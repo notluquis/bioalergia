@@ -20,5 +20,5 @@ export function useAppBadge() {
 
   // Auto-clear on unmount isn't always desired, so we leave it manual
 
-  return { badgeCount, setBadge, clearBadge };
+  return { badgeCount, clearBadge, setBadge };
 }

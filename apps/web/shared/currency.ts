@@ -1,6 +1,22 @@
 import { Decimal } from "decimal.js";
 
-export type CurrencyValue = number | string | object | null | undefined | Decimal;
+export type CurrencyValue = Decimal | null | number | object | string | undefined;
+
+export function addCurrency(a: CurrencyValue, b: CurrencyValue): number {
+  return toDecimal(a).plus(toDecimal(b)).round().toNumber();
+}
+
+/**
+ * Round currency to whole numbers (CLP has no decimals)
+ * Uses Decimal.js for precise rounding (ROUND_HALF_UP default)
+ */
+export function roundCurrency(value: CurrencyValue): number {
+  return toDecimal(value).round().toNumber();
+}
+
+export function subtractCurrency(a: CurrencyValue, b: CurrencyValue): number {
+  return toDecimal(a).minus(toDecimal(b)).round().toNumber();
+}
 
 /**
  * Safely convert any value to a Decimal instance.
@@ -17,20 +33,4 @@ export function toDecimal(value: CurrencyValue): Decimal {
   } catch {
     return new Decimal(0);
   }
-}
-
-/**
- * Round currency to whole numbers (CLP has no decimals)
- * Uses Decimal.js for precise rounding (ROUND_HALF_UP default)
- */
-export function roundCurrency(value: CurrencyValue): number {
-  return toDecimal(value).round().toNumber();
-}
-
-export function addCurrency(a: CurrencyValue, b: CurrencyValue): number {
-  return toDecimal(a).plus(toDecimal(b)).round().toNumber();
-}
-
-export function subtractCurrency(a: CurrencyValue, b: CurrencyValue): number {
-  return toDecimal(a).minus(toDecimal(b)).round().toNumber();
 }

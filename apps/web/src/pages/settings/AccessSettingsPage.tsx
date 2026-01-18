@@ -10,7 +10,7 @@ import { getUserAccessColumns } from "@/features/users/components/UserAccessColu
 import { userKeys } from "@/features/users/queries";
 
 export default function AccessSettingsPage() {
-  const { success, error: toastError } = useToast();
+  const { error: toastError, success } = useToast();
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const isAdmin = can("update", "User");
@@ -18,20 +18,19 @@ export default function AccessSettingsPage() {
   const { data: users } = useSuspenseQuery(userKeys.adminList());
 
   const toggleMfaMutation = useMutation({
-    mutationFn: ({ userId, enabled }: { userId: number; enabled: boolean }) => toggleUserMfa(userId, enabled),
+    mutationFn: ({ enabled, userId }: { enabled: boolean; userId: number }) => toggleUserMfa(userId, enabled),
+    onError: (err) => {
+      toastError(err instanceof Error ? err.message : "Error desconocido");
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users", "admin-list"] });
       success("Estado MFA actualizado correctamente");
     },
-    onError: (err) => {
-      toastError(err instanceof Error ? err.message : "Error desconocido");
-    },
   });
 
-  const columns = getUserAccessColumns(
-    (userId, enabled) => toggleMfaMutation.mutate({ userId, enabled }),
-    toggleMfaMutation.isPending
-  );
+  const columns = getUserAccessColumns((userId, enabled) => {
+    toggleMfaMutation.mutate({ enabled, userId });
+  }, toggleMfaMutation.isPending);
 
   if (!isAdmin) {
     return (

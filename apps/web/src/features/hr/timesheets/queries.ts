@@ -10,8 +10,8 @@ export const timesheetKeys = {
 export const timesheetQueries = {
   months: () =>
     queryOptions({
-      queryKey: timesheetKeys.months(),
       queryFn: fetchTimesheetMonths,
+      queryKey: timesheetKeys.months(),
       staleTime: 1000 * 60 * 5,
     }),
 };

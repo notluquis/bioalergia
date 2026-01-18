@@ -15,10 +15,10 @@ export async function generateTimesheetPdfBase64(
   summaryRow: TimesheetSummaryRow,
   bulkRows: BulkRow[],
   monthLabel: string
-): Promise<string | null> {
+): Promise<null | string> {
   try {
     const [{ default: jsPDF }, autoTableModule] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
-    const autoTable = (autoTableModule.default ?? autoTableModule) as typeof autoTableModule.default;
+    const autoTable = autoTableModule.default ?? autoTableModule;
     const doc = new jsPDF();
 
     const margin = 10;
@@ -28,7 +28,9 @@ export async function generateTimesheetPdfBase64(
       const logoBlob = await ky.get("/logo_sin_eslogan.png").blob();
       const logoBase64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
-        reader.addEventListener("load", () => resolve(reader.result as string));
+        reader.addEventListener("load", () => {
+          resolve(reader.result as string);
+        });
         reader.readAsDataURL(logoBlob);
       });
       doc.addImage(logoBase64, "PNG", margin, 5, 40, 12);
@@ -51,13 +53,12 @@ export async function generateTimesheetPdfBase64(
 
     // Summary table
     const fmtCLP = (n: number) =>
-      n.toLocaleString("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 });
+      n.toLocaleString("es-CL", { currency: "CLP", minimumFractionDigits: 0, style: "currency" });
 
     // Use retention rate from backend summary (already calculated with correct year)
     const retentionPercent = formatRetentionPercent(summaryRow.retentionRate || 0);
 
     autoTable(doc, {
-      head: [["Concepto", "Valor"]],
       body: [
         ["Horas trabajadas", summaryRow.hoursFormatted],
         ["Horas extras", summaryRow.overtimeFormatted],
@@ -66,12 +67,13 @@ export async function generateTimesheetPdfBase64(
         [`Retención (${retentionPercent})`, `-${fmtCLP(summaryRow.retention)}`],
         ["Total líquido", fmtCLP(summaryRow.net)],
       ],
-      startY: 75,
-      theme: "grid",
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [14, 100, 183] },
       columnStyles: { 1: { halign: "right" } },
+      head: [["Concepto", "Valor"]],
+      headStyles: { fillColor: [14, 100, 183] },
       margin: { left: margin, right: margin },
+      startY: 75,
+      styles: { fontSize: 10 },
+      theme: "grid",
     });
 
     // Detail table
@@ -84,13 +86,13 @@ export async function generateTimesheetPdfBase64(
 
     if (detailBody.length > 0) {
       autoTable(doc, {
-        head: [["Fecha", "Entrada", "Salida", "Extras"]],
         body: detailBody,
-        startY: nextY,
-        theme: "grid",
-        styles: { fontSize: 9, halign: "center" },
+        head: [["Fecha", "Entrada", "Salida", "Extras"]],
         headStyles: { fillColor: [241, 167, 34], halign: "center" },
         margin: { left: margin, right: margin },
+        startY: nextY,
+        styles: { fontSize: 9, halign: "center" },
+        theme: "grid",
       });
     }
 
@@ -103,7 +105,13 @@ export async function generateTimesheetPdfBase64(
         const base64 = dataUrl.split(",")[1] || "";
         resolve(base64);
       });
-      reader.addEventListener("error", () => resolve(null), { once: true });
+      reader.addEventListener(
+        "error",
+        () => {
+          resolve(null);
+        },
+        { once: true }
+      );
       reader.readAsDataURL(pdfBlob);
     });
   } catch (error) {

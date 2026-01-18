@@ -14,19 +14,19 @@ import {
 import Input from "@/components/ui/Input";
 
 interface DataTableFacetedFilterProps<TData, TValue> {
-  column?: Column<TData, TValue>;
-  title?: string;
-  options: {
-    label: string;
-    value: string;
-    icon?: React.ComponentType<{ className?: string }>;
+  readonly column?: Column<TData, TValue>;
+  readonly options: {
+    readonly icon?: React.ComponentType<{ className?: string }>;
+    readonly label: string;
+    readonly value: string;
   }[];
+  readonly title?: string;
 }
 
 export function DataTableFacetedFilter<TData, TValue>({
   column,
-  title,
   options,
+  title,
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues();
   const selectedValues = new Set(column?.getFilterValue() as string[]);
@@ -37,10 +37,10 @@ export function DataTableFacetedFilter<TData, TValue>({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 border-dashed">
+        <Button className="h-8 border-dashed" size="sm" variant="outline">
           <PlusCircle className="mr-2 h-4 w-4" />
           {title}
-          {selectedValues?.size > 0 && (
+          {selectedValues.size > 0 && (
             <>
               <div className="bg-base-300 mx-2 h-4 w-px" />
               <div className="badge badge-sm badge-secondary hidden lg:flex">{selectedValues.size}</div>
@@ -49,14 +49,18 @@ export function DataTableFacetedFilter<TData, TValue>({
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-50 p-0" align="start">
+      <DropdownMenuContent align="start" className="w-50 p-0">
         <div className="p-1">
           <Input
+            className="h-8"
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+            }}
             placeholder={title}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-8"
-            onKeyDown={(e) => e.stopPropagation()}
           />
         </div>
         <DropdownMenuSeparator />
@@ -68,9 +72,8 @@ export function DataTableFacetedFilter<TData, TValue>({
             const isSelected = selectedValues.has(option.value);
             return (
               <DropdownMenuCheckboxItem
-                key={option.value}
                 checked={isSelected}
-                onSelect={(e) => e.preventDefault()}
+                key={option.value}
                 onCheckedChange={() => {
                   if (isSelected) {
                     selectedValues.delete(option.value);
@@ -79,6 +82,9 @@ export function DataTableFacetedFilter<TData, TValue>({
                   }
                   const filterValues = [...selectedValues];
                   column?.setFilterValue(filterValues.length > 0 ? filterValues : undefined);
+                }}
+                onSelect={(e) => {
+                  e.preventDefault();
                 }}
               >
                 {option.icon && <option.icon className="mr-2 h-4 w-4 opacity-50" />}
@@ -97,8 +103,8 @@ export function DataTableFacetedFilter<TData, TValue>({
             <DropdownMenuSeparator />
             <div className="p-1">
               <DropdownMenuItem
-                onSelect={() => column?.setFilterValue(undefined)}
                 className="justify-center text-center"
+                onSelect={() => column?.setFilterValue(undefined)}
               >
                 Clear filters
               </DropdownMenuItem>

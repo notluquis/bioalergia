@@ -5,17 +5,17 @@ import { cn } from "@/lib/utils";
 
 // Constants extracted outside component to reduce complexity
 const SIZE_CLASSES = {
-  xs: "input-xs h-6 text-xs",
-  sm: "input-sm h-8 text-sm",
-  md: "h-10 text-sm",
   lg: "input-lg h-12 text-base",
+  md: "h-10 text-sm",
+  sm: "input-sm h-8 text-sm",
+  xs: "input-xs h-6 text-xs",
 } as const;
 
 const SELECT_SIZE_CLASSES = {
-  xs: "select-xs h-6 text-xs",
-  sm: "select-sm h-8 text-sm",
-  md: "h-10 text-sm",
   lg: "select-lg h-12 text-base",
+  md: "h-10 text-sm",
+  sm: "select-sm h-8 text-sm",
+  xs: "select-xs h-6 text-xs",
 } as const;
 
 const BASE_CLASSES =
@@ -24,34 +24,34 @@ const BASE_CLASSES =
 const LABEL_CLASSES = "label pt-0 pb-2";
 const LABEL_TEXT_CLASSES = "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";
 
-type InputSize = "xs" | "sm" | "md" | "lg";
-
-type InputBaseProps = {
-  label?: string;
-  helper?: string;
-  error?: string;
+interface InputBaseProps {
   containerClassName?: string;
+  error?: string;
+  helper?: string;
+  label?: string;
   rightElement?: React.ReactNode;
-  type?: string;
   size?: InputSize;
-};
+  type?: string;
+}
 
 type InputProps = InputBaseProps &
   Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> & {
-    inputMode?: "none" | "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url";
-    enterKeyHint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
+    enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send";
+    inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url";
   };
-type TextareaProps = InputBaseProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+
+type InputSize = "lg" | "md" | "sm" | "xs";
+type Props = (InputProps & { as?: "input" }) | (SelectProps & { as: "select" }) | (TextareaProps & { as: "textarea" });
 type SelectProps = InputBaseProps & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size">;
 
-type Props = ({ as?: "input" } & InputProps) | ({ as: "textarea" } & TextareaProps) | ({ as: "select" } & SelectProps);
+type TextareaProps = InputBaseProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
 // Helper to get error classes for any input type
-const getErrorClasses = (inputType: "input" | "textarea" | "select") =>
+const getErrorClasses = (inputType: "input" | "select" | "textarea") =>
   `${inputType}-error focus:ring-error/20 focus:border-error`;
 
 export default function Input(props: Props) {
-  const { label, helper, error, className, containerClassName, as = "input", type, size = "md", ...rest } = props;
+  const { as = "input", className, containerClassName, error, helper, label, size = "md", type, ...rest } = props;
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
 
   const generatedId = React.useId();
@@ -98,9 +98,9 @@ export default function Input(props: Props) {
   }
 
   const ariaProps = {
-    id: inputId,
     "aria-describedby": describedById,
     "aria-invalid": error ? true : undefined,
+    id: inputId,
   };
 
   // Render control based on type using if-else
@@ -122,8 +122,8 @@ export default function Input(props: Props) {
   } else {
     control = (
       <input
-        type={inputType}
         className={inputClasses}
+        type={inputType}
         {...ariaProps}
         {...(rest as React.InputHTMLAttributes<HTMLInputElement>)}
       />
@@ -134,11 +134,13 @@ export default function Input(props: Props) {
     props.rightElement ??
     (isPassword && (
       <button
-        type="button"
-        onClick={() => setIsPasswordVisible((v) => !v)}
-        className="text-base-content/60 hover:text-base-content hover:bg-base-200/50 rounded-full p-1 transition-colors focus:outline-none"
-        tabIndex={-1}
         aria-label={isPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
+        className="text-base-content/60 hover:text-base-content hover:bg-base-200/50 rounded-full p-1 transition-colors focus:outline-none"
+        onClick={() => {
+          setIsPasswordVisible((v) => !v);
+        }}
+        tabIndex={-1}
+        type="button"
       >
         {isPasswordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
       </button>
@@ -156,7 +158,7 @@ export default function Input(props: Props) {
   return (
     <div className={cn("form-control w-full", containerClassName)}>
       {label && (
-        <label htmlFor={inputId} className={LABEL_CLASSES}>
+        <label className={LABEL_CLASSES} htmlFor={inputId}>
           <span className={LABEL_TEXT_CLASSES}>{label}</span>
         </label>
       )}
@@ -165,7 +167,7 @@ export default function Input(props: Props) {
 
       {(helper || error) && (
         <div className="label pt-0 pb-0">
-          <span id={describedById} className={helperClasses}>
+          <span className={helperClasses} id={describedById}>
             {error || helper}
           </span>
         </div>

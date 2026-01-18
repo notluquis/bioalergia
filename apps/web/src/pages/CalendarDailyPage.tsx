@@ -1,5 +1,3 @@
-import "dayjs/locale/es";
-
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
@@ -18,22 +16,24 @@ import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { today } from "@/lib/dates";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
+import "dayjs/locale/es";
+
 dayjs.locale("es");
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 
 function CalendarDailyPage() {
   const {
-    filters,
     appliedFilters,
-    daily,
-    loading,
-    error,
-    availableEventTypes,
-    availableCategories,
-    updateFilters,
     applyFilters,
+    availableCategories,
+    availableEventTypes,
+    daily,
+    error,
+    filters,
+    loading,
     resetFilters,
+    updateFilters,
   } = useCalendarEvents();
 
   const [selectedDate, setSelectedDate] = useState(() => today());
@@ -80,37 +80,39 @@ function CalendarDailyPage() {
       {/* Header with Navigation */}
       <header className="space-y-3">
         <DayNavigation
-          selectedDate={selectedDate}
           onSelect={setSelectedDate}
           rightSlot={
             <Button
-              variant={showFilters ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
               className="gap-1.5"
+              onClick={() => {
+                setShowFilters(!showFilters);
+              }}
+              size="sm"
+              variant={showFilters ? "secondary" : "ghost"}
             >
               <Filter className="h-4 w-4" />
               <span className="hidden sm:inline">{showFilters ? "Cerrar" : "Filtros"}</span>
             </Button>
           }
+          selectedDate={selectedDate}
         />
 
         {/* Filters Panel (Collapsible) */}
         {showFilters && (
           <CalendarFilterPanel
-            filters={filters}
-            availableEventTypes={availableEventTypes}
             availableCategories={availableCategories}
-            onFilterChange={updateFilters}
-            onApply={applyFilters}
-            onReset={resetFilters}
+            availableEventTypes={availableEventTypes}
+            filters={filters}
             loading={loading}
+            onApply={applyFilters}
+            onFilterChange={updateFilters}
+            onReset={resetFilters}
           />
         )}
       </header>
 
       {error && (
-        <Alert variant="error" className="mt-4">
+        <Alert className="mt-4" variant="error">
           {error}
         </Alert>
       )}
@@ -118,10 +120,10 @@ function CalendarDailyPage() {
       {/* Stats Cards - Compact summary */}
       {selectedDayEntry && (
         <DailyStatsCards
-          eventsCount={selectedDayEntry.total}
           amountExpected={selectedDayEntry.amountExpected}
           amountPaid={selectedDayEntry.amountPaid}
           className="mt-4"
+          eventsCount={selectedDayEntry.total}
         />
       )}
 
@@ -149,7 +151,7 @@ function CalendarDailyPage() {
           return (
             <>
               {selectedDayEntry.events.map((event) => (
-                <DailyEventCard key={event.eventId} event={event} />
+                <DailyEventCard event={event} key={event.eventId} />
               ))}
 
               {/* Footer */}

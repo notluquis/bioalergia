@@ -2,74 +2,12 @@ import { apiClient } from "@/lib/apiClient";
 
 import type { TimesheetEntry, TimesheetPayload, TimesheetSummaryResponse, TimesheetUpsertEntry } from "./types";
 
-export async function fetchTimesheetSummary(month: string, employeeId?: number | null) {
-  const query: Record<string, string> = { month };
-  if (employeeId) query.employeeId = String(employeeId);
-
-  const data = await apiClient.get<TimesheetSummaryResponse & { status: string; message?: string }>(
-    "/api/timesheets/summary",
-    { query }
-  );
-
-  if (data.status !== "ok") {
-    throw new Error(data.message || "Error al cargar resumen");
-  }
-  return data;
-}
-
-export async function fetchTimesheetDetail(employeeId: number, month: string) {
-  const data = await apiClient.get<{
-    entries: TimesheetEntry[];
-    from: string;
-    to: string;
-    status: string;
-    message?: string;
-  }>(`/api/timesheets/${employeeId}/detail`, { query: { month } });
-
-  if (data.status !== "ok") {
-    throw new Error(data.message || "Error al cargar detalle");
-  }
-  return data;
-}
-
-export async function upsertTimesheet(payload: TimesheetPayload) {
-  const data = await apiClient.post<{ entry: TimesheetEntry; status: string; message?: string }>(
-    "/api/timesheets",
-    payload
-  );
-
-  if (data.status !== "ok") {
-    throw new Error(data.message || "Error al guardar registro");
-  }
-  return data.entry;
-}
-
-export async function updateTimesheet(id: number, payload: Partial<TimesheetPayload>) {
-  const data = await apiClient.put<{ entry: TimesheetEntry; status: string; message?: string }>(
-    `/api/timesheets/${id}`,
-    payload
-  );
-
-  if (data.status !== "ok") {
-    throw new Error(data.message || "Error al actualizar registro");
-  }
-  return data.entry;
-}
-
-export async function deleteTimesheet(id: number) {
-  const data = await apiClient.delete<{ status: string; message?: string }>(`/api/timesheets/${id}`);
-
-  if (data.status !== "ok") {
-    throw new Error(data.message || "Error al eliminar registro");
-  }
-}
-
 export async function bulkUpsertTimesheets(
   employeeId: number,
   entries: TimesheetUpsertEntry[] = [],
   removeIds: number[] = []
 ) {
-  const data = await apiClient.post<{ inserted: number; removed: number; status: string; message?: string }>(
+  const data = await apiClient.post<{ inserted: number; message?: string; removed: number; status: string }>(
     "/api/timesheets/bulk",
     {
       employee_id: employeeId,
@@ -84,39 +22,35 @@ export async function bulkUpsertTimesheets(
   return data;
 }
 
-export async function prepareTimesheetEmail(payload: {
-  employeeId: number;
-  employeeName: string;
-  employeeEmail: string;
-  month: string;
-  monthLabel: string;
-  pdfBase64: string;
-  summary: {
-    role: string;
-    workedMinutes: number;
-    overtimeMinutes: number;
-    subtotal: number;
-    retention: number;
-    net: number;
-    payDate: string;
-    retentionRate?: number | null;
-    retention_rate?: number | null;
-  };
-}) {
-  const data = await apiClient.post<{ status: string; message?: string; emlBase64: string; filename: string }>(
-    "/api/timesheets/prepare-email",
-    payload
-  );
+export async function deleteTimesheet(id: number) {
+  const data = await apiClient.delete<{ message?: string; status: string }>(`/api/timesheets/${id}`);
 
   if (data.status !== "ok") {
-    throw new Error(data.message || "Error al preparar el email");
+    throw new Error(data.message || "Error al eliminar registro");
   }
+}
 
+export async function fetchImageBlob(url: string) {
+  return apiClient.get<Blob>(url, { responseType: "blob" });
+}
+
+export async function fetchTimesheetDetail(employeeId: number, month: string) {
+  const data = await apiClient.get<{
+    entries: TimesheetEntry[];
+    from: string;
+    message?: string;
+    status: string;
+    to: string;
+  }>(`/api/timesheets/${employeeId}/detail`, { query: { month } });
+
+  if (data.status !== "ok") {
+    throw new Error(data.message || "Error al cargar detalle");
+  }
   return data;
 }
 
 export async function fetchTimesheetMonths() {
-  const data = await apiClient.get<{ status: string; months: string[]; monthsWithData: string[] }>(
+  const data = await apiClient.get<{ months: string[]; monthsWithData: string[]; status: string }>(
     "/api/timesheets/months"
   );
   if (data.status !== "ok") {
@@ -128,6 +62,72 @@ export async function fetchTimesheetMonths() {
   };
 }
 
-export async function fetchImageBlob(url: string) {
-  return apiClient.get<Blob>(url, { responseType: "blob" });
+export async function fetchTimesheetSummary(month: string, employeeId?: null | number) {
+  const query: Record<string, string> = { month };
+  if (employeeId) query.employeeId = String(employeeId);
+
+  const data = await apiClient.get<TimesheetSummaryResponse & { message?: string; status: string }>(
+    "/api/timesheets/summary",
+    { query }
+  );
+
+  if (data.status !== "ok") {
+    throw new Error(data.message || "Error al cargar resumen");
+  }
+  return data;
+}
+
+export async function prepareTimesheetEmail(payload: {
+  employeeEmail: string;
+  employeeId: number;
+  employeeName: string;
+  month: string;
+  monthLabel: string;
+  pdfBase64: string;
+  summary: {
+    net: number;
+    overtimeMinutes: number;
+    payDate: string;
+    retention: number;
+    retention_rate?: null | number;
+    retentionRate?: null | number;
+    role: string;
+    subtotal: number;
+    workedMinutes: number;
+  };
+}) {
+  const data = await apiClient.post<{ emlBase64: string; filename: string; message?: string; status: string }>(
+    "/api/timesheets/prepare-email",
+    payload
+  );
+
+  if (data.status !== "ok") {
+    throw new Error(data.message || "Error al preparar el email");
+  }
+
+  return data;
+}
+
+export async function updateTimesheet(id: number, payload: Partial<TimesheetPayload>) {
+  const data = await apiClient.put<{ entry: TimesheetEntry; message?: string; status: string }>(
+    `/api/timesheets/${id}`,
+    payload
+  );
+
+  if (data.status !== "ok") {
+    throw new Error(data.message || "Error al actualizar registro");
+  }
+  return data.entry;
+}
+
+export async function upsertTimesheet(payload: TimesheetPayload) {
+  const data = await apiClient.post<{ entry: TimesheetEntry; message?: string; status: string }>(
+    "/api/timesheets",
+    payload
+  );
+
+  if (data.status !== "ok") {
+    throw new Error(data.message || "Error al guardar registro");
+  }
+  return data.entry;
 }

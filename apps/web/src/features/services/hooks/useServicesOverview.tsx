@@ -1,4 +1,5 @@
 import type { ServiceSchedule } from "../types";
+
 import { useServiceDetails } from "./useServiceDetails";
 import { useServiceMutations } from "./useServiceMutations";
 import { useServicePayment } from "./useServicePayment";
@@ -49,25 +50,25 @@ export function useServicesOverview() {
     ...mutations,
     ...payment,
 
-    // Computed / Combined
-    loadingDetail,
+    applyTemplate: details.openCreateModal,
 
+    canManage: mutations.canManage, // derived in mutations
+    closeCreateModal: details.closeCreateModal,
+    globalError: list.listError,
     // Renamed or Composite Handlers for View Compatibility
     handleAgendaRegisterPayment,
     handleAgendaUnlinkPayment,
+
     handleCreateService,
     handleRegenerate,
     handleUnlink,
+    // Computed / Combined
+    loadingDetail,
 
-    // Explicit mappings if names mismatched (checked and they align mostly)
-    processingPayment: payment.paymentPending,
-    canManage: mutations.canManage, // derived in mutations
     loadingList: false, // Suspense handles this now, so basic loading is false after boundary
-    globalError: list.listError,
-
     // Modal & Action props that might expect specific signatures
     openCreateModal: details.openCreateModal,
-    closeCreateModal: details.closeCreateModal,
-    applyTemplate: details.openCreateModal,
+    // Explicit mappings if names mismatched (checked and they align mostly)
+    processingPayment: payment.paymentPending,
   };
 }

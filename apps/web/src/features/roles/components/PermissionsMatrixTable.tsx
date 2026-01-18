@@ -1,6 +1,8 @@
 import { Check, ChevronDown, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react";
 import { Fragment, useState } from "react";
 
+import type { Permission, Role } from "@/types/roles";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,48 +10,47 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
-import type { Permission, Role } from "@/types/roles";
 
 import { BulkToggleCell } from "./BulkToggleCell";
 
+export interface MatrixItem {
+  icon: React.ElementType;
+  label: string;
+  permissionIds: number[];
+  relatedPermissions: Permission[];
+}
+
 // Types corresponding to the processed nav sections
-export type MatrixSection = {
-  title: string;
+export interface MatrixSection {
   items: MatrixItem[];
   permissionIds: number[];
-};
-
-export type MatrixItem = {
-  label: string;
-  icon: React.ElementType;
-  relatedPermissions: Permission[];
-  permissionIds: number[];
-};
+  title: string;
+}
 
 interface PermissionsMatrixTableProps {
+  isUpdatingPermissions: boolean;
+  onBulkToggle: (role: Role, permissionIds: number[]) => void;
+  onDeleteRole: (role: Role) => void;
+  onEditRole: (role: Role) => void;
+  onImpersonate: (role: Role) => void;
+  onPermissionToggle: (role: Role, permissionId: number) => void;
   roles: Role[];
   sections: MatrixSection[];
-  viewModeRole: string;
-  isUpdatingPermissions: boolean;
   updatingRoleId?: number;
-  onPermissionToggle: (role: Role, permissionId: number) => void;
-  onBulkToggle: (role: Role, permissionIds: number[]) => void;
-  onEditRole: (role: Role) => void;
-  onDeleteRole: (role: Role) => void;
-  onImpersonate: (role: Role) => void;
+  viewModeRole: string;
 }
 
 export function PermissionsMatrixTable({
+  isUpdatingPermissions,
+  onBulkToggle,
+  onDeleteRole,
+  onEditRole,
+  onImpersonate,
+  onPermissionToggle,
   roles,
   sections,
-  viewModeRole,
-  isUpdatingPermissions,
   updatingRoleId,
-  onPermissionToggle,
-  onBulkToggle,
-  onEditRole,
-  onDeleteRole,
-  onImpersonate,
+  viewModeRole,
 }: PermissionsMatrixTableProps) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
@@ -81,8 +82,8 @@ export function PermissionsMatrixTable({
         </div>
         {displayRoles.map((role) => (
           <div
-            key={role.id}
             className="group hover:bg-base-200/50 border-base-300 relative flex flex-col items-center justify-start border-b p-4 text-center align-top"
+            key={role.id}
           >
             <div className="flex flex-col items-center gap-1">
               <span className="line-clamp-2 text-base leading-tight font-bold" title={role.name}>
@@ -99,16 +100,29 @@ export function PermissionsMatrixTable({
                     <ChevronDown className="h-3 w-3" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" sideOffset={4}>
-                    <DropdownMenuItem onClick={() => onImpersonate(role)}>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        onImpersonate(role);
+                      }}
+                    >
                       <Eye className="h-4 w-4" />
                       Previsualizar
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onEditRole(role)}>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        onEditRole(role);
+                      }}
+                    >
                       <Pencil className="h-4 w-4" />
                       Editar
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onDeleteRole(role)} className="text-error focus:text-error">
+                    <DropdownMenuItem
+                      className="text-error focus:text-error"
+                      onClick={() => {
+                        onDeleteRole(role);
+                      }}
+                    >
                       <Trash2 className="h-4 w-4" />
                       Eliminar
                     </DropdownMenuItem>
@@ -126,9 +140,11 @@ export function PermissionsMatrixTable({
             {/* Section Title & Bulk Toggle */}
             <div className="border-base-300 sticky left-0 z-10 flex border-r border-b">
               <button
-                type="button"
                 className="bg-base-200/50 hover:bg-base-200/70 flex flex-1 cursor-pointer items-center gap-2 py-3 pl-4 text-xs font-bold tracking-widest uppercase transition-colors"
-                onClick={() => toggleSection(section.title)}
+                onClick={() => {
+                  toggleSection(section.title);
+                }}
+                type="button"
               >
                 {openSections[section.title] ? (
                   <ChevronDown className="h-4 w-4" />
@@ -140,16 +156,16 @@ export function PermissionsMatrixTable({
             </div>
             {displayRoles.map((role) => (
               <div
-                key={role.id}
                 className="bg-base-200/50 hover:bg-base-200/70 border-base-300 flex items-center justify-center border-b p-0 transition-colors"
+                key={role.id}
               >
                 <BulkToggleCell
-                  role={role}
-                  permissionIds={section.permissionIds}
+                  className="w-full"
                   isUpdating={isUpdatingPermissions && updatingRoleId === role.id}
                   onToggle={onBulkToggle}
+                  permissionIds={section.permissionIds}
+                  role={role}
                   variant="section"
-                  className="w-full"
                 />
               </div>
             ))}
@@ -167,9 +183,11 @@ export function PermissionsMatrixTable({
                       <Fragment key={item.label}>
                         <div className="border-base-300 sticky left-0 z-10 flex border-r border-b">
                           <button
-                            type="button"
                             className="bg-base-100/50 hover:bg-base-200/20 flex flex-1 cursor-pointer items-center gap-2 py-3 pl-8 text-sm font-semibold transition-colors"
-                            onClick={() => toggleItem(itemKey)}
+                            onClick={() => {
+                              toggleItem(itemKey);
+                            }}
+                            type="button"
                           >
                             <div className="text-base-content/40 flex h-4 w-4 items-center justify-center">
                               {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -180,16 +198,16 @@ export function PermissionsMatrixTable({
                         </div>
                         {displayRoles.map((role) => (
                           <div
-                            key={role.id}
                             className="bg-base-100/50 hover:bg-base-200/20 border-base-300 flex items-center justify-center border-b p-0 transition-colors"
+                            key={role.id}
                           >
                             <BulkToggleCell
-                              role={role}
-                              permissionIds={item.permissionIds}
+                              className="w-full py-3"
                               isUpdating={isUpdatingPermissions && updatingRoleId === role.id}
                               onToggle={onBulkToggle}
+                              permissionIds={item.permissionIds}
+                              role={role}
                               variant="page"
-                              className="w-full py-3"
                             />
                           </div>
                         ))}
@@ -198,11 +216,11 @@ export function PermissionsMatrixTable({
                         {isOpen &&
                           item.relatedPermissions.map((perm) => (
                             <PermissionRow
-                              key={perm.id}
-                              perm={perm}
                               displayRoles={displayRoles}
-                              onToggle={onPermissionToggle}
                               isUpdating={isUpdatingPermissions}
+                              key={perm.id}
+                              onToggle={onPermissionToggle}
+                              perm={perm}
                               updatingRoleId={updatingRoleId}
                             />
                           ))}
@@ -214,10 +232,10 @@ export function PermissionsMatrixTable({
                   if (!perm) return null;
 
                   const actionMap: Record<string, string> = {
-                    read: "Ver",
                     create: "Crear",
-                    update: "Editar",
                     delete: "Eliminar",
+                    read: "Ver",
+                    update: "Editar",
                   };
                   const actionLabel = actionMap[perm.action] || perm.action;
                   const displayLabel = `${item.label} (${actionLabel})`;
@@ -235,12 +253,12 @@ export function PermissionsMatrixTable({
                       </div>
                       {displayRoles.map((role) => (
                         <PermissionCell
-                          key={role.id}
-                          role={role}
-                          permissionId={perm.id}
-                          isUpdating={isUpdatingPermissions && updatingRoleId === role.id}
-                          onToggle={onPermissionToggle}
                           className="border-base-300 border-b p-0"
+                          isUpdating={isUpdatingPermissions && updatingRoleId === role.id}
+                          key={role.id}
+                          onToggle={onPermissionToggle}
+                          permissionId={perm.id}
+                          role={role}
                         />
                       ))}
                     </Fragment>
@@ -256,30 +274,32 @@ export function PermissionsMatrixTable({
 }
 
 function PermissionCell({
-  role,
-  permissionId,
+  className,
   isUpdating,
   onToggle,
-  className,
+  permissionId,
+  role,
 }: {
-  role: Role;
-  permissionId: number;
+  className?: string;
   isUpdating: boolean;
   onToggle: (r: Role, i: number) => void;
-  className?: string;
+  permissionId: number;
+  role: Role;
 }) {
   const hasAccess = role.permissions.some((rp) => rp.permissionId === permissionId);
 
   return (
     <div className={`flex items-center justify-center ${className || ""}`}>
       <button
-        onClick={() => onToggle(role, permissionId)}
-        disabled={isUpdating}
         className="group flex h-8 w-8 items-center justify-center transition-colors"
+        disabled={isUpdating}
+        onClick={() => {
+          onToggle(role, permissionId);
+        }}
       >
         {hasAccess ? (
           <div className="bg-primary hover:bg-primary-focus flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
-            <Check size={12} className="text-primary-content" />
+            <Check className="text-primary-content" size={12} />
           </div>
         ) : (
           <div className="border-base-300 bg-base-100 group-hover:border-primary/50 group-hover:bg-primary/5 h-5 w-5 rounded-md border-2 transition-colors" />
@@ -290,23 +310,23 @@ function PermissionCell({
 }
 
 function PermissionRow({
-  perm,
   displayRoles,
-  onToggle,
   isUpdating,
+  onToggle,
+  perm,
   updatingRoleId,
 }: {
-  perm: Permission;
   displayRoles: Role[];
-  onToggle: (role: Role, id: number) => void;
   isUpdating: boolean;
+  onToggle: (role: Role, id: number) => void;
+  perm: Permission;
   updatingRoleId?: number;
 }) {
   const actionMap: Record<string, string> = {
-    read: "Ver",
     create: "Crear",
-    update: "Editar",
     delete: "Eliminar",
+    read: "Ver",
+    update: "Editar",
   };
   const actionLabel = actionMap[perm.action] || perm.action;
 
@@ -320,12 +340,12 @@ function PermissionRow({
       </div>
       {displayRoles.map((role) => (
         <PermissionCell
-          key={role.id}
-          role={role}
-          permissionId={perm.id}
-          isUpdating={isUpdating && updatingRoleId === role.id}
-          onToggle={onToggle}
           className="border-base-300 border-b"
+          isUpdating={isUpdating && updatingRoleId === role.id}
+          key={role.id}
+          onToggle={onToggle}
+          permissionId={perm.id}
+          role={role}
         />
       ))}
     </div>

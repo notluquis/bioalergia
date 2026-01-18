@@ -7,51 +7,52 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 
 import type { LoanSchedule, LoanSummary, RegenerateSchedulePayload } from "../types";
+
 import LoanScheduleTable from "./LoanScheduleTable";
 
 interface LoanDetailProps {
-  loan: LoanSummary | null;
-  schedules: LoanSchedule[];
-  summary: {
-    total_expected: number;
-    total_paid: number;
-    remaining_amount: number;
-    paid_installments: number;
-    pending_installments: number;
-  } | null;
-  loading: boolean;
   canManage: boolean;
+  loading: boolean;
+  loan: LoanSummary | null;
   onRegenerate: (payload: RegenerateSchedulePayload) => Promise<void>;
   onRegisterPayment: (schedule: LoanSchedule) => void;
   onUnlinkPayment: (schedule: LoanSchedule) => void;
+  schedules: LoanSchedule[];
+  summary: null | {
+    paid_installments: number;
+    pending_installments: number;
+    remaining_amount: number;
+    total_expected: number;
+    total_paid: number;
+  };
 }
 
 export function LoanDetail({
-  loan,
-  schedules,
-  summary,
-  loading,
   canManage,
+  loading,
+  loan,
   onRegenerate,
   onRegisterPayment,
   onUnlinkPayment,
+  schedules,
+  summary,
 }: LoanDetailProps) {
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [regenerateForm, setRegenerateForm] = useState<RegenerateSchedulePayload>({});
   const [regenerating, setRegenerating] = useState(false);
-  const [regenerateError, setRegenerateError] = useState<string | null>(null);
+  const [regenerateError, setRegenerateError] = useState<null | string>(null);
 
   const statusBadge = (() => {
-    if (!loan) return { label: "", className: "" };
+    if (!loan) return { className: "", label: "" };
     switch (loan.status) {
       case "COMPLETED": {
-        return { label: "Liquidado", className: "bg-emerald-100 text-emerald-700" };
+        return { className: "bg-emerald-100 text-emerald-700", label: "Liquidado" };
       }
       case "DEFAULTED": {
-        return { label: "En mora", className: "bg-rose-100 text-rose-700" };
+        return { className: "bg-rose-100 text-rose-700", label: "En mora" };
       }
       default: {
-        return { label: "Activo", className: "bg-amber-100 text-amber-700" };
+        return { className: "bg-amber-100 text-amber-700", label: "Activo" };
       }
     }
   })();
@@ -95,9 +96,9 @@ export function LoanDetail({
               {loan.total_installments} cuotas ·{" "}
               {
                 {
-                  WEEKLY: "semanal",
                   BIWEEKLY: "quincenal",
                   MONTHLY: "mensual",
+                  WEEKLY: "semanal",
                 }[loan.frequency]
               }
             </span>
@@ -111,7 +112,13 @@ export function LoanDetail({
             {statusBadge.label}
           </span>
           {canManage && (
-            <Button type="button" variant="secondary" onClick={() => setRegenerateOpen(true)}>
+            <Button
+              onClick={() => {
+                setRegenerateOpen(true);
+              }}
+              type="button"
+              variant="secondary"
+            >
               Regenerar cronograma
             </Button>
           )}
@@ -142,10 +149,10 @@ export function LoanDetail({
       </section>
 
       <LoanScheduleTable
-        schedules={schedules}
+        canManage={canManage}
         onRegisterPayment={onRegisterPayment}
         onUnlinkPayment={onUnlinkPayment}
-        canManage={canManage}
+        schedules={schedules}
       />
 
       {loan.notes && (
@@ -155,46 +162,52 @@ export function LoanDetail({
         </div>
       )}
 
-      <Modal isOpen={regenerateOpen} onClose={() => setRegenerateOpen(false)} title="Regenerar cronograma">
-        <form onSubmit={handleRegenerate} className="space-y-4">
+      <Modal
+        isOpen={regenerateOpen}
+        onClose={() => {
+          setRegenerateOpen(false);
+        }}
+        title="Regenerar cronograma"
+      >
+        <form className="space-y-4" onSubmit={handleRegenerate}>
           <Input
             label="Nuevo total de cuotas"
+            max={360}
+            min={1}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setRegenerateForm((prev) => ({ ...prev, totalInstallments: Number(event.target.value) }));
+            }}
             type="number"
             value={regenerateForm.totalInstallments ?? loan.total_installments}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setRegenerateForm((prev) => ({ ...prev, totalInstallments: Number(event.target.value) }))
-            }
-            min={1}
-            max={360}
           />
           <Input
             label="Nueva fecha de inicio"
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }));
+            }}
             type="date"
             value={regenerateForm.startDate ?? loan.start_date}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }))
-            }
           />
           <Input
             label="Tasa de interés (%)"
+            min={0}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setRegenerateForm((prev) => ({ ...prev, interestRate: Number(event.target.value) }));
+            }}
+            step="0.01"
             type="number"
             value={regenerateForm.interestRate ?? loan.interest_rate}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setRegenerateForm((prev) => ({ ...prev, interestRate: Number(event.target.value) }))
-            }
-            min={0}
-            step="0.01"
           />
           <Input
-            label="Frecuencia"
             as="select"
-            value={regenerateForm.frequency ?? loan.frequency}
-            onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            label="Frecuencia"
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
               setRegenerateForm((prev) => ({
                 ...prev,
                 frequency: event.target.value as RegenerateSchedulePayload["frequency"],
-              }))
-            }
+              }));
+            }}
+            value={regenerateForm.frequency ?? loan.frequency}
           >
             <option value="WEEKLY">Semanal</option>
             <option value="BIWEEKLY">Quincenal</option>
@@ -204,10 +217,17 @@ export function LoanDetail({
             <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{regenerateError}</p>
           )}
           <div className="flex justify-end gap-3">
-            <Button type="button" variant="secondary" onClick={() => setRegenerateOpen(false)} disabled={regenerating}>
+            <Button
+              disabled={regenerating}
+              onClick={() => {
+                setRegenerateOpen(false);
+              }}
+              type="button"
+              variant="secondary"
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={regenerating}>
+            <Button disabled={regenerating} type="submit">
               {regenerating ? "Actualizando..." : "Regenerar"}
             </Button>
           </div>

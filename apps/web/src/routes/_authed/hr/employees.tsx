@@ -13,12 +13,12 @@ export const Route = createFileRoute("/_authed/hr/employees")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  loader: ({ context: { queryClient } }) => {
-    return queryClient.ensureQueryData(employeeKeys.list({ includeInactive: false }));
-  },
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <EmployeesPage />
     </Suspense>
   ),
+  loader: ({ context: { queryClient } }) => {
+    return queryClient.ensureQueryData(employeeKeys.list({ includeInactive: false }));
+  },
 });

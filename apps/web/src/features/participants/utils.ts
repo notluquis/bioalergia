@@ -1,9 +1,9 @@
 import dayjs from "dayjs";
 
-type RangeParams = {
+interface RangeParams {
   from?: string;
   to?: string;
-};
+}
 
 export function resolveRange(quickValue: string, fromValue: string, toValue: string): RangeParams {
   if (quickValue === "custom") {

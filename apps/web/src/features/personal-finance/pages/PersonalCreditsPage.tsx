@@ -6,15 +6,16 @@ import { Suspense } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { formatCurrency } from "@/lib/utils";
 
+import type { PersonalCredit } from "../types";
+
 import { CreateCreditForm } from "../components/CreateCreditForm";
 import { personalFinanceQueries } from "../queries";
-import type { PersonalCredit } from "../types";
 
 const columns: ColumnDef<PersonalCredit>[] = [
   {
     accessorKey: "bankName",
-    header: "Banco",
     cell: ({ row }) => <span className="font-medium">{row.original.bankName}</span>,
+    header: "Banco",
   },
   {
     accessorKey: "description",
@@ -22,12 +23,11 @@ const columns: ColumnDef<PersonalCredit>[] = [
   },
   {
     accessorKey: "totalAmount",
-    header: "Monto Total",
     cell: ({ row }) => formatCurrency(Number(row.original.totalAmount), row.original.currency),
+    header: "Monto Total",
   },
   {
     accessorKey: "progress",
-    header: "Progreso",
     cell: ({ row }) => {
       // Simple static bar for verification phase
       const paid = row.original.installments?.filter((i) => i.status === "PAID").length || 0;
@@ -40,27 +40,28 @@ const columns: ColumnDef<PersonalCredit>[] = [
         </div>
       );
     },
+    header: "Progreso",
   },
   {
     accessorKey: "status",
-    header: "Estado",
     cell: ({ row }) => {
       const status = row.original.status;
       const badgeClass = status === "ACTIVE" ? "badge-primary" : "badge-ghost";
       return <div className={`badge ${badgeClass}`}>{status}</div>;
     },
+    header: "Estado",
   },
   {
-    id: "actions",
     cell: ({ row }) => (
       <Link
-        to="/finanzas/personal-credits/$creditId"
-        params={{ creditId: row.original.id.toString() }}
         className="btn btn-ghost btn-sm no-animation ease-apple transition-all duration-200 hover:-translate-y-px active:translate-y-0 active:scale-[0.98]"
+        params={{ creditId: row.original.id.toString() }}
+        to="/finanzas/personal-credits/$creditId"
       >
         Ver Detalle
       </Link>
     ),
+    id: "actions",
   },
 ];
 

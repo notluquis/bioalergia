@@ -8,25 +8,25 @@ export const DEFAULT_DATE_RANGE_DAYS = 30;
 
 /** Currency formatter for Chilean Pesos (CLP) */
 export const CLP_FORMATTER = new Intl.NumberFormat("es-CL", {
-  style: "currency",
   currency: "CLP",
-  minimumFractionDigits: 0,
   maximumFractionDigits: 0,
+  minimumFractionDigits: 0,
+  style: "currency",
 });
 
 /** Direction labels for display */
 export const DIRECTION_LABELS = {
   IN: "Ingreso",
-  OUT: "Egreso",
   NEUTRO: "Neutro",
+  OUT: "Egreso",
 } as const;
 
 /** Payment status labels */
 export const PAYMENT_STATUS_LABELS = {
-  PENDING: "Pendiente",
-  PARTIAL: "Parcial",
-  PAID: "Pagado",
   OVERDUE: "Atrasado",
+  PAID: "Pagado",
+  PARTIAL: "Parcial",
+  PENDING: "Pendiente",
   SKIPPED: "Omitido",
 } as const;
 
@@ -39,7 +39,7 @@ export const LOAN_STATUS_LABELS = {
 
 /** Payment frequency labels */
 export const FREQUENCY_LABELS = {
-  WEEKLY: "Semanal",
   BIWEEKLY: "Quincenal",
   MONTHLY: "Mensual",
+  WEEKLY: "Semanal",
 } as const;

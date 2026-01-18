@@ -7,7 +7,7 @@ import ServiceTemplateGallery from "@/features/services/components/ServiceTempla
 import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
 
 export default function ServicesTemplatesContent() {
-  const { canManage, applyTemplate } = useServicesOverview();
+  const { applyTemplate, canManage } = useServicesOverview();
 
   return (
     <section className="space-y-8">
@@ -16,14 +16,14 @@ export default function ServicesTemplatesContent() {
       )}
 
       <ServicesHero
-        title="Plantillas de servicios"
-        description="Reutiliza configuraciones predefinidas para acelerar la creación de servicios recurrentes."
-        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Plantillas" }]}
         actions={
           <Link to="/services/create">
             <Button variant="ghost">Ir a crear</Button>
           </Link>
         }
+        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Plantillas" }]}
+        description="Reutiliza configuraciones predefinidas para acelerar la creación de servicios recurrentes."
+        title="Plantillas de servicios"
       />
 
       <ServicesSurface>

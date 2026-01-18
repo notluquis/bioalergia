@@ -3,6 +3,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { Shield, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 
+// type AvailableRole removed
+import type { Role } from "@/types/roles";
+
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import Input from "@/components/ui/Input";
@@ -11,37 +14,35 @@ import { fetchPeople } from "@/features/people/api";
 import { fetchRoles } from "@/features/roles/api";
 import { inviteUser } from "@/features/users/api";
 import { getPersonFullName } from "@/lib/person";
-// type AvailableRole removed
-import type { Role } from "@/types/roles";
 
 export default function AddUserPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { success, error: toastError } = useToast();
+  const { error: toastError, success } = useToast();
   const [form, setForm] = useState({
     email: "",
-    names: "",
     fatherName: "",
-    motherName: "",
-    rut: "",
-    role: "VIEWER",
-    position: "",
+    linkToPerson: false,
     mfaEnforced: true,
+    motherName: "",
+    names: "",
     passkeyOnly: false,
     personId: undefined as number | undefined,
-    linkToPerson: false,
+    position: "",
+    role: "VIEWER",
+    rut: "",
   });
 
   // Fetch available roles
   const { data: availableRoles } = useSuspenseQuery({
-    queryKey: ["available-roles"],
     queryFn: fetchRoles,
+    queryKey: ["available-roles"],
   });
 
   // Fetch people without users
   const { data: peopleData } = useSuspenseQuery({
-    queryKey: ["people"],
     queryFn: fetchPeople,
+    queryKey: ["people"],
   });
 
   // Filter people who don't have a user yet and exclude test users
@@ -57,14 +58,14 @@ export default function AddUserPage() {
   // Create user mutation
   const createUserMutation = useMutation({
     mutationFn: inviteUser,
+    onError: (err) => {
+      toastError(err instanceof Error ? err.message : "Error al crear usuario");
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["people"] });
       success("Usuario creado exitosamente");
       navigate({ to: "/settings/users" });
-    },
-    onError: (err) => {
-      toastError(err instanceof Error ? err.message : "Error al crear usuario");
     },
   });
 
@@ -72,10 +73,10 @@ export default function AddUserPage() {
     e.preventDefault();
     const payload: Record<string, unknown> = {
       email: form.email,
-      role: form.role,
-      position: form.position,
       mfaEnforced: form.mfaEnforced,
       passkeyOnly: form.passkeyOnly,
+      position: form.position,
+      role: form.role,
     };
 
     if (form.linkToPerson && form.personId) {
@@ -102,7 +103,7 @@ export default function AddUserPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="surface-elevated space-y-6 rounded-3xl p-6 shadow-lg">
+      <form className="surface-elevated space-y-6 rounded-3xl p-6 shadow-lg" onSubmit={handleSubmit}>
         {/* Opción de vincular a persona existente */}
         {availablePeople.length > 0 && (
           <div className="border-info/20 bg-info/5 rounded-xl border p-4">
@@ -117,25 +118,25 @@ export default function AddUserPage() {
                 </div>
                 <div className="space-y-2">
                   <Input
-                    label="Vincular con persona (opcional)"
                     as="select"
                     id="personId"
-                    value={form.personId ?? ""}
+                    label="Vincular con persona (opcional)"
                     onChange={(e) => {
                       const pid = e.target.value ? Number(e.target.value) : undefined;
                       const person = availablePeople.find((p) => p.id === pid);
                       setForm({
                         ...form,
-                        personId: pid,
-                        linkToPerson: !!pid,
                         email: person?.email ?? form.email,
-                        position: person?.employee?.position ?? form.position,
-                        names: pid ? "" : form.names,
                         fatherName: pid ? "" : form.fatherName,
+                        linkToPerson: !!pid,
                         motherName: pid ? "" : form.motherName,
+                        names: pid ? "" : form.names,
+                        personId: pid,
+                        position: person?.employee?.position ?? form.position,
                         rut: pid ? "" : form.rut,
                       });
                     }}
+                    value={form.personId ?? ""}
                   >
                     <option value="">No vincular (Crear usuario nuevo)</option>
                     {availablePeople.map((person) => (
@@ -158,31 +159,39 @@ export default function AddUserPage() {
               </div>
               <Input
                 label="Nombres"
-                value={form.names}
-                onChange={(e) => setForm({ ...form, names: e.target.value })}
-                required={!form.personId}
+                onChange={(e) => {
+                  setForm({ ...form, names: e.target.value });
+                }}
                 placeholder="Ej: Juan Andrés"
+                required={!form.personId}
+                value={form.names}
               />
               <Input
                 label="Apellido Paterno"
-                value={form.fatherName}
-                onChange={(e) => setForm({ ...form, fatherName: e.target.value })}
-                required={!form.personId}
+                onChange={(e) => {
+                  setForm({ ...form, fatherName: e.target.value });
+                }}
                 placeholder="Ej: Pérez"
+                required={!form.personId}
+                value={form.fatherName}
               />
               <Input
                 label="Apellido Materno"
-                value={form.motherName}
-                onChange={(e) => setForm({ ...form, motherName: e.target.value })}
-                required={!form.personId}
+                onChange={(e) => {
+                  setForm({ ...form, motherName: e.target.value });
+                }}
                 placeholder="Ej: González"
+                required={!form.personId}
+                value={form.motherName}
               />
               <Input
                 label="RUT"
-                value={form.rut}
-                onChange={(e) => setForm({ ...form, rut: e.target.value })}
-                required={!form.personId}
+                onChange={(e) => {
+                  setForm({ ...form, rut: e.target.value });
+                }}
                 placeholder="12.345.678-9"
+                required={!form.personId}
+                value={form.rut}
               />
               <div className="md:col-span-1">{/* Spacer */}</div>
             </>
@@ -194,34 +203,40 @@ export default function AddUserPage() {
 
           <div className="md:col-span-2">
             <Input
+              helper={form.personId ? "Verifica o actualiza el correo asociado" : undefined}
               label="Correo electrónico"
+              onChange={(e) => {
+                setForm({ ...form, email: e.target.value });
+              }}
+              placeholder="usuario@bioalergia.cl"
+              required
               type="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-              placeholder="usuario@bioalergia.cl"
-              helper={form.personId ? "Verifica o actualiza el correo asociado" : undefined}
             />
           </div>
 
           <Input
             label="Cargo / posición"
-            value={form.position}
-            onChange={(e) => setForm({ ...form, position: e.target.value })}
-            required
+            onChange={(e) => {
+              setForm({ ...form, position: e.target.value });
+            }}
             placeholder="Ej: Enfermera, Administrativo"
+            required
+            value={form.position}
           />
 
           <div className={form.personId ? "md:col-span-2" : ""}>
-            <label htmlFor="role" className="label">
+            <label className="label" htmlFor="role">
               <span className="label-text">Rol</span>
             </label>
             <select
-              id="role"
               className="select select-bordered w-full"
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
+              id="role"
+              onChange={(e) => {
+                setForm({ ...form, role: e.target.value });
+              }}
               required
+              value={form.role}
             >
               {availableRoles.length === 0 && <option value="VIEWER">VIEWER (Fallback)</option>}
               {availableRoles.map((role: Role) => (
@@ -246,18 +261,20 @@ export default function AddUserPage() {
           </div>
           <div className="mt-4 space-y-3 pl-8">
             <Checkbox
-              label="Forzar passkey o MFA"
               checked={form.mfaEnforced}
-              onChange={(e) => setForm({ ...form, mfaEnforced: e.target.checked })}
+              label="Forzar passkey o MFA"
+              onChange={(e) => {
+                setForm({ ...form, mfaEnforced: e.target.checked });
+              }}
             />
           </div>
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="secondary" onClick={() => navigate({ to: "/settings/users" })}>
+          <Button onClick={() => navigate({ to: "/settings/users" })} type="button" variant="secondary">
             Cancelar
           </Button>
-          <Button type="submit" disabled={loading} className="gap-2">
+          <Button className="gap-2" disabled={loading} type="submit">
             <UserPlus size={18} />
             {loading ? "Creando..." : "Crear usuario"}
           </Button>

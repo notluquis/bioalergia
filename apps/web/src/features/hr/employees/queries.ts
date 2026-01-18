@@ -6,14 +6,14 @@ const defaultFilter = { includeInactive: false };
 
 export const employeeKeys = {
   all: ["employees"] as const,
-  list: (filters: { includeInactive: boolean } = defaultFilter) =>
-    queryOptions({
-      queryKey: ["employees", "list", filters],
-      queryFn: () => api.fetchEmployees(filters.includeInactive),
-    }),
   detail: (id: number) =>
     queryOptions({
-      queryKey: ["employees", "detail", id],
       queryFn: () => Promise.resolve(null), // Placeholder if we need individual fetch later
+      queryKey: ["employees", "detail", id],
+    }),
+  list: (filters: { includeInactive: boolean } = defaultFilter) =>
+    queryOptions({
+      queryFn: () => api.fetchEmployees(filters.includeInactive),
+      queryKey: ["employees", "list", filters],
     }),
 };

@@ -3,6 +3,8 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Lock, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
+import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
+
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -14,13 +16,12 @@ import AllergyInventoryView from "@/features/inventory/components/AllergyInvento
 import { columns } from "@/features/inventory/components/columns";
 import InventoryItemForm from "@/features/inventory/components/InventoryItemForm";
 import { inventoryKeys } from "@/features/inventory/queries";
-import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 
 export default function InventoryPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const { success: toastSuccess, error: toastError } = useToast();
+  const { error: toastError, success: toastSuccess } = useToast();
 
   const canCreateItem = can("create", "InventoryItem");
   const canUpdateItem = can("update", "InventoryItem");
@@ -30,7 +31,7 @@ export default function InventoryPage() {
   // Modernized Query
   const { data: items } = useSuspenseQuery(inventoryKeys.items());
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
@@ -72,28 +73,28 @@ export default function InventoryPage() {
     try {
       if (editingItem) {
         await updateItemMutation.mutateAsync({
-          where: { id: editingItem.id },
           data: {
-            name: itemData.name,
-            description: itemData.description,
             categoryId: itemData.category_id,
             currentStock: itemData.current_stock,
+            description: itemData.description,
+            name: itemData.name,
           },
+          where: { id: editingItem.id },
         });
         toastSuccess("Item actualizado");
       } else {
         // ZenStack uses camelCase field names
         await createItemMutation.mutateAsync({
           data: {
-            name: itemData.name,
-            description: itemData.description,
             categoryId: itemData.category_id,
-            currentStock: itemData.current_stock ?? 0,
+            currentStock: itemData.current_stock,
+            description: itemData.description,
+            name: itemData.name,
           },
         });
         toastSuccess("Item creado correctamente");
       }
-      queryClient.invalidateQueries({ queryKey: inventoryKeys.items().queryKey });
+      void queryClient.invalidateQueries({ queryKey: inventoryKeys.items().queryKey });
       closeModal();
     } catch (error_) {
       const message = error_ instanceof Error ? error_.message : "No se pudo guardar el item";
@@ -114,7 +115,7 @@ export default function InventoryPage() {
         },
       });
       // Refetch items to get updated stock
-      queryClient.invalidateQueries({ queryKey: inventoryKeys.items().queryKey });
+      void queryClient.invalidateQueries({ queryKey: inventoryKeys.items().queryKey });
       toastSuccess("Stock ajustado correctamente");
       closeModal();
     } catch (error_) {
@@ -129,18 +130,18 @@ export default function InventoryPage() {
   return (
     <section className="space-y-8">
       <ServicesHero
-        title="Inventario"
-        description="Gestiona insumos, materiales y stock del centro con controles rápidos para crear y ajustar."
         actions={
           <Button
-            onClick={openCreateModal}
             disabled={!canCreateItem}
+            onClick={openCreateModal}
             title={canCreateItem ? undefined : "Requiere permiso para crear ítems"}
           >
             {canCreateItem ? <PlusCircle size={16} /> : <Lock size={16} />}
             Agregar item
           </Button>
         }
+        description="Gestiona insumos, materiales y stock del centro con controles rápidos para crear y ajustar."
+        title="Inventario"
       />
 
       {combinedError && <Alert variant="error">{combinedError}</Alert>}
@@ -149,13 +150,13 @@ export default function InventoryPage() {
         <DataTable
           columns={columns}
           data={items}
-          isLoading={loading}
           enableVirtualization
+          isLoading={loading}
           meta={{
+            canAdjust: canAdjustStock,
+            canUpdate: canUpdateItem,
             openAdjustStockModal,
             openEditModal,
-            canUpdate: canUpdateItem,
-            canAdjust: canAdjustStock,
           }}
         />
       </ServicesSurface>
@@ -163,12 +164,12 @@ export default function InventoryPage() {
       <AllergyInventoryView />
 
       <Modal isOpen={isItemModalOpen} onClose={closeModal} title={editingItem ? "Editar item" : "Agregar nuevo item"}>
-        <InventoryItemForm item={editingItem} onSave={handleSaveItem} onCancel={closeModal} saving={saving} />
+        <InventoryItemForm item={editingItem} onCancel={closeModal} onSave={handleSaveItem} saving={saving} />
       </Modal>
 
       {itemForStockAdjust && (
         <Modal isOpen={isAdjustStockModalOpen} onClose={closeModal} title="Ajustar stock">
-          <AdjustStockForm item={itemForStockAdjust} onSave={handleAdjustStock} onCancel={closeModal} saving={saving} />
+          <AdjustStockForm item={itemForStockAdjust} onCancel={closeModal} onSave={handleAdjustStock} saving={saving} />
         </Modal>
       )}
     </section>

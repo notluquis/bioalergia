@@ -7,57 +7,59 @@ import type { ServiceObligationType, ServiceOwnership, ServiceRecurrenceType, Se
 import type { ServiceFormState } from "../ServiceForm";
 
 interface ServiceClassificationSectionProps {
-  serviceType?: ServiceType;
-  ownership?: ServiceOwnership;
   obligationType?: ServiceObligationType;
-  recurrenceType?: ServiceRecurrenceType;
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
+  ownership?: ServiceOwnership;
+  recurrenceType?: ServiceRecurrenceType;
+  serviceType?: ServiceType;
 }
 
-const SERVICE_TYPE_OPTIONS: Array<{ value: ServiceType; label: string }> = [
-  { value: "BUSINESS", label: "Operación general" },
-  { value: "SUPPLIER", label: "Proveedor" },
-  { value: "UTILITY", label: "Servicios básicos" },
-  { value: "LEASE", label: "Arriendo / leasing" },
-  { value: "SOFTWARE", label: "Software / suscripciones" },
-  { value: "TAX", label: "Impuestos / contribuciones" },
-  { value: "PERSONAL", label: "Personal" },
-  { value: "OTHER", label: "Otro" },
+const SERVICE_TYPE_OPTIONS: { label: string; value: ServiceType }[] = [
+  { label: "Operación general", value: "BUSINESS" },
+  { label: "Proveedor", value: "SUPPLIER" },
+  { label: "Servicios básicos", value: "UTILITY" },
+  { label: "Arriendo / leasing", value: "LEASE" },
+  { label: "Software / suscripciones", value: "SOFTWARE" },
+  { label: "Impuestos / contribuciones", value: "TAX" },
+  { label: "Personal", value: "PERSONAL" },
+  { label: "Otro", value: "OTHER" },
 ];
 
-const OWNERSHIP_OPTIONS: Array<{ value: ServiceOwnership; label: string }> = [
-  { value: "COMPANY", label: "Empresa" },
-  { value: "OWNER", label: "Personal del dueño" },
-  { value: "MIXED", label: "Compartido" },
-  { value: "THIRD_PARTY", label: "Terceros" },
+const OWNERSHIP_OPTIONS: { label: string; value: ServiceOwnership }[] = [
+  { label: "Empresa", value: "COMPANY" },
+  { label: "Personal del dueño", value: "OWNER" },
+  { label: "Compartido", value: "MIXED" },
+  { label: "Terceros", value: "THIRD_PARTY" },
 ];
 
-const OBLIGATION_OPTIONS: Array<{ value: ServiceObligationType; label: string }> = [
-  { value: "SERVICE", label: "Servicio / gasto" },
-  { value: "DEBT", label: "Deuda" },
-  { value: "LOAN", label: "Préstamo" },
-  { value: "OTHER", label: "Otro" },
+const OBLIGATION_OPTIONS: { label: string; value: ServiceObligationType }[] = [
+  { label: "Servicio / gasto", value: "SERVICE" },
+  { label: "Deuda", value: "DEBT" },
+  { label: "Préstamo", value: "LOAN" },
+  { label: "Otro", value: "OTHER" },
 ];
 
-const RECURRENCE_OPTIONS: Array<{ value: ServiceRecurrenceType; label: string }> = [
-  { value: "RECURRING", label: "Recurrente" },
-  { value: "ONE_OFF", label: "Puntual" },
+const RECURRENCE_OPTIONS: { label: string; value: ServiceRecurrenceType }[] = [
+  { label: "Recurrente", value: "RECURRING" },
+  { label: "Puntual", value: "ONE_OFF" },
 ];
 
 export function ServiceClassificationSection({
-  serviceType,
-  ownership,
   obligationType,
-  recurrenceType,
   onChange,
+  ownership,
+  recurrenceType,
+  serviceType,
 }: ServiceClassificationSectionProps) {
   return (
     <section className={GRID_2_COL_MD}>
       <Input
-        label="Tipo"
         as="select"
+        label="Tipo"
+        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+          onChange("serviceType", event.target.value as ServiceType);
+        }}
         value={serviceType ?? "BUSINESS"}
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => onChange("serviceType", event.target.value as ServiceType)}
       >
         {SERVICE_TYPE_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>
@@ -66,12 +68,12 @@ export function ServiceClassificationSection({
         ))}
       </Input>
       <Input
-        label="Propiedad"
         as="select"
+        label="Propiedad"
+        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+          onChange("ownership", event.target.value as ServiceOwnership);
+        }}
         value={ownership ?? "COMPANY"}
-        onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-          onChange("ownership", event.target.value as ServiceOwnership)
-        }
       >
         {OWNERSHIP_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>
@@ -80,12 +82,12 @@ export function ServiceClassificationSection({
         ))}
       </Input>
       <Input
-        label="Naturaleza"
         as="select"
+        label="Naturaleza"
+        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+          onChange("obligationType", event.target.value as ServiceObligationType);
+        }}
         value={obligationType ?? "SERVICE"}
-        onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-          onChange("obligationType", event.target.value as ServiceObligationType)
-        }
       >
         {OBLIGATION_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>
@@ -94,12 +96,12 @@ export function ServiceClassificationSection({
         ))}
       </Input>
       <Input
-        label="Recurrencia"
         as="select"
+        label="Recurrencia"
+        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+          onChange("recurrenceType", event.target.value as ServiceRecurrenceType);
+        }}
         value={recurrenceType ?? "RECURRING"}
-        onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-          onChange("recurrenceType", event.target.value as ServiceRecurrenceType)
-        }
       >
         {RECURRENCE_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>

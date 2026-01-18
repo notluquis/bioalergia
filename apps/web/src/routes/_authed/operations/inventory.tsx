@@ -13,12 +13,12 @@ export const Route = createFileRoute("/_authed/operations/inventory")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  loader: ({ context: { queryClient } }) => {
-    return queryClient.ensureQueryData(inventoryKeys.items());
-  },
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <InventoryPage />
     </Suspense>
   ),
+  loader: ({ context: { queryClient } }) => {
+    return queryClient.ensureQueryData(inventoryKeys.items());
+  },
 });

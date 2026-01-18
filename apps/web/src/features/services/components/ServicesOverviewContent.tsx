@@ -18,66 +18,66 @@ import { CARD_COMPACT, LOADING_SPINNER_MD, TITLE_MD } from "@/lib/styles";
 export default function ServicesOverviewContent() {
   const overview = useServicesOverview();
   const {
-    canManage,
-    services,
-    filteredServices,
-    summaryTotals,
-    collectionRate,
-    unifiedAgendaItems,
-    globalError,
-    loadingList,
-    loadingDetail,
-    aggregatedLoading,
     aggregatedError,
-    selectedService,
-    schedules,
-    selectedId,
-    setSelectedId,
-    createOpen,
-    createError,
-    openCreateModal,
+    aggregatedLoading,
+    canManage,
     closeCreateModal,
-    selectedTemplate,
-    paymentSchedule,
-    paymentForm,
-    handlePaymentFieldChange,
-    paymentError,
-    processingPayment,
-    filters,
-    handleCreateService,
-    handleRegenerate,
-    openPaymentModal,
     closePaymentModal,
-    handlePaymentSubmit,
-    handleUnlink,
-    handleFilterChange,
+    collectionRate,
+    createError,
+    createOpen,
+    filteredServices,
+    filters,
+    globalError,
     handleAgendaRegisterPayment,
     handleAgendaUnlinkPayment,
+    handleCreateService,
+    handleFilterChange,
+    handlePaymentFieldChange,
+    handlePaymentSubmit,
+    handleRegenerate,
+    handleUnlink,
+    loadingDetail,
+    loadingList,
+    openCreateModal,
+    openPaymentModal,
+    paymentError,
+    paymentForm,
+    paymentSchedule,
+    processingPayment,
+    schedules,
+    selectedId,
+    selectedService,
+    selectedTemplate,
+    services,
+    setSelectedId,
+    summaryTotals,
+    unifiedAgendaItems,
   } = overview;
 
   const stats = [
     {
+      helper: `Vista filtrada: ${filteredServices.length} de ${services.length}`,
       title: "Servicios activos",
       value: `${numberFormatter.format(summaryTotals.activeCount)} / ${numberFormatter.format(filteredServices.length)}`,
-      helper: `Vista filtrada: ${filteredServices.length} de ${services.length}`,
     },
     {
+      helper: "Periodo actual",
       title: "Monto esperado",
       value: currencyFormatter.format(summaryTotals.totalExpected),
-      helper: "Periodo actual",
     },
     {
-      title: "Pagos conciliados",
-      value: currencyFormatter.format(summaryTotals.totalPaid),
       helper: (() => {
         const percentage = collectionRate ? Math.round(collectionRate * 100) : 0;
         return `Cobertura ${percentage}%`;
       })(),
+      title: "Pagos conciliados",
+      value: currencyFormatter.format(summaryTotals.totalPaid),
     },
     {
+      helper: "Cuotas con seguimiento",
       title: "Pendientes / vencidos",
       value: `${numberFormatter.format(summaryTotals.pendingCount)} / ${numberFormatter.format(summaryTotals.overdueCount)}`,
-      helper: "Cuotas con seguimiento",
     },
   ];
 
@@ -88,7 +88,7 @@ export default function ServicesOverviewContent() {
     return (
       <div className="flex min-h-60 items-center justify-center">
         <div className="text-base-content/70 flex items-center gap-3 text-sm">
-          <span className={LOADING_SPINNER_MD} aria-hidden="true" />
+          <span aria-hidden="true" className={LOADING_SPINNER_MD} />
           <span>Cargando servicios...</span>
         </div>
       </div>
@@ -114,7 +114,7 @@ export default function ServicesOverviewContent() {
         <div className="card-body">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {stats.map((stat) => (
-              <div key={stat.title} className="space-y-1">
+              <div className="space-y-1" key={stat.title}>
                 <p className="text-base-content/60 text-xs font-medium uppercase">{stat.title}</p>
                 <p className="text-primary text-lg font-bold">{stat.value}</p>
                 {stat.helper && <p className="text-base-content/50 text-xs">{stat.helper}</p>}
@@ -132,7 +132,7 @@ export default function ServicesOverviewContent() {
               <span className="badge badge-primary badge-sm">{activeFiltersCount} activos</span>
             )}
           </div>
-          <ServicesFilterPanel services={services} filters={filters} onChange={handleFilterChange} />
+          <ServicesFilterPanel filters={filters} onChange={handleFilterChange} services={services} />
         </div>
       </div>
 
@@ -144,24 +144,24 @@ export default function ServicesOverviewContent() {
         </div>
 
         <ServiceList
-          services={filteredServices}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          onCreateRequest={openCreateModal}
           canManage={canManage}
           loading={loadingList}
+          onCreateRequest={openCreateModal}
+          onSelect={setSelectedId}
+          selectedId={selectedId}
+          services={filteredServices}
         />
       </div>
 
       {selectedService && (
         <ServiceDetail
-          service={selectedService}
-          schedules={schedules}
-          loading={loadingDetail}
           canManage={canManage}
+          loading={loadingDetail}
           onRegenerate={handleRegenerate}
           onRegisterPayment={openPaymentModal}
           onUnlinkPayment={handleUnlink}
+          schedules={schedules}
+          service={selectedService}
         />
       )}
 
@@ -173,16 +173,16 @@ export default function ServicesOverviewContent() {
               <p className="text-base-content/60 text-xs">Próximos pagos programados</p>
             </div>
             <Link to="/services/agenda">
-              <Button variant="ghost" size="xs">
+              <Button size="xs" variant="ghost">
                 Ver todo
               </Button>
             </Link>
           </div>
           <ServicesUnifiedAgenda
+            canManage={canManage}
+            error={aggregatedError}
             items={unifiedAgendaItems}
             loading={aggregatedLoading}
-            error={aggregatedError}
-            canManage={canManage}
             onRegisterPayment={handleAgendaRegisterPayment}
             onUnlinkPayment={handleAgendaUnlinkPayment}
           />
@@ -191,11 +191,11 @@ export default function ServicesOverviewContent() {
 
       <Modal isOpen={createOpen} onClose={closeCreateModal} title="Nuevo servicio">
         <ServiceForm
+          initialValues={selectedTemplate?.payload}
+          onCancel={closeCreateModal}
           onSubmit={async (payload) => {
             await handleCreateService(payload);
           }}
-          onCancel={closeCreateModal}
-          initialValues={selectedTemplate?.payload}
           submitLabel="Crear servicio"
         />
         {createError && <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{createError}</p>}
@@ -211,51 +211,51 @@ export default function ServicesOverviewContent() {
         }
       >
         {paymentSchedule && (
-          <form onSubmit={handlePaymentSubmit} className="space-y-4">
+          <form className="space-y-4" onSubmit={handlePaymentSubmit}>
             <Input
               label="ID transacción"
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                handlePaymentFieldChange("transactionId", event.target.value);
+              }}
+              required
               type="number"
               value={paymentForm.transactionId}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handlePaymentFieldChange("transactionId", event.target.value)
-              }
-              required
             />
             <Input
               label="Monto pagado"
+              min={0}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                handlePaymentFieldChange("paidAmount", event.target.value);
+              }}
+              required
+              step="0.01"
               type="number"
               value={paymentForm.paidAmount}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handlePaymentFieldChange("paidAmount", event.target.value)
-              }
-              min={0}
-              step="0.01"
-              required
             />
             <Input
               label="Fecha de pago"
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                handlePaymentFieldChange("paidDate", event.target.value);
+              }}
+              required
               type="date"
               value={paymentForm.paidDate}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                handlePaymentFieldChange("paidDate", event.target.value)
-              }
-              required
             />
             <Input
-              label="Nota"
               as="textarea"
+              label="Nota"
+              onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+                handlePaymentFieldChange("note", event.target.value);
+              }}
               rows={2}
               value={paymentForm.note}
-              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                handlePaymentFieldChange("note", event.target.value)
-              }
             />
             {paymentError && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>}
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="secondary" onClick={closePaymentModal} disabled={processingPayment}>
+              <Button disabled={processingPayment} onClick={closePaymentModal} type="button" variant="secondary">
                 Cancelar
               </Button>
-              <Button type="submit" disabled={processingPayment}>
+              <Button disabled={processingPayment} type="submit">
                 {processingPayment ? "Registrando..." : "Registrar pago"}
               </Button>
             </div>

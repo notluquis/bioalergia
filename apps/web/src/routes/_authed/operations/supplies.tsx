@@ -12,6 +12,11 @@ export const Route = createFileRoute("/_authed/operations/supplies")({
       throw routeApi.redirect({ to: "/" });
     }
   },
+  component: () => (
+    <Suspense fallback={<PageLoader />}>
+      <SuppliesPage />
+    </Suspense>
+  ),
   loader: async ({ context: { queryClient } }) => {
     const { supplyQueries } = await import("@/features/supplies/queries");
     await Promise.all([
@@ -19,9 +24,4 @@ export const Route = createFileRoute("/_authed/operations/supplies")({
       queryClient.ensureQueryData(supplyQueries.common()),
     ]);
   },
-  component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <SuppliesPage />
-    </Suspense>
-  ),
 });

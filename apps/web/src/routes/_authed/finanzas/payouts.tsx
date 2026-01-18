@@ -16,13 +16,13 @@ export const Route = createFileRoute("/_authed/finanzas/payouts")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  loader: async ({ context: { queryClient } }) => {
-    const { payoutKeys } = await import("@/features/payouts/queries");
-    await queryClient.ensureQueryData(payoutKeys.list());
-  },
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <PayoutsPage />
     </Suspense>
   ),
+  loader: async ({ context: { queryClient } }) => {
+    const { payoutKeys } = await import("@/features/payouts/queries");
+    await queryClient.ensureQueryData(payoutKeys.list());
+  },
 });

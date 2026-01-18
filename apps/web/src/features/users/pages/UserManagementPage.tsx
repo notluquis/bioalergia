@@ -1,5 +1,3 @@
-import "dayjs/locale/es";
-
 import {
   useCreateUserRoleAssignment,
   useDeleteManyUserRoleAssignment,
@@ -15,6 +13,8 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { Key, Shield, UserCog, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import type { User } from "@/features/users/types";
+
 import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -22,25 +22,26 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteUserPasskey, resetUserPassword, toggleUserMfa } from "@/features/users/api";
 import { getColumns } from "@/features/users/components/columns";
-import type { User } from "@/features/users/types";
 import { getPersonFullName } from "@/lib/person";
 import { PAGE_CONTAINER } from "@/lib/styles";
+
+import "dayjs/locale/es";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
 
 export default function UserManagementPage() {
   useAuth(); // Keep context mounted
-  const { success, error } = useToast();
+  const { error, success } = useToast();
   const queryClient = useQueryClient();
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
 
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<null | User>(null);
   const [selectedRole, setSelectedRole] = useState("");
 
   // ZenStack hooks for users
   const { data: usersData, isLoading } = useFindManyUser({
-    include: { person: true, roles: { include: { role: true } }, passkeys: true },
+    include: { passkeys: true, person: true, roles: { include: { role: true } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -54,19 +55,19 @@ export default function UserManagementPage() {
       .filter((u) => !u.email?.includes("test") && !u.email?.includes("debug"))
       .map(
         (u: RawUser): User => ({
-          id: u.id,
+          createdAt: u.createdAt?.toISOString() ?? new Date().toISOString(),
           email: u.email,
-          role: (u as { roles?: Array<{ role?: { name?: string } }> }).roles?.[0]?.role?.name ?? "",
+          hasPasskey: ((u as { passkeys?: unknown[] }).passkeys ?? []).length > 0,
+          id: u.id,
           mfaEnabled: u.mfaEnabled ?? false,
           passkeysCount: ((u as { passkeys?: unknown[] }).passkeys ?? []).length,
-          hasPasskey: ((u as { passkeys?: unknown[] }).passkeys ?? []).length > 0,
-          status: u.status as User["status"],
-          createdAt: u.createdAt?.toISOString() ?? new Date().toISOString(),
           person: {
+            fatherName: (u as { person?: { fatherName?: null | string } }).person?.fatherName ?? null,
             names: (u as { person?: { names?: string } }).person?.names ?? "",
-            fatherName: (u as { person?: { fatherName?: string | null } }).person?.fatherName ?? null,
             rut: (u as { person?: { rut?: string } }).person?.rut ?? "",
           },
+          role: (u as { roles?: { role?: { name?: string } }[] }).roles?.[0]?.role?.name ?? "",
+          status: u.status as User["status"],
         })
       );
   }, [usersData]);
@@ -86,21 +87,30 @@ export default function UserManagementPage() {
   // Actions Handlers
   const actions = useMemo(
     () => ({
+      onDeletePasskey: async (id: number) => {
+        if (confirm("¿Eliminar Passkey?")) {
+          try {
+            await deleteUserPasskey(id);
+            success("Passkey eliminado");
+            queryClient.invalidateQueries({ queryKey: ["user"] });
+          } catch {
+            error("Error al eliminar Passkey");
+          }
+        }
+      },
+      onDeleteUser: async (id: number) => {
+        if (confirm("¿Eliminar usuario permanentemente?")) {
+          try {
+            await deleteUserMutation.mutateAsync({ where: { id } });
+            success("Usuario eliminado");
+          } catch (error_) {
+            error(error_ instanceof Error ? error_.message : "Error al eliminar");
+          }
+        }
+      },
       onEditRole: (user: User) => {
         setEditingUser(user);
         setSelectedRole(user.role);
-      },
-      onToggleMfa: async (id: number, current: boolean) => {
-        const action = current ? "desactivar" : "activar";
-        if (confirm(`¿Estás seguro de ${action} MFA para este usuario?`)) {
-          try {
-            await toggleUserMfa(id, !current);
-            queryClient.invalidateQueries({ queryKey: ["user"] });
-            success("Estado MFA actualizado correctamente");
-          } catch (error_) {
-            error(error_ instanceof Error ? error_.message : "Error desconocido");
-          }
-        }
       },
       onResetPassword: async (id: number) => {
         if (confirm("¿Restablecer contraseña? Esto generará una clave temporal.")) {
@@ -114,14 +124,15 @@ export default function UserManagementPage() {
           }
         }
       },
-      onDeletePasskey: async (id: number) => {
-        if (confirm("¿Eliminar Passkey?")) {
+      onToggleMfa: async (id: number, current: boolean) => {
+        const action = current ? "desactivar" : "activar";
+        if (confirm(`¿Estás seguro de ${action} MFA para este usuario?`)) {
           try {
-            await deleteUserPasskey(id);
-            success("Passkey eliminado");
+            await toggleUserMfa(id, !current);
             queryClient.invalidateQueries({ queryKey: ["user"] });
-          } catch {
-            error("Error al eliminar Passkey");
+            success("Estado MFA actualizado correctamente");
+          } catch (error_) {
+            error(error_ instanceof Error ? error_.message : "Error desconocido");
           }
         }
       },
@@ -131,22 +142,12 @@ export default function UserManagementPage() {
         if (confirm(`¿${action} usuario?`)) {
           try {
             await updateUserMutation.mutateAsync({
-              where: { id },
               data: { status: newStatus },
+              where: { id },
             });
             success(`Usuario ${newStatus === "ACTIVE" ? "reactivado" : "suspendido"}`);
           } catch (error_) {
             error(error_ instanceof Error ? error_.message : "Error al actualizar estado");
-          }
-        }
-      },
-      onDeleteUser: async (id: number) => {
-        if (confirm("¿Eliminar usuario permanentemente?")) {
-          try {
-            await deleteUserMutation.mutateAsync({ where: { id } });
-            success("Usuario eliminado");
-          } catch (error_) {
-            error(error_ instanceof Error ? error_.message : "Error al eliminar");
           }
         }
       },
@@ -174,8 +175,8 @@ export default function UserManagementPage() {
       // Then, create the new role assignment
       await createRoleAssignment.mutateAsync({
         data: {
-          userId: editingUser.id,
           roleId: selectedRoleObj.id,
+          userId: editingUser.id,
         },
       });
 
@@ -251,10 +252,12 @@ export default function UserManagementPage() {
               <span className="label-text-alt">Filtrar por rol</span>
             </label>
             <select
-              id="role-filter"
               className="select select-bordered w-full"
+              id="role-filter"
+              onChange={(e) => {
+                setRoleFilter(e.target.value);
+              }}
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
             >
               <option value="ALL">Todos los roles</option>
               {roles?.map((role: { name: string }) => (
@@ -265,20 +268,22 @@ export default function UserManagementPage() {
             </select>
           </div>
 
-          <Link to="/settings/users/add" className="btn btn-primary gap-2">
+          <Link className="btn btn-primary gap-2" to="/settings/users/add">
             <UserPlus size={20} />
             Agregar usuario
           </Link>
         </div>
 
-        <DataTable columns={columns} data={filteredUsers} isLoading={isLoading} enableToolbar={true} />
+        <DataTable columns={columns} data={filteredUsers} enableToolbar={true} isLoading={isLoading} />
       </div>
 
       <Modal
-        isOpen={!!editingUser}
-        onClose={() => setEditingUser(null)}
-        title={`Editar Rol: ${editingUser ? getPersonFullName(editingUser.person) : ""}`}
         boxClassName="max-w-md"
+        isOpen={!!editingUser}
+        onClose={() => {
+          setEditingUser(null);
+        }}
+        title={`Editar Rol: ${editingUser ? getPersonFullName(editingUser.person) : ""}`}
       >
         <div className="mt-4 flex flex-col gap-4">
           <p className="text-base-content/70 text-sm">
@@ -290,12 +295,14 @@ export default function UserManagementPage() {
               <span className="label-text">Rol asignado</span>
             </label>
             <select
-              id="role-select"
               className="select select-bordered w-full"
+              id="role-select"
+              onChange={(e) => {
+                setSelectedRole(e.target.value);
+              }}
               value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
             >
-              <option value="" disabled>
+              <option disabled value="">
                 Seleccionar rol
               </option>
               {roles?.map((role: { name: string }) => (
@@ -307,14 +314,19 @@ export default function UserManagementPage() {
           </div>
 
           <div className="modal-action mt-6">
-            <Button variant="ghost" onClick={() => setEditingUser(null)}>
+            <Button
+              onClick={() => {
+                setEditingUser(null);
+              }}
+              variant="ghost"
+            >
               Cancelar
             </Button>
             <Button
-              variant="primary"
-              onClick={handleSaveRole}
-              isLoading={updateUserMutation.isPending}
               disabled={!selectedRole || selectedRole === editingUser?.role}
+              isLoading={updateUserMutation.isPending}
+              onClick={handleSaveRole}
+              variant="primary"
             >
               Guardar cambios
             </Button>

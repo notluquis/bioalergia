@@ -12,15 +12,15 @@ import { cn } from "@/lib/utils";
 import Button from "./Button";
 
 interface ModalProps {
+  boxClassName?: string;
+  children: React.ReactNode;
+  className?: string;
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  children: React.ReactNode;
-  className?: string;
-  boxClassName?: string;
 }
 
-export default function Modal({ isOpen, onClose, title, children, className, boxClassName }: ModalProps) {
+export default function Modal({ boxClassName, children, className, isOpen, onClose, title }: ModalProps) {
   // Lock body scroll when open
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "unset";
@@ -37,7 +37,9 @@ export default function Modal({ isOpen, onClose, title, children, className, box
       }
     };
     globalThis.addEventListener("keydown", handleKeyDown);
-    return () => globalThis.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      globalThis.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -46,33 +48,33 @@ export default function Modal({ isOpen, onClose, title, children, className, box
     <div className={cn("modal modal-open flex items-center justify-center", className)}>
       {/* Backdrop */}
       <div
+        aria-label="Cerrar modal"
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
         onKeyDown={(e) => e.key === "Escape" && onClose()}
         role="button"
         tabIndex={0}
-        aria-label="Cerrar modal"
       />
 
       <div
-        role="dialog"
-        aria-modal="true"
         aria-labelledby="modal-title"
+        aria-modal="true"
         className={cn(
           "modal-box surface-elevated border-base-300/50 ring-base-300/30 relative z-10 w-full max-w-2xl rounded-[28px] border p-6 shadow-2xl ring-1",
           boxClassName
         )}
+        role="dialog"
       >
         <div className="mb-4 flex items-start justify-between">
-          <h2 id="modal-title" className="text-primary text-xl font-bold">
+          <h2 className="text-primary text-xl font-bold" id="modal-title">
             {title}
           </h2>
           <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
             aria-label="Cerrar modal"
             className="btn-circle bg-base-200/60 text-base-content hover:bg-base-200"
+            onClick={onClose}
+            size="sm"
+            variant="ghost"
           >
             <X size={18} />
           </Button>

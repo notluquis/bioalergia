@@ -2,6 +2,15 @@ import { apiClient } from "@/lib/apiClient";
 
 import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "./types";
 
+export async function createEmployee(data: EmployeePayload): Promise<Employee> {
+  const res = await apiClient.post<{ employee: Employee }>("/api/employees", data);
+  return res.employee;
+}
+
+export async function deactivateEmployee(id: number): Promise<void> {
+  await apiClient.delete(`/api/employees/${id}`);
+}
+
 export async function fetchEmployees(includeInactive = false): Promise<Employee[]> {
   const url = new URL("/api/employees", globalThis.location.origin);
   if (includeInactive) {
@@ -20,18 +29,9 @@ export async function fetchEmployees(includeInactive = false): Promise<Employee[
   });
 }
 
-export async function createEmployee(data: EmployeePayload): Promise<Employee> {
-  const res = await apiClient.post<{ employee: Employee }>("/api/employees", data);
-  return res.employee;
-}
-
 export async function updateEmployee(id: number, data: EmployeeUpdatePayload): Promise<Employee> {
   const res = await apiClient.put<{ employee: Employee }>(`/api/employees/${id}`, data);
   return res.employee;
-}
-
-export async function deactivateEmployee(id: number): Promise<void> {
-  await apiClient.delete(`/api/employees/${id}`);
 }
 
 export { type Employee, type EmployeePayload, type EmployeeUpdatePayload } from "./types";

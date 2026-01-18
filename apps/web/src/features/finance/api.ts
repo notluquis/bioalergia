@@ -4,35 +4,49 @@ import type { ListResponse as ReleaseListResponse } from "./releases/types";
 import type { ListResponse as SettlementListResponse } from "./settlements/types";
 import type { Transaction } from "./types";
 
-export type FetchTransactionsParams = {
+export interface FetchTransactionsParams {
   filters: {
-    from?: string;
-    to?: string;
-    description?: string;
-    origin?: string;
-    destination?: string;
-    sourceId?: string;
     bankAccountNumber?: string;
+    description?: string;
+    destination?: string;
     direction?: string;
-    includeAmounts?: boolean;
     externalReference?: string;
-    transactionType?: string;
-    status?: string;
+    from?: string;
+    includeAmounts?: boolean;
+    origin?: string;
     paymentMethod?: string;
     search?: string;
+    sourceId?: string;
+    status?: string;
+    to?: string;
+    transactionType?: string;
   };
   page: number;
   pageSize: number;
-};
+}
 
-export type TransactionsResponse = {
-  status: "ok" | "error";
+export interface TransactionsResponse {
   data: Transaction[];
-  total?: number;
-  totalPages?: number;
   page?: number;
   pageSize?: number;
-};
+  status: "error" | "ok";
+  total?: number;
+  totalPages?: number;
+}
+
+export async function fetchReleaseTransactions(page: number, pageSize: number, search?: string) {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (search) params.set("search", search);
+
+  return apiClient.get<ReleaseListResponse>(`/api/release-transactions?${params.toString()}`);
+}
+
+export async function fetchSettlementTransactions(page: number, pageSize: number, search?: string) {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (search) params.set("search", search);
+
+  return apiClient.get<SettlementListResponse>(`/api/settlement-transactions?${params.toString()}`);
+}
 
 export async function fetchTransactions({ filters, page, pageSize }: FetchTransactionsParams) {
   const params = new URLSearchParams();
@@ -54,18 +68,4 @@ export async function fetchTransactions({ filters, page, pageSize }: FetchTransa
 
   const res = await apiClient.get<TransactionsResponse>(`/api/transactions?${params.toString()}`);
   return res;
-}
-
-export async function fetchReleaseTransactions(page: number, pageSize: number, search?: string) {
-  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-  if (search) params.set("search", search);
-
-  return apiClient.get<ReleaseListResponse>(`/api/release-transactions?${params.toString()}`);
-}
-
-export async function fetchSettlementTransactions(page: number, pageSize: number, search?: string) {
-  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-  if (search) params.set("search", search);
-
-  return apiClient.get<SettlementListResponse>(`/api/settlement-transactions?${params.toString()}`);
 }

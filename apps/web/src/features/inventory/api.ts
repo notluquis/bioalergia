@@ -2,15 +2,10 @@ import { apiClient } from "@/lib/apiClient";
 
 import type { AllergyInventoryOverview, InventoryCategory, InventoryItem, InventoryMovement } from "./types";
 
-type ApiResponse<T> = {
-  status?: string;
-  message?: string;
+interface ApiResponse<T> {
   data: T;
-};
-
-export async function getInventoryCategories(): Promise<InventoryCategory[]> {
-  const res = await apiClient.get<ApiResponse<InventoryCategory[]>>("/api/inventory/categories");
-  return res.data;
+  message?: string;
+  status?: string;
 }
 
 export async function createInventoryCategory(name: string): Promise<InventoryCategory> {
@@ -18,17 +13,35 @@ export async function createInventoryCategory(name: string): Promise<InventoryCa
   return res.data;
 }
 
+export async function createInventoryItem(item: Omit<InventoryItem, "id">): Promise<InventoryItem> {
+  const res = await apiClient.post<ApiResponse<InventoryItem>>("/api/inventory/items", item);
+  return res.data;
+}
+
+export async function createInventoryMovement(movement: InventoryMovement): Promise<void> {
+  await apiClient.post("/api/inventory/movements", movement);
+}
+
 export async function deleteInventoryCategory(id: number): Promise<void> {
   await apiClient.delete(`/api/inventory/categories/${id}`);
 }
 
-export async function getInventoryItems(): Promise<InventoryItem[]> {
-  const res = await apiClient.get<ApiResponse<InventoryItem[]>>("/api/inventory/items");
+export async function deleteInventoryItem(id: number): Promise<void> {
+  await apiClient.delete(`/api/inventory/items/${id}`);
+}
+
+export async function fetchAllergyOverview(): Promise<AllergyInventoryOverview[]> {
+  const payload = await apiClient.get<ApiResponse<AllergyInventoryOverview[]>>("/api/inventory/allergy-overview");
+  return payload.data ?? [];
+}
+
+export async function getInventoryCategories(): Promise<InventoryCategory[]> {
+  const res = await apiClient.get<ApiResponse<InventoryCategory[]>>("/api/inventory/categories");
   return res.data;
 }
 
-export async function createInventoryItem(item: Omit<InventoryItem, "id">): Promise<InventoryItem> {
-  const res = await apiClient.post<ApiResponse<InventoryItem>>("/api/inventory/items", item);
+export async function getInventoryItems(): Promise<InventoryItem[]> {
+  const res = await apiClient.get<ApiResponse<InventoryItem[]>>("/api/inventory/items");
   return res.data;
 }
 
@@ -38,17 +51,4 @@ export async function updateInventoryItem(
 ): Promise<InventoryItem> {
   const res = await apiClient.put<ApiResponse<InventoryItem>>(`/api/inventory/items/${id}`, item);
   return res.data;
-}
-
-export async function deleteInventoryItem(id: number): Promise<void> {
-  await apiClient.delete(`/api/inventory/items/${id}`);
-}
-
-export async function createInventoryMovement(movement: InventoryMovement): Promise<void> {
-  await apiClient.post("/api/inventory/movements", movement);
-}
-
-export async function fetchAllergyOverview(): Promise<AllergyInventoryOverview[]> {
-  const payload = await apiClient.get<ApiResponse<AllergyInventoryOverview[]>>("/api/inventory/allergy-overview");
-  return payload.data ?? [];
 }

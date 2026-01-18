@@ -4,16 +4,16 @@ import { useSettings } from "@/context/SettingsContext";
 import { deriveMovements, type Movement, parseDelimited } from "@/mp/reports";
 
 interface UseReportUploadResult {
+  error: null | string;
+  fileName: null | string;
   movs: Movement[];
-  fileName: string | null;
-  error: string | null;
   onFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export function useReportUpload(): UseReportUploadResult {
   const [movs, setMovs] = useState<Movement[]>([]);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<null | string>(null);
+  const [error, setError] = useState<null | string>(null);
   const { settings } = useSettings();
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -33,5 +33,5 @@ export function useReportUpload(): UseReportUploadResult {
     }
   }
 
-  return { movs, fileName, error, onFile };
+  return { error, fileName, movs, onFile };
 }

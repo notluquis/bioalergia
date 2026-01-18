@@ -4,8 +4,8 @@ import { fetchTimesheetMonths } from "../api";
 
 export function useMonths() {
   const { data } = useSuspenseQuery({
-    queryKey: ["timesheet-months"],
     queryFn: fetchTimesheetMonths,
+    queryKey: ["timesheet-months"],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 

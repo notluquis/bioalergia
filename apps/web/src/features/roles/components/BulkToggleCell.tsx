@@ -3,18 +3,18 @@ import { CheckCheck, Loader2, Minus } from "lucide-react";
 import { Role } from "@/types/roles";
 
 export function BulkToggleCell({
-  role,
-  permissionIds,
+  className,
   isUpdating,
   onToggle,
-  className,
+  permissionIds,
+  role,
 }: {
-  role: Role;
-  permissionIds: number[];
+  className?: string;
   isUpdating: boolean;
   onToggle: (role: Role, ids: number[]) => void;
-  variant?: "section" | "page"; // Deprecated but kept for compatibility
-  className?: string;
+  permissionIds: number[];
+  role: Role;
+  variant?: "page" | "section"; // Deprecated but kept for compatibility
 }) {
   const currentPermissionIds = new Set(role.permissions.map((p) => p.permissionId));
   const presentCount = permissionIds.filter((id) => currentPermissionIds.has(id)).length;
@@ -28,14 +28,14 @@ export function BulkToggleCell({
     if (allPresent) {
       return (
         <div className="bg-primary hover:bg-primary-focus flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
-          <CheckCheck size={12} className="text-primary-content" />
+          <CheckCheck className="text-primary-content" size={12} />
         </div>
       );
     }
     if (somePresent) {
       return (
         <div className="bg-primary/70 hover:bg-primary flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
-          <Minus size={12} className="text-primary-content" />
+          <Minus className="text-primary-content" size={12} />
         </div>
       );
     }
@@ -49,10 +49,12 @@ export function BulkToggleCell({
   return (
     <div className={`flex items-center justify-center p-0 text-center ${className || ""}`}>
       <button
-        onClick={() => onToggle(role, permissionIds)}
-        disabled={isUpdating}
-        title={allPresent ? "Desmarcar todos" : "Marcar todos"}
         className="mx-auto flex h-8 w-full items-center justify-center rounded-md transition-colors"
+        disabled={isUpdating}
+        onClick={() => {
+          onToggle(role, permissionIds);
+        }}
+        title={allPresent ? "Desmarcar todos" : "Marcar todos"}
       >
         {renderIcon()}
       </button>

@@ -9,14 +9,12 @@ import { SettlementTransaction } from "../types";
 const moneyColumn = (
   accessorKey: keyof SettlementTransaction,
   header: string,
-  align: "right" | "center" = "right",
+  align: "center" | "right" = "right",
   isNegative = false
 ): ColumnDef<SettlementTransaction> => ({
   accessorKey,
-  header,
-  minSize: 100,
   cell: ({ row }) => {
-    const amount = row.getValue(accessorKey) as number | null;
+    const amount = row.getValue(accessorKey);
     const currency = row.original.transactionCurrency;
     if (amount == null) return <div className={`text-${align}`}>-</div>;
 
@@ -26,26 +24,23 @@ const moneyColumn = (
 
     return <div className={className}>{formatAmount(amount, currency)}</div>;
   },
+  header,
+  minSize: 100,
 });
 
 const dateColumn = (accessorKey: keyof SettlementTransaction, header: string): ColumnDef<SettlementTransaction> => ({
   accessorKey,
-  header,
-  minSize: 120,
   cell: ({ row }) => {
-    const val = row.getValue(accessorKey) as string | null;
+    const val = row.getValue(accessorKey);
     if (!val) return "-";
     return dayjs(val).format("DD/MM/YY HH:mm");
   },
+  header,
+  minSize: 120,
 });
 
 export const columns: ColumnDef<SettlementTransaction>[] = [
   {
-    id: "expander",
-    header: () => null,
-    size: 40,
-    enableResizing: false,
-    enablePinning: true,
     cell: ({ row }) => {
       return row.getCanExpand() ? (
         <button
@@ -59,17 +54,22 @@ export const columns: ColumnDef<SettlementTransaction>[] = [
         </button>
       ) : null;
     },
+    enablePinning: true,
+    enableResizing: false,
+    header: () => null,
+    id: "expander",
+    size: 40,
   },
   {
     accessorKey: "sourceId",
-    header: "ID Origen",
-    enablePinning: true, // Hint for UI, logic handled in DataTable state
-    minSize: 180,
     cell: ({ row }) => (
       <span className="block max-w-37.5 truncate font-medium" title={row.original.sourceId}>
         {row.original.sourceId}
       </span>
     ),
+    enablePinning: true, // Hint for UI, logic handled in DataTable state
+    header: "ID Origen",
+    minSize: 180,
   },
   // ... rest of columns ...
   dateColumn("transactionDate", "Fecha Tx"),
@@ -77,28 +77,28 @@ export const columns: ColumnDef<SettlementTransaction>[] = [
   dateColumn("moneyReleaseDate", "Fecha Lib."),
   {
     accessorKey: "transactionType",
-    header: "Tipo",
-    minSize: 150,
     cell: ({ row }) => (
       <span className="badge badge-outline badge-sm whitespace-nowrap">{row.original.transactionType}</span>
     ),
+    header: "Tipo",
+    minSize: 150,
   },
   { accessorKey: "paymentMethod", header: "Método", minSize: 100 },
   { accessorKey: "paymentMethodType", header: "Tipo Método", minSize: 120 },
   moneyColumn("transactionAmount", "Monto Tx"),
   {
     accessorKey: "transactionCurrency",
+    cell: ({ row }) => <div className="text-center">{row.original.transactionCurrency}</div>,
     header: "Moneda",
     size: 80,
-    cell: ({ row }) => <div className="text-center">{row.original.transactionCurrency}</div>,
   },
   moneyColumn("feeAmount", "Comisión", "right", true),
   moneyColumn("settlementNetAmount", "Neto Liq"),
   {
     accessorKey: "settlementCurrency",
+    cell: ({ row }) => <div className="text-center">{row.original.settlementCurrency}</div>,
     header: "Moneda Liq",
     size: 80,
-    cell: ({ row }) => <div className="text-center">{row.original.settlementCurrency}</div>,
   },
   moneyColumn("sellerAmount", "Monto Vendedor"),
   moneyColumn("realAmount", "Monto Real"),
@@ -109,27 +109,25 @@ export const columns: ColumnDef<SettlementTransaction>[] = [
   moneyColumn("taxesAmount", "Impuestos", "right", true),
   {
     accessorKey: "installments",
+    cell: ({ row }) => <div className="text-center">{row.original.installments}</div>,
     header: "Cuotas",
     size: 80,
-    cell: ({ row }) => <div className="text-center">{row.original.installments}</div>,
   },
   {
     accessorKey: "description",
-    header: "Descripción",
-    minSize: 200,
     cell: ({ row }) => (
       <span className="block max-w-50 truncate" title={row.original.description || ""}>
         {row.original.description}
       </span>
     ),
+    header: "Descripción",
+    minSize: 200,
   },
   { accessorKey: "cardInitialNumber", header: "BIN", size: 90 },
   { accessorKey: "lastFourDigits", header: "Últimos 4", size: 90 },
   { accessorKey: "issuerName", header: "Emisor", minSize: 150 },
   {
     accessorKey: "isReleased",
-    header: "Liberado",
-    size: 90,
     cell: ({ row }) => (
       <div className="text-center">
         {row.original.isReleased ? (
@@ -139,6 +137,8 @@ export const columns: ColumnDef<SettlementTransaction>[] = [
         )}
       </div>
     ),
+    header: "Liberado",
+    size: 90,
   },
   { accessorKey: "posName", header: "POS", minSize: 150 },
   { accessorKey: "storeName", header: "Tienda", minSize: 150 },
@@ -146,15 +146,15 @@ export const columns: ColumnDef<SettlementTransaction>[] = [
   { accessorKey: "orderMp", header: "Orden MP", minSize: 150 },
   {
     accessorKey: "shippingId",
+    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.shippingId || "-")}</span>,
     header: "ID Envío",
     minSize: 120,
-    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.shippingId || "-")}</span>,
   },
   {
     accessorKey: "orderId",
+    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.orderId || "-")}</span>,
     header: "ID Orden",
     minSize: 120,
-    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.orderId || "-")}</span>,
   },
   moneyColumn("tipAmount", "Propina"),
   moneyColumn("totalCouponAmount", "Total Cupón"),
@@ -179,9 +179,9 @@ export const columns: ColumnDef<SettlementTransaction>[] = [
   { accessorKey: "shipmentMode", header: "Modo Envío", size: 100 },
   {
     accessorKey: "packId",
+    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.packId || "-")}</span>,
     header: "ID Paquete",
     minSize: 120,
-    cell: ({ row }) => <span className="font-mono text-xs">{String(row.original.packId || "-")}</span>,
   },
   { accessorKey: "shippingOrderId", header: "ID Orden Envío", minSize: 150 },
   { accessorKey: "poiWalletName", header: "Wallet", minSize: 150 },

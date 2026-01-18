@@ -27,6 +27,107 @@ import type {
 // STATUS
 // ============================================================
 
+export async function bookDoctoraliaSlot(
+  facilityId: string,
+  doctorId: string,
+  addressId: string,
+  slotStart: string,
+  payload: BookSlotPayload
+): Promise<DoctoraliaBooking> {
+  const response = await apiClient.post<{ booking: DoctoraliaBooking; status: "ok" }>(
+    `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/slots/${encodeURIComponent(slotStart)}/book`,
+    { json: payload }
+  );
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo crear la reserva");
+  }
+
+  return response.booking;
+}
+
+// ============================================================
+// FACILITIES
+// ============================================================
+
+export async function cancelDoctoraliaBooking(
+  facilityId: string,
+  doctorId: string,
+  addressId: string,
+  bookingId: string,
+  reason?: string
+): Promise<void> {
+  const baseUrl = `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/bookings/${bookingId}`;
+  const url = reason ? `${baseUrl}?reason=${encodeURIComponent(reason)}` : baseUrl;
+  await apiClient.delete(url);
+}
+
+// ============================================================
+// DOCTORS
+// ============================================================
+
+export async function fetchDoctoraliaBookings(query: DoctoraliaBookingQuery): Promise<{
+  bookings: DoctoraliaBooking[];
+  pagination: { limit: number; page: number; pages: number; total: number };
+}> {
+  const { addressId, doctorId, end, facilityId, start } = query;
+  const response = await apiClient.get<DoctoraliaBookingsResponse>(
+    `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/bookings`,
+    { query: { end, start } }
+  );
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener las reservas");
+  }
+
+  return {
+    bookings: response.bookings,
+    pagination: response.pagination,
+  };
+}
+
+// ============================================================
+// SLOTS
+// ============================================================
+
+export async function fetchDoctoraliaDoctors(facilityId: number): Promise<DoctoraliaDoctor[]> {
+  const response = await apiClient.get<DoctoraliaDoctorsResponse>(`/api/doctoralia/facilities/${facilityId}/doctors`);
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener los doctores");
+  }
+
+  return response.doctors;
+}
+
+// ============================================================
+// BOOKINGS
+// ============================================================
+
+export async function fetchDoctoraliaFacilities(): Promise<DoctoraliaFacility[]> {
+  const response = await apiClient.get<DoctoraliaFacilitiesResponse>("/api/doctoralia/facilities");
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener las instalaciones");
+  }
+
+  return response.facilities;
+}
+
+export async function fetchDoctoraliaSlots(query: DoctoraliaSlotQuery): Promise<DoctoraliaSlot[]> {
+  const { addressId, doctorId, end, facilityId, start } = query;
+  const response = await apiClient.get<DoctoraliaSlotsResponse>(
+    `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/slots`,
+    { query: { end, start } }
+  );
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener los slots disponibles");
+  }
+
+  return response.slots;
+}
+
 export async function fetchDoctoraliaStatus(): Promise<{
   configured: boolean;
   domain: string;
@@ -41,107 +142,6 @@ export async function fetchDoctoraliaStatus(): Promise<{
     configured: response.configured,
     domain: response.domain,
   };
-}
-
-// ============================================================
-// FACILITIES
-// ============================================================
-
-export async function fetchDoctoraliaFacilities(): Promise<DoctoraliaFacility[]> {
-  const response = await apiClient.get<DoctoraliaFacilitiesResponse>("/api/doctoralia/facilities");
-
-  if (response.status !== "ok") {
-    throw new Error("No se pudo obtener las instalaciones");
-  }
-
-  return response.facilities;
-}
-
-// ============================================================
-// DOCTORS
-// ============================================================
-
-export async function fetchDoctoraliaDoctors(facilityId: number): Promise<DoctoraliaDoctor[]> {
-  const response = await apiClient.get<DoctoraliaDoctorsResponse>(`/api/doctoralia/facilities/${facilityId}/doctors`);
-
-  if (response.status !== "ok") {
-    throw new Error("No se pudo obtener los doctores");
-  }
-
-  return response.doctors;
-}
-
-// ============================================================
-// SLOTS
-// ============================================================
-
-export async function fetchDoctoraliaSlots(query: DoctoraliaSlotQuery): Promise<DoctoraliaSlot[]> {
-  const { facilityId, doctorId, addressId, start, end } = query;
-  const response = await apiClient.get<DoctoraliaSlotsResponse>(
-    `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/slots`,
-    { query: { start, end } }
-  );
-
-  if (response.status !== "ok") {
-    throw new Error("No se pudo obtener los slots disponibles");
-  }
-
-  return response.slots;
-}
-
-// ============================================================
-// BOOKINGS
-// ============================================================
-
-export async function fetchDoctoraliaBookings(query: DoctoraliaBookingQuery): Promise<{
-  bookings: DoctoraliaBooking[];
-  pagination: { page: number; limit: number; pages: number; total: number };
-}> {
-  const { facilityId, doctorId, addressId, start, end } = query;
-  const response = await apiClient.get<DoctoraliaBookingsResponse>(
-    `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/bookings`,
-    { query: { start, end } }
-  );
-
-  if (response.status !== "ok") {
-    throw new Error("No se pudo obtener las reservas");
-  }
-
-  return {
-    bookings: response.bookings,
-    pagination: response.pagination,
-  };
-}
-
-export async function bookDoctoraliaSlot(
-  facilityId: string,
-  doctorId: string,
-  addressId: string,
-  slotStart: string,
-  payload: BookSlotPayload
-): Promise<DoctoraliaBooking> {
-  const response = await apiClient.post<{ status: "ok"; booking: DoctoraliaBooking }>(
-    `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/slots/${encodeURIComponent(slotStart)}/book`,
-    { json: payload }
-  );
-
-  if (response.status !== "ok") {
-    throw new Error("No se pudo crear la reserva");
-  }
-
-  return response.booking;
-}
-
-export async function cancelDoctoraliaBooking(
-  facilityId: string,
-  doctorId: string,
-  addressId: string,
-  bookingId: string,
-  reason?: string
-): Promise<void> {
-  const baseUrl = `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/bookings/${bookingId}`;
-  const url = reason ? `${baseUrl}?reason=${encodeURIComponent(reason)}` : baseUrl;
-  await apiClient.delete(url);
 }
 
 // ============================================================
@@ -160,9 +160,9 @@ export async function fetchDoctoraliaSyncLogs(): Promise<DoctoraliaSyncLog[]> {
 
 export async function triggerDoctoraliaSync(): Promise<{ logId: number }> {
   const response = await apiClient.post<{
-    status: "accepted";
-    message: string;
     logId: number;
+    message: string;
+    status: "accepted";
   }>("/api/doctoralia/sync", {});
 
   if (response.status !== "accepted") {

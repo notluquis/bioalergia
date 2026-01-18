@@ -6,42 +6,50 @@ import { GRID_2_COL_MD } from "@/lib/styles";
 import type { ServiceFormState } from "../ServiceForm";
 
 interface BasicInfoSectionProps {
+  category?: null | string;
+  detail?: null | string;
   name: string;
-  category?: string | null;
-  detail?: string | null;
-  notes?: string | null;
+  notes?: null | string;
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
 }
 
-export function BasicInfoSection({ name, category, detail, notes, onChange }: BasicInfoSectionProps) {
+export function BasicInfoSection({ category, detail, name, notes, onChange }: BasicInfoSectionProps) {
   return (
     <section className={GRID_2_COL_MD}>
       <Input
         label="Nombre"
-        value={name}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => onChange("name", event.target.value)}
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          onChange("name", event.target.value);
+        }}
         required
+        value={name}
       />
       <Input
-        label="Categoría"
-        value={category ?? ""}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => onChange("category", event.target.value)}
         helper="Ej: Servicios básicos, Marketing, Arriendo"
+        label="Categoría"
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          onChange("category", event.target.value);
+        }}
+        value={category ?? ""}
       />
       <Input
-        label="Detalle"
         as="textarea"
+        helper="Describe qué cubre el servicio o condiciones especiales"
+        label="Detalle"
+        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+          onChange("detail", event.target.value);
+        }}
         rows={3}
         value={detail ?? ""}
-        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange("detail", event.target.value)}
-        helper="Describe qué cubre el servicio o condiciones especiales"
       />
       <Input
-        label="Notas"
         as="textarea"
+        label="Notas"
+        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+          onChange("notes", event.target.value);
+        }}
         rows={3}
         value={notes ?? ""}
-        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange("notes", event.target.value)}
       />
     </section>
   );

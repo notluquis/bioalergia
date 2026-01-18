@@ -24,13 +24,13 @@ export default function ReleasesPage() {
         <div className="relative max-w-sm flex-1">
           <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-gray-500" />
           <Input
-            placeholder="Buscar por ID, referencia..."
             className="pl-9"
-            value={searchInput}
             onChange={(e: ChangeEvent<HTMLInputElement>) => {
               setSearchInput(e.target.value);
               setPage(0);
             }}
+            placeholder="Buscar por ID, referencia..."
+            value={searchInput}
           />
         </div>
       </div>
@@ -38,11 +38,7 @@ export default function ReleasesPage() {
       <DataTable
         columns={columns}
         data={data?.data || []}
-        pageCount={data?.totalPages || -1}
-        pagination={{
-          pageIndex: page,
-          pageSize: pageSize,
-        }}
+        initialPinning={{ left: ["expander", "sourceId"], right: [] }}
         onPaginationChange={(updater: Updater<PaginationState>) => {
           if (typeof updater === "function") {
             const newState = updater({ pageIndex: page, pageSize });
@@ -53,7 +49,11 @@ export default function ReleasesPage() {
             setPageSize(updater.pageSize);
           }
         }}
-        initialPinning={{ left: ["expander", "sourceId"], right: [] }}
+        pageCount={data?.totalPages || -1}
+        pagination={{
+          pageIndex: page,
+          pageSize: pageSize,
+        }}
       />
     </div>
   );

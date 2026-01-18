@@ -8,37 +8,36 @@ import { fmtCLP } from "@/lib/format";
 export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "date",
-    header: "Fecha",
     cell: ({ row }) => (
       <span className="text-base-content font-medium whitespace-nowrap">
         {dayjs(row.original.date).format("DD MMM YYYY HH:mm")}
       </span>
     ),
+    header: "Fecha",
   },
   {
     accessorKey: "externalReference",
-    header: "Referencia",
     cell: ({ row }) => (
       <span className="text-base-content/70 font-mono text-xs">{row.original.externalReference || "-"}</span>
     ),
+    header: "Referencia",
   },
   {
     accessorKey: "description",
-    header: "Descripción",
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <span className="badge badge-sm badge-ghost">{row.original.description}</span>
       </div>
     ),
+    header: "Descripción",
   },
   {
     accessorKey: "grossAmount",
-    header: "Monto Bruto",
     cell: ({ row }) => <div className="text-right font-medium">{fmtCLP(String(row.original.grossAmount))}</div>,
+    header: "Monto Bruto",
   },
   {
     accessorKey: "netDebitAmount",
-    header: "Débito Neto",
     cell: ({ row }) => {
       const amount = row.original.netDebitAmount;
       if (!amount) return <div className="text-right">-</div>;
@@ -49,10 +48,10 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
         </div>
       );
     },
+    header: "Débito Neto",
   },
   {
     accessorKey: "netCreditAmount",
-    header: "Crédito Neto",
     cell: ({ row }) => {
       const amount = row.original.netCreditAmount;
       if (!amount) return <div className="text-right">-</div>;
@@ -63,21 +62,22 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
         </div>
       );
     },
+    header: "Crédito Neto",
   },
   {
     accessorKey: "balanceAmount",
-    header: "Balance",
     cell: ({ row }) => (
       <div className="text-base-content text-right font-bold">
         {row.original.balanceAmount ? fmtCLP(String(row.original.balanceAmount)) : "-"}
       </div>
     ),
+    header: "Balance",
   },
   {
     accessorKey: "payoutBankAccountNumber",
-    header: "Cuenta Destino",
     cell: ({ row }) => (
       <span className="text-base-content/70 font-mono text-xs">{row.original.payoutBankAccountNumber || "-"}</span>
     ),
+    header: "Cuenta Destino",
   },
 ];

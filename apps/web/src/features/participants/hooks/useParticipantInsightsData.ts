@@ -4,40 +4,15 @@ import { useState } from "react";
 
 import { formatRut } from "@/lib/rut";
 
-import { type LeaderboardParams, participantQueries } from "../queries";
 import type { LeaderboardDisplayRow } from "../types";
+
+import { type LeaderboardParams, participantQueries } from "../queries";
 
 const MAX_MONTHS = 12;
 
-type RangeParams = {
+interface RangeParams {
   from?: string;
   to?: string;
-};
-
-function resolveRange(quickValue: string, fromValue: string, toValue: string): RangeParams {
-  if (quickValue === "custom") {
-    const range: RangeParams = {};
-    if (fromValue) range.from = fromValue;
-    if (toValue) range.to = toValue;
-    return range;
-  }
-
-  const value = quickValue === "current" ? dayjs().format("YYYY-MM") : quickValue;
-  const [yearStr, monthStr] = value.split("-");
-  const year = Number(yearStr);
-  const monthIndex = Number(monthStr) - 1;
-
-  if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
-    return {};
-  }
-
-  const start = dayjs(new Date(year, monthIndex, 1));
-  const end = start.endOf("month");
-
-  return {
-    from: start.format("YYYY-MM-DD"),
-    to: end.format("YYYY-MM-DD"),
-  };
 }
 
 export function useParticipantInsightsData() {
@@ -67,8 +42,8 @@ export function useParticipantInsightsData() {
   // 2. Details (Click-to-fetch, keeps useQuery)
   const {
     data: detailData,
-    isLoading: detailLoading,
     error: detailErrorObj,
+    isLoading: detailLoading,
   } = useQuery(
     participantQueries.detail({
       participantId: activeParticipantId,
@@ -94,12 +69,12 @@ export function useParticipantInsightsData() {
     const rut = rutValue || "-";
     const account = row.bankAccountNumber || row.withdrawId || row.participant || "-";
     return {
-      key: selectKey || `${displayName}-${account}`,
-      displayName,
-      rut,
       account,
-      outgoingCount: row.outgoingCount,
+      displayName,
+      key: selectKey || `${displayName}-${account}`,
       outgoingAmount: row.outgoingAmount,
+      outgoingCount: row.outgoingCount,
+      rut,
       selectKey,
     };
   });
@@ -109,24 +84,24 @@ export function useParticipantInsightsData() {
     const map = new Map<
       string,
       {
-        displayName: string;
-        rut: string;
         accounts: Set<string>;
-        outgoingCount: number;
+        displayName: string;
         outgoingAmount: number;
+        outgoingCount: number;
+        rut: string;
         selectKey: string;
       }
     >();
 
-    accountRows.forEach((row) => {
+    for (const row of accountRows) {
       const key = row.rut === "-" ? row.displayName : row.rut;
       if (!map.has(key)) {
         map.set(key, {
-          displayName: row.displayName,
-          rut: row.rut === "-" ? "-" : row.rut,
           accounts: new Set<string>(),
-          outgoingCount: 0,
+          displayName: row.displayName,
           outgoingAmount: 0,
+          outgoingCount: 0,
+          rut: row.rut === "-" ? "-" : row.rut,
           selectKey: row.selectKey,
         });
       }
@@ -142,16 +117,16 @@ export function useParticipantInsightsData() {
       if (!entry.selectKey && row.selectKey) {
         entry.selectKey = row.selectKey;
       }
-    });
+    }
 
     return [...map.entries()]
       .map(([key, entry]) => ({
-        key,
-        displayName: entry.displayName,
-        rut: entry.rut,
         account: entry.accounts.size > 0 ? [...entry.accounts].slice(0, 4).join(", ") : "-",
-        outgoingCount: entry.outgoingCount,
+        displayName: entry.displayName,
+        key,
         outgoingAmount: entry.outgoingAmount,
+        outgoingCount: entry.outgoingCount,
+        rut: entry.rut,
         selectKey: entry.selectKey,
       }))
       .toSorted((a, b) => {
@@ -164,12 +139,12 @@ export function useParticipantInsightsData() {
 
   // Options
   const quickMonthOptions = (() => {
-    const options = [{ value: "current", label: "Mes actual" }];
+    const options = [{ label: "Mes actual", value: "current" }];
     for (let i = 1; i < MAX_MONTHS; i += 1) {
       const date = dayjs().subtract(i, "month");
-      options.push({ value: date.format("YYYY-MM"), label: date.format("MMMM YYYY") });
+      options.push({ label: date.format("MMMM YYYY"), value: date.format("YYYY-MM") });
     }
-    options.push({ value: "custom", label: "Personalizado" });
+    options.push({ label: "Personalizado", value: "custom" });
     return options;
   })();
 
@@ -187,36 +162,62 @@ export function useParticipantInsightsData() {
   };
 
   return {
-    // Filters & State
-    participantId,
-    setParticipantId,
-    from,
-    setFrom,
-    to,
-    setTo,
-    quickMonth,
-    setQuickMonth,
-    leaderboardLimit,
-    setLeaderboardLimit,
-    leaderboardGrouping,
-    setLeaderboardGrouping,
-    quickMonthOptions,
-
-    // Data (Leaderboard)
-    leaderboard,
-    displayedLeaderboard,
-    leaderboardLoading: false, // Suspense handles initial, mutation handles updates? No, query handles all.
-    leaderboardError: null, // ErrorBoundary handles this
-
-    // Data (Details)
-    monthly,
     counterparts,
-    visible,
-    detailLoading,
     detailError,
-
+    detailLoading,
+    displayedLeaderboard,
+    from,
+    handleSelectParticipant,
     // Handlers
     handleSubmit,
-    handleSelectParticipant,
+    // Data (Leaderboard)
+    leaderboard,
+    leaderboardError: null, // ErrorBoundary handles this
+    leaderboardGrouping,
+    leaderboardLimit,
+    leaderboardLoading: false, // Suspense handles initial, mutation handles updates? No, query handles all.
+    // Data (Details)
+    monthly,
+
+    // Filters & State
+    participantId,
+    quickMonth,
+    quickMonthOptions,
+    setFrom,
+
+    setLeaderboardGrouping,
+    setLeaderboardLimit,
+    setParticipantId,
+    setQuickMonth,
+    setTo,
+
+    to,
+    visible,
+  };
+}
+
+function resolveRange(quickValue: string, fromValue: string, toValue: string): RangeParams {
+  if (quickValue === "custom") {
+    const range: RangeParams = {};
+    if (fromValue) range.from = fromValue;
+    if (toValue) range.to = toValue;
+    return range;
+  }
+
+  const value = quickValue === "current" ? dayjs().format("YYYY-MM") : quickValue;
+  const [yearStr, monthStr] = value.split("-");
+  const year = Number(yearStr);
+  const monthIndex = Number(monthStr) - 1;
+
+  if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
+    return {};
+  }
+
+  const start = dayjs(new Date(year, monthIndex, 1));
+  const end = start.endOf("month");
+
+  return {
+    from: start.format("YYYY-MM-DD"),
+    to: end.format("YYYY-MM-DD"),
   };
 }

@@ -13,13 +13,13 @@ export const Route = createFileRoute("/_authed/services/")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  loader: async ({ context: { queryClient } }) => {
-    const { serviceQueries } = await import("@/features/services/queries");
-    await queryClient.ensureQueryData(serviceQueries.list(true));
-  },
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <OverviewPage />
     </Suspense>
   ),
+  loader: async ({ context: { queryClient } }) => {
+    const { serviceQueries } = await import("@/features/services/queries");
+    await queryClient.ensureQueryData(serviceQueries.list(true));
+  },
 });

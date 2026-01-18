@@ -2,6 +2,8 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import dayjs from "dayjs";
 import { lazy, Suspense, useEffect, useState } from "react";
 
+import type { BulkRow, TimesheetSummaryRow, TimesheetUpsertEntry } from "@/features/hr/timesheets/types";
+
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
@@ -14,7 +16,6 @@ import {
 import EmailPreviewModal from "@/features/hr/timesheets/components/EmailPreviewModal";
 import TimesheetDetailTable from "@/features/hr/timesheets/components/TimesheetDetailTable";
 import { generateTimesheetPdfBase64 } from "@/features/hr/timesheets/pdfUtils";
-import type { BulkRow, TimesheetSummaryRow, TimesheetUpsertEntry } from "@/features/hr/timesheets/types";
 import { buildBulkRows, formatDateLabel, hasRowData, isRowDirty, parseDuration } from "@/features/hr/timesheets/utils";
 
 import type { Employee } from "../../employees/types";
@@ -22,28 +23,20 @@ import type { Employee } from "../../employees/types";
 const TimesheetExportPDF = lazy(() => import("@/features/hr/timesheets/components/TimesheetExportPDF"));
 
 interface TimesheetEditorProps {
-  employeeId: number;
-  month: string; // YYYY-MM
-  selectedEmployee: Employee;
-  activeEmployees: Employee[];
-  monthLabel: string;
-  summaryRow: TimesheetSummaryRow | null;
-}
-
-// Utility to ensure month is always YYYY-MM
-function formatMonthString(m: string): string {
-  if (/^\d{4}-\d{2}$/.test(m)) return m;
-  const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
-  if (d.isValid()) return d.format("YYYY-MM");
-  return dayjs().format("YYYY-MM");
+  readonly activeEmployees: Employee[];
+  readonly employeeId: number;
+  readonly month: string; // YYYY-MM
+  readonly monthLabel: string;
+  readonly selectedEmployee: Employee;
+  readonly summaryRow: null | TimesheetSummaryRow;
 }
 
 export default function TimesheetEditor({
+  activeEmployees,
   employeeId,
   month,
-  selectedEmployee,
-  activeEmployees,
   monthLabel,
+  selectedEmployee,
   summaryRow,
 }: TimesheetEditorProps) {
   const queryClient = useQueryClient();
@@ -51,25 +44,23 @@ export default function TimesheetEditor({
 
   const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
   const [initialRows, setInitialRows] = useState<BulkRow[]>([]);
-  const [errorLocal, setErrorLocal] = useState<string | null>(null);
+  const [errorLocal, setErrorLocal] = useState<null | string>(null);
 
   const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailPrepareStatus, setEmailPrepareStatus] = useState<string | null>(null);
+  const [emailPrepareStatus, setEmailPrepareStatus] = useState<null | string>(null);
 
   // --- Query ---
   const { data: detailData } = useSuspenseQuery({
-    queryKey: ["timesheet-detail", employeeId, month],
     queryFn: () => fetchTimesheetDetail(employeeId, formatMonthString(month)),
+    queryKey: ["timesheet-detail", employeeId, month],
   });
 
   // --- Sync State ---
   useEffect(() => {
-    if (detailData) {
-      const rows = buildBulkRows(formatMonthString(month), detailData.entries);
-      setBulkRows(rows);
-      setInitialRows(rows);
-      setErrorLocal(null);
-    }
+    const rows = buildBulkRows(formatMonthString(month), detailData.entries);
+    setBulkRows(rows);
+    setInitialRows(rows);
+    setErrorLocal(null);
   }, [detailData, month]);
 
   // --- Mutations ---
@@ -78,13 +69,13 @@ export default function TimesheetEditor({
     mutationFn: async (args: { employeeId: number; entries: TimesheetUpsertEntry[]; removeIds: number[] }) => {
       return bulkUpsertTimesheets(args.employeeId, args.entries, args.removeIds);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["timesheet-detail"] });
-      queryClient.invalidateQueries({ queryKey: ["timesheet-summary"] });
-    },
     onError: (err) => {
       const message = err instanceof Error ? err.message : "Error al guardar";
       setErrorLocal(message);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["timesheet-detail"] });
+      void queryClient.invalidateQueries({ queryKey: ["timesheet-summary"] });
     },
   });
 
@@ -92,13 +83,13 @@ export default function TimesheetEditor({
     mutationFn: async (entryId: number) => {
       return deleteTimesheet(entryId);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["timesheet-detail"] });
-      queryClient.invalidateQueries({ queryKey: ["timesheet-summary"] });
-      toastSuccess("Registro eliminado");
-    },
     onError: (err) => {
       setErrorLocal(err instanceof Error ? err.message : "Error al eliminar");
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["timesheet-detail"] });
+      void queryClient.invalidateQueries({ queryKey: ["timesheet-summary"] });
+      toastSuccess("Registro eliminado");
     },
   });
 
@@ -114,13 +105,13 @@ export default function TimesheetEditor({
 
   // --- Handlers ---
 
-  const generatePdfBase64 = async (): Promise<string | null> => {
-    if (!selectedEmployee || !summaryRow) return null;
+  const generatePdfBase64 = async (): Promise<null | string> => {
+    if (!summaryRow) return null;
     return generateTimesheetPdfBase64(selectedEmployee, summaryRow, bulkRows, monthLabel);
   };
 
   async function handlePrepareEmail() {
-    if (!selectedEmployee || !summaryRow || !month) return;
+    if (!summaryRow || !month) return;
     setEmailPrepareStatus("generating-pdf");
     setErrorLocal(null);
 
@@ -131,32 +122,32 @@ export default function TimesheetEditor({
       setEmailPrepareStatus("preparing");
 
       const data = await emailMutation.mutateAsync({
+        employeeEmail: selectedEmployee.person?.email ?? "",
         employeeId: selectedEmployee.id,
         employeeName: selectedEmployee.full_name,
-        employeeEmail: selectedEmployee.person?.email || "",
         month,
         monthLabel,
         pdfBase64,
         summary: {
-          role: summaryRow.role,
-          workedMinutes: summaryRow.workedMinutes,
-          overtimeMinutes: summaryRow.overtimeMinutes,
-          subtotal: summaryRow.subtotal,
-          retention: summaryRow.retention,
           net: summaryRow.net,
+          overtimeMinutes: summaryRow.overtimeMinutes,
           payDate: summaryRow.payDate,
-          retentionRate: summaryRow.retentionRate,
+          retention: summaryRow.retention,
           retention_rate: (summaryRow as unknown as Record<string, unknown>).retention_rate as
-            | number
             | null
+            | number
             | undefined, // Legacy support workaround
+          retentionRate: summaryRow.retentionRate,
+          role: summaryRow.role,
+          subtotal: summaryRow.subtotal,
+          workedMinutes: summaryRow.workedMinutes,
         },
       });
 
       if (data.status !== "ok") throw new Error(data.message || "Error al preparar el email");
 
       // Download .eml
-      const emlBlob = new Blob([Uint8Array.from(atob(data.emlBase64), (c) => c.codePointAt(0)!)], {
+      const emlBlob = new Blob([Uint8Array.from(atob(data.emlBase64), (c) => c.codePointAt(0) ?? 0)], {
         type: "message/rfc822",
       });
       const url = URL.createObjectURL(emlBlob);
@@ -196,7 +187,7 @@ export default function TimesheetEditor({
     });
   };
 
-  const { mutateAsync: upsertMutate, isPending: isUpsertPending } = upsertMutation;
+  const { isPending: isUpsertPending, mutateAsync: upsertMutate } = upsertMutation;
 
   const saveRowImmediately = async (index: number) => {
     if (isUpsertPending) return;
@@ -215,12 +206,12 @@ export default function TimesheetEditor({
 
     const comment = row.comment.trim() || null;
     const entry = {
-      work_date: row.date,
-      start_time: row.entrada || null,
-      end_time: row.salida || null,
-      overtime_minutes: overtime,
-      extra_amount: 0,
       comment,
+      end_time: row.salida || null,
+      extra_amount: 0,
+      overtime_minutes: overtime,
+      start_time: row.entrada || null,
+      work_date: row.date,
     };
 
     try {
@@ -237,13 +228,13 @@ export default function TimesheetEditor({
 
   const handleSalidaBlur = (index: number) => {
     setTimeout(() => {
-      saveRowImmediately(index);
+      void saveRowImmediately(index);
     }, 100);
   };
 
   const { mutate: deleteMutate } = deleteMutation;
 
-  const handleRemoveEntry = async (row: BulkRow) => {
+  const handleRemoveEntry = (row: BulkRow) => {
     if (!row.entryId) return;
     if (!confirm("¿Eliminar el registro de este día?")) return;
     deleteMutate(row.entryId);
@@ -252,7 +243,7 @@ export default function TimesheetEditor({
   const processBulkRow = (
     row: BulkRow,
     initial: BulkRow
-  ): { entry?: TimesheetUpsertEntry; removeId?: number; error?: string } => {
+  ): { entry?: TimesheetUpsertEntry; error?: string; removeId?: number } => {
     if (!isRowDirty(row, initial)) return {};
 
     if (row.entrada && !/^\d{1,2}:\d{2}$/.test(row.entrada)) {
@@ -278,12 +269,12 @@ export default function TimesheetEditor({
 
     return {
       entry: {
-        work_date: row.date,
-        start_time: row.entrada ? dayjs(`${row.date} ${row.entrada}`).toISOString() : null,
-        end_time: row.salida ? dayjs(`${row.date} ${row.salida}`).toISOString() : null,
-        overtime_minutes: overtime,
-        extra_amount: 0,
         comment,
+        end_time: row.salida ? dayjs(`${row.date} ${row.salida}`).toISOString() : null,
+        extra_amount: 0,
+        overtime_minutes: overtime,
+        start_time: row.entrada ? dayjs(`${row.date} ${row.entrada}`).toISOString() : null,
+        work_date: row.date,
       },
     };
   };
@@ -295,7 +286,9 @@ export default function TimesheetEditor({
     const removeIds: number[] = [];
 
     for (const [index, row] of bulkRows.entries()) {
-      const result = processBulkRow(row, initialRows[index]!);
+      const initial = initialRows[index];
+      if (!initial) continue;
+      const result = processBulkRow(row, initial);
       if (result.error) {
         setErrorLocal(result.error);
         return;
@@ -328,38 +321,38 @@ export default function TimesheetEditor({
     <>
       <div className="mb-4 flex justify-end gap-2">
         <Button
-          type="button"
-          variant="secondary"
           className="gap-2"
+          disabled={!summaryRow || !selectedEmployee.person?.email}
           onClick={() => {
             setEmailModalOpen(true);
             setEmailPrepareStatus(null);
           }}
-          disabled={!summaryRow || !selectedEmployee.person?.email}
           title={
             selectedEmployee.person?.email
               ? "Preparar boleta para enviar por email"
               : "El empleado no tiene email registrado"
           }
+          type="button"
+          variant="secondary"
         >
           ✉️ Preparar email
         </Button>
         <Suspense
           fallback={
             <div className="flex items-center gap-2">
-              <Button disabled variant="primary" className="bg-primary/70 cursor-wait">
+              <Button className="bg-primary/70 cursor-wait" disabled variant="primary">
                 Cargando exportador...
               </Button>
             </div>
           }
         >
           <TimesheetExportPDF
-            logoUrl={"/logo.png"}
-            employee={selectedEmployee}
-            summary={summaryRow || null}
             bulkRows={bulkRows}
             columns={["date", "entrada", "salida", "worked", "overtime"]}
+            employee={selectedEmployee}
+            logoUrl={"/logo.png"}
             monthLabel={monthLabel}
+            summary={summaryRow || null}
           />
         </Suspense>
       </div>
@@ -368,34 +361,42 @@ export default function TimesheetEditor({
 
       <TimesheetDetailTable
         bulkRows={bulkRows}
+        employeeOptions={activeEmployees}
         initialRows={initialRows}
         loadingDetail={false}
-        selectedEmployee={selectedEmployee}
-        onRowChange={handleRowChange}
-        onSalidaBlur={handleSalidaBlur}
-        onResetRow={handleResetRow}
-        onRemoveEntry={handleRemoveEntry}
-        onBulkSave={handleBulkSave}
-        saving={upsertMutation.isPending}
-        pendingCount={pendingCount}
         modifiedCount={modifiedCount}
         monthLabel={monthLabel}
-        employeeOptions={activeEmployees}
+        onBulkSave={handleBulkSave}
+        onRemoveEntry={handleRemoveEntry}
+        onResetRow={handleResetRow}
+        onRowChange={handleRowChange}
+        onSalidaBlur={handleSalidaBlur}
+        pendingCount={pendingCount}
+        saving={upsertMutation.isPending}
+        selectedEmployee={selectedEmployee}
       />
 
       <EmailPreviewModal
+        employee={selectedEmployee}
         isOpen={emailModalOpen}
+        month={month}
+        monthLabel={monthLabel}
         onClose={() => {
           setEmailModalOpen(false);
           setEmailPrepareStatus(null);
         }}
         onPrepare={handlePrepareEmail}
         prepareStatus={emailPrepareStatus}
-        employee={selectedEmployee}
         summary={summaryRow ?? null}
-        month={month}
-        monthLabel={monthLabel}
       />
     </>
   );
+}
+
+// Utility to ensure month is always YYYY-MM
+function formatMonthString(m: string): string {
+  if (/^\d{4}-\d{2}$/.test(m)) return m;
+  const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
+  if (d.isValid()) return d.format("YYYY-MM");
+  return dayjs().format("YYYY-MM");
 }

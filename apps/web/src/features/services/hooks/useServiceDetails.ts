@@ -5,10 +5,11 @@ import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { logger } from "@/lib/logger";
 
+import type { ServiceDetailResponse, ServiceListResponse } from "../types";
+
 import { fetchServiceDetail } from "../api";
 import { serviceKeys } from "../queries";
 import { servicesActions, servicesStore } from "../store";
-import type { ServiceDetailResponse, ServiceListResponse } from "../types";
 
 export function useServiceDetails(services: ServiceListResponse["services"]) {
   const { can } = useAuth();
@@ -23,29 +24,29 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
 
   // Fetch All Details (Aggregated)
   const { data: allDetails } = useSuspenseQuery({
-    queryKey: [...serviceKeys.detailsAggregated(serviceIds), services.length, canView],
     queryFn: async () => {
       if (services.length === 0 || !canView) return {};
       const results = await Promise.allSettled(services.map((service) => fetchServiceDetail(service.public_id)));
 
       const detailsMap: Record<string, ServiceDetailResponse> = {};
-      const failures: Array<{ id: string; reason: unknown }> = [];
+      const failures: { id: string; reason: unknown }[] = [];
 
-      results.forEach((result, index) => {
+      for (const [index, result] of results.entries()) {
         if (result.status === "fulfilled") {
           detailsMap[result.value.service.public_id] = result.value;
         } else {
           const serviceId = services[index]?.public_id ?? "unknown";
           failures.push({ id: serviceId, reason: result.reason });
-          logger.error("[services] aggregated:error", { serviceId, error: result.reason });
+          logger.error("[services] aggregated:error", { error: result.reason, serviceId });
         }
-      });
+      }
 
       if (failures.length > 0) {
         console.warn(`Failed to load details for ${failures.length} services`);
       }
       return detailsMap;
     },
+    queryKey: [...serviceKeys.detailsAggregated(serviceIds), services.length, canView],
     staleTime: 5 * 60 * 1000,
   });
 
@@ -57,25 +58,27 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
   }, [selectedId]);
 
   const unifiedAgendaItems = Object.values(allDetails).flatMap((item) =>
-    item.schedules.map((schedule) => ({ service: item.service, schedule }))
+    item.schedules.map((schedule) => ({ schedule, service: item.service }))
   );
 
   return {
-    allDetails,
-    selectedService: detail?.service ?? null,
-    schedules: detail?.schedules ?? [],
-    unifiedAgendaItems,
-    aggregatedLoading: false, // Suspense guarantees data is ready
     aggregatedError: null, // Errors are handled by Suspense boundary or internally logged
+    aggregatedLoading: false, // Suspense guarantees data is ready
+    allDetails,
+    applyTemplate: servicesActions.openCreateModal,
+    closeCreateModal: servicesActions.closeCreateModal,
+    createOpen,
 
+    openCreateModal: servicesActions.openCreateModal,
+    schedules: detail?.schedules ?? [],
     // Selection / Modal State
     selectedId,
-    setSelectedId: servicesActions.setSelectedId,
-    createOpen,
-    openCreateModal: servicesActions.openCreateModal,
-    closeCreateModal: servicesActions.closeCreateModal,
+    selectedService: detail?.service ?? null,
     selectedTemplate,
-    setSelectedTemplate: (t: any) => servicesStore.setState((s) => ({ ...s, selectedTemplate: t })),
-    applyTemplate: servicesActions.openCreateModal,
+    setSelectedId: servicesActions.setSelectedId,
+    setSelectedTemplate: (t: any) => {
+      servicesStore.setState((s) => ({ ...s, selectedTemplate: t }));
+    },
+    unifiedAgendaItems,
   };
 }

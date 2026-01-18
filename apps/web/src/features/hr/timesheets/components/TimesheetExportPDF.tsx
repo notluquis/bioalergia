@@ -1,304 +1,74 @@
-import "dayjs/locale/es";
-
 import { formatRetentionPercent } from "@shared/retention";
 import dayjs from "dayjs";
 import type { CellHookData } from "jspdf-autotable";
 import React from "react";
 
+import type { Employee } from "@/features/hr/employees/types";
+
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { useSettings } from "@/context/SettingsContext";
-import type { Employee } from "@/features/hr/employees/types";
 import { apiClient } from "@/lib/apiClient";
 import { fmtCLP } from "@/lib/format";
 
 import type { BulkRow, TimesheetSummaryRow } from "../types";
 
-type TimesheetColumnKey = "date" | "entrada" | "salida" | "worked" | "overtime";
+import "dayjs/locale/es";
+
+type TimesheetColumnKey = "date" | "entrada" | "overtime" | "salida" | "worked";
 
 const assertUnreachable = (value: never): never => {
   throw new Error(`Unhandled column key: ${String(value)}`);
 };
 
 interface TimesheetExportPDFProps {
-  logoUrl: string;
-  employee: Employee;
-  summary: TimesheetSummaryRow | null;
   bulkRows: BulkRow[];
   columns: TimesheetColumnKey[];
+  employee: Employee;
+  logoUrl: string;
   monthLabel: string;
+  summary: null | TimesheetSummaryRow;
 }
 
 const COLUMN_LABELS: Record<TimesheetColumnKey, string> = {
   date: "Fecha",
   entrada: "Entrada",
+  overtime: "Extras",
   salida: "Salida",
   worked: "Trabajadas",
-  overtime: "Extras",
 };
 
-type JsPdfFactory = typeof import("jspdf");
 type AutoTableFactory = typeof import("jspdf-autotable");
-
-// Helper: Cargar logo y normalizarlo a PNG (evitar "wrong PNG signature")
-function blobToDataUrl(blob: Blob): Promise<string | null> {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.addEventListener("load", () => resolve(reader.result as string));
-    reader.addEventListener("error", () => resolve(null));
-    reader.readAsDataURL(blob);
-  });
-}
-
-function imageToPngDataUrl(objectUrl: string): Promise<string | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const onLoad = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width || 240;
-        canvas.height = img.height || 120;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          resolve(null);
-          return;
-        }
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL("image/png"));
-      } catch {
-        resolve(null);
-      }
-    };
-    img.addEventListener("load", onLoad);
-    img.addEventListener("error", () => resolve(null));
-    img.src = objectUrl;
-  });
-}
-
-// Helper: Cargar logo y normalizarlo a PNG (evitar "wrong PNG signature")
-async function loadLogoAsPng(url: string): Promise<string | null> {
-  try {
-    let blob: Blob | null = null;
-    const isUrl = /^https?:\/\//i.test(url);
-
-    if (isUrl) {
-      try {
-        const proxyUrl = `/api/assets/proxy-image?url=${encodeURIComponent(url)}`;
-        blob = await apiClient.get<Blob>(proxyUrl, { responseType: "blob" });
-      } catch {
-        blob = null;
-      }
-    }
-
-    if (!blob) {
-      try {
-        blob = await apiClient.get<Blob>(url, { responseType: "blob" });
-      } catch {
-        blob = null;
-      }
-    }
-
-    if (!blob) return null;
-
-    if (blob.type === "image/png") {
-      return blobToDataUrl(blob);
-    }
-
-    const objectUrl = URL.createObjectURL(blob);
-    try {
-      return await imageToPngDataUrl(objectUrl);
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
-  } catch {
-    return null;
-  }
-}
-
-function getLogoDimensions(logoDataUrl: string | null): Promise<{ w: number; h: number } | null> {
-  if (!logoDataUrl) return Promise.resolve(null);
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.addEventListener("load", () => {
-      const maxW = 45;
-      const maxH = 22;
-      const iw0 = (img as HTMLImageElement).width || maxW;
-      const ih0 = (img as HTMLImageElement).height || maxH;
-      const scale = Math.min(maxW / iw0, maxH / ih0);
-      resolve({ w: Math.max(1, iw0 * scale), h: Math.max(1, ih0 * scale) });
-    });
-    img.addEventListener("error", () => resolve(null));
-    img.src = logoDataUrl;
-  });
-}
-
-// === NEW EXTRACTED HELPERS ===
-
-function timeToMinutes(t?: string): number | null {
-  if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return null;
-  const parts = t.split(":").map(Number);
-  const [h, m] = parts;
-  if (h === undefined || m === undefined) return null;
-  if (h < 0 || h > 23 || m < 0 || m >= 60) return null;
-  return h * 60 + m;
-}
-
-function computeWorked(entrada?: string, salida?: string): string {
-  const s = timeToMinutes(entrada);
-  const e = timeToMinutes(salida);
-  if (s == null || e == null) return "";
-  let diff = e - s;
-  if (diff < 0) diff += 24 * 60;
-  const hh = String(Math.floor(diff / 60))
-    .toString()
-    .padStart(2, "0");
-  const mm = String(diff % 60).padStart(2, "0");
-  return `${hh}:${mm}`;
-}
-
-interface SummaryTableProps {
-  doc: import("jspdf").default;
-  autoTable: AutoTableFactory["default"];
-  summary: TimesheetSummaryRow | null;
-  infoStartY: number;
-  pageWidth: number;
-  margin: number;
-}
-
-function drawSummaryTable({ doc, autoTable, summary, infoStartY, pageWidth, margin }: SummaryTableProps) {
-  const summaryHead = [["Concepto", "Valor"]];
-  const hasOvertime = summary && (summary.overtimeMinutes > 0 || (summary.extraAmount || 0) > 0);
-
-  const summaryBody: string[][] = [];
-  if (summary) {
-    const retentionPercent = formatRetentionPercent(summary.retentionRate || 0);
-
-    summaryBody.push(
-      ["Horas trabajadas", summary.hoursFormatted || "0:00"],
-      ...(hasOvertime ? [["Horas extras", summary.overtimeFormatted || "0:00"]] : []),
-      ["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)],
-      ["Subtotal", fmtCLP(summary.subtotal || 0)],
-      [`Retención (${retentionPercent})`, `-${fmtCLP(summary.retention || 0)}`],
-      ["Total Líquido", fmtCLP(summary.net || 0)]
-    );
-  }
-
-  const summaryColumnStyles: Record<string, { halign: "left" | "center" | "right" }> = {
-    0: { halign: "left" },
-    1: { halign: "right" },
-  };
-
-  autoTable(doc, {
-    head: summaryHead,
-    body: summaryBody,
-    startY: infoStartY + 20,
-    theme: "grid",
-    styles: { fontSize: 9, cellPadding: 2, overflow: "linebreak" },
-    headStyles: { fillColor: [14, 100, 183], textColor: [255, 255, 255], fontStyle: "bold" },
-    tableWidth: pageWidth - margin * 2,
-    margin: { left: margin, right: margin },
-    columnStyles: summaryColumnStyles,
-  });
-}
-
 interface DetailTableProps {
-  doc: import("jspdf").default;
   autoTable: AutoTableFactory["default"];
   bulkRows: BulkRow[];
-  selectedCols: TimesheetColumnKey[];
   defaultCols: readonly TimesheetColumnKey[];
+  doc: import("jspdf").default;
   labels: Record<TimesheetColumnKey, string>;
-  pageWidth: number;
   margin: number;
+  pageWidth: number;
+  selectedCols: TimesheetColumnKey[];
   startY: number;
 }
 
-function drawDetailTable({
-  doc,
-  autoTable,
-  bulkRows,
-  selectedCols,
-  defaultCols,
-  labels,
-  pageWidth,
-  margin,
-  startY,
-}: DetailTableProps) {
-  const hasAnyOvertime = bulkRows.some((row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00");
-  const baseColKeys: TimesheetColumnKey[] = selectedCols.length > 0 ? selectedCols : [...defaultCols];
-  const colKeys: TimesheetColumnKey[] = hasAnyOvertime ? baseColKeys : baseColKeys.filter((k) => k !== "overtime");
+type JsPdfFactory = typeof import("jspdf");
 
-  const workedRows = bulkRows.filter((row) => row.entrada || row.salida);
-
-  const body = workedRows.map((row) =>
-    colKeys.map((key): string => {
-      switch (key) {
-        case "date": {
-          return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : row.date;
-        }
-        case "entrada": {
-          return row.entrada || "-";
-        }
-        case "salida": {
-          return row.salida || "-";
-        }
-        case "worked": {
-          return computeWorked(row.entrada, row.salida) || "-";
-        }
-        case "overtime": {
-          return row.overtime || "-";
-        }
-        default: {
-          return assertUnreachable(key);
-        }
-      }
-    })
-  );
-
-  if (body.length === 0) {
-    doc.setFontSize(11);
-    doc.text("Sin registros para este periodo.", margin, startY);
-    return;
-  }
-
-  autoTable(doc, {
-    head: [colKeys.map((k) => labels[k] ?? k.toUpperCase())],
-    body,
-    startY,
-    theme: "grid",
-    tableWidth: pageWidth - margin * 2,
-    margin: { left: margin, right: margin },
-    styles: { fontSize: 8, cellPadding: 1, overflow: "linebreak" },
-    headStyles: { fontSize: 9, fillColor: [241, 167, 34], textColor: [255, 255, 255], fontStyle: "bold" },
-    columnStyles: {
-      0: { halign: "center" },
-      1: { halign: "center" },
-      2: { halign: "center" },
-      3: { halign: "center" },
-      4: { halign: "center" },
-    },
-    willDrawCell: (data: CellHookData) => {
-      if (data.section === "body") {
-        const rowIndex = data.row.index;
-        const rawDate = workedRows[rowIndex]?.date;
-        const isSunday = rawDate && dayjs(rawDate).day() === 0;
-        if (isSunday) {
-          data.cell.styles.fillColor = [245, 245, 245];
-        }
-      }
-    },
-  });
+interface SummaryTableProps {
+  autoTable: AutoTableFactory["default"];
+  doc: import("jspdf").default;
+  infoStartY: number;
+  margin: number;
+  pageWidth: number;
+  summary: null | TimesheetSummaryRow;
 }
 
-// === MAIN COMPONENT ===
-
 export default function TimesheetExportPDF({
-  logoUrl,
-  employee,
-  summary,
   bulkRows,
   columns,
+  employee,
+  logoUrl,
   monthLabel,
+  summary,
 }: TimesheetExportPDFProps) {
   const { settings } = useSettings();
   const defaultCols: readonly TimesheetColumnKey[] = ["date", "entrada", "salida", "worked", "overtime"];
@@ -306,33 +76,33 @@ export default function TimesheetExportPDF({
     columns.length > 0 ? columns : [...defaultCols]
   );
   const [showOptions, setShowOptions] = React.useState(false);
-  const pdfLibsRef = React.useRef<{ jsPDF: JsPdfFactory["default"]; autoTable: AutoTableFactory["default"] } | null>(
+  const pdfLibsRef = React.useRef<null | { autoTable: AutoTableFactory["default"]; jsPDF: JsPdfFactory["default"] }>(
     null
   );
 
   async function loadPdfLibs() {
     if (!pdfLibsRef.current) {
       const [{ default: jsPDF }, autoTableModule] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
-      const autoTable = (autoTableModule.default ?? autoTableModule) as AutoTableFactory["default"];
-      pdfLibsRef.current = { jsPDF, autoTable };
+      const autoTable = autoTableModule.default ?? autoTableModule;
+      pdfLibsRef.current = { autoTable, jsPDF };
     }
     return pdfLibsRef.current;
   }
 
-  type JsPdfPageSize = {
+  interface JsPdfPageSize {
     getWidth?: () => number;
     width?: number;
-  };
+  }
 
-  type JsPdfInternal = {
-    pageSize?: JsPdfPageSize;
+  interface JsPdfInternal {
     getPageSize?: () => JsPdfPageSize;
-  };
+    pageSize?: JsPdfPageSize;
+  }
 
   async function handleExport(preview = true) {
     try {
       const libs = await loadPdfLibs();
-      const { jsPDF, autoTable } = libs;
+      const { autoTable, jsPDF } = libs;
       const doc = new jsPDF();
       const internal = (doc as unknown as { internal?: JsPdfInternal }).internal ?? {};
       const pageSize = internal.pageSize ?? internal.getPageSize?.();
@@ -342,7 +112,7 @@ export default function TimesheetExportPDF({
 
       // Logo (mantener proporción)
       const resolvedLogo = settings.logoUrl || logoUrl;
-      let logoDataUrl: string | null = null;
+      let logoDataUrl: null | string = null;
       if (resolvedLogo) logoDataUrl = await loadLogoAsPng(resolvedLogo);
       if (!logoDataUrl) logoDataUrl = await loadLogoAsPng("/logo.png");
 
@@ -405,7 +175,7 @@ export default function TimesheetExportPDF({
       doc.setFont("helvetica", "normal");
 
       // Tabla de RESUMEN
-      drawSummaryTable({ doc, autoTable, summary, infoStartY, pageWidth, margin });
+      drawSummaryTable({ autoTable, doc, infoStartY, margin, pageWidth, summary });
 
       // Tabla de DETALLE
       const lastTableReference = doc as unknown as { lastAutoTable?: { finalY: number } };
@@ -413,14 +183,14 @@ export default function TimesheetExportPDF({
       const nextY = lastAutoTable ? lastAutoTable.finalY + 8 : infoStartY + 30;
 
       drawDetailTable({
-        doc,
         autoTable,
         bulkRows,
-        selectedCols,
         defaultCols,
+        doc,
         labels: COLUMN_LABELS,
-        pageWidth,
         margin,
+        pageWidth,
+        selectedCols,
         startY: nextY,
       });
 
@@ -448,20 +218,22 @@ export default function TimesheetExportPDF({
     <div className="flex items-center gap-2">
       <div className="relative inline-block">
         <Button
-          type="button"
-          variant="primary"
           className="text-primary-content bg-primary hover:bg-primary/85 focus-visible:outline-primary/35 rounded-xl px-4 py-2 text-sm font-semibold shadow-md focus-visible:outline-2 focus-visible:outline-offset-2"
           onClick={() => handleExport(true)}
+          type="button"
+          variant="primary"
         >
           Exportar PDF
         </Button>
         <Button
-          type="button"
-          size="sm"
-          variant="secondary"
           className="border-base-300 bg-base-100 text-primary hover:bg-base-100/90 ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border shadow"
+          onClick={() => {
+            setShowOptions((v) => !v);
+          }}
+          size="sm"
           title="Opciones"
-          onClick={() => setShowOptions((v) => !v)}
+          type="button"
+          variant="secondary"
         >
           ⋯
         </Button>
@@ -469,7 +241,7 @@ export default function TimesheetExportPDF({
           <div className="bg-base-100 absolute right-0 z-20 mt-2 w-56 rounded-xl p-3 shadow-xl ring-1 ring-black/5">
             <p className="text-base-content/80 mb-2 text-xs font-semibold">Columnas del detalle</p>
             {[...defaultCols].map((key) => (
-              <label key={key} className="text-base-content mb-1 flex items-center gap-2 text-sm">
+              <label className="text-base-content mb-1 flex items-center gap-2 text-sm" key={key}>
                 <Checkbox
                   checked={selectedCols.includes(key)}
                   onChange={(e) => {
@@ -486,26 +258,28 @@ export default function TimesheetExportPDF({
             ))}
             <div className="mt-3 flex justify-end gap-2">
               <Button
+                className="text-base-content/60 hover:text-base-content text-xs"
+                onClick={() => {
+                  setShowOptions(false);
+                }}
                 size="sm"
                 variant="secondary"
-                className="text-base-content/60 hover:text-base-content text-xs"
-                onClick={() => setShowOptions(false)}
               >
                 Cerrar
               </Button>
               <Button
-                size="sm"
-                variant="secondary"
                 className="text-primary text-xs hover:underline"
                 onClick={() => handleExport(true)}
+                size="sm"
+                variant="secondary"
               >
                 Vista previa
               </Button>
               <Button
-                size="sm"
-                variant="secondary"
                 className="text-primary text-xs hover:underline"
                 onClick={() => handleExport(false)}
+                size="sm"
+                variant="secondary"
               >
                 Descargar
               </Button>
@@ -515,4 +289,243 @@ export default function TimesheetExportPDF({
       </div>
     </div>
   );
+}
+
+// Helper: Cargar logo y normalizarlo a PNG (evitar "wrong PNG signature")
+function blobToDataUrl(blob: Blob): Promise<null | string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      resolve(reader.result as string);
+    });
+    reader.addEventListener("error", () => {
+      resolve(null);
+    });
+    reader.readAsDataURL(blob);
+  });
+}
+
+// === NEW EXTRACTED HELPERS ===
+
+function computeWorked(entrada?: string, salida?: string): string {
+  const s = timeToMinutes(entrada);
+  const e = timeToMinutes(salida);
+  if (s == null || e == null) return "";
+  let diff = e - s;
+  if (diff < 0) diff += 24 * 60;
+  const hh = String(Math.floor(diff / 60))
+    .toString()
+    .padStart(2, "0");
+  const mm = String(diff % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function drawDetailTable({
+  autoTable,
+  bulkRows,
+  defaultCols,
+  doc,
+  labels,
+  margin,
+  pageWidth,
+  selectedCols,
+  startY,
+}: DetailTableProps) {
+  const hasAnyOvertime = bulkRows.some((row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00");
+  const baseColKeys: TimesheetColumnKey[] = selectedCols.length > 0 ? selectedCols : [...defaultCols];
+  const colKeys: TimesheetColumnKey[] = hasAnyOvertime ? baseColKeys : baseColKeys.filter((k) => k !== "overtime");
+
+  const workedRows = bulkRows.filter((row) => row.entrada || row.salida);
+
+  const body = workedRows.map((row) =>
+    colKeys.map((key): string => {
+      switch (key) {
+        case "date": {
+          return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : row.date;
+        }
+        case "entrada": {
+          return row.entrada || "-";
+        }
+        case "overtime": {
+          return row.overtime || "-";
+        }
+        case "salida": {
+          return row.salida || "-";
+        }
+        case "worked": {
+          return computeWorked(row.entrada, row.salida) || "-";
+        }
+        default: {
+          return assertUnreachable(key);
+        }
+      }
+    })
+  );
+
+  if (body.length === 0) {
+    doc.setFontSize(11);
+    doc.text("Sin registros para este periodo.", margin, startY);
+    return;
+  }
+
+  autoTable(doc, {
+    body,
+    columnStyles: {
+      0: { halign: "center" },
+      1: { halign: "center" },
+      2: { halign: "center" },
+      3: { halign: "center" },
+      4: { halign: "center" },
+    },
+    head: [colKeys.map((k) => labels[k] ?? k.toUpperCase())],
+    headStyles: { fillColor: [241, 167, 34], fontSize: 9, fontStyle: "bold", textColor: [255, 255, 255] },
+    margin: { left: margin, right: margin },
+    startY,
+    styles: { cellPadding: 1, fontSize: 8, overflow: "linebreak" },
+    tableWidth: pageWidth - margin * 2,
+    theme: "grid",
+    willDrawCell: (data: CellHookData) => {
+      if (data.section === "body") {
+        const rowIndex = data.row.index;
+        const rawDate = workedRows[rowIndex]?.date;
+        const isSunday = rawDate && dayjs(rawDate).day() === 0;
+        if (isSunday) {
+          data.cell.styles.fillColor = [245, 245, 245];
+        }
+      }
+    },
+  });
+}
+
+function drawSummaryTable({ autoTable, doc, infoStartY, margin, pageWidth, summary }: SummaryTableProps) {
+  const summaryHead = [["Concepto", "Valor"]];
+  const hasOvertime = summary && (summary.overtimeMinutes > 0 || (summary.extraAmount || 0) > 0);
+
+  const summaryBody: string[][] = [];
+  if (summary) {
+    const retentionPercent = formatRetentionPercent(summary.retentionRate || 0);
+
+    summaryBody.push(
+      ["Horas trabajadas", summary.hoursFormatted || "0:00"],
+      ...(hasOvertime ? [["Horas extras", summary.overtimeFormatted || "0:00"]] : []),
+      ["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)],
+      ["Subtotal", fmtCLP(summary.subtotal || 0)],
+      [`Retención (${retentionPercent})`, `-${fmtCLP(summary.retention || 0)}`],
+      ["Total Líquido", fmtCLP(summary.net || 0)]
+    );
+  }
+
+  const summaryColumnStyles: Record<string, { halign: "center" | "left" | "right" }> = {
+    0: { halign: "left" },
+    1: { halign: "right" },
+  };
+
+  autoTable(doc, {
+    body: summaryBody,
+    columnStyles: summaryColumnStyles,
+    head: summaryHead,
+    headStyles: { fillColor: [14, 100, 183], fontStyle: "bold", textColor: [255, 255, 255] },
+    margin: { left: margin, right: margin },
+    startY: infoStartY + 20,
+    styles: { cellPadding: 2, fontSize: 9, overflow: "linebreak" },
+    tableWidth: pageWidth - margin * 2,
+    theme: "grid",
+  });
+}
+
+function getLogoDimensions(logoDataUrl: null | string): Promise<null | { h: number; w: number }> {
+  if (!logoDataUrl) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.addEventListener("load", () => {
+      const maxW = 45;
+      const maxH = 22;
+      const iw0 = img.width || maxW;
+      const ih0 = img.height || maxH;
+      const scale = Math.min(maxW / iw0, maxH / ih0);
+      resolve({ h: Math.max(1, ih0 * scale), w: Math.max(1, iw0 * scale) });
+    });
+    img.addEventListener("error", () => {
+      resolve(null);
+    });
+    img.src = logoDataUrl;
+  });
+}
+
+function imageToPngDataUrl(objectUrl: string): Promise<null | string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const onLoad = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width || 240;
+        canvas.height = img.height || 120;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        resolve(null);
+      }
+    };
+    img.addEventListener("load", onLoad);
+    img.addEventListener("error", () => {
+      resolve(null);
+    });
+    img.src = objectUrl;
+  });
+}
+
+// Helper: Cargar logo y normalizarlo a PNG (evitar "wrong PNG signature")
+async function loadLogoAsPng(url: string): Promise<null | string> {
+  try {
+    let blob: Blob | null = null;
+    const isUrl = /^https?:\/\//i.test(url);
+
+    if (isUrl) {
+      try {
+        const proxyUrl = `/api/assets/proxy-image?url=${encodeURIComponent(url)}`;
+        blob = await apiClient.get<Blob>(proxyUrl, { responseType: "blob" });
+      } catch {
+        blob = null;
+      }
+    }
+
+    if (!blob) {
+      try {
+        blob = await apiClient.get<Blob>(url, { responseType: "blob" });
+      } catch {
+        blob = null;
+      }
+    }
+
+    if (!blob) return null;
+
+    if (blob.type === "image/png") {
+      return blobToDataUrl(blob);
+    }
+
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      return await imageToPngDataUrl(objectUrl);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  } catch {
+    return null;
+  }
+}
+
+// === MAIN COMPONENT ===
+
+function timeToMinutes(t?: string): null | number {
+  if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return null;
+  const parts = t.split(":").map(Number);
+  const [h, m] = parts;
+  if (h === undefined || m === undefined) return null;
+  if (h < 0 || h > 23 || m < 0 || m >= 60) return null;
+  return h * 60 + m;
 }

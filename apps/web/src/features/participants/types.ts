@@ -1,64 +1,64 @@
-export type ParticipantMonthlyRow = {
-  month: string;
-  outgoingCount: number;
-  incomingCount: number;
-  outgoingAmount: number;
-  incomingAmount: number;
-};
-
-export type ParticipantCounterpartRow = {
-  counterpart: string;
-  counterpartId: string | null;
-  withdrawId: string | null;
-  bankAccountHolder: string | null;
-  bankName: string | null;
-  bankAccountNumber: string | null;
-  bankAccountType: string | null;
-  bankBranch: string | null;
-  identificationType: string | null;
-  identificationNumber: string | null;
-  outgoingCount: number;
-  incomingCount: number;
-  outgoingAmount: number;
-  incomingAmount: number;
-};
-
-export type ParticipantSummaryRow = {
-  participant: string;
-  displayName: string;
-  outgoingCount: number;
-  identificationNumber: string | null;
-  bankAccountHolder: string | null;
-  bankAccountNumber: string | null;
-  bankAccountType: string | null;
-  bankName: string | null;
-  bankBranch: string | null;
-  withdrawId: string | null;
-  incomingCount: number;
-  outgoingAmount: number;
-  incomingAmount: number;
-  totalCount: number;
-  totalAmount: number;
-};
-
-export type ParticipantInsightResponse = {
-  status: "ok";
-  participant: string;
-  monthly: ParticipantMonthlyRow[];
-  counterparts: ParticipantCounterpartRow[];
-};
-
-export type ParticipantLeaderboardResponse = {
-  status: "ok";
-  participants: ParticipantSummaryRow[];
-};
-
-export type LeaderboardDisplayRow = {
-  key: string;
-  displayName: string;
-  rut: string;
+export interface LeaderboardDisplayRow {
   account: string;
-  outgoingCount: number;
+  displayName: string;
+  key: string;
   outgoingAmount: number;
+  outgoingCount: number;
+  rut: string;
   selectKey: string;
-};
+}
+
+export interface ParticipantCounterpartRow {
+  bankAccountHolder: null | string;
+  bankAccountNumber: null | string;
+  bankAccountType: null | string;
+  bankBranch: null | string;
+  bankName: null | string;
+  counterpart: string;
+  counterpartId: null | string;
+  identificationNumber: null | string;
+  identificationType: null | string;
+  incomingAmount: number;
+  incomingCount: number;
+  outgoingAmount: number;
+  outgoingCount: number;
+  withdrawId: null | string;
+}
+
+export interface ParticipantInsightResponse {
+  counterparts: ParticipantCounterpartRow[];
+  monthly: ParticipantMonthlyRow[];
+  participant: string;
+  status: "ok";
+}
+
+export interface ParticipantLeaderboardResponse {
+  participants: ParticipantSummaryRow[];
+  status: "ok";
+}
+
+export interface ParticipantMonthlyRow {
+  incomingAmount: number;
+  incomingCount: number;
+  month: string;
+  outgoingAmount: number;
+  outgoingCount: number;
+}
+
+export interface ParticipantSummaryRow {
+  bankAccountHolder: null | string;
+  bankAccountNumber: null | string;
+  bankAccountType: null | string;
+  bankBranch: null | string;
+  bankName: null | string;
+  displayName: string;
+  identificationNumber: null | string;
+  incomingAmount: number;
+  incomingCount: number;
+  outgoingAmount: number;
+  outgoingCount: number;
+  participant: string;
+  totalAmount: number;
+  totalCount: number;
+  withdrawId: null | string;
+}

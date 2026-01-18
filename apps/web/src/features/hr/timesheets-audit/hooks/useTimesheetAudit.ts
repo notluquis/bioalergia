@@ -4,25 +4,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-import { fetchMultiEmployeeTimesheets } from "../api";
 import type { TimesheetEntryWithEmployee } from "../types";
 
-export type AuditDateRange = { start: string; end: string };
+import { fetchMultiEmployeeTimesheets } from "../api";
+
+export interface AuditDateRange {
+  end: string;
+  start: string;
+}
 
 interface UseTimesheetAuditOptions {
-  ranges: AuditDateRange[];
   employeeIds: number[];
+  ranges: AuditDateRange[];
 }
 
-function isWithinRange(date: string, range: AuditDateRange) {
-  return date >= range.start && date <= range.end;
-}
-
-function filterAuditEntries(data: TimesheetEntryWithEmployee[], ranges: AuditDateRange[]) {
-  return data.filter((entry) => ranges.some((range) => isWithinRange(entry.work_date, range)));
-}
-
-export function useTimesheetAudit({ ranges, employeeIds }: UseTimesheetAuditOptions) {
+export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOptions) {
   const sortedRanges = useMemo(() => ranges.toSorted((a, b) => a.start.localeCompare(b.start)), [ranges]);
   const firstDay = sortedRanges[0]?.start;
   const lastDay = sortedRanges.at(-1)?.end;
@@ -31,16 +27,24 @@ export function useTimesheetAudit({ ranges, employeeIds }: UseTimesheetAuditOpti
 
   const {
     data: entries = [],
-    isLoading,
     error,
+    isLoading,
   } = useQuery({
-    queryKey: ["timesheet-audit", employeeIds, firstDay, lastDay, sortedRanges],
+    enabled: shouldFetch,
     queryFn: async () => {
       const data = await fetchMultiEmployeeTimesheets(employeeIds, firstDay!, lastDay!);
       return filterAuditEntries(data, sortedRanges);
     },
-    enabled: shouldFetch,
+    queryKey: ["timesheet-audit", employeeIds, firstDay, lastDay, sortedRanges],
   });
 
-  return { entries: entries as TimesheetEntryWithEmployee[], isLoading, error };
+  return { entries: entries, error, isLoading };
+}
+
+function filterAuditEntries(data: TimesheetEntryWithEmployee[], ranges: AuditDateRange[]) {
+  return data.filter((entry) => ranges.some((range) => isWithinRange(entry.work_date, range)));
+}
+
+function isWithinRange(date: string, range: AuditDateRange) {
+  return date >= range.start && date <= range.end;
 }

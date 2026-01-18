@@ -35,8 +35,8 @@ export default function MovementTypeList({ data }: MovementTypeListProps) {
         <div className="space-y-1">
           {items.map((item, index) => (
             <div
-              key={index}
               className="hover:bg-base-200/50 flex items-center justify-between rounded-lg border border-transparent p-2 transition-colors"
+              key={index}
             >
               <span className="text-sm">{item.description || "Sin categoría"}</span>
               <span className={`font-mono text-sm font-semibold ${colorClass}`}>{fmtCLP(item.total)}</span>

@@ -17,12 +17,12 @@ import {
 } from "@/features/auth/api";
 
 export default function AccountSettingsPage() {
-  const { user, refreshSession } = useAuth();
-  const { success, error } = useToast();
+  const { refreshSession, user } = useAuth();
+  const { error, success } = useToast();
 
   // MFA State
-  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [mfaSecret, setMfaSecret] = useState<null | string>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<null | string>(null);
   const [mfaToken, setMfaToken] = useState("");
   const [isMfaEnabled, setIsMfaEnabled] = useState(user?.mfaEnabled ?? false);
 
@@ -38,12 +38,12 @@ export default function AccountSettingsPage() {
         if (res.status !== "ok") throw new Error(res.message || "Error al iniciar configuración MFA");
         return res;
       }),
+    onError: (err) => {
+      error(err instanceof Error ? err.message : "Error al iniciar configuración MFA");
+    },
     onSuccess: (data) => {
       setMfaSecret(data.secret);
       setQrCodeUrl(data.qrCodeUrl);
-    },
-    onError: (err) => {
-      error(err instanceof Error ? err.message : "Error al iniciar configuración MFA");
     },
   });
 
@@ -53,15 +53,15 @@ export default function AccountSettingsPage() {
         if (res.status !== "ok") throw new Error(res.message || "Código incorrecto");
         return res;
       }),
+    onError: (err) => {
+      error(err instanceof Error ? err.message : "Error al activar MFA");
+    },
     onSuccess: async () => {
       success("MFA activado correctamente");
       setIsMfaEnabled(true);
       setMfaSecret(null);
       setQrCodeUrl(null);
       await refreshSession();
-    },
-    onError: (err) => {
-      error(err instanceof Error ? err.message : "Error al activar MFA");
     },
   });
 
@@ -71,13 +71,13 @@ export default function AccountSettingsPage() {
         if (res.status !== "ok") throw new Error("No se pudo desactivar MFA");
         return res;
       }),
+    onError: () => {
+      error("Error al desactivar MFA");
+    },
     onSuccess: async () => {
       success("MFA desactivado");
       setIsMfaEnabled(false);
       await refreshSession();
-    },
-    onError: () => {
-      error("Error al desactivar MFA");
     },
   });
 
@@ -100,13 +100,13 @@ export default function AccountSettingsPage() {
 
       return verifyData;
     },
-    onSuccess: async () => {
-      success("Passkey registrado exitosamente");
-      await refreshSession();
-    },
     onError: (err) => {
       console.error(err);
       error(err instanceof Error ? err.message : "Error al registrar passkey");
+    },
+    onSuccess: async () => {
+      success("Passkey registrado exitosamente");
+      await refreshSession();
     },
   });
 
@@ -116,12 +116,12 @@ export default function AccountSettingsPage() {
         if (res.status !== "ok") throw new Error(res.message || "Error al eliminar passkey");
         return res;
       }),
+    onError: (err) => {
+      error(err instanceof Error ? err.message : "Error al eliminar passkey");
+    },
     onSuccess: async () => {
       success("Passkey eliminado");
       await refreshSession();
-    },
-    onError: (err) => {
-      error(err instanceof Error ? err.message : "Error al eliminar passkey");
     },
   });
 
@@ -157,11 +157,11 @@ export default function AccountSettingsPage() {
                 <span className="font-medium">MFA está activado en tu cuenta.</span>
                 <div className="ml-auto">
                   <Button
-                    variant="ghost"
-                    size="sm"
                     className="text-error hover:bg-error/10"
-                    onClick={handleDisableMfa}
                     disabled={disableMfaMutation.isPending}
+                    onClick={handleDisableMfa}
+                    size="sm"
+                    variant="ghost"
                   >
                     Desactivar
                   </Button>
@@ -174,11 +174,11 @@ export default function AccountSettingsPage() {
                     <div className="mb-4 text-center">
                       <p className="mb-2 text-sm font-medium">1. Escanea este código QR con tu app de autenticación:</p>
                       <img
-                        src={qrCodeUrl}
                         alt="QR Code"
                         className="mx-auto rounded-lg bg-white p-2 shadow-sm"
-                        loading="lazy"
                         decoding="async"
+                        loading="lazy"
+                        src={qrCodeUrl}
                       />
                       <p className="text-base-content/50 mt-2 text-xs">Secreto: {mfaSecret}</p>
                     </div>
@@ -187,35 +187,44 @@ export default function AccountSettingsPage() {
                       <p className="text-sm font-medium">2. Ingresa el código de 6 dígitos:</p>
                       <div className="flex gap-2">
                         <Input
-                          value={mfaToken}
-                          onChange={(e) => setMfaToken(e.target.value)}
-                          placeholder="000000"
+                          autoComplete="one-time-code"
                           className="text-center tracking-widest"
                           maxLength={6}
-                          autoComplete="one-time-code"
+                          onChange={(e) => {
+                            setMfaToken(e.target.value);
+                          }}
+                          placeholder="000000"
+                          value={mfaToken}
                         />
                         <Button
-                          onClick={() => enableMfaMutation.mutate(mfaToken)}
                           disabled={enableMfaMutation.isPending || mfaToken.length !== 6}
+                          onClick={() => {
+                            enableMfaMutation.mutate(mfaToken);
+                          }}
                         >
                           {enableMfaMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : "Activar"}
                         </Button>
                       </div>
                       <Button
-                        variant="ghost"
-                        size="sm"
                         className="text-base-content/50 w-full"
                         onClick={() => {
                           setQrCodeUrl(null);
                           setMfaSecret(null);
                         }}
+                        size="sm"
+                        variant="ghost"
                       >
                         Cancelar
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <Button onClick={() => setupMfaMutation.mutate()} disabled={setupMfaMutation.isPending}>
+                  <Button
+                    disabled={setupMfaMutation.isPending}
+                    onClick={() => {
+                      setupMfaMutation.mutate();
+                    }}
+                  >
                     {setupMfaMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
                     Configurar MFA
                   </Button>
@@ -246,19 +255,21 @@ export default function AccountSettingsPage() {
                 <span className="font-medium">Passkey configurado.</span>
                 <div className="ml-auto flex gap-2">
                   <Button
-                    variant="ghost"
-                    size="sm"
                     className="text-error hover:bg-error/10"
-                    onClick={handleDeletePasskey}
                     disabled={deletePasskeyMutation.isPending}
+                    onClick={handleDeletePasskey}
+                    size="sm"
+                    variant="ghost"
                   >
                     Eliminar
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => registerPasskeyMutation.mutate()}
                     disabled={registerPasskeyMutation.isPending}
+                    onClick={() => {
+                      registerPasskeyMutation.mutate();
+                    }}
+                    size="sm"
+                    variant="ghost"
                   >
                     Reemplazar
                   </Button>
@@ -267,9 +278,11 @@ export default function AccountSettingsPage() {
             ) : (
               <div className="flex items-center gap-4">
                 <Button
-                  variant="outline"
-                  onClick={() => registerPasskeyMutation.mutate()}
                   disabled={registerPasskeyMutation.isPending}
+                  onClick={() => {
+                    registerPasskeyMutation.mutate();
+                  }}
+                  variant="outline"
                 >
                   {registerPasskeyMutation.isPending ? (
                     <Loader2 className="mr-2 size-4 animate-spin" />

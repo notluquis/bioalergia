@@ -1,217 +1,216 @@
 import { z } from "zod";
 
-export type CalendarData = {
-  id: number;
-  googleId: string;
-  name: string;
-  eventCount: number;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type CalendarFilters = {
-  from: string;
-  to: string;
-  calendarIds?: string[];
-  eventTypes?: string[];
-  categories: string[];
-  search?: string;
-  maxDays: number;
-};
-
-export type CalendarAggregateByYear = {
-  year: number;
-  total: number;
+export interface CalendarAggregateByDate {
   amountExpected: number;
   amountPaid: number;
-};
-
-export type CalendarAggregateByMonth = {
-  year: number;
-  month: number;
-  total: number;
-  amountExpected: number;
-  amountPaid: number;
-};
-
-export type CalendarAggregateByWeek = {
-  isoYear: number;
-  isoWeek: number;
-  total: number;
-  amountExpected: number;
-  amountPaid: number;
-};
-
-export type CalendarAggregateByWeekday = {
-  weekday: number;
-  total: number;
-  amountExpected: number;
-  amountPaid: number;
-};
-
-export type CalendarAggregateByDate = {
   date: string;
   total: number;
+}
+
+export interface CalendarAggregateByMonth {
   amountExpected: number;
   amountPaid: number;
-};
+  month: number;
+  total: number;
+  year: number;
+}
 
-export type CalendarSummary = {
+export interface CalendarAggregateByWeek {
+  amountExpected: number;
+  amountPaid: number;
+  isoWeek: number;
+  isoYear: number;
+  total: number;
+}
+
+export interface CalendarAggregateByWeekday {
+  amountExpected: number;
+  amountPaid: number;
+  total: number;
+  weekday: number;
+}
+
+export interface CalendarAggregateByYear {
+  amountExpected: number;
+  amountPaid: number;
+  total: number;
+  year: number;
+}
+
+export interface CalendarDaily {
+  days: CalendarDayEvents[];
   filters: {
-    from: string;
-    to: string;
     calendarIds: string[];
-    eventTypes: string[];
     categories: string[];
+    eventTypes: string[];
+    from: string;
+    maxDays: number;
     search?: string;
+    to: string;
   };
   totals: {
-    events: number;
-    days: number;
     amountExpected: number;
     amountPaid: number;
+    days: number;
+    events: number;
   };
+}
+
+export interface CalendarData {
+  createdAt: string;
+  eventCount: number;
+  googleId: string;
+  id: number;
+  name: string;
+  updatedAt: string;
+}
+
+export interface CalendarDayEvents {
+  amountExpected: number;
+  amountPaid: number;
+  date: string;
+  events: CalendarEventDetail[];
+  total: number;
+}
+
+export interface CalendarEventClassificationPayload {
+  amountExpected?: null | number;
+  amountPaid?: null | number;
+  attended?: boolean | null;
+  calendarId: string;
+  category?: null | string;
+  dosage?: null | string;
+  eventId: string;
+  treatmentStage?: null | string;
+}
+
+export interface CalendarEventDetail {
+  amountExpected?: null | number;
+  amountPaid?: null | number;
+  attended?: boolean | null;
+  calendarId: string;
+  category?: null | string;
+  colorId: null | string;
+  description: null | string;
+  dosage?: null | string;
+  endDate: null | string;
+  endDateTime: null | string;
+  endTimeZone: null | string;
+  eventCreatedAt: null | string;
+  eventDate: string;
+  eventDateTime: null | string;
+  eventId: string;
+  eventType: null | string;
+  eventUpdatedAt: null | string;
+  hangoutLink: null | string;
+  location: null | string;
+  rawEvent: null | unknown;
+  startDate: null | string;
+  startDateTime: null | string;
+  startTimeZone: null | string;
+  status: null | string;
+  summary: null | string;
+  transparency: null | string;
+  treatmentStage?: null | string;
+  visibility: null | string;
+}
+
+export interface CalendarFilters {
+  calendarIds?: string[];
+  categories: string[];
+  eventTypes?: string[];
+  from: string;
+  maxDays: number;
+  search?: string;
+  to: string;
+}
+
+export interface CalendarSummary {
   aggregates: {
-    byYear: CalendarAggregateByYear[];
+    byDate: CalendarAggregateByDate[];
     byMonth: CalendarAggregateByMonth[];
     byWeek: CalendarAggregateByWeek[];
     byWeekday: CalendarAggregateByWeekday[];
-    byDate: CalendarAggregateByDate[];
+    byYear: CalendarAggregateByYear[];
   };
   available: {
-    calendars: Array<{ calendarId: string; total: number }>;
-    eventTypes: Array<{ eventType: string | null; total: number }>;
-    categories: Array<{ category: string | null; total: number }>;
+    calendars: { calendarId: string; total: number }[];
+    categories: { category: null | string; total: number }[];
+    eventTypes: { eventType: null | string; total: number }[];
   };
-};
-
-export type CalendarEventDetail = {
-  calendarId: string;
-  eventId: string;
-  status: string | null;
-  eventType: string | null;
-  summary: string | null;
-  description: string | null;
-  startDate: string | null;
-  startDateTime: string | null;
-  startTimeZone: string | null;
-  endDate: string | null;
-  endDateTime: string | null;
-  endTimeZone: string | null;
-  colorId: string | null;
-  location: string | null;
-  transparency: string | null;
-  visibility: string | null;
-  hangoutLink: string | null;
-  eventDate: string;
-  eventDateTime: string | null;
-  eventCreatedAt: string | null;
-  eventUpdatedAt: string | null;
-  rawEvent: unknown | null;
-  category?: string | null;
-  amountExpected?: number | null;
-  amountPaid?: number | null;
-  attended?: boolean | null;
-  dosage?: string | null;
-  treatmentStage?: string | null;
-};
-
-export type CalendarDayEvents = {
-  date: string;
-  total: number;
-  events: CalendarEventDetail[];
-  amountExpected: number;
-  amountPaid: number;
-};
-
-export type CalendarDaily = {
   filters: {
-    from: string;
-    to: string;
     calendarIds: string[];
-    eventTypes: string[];
     categories: string[];
+    eventTypes: string[];
+    from: string;
     search?: string;
-    maxDays: number;
+    to: string;
   };
   totals: {
-    days: number;
-    events: number;
     amountExpected: number;
     amountPaid: number;
+    days: number;
+    events: number;
   };
-  days: CalendarDayEvents[];
-};
+}
 
-export type CalendarSyncLog = {
-  id: number;
-  triggerSource: string;
-  triggerUserId: number | null;
-  triggerLabel: string | null;
-  status: "SUCCESS" | "ERROR" | "RUNNING";
-  startedAt: string;
-  finishedAt: string | null;
-  fetchedAt: string | null;
-  inserted: number;
-  updated: number;
-  skipped: number;
-  excluded: number;
-  errorMessage: string | null;
-  changeDetails?: {
-    inserted?: string[];
-    updated?: (string | { summary: string; changes: string[] })[];
+export interface CalendarSyncLog {
+  changeDetails?: null | {
     excluded?: string[];
-  } | null;
-};
+    inserted?: string[];
+    updated?: (string | { changes: string[]; summary: string })[];
+  };
+  errorMessage: null | string;
+  excluded: number;
+  fetchedAt: null | string;
+  finishedAt: null | string;
+  id: number;
+  inserted: number;
+  skipped: number;
+  startedAt: string;
+  status: "ERROR" | "RUNNING" | "SUCCESS";
+  triggerLabel: null | string;
+  triggerSource: string;
+  triggerUserId: null | number;
+  updated: number;
+}
 
-export type CalendarSyncStep = {
-  id: "fetch" | "upsert" | "exclude" | "snapshot";
-  label: string;
-  durationMs: number;
+export interface CalendarSyncStep {
   details: Record<string, unknown>;
-};
+  durationMs: number;
+  id: "exclude" | "fetch" | "snapshot" | "upsert";
+  label: string;
+}
 
-export type CalendarUnclassifiedEvent = {
-  calendarId: string;
-  eventId: string;
-  status: string | null;
-  eventType: string | null;
-  summary: string | null;
-  description: string | null;
-  startDate: string | null;
-  startDateTime: string | null;
-  endDate: string | null;
-  endDateTime: string | null;
-  category: string | null;
-  amountExpected: number | null;
-  amountPaid: number | null;
+export interface CalendarUnclassifiedEvent {
+  amountExpected: null | number;
+  amountPaid: null | number;
   attended: boolean | null;
-  dosage: string | null;
-  treatmentStage: string | null;
-};
-
-export type CalendarEventClassificationPayload = {
   calendarId: string;
+  category: null | string;
+  description: null | string;
+  dosage: null | string;
+  endDate: null | string;
+  endDateTime: null | string;
   eventId: string;
-  category?: string | null;
-  amountExpected?: number | null;
-  amountPaid?: number | null;
-  attended?: boolean | null;
-  dosage?: string | null;
-  treatmentStage?: string | null;
-};
+  eventType: null | string;
+  startDate: null | string;
+  startDateTime: null | string;
+  status: null | string;
+  summary: null | string;
+  treatmentStage: null | string;
+}
 
-export type ClassificationFormValues = {
-  category: string;
+export interface ClassificationFormValues {
   amountExpected: string;
   amountPaid: string;
   attended: boolean;
+  category: string;
   dosage: string;
   treatmentStage: string;
-};
+}
 
 export const calendarClassificationSchema = z.object({
-  category: z.string().max(120).optional().nullable(),
   amountExpected: z
     .string()
     .trim()
@@ -231,6 +230,7 @@ export const calendarClassificationSchema = z.object({
       return Number.isNaN(parsed) ? null : parsed;
     }),
   attended: z.boolean().optional().nullable(),
+  category: z.string().max(120).optional().nullable(),
   dosage: z.string().max(64).optional().nullable(),
   treatmentStage: z.string().max(64).optional().nullable(),
 });

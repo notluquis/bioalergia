@@ -10,119 +10,119 @@ import { z } from "zod";
 // ENTITIES
 // ============================================================
 
-export interface DoctoraliaFacility {
-  id: number;
-  externalId: string;
-  name: string;
-  doctorCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface DoctoraliaDoctor {
-  id: number;
-  externalId: string;
-  name: string;
-  surname: string;
-  fullName: string;
-  profileUrl?: string;
-  addresses: DoctoraliaAddress[];
-}
-
 export interface DoctoraliaAddress {
-  id: number;
-  externalId: string;
-  name: string | null;
-  cityName: string | null;
-  street: string | null;
-  onlineOnly: boolean;
   bookingCount: number;
+  cityName: null | string;
+  externalId: string;
+  id: number;
+  name: null | string;
+  onlineOnly: boolean;
   serviceCount: number;
-}
-
-export interface DoctoraliaSlot {
-  start: string;
-  end?: string;
-  services?: Array<{ id: string; name: string }>;
+  street: null | string;
 }
 
 export interface DoctoraliaBooking {
-  id: string;
-  status: "booked" | "canceled";
-  startAt: string;
-  endAt: string;
-  duration: number;
-  bookedBy: string;
   bookedAt: string;
-  canceledBy?: string;
+  bookedBy: string;
   canceledAt?: string;
+  canceledBy?: string;
   comment?: string;
+  duration: number;
+  endAt: string;
+  id: string;
   patient?: DoctoraliaPatient;
+  startAt: string;
+  status: "booked" | "canceled";
 }
 
-export interface DoctoraliaPatient {
-  name: string;
-  surname: string;
-  email: string;
-  phone: string;
-  birthDate?: string;
-  nin?: string;
-  gender?: "m" | "f";
+export interface DoctoraliaBookingsResponse {
+  bookings: DoctoraliaBooking[];
+  pagination: {
+    limit: number;
+    page: number;
+    pages: number;
+    total: number;
+  };
+  status: "ok";
 }
 
-export interface DoctoraliaSyncLog {
+export interface DoctoraliaDoctor {
+  addresses: DoctoraliaAddress[];
+  externalId: string;
+  fullName: string;
   id: number;
-  triggerSource: string | null;
-  triggerUserId: number | null;
-  status: string;
-  startedAt: string;
-  endedAt: string | null;
-  facilitiesSynced: number;
-  doctorsSynced: number;
-  slotsSynced: number;
-  bookingsSynced: number;
-  errorMessage: string | null;
+  name: string;
+  profileUrl?: string;
+  surname: string;
+}
+
+export interface DoctoraliaDoctorsResponse {
+  doctors: DoctoraliaDoctor[];
+  status: "ok";
+}
+
+export interface DoctoraliaFacilitiesResponse {
+  facilities: DoctoraliaFacility[];
+  status: "ok";
+}
+
+export interface DoctoraliaFacility {
+  createdAt: string;
+  doctorCount: number;
+  externalId: string;
+  id: number;
+  name: string;
+  updatedAt: string;
 }
 
 // ============================================================
 // API RESPONSE TYPES
 // ============================================================
 
-export interface DoctoraliaStatusResponse {
-  status: "ok";
-  configured: boolean;
-  domain: string;
+export interface DoctoraliaPatient {
+  birthDate?: string;
+  email: string;
+  gender?: "f" | "m";
+  name: string;
+  nin?: string;
+  phone: string;
+  surname: string;
 }
 
-export interface DoctoraliaFacilitiesResponse {
-  status: "ok";
-  facilities: DoctoraliaFacility[];
-}
-
-export interface DoctoraliaDoctorsResponse {
-  status: "ok";
-  doctors: DoctoraliaDoctor[];
+export interface DoctoraliaSlot {
+  end?: string;
+  services?: { id: string; name: string }[];
+  start: string;
 }
 
 export interface DoctoraliaSlotsResponse {
-  status: "ok";
   slots: DoctoraliaSlot[];
+  status: "ok";
 }
 
-export interface DoctoraliaBookingsResponse {
+export interface DoctoraliaStatusResponse {
+  configured: boolean;
+  domain: string;
   status: "ok";
-  bookings: DoctoraliaBooking[];
-  pagination: {
-    page: number;
-    limit: number;
-    pages: number;
-    total: number;
-  };
+}
+
+export interface DoctoraliaSyncLog {
+  bookingsSynced: number;
+  doctorsSynced: number;
+  endedAt: null | string;
+  errorMessage: null | string;
+  facilitiesSynced: number;
+  id: number;
+  slotsSynced: number;
+  startedAt: string;
+  status: string;
+  triggerSource: null | string;
+  triggerUserId: null | number;
 }
 
 export interface DoctoraliaSyncLogsResponse {
-  status: "ok";
   logs: DoctoraliaSyncLog[];
+  status: "ok";
 }
 
 // ============================================================
@@ -130,16 +130,16 @@ export interface DoctoraliaSyncLogsResponse {
 // ============================================================
 
 export const bookSlotSchema = z.object({
-  duration: z.number().min(5).max(480),
   comment: z.string().optional(),
+  duration: z.number().min(5).max(480),
   patient: z.object({
-    name: z.string().min(1),
-    surname: z.string().min(1),
-    email: z.email(),
-    phone: z.string().min(8),
     birthDate: z.string().optional(),
-    nin: z.string().optional(),
+    email: z.email(),
     gender: z.enum(["m", "f"]).optional(),
+    name: z.string().min(1),
+    nin: z.string().optional(),
+    phone: z.string().min(8),
+    surname: z.string().min(1),
   }),
   serviceId: z.string().optional(),
 });
@@ -150,12 +150,12 @@ export type BookSlotPayload = z.infer<typeof bookSlotSchema>;
 // QUERY PARAMS
 // ============================================================
 
-export interface DoctoraliaSlotQuery {
-  facilityId: string;
-  doctorId: string;
-  addressId: string;
-  start: string;
-  end: string;
-}
-
 export interface DoctoraliaBookingQuery extends DoctoraliaSlotQuery {}
+
+export interface DoctoraliaSlotQuery {
+  addressId: string;
+  doctorId: string;
+  end: string;
+  facilityId: string;
+  start: string;
+}

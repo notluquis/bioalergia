@@ -2,59 +2,59 @@ import { type LucideIcon, TrendingDown, TrendingUp, Wallet } from "lucide-react"
 
 import { fmtCLP } from "@/lib/format";
 
-type Accent = "emerald" | "rose" | "primary";
+type Accent = "emerald" | "primary" | "rose";
 
 const ACCENT_THEME: Record<
   Accent,
   {
-    gradient: string;
-    ring: string;
-    value: string;
     badge: string;
     badgeLabel: string;
+    gradient: string;
     icon: LucideIcon;
     iconColor: string;
+    ring: string;
+    value: string;
   }
 > = {
   emerald: {
-    gradient: "from-success/20 via-success/5 to-transparent",
-    ring: "ring-success/20",
-    value: "text-success",
     badge: "bg-success/10 text-success",
     badgeLabel: "Ingresos",
+    gradient: "from-success/20 via-success/5 to-transparent",
     icon: TrendingUp,
     iconColor: "text-success",
-  },
-  rose: {
-    gradient: "from-error/20 via-error/5 to-transparent",
-    ring: "ring-error/20",
-    value: "text-error",
-    badge: "bg-error/10 text-error",
-    badgeLabel: "Egresos",
-    icon: TrendingDown,
-    iconColor: "text-error",
+    ring: "ring-success/20",
+    value: "text-success",
   },
   primary: {
-    gradient: "from-primary/20 via-primary/5 to-transparent",
-    ring: "ring-primary/20",
-    value: "text-primary",
     badge: "bg-primary/10 text-primary",
     badgeLabel: "Resultado",
+    gradient: "from-primary/20 via-primary/5 to-transparent",
     icon: Wallet,
     iconColor: "text-primary",
+    ring: "ring-primary/20",
+    value: "text-primary",
+  },
+  rose: {
+    badge: "bg-error/10 text-error",
+    badgeLabel: "Egresos",
+    gradient: "from-error/20 via-error/5 to-transparent",
+    icon: TrendingDown,
+    iconColor: "text-error",
+    ring: "ring-error/20",
+    value: "text-error",
   },
 };
 
 export default function MetricCard({
-  title,
-  value,
   accent,
   loading,
+  title,
+  value,
 }: {
-  title: string;
-  value: number;
   accent: Accent;
   loading: boolean;
+  title: string;
+  value: number;
 }) {
   const theme = ACCENT_THEME[accent];
   const Icon = theme.icon;
@@ -64,8 +64,8 @@ export default function MetricCard({
       className={`relative overflow-hidden rounded-4xl bg-linear-to-br ${theme.gradient} p-6 shadow-lg ring-1 transition-all duration-300 ring-inset hover:-translate-y-1 hover:shadow-xl ${theme.ring}`}
     >
       <div
-        className={`pointer-events-none absolute inset-0 rounded-3xl bg-linear-to-br ${theme.gradient}`}
         aria-hidden="true"
+        className={`pointer-events-none absolute inset-0 rounded-3xl bg-linear-to-br ${theme.gradient}`}
       />
       <div className="relative flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">

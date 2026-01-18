@@ -1,11 +1,11 @@
 export interface HealthResponse {
-  status: "ok" | "degraded" | "error";
-  timestamp: string;
   checks: {
     db: {
-      status: "ok" | "error";
-      latency: number | null;
+      latency: null | number;
       message?: string;
+      status: "error" | "ok";
     };
   };
+  status: "degraded" | "error" | "ok";
+  timestamp: string;
 }

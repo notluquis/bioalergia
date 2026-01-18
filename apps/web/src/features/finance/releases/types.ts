@@ -1,69 +1,69 @@
 import type { JsonId } from "../types";
 
-// Prisma/ZenStack serializes Decimal as string in JSON
-type DecimalValue = number | string | null;
-
-export interface ReleaseTransaction {
-  id: number;
-  sourceId: string;
-  date: string;
-  externalReference: string | null;
-  recordType: string | null;
-  description: string | null;
-  netCreditAmount: DecimalValue;
-  netDebitAmount: DecimalValue;
-  grossAmount: DecimalValue;
-  sellerAmount: DecimalValue;
-  mpFeeAmount: DecimalValue;
-  financingFeeAmount: DecimalValue;
-  shippingFeeAmount: DecimalValue;
-  taxesAmount: DecimalValue;
-  couponAmount: DecimalValue;
-  effectiveCouponAmount: DecimalValue;
-  balanceAmount: DecimalValue;
-  taxAmountTelco: DecimalValue;
-  installments: number | null;
-  paymentMethod: string | null;
-  paymentMethodType: string | null;
-  taxDetail: string | null;
-  taxesDisaggregated: unknown;
-  posId: string | null;
-  posName: string | null;
-  storeId: string | null;
-  storeName: string | null;
-  orderId: JsonId | null;
-  currency: string | null;
-  shippingId: JsonId | null;
-  shipmentMode: string | null;
-  transactionApprovalDate: string | null;
-  transactionIntentId: string | null;
-  externalPosId: string | null;
-  externalStoreId: string | null;
-  shippingOrderId: string | null;
-  packId: JsonId | null;
-  poiId: string | null;
-  itemId: string | null;
-  cardInitialNumber: string | null;
-  operationTags: unknown;
-  lastFourDigits: string | null;
-  franchise: string | null;
-  issuerName: string | null;
-  poiBankName: string | null;
-  poiWalletName: string | null;
-  businessUnit: string | null;
-  subUnit: string | null;
-  payoutBankAccountNumber: string | null;
-  productSku: string | null;
-  saleDetail: string | null;
-  orderMp: string | null;
-  purchaseId: string | null;
-}
-
 export interface ListResponse {
-  status: string;
   data: ReleaseTransaction[];
-  total: number;
   page: number;
   pageSize: number;
+  status: string;
+  total: number;
   totalPages: number;
 }
+
+export interface ReleaseTransaction {
+  balanceAmount: DecimalValue;
+  businessUnit: null | string;
+  cardInitialNumber: null | string;
+  couponAmount: DecimalValue;
+  currency: null | string;
+  date: string;
+  description: null | string;
+  effectiveCouponAmount: DecimalValue;
+  externalPosId: null | string;
+  externalReference: null | string;
+  externalStoreId: null | string;
+  financingFeeAmount: DecimalValue;
+  franchise: null | string;
+  grossAmount: DecimalValue;
+  id: number;
+  installments: null | number;
+  issuerName: null | string;
+  itemId: null | string;
+  lastFourDigits: null | string;
+  mpFeeAmount: DecimalValue;
+  netCreditAmount: DecimalValue;
+  netDebitAmount: DecimalValue;
+  operationTags: unknown;
+  orderId: JsonId | null;
+  orderMp: null | string;
+  packId: JsonId | null;
+  paymentMethod: null | string;
+  paymentMethodType: null | string;
+  payoutBankAccountNumber: null | string;
+  poiBankName: null | string;
+  poiId: null | string;
+  poiWalletName: null | string;
+  posId: null | string;
+  posName: null | string;
+  productSku: null | string;
+  purchaseId: null | string;
+  recordType: null | string;
+  saleDetail: null | string;
+  sellerAmount: DecimalValue;
+  shipmentMode: null | string;
+  shippingFeeAmount: DecimalValue;
+  shippingId: JsonId | null;
+  shippingOrderId: null | string;
+  sourceId: string;
+  storeId: null | string;
+  storeName: null | string;
+  subUnit: null | string;
+  taxAmountTelco: DecimalValue;
+  taxDetail: null | string;
+  taxesAmount: DecimalValue;
+  taxesDisaggregated: unknown;
+  transactionApprovalDate: null | string;
+  transactionIntentId: null | string;
+}
+
+// Prisma/ZenStack serializes Decimal as string in JSON
+type DecimalValue = null | number | string;

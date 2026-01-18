@@ -2,41 +2,42 @@ import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 import type { BalanceSummary, DayStatus } from "../types";
+
 import { formatSaveTime } from "../utils";
 
 interface CierrePanelProps {
-  summary: BalanceSummary;
-  status: DayStatus;
-  lastSaved: Date | null;
-  isSaving: boolean;
-  onSaveDraft: () => void;
-  onFinalize: () => void;
   className?: string;
+  isSaving: boolean;
+  lastSaved: Date | null;
+  onFinalize: () => void;
+  onSaveDraft: () => void;
+  status: DayStatus;
+  summary: BalanceSummary;
 }
 
 /**
  * Sticky sidebar showing live summary and action buttons
  */
 export function CierrePanel({
-  summary,
-  status,
-  lastSaved,
-  isSaving,
-  onSaveDraft,
-  onFinalize,
   className,
+  isSaving,
+  lastSaved,
+  onFinalize,
+  onSaveDraft,
+  status,
+  summary,
 }: CierrePanelProps) {
   const statusLabels: Record<DayStatus, string> = {
-    empty: "Vacío",
-    draft: "Borrador",
     balanced: "Cuadra",
+    draft: "Borrador",
+    empty: "Vacío",
     unbalanced: "Pendiente",
   };
 
   const statusColors: Record<DayStatus, string> = {
-    empty: "bg-base-content/10 text-base-content/60",
-    draft: "bg-warning/20 text-warning",
     balanced: "bg-success/20 text-success",
+    draft: "bg-warning/20 text-warning",
+    empty: "bg-base-content/10 text-base-content/60",
     unbalanced: "bg-error/20 text-error",
   };
 
@@ -61,7 +62,7 @@ export function CierrePanel({
       <div className="bg-base-300/30 border-base-content/5 space-y-1 rounded-xl border p-3">
         <SummaryRow label="Métodos" value={summary.totalMetodos} />
         <SummaryRow label="Servicios" value={summary.totalServicios} />
-        <SummaryRow label="Gastos" value={summary.gastos} muted />
+        <SummaryRow label="Gastos" muted value={summary.gastos} />
 
         {/* Diferencia - highlighted */}
         <div className="border-base-content/10 mt-2 border-t pt-2">
@@ -92,18 +93,18 @@ export function CierrePanel({
       {/* Action buttons */}
       <div className="mt-4 flex gap-2">
         <button
-          type="button"
-          onClick={onSaveDraft}
-          disabled={isSaving}
           className={cn("btn btn-outline flex-1 rounded-xl", isSaving && "loading")}
+          disabled={isSaving}
+          onClick={onSaveDraft}
+          type="button"
         >
           Guardar
         </button>
         <button
-          type="button"
-          onClick={onFinalize}
-          disabled={!canFinalize || isSaving}
           className={cn("btn flex-1 rounded-xl", canFinalize ? "btn-success" : "btn-disabled")}
+          disabled={!canFinalize || isSaving}
+          onClick={onFinalize}
+          type="button"
         >
           Finalizar
         </button>
@@ -112,7 +113,7 @@ export function CierrePanel({
   );
 }
 
-function SummaryRow({ label, value, muted = false }: { label: string; value: number; muted?: boolean }) {
+function SummaryRow({ label, muted = false, value }: { label: string; muted?: boolean; value: number }) {
   return (
     <div className="flex items-center justify-between py-1">
       <span className={cn("text-sm", muted ? "text-base-content/40" : "text-base-content/60")}>{label}</span>

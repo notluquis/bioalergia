@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import { today } from "@/lib/dates";
 
-import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import type { CounterpartAccount } from "../../counterparts/types";
 import type { CreateServicePayload } from "../types";
+
+import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import {
   BasicInfoSection,
   CounterpartSection,
@@ -16,52 +17,52 @@ import {
   ServiceClassificationSection,
 } from "./ServiceForm/index";
 
+export type ServiceFormState = CreateServicePayload & {
+  emissionExactDate?: null | string;
+};
+
 interface ServiceFormProps {
-  onSubmit: (payload: CreateServicePayload) => Promise<void>;
-  onCancel: () => void;
   initialValues?: Partial<CreateServicePayload>;
+  onCancel: () => void;
+  onSubmit: (payload: CreateServicePayload) => Promise<void>;
   submitLabel?: string;
 }
 
-export type ServiceFormState = CreateServicePayload & {
-  emissionExactDate?: string | null;
-};
-
 const INITIAL_STATE: ServiceFormState = {
-  name: "",
-  detail: "",
-  category: "",
-  serviceType: "BUSINESS",
-  ownership: "COMPANY",
-  obligationType: "SERVICE",
-  recurrenceType: "RECURRING",
-  frequency: "MONTHLY",
-  defaultAmount: 0,
-  amountIndexation: "NONE",
-  counterpartId: null,
-  counterpartAccountId: null,
   accountReference: "",
-  emissionMode: "FIXED_DAY",
+  amountIndexation: "NONE",
+  category: "",
+  counterpartAccountId: null,
+  counterpartId: null,
+  defaultAmount: 0,
+  detail: "",
+  dueDay: null,
   emissionDay: 1,
-  emissionStartDay: null,
   emissionEndDay: null,
   emissionExactDate: null,
-  dueDay: null,
-  startDate: today(),
-  monthsToGenerate: 12,
+  emissionMode: "FIXED_DAY",
+  emissionStartDay: null,
+  frequency: "MONTHLY",
+  lateFeeGraceDays: null,
   lateFeeMode: "NONE",
   lateFeeValue: null,
-  lateFeeGraceDays: null,
+  monthsToGenerate: 12,
+  name: "",
   notes: "",
+  obligationType: "SERVICE",
+  ownership: "COMPANY",
+  recurrenceType: "RECURRING",
+  serviceType: "BUSINESS",
+  startDate: today(),
 };
 
-export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: ServiceFormProps) {
+export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: ServiceFormProps) {
   const [form, setForm] = useState<ServiceFormState>({
     ...INITIAL_STATE,
     ...initialValues,
   });
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   const effectiveSubmitLabel = submitLabel ?? "Crear servicio";
   const submittingLabel = submitLabel ? "Guardando..." : "Creando...";
@@ -88,7 +89,7 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
     if (lateFeeMode === "NONE") {
       setForm((prev) => {
         if (prev.lateFeeValue != null || prev.lateFeeGraceDays != null) {
-          return { ...prev, lateFeeValue: null, lateFeeGraceDays: null };
+          return { ...prev, lateFeeGraceDays: null, lateFeeValue: null };
         }
         return prev;
       });
@@ -96,18 +97,18 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
   }, [lateFeeMode]);
 
   const { data: counterparts = [] } = useQuery({
-    queryKey: ["counterparts"],
     queryFn: fetchCounterparts,
+    queryKey: ["counterparts"],
   });
 
   const { data: accounts = [] } = useQuery<CounterpartAccount[]>({
-    queryKey: ["counterpart-accounts", form.counterpartId],
+    enabled: !!form.counterpartId,
     queryFn: async () => {
       // safe assurance due to enabled check
       const detail = await fetchCounterpart(form.counterpartId!);
       return detail.accounts;
     },
-    enabled: !!form.counterpartId,
+    queryKey: ["counterpart-accounts", form.counterpartId],
   });
 
   const counterpartsError = null; // Suspense handles errors
@@ -121,10 +122,10 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
         if (prev.emissionStartDay !== null || prev.emissionEndDay !== null || prev.emissionExactDate) {
           return {
             ...prev,
-            emissionStartDay: null,
+            emissionDay: prev.emissionDay ?? 1,
             emissionEndDay: null,
             emissionExactDate: null,
-            emissionDay: prev.emissionDay ?? 1,
+            emissionStartDay: null,
           };
         }
         if (prev.emissionDay == null) {
@@ -144,9 +145,9 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
           return {
             ...prev,
             emissionDay: null,
+            emissionEndDay: nextEnd,
             emissionExactDate: null,
             emissionStartDay: nextStart,
-            emissionEndDay: nextEnd,
           };
         }
         return prev;
@@ -156,8 +157,8 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
           return {
             ...prev,
             emissionDay: null,
-            emissionStartDay: null,
             emissionEndDay: null,
+            emissionStartDay: null,
           };
         }
         return prev;
@@ -186,35 +187,35 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
     setError(null);
     try {
       const payload: CreateServicePayload = {
-        name: form.name.trim(),
-        detail: form.detail?.trim() ? form.detail.trim() : undefined,
-        category: form.category?.trim() ? form.category.trim() : undefined,
-        serviceType: form.serviceType,
-        ownership: form.ownership,
-        obligationType: form.obligationType,
-        recurrenceType: form.recurrenceType,
-        frequency: form.frequency,
-        defaultAmount: Number(form.defaultAmount) || 0,
-        amountIndexation: form.amountIndexation,
-        counterpartId: form.counterpartId ?? null,
-        counterpartAccountId: form.counterpartAccountId ?? null,
         accountReference: form.accountReference?.trim() ? form.accountReference.trim() : undefined,
-        emissionMode,
+        amountIndexation: form.amountIndexation,
+        category: form.category?.trim() ? form.category.trim() : undefined,
+        counterpartAccountId: form.counterpartAccountId ?? null,
+        counterpartId: form.counterpartId ?? null,
+        defaultAmount: Number(form.defaultAmount) || 0,
+        detail: form.detail?.trim() ? form.detail.trim() : undefined,
+        dueDay: form.dueDay ?? null,
         emissionDay: emissionMode === "FIXED_DAY" ? (form.emissionDay ?? null) : null,
-        emissionStartDay: emissionMode === "DATE_RANGE" ? (form.emissionStartDay ?? null) : null,
         emissionEndDay: emissionMode === "DATE_RANGE" ? (form.emissionEndDay ?? null) : null,
         emissionExactDate: emissionMode === "SPECIFIC_DATE" ? (form.emissionExactDate ?? undefined) : null,
-        dueDay: form.dueDay ?? null,
-        startDate: form.startDate,
-        monthsToGenerate: form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE" ? 1 : form.monthsToGenerate,
+        emissionMode,
+        emissionStartDay: emissionMode === "DATE_RANGE" ? (form.emissionStartDay ?? null) : null,
+        frequency: form.frequency,
+        lateFeeGraceDays: lateFeeMode === "NONE" ? null : (form.lateFeeGraceDays ?? null),
         lateFeeMode,
         lateFeeValue: (() => {
           if (lateFeeMode === "NONE") return null;
           if (form.lateFeeValue === null || form.lateFeeValue === undefined) return null;
           return Number(form.lateFeeValue);
         })(),
-        lateFeeGraceDays: lateFeeMode === "NONE" ? null : (form.lateFeeGraceDays ?? null),
+        monthsToGenerate: form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE" ? 1 : form.monthsToGenerate,
+        name: form.name.trim(),
         notes: form.notes?.trim() ? form.notes.trim() : undefined,
+        obligationType: form.obligationType,
+        ownership: form.ownership,
+        recurrenceType: form.recurrenceType,
+        serviceType: form.serviceType,
+        startDate: form.startDate,
       };
 
       await onSubmit(payload);
@@ -232,70 +233,70 @@ export function ServiceForm({ onSubmit, onCancel, initialValues, submitLabel }: 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form className="space-y-6" onSubmit={handleSubmit}>
       <BasicInfoSection
-        name={form.name}
         category={form.category}
         detail={form.detail}
+        name={form.name}
         notes={form.notes}
         onChange={handleChange}
       />
 
       <ServiceClassificationSection
-        serviceType={form.serviceType}
-        ownership={form.ownership}
         obligationType={form.obligationType}
-        recurrenceType={form.recurrenceType}
         onChange={handleChange}
+        ownership={form.ownership}
+        recurrenceType={form.recurrenceType}
+        serviceType={form.serviceType}
       />
 
       <CounterpartSection
-        counterpartId={form.counterpartId}
-        counterpartAccountId={form.counterpartAccountId}
         accountReference={form.accountReference}
-        counterparts={counterparts}
         accounts={accounts}
-        counterpartsLoading={false}
         accountsLoading={false}
+        counterpartAccountId={form.counterpartAccountId}
+        counterpartId={form.counterpartId}
+        counterparts={counterparts}
         counterpartsError={counterpartsError}
-        onCounterpartSelect={handleCounterpartSelect}
+        counterpartsLoading={false}
         onChange={handleChange}
+        onCounterpartSelect={handleCounterpartSelect}
       />
 
       <SchedulingSection
-        frequency={form.frequency}
-        startDate={form.startDate}
-        monthsToGenerate={form.monthsToGenerate}
         dueDay={form.dueDay}
-        recurrenceType={form.recurrenceType}
         effectiveMonths={effectiveMonths}
+        frequency={form.frequency}
+        monthsToGenerate={form.monthsToGenerate}
         onChange={handleChange}
+        recurrenceType={form.recurrenceType}
+        startDate={form.startDate}
       />
 
       <EmissionSection
-        emissionMode={form.emissionMode}
         emissionDay={form.emissionDay}
-        emissionStartDay={form.emissionStartDay}
         emissionEndDay={form.emissionEndDay}
         emissionExactDate={form.emissionExactDate}
+        emissionMode={form.emissionMode}
+        emissionStartDay={form.emissionStartDay}
         onChange={handleChange}
       />
 
       <FinancialSection
-        defaultAmount={form.defaultAmount}
         amountIndexation={form.amountIndexation}
+        defaultAmount={form.defaultAmount}
+        lateFeeGraceDays={form.lateFeeGraceDays}
         lateFeeMode={form.lateFeeMode}
         lateFeeValue={form.lateFeeValue}
-        lateFeeGraceDays={form.lateFeeGraceDays}
         onChange={handleChange}
       />
 
       {error && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{error}</p>}
       <div className="flex justify-end gap-3">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={submitting}>
+        <Button disabled={submitting} onClick={onCancel} type="button" variant="secondary">
           Cancelar
         </Button>
-        <Button type="submit" disabled={submitting}>
+        <Button disabled={submitting} type="submit">
           {submitting ? submittingLabel : effectiveSubmitLabel}
         </Button>
       </div>

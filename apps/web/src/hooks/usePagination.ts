@@ -50,19 +50,19 @@ export function usePagination({
     const end = Math.min(pagination.page * pagination.pageSize, total);
     const totalPages = Math.ceil(total / pagination.pageSize);
 
-    return { start, end, totalPages, total };
+    return { end, start, total, totalPages };
   };
 
   return {
-    pagination,
-    setPagination,
-    setPage,
-    setPageSize,
-    nextPage,
-    prevPage,
     canGoNext,
     canGoPrev,
     getPageInfo,
+    nextPage,
     pageSizeOptions,
+    pagination,
+    prevPage,
+    setPage,
+    setPageSize,
+    setPagination,
   };
 }

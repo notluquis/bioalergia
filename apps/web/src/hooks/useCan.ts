@@ -9,5 +9,5 @@ export function useCan() {
     return ability.can(action, subject, field);
   };
 
-  return { can, ability };
+  return { ability, can };
 }

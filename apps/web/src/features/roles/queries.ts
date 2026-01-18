@@ -6,12 +6,12 @@ export const roleKeys = {
   all: ["roles"] as const,
   lists: () =>
     queryOptions({
-      queryKey: ["roles"],
       queryFn: fetchRoles,
+      queryKey: ["roles"],
     }),
   permissions: () =>
     queryOptions({
-      queryKey: ["permissions"],
       queryFn: fetchPermissions,
+      queryKey: ["permissions"],
     }),
 };

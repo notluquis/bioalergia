@@ -4,29 +4,29 @@ import { z } from "zod";
 export const createCreditSchema = z.object({
   bankName: z.string().min(1, "El banco es obligatorio"),
   creditNumber: z.string().min(1, "El número de crédito es obligatorio"),
-  description: z.string().optional(),
-  totalAmount: z.number().positive("El monto debe ser positivo"),
   currency: z.enum(["CLP", "UF", "USD"]).default("CLP"),
-  interestRate: z.number().optional(),
-  startDate: z.date({ message: "La fecha de inicio es requerida" }),
-  totalInstallments: z.number().int().positive("Debe tener al menos 1 cuota"),
+  description: z.string().optional(),
   installments: z
     .array(
       z.object({
-        installmentNumber: z.number().int(),
-        dueDate: z.date(),
         amount: z.number(),
         capitalAmount: z.number().optional(),
+        dueDate: z.date(),
+        installmentNumber: z.number().int(),
         interestAmount: z.number().optional(),
         otherCharges: z.number().optional(),
       })
     )
     .optional(),
+  interestRate: z.number().optional(),
+  startDate: z.date({ message: "La fecha de inicio es requerida" }),
+  totalAmount: z.number().positive("El monto debe ser positivo"),
+  totalInstallments: z.number().int().positive("Debe tener al menos 1 cuota"),
 });
 
 export const payInstallmentSchema = z.object({
-  paymentDate: z.date(),
   amount: z.number().positive(),
+  paymentDate: z.date(),
 });
 
 export type CreateCreditInput = z.infer<typeof createCreditSchema>;
@@ -34,37 +34,37 @@ export type PayInstallmentInput = z.infer<typeof payInstallmentSchema>;
 
 // Domain Types (ZenStack models + extensions)
 export interface PersonalCredit {
-  id: number;
   bankName: string;
-  creditNumber: string;
-  description?: string | null;
-  totalAmount: number; // Decimal in DB, number in JS (usually handled by serializer)
-  currency: string;
-  interestRate?: number | null;
-  startDate: string; // ISO Date
-  totalInstallments: number;
-  status: "ACTIVE" | "PAID" | "REFINANCED";
   createdAt: string;
-  updatedAt: string;
+  creditNumber: string;
+  currency: string;
+  description?: null | string;
+  id: number;
   installments?: PersonalCreditInstallment[];
-
+  institution?: null | string;
+  interestRate?: null | number;
+  nextPaymentAmount?: null | number;
+  nextPaymentDate?: null | string;
   // Calculated/extended fields
   remainingAmount?: number;
-  nextPaymentDate?: string | null;
-  nextPaymentAmount?: number | null;
-  institution?: string | null;
+  startDate: string; // ISO Date
+
+  status: "ACTIVE" | "PAID" | "REFINANCED";
+  totalAmount: number; // Decimal in DB, number in JS (usually handled by serializer)
+  totalInstallments: number;
+  updatedAt: string;
 }
 
 export interface PersonalCreditInstallment {
-  id: number;
-  creditId: number;
-  installmentNumber: number;
-  dueDate: string;
   amount: number;
-  capitalAmount?: number | null;
-  interestAmount?: number | null;
-  otherCharges?: number | null;
-  status: "PENDING" | "PAID";
-  paidAt?: string | null;
-  paidAmount?: number | null;
+  capitalAmount?: null | number;
+  creditId: number;
+  dueDate: string;
+  id: number;
+  installmentNumber: number;
+  interestAmount?: null | number;
+  otherCharges?: null | number;
+  paidAmount?: null | number;
+  paidAt?: null | string;
+  status: "PAID" | "PENDING";
 }

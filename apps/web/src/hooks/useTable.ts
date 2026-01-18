@@ -3,34 +3,34 @@ import { type PaginationState, usePagination } from "./usePagination";
 import { type SortState, useSorting } from "./useSorting";
 
 export interface TableState<T extends string = string> {
+  columnVisibility: ColumnVisibility;
   pagination: PaginationState;
   sorting: SortState<T>;
-  columnVisibility: ColumnVisibility;
 }
 
 export interface UseTableOptions<T extends string> {
-  // Pagination options
-  initialPage?: number;
-  initialPageSize?: number;
-  pageSizeOptions?: number[];
-
-  // Sorting options
-  initialSortColumn?: T | null;
-  initialSortDirection?: "asc" | "desc";
-
   // Column visibility options
   columns?: T[];
   defaultColumnVisible?: boolean;
+  // Pagination options
+  initialPage?: number;
+
+  initialPageSize?: number;
+  // Sorting options
+  initialSortColumn?: null | T;
+
+  initialSortDirection?: "asc" | "desc";
+  pageSizeOptions?: number[];
 }
 
 export function useTable<T extends string>({
-  initialPage = 1,
-  initialPageSize = 25,
-  pageSizeOptions = [10, 25, 50, 100],
-  initialSortColumn = null,
-  initialSortDirection = "asc",
   columns = [],
   defaultColumnVisible = true,
+  initialPage = 1,
+  initialPageSize = 25,
+  initialSortColumn = null,
+  initialSortDirection = "asc",
+  pageSizeOptions = [10, 25, 50, 100],
 }: UseTableOptions<T> = {}) {
   const pagination = usePagination({
     initialPage,
@@ -44,14 +44,14 @@ export function useTable<T extends string>({
   });
 
   const columnVisibility = useColumnVisibility({
-    initialColumns: columns,
     defaultVisible: defaultColumnVisible,
+    initialColumns: columns,
   });
 
   const state: TableState<T> = {
+    columnVisibility: columnVisibility.visibleColumns,
     pagination: pagination.pagination,
     sorting: sorting.sortState,
-    columnVisibility: columnVisibility.visibleColumns,
   };
 
   return {

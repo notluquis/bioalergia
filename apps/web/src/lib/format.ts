@@ -2,7 +2,7 @@ import { Decimal } from "decimal.js";
 
 // === CURRENCY FORMATTING ===
 
-export const fmtCLP = (n?: number | string | Decimal | null) => {
+export const fmtCLP = (n?: Decimal | null | number | string) => {
   // Handle null/undefined
   if (n == null) return "$0";
 
@@ -13,7 +13,7 @@ export const fmtCLP = (n?: number | string | Decimal | null) => {
   } else if (typeof n === "string") {
     num = Number(n);
   } else {
-    num = n as number;
+    num = n;
   }
 
   // Handle NaN or non-finite numbers
@@ -21,9 +21,9 @@ export const fmtCLP = (n?: number | string | Decimal | null) => {
 
   try {
     return new Intl.NumberFormat("es-CL", {
-      style: "currency",
       currency: "CLP",
       maximumFractionDigits: 0,
+      style: "currency",
     }).format(num);
   } catch (error) {
     // Fallback if formatting fails
@@ -47,29 +47,29 @@ export const coerceAmount = (v?: unknown): number => {
 
 // === DATE/TIME FORMATTING ===
 
-export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
+export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOptions): string {
   const d = typeof date === "string" ? new Date(date) : date;
   if (!d || Number.isNaN(d.getTime())) return "-";
 
   return new Intl.DateTimeFormat("es-CL", {
-    year: "numeric",
-    month: "2-digit",
     day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
     ...options,
   }).format(d);
 }
 
-export function formatDateTime(date: string | Date): string {
+export function formatDateTime(date: Date | string): string {
   return formatDate(date, {
-    year: "numeric",
-    month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 }
 
-export function formatRelativeDate(date: string | Date): string {
+export function formatRelativeDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   if (!d || Number.isNaN(d.getTime())) return "-";
 
@@ -87,7 +87,7 @@ export function formatRelativeDate(date: string | Date): string {
 
 // === DURATION FORMATTING ===
 
-export { durationToMinutes, minutesToDuration, minutesToTime, parseTimeToMinutes } from "~/shared/time";
+export { formatFileSize } from "../../shared/format";
 
 // === NUMERIC FORMATTING ===
 
@@ -96,13 +96,13 @@ export const numberFormatter = new Intl.NumberFormat("es-CL");
 
 /** Shared currency formatter instance (CLP, no decimals) */
 export const currencyFormatter = new Intl.NumberFormat("es-CL", {
-  style: "currency",
   currency: "CLP",
   maximumFractionDigits: 0,
+  style: "currency",
 });
 
 /** Safe wrapper for currency formatting that handles null/undefined/invalid values */
-export function formatCurrency(value?: number | string | Decimal | null): string {
+export function formatCurrency(value?: Decimal | null | number | string): string {
   if (value == null) return "$0";
 
   let num: number;
@@ -111,7 +111,7 @@ export function formatCurrency(value?: number | string | Decimal | null): string
   } else if (typeof value === "string") {
     num = Number(value);
   } else {
-    num = value as number;
+    num = value;
   }
 
   if (!Number.isFinite(num)) return "$0";
@@ -136,4 +136,4 @@ export function formatPercentage(value: number, decimals = 1): string {
 
 // === FILE SIZE FORMATTING ===
 
-export { formatFileSize } from "../../shared/format";
+export { durationToMinutes, minutesToDuration, minutesToTime, parseTimeToMinutes } from "~/shared/time";

@@ -25,17 +25,17 @@ export default function LoginPage() {
   const [mfaCode, setMfaCode] = useState("");
 
   // UI State
-  const [step, setStep] = useState<"passkey" | "credentials" | "mfa">("passkey");
-  const [tempUserId, setTempUserId] = useState<number | null>(null);
+  const [step, setStep] = useState<"credentials" | "mfa" | "passkey">("passkey");
+  const [tempUserId, setTempUserId] = useState<null | number>(null);
   const [loading, setLoading] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<null | string>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const fallbackLogo = "/logo_sin_eslogan.png";
-  const logoSrc = settings.logoUrl?.trim() || fallbackLogo;
+  const logoSrc = settings.logoUrl.trim() || fallbackLogo;
   const supportEmail = "lpulgar@bioalergia.cl";
 
-  const from = (location.state as { from?: string } | null)?.from ?? "/";
+  const from = (location.state as null | { from?: string })?.from ?? "/";
 
   const handleCredentialsSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -56,7 +56,7 @@ export default function LoginPage() {
       // Small delay for harmonic transition
       setTimeout(() => {
         logger.info("[login-page] redirecting", { to: from });
-        navigate({ to: from as "/", replace: true });
+        void navigate({ replace: true, to: from as "/" });
       }, 800);
     } catch (error) {
       const message = error instanceof Error ? error.message : "No se pudo iniciar sesión";
@@ -78,7 +78,7 @@ export default function LoginPage() {
       setIsSuccess(true);
       setTimeout(() => {
         logger.info("[login-page] redirecting", { to: from });
-        navigate({ to: from as "/", replace: true });
+        void navigate({ replace: true, to: from as "/" });
       }, 800);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Código incorrecto";
@@ -98,18 +98,18 @@ export default function LoginPage() {
       const authResp = await startAuthentication({ optionsJSON: options });
       await loginWithPasskey(authResp, options.challenge);
     },
+    onError: (err) => {
+      console.error(err);
+      setFormError("No se pudo validar el acceso biométrico. Usa tu contraseña.");
+      setStep("credentials");
+    },
     onSuccess: () => {
       logger.info("[login-page] passkey success, showing transition");
       setIsSuccess(true);
       setTimeout(() => {
         logger.info("[login-page] redirecting", { to: from });
-        navigate({ to: from as "/", replace: true });
+        void navigate({ replace: true, to: from as "/" });
       }, 800);
-    },
-    onError: (err) => {
-      console.error(err);
-      setFormError("No se pudo validar el acceso biométrico. Usa tu contraseña.");
-      setStep("credentials");
     },
   });
 
@@ -129,7 +129,6 @@ export default function LoginPage() {
         {/* Header */}
         <div className="mb-8 flex flex-col items-center gap-4 text-center">
           <img
-            src={logoSrc}
             alt={settings.orgName || "Bioalergia"}
             className="brand-logo h-16"
             onError={(event) => {
@@ -137,6 +136,7 @@ export default function LoginPage() {
                 event.currentTarget.src = fallbackLogo;
               }
             }}
+            src={logoSrc}
           />
           <div>
             <h1 className="text-base-content text-2xl font-semibold text-balance">
@@ -156,23 +156,23 @@ export default function LoginPage() {
           : step === "passkey" && (
               <div className="space-y-3">
                 <Button
-                  type="button"
                   className="h-14 w-full gap-2 text-base"
-                  onClick={handlePasskeyLogin}
                   disabled={passkeyLoginMutation.isPending}
+                  onClick={handlePasskeyLogin}
+                  type="button"
                 >
                   <Fingerprint className="size-5" />
                   {passkeyLoginMutation.isPending ? "Verificando..." : "Ingresar con biometría"}
                 </Button>
 
                 <button
-                  type="button"
+                  className="border-base-300 hover:bg-base-200 flex h-12 w-full items-center justify-center gap-2 rounded-lg border transition-colors disabled:opacity-50"
+                  disabled={passkeyLoginMutation.isPending}
                   onClick={() => {
                     setStep("credentials");
                     setFormError(null);
                   }}
-                  disabled={passkeyLoginMutation.isPending}
-                  className="border-base-300 hover:bg-base-200 flex h-12 w-full items-center justify-center gap-2 rounded-lg border transition-colors disabled:opacity-50"
+                  type="button"
                 >
                   <Mail className="size-4" />
                   <span className="text-sm font-medium">Usar correo y contraseña</span>
@@ -181,46 +181,46 @@ export default function LoginPage() {
             )}
 
         {step === "credentials" && !isSuccess && (
-          <form onSubmit={handleCredentialsSubmit} className="space-y-4">
+          <form className="space-y-4" onSubmit={handleCredentialsSubmit}>
             <Input
+              autoComplete="username"
               label="Correo electrónico"
-              type="email"
-              value={email}
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 setEmail(event.target.value);
                 if (formError) setFormError(null);
               }}
               placeholder="usuario@bioalergia.cl"
-              autoComplete="username"
               required
+              type="email"
+              value={email}
             />
             <Input
+              autoComplete="current-password"
+              enterKeyHint="go"
               label="Contraseña"
-              type="password"
-              value={password}
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 setPassword(event.target.value);
                 if (formError) setFormError(null);
               }}
               placeholder="••••••••"
-              autoComplete="current-password"
-              enterKeyHint="go"
+              type="password"
+              value={password}
             />
 
             <div className="flex gap-2 pt-2">
               <Button
-                type="button"
-                variant="ghost"
+                className="flex-1"
+                disabled={loading}
                 onClick={() => {
                   setStep("passkey");
                   setFormError(null);
                 }}
-                disabled={loading}
-                className="flex-1"
+                type="button"
+                variant="ghost"
               >
                 Atrás
               </Button>
-              <Button type="submit" disabled={loading} className="flex-1">
+              <Button className="flex-1" disabled={loading} type="submit">
                 {loading ? "Verificando..." : "Continuar"}
               </Button>
             </div>
@@ -228,39 +228,39 @@ export default function LoginPage() {
         )}
 
         {step === "mfa" && !isSuccess && (
-          <form onSubmit={handleMfaSubmit} className="space-y-4">
+          <form className="space-y-4" onSubmit={handleMfaSubmit}>
             <Input
-              label="Código de seguridad"
-              type="text"
+              autoComplete="one-time-code"
+              className="text-center text-2xl tracking-widest"
               inputMode="numeric"
-              pattern="[0-9]*"
+              label="Código de seguridad"
               maxLength={6}
-              value={mfaCode}
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 setMfaCode(event.target.value);
                 if (formError) setFormError(null);
               }}
+              pattern="[0-9]*"
               placeholder="000000"
-              autoComplete="one-time-code"
-              className="text-center text-2xl tracking-widest"
               required
+              type="text"
+              value={mfaCode}
             />
 
             <div className="flex gap-2 pt-2">
               <Button
-                type="button"
-                variant="ghost"
+                className="flex-1"
+                disabled={loading}
                 onClick={() => {
                   setStep("credentials");
                   setMfaCode("");
                   setFormError(null);
                 }}
-                disabled={loading}
-                className="flex-1"
+                type="button"
+                variant="ghost"
               >
                 Atrás
               </Button>
-              <Button type="submit" disabled={loading} className="flex-1">
+              <Button className="flex-1" disabled={loading} type="submit">
                 {loading ? "Verificando..." : "Confirmar"}
               </Button>
             </div>
@@ -271,8 +271,8 @@ export default function LoginPage() {
         {isSuccess && (
           <div className="animate-in fade-in zoom-in flex flex-col items-center justify-center gap-4 py-8 duration-500">
             <div className="bg-success/20 text-success flex size-16 scale-110 items-center justify-center rounded-full transition-transform duration-700">
-              <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              <svg className="size-8" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
             <div className="text-center">
@@ -293,7 +293,7 @@ export default function LoginPage() {
         {step === "credentials" && (
           <div className="text-base-content/60 mt-6 text-center text-xs">
             ¿Problemas?{" "}
-            <a href={`mailto:${supportEmail}`} className="text-primary font-semibold hover:underline">
+            <a className="text-primary font-semibold hover:underline" href={`mailto:${supportEmail}`}>
               Contacta aquí
             </a>
           </div>

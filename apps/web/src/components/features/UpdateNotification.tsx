@@ -10,15 +10,15 @@ export function UpdateNotification() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
+    onNeedRefresh() {
+      console.info("New app version available - prompting user");
+      setNeedRefresh(true);
+    },
     onRegistered() {
       // No periodic checks - let browser handle update detection naturally
       // The service worker will auto-detect new versions on navigation/reload
       // This prevents the notification from appearing repeatedly after update
       console.info("Service worker registered - auto-update detection enabled");
-    },
-    onNeedRefresh() {
-      console.info("New app version available - prompting user");
-      setNeedRefresh(true);
     },
   });
 
@@ -34,7 +34,13 @@ export function UpdateNotification() {
       // This is crucial - we need to ensure the new SW is controlling before clearing cache
       if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
         await new Promise<void>((resolve) => {
-          navigator.serviceWorker.addEventListener("controllerchange", () => resolve(), { once: true });
+          navigator.serviceWorker.addEventListener(
+            "controllerchange",
+            () => {
+              resolve();
+            },
+            { once: true }
+          );
           // Fallback timeout in case controllerchange doesn't fire
           setTimeout(resolve, 1000);
         });
@@ -66,10 +72,10 @@ export function UpdateNotification() {
           <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
             <svg className="text-primary h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               />
             </svg>
           </div>
@@ -77,10 +83,17 @@ export function UpdateNotification() {
             <h3 className="text-base-content text-sm font-semibold">Nueva versión disponible</h3>
             <p className="text-base-content/70 mt-1 text-xs">Actualiza cuando estés listo. No perderás tu progreso.</p>
             <div className="mt-3 flex gap-2">
-              <Button size="sm" onClick={handleUpdate} className="flex-1" disabled={isUpdating}>
+              <Button className="flex-1" disabled={isUpdating} onClick={handleUpdate} size="sm">
                 {isUpdating ? "Actualizando..." : "Actualizar"}
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setNeedRefresh(false)} className="px-3">
+              <Button
+                className="px-3"
+                onClick={() => {
+                  setNeedRefresh(false);
+                }}
+                size="sm"
+                variant="ghost"
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>

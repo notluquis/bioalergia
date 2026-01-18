@@ -1,15 +1,16 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, Calendar, CheckCircle2, RefreshCw } from "lucide-react";
 
+import type { CalendarData } from "@/features/calendar/types";
+
 import Button from "@/components/ui/Button";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
 import { calendarQueries } from "@/features/calendar/queries";
-import type { CalendarData } from "@/features/calendar/types";
 import { cn } from "@/lib/utils";
 
 export default function CalendarSettingsPage() {
-  const { syncing, syncError, syncProgress, syncDurationMs, syncNow, syncLogs, hasRunningSyncFromOtherSource } =
+  const { hasRunningSyncFromOtherSource, syncDurationMs, syncError, syncing, syncLogs, syncNow, syncProgress } =
     useCalendarEvents();
 
   // Fetch calendars
@@ -60,8 +61,8 @@ export default function CalendarSettingsPage() {
           {renderCalendarsList(calendars)}
 
           <div className="flex justify-end pt-4">
-            <Button onClick={syncNow} disabled={isSyncing} className="gap-2">
-              <RefreshCw size={16} className={cn(isSyncing && "animate-spin")} />
+            <Button className="gap-2" disabled={isSyncing} onClick={syncNow}>
+              <RefreshCw className={cn(isSyncing && "animate-spin")} size={16} />
               {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
             </Button>
           </div>
@@ -69,50 +70,12 @@ export default function CalendarSettingsPage() {
       </div>
 
       <SyncProgressPanel
-        syncing={syncing}
-        syncError={syncError}
-        syncProgress={syncProgress}
         syncDurationMs={syncDurationMs}
+        syncError={syncError}
+        syncing={syncing}
+        syncProgress={syncProgress}
       />
     </div>
-  );
-}
-
-function renderSyncBadge(status: "SUCCESS" | "ERROR" | "RUNNING" | undefined) {
-  let badgeClass = "badge-ghost";
-  let icon = <RefreshCw size={12} />;
-  let text = "Sin datos";
-
-  switch (status) {
-    case "SUCCESS": {
-      badgeClass = "badge-success";
-      icon = <CheckCircle2 size={12} />;
-      text = "Activo";
-
-      break;
-    }
-    case "RUNNING": {
-      badgeClass = "badge-warning";
-      icon = <span className="loading loading-spinner loading-xs"></span>;
-      text = "Sincronizando...";
-
-      break;
-    }
-    case "ERROR": {
-      badgeClass = "badge-error";
-      icon = <AlertCircle size={12} />;
-      text = "Error";
-
-      break;
-    }
-    // No default
-  }
-
-  return (
-    <span className={cn("badge h-auto gap-1 py-1 whitespace-nowrap", badgeClass)}>
-      {icon}
-      {text}
-    </span>
   );
 }
 
@@ -120,7 +83,7 @@ function renderCalendarsList(calendars: CalendarData[]) {
   if (calendars.length === 0) {
     return (
       <div className="text-base-content/50 p-8 text-center">
-        <Calendar size={32} className="mx-auto mb-2 opacity-30" />
+        <Calendar className="mx-auto mb-2 opacity-30" size={32} />
         <p className="text-sm">No hay calendarios conectados</p>
       </div>
     );
@@ -130,8 +93,8 @@ function renderCalendarsList(calendars: CalendarData[]) {
     <div className="grid gap-3">
       {calendars.map((cal: CalendarData) => (
         <div
-          key={cal.id}
           className="bg-base-200/50 border-base-200 flex items-center justify-between gap-4 rounded-lg border p-3"
+          key={cal.id}
         >
           <div className="flex min-w-0 items-center gap-3">
             <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
@@ -148,5 +111,43 @@ function renderCalendarsList(calendars: CalendarData[]) {
         </div>
       ))}
     </div>
+  );
+}
+
+function renderSyncBadge(status: "ERROR" | "RUNNING" | "SUCCESS" | undefined) {
+  let badgeClass = "badge-ghost";
+  let icon = <RefreshCw size={12} />;
+  let text = "Sin datos";
+
+  switch (status) {
+    case "ERROR": {
+      badgeClass = "badge-error";
+      icon = <AlertCircle size={12} />;
+      text = "Error";
+
+      break;
+    }
+    case "RUNNING": {
+      badgeClass = "badge-warning";
+      icon = <span className="loading loading-spinner loading-xs"></span>;
+      text = "Sincronizando...";
+
+      break;
+    }
+    case "SUCCESS": {
+      badgeClass = "badge-success";
+      icon = <CheckCircle2 size={12} />;
+      text = "Activo";
+
+      break;
+    }
+    // No default
+  }
+
+  return (
+    <span className={cn("badge h-auto gap-1 py-1 whitespace-nowrap", badgeClass)}>
+      {icon}
+      {text}
+    </span>
   );
 }

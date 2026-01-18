@@ -1,47 +1,47 @@
-export type InventoryCategory = {
-  id: number;
-  name: string;
-  created_at?: string;
-};
-
-export type InventoryItem = {
-  id: number;
-  category_id: number | null;
-  name: string;
-  description: string | null;
+export interface AllergyInventoryOverview {
+  allergy_type: {
+    category?: { id: number; name: string };
+    subtype?: { id: number; name: string };
+    type?: { id: number; name: string };
+  };
+  category: {
+    id: null | number;
+    name: null | string;
+  };
   current_stock: number;
-  category_name?: string;
-};
-
-export type InventoryMovement = {
+  description: null | string;
   item_id: number;
-  quantity_change: number;
-  reason: string;
-};
+  name: string;
+  providers: AllergyInventoryProvider[];
+}
 
-export type AllergyInventoryProvider = {
+export interface AllergyInventoryProvider {
+  accounts: string[];
+  current_price: null | number;
+  last_price_check: null | string;
+  last_stock_check: null | string;
   provider_id: number;
   provider_name: string;
   provider_rut: string;
-  current_price: number | null;
-  last_stock_check: string | null;
-  last_price_check: string | null;
-  accounts: string[];
-};
+}
 
-export type AllergyInventoryOverview = {
-  item_id: number;
+export interface InventoryCategory {
+  created_at?: string;
+  id: number;
   name: string;
-  description: string | null;
+}
+
+export interface InventoryItem {
+  category_id: null | number;
+  category_name?: string;
   current_stock: number;
-  category: {
-    id: number | null;
-    name: string | null;
-  };
-  allergy_type: {
-    type?: { id: number; name: string };
-    category?: { id: number; name: string };
-    subtype?: { id: number; name: string };
-  };
-  providers: AllergyInventoryProvider[];
-};
+  description: null | string;
+  id: number;
+  name: string;
+}
+
+export interface InventoryMovement {
+  item_id: number;
+  quantity_change: number;
+  reason: string;
+}

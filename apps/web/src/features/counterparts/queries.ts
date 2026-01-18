@@ -4,18 +4,18 @@ import { fetchCounterpart, fetchCounterpartSummary } from "./api";
 
 export const counterpartKeys = {
   all: ["counterpart"] as const,
-  lists: () => [...counterpartKeys.all, "list"] as const,
   detail: (id: number) =>
     queryOptions({
-      queryKey: ["counterpart-detail", id],
-      queryFn: () => fetchCounterpart(id),
       enabled: !!id,
+      queryFn: () => fetchCounterpart(id),
+      queryKey: ["counterpart-detail", id],
     }),
+  lists: () => [...counterpartKeys.all, "list"] as const,
   summary: (id: number, range: { from: string; to: string }) =>
     queryOptions({
-      queryKey: ["counterpart-summary", id, range],
-      queryFn: () => fetchCounterpartSummary(id, range),
       enabled: !!id,
+      queryFn: () => fetchCounterpartSummary(id, range),
+      queryKey: ["counterpart-summary", id, range],
     }),
 };
 
@@ -24,11 +24,11 @@ export const counterpartKeys = {
 export const counterpartQueries = {
   list: () =>
     queryOptions({
-      queryKey: counterpartKeys.lists(),
       queryFn: async () => {
         // This will be handled by ZenStack in the component
         // For now, return empty array to avoid breaking loader
         return [];
       },
+      queryKey: counterpartKeys.lists(),
     }),
 };

@@ -2,69 +2,69 @@ import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/bro
 
 import { apiClient } from "@/lib/apiClient";
 
-export type PasskeyLoginOptions = PublicKeyCredentialCreationOptionsJSON & {
-  challenge: string;
-};
+export interface MfaEnableParams {
+  secret?: string;
+  token: string;
+  userId?: number;
+}
 
-export async function fetchPasskeyLoginOptions() {
-  return apiClient.get<PasskeyLoginOptions>("/api/auth/passkey/login/options");
+export interface MfaSetupResponse {
+  message?: string;
+  qrCodeUrl: string;
+  secret: string;
+  status: string;
 }
 
 // --- MFA ---
 
-export interface MfaSetupResponse {
-  status: string;
-  secret: string;
-  qrCodeUrl: string;
-  message?: string;
-}
-
-export async function setupMfa() {
-  return apiClient.post<MfaSetupResponse>("/api/auth/mfa/setup", {});
-}
-
-export interface MfaEnableParams {
-  token: string;
-  userId?: number;
-  secret?: string;
-}
-
-export async function enableMfa({ token, userId, secret }: MfaEnableParams) {
-  return apiClient.post<{ status: string; message?: string }>("/api/auth/mfa/enable", {
-    token,
-    userId,
-    secret,
-  });
-}
-
-export async function disableMfa() {
-  return apiClient.post<{ status: string }>("/api/auth/mfa/disable", {});
-}
-
-// --- Passkey Registration ---
-
-export type PasskeyOptionsResponse = PublicKeyCredentialCreationOptionsJSON & {
-  status?: string;
-  message?: string;
+export type PasskeyLoginOptions = PublicKeyCredentialCreationOptionsJSON & {
+  challenge: string;
 };
 
-export async function fetchPasskeyRegistrationOptions() {
-  return apiClient.get<PasskeyOptionsResponse>("/api/auth/passkey/register/options");
-}
+export type PasskeyOptionsResponse = PublicKeyCredentialCreationOptionsJSON & {
+  message?: string;
+  status?: string;
+};
 
 export interface PasskeyVerifyParams {
   body: unknown;
   challenge: string;
 }
 
-export async function verifyPasskeyRegistration({ body, challenge }: PasskeyVerifyParams) {
-  return apiClient.post<{ status: string; message?: string }>("/api/auth/passkey/register/verify", {
-    body,
-    challenge,
+export async function disableMfa() {
+  return apiClient.post<{ status: string }>("/api/auth/mfa/disable", {});
+}
+
+export async function enableMfa({ secret, token, userId }: MfaEnableParams) {
+  return apiClient.post<{ message?: string; status: string }>("/api/auth/mfa/enable", {
+    secret,
+    token,
+    userId,
   });
+}
+
+// --- Passkey Registration ---
+
+export async function fetchPasskeyLoginOptions() {
+  return apiClient.get<PasskeyLoginOptions>("/api/auth/passkey/login/options");
+}
+
+export async function fetchPasskeyRegistrationOptions() {
+  return apiClient.get<PasskeyOptionsResponse>("/api/auth/passkey/register/options");
 }
 
 export async function removePasskey() {
   // Use delete method if the API supports it, component used delete
-  return apiClient.delete<{ status: string; message?: string }>("/api/auth/passkey/remove");
+  return apiClient.delete<{ message?: string; status: string }>("/api/auth/passkey/remove");
+}
+
+export async function setupMfa() {
+  return apiClient.post<MfaSetupResponse>("/api/auth/mfa/setup", {});
+}
+
+export async function verifyPasskeyRegistration({ body, challenge }: PasskeyVerifyParams) {
+  return apiClient.post<{ message?: string; status: string }>("/api/auth/passkey/register/verify", {
+    body,
+    challenge,
+  });
 }

@@ -1,29 +1,29 @@
 export interface User {
-  id: number;
+  createdAt: string;
   email: string;
-  role: string;
+  hasPasskey: boolean;
+  id: number;
   mfaEnabled: boolean;
   passkeysCount: number;
-  hasPasskey: boolean;
-  status: "ACTIVE" | "INACTIVE" | "PENDING_SETUP" | "SUSPENDED";
-  createdAt: string;
   person: {
+    fatherName: null | string;
     names: string;
-    fatherName: string | null;
     rut: string;
   };
+  role: string;
+  status: "ACTIVE" | "INACTIVE" | "PENDING_SETUP" | "SUSPENDED";
 }
 
 export interface UserProfile {
-  id: number;
-  email: string;
-  names: string;
-  fatherName: string;
-  motherName?: string;
-  rut: string;
-  phone?: string;
   address?: string;
-  bankName?: string;
-  bankAccountType?: string;
   bankAccountNumber?: string;
+  bankAccountType?: string;
+  bankName?: string;
+  email: string;
+  fatherName: string;
+  id: number;
+  motherName?: string;
+  names: string;
+  phone?: string;
+  rut: string;
 }

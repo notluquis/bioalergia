@@ -14,11 +14,11 @@ const TopParticipantsPieChart = lazy(() => import("./TopParticipantsPieChart.js"
 
 interface TopParticipantsSectionProps {
   data: TopParticipantData[];
+  error: null | string;
   loading: boolean;
-  error: string | null;
 }
 
-export default function TopParticipantsSection({ data, loading, error }: TopParticipantsSectionProps) {
+export default function TopParticipantsSection({ data, error, loading }: TopParticipantsSectionProps) {
   return (
     <div className="bg-base-100 border-base-200 rounded-2xl border p-6 shadow-sm">
       <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
@@ -55,8 +55,8 @@ export default function TopParticipantsSection({ data, loading, error }: TopPart
           <div className="space-y-2">
             {data.slice(0, 10).map((participant, index) => (
               <div
-                key={participant.personId}
                 className="hover:bg-base-200/50 flex items-center justify-between rounded-lg p-3 transition-colors"
+                key={participant.personId}
               >
                 <div className="flex items-center gap-3">
                   <div className="bg-primary/10 text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold">

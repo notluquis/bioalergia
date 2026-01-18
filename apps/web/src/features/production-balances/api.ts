@@ -1,71 +1,71 @@
 import { apiClient } from "@/lib/apiClient";
 
-interface ApiSuccessResponse<T> {
-  status: "ok";
-  item: T;
-}
-
-interface ApiListResponse<T> {
-  status: "ok";
-  items: T[];
-  from: string;
-  to: string;
+export interface DailyBalancePayload {
+  balanceDate: string;
+  comentarios: string;
+  consultasMonto: number;
+  controlesMonto: number;
+  createdBy?: number;
+  gastosDiarios: number;
+  ingresoEfectivo: number;
+  ingresoTarjetas: number;
+  ingresoTransferencias: number;
+  licenciasMonto: number;
+  otrosAbonos: number;
+  roxairMonto: number;
+  testsMonto: number;
+  vacunasMonto: number;
 }
 
 // Result from GET /api/daily-production-balances
 // Result from GET /api/daily-production-balances
 export interface ProductionBalanceApiItem {
-  id: number;
   balanceDate: string; // was date
-  ingresoTarjetas: number;
-  ingresoTransferencias: number;
-  ingresoEfectivo: number;
-  // subtotalIngresos? Maybe calculated on backend or frontend? Keep if unsure but backend might not send it.
-  gastosDiarios: number;
-  // totalIngresos?
-  otrosAbonos: number;
+  changeReason: null | string;
+  // total?
+  comentarios: null | string;
   consultasMonto: number; // was consultas
   controlesMonto: number; // was controles
-  testsMonto: number; // was tests
-  vacunasMonto: number; // was vacunas
-  licenciasMonto: number; // was licencias
-  roxairMonto: number; // was roxair
-  // total?
-  comentarios: string | null;
-  status: string; // "PENDING", "COMPLETED", etc.
-  changeReason: string | null;
-  createdByEmail: string | null; // This likely comes from "include: { user: true }" ??? Or maybe not sent?
-  updatedByEmail: string | null;
   createdAt: string;
-  updatedAt: string;
-}
-
-export interface DailyBalancePayload {
-  balanceDate: string;
+  createdByEmail: null | string; // This likely comes from "include: { user: true }" ??? Or maybe not sent?
+  // subtotalIngresos? Maybe calculated on backend or frontend? Keep if unsure but backend might not send it.
+  gastosDiarios: number;
+  id: number;
+  ingresoEfectivo: number;
   ingresoTarjetas: number;
   ingresoTransferencias: number;
-  ingresoEfectivo: number;
-  gastosDiarios: number;
+  licenciasMonto: number; // was licencias
+  // totalIngresos?
   otrosAbonos: number;
-  comentarios: string;
-  consultasMonto: number;
-  controlesMonto: number;
-  testsMonto: number;
-  vacunasMonto: number;
-  licenciasMonto: number;
-  roxairMonto: number;
-  createdBy?: number;
+  roxairMonto: number; // was roxair
+  status: string; // "PENDING", "COMPLETED", etc.
+  testsMonto: number; // was tests
+  updatedAt: string;
+  updatedByEmail: null | string;
+  vacunasMonto: number; // was vacunas
+}
+
+interface ApiListResponse<T> {
+  from: string;
+  items: T[];
+  status: "ok";
+  to: string;
+}
+
+interface ApiSuccessResponse<T> {
+  item: T;
+  status: "ok";
 }
 
 export const dailyBalanceApi = {
+  createBalance: async (data: DailyBalancePayload) => {
+    return apiClient.post<ApiSuccessResponse<ProductionBalanceApiItem>>("/api/daily-production-balances", data);
+  },
+
   getBalances: async (from: string, to: string) => {
     return apiClient.get<ApiListResponse<ProductionBalanceApiItem>>(
       `/api/daily-production-balances?from=${from}&to=${to}`
     );
-  },
-
-  createBalance: async (data: DailyBalancePayload) => {
-    return apiClient.post<ApiSuccessResponse<ProductionBalanceApiItem>>("/api/daily-production-balances", data);
   },
 
   updateBalance: async (id: number, data: DailyBalancePayload) => {

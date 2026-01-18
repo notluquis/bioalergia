@@ -10,14 +10,6 @@ const isDev = Boolean(import.meta.env?.DEV);
 
 type LogMethod = (...args: unknown[]) => void;
 
-function createMethod(fn: LogMethod, showInProd = false): LogMethod {
-  return (...args: unknown[]) => {
-    if (isDev || showInProd) {
-      fn(...args);
-    }
-  };
-}
-
 /**
  * Create a namespaced logger
  */
@@ -36,10 +28,18 @@ export function createLogger(namespace?: string) {
 
   return {
     debug: createMethod(withPrefix(console.debug)),
+    error: createMethod(withPrefix(console.error), true), // Always show in prod
     info: createMethod(withPrefix(console.info)),
     log: createMethod(withPrefix(console.log)),
     warn: createMethod(withPrefix(console.warn), true), // Always show in prod
-    error: createMethod(withPrefix(console.error), true), // Always show in prod
+  };
+}
+
+function createMethod(fn: LogMethod, showInProd = false): LogMethod {
+  return (...args: unknown[]) => {
+    if (isDev || showInProd) {
+      fn(...args);
+    }
   };
 }
 
@@ -47,4 +47,4 @@ export function createLogger(namespace?: string) {
 export const logger = createLogger();
 
 // Convenience exports
-export const { debug, info, log, warn, error } = logger;
+export const { debug, error, info, log, warn } = logger;

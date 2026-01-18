@@ -3,43 +3,43 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-type BadgeVariant = "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "ghost";
-type BadgeSize = "default" | "sm" | "lg" | "xs";
-
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: BadgeVariant;
   size?: BadgeSize;
+  variant?: BadgeVariant;
 }
+type BadgeSize = "default" | "lg" | "sm" | "xs";
 
+type BadgeVariant = "default" | "destructive" | "ghost" | "outline" | "secondary" | "success" | "warning";
+
+type ChipColor = "accent" | "danger" | "default" | "success" | "warning";
 // Map legacy variants to HeroUI v3 Chip props (based on actual installed types)
 // HeroUI v3 beta: variant = "primary" | "secondary" | "tertiary" | "soft"
 // HeroUI v3 beta: color = "success" | "danger" | "default" | "accent" | "warning"
-type ChipVariant = "primary" | "secondary" | "tertiary" | "soft";
-type ChipColor = "success" | "danger" | "default" | "accent" | "warning";
+type ChipVariant = "primary" | "secondary" | "soft" | "tertiary";
 
-const variantMap: Record<BadgeVariant, { variant: ChipVariant; color: ChipColor }> = {
-  default: { variant: "primary", color: "accent" },
-  secondary: { variant: "secondary", color: "default" },
-  destructive: { variant: "primary", color: "danger" },
-  outline: { variant: "tertiary", color: "default" },
-  success: { variant: "primary", color: "success" },
-  warning: { variant: "primary", color: "warning" },
-  ghost: { variant: "soft", color: "default" },
+const variantMap: Record<BadgeVariant, { color: ChipColor; variant: ChipVariant }> = {
+  default: { color: "accent", variant: "primary" },
+  destructive: { color: "danger", variant: "primary" },
+  ghost: { color: "default", variant: "soft" },
+  outline: { color: "default", variant: "tertiary" },
+  secondary: { color: "default", variant: "secondary" },
+  success: { color: "success", variant: "primary" },
+  warning: { color: "warning", variant: "primary" },
 };
 
-const sizeMap: Record<BadgeSize, "sm" | "md" | "lg"> = {
-  xs: "sm",
-  sm: "sm",
+const sizeMap: Record<BadgeSize, "lg" | "md" | "sm"> = {
   default: "md",
   lg: "lg",
+  sm: "sm",
+  xs: "sm",
 };
 
-function Badge({ className, variant = "default", size = "default", children }: BadgeProps) {
+function Badge({ children, className, size = "default", variant = "default" }: BadgeProps) {
   const chipProps = variantMap[variant];
   const chipSize = sizeMap[size];
 
   return (
-    <Chip variant={chipProps.variant} color={chipProps.color} size={chipSize} className={cn(className)}>
+    <Chip className={cn(className)} color={chipProps.color} size={chipSize} variant={chipProps.variant}>
       {children}
     </Chip>
   );

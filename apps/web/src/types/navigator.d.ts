@@ -1,11 +1,11 @@
 declare global {
   interface Navigator {
-    deviceMemory?: number;
     connection?: {
-      saveData?: boolean;
+      downlink?: number;
       effectiveType?: string;
       rtt?: number;
-      downlink?: number;
+      saveData?: boolean;
     };
+    deviceMemory?: number;
   }
 }

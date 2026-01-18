@@ -7,43 +7,43 @@ import type { ServiceFrequency, ServiceRecurrenceType } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
 
 interface SchedulingSectionProps {
-  frequency?: ServiceFrequency;
-  startDate?: string;
-  monthsToGenerate?: number;
-  dueDay?: number | null;
-  recurrenceType?: ServiceRecurrenceType;
+  dueDay?: null | number;
   effectiveMonths: number;
+  frequency?: ServiceFrequency;
+  monthsToGenerate?: number;
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
+  recurrenceType?: ServiceRecurrenceType;
+  startDate?: string;
 }
 
-const FREQUENCY_OPTIONS: Array<{ value: ServiceFrequency; label: string }> = [
-  { value: "WEEKLY", label: "Semanal" },
-  { value: "BIWEEKLY", label: "Quincenal" },
-  { value: "MONTHLY", label: "Mensual" },
-  { value: "BIMONTHLY", label: "Bimensual" },
-  { value: "QUARTERLY", label: "Trimestral" },
-  { value: "SEMIANNUAL", label: "Semestral" },
-  { value: "ANNUAL", label: "Anual" },
-  { value: "ONCE", label: "Única vez" },
+const FREQUENCY_OPTIONS: { label: string; value: ServiceFrequency }[] = [
+  { label: "Semanal", value: "WEEKLY" },
+  { label: "Quincenal", value: "BIWEEKLY" },
+  { label: "Mensual", value: "MONTHLY" },
+  { label: "Bimensual", value: "BIMONTHLY" },
+  { label: "Trimestral", value: "QUARTERLY" },
+  { label: "Semestral", value: "SEMIANNUAL" },
+  { label: "Anual", value: "ANNUAL" },
+  { label: "Única vez", value: "ONCE" },
 ];
 
 export function SchedulingSection({
-  frequency,
-  startDate,
   dueDay,
-  recurrenceType,
   effectiveMonths,
+  frequency,
   onChange,
+  recurrenceType,
+  startDate,
 }: SchedulingSectionProps) {
   return (
     <section className={GRID_2_COL_MD}>
       <Input
-        label="Frecuencia"
         as="select"
+        label="Frecuencia"
+        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+          onChange("frequency", event.target.value as ServiceFrequency);
+        }}
         value={frequency ?? "MONTHLY"}
-        onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-          onChange("frequency", event.target.value as ServiceFrequency)
-        }
       >
         {FREQUENCY_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>
@@ -53,34 +53,38 @@ export function SchedulingSection({
       </Input>
       <Input
         label="Fecha de inicio"
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          onChange("startDate", event.target.value);
+        }}
+        required
         type="date"
         value={startDate ?? ""}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => onChange("startDate", event.target.value)}
-        required
       />
       <Input
-        label="Meses a generar"
-        type="number"
-        value={effectiveMonths}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => onChange("monthsToGenerate", Number(event.target.value))}
-        min={1}
-        max={60}
         disabled={recurrenceType === "ONE_OFF" || frequency === "ONCE"}
         helper={
           recurrenceType === "ONE_OFF" || frequency === "ONCE"
             ? "Para servicios puntuales se genera un único periodo"
             : undefined
         }
+        label="Meses a generar"
+        max={60}
+        min={1}
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          onChange("monthsToGenerate", Number(event.target.value));
+        }}
+        type="number"
+        value={effectiveMonths}
       />
       <Input
         label="Día de vencimiento"
+        max={31}
+        min={1}
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          onChange("dueDay", event.target.value ? Number(event.target.value) : null);
+        }}
         type="number"
         value={dueDay ?? ""}
-        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-          onChange("dueDay", event.target.value ? Number(event.target.value) : null)
-        }
-        min={1}
-        max={31}
       />
     </section>
   );

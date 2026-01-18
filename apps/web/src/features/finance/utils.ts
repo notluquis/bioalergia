@@ -2,7 +2,7 @@
  * Formats monetary amounts for display.
  * Handles both number and string (Decimal serialization) inputs.
  */
-export function formatAmount(amount: number | string | null | undefined, currency: string | null = "CLP"): string {
+export function formatAmount(amount: null | number | string | undefined, currency: null | string = "CLP"): string {
   if (amount === null || amount === undefined) return "-";
 
   // Convert string (from Decimal serialization) to number
@@ -18,8 +18,8 @@ export function formatAmount(amount: number | string | null | undefined, currenc
   if (Number.isNaN(numericAmount)) return "-";
 
   return new Intl.NumberFormat("es-CL", {
-    style: "currency",
     currency: currency || "CLP",
     minimumFractionDigits: 0,
+    style: "currency",
   }).format(numericAmount);
 }

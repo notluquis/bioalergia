@@ -7,20 +7,20 @@ import type { ParticipantSummaryRow } from "../../participants/types";
 
 export default function TopParticipantsWidget({
   data,
-  loading,
   error,
+  loading,
 }: {
   data: ParticipantSummaryRow[];
+  error: null | string;
   loading: boolean;
-  error: string | null;
 }) {
   return (
     <article className="surface-recessed space-y-4 p-6">
       <div className="flex items-center justify-between">
         <h3 className="text-secondary text-base font-semibold drop-shadow-sm">Retiros destacados</h3>
         <Link
-          to="/finanzas/participants"
           className="border-secondary/40 bg-secondary/15 text-secondary inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide uppercase"
+          to="/finanzas/participants"
         >
           Ver todos
         </Link>
@@ -39,8 +39,8 @@ export default function TopParticipantsWidget({
             const account = item.bankAccountNumber || item.withdrawId || "-";
             return (
               <li
-                key={`${item.participant}-${item.withdrawId ?? ""}`}
                 className="border-base-300 bg-base-200 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-sm"
+                key={`${item.participant}-${item.withdrawId ?? ""}`}
               >
                 <div>
                   <p className="text-base-content font-medium">{displayName}</p>

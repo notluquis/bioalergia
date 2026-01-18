@@ -1,92 +1,93 @@
 import type { Transaction } from "@/features/finance/types";
+
 import { CounterpartCategory, PersonType } from "@/types/schema";
+
+export interface AccountGroup {
+  accounts: CounterpartAccount[];
+  bankName: null | string;
+  concept: string;
+  holder: null | string;
+  key: string;
+  label: string;
+}
+
+export interface AccountTransactionsState {
+  error: null | string;
+  expanded: boolean;
+  loading: boolean;
+  recentTransactions?: Transaction[];
+}
+
+export interface Counterpart {
+  category: CounterpartCategory;
+  created_at: string;
+  email: null | string;
+  employeeId: null | number;
+  id: number;
+  name: string;
+  notes: null | string;
+  personType: CounterpartPersonType;
+  rut: null | string;
+  updated_at: string;
+}
+
+export interface CounterpartAccount {
+  account_identifier: string;
+  account_type: null | string;
+  bank_name: null | string;
+  concept: null | string;
+  counterpart_id: number;
+  created_at: string;
+  holder: null | string;
+  id: number;
+  metadata: CounterpartAccountMetadata | null;
+  summary?: null | {
+    movements: number;
+    totalAmount: number;
+  };
+  updated_at: string;
+}
+
+export interface CounterpartAccountMetadata {
+  bankAccountNumber?: null | string;
+  withdrawId?: null | string;
+}
+
+export interface CounterpartAccountSuggestion {
+  accountIdentifier: string;
+  accountType: null | string;
+  assignedCounterpartId: null | number;
+  bankAccountNumber: null | string;
+  bankName: null | string;
+  holder: null | string;
+  movements: number;
+  rut: null | string;
+  totalAmount: number;
+  withdrawId: null | string;
+}
+
+export interface CounterpartDetail {
+  accounts: CounterpartAccount[];
+  counterpart: Counterpart;
+}
 
 export type CounterpartPersonType = PersonType;
 
-export type Counterpart = {
-  id: number;
-  rut: string | null;
-  name: string;
-  personType: CounterpartPersonType;
-  category: CounterpartCategory;
-  employeeId: number | null;
-  email: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-export type CounterpartAccountMetadata = {
-  bankAccountNumber?: string | null;
-  withdrawId?: string | null;
-};
-
-export type CounterpartAccount = {
-  id: number;
-  counterpart_id: number;
-  account_identifier: string;
-  bank_name: string | null;
-  account_type: string | null;
-  holder: string | null;
-  concept: string | null;
-  metadata: CounterpartAccountMetadata | null;
-  created_at: string;
-  updated_at: string;
-  summary?: {
-    totalAmount: number;
-    movements: number;
-  } | null;
-};
-
-export type CounterpartDetail = {
-  counterpart: Counterpart;
-  accounts: CounterpartAccount[];
-};
-
-export type CounterpartAccountSuggestion = {
-  accountIdentifier: string;
-  rut: string | null;
-  holder: string | null;
-  bankName: string | null;
-  accountType: string | null;
-  bankAccountNumber: string | null;
-  withdrawId: string | null;
-  totalAmount: number;
-  movements: number;
-  assignedCounterpartId: number | null;
-};
-
-export type CounterpartSummary = {
-  monthly: Array<{ month: string; concept: string; total: number }>;
-  byAccount: Array<{
+export interface CounterpartSummary {
+  byAccount: {
     account_identifier: string;
-    concept: string | null;
-    bank_name: string | null;
-    total: number;
+    bank_name: null | string;
+    concept: null | string;
     count: number;
-  }>;
-};
+    total: number;
+  }[];
+  monthly: { concept: string; month: string; total: number }[];
+}
 
-export type AccountTransactionsState = {
-  expanded: boolean;
-  loading: boolean;
-  error: string | null;
-  recentTransactions?: Transaction[];
-};
-
-export type TransactionsApiResponse = {
-  status: "ok" | "error";
+export interface TransactionsApiResponse {
   data: Transaction[];
   message?: string;
-};
-
-export type AccountGroup = {
-  key: string;
-  label: string;
-  bankName: string | null;
-  holder: string | null;
-  concept: string;
-  accounts: CounterpartAccount[];
-};
+  status: "error" | "ok";
+}
 
 export { type CounterpartCategory } from "@/types/schema";

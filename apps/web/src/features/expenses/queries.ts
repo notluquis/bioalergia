@@ -1,14 +1,19 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { fetchMonthlyExpenseDetail, fetchMonthlyExpenses,fetchMonthlyExpenseStats } from "./api";
 import type { ExpenseFilters } from "./hooks/useMonthlyExpenses";
+
+import { fetchMonthlyExpenseDetail, fetchMonthlyExpenses, fetchMonthlyExpenseStats } from "./api";
 
 export const expenseKeys = {
   all: ["monthly-expenses"] as const,
-  statsAll: ["monthly-expenses-stats"] as const,
+  detail: (id: string) =>
+    queryOptions({
+      enabled: !!id,
+      queryFn: () => fetchMonthlyExpenseDetail(id),
+      queryKey: ["monthly-expense-detail", id],
+    }),
   list: (filters: ExpenseFilters) =>
     queryOptions({
-      queryKey: ["monthly-expenses", filters.from, filters.to],
       queryFn: async () => {
         const response = await fetchMonthlyExpenses({
           from: filters.from,
@@ -24,24 +29,20 @@ export const expenseKeys = {
         // The API returns { expenses: ... }.
         return response;
       },
+      queryKey: ["monthly-expenses", filters.from, filters.to],
     }),
   stats: (filters: ExpenseFilters) =>
     queryOptions({
-      queryKey: ["monthly-expenses-stats", filters.from, filters.to, filters.category],
       queryFn: async () => {
         const response = await fetchMonthlyExpenseStats({
-          from: filters.from,
-          to: filters.to,
-          groupBy: "month",
           category: filters.category ?? undefined,
+          from: filters.from,
+          groupBy: "month",
+          to: filters.to,
         });
         return response;
       },
+      queryKey: ["monthly-expenses-stats", filters.from, filters.to, filters.category],
     }),
-  detail: (id: string) =>
-    queryOptions({
-      queryKey: ["monthly-expense-detail", id],
-      queryFn: () => fetchMonthlyExpenseDetail(id),
-      enabled: !!id,
-    }),
+  statsAll: ["monthly-expenses-stats"] as const,
 };

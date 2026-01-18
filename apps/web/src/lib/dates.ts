@@ -9,19 +9,12 @@ import dayjs, { Dayjs } from "dayjs";
 export const ISO_DATE_FORMAT = "YYYY-MM-DD";
 
 /**
- * Obtiene la fecha actual en formato ISO (YYYY-MM-DD)
- * @returns Fecha actual formateada
+ * Resta días a la fecha actual
+ * @param days - Cantidad de días a restar
+ * @returns Fecha N días atrás en formato ISO
  */
-export function today(): string {
-  return dayjs().format(ISO_DATE_FORMAT);
-}
-
-/**
- * Obtiene el primer día del mes actual en formato ISO
- * @returns Primer día del mes actual
- */
-export function startOfMonth(): string {
-  return dayjs().startOf("month").format(ISO_DATE_FORMAT);
+export function daysAgo(days: number): string {
+  return dayjs().subtract(days, "day").format(ISO_DATE_FORMAT);
 }
 
 /**
@@ -30,15 +23,6 @@ export function startOfMonth(): string {
  */
 export function endOfMonth(): string {
   return dayjs().endOf("month").format(ISO_DATE_FORMAT);
-}
-
-/**
- * Obtiene el primer día del mes de una fecha específica
- * @param date - Fecha base
- * @returns Primer día del mes
- */
-export function startOfMonthFor(date: Dayjs | string): string {
-  return dayjs(date).startOf("month").format(ISO_DATE_FORMAT);
 }
 
 /**
@@ -51,12 +35,20 @@ export function endOfMonthFor(date: Dayjs | string): string {
 }
 
 /**
- * Resta meses a la fecha actual y obtiene el primer día de ese mes
- * @param months - Cantidad de meses a restar
- * @returns Primer día del mes N meses atrás
+ * Obtiene el último día del año actual
+ * @returns Último día del año actual (YYYY-12-31)
  */
-export function monthsAgoStart(months: number): string {
-  return dayjs().subtract(months, "month").startOf("month").format(ISO_DATE_FORMAT);
+export function endOfYear(): string {
+  return dayjs().endOf("year").format(ISO_DATE_FORMAT);
+}
+
+/**
+ * Formatea una fecha arbitraria al formato ISO
+ * @param date - Fecha a formatear (string, Date, Dayjs)
+ * @returns Fecha en formato ISO
+ */
+export function formatISO(date: Date | Dayjs | string): string {
+  return dayjs(date).format(ISO_DATE_FORMAT);
 }
 
 /**
@@ -69,6 +61,32 @@ export function monthsAgoEnd(months: number): string {
 }
 
 /**
+ * Resta meses a la fecha actual y obtiene el primer día de ese mes
+ * @param months - Cantidad de meses a restar
+ * @returns Primer día del mes N meses atrás
+ */
+export function monthsAgoStart(months: number): string {
+  return dayjs().subtract(months, "month").startOf("month").format(ISO_DATE_FORMAT);
+}
+
+/**
+ * Obtiene el primer día del mes actual en formato ISO
+ * @returns Primer día del mes actual
+ */
+export function startOfMonth(): string {
+  return dayjs().startOf("month").format(ISO_DATE_FORMAT);
+}
+
+/**
+ * Obtiene el primer día del mes de una fecha específica
+ * @param date - Fecha base
+ * @returns Primer día del mes
+ */
+export function startOfMonthFor(date: Dayjs | string): string {
+  return dayjs(date).startOf("month").format(ISO_DATE_FORMAT);
+}
+
+/**
  * Obtiene el primer día del año actual
  * @returns Primer día del año actual (YYYY-01-01)
  */
@@ -77,27 +95,9 @@ export function startOfYear(): string {
 }
 
 /**
- * Obtiene el último día del año actual
- * @returns Último día del año actual (YYYY-12-31)
+ * Obtiene la fecha actual en formato ISO (YYYY-MM-DD)
+ * @returns Fecha actual formateada
  */
-export function endOfYear(): string {
-  return dayjs().endOf("year").format(ISO_DATE_FORMAT);
-}
-
-/**
- * Resta días a la fecha actual
- * @param days - Cantidad de días a restar
- * @returns Fecha N días atrás en formato ISO
- */
-export function daysAgo(days: number): string {
-  return dayjs().subtract(days, "day").format(ISO_DATE_FORMAT);
-}
-
-/**
- * Formatea una fecha arbitraria al formato ISO
- * @param date - Fecha a formatear (string, Date, Dayjs)
- * @returns Fecha en formato ISO
- */
-export function formatISO(date: string | Date | Dayjs): string {
-  return dayjs(date).format(ISO_DATE_FORMAT);
+export function today(): string {
+  return dayjs().format(ISO_DATE_FORMAT);
 }

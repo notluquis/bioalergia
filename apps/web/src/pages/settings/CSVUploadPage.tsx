@@ -15,164 +15,168 @@ import { type CsvImportPayload, importCsvData, previewCsvImport } from "@/featur
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
-type TableOption = {
-  value: string;
+interface TableOption {
+  fields: { name: string; required: boolean; type: string }[];
   label: string;
-  fields: { name: string; type: string; required: boolean }[];
-};
+  value: string;
+}
 
 const TABLE_OPTIONS: TableOption[] = [
   {
-    value: "people",
+    fields: [
+      { name: "rut", required: true, type: "string" },
+      { name: "names", required: true, type: "string" },
+      { name: "fatherName", required: false, type: "string" },
+      { name: "motherName", required: false, type: "string" },
+      { name: "email", required: false, type: "string" },
+      { name: "phone", required: false, type: "string" },
+      { name: "address", required: false, type: "string" },
+      { name: "personType", required: false, type: "enum" },
+    ],
     label: "Personas",
-    fields: [
-      { name: "rut", type: "string", required: true },
-      { name: "names", type: "string", required: true },
-      { name: "fatherName", type: "string", required: false },
-      { name: "motherName", type: "string", required: false },
-      { name: "email", type: "string", required: false },
-      { name: "phone", type: "string", required: false },
-      { name: "address", type: "string", required: false },
-      { name: "personType", type: "enum", required: false },
-    ],
+    value: "people",
   },
   {
-    value: "employees",
+    fields: [
+      { name: "rut", required: true, type: "string" },
+      { name: "position", required: true, type: "string" },
+      { name: "department", required: false, type: "string" },
+      { name: "startDate", required: true, type: "date" },
+      { name: "endDate", required: false, type: "date" },
+      { name: "status", required: false, type: "enum" },
+      { name: "salaryType", required: false, type: "enum" },
+      { name: "baseSalary", required: false, type: "number" },
+      { name: "hourlyRate", required: false, type: "number" },
+      { name: "overtimeRate", required: false, type: "number" },
+      { name: "retentionRate", required: false, type: "number" },
+      { name: "bankName", required: false, type: "string" },
+      { name: "bankAccountType", required: false, type: "string" },
+      { name: "bankAccountNumber", required: false, type: "string" },
+    ],
     label: "Trabajadores",
-    fields: [
-      { name: "rut", type: "string", required: true },
-      { name: "position", type: "string", required: true },
-      { name: "department", type: "string", required: false },
-      { name: "startDate", type: "date", required: true },
-      { name: "endDate", type: "date", required: false },
-      { name: "status", type: "enum", required: false },
-      { name: "salaryType", type: "enum", required: false },
-      { name: "baseSalary", type: "number", required: false },
-      { name: "hourlyRate", type: "number", required: false },
-      { name: "overtimeRate", type: "number", required: false },
-      { name: "retentionRate", type: "number", required: false },
-      { name: "bankName", type: "string", required: false },
-      { name: "bankAccountType", type: "string", required: false },
-      { name: "bankAccountNumber", type: "string", required: false },
-    ],
+    value: "employees",
   },
   {
-    value: "counterparts",
+    fields: [
+      { name: "rut", required: true, type: "string" },
+      { name: "category", required: false, type: "enum" },
+      { name: "notes", required: false, type: "string" },
+    ],
     label: "Contrapartes",
-    fields: [
-      { name: "rut", type: "string", required: true },
-      { name: "category", type: "enum", required: false },
-      { name: "notes", type: "string", required: false },
-    ],
+    value: "counterparts",
   },
   {
-    value: "transactions",
+    fields: [
+      { name: "timestamp", required: true, type: "datetime" },
+      { name: "description", required: false, type: "string" },
+      { name: "amount", required: true, type: "number" },
+      { name: "direction", required: true, type: "enum" },
+      { name: "rut", required: false, type: "string" },
+      { name: "origin", required: false, type: "string" },
+      { name: "destination", required: false, type: "string" },
+      { name: "category", required: false, type: "string" },
+    ],
     label: "Transacciones",
-    fields: [
-      { name: "timestamp", type: "datetime", required: true },
-      { name: "description", type: "string", required: false },
-      { name: "amount", type: "number", required: true },
-      { name: "direction", type: "enum", required: true },
-      { name: "rut", type: "string", required: false },
-      { name: "origin", type: "string", required: false },
-      { name: "destination", type: "string", required: false },
-      { name: "category", type: "string", required: false },
-    ],
+    value: "transactions",
   },
   {
-    value: "daily_balances",
+    fields: [
+      { name: "date", required: true, type: "date" },
+      { name: "amount", required: true, type: "number" },
+      { name: "note", required: false, type: "string" },
+    ],
     label: "Saldos diarios",
-    fields: [
-      { name: "date", type: "date", required: true },
-      { name: "amount", type: "number", required: true },
-      { name: "note", type: "string", required: false },
-    ],
+    value: "daily_balances",
   },
   {
-    value: "daily_production_balances",
+    fields: [
+      { name: "balanceDate", required: true, type: "date" },
+      { name: "ingresoTarjetas", required: false, type: "number" },
+      { name: "ingresoTransferencias", required: false, type: "number" },
+      { name: "ingresoEfectivo", required: false, type: "number" },
+      { name: "gastosDiarios", required: false, type: "number" },
+      { name: "otrosAbonos", required: false, type: "number" },
+      { name: "consultasMonto", required: false, type: "number" },
+      { name: "controlesMonto", required: false, type: "number" },
+      { name: "testsMonto", required: false, type: "number" },
+      { name: "vacunasMonto", required: false, type: "number" },
+      { name: "licenciasMonto", required: false, type: "number" },
+      { name: "roxairMonto", required: false, type: "number" },
+      { name: "comentarios", required: false, type: "string" },
+      { name: "status", required: false, type: "enum" },
+      { name: "changeReason", required: false, type: "string" },
+    ],
     label: "Balances de producción diaria",
-    fields: [
-      { name: "balanceDate", type: "date", required: true },
-      { name: "ingresoTarjetas", type: "number", required: false },
-      { name: "ingresoTransferencias", type: "number", required: false },
-      { name: "ingresoEfectivo", type: "number", required: false },
-      { name: "gastosDiarios", type: "number", required: false },
-      { name: "otrosAbonos", type: "number", required: false },
-      { name: "consultasMonto", type: "number", required: false },
-      { name: "controlesMonto", type: "number", required: false },
-      { name: "testsMonto", type: "number", required: false },
-      { name: "vacunasMonto", type: "number", required: false },
-      { name: "licenciasMonto", type: "number", required: false },
-      { name: "roxairMonto", type: "number", required: false },
-      { name: "comentarios", type: "string", required: false },
-      { name: "status", type: "enum", required: false },
-      { name: "changeReason", type: "string", required: false },
-    ],
+    value: "daily_production_balances",
   },
   {
-    value: "services",
+    fields: [
+      { name: "name", required: true, type: "string" },
+      { name: "rut", required: false, type: "string" },
+      { name: "type", required: false, type: "enum" },
+      { name: "frequency", required: false, type: "enum" },
+      { name: "defaultAmount", required: false, type: "number" },
+      { name: "status", required: false, type: "enum" },
+    ],
     label: "Servicios",
-    fields: [
-      { name: "name", type: "string", required: true },
-      { name: "rut", type: "string", required: false },
-      { name: "type", type: "enum", required: false },
-      { name: "frequency", type: "enum", required: false },
-      { name: "defaultAmount", type: "number", required: false },
-      { name: "status", type: "enum", required: false },
-    ],
+    value: "services",
   },
   {
-    value: "inventory_items",
+    fields: [
+      { name: "categoryId", required: false, type: "number" },
+      { name: "name", required: true, type: "string" },
+      { name: "description", required: false, type: "string" },
+      { name: "currentStock", required: false, type: "number" },
+    ],
     label: "Ítems de inventario",
-    fields: [
-      { name: "categoryId", type: "number", required: false },
-      { name: "name", type: "string", required: true },
-      { name: "description", type: "string", required: false },
-      { name: "currentStock", type: "number", required: false },
-    ],
+    value: "inventory_items",
   },
   {
-    value: "employee_timesheets",
-    label: "Horas trabajadas",
     fields: [
-      { name: "rut", type: "string", required: true },
-      { name: "workDate", type: "date", required: true },
-      { name: "startTime", type: "time", required: false },
-      { name: "endTime", type: "time", required: false },
-      { name: "workedMinutes", type: "number", required: true },
-      { name: "overtimeMinutes", type: "number", required: false },
-      { name: "comment", type: "string", required: false },
+      { name: "rut", required: true, type: "string" },
+      { name: "workDate", required: true, type: "date" },
+      { name: "startTime", required: false, type: "time" },
+      { name: "endTime", required: false, type: "time" },
+      { name: "workedMinutes", required: true, type: "number" },
+      { name: "overtimeMinutes", required: false, type: "number" },
+      { name: "comment", required: false, type: "string" },
     ],
+    label: "Horas trabajadas",
+    value: "employee_timesheets",
   },
 ];
 
 // Backend now supports all these tables
 const SUPPORTED_TABLES = new Set([
-  "people",
-  "employees",
   "counterparts",
   "daily_balances",
   "daily_production_balances",
-  "transactions",
-  "services",
-  "inventory_items",
   "employee_timesheets",
+  "employees",
+  "inventory_items",
+  "people",
+  "services",
+  "transactions",
 ]);
 
 // Permission mapping
 const PERMISSION_MAP: Record<string, { action: string; subject: string }> = {
-  people: { action: "create", subject: "Person" },
-  employees: { action: "create", subject: "Employee" },
   counterparts: { action: "create", subject: "Counterpart" },
   daily_balances: { action: "create", subject: "DailyBalance" },
   daily_production_balances: { action: "create", subject: "ProductionBalance" },
-  transactions: { action: "create", subject: "Transaction" },
-  services: { action: "create", subject: "Service" },
-  inventory_items: { action: "create", subject: "InventoryItem" },
   employee_timesheets: { action: "create", subject: "Timesheet" },
+  employees: { action: "create", subject: "Employee" },
+  inventory_items: { action: "create", subject: "InventoryItem" },
+  people: { action: "create", subject: "Person" },
+  services: { action: "create", subject: "Service" },
+  transactions: { action: "create", subject: "Transaction" },
 };
 
-type FieldDefinition = { name: string; type: string; required: boolean };
+interface FieldDefinition {
+  name: string;
+  required: boolean;
+  type: string;
+}
 
 export default function CSVUploadPage() {
   const { can } = useAuth();
@@ -182,18 +186,18 @@ export default function CSVUploadPage() {
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
 
   // Parsed status
-  const [parseStatus, setParseStatus] = useState<"idle" | "parsing" | "error">("idle");
+  const [parseStatus, setParseStatus] = useState<"error" | "idle" | "parsing">("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const [previewData, setPreviewData] = useState<{
-    toInsert?: number;
-    toUpdate?: number;
-    toSkip?: number;
-    inserted?: number;
-    updated?: number;
-    skipped?: number;
+  const [previewData, setPreviewData] = useState<null | {
     errors?: string[];
-  } | null>(null);
+    inserted?: number;
+    skipped?: number;
+    toInsert?: number;
+    toSkip?: number;
+    toUpdate?: number;
+    updated?: number;
+  }>(null);
 
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
@@ -210,25 +214,28 @@ export default function CSVUploadPage() {
 
   // Mutations
   const {
-    mutate: previewMutate,
-    isPending: isPreviewPending,
     isError: isPreviewError,
+    isPending: isPreviewPending,
+    mutate: previewMutate,
   } = useMutation({
     mutationFn: (payload: CsvImportPayload) => previewCsvImport(payload),
-    onSuccess: (data) => {
-      setPreviewData(data);
-    },
     onError: (err) => {
       setErrorMessage(err instanceof Error ? err.message : "Error al previsualizar datos");
+    },
+    onSuccess: (data) => {
+      setPreviewData(data);
     },
   });
 
   const {
-    mutate: importMutate,
-    isPending: isImportPending,
     isError: isImportError,
+    isPending: isImportPending,
+    mutate: importMutate,
   } = useMutation({
     mutationFn: (payload: CsvImportPayload) => importCsvData(payload),
+    onError: (err) => {
+      setErrorMessage(err instanceof Error ? err.message : "Error al importar datos");
+    },
     onSuccess: (data) => {
       setPreviewData(data);
       setShowSuccessMessage(true);
@@ -242,9 +249,6 @@ export default function CSVUploadPage() {
         setPreviewData(null);
         setParseStatus("idle");
       }, 3000);
-    },
-    onError: (err) => {
-      setErrorMessage(err instanceof Error ? err.message : "Error al importar datos");
     },
   });
 
@@ -277,7 +281,7 @@ export default function CSVUploadPage() {
     // Auto-mapping heuristics
     if (currentTable) {
       const autoMapping: Record<string, string> = {};
-      currentTable.fields.forEach((field) => {
+      for (const field of currentTable.fields) {
         const matchingHeader = headers.find(
           (h) =>
             h.toLowerCase() === field.name.toLowerCase() ||
@@ -286,14 +290,14 @@ export default function CSVUploadPage() {
         if (matchingHeader) {
           autoMapping[field.name] = matchingHeader;
         }
-      });
+      }
       setColumnMapping(autoMapping);
     }
 
     setParseStatus("idle");
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement> | File) => {
+  const handleFileChange = (e: File | React.ChangeEvent<HTMLInputElement>) => {
     const file = e instanceof File ? e : e.target.files?.[0];
     if (!file) return;
 
@@ -303,13 +307,13 @@ export default function CSVUploadPage() {
     setPreviewData(null);
 
     Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
       complete: handleParseComplete,
       error: (error) => {
         setParseStatus("error");
         setErrorMessage(`Error al leer archivo: ${error.message}`);
       },
+      header: true,
+      skipEmptyLines: true,
     });
   };
 
@@ -322,12 +326,12 @@ export default function CSVUploadPage() {
 
   const getTransformedData = () => {
     return csvData.map((row) => {
-      const transformed: Record<string, string | number> = {};
-      Object.entries(columnMapping).forEach(([dbField, csvColumn]) => {
+      const transformed: Record<string, number | string> = {};
+      for (const [dbField, csvColumn] of Object.entries(columnMapping)) {
         if (csvColumn && row[csvColumn] !== undefined) {
           transformed[dbField] = row[csvColumn];
         }
-      });
+      }
       return transformed;
     });
   };
@@ -336,8 +340,8 @@ export default function CSVUploadPage() {
     if (!selectedTable || csvData.length === 0) return;
     setErrorMessage("");
     previewMutate({
-      table: selectedTable,
       data: getTransformedData(),
+      table: selectedTable,
     });
   };
 
@@ -345,8 +349,8 @@ export default function CSVUploadPage() {
     if (!selectedTable || csvData.length === 0) return;
     setErrorMessage("");
     importMutate({
-      table: selectedTable,
       data: getTransformedData(),
+      table: selectedTable,
     });
   };
 
@@ -359,7 +363,6 @@ export default function CSVUploadPage() {
   const columns: ColumnDef<FieldDefinition>[] = [
     {
       accessorKey: "name",
-      header: "Campo BD",
       cell: ({ row }) => (
         <div className="flex items-center gap-1.5 font-medium">
           {row.original.name}
@@ -370,27 +373,28 @@ export default function CSVUploadPage() {
           )}
         </div>
       ),
+      header: "Campo BD",
     },
     {
       accessorKey: "type",
-      header: "Tipo",
       cell: ({ row }) => <span className="badge badge-xs badge-ghost font-mono">{row.original.type}</span>,
+      header: "Tipo",
     },
     {
-      id: "mapping",
-      header: "Columna CSV",
       cell: ({ row }) => (
         <Input
           as="select"
-          size="sm"
           className={cn(
             "w-full max-w-xs transition-colors",
             row.original.required && !columnMapping[row.original.name]
               ? "border-error focus:border-error text-error"
               : ""
           )}
+          onChange={(e) => {
+            handleColumnMapChange(row.original.name, e.target.value);
+          }}
+          size="sm"
           value={columnMapping[row.original.name] || ""}
-          onChange={(e) => handleColumnMapChange(row.original.name, e.target.value)}
         >
           <option value="">-- Ignorar / Sin mapear --</option>
           {csvHeaders.map((header) => (
@@ -400,10 +404,10 @@ export default function CSVUploadPage() {
           ))}
         </Input>
       ),
+      header: "Columna CSV",
+      id: "mapping",
     },
     {
-      id: "preview",
-      header: "Ejemplo (Fila 1)",
       cell: ({ row }) => {
         const mappedColumn = columnMapping[row.original.name];
         return (
@@ -412,6 +416,8 @@ export default function CSVUploadPage() {
           </span>
         );
       },
+      header: "Ejemplo (Fila 1)",
+      id: "preview",
     },
   ];
 
@@ -440,7 +446,7 @@ export default function CSVUploadPage() {
             <CardContent>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                 <div className="w-full sm:w-1/3">
-                  <Input as="select" value={selectedTable} onChange={handleTableChange} className="w-full">
+                  <Input as="select" className="w-full" onChange={handleTableChange} value={selectedTable}>
                     <option value="">-- Seleccionar tabla --</option>
                     {allowedTableOptions.map((table) => (
                       <option key={table.value} value={table.value}>
@@ -456,8 +462,8 @@ export default function CSVUploadPage() {
                     <div className="flex flex-wrap gap-2">
                       {currentTable.fields.map((field) => (
                         <span
-                          key={field.name}
                           className={cn("badge badge-sm", field.required ? "badge-primary" : "badge-ghost opacity-60")}
+                          key={field.name}
                         >
                           {field.name}
                           {field.required && "*"}
@@ -479,9 +485,9 @@ export default function CSVUploadPage() {
               <CardContent className="space-y-4">
                 <FileInput
                   accept=".csv"
-                  onChange={handleFileChange}
                   disabled={parseStatus === "parsing" || isPreviewPending || isImportPending}
                   label="Arrastra un archivo CSV aquí o haz clic para seleccionar"
+                  onChange={handleFileChange}
                 />
 
                 {parseStatus === "parsing" && (
@@ -561,7 +567,7 @@ export default function CSVUploadPage() {
                 </div>
 
                 {previewData.errors && previewData.errors.length > 0 && (
-                  <Alert variant="warning" className="mb-0">
+                  <Alert className="mb-0" variant="warning">
                     <div className="flex w-full flex-col gap-2">
                       <div className="flex items-center gap-2 font-medium">
                         <AlertCircle className="h-4 w-4" />
@@ -583,9 +589,9 @@ export default function CSVUploadPage() {
           {csvData.length > 0 && (
             <div className="bg-base-100/80 border-base-200 sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-t p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
               <Button
-                variant="outline"
-                onClick={handlePreview}
                 disabled={!isValidMapping || isPreviewPending || isImportPending}
+                onClick={handlePreview}
+                variant="outline"
               >
                 {isPreviewPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -596,9 +602,9 @@ export default function CSVUploadPage() {
               </Button>
 
               <Button
-                variant="primary"
-                onClick={handleImport}
                 disabled={!isValidMapping || isPreviewPending || isImportPending}
+                onClick={handleImport}
+                variant="primary"
               >
                 {isImportPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

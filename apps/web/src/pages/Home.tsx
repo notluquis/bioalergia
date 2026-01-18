@@ -33,7 +33,7 @@ export default function Home() {
   const to = today();
 
   const statsParams = { from, to };
-  const leaderboardParams = { from, to, limit: 5, mode: "outgoing" as const };
+  const leaderboardParams = { from, limit: 5, mode: "outgoing" as const, to };
 
   if (!canReadDashboard) {
     return <div className="text-base-content/60 p-8 text-center">No tienes permisos para ver el panel principal.</div>;
@@ -107,44 +107,44 @@ function DashboardSkeleton() {
 
 const QUICK_LINKS = [
   {
-    title: "Registrar saldo",
-    description: "Actualiza saldos diarios y conciliaciones.",
-    to: "/finanzas/production-balances" as const,
-    icon: Wallet,
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
-    subject: "DailyBalance",
     action: "read", // Minimum requirement
+    bg: "bg-emerald-500/10",
+    color: "text-emerald-500",
+    description: "Actualiza saldos diarios y conciliaciones.",
+    icon: Wallet,
+    subject: "DailyBalance",
+    title: "Registrar saldo",
+    to: "/finanzas/production-balances" as const,
   },
   {
-    title: "Ver movimientos",
-    description: "Audita los movimientos y flujos de caja.",
-    to: "/finanzas/statistics" as const,
-    icon: ArrowRightLeft,
-    color: "text-blue-500",
+    action: "read",
     bg: "bg-blue-500/10",
+    color: "text-blue-500",
+    description: "Audita los movimientos y flujos de caja.",
+    icon: ArrowRightLeft,
     subject: "Transaction",
-    action: "read",
+    title: "Ver movimientos",
+    to: "/finanzas/statistics" as const,
   },
   {
-    title: "Participantes",
-    description: "Gestiona contrapartes y sus historiales.",
-    to: "/finanzas/participants" as const,
-    icon: Users,
-    color: "text-violet-500",
+    action: "read",
     bg: "bg-violet-500/10",
+    color: "text-violet-500",
+    description: "Gestiona contrapartes y sus historiales.",
+    icon: Users,
     subject: "Person",
-    action: "read",
+    title: "Participantes",
+    to: "/finanzas/participants" as const,
   },
   {
-    title: "Servicios",
-    description: "Administra servicios recurrentes y agenda.",
-    to: "/services" as const,
-    icon: CalendarDays,
-    color: "text-amber-500",
-    bg: "bg-amber-500/10",
-    subject: "Service",
     action: "read",
+    bg: "bg-amber-500/10",
+    color: "text-amber-500",
+    description: "Administra servicios recurrentes y agenda.",
+    icon: CalendarDays,
+    subject: "Service",
+    title: "Servicios",
+    to: "/services" as const,
   },
 ] as const;
 
@@ -160,9 +160,9 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
         <div className="grid gap-2 sm:grid-cols-2">
           {links.map((link) => (
             <Link
+              className="group border-base-200 bg-base-200/50 hover:bg-base-200 flex items-center gap-3 rounded-lg border p-3 transition-colors"
               key={link.to}
               to={link.to}
-              className="group border-base-200 bg-base-200/50 hover:bg-base-200 flex items-center gap-3 rounded-lg border p-3 transition-colors"
             >
               <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${link.bg} ${link.color}`}>
                 <link.icon className="h-5 w-5" />

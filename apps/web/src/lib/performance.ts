@@ -4,10 +4,10 @@
  */
 
 interface NavigatorWithMemory extends Navigator {
-  deviceMemory?: number;
   connection?: {
     saveData: boolean;
   };
+  deviceMemory?: number;
 }
 
 export function initPerformanceMonitoring() {

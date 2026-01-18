@@ -14,29 +14,29 @@ import { PAGE_CONTAINER } from "@/lib/styles";
 
 export default function ParticipantInsightsPage() {
   const {
-    participantId,
-    setParticipantId,
-    from,
-    setFrom,
-    to,
-    setTo,
-    quickMonth,
-    setQuickMonth,
-    monthly,
     counterparts,
-    visible,
-    detailLoading,
     detailError,
-    leaderboardLimit,
-    setLeaderboardLimit,
-    leaderboardGrouping,
-    setLeaderboardGrouping,
-    leaderboardLoading,
-    leaderboardError,
+    detailLoading,
     displayedLeaderboard,
-    quickMonthOptions,
-    handleSubmit,
+    from,
     handleSelectParticipant,
+    handleSubmit,
+    leaderboardError,
+    leaderboardGrouping,
+    leaderboardLimit,
+    leaderboardLoading,
+    monthly,
+    participantId,
+    quickMonth,
+    quickMonthOptions,
+    setFrom,
+    setLeaderboardGrouping,
+    setLeaderboardLimit,
+    setParticipantId,
+    setQuickMonth,
+    setTo,
+    to,
+    visible,
   } = useParticipantInsightsData();
 
   const leaderboardColumns = getLeaderboardColumns();
@@ -47,17 +47,26 @@ export default function ParticipantInsightsPage() {
     <section className={PAGE_CONTAINER}>
       <Card>
         <CardContent className="p-6">
-          <form onSubmit={handleSubmit} className="grid items-end gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <form className="grid items-end gap-6 sm:grid-cols-2 lg:grid-cols-4" onSubmit={handleSubmit}>
             <Input
+              enterKeyHint="search"
+              inputMode="numeric"
               label="ID participante"
+              onChange={(e) => {
+                setParticipantId(e.target.value);
+              }}
+              placeholder="123861706983"
               type="text"
               value={participantId}
-              onChange={(e) => setParticipantId(e.target.value)}
-              placeholder="123861706983"
-              inputMode="numeric"
-              enterKeyHint="search"
             />
-            <Input label="Rango rápido" as="select" value={quickMonth} onChange={(e) => setQuickMonth(e.target.value)}>
+            <Input
+              as="select"
+              label="Rango rápido"
+              onChange={(e) => {
+                setQuickMonth(e.target.value);
+              }}
+              value={quickMonth}
+            >
               {quickMonthOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -65,21 +74,25 @@ export default function ParticipantInsightsPage() {
               ))}
             </Input>
             <Input
+              disabled={quickMonth !== "custom"}
               label="Desde"
+              onChange={(e) => {
+                setFrom(e.target.value);
+              }}
               type="date"
               value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              disabled={quickMonth !== "custom"}
             />
             <Input
+              disabled={quickMonth !== "custom"}
               label="Hasta"
+              onChange={(e) => {
+                setTo(e.target.value);
+              }}
               type="date"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
-              disabled={quickMonth !== "custom"}
             />
             <div className="flex justify-end lg:col-span-4">
-              <Button type="submit" disabled={detailLoading} isLoading={detailLoading}>
+              <Button disabled={detailLoading} isLoading={detailLoading} type="submit">
                 Consultar
               </Button>
             </div>
@@ -96,14 +109,14 @@ export default function ParticipantInsightsPage() {
           <div className="flex flex-wrap gap-4">
             <div className="w-32">
               <Input
-                label="Mostrar top"
                 as="select"
-                value={leaderboardLimit}
+                className="select-sm"
+                label="Mostrar top"
                 onChange={(e) => {
                   const value = Number(e.target.value);
                   setLeaderboardLimit(Number.isFinite(value) ? value : 10);
                 }}
-                className="select-sm"
+                value={leaderboardLimit}
               >
                 {[10, 20, 30].map((value) => (
                   <option key={value} value={value}>
@@ -114,11 +127,13 @@ export default function ParticipantInsightsPage() {
             </div>
             <div className="w-40">
               <Input
-                label="Agrupar por"
                 as="select"
-                value={leaderboardGrouping}
-                onChange={(e) => setLeaderboardGrouping(e.target.value as "account" | "rut")}
                 className="select-sm"
+                label="Agrupar por"
+                onChange={(e) => {
+                  setLeaderboardGrouping(e.target.value as "account" | "rut");
+                }}
+                value={leaderboardGrouping}
               >
                 <option value="account">Cuenta bancaria</option>
                 <option value="rut">RUT</option>
@@ -137,9 +152,9 @@ export default function ParticipantInsightsPage() {
               isLoading={leaderboardLoading}
               meta={
                 {
-                  participantId,
-                  onSelect: handleSelectParticipant,
                   detailLoading,
+                  onSelect: handleSelectParticipant,
+                  participantId,
                 } as LeaderboardMeta
               }
               noDataMessage={leaderboardLoading ? "Cargando ranking..." : "Sin participantes en el rango seleccionado."}
@@ -159,8 +174,8 @@ export default function ParticipantInsightsPage() {
                 <DataTable
                   columns={monthlyColumns}
                   data={monthly}
-                  noDataMessage="Sin movimientos."
                   isLoading={detailLoading}
+                  noDataMessage="Sin movimientos."
                 />
               </CardContent>
             </Card>
@@ -173,8 +188,8 @@ export default function ParticipantInsightsPage() {
                 <DataTable
                   columns={counterpartsColumns}
                   data={counterparts}
-                  noDataMessage="No hay contrapartes."
                   isLoading={detailLoading}
+                  noDataMessage="No hay contrapartes."
                 />
               </CardContent>
             </Card>

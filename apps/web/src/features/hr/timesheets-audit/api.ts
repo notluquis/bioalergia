@@ -20,9 +20,9 @@ export async function fetchMultiEmployeeTimesheets(
   }
 
   const params = new URLSearchParams({
+    employeeIds: employeeIds.join(","),
     from,
     to,
-    employeeIds: employeeIds.join(","),
   });
 
   const response = await apiClient.get<{ entries: TimesheetEntryWithEmployee[] }>(

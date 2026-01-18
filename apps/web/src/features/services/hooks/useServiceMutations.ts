@@ -2,10 +2,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/context/AuthContext";
 
+import type { CreateServicePayload, RegenerateServicePayload, ServiceListResponse } from "../types";
+
 import { createService, extractErrorMessage, regenerateServiceSchedules, unlinkServicePayment } from "../api";
 import { serviceKeys } from "../queries";
 import { servicesActions } from "../store";
-import type { CreateServicePayload, RegenerateServicePayload, ServiceListResponse } from "../types";
 
 export function useServiceMutations() {
   const { can } = useAuth();
@@ -17,12 +18,12 @@ export function useServiceMutations() {
     mutationFn: createService,
     onSuccess: (response) => {
       queryClient.setQueryData(serviceKeys.lists(), (old: ServiceListResponse | undefined) => {
-        if (!old) return { status: "ok", services: [response.service] };
+        if (!old) return { services: [response.service], status: "ok" };
         return { ...old, services: [...old.services, response.service] };
       });
       // Invalidate both lists and detail (unifying cache is harder without normalized cache)
-      queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
 
       servicesActions.setSelectedId(response.service.public_id);
       servicesActions.closeCreateModal();
@@ -35,7 +36,7 @@ export function useServiceMutations() {
       return regenerateServiceSchedules(id, payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
     },
   });
 
@@ -43,30 +44,30 @@ export function useServiceMutations() {
   const unlinkMutation = useMutation({
     mutationFn: unlinkServicePayment,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
     },
   });
 
   return {
+    // State
+    canManage,
+    createError: extractErrorMessage(createMutation.error),
+    createPending: createMutation.isPending,
+
     // Methods
     createService: async (payload: CreateServicePayload) => {
       await createMutation.mutateAsync(payload);
     },
+    regenerateError: extractErrorMessage(regenerateMutation.error),
+    regeneratePending: regenerateMutation.isPending,
     regenerateService: async (id: string, overrides: RegenerateServicePayload) => {
       await regenerateMutation.mutateAsync({ id, payload: overrides });
     },
+    unlinkError: extractErrorMessage(unlinkMutation.error),
     unlinkPayment: async (scheduleId: number) => {
       await unlinkMutation.mutateAsync(scheduleId);
     },
-
-    // State
-    canManage,
-    createPending: createMutation.isPending,
-    createError: extractErrorMessage(createMutation.error),
-    regeneratePending: regenerateMutation.isPending,
-    regenerateError: extractErrorMessage(regenerateMutation.error),
     unlinkPending: unlinkMutation.isPending,
-    unlinkError: extractErrorMessage(unlinkMutation.error),
   };
 }

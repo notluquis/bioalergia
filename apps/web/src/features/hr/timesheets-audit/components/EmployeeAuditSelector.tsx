@@ -5,23 +5,24 @@
 
 import { useState } from "react";
 
-import Checkbox from "@/components/ui/Checkbox";
 import type { Employee } from "@/features/hr/employees/types";
+
+import Checkbox from "@/components/ui/Checkbox";
 
 interface EmployeeAuditSelectorProps {
   employees: Employee[];
-  selectedIds: number[];
-  onSelectionChange: (ids: number[]) => void;
   loading?: boolean;
+  onSelectionChange: (ids: number[]) => void;
+  selectedIds: number[];
 }
 
 const MAX_EMPLOYEES = 5;
 
 export default function EmployeeAuditSelector({
   employees,
-  selectedIds,
-  onSelectionChange,
   loading = false,
+  onSelectionChange,
+  selectedIds,
 }: EmployeeAuditSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -55,10 +56,12 @@ export default function EmployeeAuditSelector({
 
       {/* Main button */}
       <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        disabled={loading}
         className="input input-bordered text-base-content flex h-12 w-full cursor-pointer items-center justify-between gap-3 text-sm select-none disabled:opacity-50"
+        disabled={loading}
+        onClick={() => {
+          setIsOpen(!isOpen);
+        }}
+        type="button"
       >
         <span className="truncate font-medium">{displayText}</span>
         <svg
@@ -67,7 +70,7 @@ export default function EmployeeAuditSelector({
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          <path d="M19 14l-7 7m0 0l-7-7m7 7V3" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
         </svg>
       </button>
 
@@ -84,14 +87,16 @@ export default function EmployeeAuditSelector({
 
                 return (
                   <Checkbox
-                    key={emp.id}
                     checked={isSelected}
-                    onChange={() => handleToggle(emp.id)}
-                    disabled={isDisabled}
-                    label={emp.full_name}
                     className={`rounded p-2 text-sm transition-colors ${
                       isDisabled ? "cursor-not-allowed opacity-50" : "hover:bg-base-100/60"
                     }`}
+                    disabled={isDisabled}
+                    key={emp.id}
+                    label={emp.full_name}
+                    onChange={() => {
+                      handleToggle(emp.id);
+                    }}
                   />
                 );
               })
@@ -116,13 +121,15 @@ export default function EmployeeAuditSelector({
             if (!emp) return null;
 
             return (
-              <div key={id} className="badge badge-primary gap-2 text-xs">
+              <div className="badge badge-primary gap-2 text-xs" key={id}>
                 {emp.full_name}
                 <button
-                  type="button"
-                  onClick={() => handleToggle(id)}
-                  className="hover:text-error text-xs transition-colors"
                   aria-label={`Remove ${emp.full_name}`}
+                  className="hover:text-error text-xs transition-colors"
+                  onClick={() => {
+                    handleToggle(id);
+                  }}
+                  type="button"
                 >
                   ✕
                 </button>

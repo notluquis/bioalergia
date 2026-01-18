@@ -15,12 +15,14 @@ export default function Clock() {
         setTime(now);
       }
     }, 1000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   return (
     <div className="border-base-300/60 bg-base-100/80 text-base-content inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-xs shadow-sm backdrop-blur">
-      <span className="bg-primary/70 inline-block h-1.5 w-1.5 rounded-full" aria-hidden="true" />
+      <span aria-hidden="true" className="bg-primary/70 inline-block h-1.5 w-1.5 rounded-full" />
       <span>
         {time.toLocaleTimeString("es-CL", {
           hour: "2-digit",

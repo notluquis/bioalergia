@@ -1,78 +1,78 @@
-export type TimesheetEntry = {
-  id: number;
-  employee_id: number;
-  work_date: string;
-  start_time: string | null;
-  end_time: string | null;
-  worked_minutes: number;
-  overtime_minutes: number;
-  extra_amount: number;
-  comment: string | null;
+export interface TimesheetEntry {
+  comment: null | string;
   created_at: string;
-  updated_at: string;
-};
-
-export type TimesheetPayload = {
   employee_id: number;
-  work_date: string;
-  start_time?: string | null;
-  end_time?: string | null;
-  worked_minutes: number;
-  overtime_minutes?: number;
-  extra_amount?: number;
-  comment?: string | null;
-};
-
-export type TimesheetUpsertEntry = {
-  work_date: string;
-  start_time: string | null;
-  end_time: string | null;
-  overtime_minutes: number;
+  end_time: null | string;
   extra_amount: number;
-  comment: string | null;
-};
+  id: number;
+  overtime_minutes: number;
+  start_time: null | string;
+  updated_at: string;
+  work_date: string;
+  worked_minutes: number;
+}
 
-export type TimesheetSummaryRow = {
-  employeeId: number;
-  fullName: string;
-  role: string;
-  email: string | null;
-  hoursFormatted: string;
-  overtimeFormatted: string;
-  hourlyRate: number;
-  overtimeRate: number;
-  retentionRate: number;
-  extraAmount: number;
-  subtotal: number;
-  retention: number;
-  net: number;
-  payDate: string;
-  workedMinutes: number;
-  overtimeMinutes: number;
-};
+export interface TimesheetPayload {
+  comment?: null | string;
+  employee_id: number;
+  end_time?: null | string;
+  extra_amount?: number;
+  overtime_minutes?: number;
+  start_time?: null | string;
+  work_date: string;
+  worked_minutes: number;
+}
 
-export type TimesheetSummaryResponse = {
-  month: string;
-  from: string;
-  to: string;
+export interface TimesheetSummaryResponse {
   employees: TimesheetSummaryRow[];
+  from: string;
+  month: string;
+  to: string;
   totals: {
-    hours: string;
-    overtime: string;
     extraAmount: number;
-    subtotal: number;
-    retention: number;
+    hours: string;
     net: number;
+    overtime: string;
+    retention: number;
+    subtotal: number;
   };
-};
+}
+
+export interface TimesheetSummaryRow {
+  email: null | string;
+  employeeId: number;
+  extraAmount: number;
+  fullName: string;
+  hourlyRate: number;
+  hoursFormatted: string;
+  net: number;
+  overtimeFormatted: string;
+  overtimeMinutes: number;
+  overtimeRate: number;
+  payDate: string;
+  retention: number;
+  retentionRate: number;
+  role: string;
+  subtotal: number;
+  workedMinutes: number;
+}
+
+export interface TimesheetUpsertEntry {
+  comment: null | string;
+  end_time: null | string;
+  extra_amount: number;
+  overtime_minutes: number;
+  start_time: null | string;
+  work_date: string;
+}
 
 export const EMPTY_BULK_ROW = {
+  comment: "",
   date: "",
   entrada: "", // Hora de entrada (ej: "09:00")
-  salida: "", // Hora de salida (ej: "18:00")
+  entryId: null as null | number,
   overtime: "", // Horas extra (ej: "02:00")
-  comment: "",
-  entryId: null as number | null,
+  salida: "", // Hora de salida (ej: "18:00")
 };
 
 export type BulkRow = typeof EMPTY_BULK_ROW;

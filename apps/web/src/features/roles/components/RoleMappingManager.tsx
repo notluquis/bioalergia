@@ -1,14 +1,16 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
+import type { Role as AvailableRole } from "@/types/roles";
+
 import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
 import { type Employee } from "@/features/hr/employees/api";
-import type { Role as AvailableRole } from "@/types/roles";
 
 import type { RoleMapping } from "../api";
-import { roleQueries, saveRoleMapping } from "../api";
 import type { ExtendedRoleMapping } from "./RoleMappingColumns";
+
+import { roleQueries, saveRoleMapping } from "../api";
 import { getColumns } from "./RoleMappingColumns";
 
 export default function RoleMappingManager() {
@@ -23,26 +25,26 @@ export default function RoleMappingManager() {
       await Promise.all(
         changedMappings.map((m) =>
           saveRoleMapping({
-            employee_role: m.employee_role,
             app_role: m.app_role,
+            employee_role: m.employee_role,
           })
         )
       );
       // Invalidate the mapping query
       return queryClient.invalidateQueries({ queryKey: roleQueries.mappings().queryKey });
     },
-    onSuccess: () => {
-      // Success means invalidation is triggerd
-    },
     onError: () => {
       // handled in component error state if needed, but we use mutation.error
+    },
+    onSuccess: () => {
+      // Success means invalidation is triggerd
     },
   });
 
   // Sync data to local state
   useEffect(() => {
     // data is guaranteed by Suspense
-    const { employees, dbMappings, roles } = data;
+    const { dbMappings, employees, roles } = data;
     setAvailableRoles(roles);
 
     const dbMappingsMap = new Map(dbMappings.map((m: RoleMapping) => [m.employee_role, m]));
@@ -53,18 +55,18 @@ export default function RoleMappingManager() {
       if (existing) {
         // Explicitly construct object to satisfy TS
         return {
-          employee_role: existing.employee_role,
           app_role: existing.app_role,
-          isNew: false,
+          employee_role: existing.employee_role,
           isModified: false,
+          isNew: false,
         };
       }
       const defaultRole = roles.find((r: AvailableRole) => r.name === "VIEWER")?.name || roles[0]?.name || "";
       return {
-        employee_role: resultRole,
         app_role: defaultRole,
-        isNew: true,
+        employee_role: resultRole,
         isModified: false,
+        isNew: true,
       };
     });
 
@@ -103,13 +105,13 @@ export default function RoleMappingManager() {
         Asigna qué rol de aplicación tendrán los empleados automáticamente según su cargo en la ficha.
       </p>
 
-      <DataTable data={mappings} columns={columns} enableToolbar={false} pagination={{ pageIndex: 0, pageSize: 100 }} />
+      <DataTable columns={columns} data={mappings} enableToolbar={false} pagination={{ pageIndex: 0, pageSize: 100 }} />
 
       <div className="flex justify-end pt-2">
         <Button
-          onClick={handleSave}
           disabled={isSaving || mappings.every((m) => !m.isNew && !m.isModified)}
           isLoading={isSaving}
+          onClick={handleSave}
         >
           Guardar Cambios
         </Button>

@@ -5,11 +5,11 @@ import { useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { fmtCLP } from "@/lib/format";
 
-export type HeatmapMonthProps = {
-  month: Dayjs;
-  statsByDate: Map<string, { total: number; amountExpected: number; amountPaid: number }>;
+export interface HeatmapMonthProps {
   maxValue: number;
-};
+  month: Dayjs;
+  statsByDate: Map<string, { amountExpected: number; amountPaid: number; total: number }>;
+}
 
 // Colors based on intensity (0 to 4)
 // Colors based on intensity (0 to 4)
@@ -43,25 +43,25 @@ function getIntensity(count: number, max: number): 0 | 1 | 2 | 3 | 4 {
 // Monday to Saturday only (excluding Sunday)
 const WEEKDAYS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
 
-type PaddingCell = {
-  key: string;
-  type: "padding";
-};
-
-type DayCell = {
-  key: string;
-  type: "day";
-  date: Dayjs;
-  dayNumber: number;
-  isoDate: string;
-  total: number;
+interface DayCell {
   amountExpected: number;
   amountPaid: number;
-  isToday: boolean;
+  date: Dayjs;
+  dayNumber: number;
   intensity: 0 | 1 | 2 | 3 | 4;
-};
+  isoDate: string;
+  isToday: boolean;
+  key: string;
+  total: number;
+  type: "day";
+}
 
-function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthProps) {
+interface PaddingCell {
+  key: string;
+  type: "padding";
+}
+
+function HeatmapMonthComponent({ maxValue, month, statsByDate }: HeatmapMonthProps) {
   // KEEP useMemo: Heavy Array generation with multiple map/format operations
   const dates = useMemo(() => {
     const startOfMonth = month.startOf("month");
@@ -87,17 +87,17 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
       .map((_, i) => {
         const date = startOfMonth.add(i, "day");
         const isoDate = date.format("YYYY-MM-DD");
-        const stats = statsByDate.get(isoDate) || { total: 0, amountExpected: 0, amountPaid: 0 };
+        const stats = statsByDate.get(isoDate) || { amountExpected: 0, amountPaid: 0, total: 0 };
 
         return {
-          key: isoDate,
-          type: "day" as const,
           date: date,
           dayNumber: i + 1,
           isoDate,
+          key: isoDate,
+          type: "day" as const,
           ...stats,
-          isToday: date.isSame(dayjs(), "day"),
           intensity: getIntensity(stats.total, maxValue),
+          isToday: date.isSame(dayjs(), "day"),
         };
       })
       .filter((day) => day.date.day() !== 0); // Filter out Sundays (day() === 0)
@@ -132,8 +132,8 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
           {/* Weekday headers */}
           {WEEKDAYS.map((d) => (
             <div
-              key={d}
               className="text-base-content/40 py-2 text-center text-[10px] font-bold tracking-widest uppercase select-none"
+              key={d}
             >
               {d}
             </div>
@@ -156,10 +156,10 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
                       // Intensity colors overlap default
                       INTENSITY_COLORS[cell.intensity],
                       {
+                        "cursor-pointer font-semibold": cell.total > 0,
                         // TODAY indicator - prominent ring with glow effect
                         "ring-warning ring-offset-base-100 shadow-warning/40 z-10 shadow-lg ring-2 ring-offset-2":
                           cell.isToday,
-                        "cursor-pointer font-semibold": cell.total > 0,
                       },
                       !cell.isToday &&
                         "hover:ring-primary hover:ring-offset-base-100 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2"
@@ -185,8 +185,8 @@ function HeatmapMonthComponent({ month, statsByDate, maxValue }: HeatmapMonthPro
                 </TooltipTrigger>
                 {cell.total > 0 && (
                   <TooltipContent
-                    side="top"
                     className="bg-base-300 border-base-content/10 text-base-content z-50 rounded-xl border p-3 text-xs shadow-xl"
+                    side="top"
                   >
                     <p className="mb-1 font-bold">{cell.date.format("dddd DD MMMM")}</p>
                     <div className="space-y-0.5">

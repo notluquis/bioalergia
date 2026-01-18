@@ -26,11 +26,13 @@ export default function PersonManagementPage() {
         <div className="relative flex-1">
           <Search className="text-base-content/40 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
-            type="text"
-            placeholder="Buscar por nombre o RUT..."
             className="w-full pl-9"
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
+            placeholder="Buscar por nombre o RUT..."
+            type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <Button className="gap-2">
@@ -46,8 +48,8 @@ export default function PersonManagementPage() {
         ) : (
           filteredPeople.map((person) => (
             <div
-              key={person.id}
               className="card bg-base-100 border-base-200 border shadow-sm transition-shadow hover:shadow-md"
+              key={person.id}
             >
               <div className="card-body p-5">
                 <div className="flex items-start justify-between">
@@ -86,7 +88,7 @@ export default function PersonManagementPage() {
                 </div>
 
                 <div className="border-base-200 mt-4 flex justify-end border-t pt-4">
-                  <Button variant="ghost" size="xs" onClick={() => navigate({ to: `/settings/people/${person.id}` })}>
+                  <Button onClick={() => navigate({ to: `/settings/people/${person.id}` })} size="xs" variant="ghost">
                     Ver Detalles
                   </Button>
                 </div>

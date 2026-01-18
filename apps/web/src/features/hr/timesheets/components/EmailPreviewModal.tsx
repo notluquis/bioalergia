@@ -1,35 +1,36 @@
-import "dayjs/locale/es";
-
 import { formatRetentionPercent, getEffectiveRetentionRate } from "@shared/retention";
 import dayjs from "dayjs";
 
-import Button from "@/components/ui/Button";
 import type { Employee } from "@/features/hr/employees/types";
+
+import Button from "@/components/ui/Button";
 import { fmtCLP } from "@/lib/format";
 import { LOADING_SPINNER_SM } from "@/lib/styles";
 
 import type { TimesheetSummaryRow } from "../types";
 
+import "dayjs/locale/es";
+
 interface EmailPreviewModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onPrepare: () => void;
-  prepareStatus: string | null; // null | 'generating-pdf' | 'preparing' | 'done'
   employee: Employee | null;
-  summary: TimesheetSummaryRow | null;
+  isOpen: boolean;
   month: string; // YYYY-MM format
   monthLabel: string;
+  onClose: () => void;
+  onPrepare: () => void;
+  prepareStatus: null | string; // null | 'generating-pdf' | 'preparing' | 'done'
+  summary: null | TimesheetSummaryRow;
 }
 
 export default function EmailPreviewModal({
+  employee,
   isOpen,
+  month,
+  monthLabel,
   onClose,
   onPrepare,
   prepareStatus,
-  employee,
   summary,
-  month,
-  monthLabel,
 }: EmailPreviewModalProps) {
   const isPreparing = prepareStatus !== null && prepareStatus !== "done";
   if (!isOpen || !employee || !summary) return null;
@@ -61,7 +62,7 @@ export default function EmailPreviewModal({
   // Handle both camelCase and snake_case from backend
   const summaryData = summary as unknown as Record<string, unknown>;
   const employeeRate =
-    (summaryData.retentionRate as number | null) || (summaryData.retention_rate as number | null) || null;
+    (summaryData.retentionRate as null | number) || (summaryData.retention_rate as null | number) || null;
   const effectiveRate = getEffectiveRetentionRate(employeeRate, summaryYear);
   const retentionPercent = formatRetentionPercent(effectiveRate);
 
@@ -171,14 +172,14 @@ export default function EmailPreviewModal({
             {!prepareStatus && "Se descargará un archivo .eml que puedes abrir con Outlook."}
           </p>
           <div className="flex gap-3">
-            <Button variant="secondary" onClick={onClose} disabled={isPreparing}>
+            <Button disabled={isPreparing} onClick={onClose} variant="secondary">
               {prepareStatus === "done" ? "Cerrar" : "Cancelar"}
             </Button>
             <Button
-              variant="primary"
-              onClick={onPrepare}
-              disabled={isPreparing || !employeeEmail || prepareStatus === "done"}
               className="min-w-44"
+              disabled={isPreparing || !employeeEmail || prepareStatus === "done"}
+              onClick={onPrepare}
+              variant="primary"
             >
               {(() => {
                 if (prepareStatus === "generating-pdf") {

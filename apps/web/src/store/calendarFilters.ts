@@ -1,23 +1,23 @@
 import { Store } from "@tanstack/store";
 
-export type CalendarFilterState = {
-  from: string;
-  to: string;
+export interface CalendarFilterState {
   calendarIds: string[];
-  eventTypes: string[];
   categories: string[];
-  search: string;
+  eventTypes: string[];
+  from: string;
   maxDays: number;
-};
+  search: string;
+  to: string;
+}
 
 const initialState: CalendarFilterState = {
-  from: "",
-  to: "",
   calendarIds: [],
-  eventTypes: [],
   categories: [],
-  search: "",
+  eventTypes: [],
+  from: "",
   maxDays: 31,
+  search: "",
+  to: "",
 };
 
 export const calendarFilterStore = new Store<CalendarFilterState>(initialState);
@@ -33,11 +33,11 @@ export const resetFilters = () => {
 export const selectCalendarFilters = (state: CalendarFilterState) => state;
 
 export const selectCalendarFiltersForQuery = (state: CalendarFilterState) => ({
-  from: state.from,
-  to: state.to,
   calendarIds: state.calendarIds,
-  eventTypes: state.eventTypes,
   categories: state.categories,
-  search: state.search,
+  eventTypes: state.eventTypes,
+  from: state.from,
   maxDays: state.maxDays,
+  search: state.search,
+  to: state.to,
 });

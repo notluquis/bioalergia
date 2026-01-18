@@ -1,8 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
 
+import type { Permission, Role } from "@/types/roles";
+
 import { fetchEmployees } from "@/features/hr/employees/api";
 import { apiClient } from "@/lib/apiClient";
-import type { Permission, Role } from "@/types/roles";
 
 export const roleKeys = {
   all: ["roles"] as const,
@@ -12,97 +13,39 @@ export const roleKeys = {
 export const roleQueries = {
   mappings: () =>
     queryOptions({
-      queryKey: roleKeys.mappings,
       queryFn: async () => {
         const [employees, dbMappings, roles] = await Promise.all([
           fetchEmployees(true),
           getRoleMappings(),
           fetchRoles(),
         ]);
-        return { employees, dbMappings, roles };
+        return { dbMappings, employees, roles };
       },
+      queryKey: roleKeys.mappings,
       // Keep data fresh but allow staleness for better UX
       staleTime: 30 * 1000,
     }),
   users: (roleId: number) =>
     queryOptions({
-      queryKey: [...roleKeys.all, roleId, "users"] as const,
       queryFn: () => fetchRoleUsers(roleId),
+      queryKey: [...roleKeys.all, roleId, "users"] as const,
     }),
 };
 
 // --- Role Mappings ---
 
-export type RoleMapping = {
-  employee_role: string;
+export interface RoleMapping {
   app_role: string;
-};
-
-export async function getRoleMappings(): Promise<RoleMapping[]> {
-  const res = await apiClient.get<{ data: RoleMapping[] }>("/api/roles/mappings");
-  return res.data;
-}
-
-export async function saveRoleMapping(mapping: RoleMapping): Promise<void> {
-  await apiClient.post("/api/roles/mappings", mapping);
-}
-
-// --- Roles & Permissions Management ---
-
-export async function fetchRoles() {
-  const res = await apiClient.get<{ status: string; roles: Role[] }>("/api/roles");
-  return res.roles;
-}
-
-export async function fetchPermissions() {
-  const res = await apiClient.get<{ status: string; permissions: Permission[] }>("/api/roles/permissions");
-  return res.permissions;
-}
-
-export async function syncPermissions() {
-  return apiClient.post("/api/roles/permissions/sync", {});
-}
-
-interface UpdateRolePermissionsParams {
-  roleId: number;
-  permissionIds: number[];
-}
-
-export async function updateRolePermissions({ roleId, permissionIds }: UpdateRolePermissionsParams) {
-  return apiClient.post(`/api/roles/${roleId}/permissions`, { permissionIds });
-}
-
-// --- CRUD & Users ---
-
-interface RoleFormData {
-  name: string;
-  description: string;
-}
-
-export async function createRole(data: RoleFormData) {
-  return apiClient.post("/api/roles", data);
-}
-
-export async function updateRole(id: number, data: RoleFormData) {
-  return apiClient.put(`/api/roles/${id}`, data);
-}
-
-export async function deleteRole(id: number) {
-  return apiClient.delete(`/api/roles/${id}`);
+  employee_role: string;
 }
 
 export interface RoleUser {
-  id: number;
   email: string;
-  person: {
-    names: string;
+  id: number;
+  person: null | {
     fatherName: string;
-  } | null;
-}
-
-export async function fetchRoleUsers(roleId: number) {
-  const res = await apiClient.get<{ users: RoleUser[] }>(`/api/roles/${roleId}/users`);
-  return res.users;
+    names: string;
+  };
 }
 
 interface ReassignParams {
@@ -110,8 +53,66 @@ interface ReassignParams {
   targetRoleId: number;
 }
 
+// --- Roles & Permissions Management ---
+
+interface RoleFormData {
+  description: string;
+  name: string;
+}
+
+interface UpdateRolePermissionsParams {
+  permissionIds: number[];
+  roleId: number;
+}
+
+export async function createRole(data: RoleFormData) {
+  return apiClient.post("/api/roles", data);
+}
+
+export async function deleteRole(id: number) {
+  return apiClient.delete(`/api/roles/${id}`);
+}
+
+export async function fetchPermissions() {
+  const res = await apiClient.get<{ permissions: Permission[]; status: string }>("/api/roles/permissions");
+  return res.permissions;
+}
+
+// --- CRUD & Users ---
+
+export async function fetchRoles() {
+  const res = await apiClient.get<{ roles: Role[]; status: string }>("/api/roles");
+  return res.roles;
+}
+
+export async function fetchRoleUsers(roleId: number) {
+  const res = await apiClient.get<{ users: RoleUser[] }>(`/api/roles/${roleId}/users`);
+  return res.users;
+}
+
+export async function getRoleMappings(): Promise<RoleMapping[]> {
+  const res = await apiClient.get<{ data: RoleMapping[] }>("/api/roles/mappings");
+  return res.data;
+}
+
 export async function reassignRoleUsers({ roleId, targetRoleId }: ReassignParams) {
   return apiClient.post(`/api/roles/${roleId}/reassign`, {
     targetRoleId,
   });
+}
+
+export async function saveRoleMapping(mapping: RoleMapping): Promise<void> {
+  await apiClient.post("/api/roles/mappings", mapping);
+}
+
+export async function syncPermissions() {
+  return apiClient.post("/api/roles/permissions/sync", {});
+}
+
+export async function updateRole(id: number, data: RoleFormData) {
+  return apiClient.put(`/api/roles/${id}`, data);
+}
+
+export async function updateRolePermissions({ permissionIds, roleId }: UpdateRolePermissionsParams) {
+  return apiClient.post(`/api/roles/${roleId}/permissions`, { permissionIds });
 }

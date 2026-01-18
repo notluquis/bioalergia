@@ -7,25 +7,25 @@ import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/apiClient";
 import { cn } from "@/lib/utils";
 
-interface GoogleStatus {
-  configured: boolean;
-  valid: boolean;
-  source: "db" | "env" | "none";
-  error?: string;
-  errorCode?: "token_expired" | "token_revoked" | "invalid_grant" | "unknown";
-}
-
 interface AuthUrlResponse {
   url: string;
 }
 
+interface GoogleStatus {
+  configured: boolean;
+  error?: string;
+  errorCode?: "invalid_grant" | "token_expired" | "token_revoked" | "unknown";
+  source: "db" | "env" | "none";
+  valid: boolean;
+}
+
 // Error message mapping for user-friendly display
 const ERROR_MESSAGES: Record<string, string> = {
+  access_denied: "Acceso denegado. El usuario canceló la autorización.",
   invalid_state: "Error de seguridad. Intenta conectar nuevamente.",
   missing_code: "No se recibió código de autorización.",
   no_refresh_token: "Google no proporcionó token. Revoca el acceso y vuelve a intentar.",
   token_exchange_failed: "Error al intercambiar código. Intenta nuevamente.",
-  access_denied: "Acceso denegado. El usuario canceló la autorización.",
 };
 
 export default function GoogleDriveConnectWrapper() {
@@ -43,7 +43,7 @@ export default function GoogleDriveConnectWrapper() {
 }
 
 function GoogleDriveConnect() {
-  const { success, error: showError } = useToast();
+  const { error: showError, success } = useToast();
   const queryClient = useQueryClient();
 
   // Handle callback results from URL params
@@ -59,7 +59,7 @@ function GoogleDriveConnect() {
       url.searchParams.delete("connected");
       globalThis.history.replaceState({}, "", url.pathname + url.search);
       // Refresh status
-      queryClient.invalidateQueries({ queryKey: ["google-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["google-status"] });
     }
 
     if (error) {
@@ -74,10 +74,10 @@ function GoogleDriveConnect() {
 
   // Status Query
   const { data: status } = useSuspenseQuery({
-    queryKey: ["google-status"],
     queryFn: async () => {
       return apiClient.get<GoogleStatus>("/api/integrations/google/status");
     },
+    queryKey: ["google-status"],
   });
 
   // Get Auth URL and redirect (no modal needed!)
@@ -85,12 +85,14 @@ function GoogleDriveConnect() {
     mutationFn: async () => {
       return apiClient.get<AuthUrlResponse>("/api/integrations/google/url");
     },
+    onError: (e) => {
+      showError(e.message);
+    },
     onSuccess: (data) => {
       // Redirect to Google in same window (not popup/new tab)
       // The callback will redirect back to this page
-      globalThis.location.href = data.url;
+      globalThis.location.assign(data.url);
     },
-    onError: (e) => showError(e.message),
   });
 
   // Disconnect Mutation
@@ -98,22 +100,24 @@ function GoogleDriveConnect() {
     mutationFn: async () => {
       return apiClient.delete("/api/integrations/google/disconnect");
     },
+    onError: (e) => {
+      showError(e.message);
+    },
     onSuccess: () => {
       success("Desconectado de Google Drive");
-      queryClient.invalidateQueries({ queryKey: ["google-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["google-status"] });
     },
-    onError: (e) => showError(e.message),
   });
 
-  const isConfigured = status?.configured;
-  const isEnv = status?.source === "env";
+  const isConfigured = status.configured;
+  const isEnv = status.source === "env";
 
   // Helper function to get icon styling based on status
   const getIconClassName = (): string => {
-    if (isConfigured && status?.valid) {
+    if (isConfigured && status.valid) {
       return "bg-success/10 text-success";
     }
-    if (isConfigured && !status?.valid) {
+    if (isConfigured && !status.valid) {
       return "bg-warning/10 text-warning";
     }
     return "bg-base-content/5 text-base-content/40";
@@ -121,8 +125,8 @@ function GoogleDriveConnect() {
 
   // Helper function to get status message
   const getStatusMessage = (): React.JSX.Element => {
-    const isValid = status?.valid;
-    const errorMsg = status?.error;
+    const isValid = status.valid;
+    const errorMsg = status.error;
     const sourceText = isEnv ? "Configuración estática ENV" : "Gestionado por Servidor";
 
     if (!isConfigured) {
@@ -150,19 +154,21 @@ function GoogleDriveConnect() {
         <div className="flex gap-2">
           {isConfigured ? (
             <>
-              {!status?.valid && (
+              {!status.valid && (
                 <Button
-                  variant="primary"
-                  onClick={() => connectMutation.mutate()}
-                  isLoading={connectMutation.isPending}
                   className="gap-2"
+                  isLoading={connectMutation.isPending}
+                  onClick={() => {
+                    connectMutation.mutate();
+                  }}
+                  variant="primary"
                 >
                   <Key className="size-4" />
                   Reconectar
                 </Button>
               )}
               <Button
-                variant="outline"
+                className="hover:bg-error/10 hover:text-error hover:border-error gap-2"
                 disabled={isEnv || disconnectMutation.isPending}
                 onClick={() => {
                   if (
@@ -171,12 +177,12 @@ function GoogleDriveConnect() {
                     disconnectMutation.mutate();
                   }
                 }}
-                className="hover:bg-error/10 hover:text-error hover:border-error gap-2"
                 title={
                   isEnv
                     ? "No se puede desconectar porque está configurado por variables de entorno"
                     : "Desconectar cuenta"
                 }
+                variant="outline"
               >
                 <LogOut className="size-4" />
                 {isEnv ? "Gestionado por ENV" : "Desconectar"}
@@ -184,10 +190,12 @@ function GoogleDriveConnect() {
             </>
           ) : (
             <Button
-              variant="primary"
-              onClick={() => connectMutation.mutate()}
-              isLoading={connectMutation.isPending}
               className="gap-2"
+              isLoading={connectMutation.isPending}
+              onClick={() => {
+                connectMutation.mutate();
+              }}
+              variant="primary"
             >
               <Key className="size-4" />
               Conectar

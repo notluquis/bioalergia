@@ -3,8 +3,6 @@
  * Separated for code splitting
  */
 
-import "dayjs/locale/es";
-
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -12,6 +10,8 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { fmtCLP } from "@/lib/format";
 
 import type { MonthlyFlowData } from "../types";
+
+import "dayjs/locale/es";
 
 dayjs.extend(customParseFormat);
 dayjs.locale("es");
@@ -25,18 +25,18 @@ export default function MonthlyFlowChartInner({ data }: MonthlyFlowChartInnerPro
     // item.month viene como "YYYY-MM" (e.g., "2025-01")
     const monthDate = dayjs(item.month + "-01", "YYYY-MM-DD");
     return {
-      month: monthDate.isValid() ? monthDate.format("MMM YY") : item.month,
-      Ingresos: item.in,
       Egresos: item.out,
+      Ingresos: item.in,
+      month: monthDate.isValid() ? monthDate.format("MMM YY") : item.month,
       Neto: item.net,
     };
   });
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
-      <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-base-300" />
-        <XAxis dataKey="month" className="text-base-content/70 text-xs" tick={{ fontSize: 12 }} />
+    <ResponsiveContainer height={320} width="100%">
+      <BarChart data={chartData} margin={{ bottom: 10, left: 10, right: 10, top: 10 }}>
+        <CartesianGrid className="stroke-base-300" strokeDasharray="3 3" />
+        <XAxis className="text-base-content/70 text-xs" dataKey="month" tick={{ fontSize: 12 }} />
         <YAxis
           className="text-base-content/70 text-xs"
           tick={{ fontSize: 12 }}
@@ -59,7 +59,7 @@ export default function MonthlyFlowChartInner({ data }: MonthlyFlowChartInnerPro
             return fmtCLP(num);
           }}
         />
-        <Legend wrapperStyle={{ fontSize: "0.875rem" }} iconType="circle" />
+        <Legend iconType="circle" wrapperStyle={{ fontSize: "0.875rem" }} />
         <Bar dataKey="Ingresos" fill="hsl(var(--su))" radius={[4, 4, 0, 0]} />
         <Bar dataKey="Egresos" fill="hsl(var(--er))" radius={[4, 4, 0, 0]} />
         <Bar dataKey="Neto" fill="hsl(var(--p))" radius={[4, 4, 0, 0]} />

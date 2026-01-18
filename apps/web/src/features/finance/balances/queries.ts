@@ -6,7 +6,7 @@ export const balanceKeys = {
   all: ["daily-balances"] as const,
   range: (from: string, to: string) =>
     queryOptions({
-      queryKey: ["daily-balances", from, to],
       queryFn: () => fetchBalances(from, to),
+      queryKey: ["daily-balances", from, to],
     }),
 };

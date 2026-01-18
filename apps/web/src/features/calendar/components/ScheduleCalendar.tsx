@@ -3,14 +3,15 @@ import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { CalendarEventDetail } from "../types";
+
 import { DailyEventCard } from "./DailyEventCard";
 import WeekGrid from "./WeekGrid";
 
-export type ScheduleCalendarProps = {
+export interface ScheduleCalendarProps {
   events: CalendarEventDetail[];
   loading?: boolean;
   weekStart?: string; // YYYY-MM-DD of week start (Monday)
-};
+}
 
 export function ScheduleCalendar({ events, loading = false, weekStart }: ScheduleCalendarProps) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventDetail | null>(null);
@@ -34,18 +35,20 @@ export function ScheduleCalendar({ events, loading = false, weekStart }: Schedul
 
   return (
     <div className="space-y-4">
-      <WeekGrid events={events} weekStart={effectiveWeekStart} loading={loading} onEventClick={setSelectedEvent} />
+      <WeekGrid events={events} loading={loading} onEventClick={setSelectedEvent} weekStart={effectiveWeekStart} />
 
       {loading && <p className="text-base-content/50 text-center text-xs">Actualizando eventos…</p>}
 
       {/* Event Detail Panel - Uses same card as Daily view */}
       {selectedEvent && (
-        <div ref={detailPanelRef} className="animate-in slide-in-from-bottom-2 relative scroll-mt-4">
+        <div className="animate-in slide-in-from-bottom-2 relative scroll-mt-4" ref={detailPanelRef}>
           <button
-            type="button"
-            className="bg-base-100 border-base-300 text-base-content/60 hover:text-base-content hover:bg-base-200 absolute -top-2 -right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-colors"
-            onClick={() => setSelectedEvent(null)}
             aria-label="Cerrar"
+            className="bg-base-100 border-base-300 text-base-content/60 hover:text-base-content hover:bg-base-200 absolute -top-2 -right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-colors"
+            onClick={() => {
+              setSelectedEvent(null);
+            }}
+            type="button"
           >
             <X size={14} />
           </button>

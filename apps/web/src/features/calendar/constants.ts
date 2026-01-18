@@ -11,10 +11,10 @@ export const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
 /** Category labels for display */
 export const CATEGORY_LABELS = {
-  subcutaneous: "Tratamiento subcutáneo",
-  test: "Test y exámenes",
   injection: "Inyección",
   maintenance: "Mantención",
+  subcutaneous: "Tratamiento subcutáneo",
+  test: "Test y exámenes",
 } as const;
 
 /** Default filter date range in days */

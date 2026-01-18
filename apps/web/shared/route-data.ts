@@ -11,27 +11,22 @@
 // TYPES
 // ============================================================================
 
-export type NavSection = "Calendario" | "Finanzas" | "Servicios" | "Operaciones" | "Sistema";
-
-export interface RoutePermission {
-  action: string;
-  subject: string;
-}
-
 export interface NavConfig {
-  /** Label shown in sidebar */
-  label: string;
   /** Lucide icon name */
   iconKey: string;
-  /** Section grouping in sidebar */
-  section: NavSection;
+  /** Label shown in sidebar */
+  label: string;
   /** Sort order within section (lower = higher) */
   order: number;
+  /** Section grouping in sidebar */
+  section: NavSection;
 }
 
+export type NavSection = "Calendario" | "Finanzas" | "Operaciones" | "Servicios" | "Sistema";
+
 export interface RouteData {
-  /** URL path segment (relative to parent). Optional if index is true. */
-  path?: string;
+  /** Nested child routes */
+  children?: RouteData[];
 
   /**
    * Component path for lazy loading (relative to src/)
@@ -39,29 +34,34 @@ export interface RouteData {
    */
   componentPath?: string;
 
+  /** If true, only match exact path (for index routes) */
+  exact?: boolean;
+
+  /** If true, this is an index route (renders at parent path) */
+  index?: boolean;
+
   /**
    * Navigation config - if present, route appears in sidebar
    * If undefined, route exists but is not shown in navigation
    */
   nav?: NavConfig;
 
+  /** URL path segment (relative to parent). Optional if index is true. */
+  path?: string;
+
   /** Required permission to access this route */
   permission?: RoutePermission;
 
-  /** Route metadata (used for breadcrumbs, page title) */
-  title?: string;
-
-  /** If true, only match exact path (for index routes) */
-  exact?: boolean;
-
-  /** Nested child routes */
-  children?: RouteData[];
-
-  /** If true, this is an index route (renders at parent path) */
-  index?: boolean;
-
   /** Redirect to another path */
   redirectTo?: string;
+
+  /** Route metadata (used for breadcrumbs, page title) */
+  title?: string;
+}
+
+export interface RoutePermission {
+  action: string;
+  subject: string;
 }
 
 // ============================================================================
@@ -73,86 +73,84 @@ export const ROUTE_DATA: RouteData[] = [
   // HOME / DASHBOARD
   // ══════════════════════════════════════════════════════════════════════════
   {
-    path: "",
     componentPath: "pages/Home",
-    nav: { label: "Inicio", iconKey: "Home", section: "Calendario", order: 0 },
+    exact: true,
+    nav: { iconKey: "Home", label: "Inicio", order: 0, section: "Calendario" },
+    path: "",
     permission: { action: "read", subject: "Dashboard" },
     title: "Inicio",
-    exact: true,
   },
   // ══════════════════════════════════════════════════════════════════════════
   // CALENDAR SECTION
   // ══════════════════════════════════════════════════════════════════════════
   {
-    path: "calendar",
-    componentPath: "components/Layout/CalendarLayout",
-    title: "Calendario",
     children: [
       { index: true, redirectTo: "/calendar/schedule" },
       {
-        path: "schedule",
         componentPath: "pages/CalendarSchedulePage",
-        nav: { label: "Calendario", iconKey: "CalendarDays", section: "Calendario", order: 1 },
+        nav: { iconKey: "CalendarDays", label: "Calendario", order: 1, section: "Calendario" },
+        path: "schedule",
         permission: { action: "read", subject: "CalendarSchedule" },
         title: "Calendario interactivo",
       },
       {
-        path: "daily",
         componentPath: "pages/CalendarDailyPage",
-        nav: { label: "Detalle Diario", iconKey: "Calendar", section: "Calendario", order: 2 },
+        nav: { iconKey: "Calendar", label: "Detalle Diario", order: 2, section: "Calendario" },
+        path: "daily",
         permission: { action: "read", subject: "CalendarDaily" },
         title: "Detalle diario",
       },
       {
-        path: "heatmap",
         componentPath: "pages/CalendarHeatmapPage",
-        nav: { label: "Mapa de Calor", iconKey: "LayoutDashboard", section: "Calendario", order: 3 },
+        nav: { iconKey: "LayoutDashboard", label: "Mapa de Calor", order: 3, section: "Calendario" },
+        path: "heatmap",
         permission: { action: "read", subject: "CalendarHeatmap" },
         title: "Mapa de calor",
       },
       {
-        path: "classify",
         componentPath: "pages/CalendarClassificationPage",
-        nav: { label: "Clasificar", iconKey: "ListChecks", section: "Calendario", order: 4 },
+        nav: { iconKey: "ListChecks", label: "Clasificar", order: 4, section: "Calendario" },
+        path: "classify",
         permission: { action: "update", subject: "CalendarEvent" },
         title: "Clasificar eventos",
       },
       {
-        path: "sync-history",
         componentPath: "pages/CalendarSyncHistoryPage",
-        nav: { label: "Historial Sync", iconKey: "Clock", section: "Calendario", order: 5 },
+        nav: { iconKey: "Clock", label: "Historial Sync", order: 5, section: "Calendario" },
+        path: "sync-history",
         permission: { action: "read", subject: "CalendarSyncLog" },
         title: "Historial de sincronización",
       },
     ],
+    componentPath: "components/Layout/CalendarLayout",
+    path: "calendar",
+    title: "Calendario",
   },
 
   // ══════════════════════════════════════════════════════════════════════════
   // FINANZAS SECTION
   // ══════════════════════════════════════════════════════════════════════════
   {
-    path: "finanzas",
-    title: "Finanzas",
     children: [
       { index: true, redirectTo: "/finanzas/conciliaciones" },
       {
-        path: "conciliaciones",
         componentPath: "features/finance/settlements/pages/SettlementsPage",
-        nav: { label: "Conciliaciones", iconKey: "ListChecks", section: "Finanzas", order: 2 },
+        nav: { iconKey: "ListChecks", label: "Conciliaciones", order: 2, section: "Finanzas" },
+        path: "conciliaciones",
         permission: { action: "read", subject: "Integration" },
         title: "Conciliaciones (MP)",
       },
       {
-        path: "liberaciones",
         componentPath: "features/finance/releases/pages/ReleasesPage",
-        nav: { label: "Liberaciones", iconKey: "Wallet", section: "Finanzas", order: 3 },
+        nav: { iconKey: "Wallet", label: "Liberaciones", order: 3, section: "Finanzas" },
+        path: "liberaciones",
         permission: { action: "read", subject: "Integration" },
         title: "Liberaciones (MP)",
       },
       {
-        path: "statistics",
         componentPath: "features/finance/statistics/pages/FinanzasStatsPage",
-        nav: { label: "Estadísticas", iconKey: "BarChart3", section: "Finanzas", order: 2 },
+        nav: { iconKey: "BarChart3", label: "Estadísticas", order: 2, section: "Finanzas" },
+        path: "statistics",
         permission: { action: "read", subject: "TransactionStats" },
         title: "Estadísticas financieras",
       },
@@ -165,241 +163,243 @@ export const ROUTE_DATA: RouteData[] = [
       //   title: "Saldos diarios",
       // },
       {
-        path: "counterparts",
         componentPath: "pages/Counterparts",
-        nav: { label: "Contrapartes", iconKey: "Users2", section: "Finanzas", order: 4 },
+        nav: { iconKey: "Users2", label: "Contrapartes", order: 4, section: "Finanzas" },
+        path: "counterparts",
         permission: { action: "read", subject: "Counterpart" },
         title: "Contrapartes",
       },
       {
-        path: "participants",
         componentPath: "pages/ParticipantInsights",
-        nav: { label: "Participantes", iconKey: "Users2", section: "Finanzas", order: 5 },
+        nav: { iconKey: "Users2", label: "Participantes", order: 5, section: "Finanzas" },
+        path: "participants",
         permission: { action: "read", subject: "Person" },
         title: "Participantes",
       },
       {
-        path: "production-balances",
         componentPath: "pages/finanzas/ProductionBalancesPage",
-        nav: { label: "Balance Diario", iconKey: "FileSpreadsheet", section: "Finanzas", order: 6 },
+        nav: { iconKey: "FileSpreadsheet", label: "Balance Diario", order: 6, section: "Finanzas" },
+        path: "production-balances",
         permission: { action: "read", subject: "ProductionBalance" },
         title: "Balances de producción diaria",
       },
       {
-        path: "loans",
         componentPath: "features/finance/loans/pages/LoansPage",
-        nav: { label: "Préstamos", iconKey: "PiggyBank", section: "Finanzas", order: 7 },
+        nav: { iconKey: "PiggyBank", label: "Préstamos", order: 7, section: "Finanzas" },
+        path: "loans",
         permission: { action: "read", subject: "Loan" },
         title: "Préstamos y créditos",
       },
     ],
+    path: "finanzas",
+    title: "Finanzas",
   },
 
   // ══════════════════════════════════════════════════════════════════════════
   // SERVICES SECTION
   // ══════════════════════════════════════════════════════════════════════════
   {
-    path: "services",
-    componentPath: "features/services/layout/ServicesLayout",
-    title: "Servicios",
     children: [
       {
-        index: true,
         componentPath: "features/services/pages/OverviewPage",
-        nav: { label: "Servicios", iconKey: "Briefcase", section: "Servicios", order: 1 },
-        permission: { action: "read", subject: "ServiceList" },
         exact: true,
+        index: true,
+        nav: { iconKey: "Briefcase", label: "Servicios", order: 1, section: "Servicios" },
+        permission: { action: "read", subject: "ServiceList" },
         title: "Servicios recurrentes",
       },
       {
-        path: "agenda",
         componentPath: "features/services/pages/AgendaPage",
-        nav: { label: "Agenda", iconKey: "CalendarDays", section: "Servicios", order: 2 },
+        nav: { iconKey: "CalendarDays", label: "Agenda", order: 2, section: "Servicios" },
+        path: "agenda",
         permission: { action: "read", subject: "ServiceAgenda" },
         title: "Agenda de servicios",
       },
       {
-        path: "create",
         componentPath: "features/services/pages/CreateServicePage",
+        path: "create",
         permission: { action: "create", subject: "Service" },
         title: "Crear servicio",
       },
       {
-        path: ":id/edit",
         componentPath: "features/services/pages/EditServicePage",
+        path: ":id/edit",
         permission: { action: "update", subject: "Service" },
         title: "Editar servicio",
       },
       {
-        path: "templates",
         componentPath: "features/services/pages/TemplatesPage",
+        path: "templates",
         permission: { action: "read", subject: "ServiceTemplate" },
         title: "Plantillas de servicios",
       },
     ],
+    componentPath: "features/services/layout/ServicesLayout",
+    path: "services",
+    title: "Servicios",
   },
 
   // ══════════════════════════════════════════════════════════════════════════
   // OPERATIONS SECTION
   // ══════════════════════════════════════════════════════════════════════════
   {
-    path: "operations",
-    title: "Operaciones",
     children: [
       { index: true, redirectTo: "/operations/inventory" },
       {
-        path: "inventory",
         componentPath: "features/operations/inventory/pages/InventoryPage",
-        nav: { label: "Inventario", iconKey: "Box", section: "Operaciones", order: 1 },
+        nav: { iconKey: "Box", label: "Inventario", order: 1, section: "Operaciones" },
+        path: "inventory",
         permission: { action: "read", subject: "InventoryItem" },
         title: "Gestión de Inventario",
       },
       {
-        path: "supplies",
         componentPath: "features/operations/supplies/pages/SuppliesPage",
-        nav: { label: "Solicitudes", iconKey: "PackagePlus", section: "Operaciones", order: 2 },
+        nav: { iconKey: "PackagePlus", label: "Solicitudes", order: 2, section: "Operaciones" },
+        path: "supplies",
         permission: { action: "read", subject: "SupplyRequest" },
         title: "Solicitud de Insumos",
       },
     ],
+    path: "operations",
+    title: "Operaciones",
   },
 
   // HR routes
   {
-    path: "hr",
-    title: "RRHH",
     children: [
       { index: true, redirectTo: "/hr/employees" },
       {
-        path: "employees",
         componentPath: "features/hr/employees/pages/EmployeesPage",
-        nav: { label: "RRHH", iconKey: "Users2", section: "Operaciones", order: 3 },
+        nav: { iconKey: "Users2", label: "RRHH", order: 3, section: "Operaciones" },
+        path: "employees",
         permission: { action: "read", subject: "Employee" },
         title: "Trabajadores",
       },
       {
-        path: "timesheets",
         componentPath: "features/hr/timesheets/pages/TimesheetsPage",
-        nav: { label: "Control Horas", iconKey: "Clock", section: "Operaciones", order: 4 },
+        nav: { iconKey: "Clock", label: "Control Horas", order: 4, section: "Operaciones" },
+        path: "timesheets",
         permission: { action: "read", subject: "TimesheetList" },
         title: "Horas y pagos",
       },
       {
-        path: "audit",
         componentPath: "features/hr/timesheets-audit/pages/TimesheetAuditPage",
-        nav: { label: "Auditoría", iconKey: "ClipboardCheck", section: "Operaciones", order: 5 },
+        nav: { iconKey: "ClipboardCheck", label: "Auditoría", order: 5, section: "Operaciones" },
+        path: "audit",
         permission: { action: "read", subject: "TimesheetAudit" },
         title: "Auditoría de horarios",
       },
       {
-        path: "reports",
         componentPath: "features/hr/reports/pages/ReportsPage",
-        nav: { label: "Análisis", iconKey: "BarChart3", section: "Operaciones", order: 6 },
+        nav: { iconKey: "BarChart3", label: "Análisis", order: 6, section: "Operaciones" },
+        path: "reports",
         permission: { action: "read", subject: "Report" },
         title: "Reportes y estadísticas",
       },
     ],
+    path: "hr",
+    title: "RRHH",
   },
 
   // ══════════════════════════════════════════════════════════════════════════
   // SETTINGS SECTION
   // ══════════════════════════════════════════════════════════════════════════
   {
-    path: "settings",
-    componentPath: "components/Layout/SettingsLayout",
-    title: "Configuración",
     children: [
       { index: true, redirectTo: "/settings/roles" },
       {
-        path: "roles",
         componentPath: "pages/settings/RolesSettingsPage",
-        nav: { label: "Roles y Permisos", iconKey: "Users2", section: "Sistema", order: 1 },
+        nav: { iconKey: "Users2", label: "Roles y Permisos", order: 1, section: "Sistema" },
+        path: "roles",
         permission: { action: "read", subject: "Role" },
         title: "Roles y permisos",
       },
       {
-        path: "users",
         componentPath: "features/users/pages/UserManagementPage",
-        nav: { label: "Usuarios", iconKey: "UserCog", section: "Sistema", order: 2 },
+        nav: { iconKey: "UserCog", label: "Usuarios", order: 2, section: "Sistema" },
+        path: "users",
         permission: { action: "read", subject: "User" },
         title: "Gestión de usuarios",
       },
       {
-        path: "users/add",
         componentPath: "pages/admin/AddUserPage",
+        path: "users/add",
         permission: { action: "create", subject: "User" },
         title: "Agregar usuario",
       },
       {
-        path: "people",
         componentPath: "features/users/pages/PersonManagementPage",
-        nav: { label: "Personas", iconKey: "Users", section: "Sistema", order: 3 },
+        nav: { iconKey: "Users", label: "Personas", order: 3, section: "Sistema" },
+        path: "people",
         permission: { action: "read", subject: "Person" },
         title: "Gestión de personas",
       },
       {
-        path: "people/:id",
         componentPath: "pages/settings/PersonDetailsPage",
+        path: "people/:id",
         permission: { action: "read", subject: "Person" },
         title: "Detalles de persona",
       },
       {
-        path: "calendar",
         componentPath: "pages/settings/CalendarSettingsPage",
-        nav: { label: "Cfg. Calendario", iconKey: "Calendar", section: "Sistema", order: 4 },
+        nav: { iconKey: "Calendar", label: "Cfg. Calendario", order: 4, section: "Sistema" },
+        path: "calendar",
         permission: { action: "update", subject: "CalendarSetting" },
         title: "Accesos y conexiones",
       },
       {
-        path: "inventario",
         componentPath: "pages/settings/InventorySettingsPage",
-        nav: { label: "Cfg. Inventario", iconKey: "PackagePlus", section: "Sistema", order: 5 },
+        nav: { iconKey: "PackagePlus", label: "Cfg. Inventario", order: 5, section: "Sistema" },
+        path: "inventario",
         permission: { action: "update", subject: "InventorySetting" },
         title: "Parámetros de inventario",
       },
       {
-        path: "csv-upload",
         componentPath: "pages/settings/CSVUploadPage",
-        nav: { label: "Carga masiva", iconKey: "Upload", section: "Sistema", order: 7 },
+        nav: { iconKey: "Upload", label: "Carga masiva", order: 7, section: "Sistema" },
+        path: "csv-upload",
         permission: { action: "create", subject: "BulkData" },
         title: "Carga masiva de datos",
       },
       {
-        path: "backups",
         componentPath: "pages/settings/BackupSettingsPage",
-        nav: { label: "Backups", iconKey: "Database", section: "Sistema", order: 8 },
+        nav: { iconKey: "Database", label: "Backups", order: 8, section: "Sistema" },
+        path: "backups",
         permission: { action: "read", subject: "Backup" },
         title: "Backups de base de datos",
       },
       {
-        path: "mercadopago",
         componentPath: "pages/settings/MercadoPagoSettingsPage",
-        nav: { label: "Mercado Pago", iconKey: "CreditCard", section: "Sistema", order: 6 },
+        nav: { iconKey: "CreditCard", label: "Mercado Pago", order: 6, section: "Sistema" },
+        path: "mercadopago",
         permission: { action: "read", subject: "Integration" },
         title: "Reportes Mercado Pago",
       },
       {
-        path: "access",
         componentPath: "pages/settings/AccessSettingsPage",
-        nav: { label: "Control Acceso", iconKey: "ShieldCheck", section: "Sistema", order: 9 },
+        nav: { iconKey: "ShieldCheck", label: "Control Acceso", order: 9, section: "Sistema" },
+        path: "access",
         permission: { action: "update", subject: "User" },
         title: "Control de acceso y MFA",
       },
       {
-        path: "sync-history",
         componentPath: "pages/admin/SyncHistoryPage",
-        nav: { label: "Historial Sync", iconKey: "History", section: "Sistema", order: 10 },
+        nav: { iconKey: "History", label: "Historial Sync", order: 10, section: "Sistema" },
+        path: "sync-history",
         permission: { action: "read", subject: "SyncLog" },
         title: "Historial de Sincronización",
       },
     ],
+    componentPath: "components/Layout/SettingsLayout",
+    path: "settings",
+    title: "Configuración",
   },
   // ══════════════════════════════════════════════════════════════════════════
   // ACCOUNT PAGE (User's own account settings - no permission required)
   // ══════════════════════════════════════════════════════════════════════════
   {
-    path: "account",
     componentPath: "pages/AccountSettingsPage",
+    path: "account",
     title: "Mi Cuenta",
     // No permission required - all authenticated users can access their own account
   },
@@ -407,8 +407,8 @@ export const ROUTE_DATA: RouteData[] = [
   // ONBOARDING (new user setup wizard - no permission required)
   // ══════════════════════════════════════════════════════════════════════════
   {
-    path: "onboarding",
     componentPath: "pages/onboarding/OnboardingWizard",
+    path: "onboarding",
     title: "Configuración inicial",
     // No permission required - new users need to complete onboarding
   },

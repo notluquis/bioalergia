@@ -4,19 +4,19 @@ import * as api from "./api";
 
 export const inventoryKeys = {
   all: ["inventory"] as const,
-  items: () =>
+  allergyOverview: () =>
     queryOptions({
-      queryKey: ["inventory", "items"],
-      queryFn: () => api.getInventoryItems(),
+      queryFn: () => api.fetchAllergyOverview(),
+      queryKey: ["inventory", "allergy-overview"],
     }),
   categories: () =>
     queryOptions({
-      queryKey: ["inventory", "categories"],
       queryFn: () => api.getInventoryCategories(),
+      queryKey: ["inventory", "categories"],
     }),
-  allergyOverview: () =>
+  items: () =>
     queryOptions({
-      queryKey: ["inventory", "allergy-overview"],
-      queryFn: () => api.fetchAllergyOverview(),
+      queryFn: () => api.getInventoryItems(),
+      queryKey: ["inventory", "items"],
     }),
 };

@@ -6,18 +6,18 @@ import Button from "@/components/ui/Button";
 import type { MonthlyExpenseDetail as MonthlyExpenseDetailData } from "../types";
 
 interface MonthlyExpenseDetailProps {
+  canManage: boolean;
   expense: MonthlyExpenseDetailData | null;
   loading: boolean;
-  canManage: boolean;
   onEdit?: () => void;
   onLinkTransaction: () => void;
   onUnlinkTransaction: (transactionId: number) => void;
 }
 
 export default function MonthlyExpenseDetail({
+  canManage,
   expense,
   loading,
-  canManage,
   onEdit,
   onLinkTransaction,
   onUnlinkTransaction,
@@ -42,11 +42,11 @@ export default function MonthlyExpenseDetail({
         {canManage && (
           <div className="flex gap-2">
             {onEdit && (
-              <Button variant="secondary" size="sm" onClick={onEdit}>
+              <Button onClick={onEdit} size="sm" variant="secondary">
                 Editar
               </Button>
             )}
-            <Button size="sm" onClick={onLinkTransaction}>
+            <Button onClick={onLinkTransaction} size="sm">
               Vincular transacción
             </Button>
           </div>
@@ -58,9 +58,9 @@ export default function MonthlyExpenseDetail({
         <DetailCard title="Monto aplicado" value={`$${expense.amountApplied.toLocaleString("es-CL")}`} />
         <DetailCard title="Estado" value={expense.status === "OPEN" ? "Pendiente" : "Cerrado"} />
         <DetailCard
+          helper="Registros conciliados"
           title="Transacciones asociadas"
           value={`${expense.transactionCount}`}
-          helper="Registros conciliados"
         />
       </div>
 
@@ -70,7 +70,7 @@ export default function MonthlyExpenseDetail({
         <h3 className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Transacciones</h3>
         <div className="muted-scrollbar max-h-72 space-y-2 overflow-y-auto pr-1">
           {expense.transactions.map((tx) => (
-            <article key={tx.transactionId} className="border-base-300 bg-base-200 rounded-xl border p-3 shadow-inner">
+            <article className="border-base-300 bg-base-200 rounded-xl border p-3 shadow-inner" key={tx.transactionId}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-base-content text-sm font-semibold">ID #{tx.transactionId}</p>
@@ -83,7 +83,13 @@ export default function MonthlyExpenseDetail({
               </div>
               {canManage && (
                 <div className="mt-2 flex justify-end">
-                  <Button size="xs" variant="secondary" onClick={() => onUnlinkTransaction(tx.transactionId)}>
+                  <Button
+                    onClick={() => {
+                      onUnlinkTransaction(tx.transactionId);
+                    }}
+                    size="xs"
+                    variant="secondary"
+                  >
                     Desvincular
                   </Button>
                 </div>
@@ -101,7 +107,7 @@ export default function MonthlyExpenseDetail({
   );
 }
 
-function DetailCard({ title, value, helper }: { title: string; value: string; helper?: string }) {
+function DetailCard({ helper, title, value }: { helper?: string; title: string; value: string }) {
   return (
     <article className="border-base-300 bg-base-200 rounded-xl border p-3 shadow-sm">
       <p className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">{title}</p>

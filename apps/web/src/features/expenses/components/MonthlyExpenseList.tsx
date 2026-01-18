@@ -6,16 +6,16 @@ import type { MonthlyExpense } from "../types";
 
 interface MonthlyExpenseListProps {
   expenses: MonthlyExpense[];
-  selectedId: string | null;
-  onSelect: (publicId: string) => void;
   onCreateRequest?: () => void;
+  onSelect: (publicId: string) => void;
+  selectedId: null | string;
 }
 
 export default function MonthlyExpenseList({
   expenses,
-  selectedId,
-  onSelect,
   onCreateRequest,
+  onSelect,
+  selectedId,
 }: MonthlyExpenseListProps) {
   return (
     <div className="muted-scrollbar h-full overflow-y-auto pr-2">
@@ -25,7 +25,7 @@ export default function MonthlyExpenseList({
           <p className="text-base-content/50 text-xs">Registros de gastos mensuales y puntuales.</p>
         </div>
         {onCreateRequest && (
-          <Button type="button" variant="secondary" size="sm" onClick={onCreateRequest}>
+          <Button onClick={onCreateRequest} size="sm" type="button" variant="secondary">
             Nuevo
           </Button>
         )}
@@ -35,14 +35,16 @@ export default function MonthlyExpenseList({
           const isActive = expense.publicId === selectedId;
           return (
             <button
-              key={expense.publicId}
-              type="button"
-              onClick={() => onSelect(expense.publicId)}
               className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-primary/40 bg-primary/15 text-primary shadow"
                   : "bg-base-100/55 text-base-content hover:border-base-300 hover:bg-base-200 border-transparent"
               }`}
+              key={expense.publicId}
+              onClick={() => {
+                onSelect(expense.publicId);
+              }}
+              type="button"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>

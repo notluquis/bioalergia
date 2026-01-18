@@ -20,53 +20,53 @@ const STEPS = [
   { id: "complete", title: "Listo" },
 ];
 
-type ProfileData = {
-  names: string;
+interface ProfileData {
+  address: string;
+  bankAccountNumber: string;
+  bankAccountType: string;
+  bankName: string;
   fatherName: string;
   motherName: string;
-  rut: string;
+  names: string;
   phone: string;
-  address: string;
-  bankName: string;
-  bankAccountType: string;
-  bankAccountNumber: string;
-};
+  rut: string;
+}
 
 export default function OnboardingWizard() {
-  const { user, refreshSession } = useAuth();
+  const { refreshSession, user } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   // Security: Redirect if user already completed onboarding
   useEffect(() => {
     if (user && user.status !== "PENDING_SETUP") {
-      navigate({ to: "/", replace: true });
+      navigate({ replace: true, to: "/" });
     }
   }, [user, navigate]);
 
   // Queries
   const { data: profileData } = useSuspenseQuery({
-    queryKey: ["user-profile"],
     queryFn: fetchUserProfile,
+    queryKey: ["user-profile"],
     refetchOnWindowFocus: false,
   });
 
   // Form State
   const [profile, setProfile] = useState<ProfileData>(() => ({
-    names: profileData.names || "",
+    address: profileData.address || "",
+    bankAccountNumber: profileData.bankAccountNumber || "",
+    bankAccountType: profileData.bankAccountType || "",
+    bankName: profileData.bankName || "",
     fatherName: profileData.fatherName || "",
     motherName: profileData.motherName || "",
-    rut: profileData.rut || "",
+    names: profileData.names || "",
     phone: profileData.phone || "",
-    address: profileData.address || "",
-    bankName: profileData.bankName || "",
-    bankAccountType: profileData.bankAccountType || "",
-    bankAccountNumber: profileData.bankAccountNumber || "",
+    rut: profileData.rut || "",
   }));
 
   const [mfaCode, setMfaCode] = useState("");
-  const [mfaSecret, setMfaSecret] = useState<{ secret: string; qrCodeUrl: string } | null>(null);
+  const [mfaSecret, setMfaSecret] = useState<null | { qrCodeUrl: string; secret: string }>(null);
   const [mfaEnabled, setMfaEnabled] = useState(false);
 
   // Password state
@@ -80,21 +80,27 @@ export default function OnboardingWizard() {
         if (res.status !== "ok") throw new Error(res.message || "Error al iniciar configuración MFA");
         return res;
       }),
-    onSuccess: (data) => setMfaSecret({ secret: data.secret, qrCodeUrl: data.qrCodeUrl }),
-    onError: () => setError("Error de conexión"),
+    onError: () => {
+      setError("Error de conexión");
+    },
+    onSuccess: (data) => {
+      setMfaSecret({ qrCodeUrl: data.qrCodeUrl, secret: data.secret });
+    },
   });
 
   const mfaVerifyMutation = useMutation({
     mutationFn: (token: string) =>
-      enableMfa({ token, secret: mfaSecret?.secret }).then((res) => {
+      enableMfa({ secret: mfaSecret?.secret, token }).then((res) => {
         if (res.status !== "ok") throw new Error(res.message || "Código incorrecto");
         return res;
       }),
+    onError: (err) => {
+      setError(err instanceof Error ? err.message : "Código incorrecto");
+    },
     onSuccess: () => {
       setMfaEnabled(true);
       handleNext();
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Código incorrecto"),
   });
 
   const passkeyRegisterMutation = useMutation({
@@ -108,13 +114,13 @@ export default function OnboardingWizard() {
       const verifyData = await verifyPasskeyRegistration({ body: attResp, challenge: options.challenge });
       if (verifyData.status !== "ok") throw new Error(verifyData.message || "Error al verificar passkey");
     },
-    onSuccess: () => {
-      setMfaEnabled(true);
-      handleNext();
-    },
     onError: (err) => {
       console.error(err);
       setError("No se pudo registrar el Passkey. Intenta nuevamente o usa la App Autenticadora.");
+    },
+    onSuccess: () => {
+      setMfaEnabled(true);
+      handleNext();
     },
   });
 
@@ -139,11 +145,11 @@ export default function OnboardingWizard() {
       });
       await refreshSession();
     },
-    onSuccess: () => {
-      navigate({ to: "/" });
-    },
     onError: () => {
       setError("Error al finalizar la configuración. Inténtalo de nuevo.");
+    },
+    onSuccess: () => {
+      navigate({ to: "/" });
     },
   });
 
@@ -189,8 +195,12 @@ export default function OnboardingWizard() {
     handleNext();
   };
 
-  const verifyMfa = () => mfaVerifyMutation.mutate(mfaCode);
-  const handlePasskeyRegister = () => passkeyRegisterMutation.mutate();
+  const verifyMfa = () => {
+    mfaVerifyMutation.mutate(mfaCode);
+  };
+  const handlePasskeyRegister = () => {
+    passkeyRegisterMutation.mutate();
+  };
 
   const { mutate: triggerSetupMfa } = mfaSetupMutation;
 
@@ -201,7 +211,9 @@ export default function OnboardingWizard() {
     }
   }, [currentStep, mfaSecret, mfaEnabled, triggerSetupMfa]);
 
-  const handleFinalSubmit = () => finalSubmitMutation.mutate();
+  const handleFinalSubmit = () => {
+    finalSubmitMutation.mutate();
+  };
 
   return (
     <div className="bg-base-200 flex min-h-screen items-center justify-center p-4">
@@ -217,7 +229,7 @@ export default function OnboardingWizard() {
             />
 
             {STEPS.map((step, idx) => (
-              <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 px-1">
+              <div className="relative z-10 flex flex-col items-center gap-2 px-1" key={step.id}>
                 <div
                   className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-full border-4 text-xs font-bold transition-all duration-300 sm:h-10 sm:w-10 sm:text-sm",
@@ -267,10 +279,10 @@ export default function OnboardingWizard() {
                 </p>
               </div>
               <Button
-                onClick={handleNext}
-                variant="primary"
-                size="lg"
                 className="shadow-primary/20 w-full max-w-xs gap-2 shadow-lg"
+                onClick={handleNext}
+                size="lg"
+                variant="primary"
               >
                 Comenzar <ArrowRight size={20} />
               </Button>
@@ -279,8 +291,8 @@ export default function OnboardingWizard() {
 
           {currentStep === 1 && (
             <form
-              onSubmit={handleProfileSubmit}
               className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500"
+              onSubmit={handleProfileSubmit}
             >
               <div className="mb-6 text-center">
                 <div className="bg-primary/10 text-primary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
@@ -294,20 +306,17 @@ export default function OnboardingWizard() {
                 <div className="form-control">
                   <Input
                     label="Nombres (sin apellidos)"
-                    value={profile.names}
-                    onChange={(e) => setProfile({ ...profile, names: e.target.value })}
+                    onChange={(e) => {
+                      setProfile({ ...profile, names: e.target.value });
+                    }}
                     required
+                    value={profile.names}
                   />
                 </div>
                 <div className="form-control">
                   <Input
-                    label="RUT"
-                    value={profile.rut}
                     error={error?.includes("RUT") ? "RUT inválido" : undefined}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setProfile({ ...profile, rut: val });
-                    }}
+                    label="RUT"
                     onBlur={() => {
                       const formatted = formatRut(profile.rut);
                       setProfile({ ...profile, rut: formatted });
@@ -317,43 +326,56 @@ export default function OnboardingWizard() {
                         setError(null);
                       }
                     }}
-                    required
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setProfile({ ...profile, rut: val });
+                    }}
                     placeholder="12.345.678-9"
+                    required
+                    value={profile.rut}
                   />
                 </div>
                 <div className="form-control">
                   <Input
                     label="Primer apellido"
+                    onChange={(e) => {
+                      setProfile({ ...profile, fatherName: e.target.value });
+                    }}
                     value={profile.fatherName}
-                    onChange={(e) => setProfile({ ...profile, fatherName: e.target.value })}
                   />
                 </div>
                 <div className="form-control">
                   <Input
                     label="Segundo apellido"
+                    onChange={(e) => {
+                      setProfile({ ...profile, motherName: e.target.value });
+                    }}
                     value={profile.motherName}
-                    onChange={(e) => setProfile({ ...profile, motherName: e.target.value })}
                   />
                 </div>
                 <div className="form-control">
                   <Input
                     label="Teléfono"
+                    onChange={(e) => {
+                      setProfile({ ...profile, phone: e.target.value });
+                    }}
                     type="tel"
                     value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                   />
                 </div>
                 <div className="form-control md:col-span-2">
                   <Input
                     label="Dirección"
+                    onChange={(e) => {
+                      setProfile({ ...profile, address: e.target.value });
+                    }}
                     value={profile.address}
-                    onChange={(e) => setProfile({ ...profile, address: e.target.value })}
                   />
                 </div>
               </div>
 
               <div className="mt-6 flex justify-end">
-                <Button type="submit" variant="primary" className="w-full px-8 sm:w-auto">
+                <Button className="w-full px-8 sm:w-auto" type="submit" variant="primary">
                   Siguiente
                 </Button>
               </div>
@@ -362,8 +384,8 @@ export default function OnboardingWizard() {
 
           {currentStep === 2 && (
             <form
-              onSubmit={handleFinancialSubmit}
               className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500"
+              onSubmit={handleFinancialSubmit}
             >
               <div className="mb-6 text-center">
                 <div className="bg-secondary/10 text-secondary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
@@ -377,9 +399,11 @@ export default function OnboardingWizard() {
                 <div className="form-control">
                   <Input
                     label="Banco"
-                    value={profile.bankName}
-                    onChange={(e) => setProfile({ ...profile, bankName: e.target.value })}
+                    onChange={(e) => {
+                      setProfile({ ...profile, bankName: e.target.value });
+                    }}
                     placeholder="Ej: Banco de Chile"
+                    value={profile.bankName}
                   />
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -387,8 +411,10 @@ export default function OnboardingWizard() {
                     <Input
                       as="select"
                       label="Tipo de cuenta"
+                      onChange={(e) => {
+                        setProfile({ ...profile, bankAccountType: e.target.value });
+                      }}
                       value={profile.bankAccountType}
-                      onChange={(e) => setProfile({ ...profile, bankAccountType: e.target.value })}
                     >
                       <option value="">Seleccionar...</option>
                       <option value="Corriente">Cuenta corriente</option>
@@ -399,18 +425,26 @@ export default function OnboardingWizard() {
                   <div className="form-control">
                     <Input
                       label="Número de cuenta"
+                      onChange={(e) => {
+                        setProfile({ ...profile, bankAccountNumber: e.target.value });
+                      }}
                       value={profile.bankAccountNumber}
-                      onChange={(e) => setProfile({ ...profile, bankAccountNumber: e.target.value })}
                     />
                   </div>
                 </div>
               </div>
 
               <div className="mt-6 flex justify-end gap-3">
-                <Button type="button" onClick={() => setCurrentStep((prev) => prev - 1)} variant="ghost">
+                <Button
+                  onClick={() => {
+                    setCurrentStep((prev) => prev - 1);
+                  }}
+                  type="button"
+                  variant="ghost"
+                >
                   Atrás
                 </Button>
-                <Button type="submit" variant="primary" className="w-full px-8 sm:w-auto">
+                <Button className="w-full px-8 sm:w-auto" type="submit" variant="primary">
                   Siguiente
                 </Button>
               </div>
@@ -419,8 +453,8 @@ export default function OnboardingWizard() {
 
           {currentStep === 3 && (
             <form
-              onSubmit={handlePasswordSubmit}
               className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500"
+              onSubmit={handlePasswordSubmit}
             >
               <div className="mb-6 text-center">
                 <div className="bg-accent/10 text-accent mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
@@ -434,30 +468,40 @@ export default function OnboardingWizard() {
                 <div className="form-control">
                   <Input
                     label="Nueva contraseña"
+                    minLength={8}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                    }}
+                    required
                     type="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
                   />
                 </div>
                 <div className="form-control">
                   <Input
                     label="Confirmar contraseña"
+                    minLength={8}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                    }}
+                    required
                     type="password"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    minLength={8}
                   />
                 </div>
               </div>
 
               <div className="mt-6 flex justify-end gap-3">
-                <Button type="button" onClick={() => setCurrentStep((prev) => prev - 1)} variant="ghost">
+                <Button
+                  onClick={() => {
+                    setCurrentStep((prev) => prev - 1);
+                  }}
+                  type="button"
+                  variant="ghost"
+                >
                   Atrás
                 </Button>
-                <Button type="submit" variant="primary" className="w-full px-8 sm:w-auto">
+                <Button className="w-full px-8 sm:w-auto" type="submit" variant="primary">
                   Siguiente
                 </Button>
               </div>
@@ -491,33 +535,35 @@ export default function OnboardingWizard() {
                     <div className="flex flex-col items-center gap-6">
                       <div className="rounded-xl bg-white p-4 shadow-sm">
                         <img
-                          src={mfaSecret.qrCodeUrl}
                           alt="QR Code"
                           className="h-48 w-48"
-                          loading="lazy"
                           decoding="async"
+                          loading="lazy"
+                          src={mfaSecret.qrCodeUrl}
                         />
                       </div>
 
                       <div className="form-control w-full max-w-xs">
                         <Input
-                          label="Ingresa el código de 6 dígitos"
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          maxLength={6}
                           className="text-center text-2xl tracking-widest"
-                          value={mfaCode}
-                          onChange={(e) => setMfaCode(e.target.value)}
+                          inputMode="numeric"
+                          label="Ingresa el código de 6 dígitos"
+                          maxLength={6}
+                          onChange={(e) => {
+                            setMfaCode(e.target.value);
+                          }}
+                          pattern="[0-9]*"
                           placeholder="000000"
+                          type="text"
+                          value={mfaCode}
                         />
                       </div>
 
                       <Button
-                        onClick={verifyMfa}
-                        variant="primary"
                         className="w-full max-w-xs"
                         disabled={mfaCode.length !== 6 || loading}
+                        onClick={verifyMfa}
+                        variant="primary"
                       >
                         {loading ? <Loader2 className="animate-spin" /> : "Verificar y activar"}
                       </Button>
@@ -525,21 +571,21 @@ export default function OnboardingWizard() {
                       <div className="divider text-base-content/40 text-xs">O usa biometría</div>
 
                       <Button
-                        onClick={handlePasskeyRegister}
-                        variant="outline"
                         className="w-full max-w-xs gap-2"
                         disabled={loading}
+                        onClick={handlePasskeyRegister}
+                        variant="outline"
                       >
                         <Fingerprint size={20} />
                         Registrar passkey (huella/FaceID)
                       </Button>
 
                       <Button
-                        onClick={handleNext}
-                        variant="ghost"
-                        size="sm"
                         className="text-base-content/50 hover:text-base-content mt-2"
                         disabled={loading}
+                        onClick={handleNext}
+                        size="sm"
+                        variant="ghost"
                       >
                         Omitir por ahora
                       </Button>
@@ -562,11 +608,11 @@ export default function OnboardingWizard() {
                 <p className="text-base-content/60 mt-2">Tu perfil ha sido completado y tu cuenta está segura.</p>
               </div>
               <Button
-                onClick={handleFinalSubmit}
-                variant="primary"
-                size="lg"
                 className="shadow-primary/20 w-full max-w-xs shadow-lg"
                 disabled={loading}
+                onClick={handleFinalSubmit}
+                size="lg"
+                variant="primary"
               >
                 {loading ? <Loader2 className="animate-spin" /> : "Finalizar e ir al dashboard"}
               </Button>

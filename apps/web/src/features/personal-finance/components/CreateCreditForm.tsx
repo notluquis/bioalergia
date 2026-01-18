@@ -18,33 +18,33 @@ export function CreateCreditForm() {
 
   const mutation = useMutation({
     mutationFn: personalFinanceApi.createCredit,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: personalFinanceKeys.all });
-      toast.success("Crédito creado exitosamente");
-      setOpen(false);
-      form.reset();
-    },
     onError: (error) => {
       toast.error("Error al crear crédito");
       console.error(error);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: personalFinanceKeys.all });
+      toast.success("Crédito creado exitosamente");
+      setOpen(false);
+      form.reset();
     },
   });
 
   const form = useForm({
     defaultValues: {
-      currency: "CLP" as const,
-      totalInstallments: 1,
       bankName: "",
       creditNumber: "",
+      currency: "CLP" as const,
       description: "",
-      totalAmount: 0,
       startDate: new Date(),
+      totalAmount: 0,
+      totalInstallments: 1,
     } as CreateCreditInput,
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       // Validate with Zod schema before submitting
       const result = createCreditSchema.safeParse(value);
       if (!result.success) {
-        toast.error(result.error.issues[0]?.message || "Error de validación");
+        toast.error(result.error.issues[0]?.message ?? "Error de validación");
         return;
       }
       mutation.mutate(value);
@@ -53,30 +53,43 @@ export function CreateCreditForm() {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>
+      <Button
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
         <PlusIcon className="mr-2 size-4" />
         Nuevo Crédito
       </Button>
 
-      <Modal isOpen={open} onClose={() => setOpen(false)} title="Crear Nuevo Crédito" className="max-w-xl">
+      <Modal
+        className="max-w-xl"
+        isOpen={open}
+        onClose={() => {
+          setOpen(false);
+        }}
+        title="Crear Nuevo Crédito"
+      >
         <form
+          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            form.handleSubmit();
+            void form.handleSubmit();
           }}
-          className="space-y-4"
         >
           <form.Field name="bankName">
             {(field) => (
               <div>
                 <Input
+                  error={field.state.meta.errors.join(", ")}
                   label="Banco / Institución"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   placeholder="Ej: BCI"
                   value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  error={field.state.meta.errors.join(", ")}
                 />
               </div>
             )}
@@ -86,12 +99,14 @@ export function CreateCreditForm() {
             {(field) => (
               <div>
                 <Input
+                  error={field.state.meta.errors.join(", ")}
                   label="Número / Identificador"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   placeholder="Ej: 123456"
                   value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  error={field.state.meta.errors.join(", ")}
                 />
               </div>
             )}
@@ -101,12 +116,14 @@ export function CreateCreditForm() {
             {(field) => (
               <div>
                 <Input
+                  error={field.state.meta.errors.join(", ")}
                   label="Descripción"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                  }}
                   placeholder="Ej: Crédito Hipotecario"
                   value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  error={field.state.meta.errors.join(", ")}
                 />
               </div>
             )}
@@ -117,12 +134,14 @@ export function CreateCreditForm() {
               {(field) => (
                 <div>
                   <Input
-                    type="number"
-                    label="Monto Total"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(Number.parseFloat(e.target.value) || 0)}
-                    onBlur={field.handleBlur}
                     error={field.state.meta.errors.join(", ")}
+                    label="Monto Total"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => {
+                      field.handleChange(Number.parseFloat(e.target.value) || 0);
+                    }}
+                    type="number"
+                    value={field.state.value}
                   />
                 </div>
               )}
@@ -133,11 +152,13 @@ export function CreateCreditForm() {
                 <div>
                   <Input
                     as="select"
-                    label="Moneda"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value as "CLP" | "UF" | "USD")}
-                    onBlur={field.handleBlur}
                     error={field.state.meta.errors.join(", ")}
+                    label="Moneda"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => {
+                      field.handleChange(e.target.value as "CLP" | "UF" | "USD");
+                    }}
+                    value={field.state.value}
                   >
                     <option value="CLP">CLP</option>
                     <option value="UF">UF</option>
@@ -153,12 +174,14 @@ export function CreateCreditForm() {
               {(field) => (
                 <div>
                   <Input
-                    type="number"
-                    label="Cuotas"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(Number.parseInt(e.target.value) || 1)}
-                    onBlur={field.handleBlur}
                     error={field.state.meta.errors.join(", ")}
+                    label="Cuotas"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => {
+                      field.handleChange(Number.parseInt(e.target.value) || 1);
+                    }}
+                    type="number"
+                    value={field.state.value}
                   />
                 </div>
               )}
@@ -168,12 +191,14 @@ export function CreateCreditForm() {
               {(field) => (
                 <div>
                   <Input
-                    type="date"
-                    label="Fecha Inicio"
-                    value={field.state.value ? new Date(field.state.value).toISOString().split("T")[0] : ""}
-                    onChange={(e) => field.handleChange(new Date(e.target.value))}
-                    onBlur={field.handleBlur}
                     error={field.state.meta.errors.join(", ")}
+                    label="Fecha Inicio"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => {
+                      field.handleChange(new Date(e.target.value));
+                    }}
+                    type="date"
+                    value={field.state.value ? new Date(field.state.value).toISOString().split("T")[0] : ""}
                   />
                 </div>
               )}
@@ -181,10 +206,16 @@ export function CreateCreditForm() {
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
-            <Button variant="ghost" onClick={() => setOpen(false)} disabled={mutation.isPending}>
+            <Button
+              disabled={mutation.isPending}
+              onClick={() => {
+                setOpen(false);
+              }}
+              variant="ghost"
+            >
               Cancelar
             </Button>
-            <Button type="submit" isLoading={mutation.isPending}>
+            <Button isLoading={mutation.isPending} type="submit">
               Guardar
             </Button>
           </div>

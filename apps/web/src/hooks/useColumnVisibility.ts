@@ -1,20 +1,18 @@
 import { useState } from "react";
 
-export interface ColumnVisibility {
-  [key: string]: boolean;
-}
+export type ColumnVisibility = Record<string, boolean>;
 
 export interface UseColumnVisibilityOptions {
-  initialColumns?: string[];
   defaultVisible?: boolean;
+  initialColumns?: string[];
 }
 
-export function useColumnVisibility({ initialColumns = [], defaultVisible = true }: UseColumnVisibilityOptions = {}) {
+export function useColumnVisibility({ defaultVisible = true, initialColumns = [] }: UseColumnVisibilityOptions = {}) {
   const [visibleColumns, setVisibleColumns] = useState<ColumnVisibility>(() => {
-    return initialColumns.reduce((acc, col) => {
+    return initialColumns.reduce<ColumnVisibility>((acc, col) => {
       acc[col] = defaultVisible;
       return acc;
-    }, {} as ColumnVisibility);
+    }, {});
   });
 
   const toggleColumn = (column: string) => {
@@ -41,9 +39,9 @@ export function useColumnVisibility({ initialColumns = [], defaultVisible = true
   const showAllColumns = () => {
     setVisibleColumns((prev) => {
       const updated = { ...prev };
-      Object.keys(updated).forEach((key) => {
+      for (const key of Object.keys(updated)) {
         updated[key] = true;
-      });
+      }
       return updated;
     });
   };
@@ -51,9 +49,9 @@ export function useColumnVisibility({ initialColumns = [], defaultVisible = true
   const hideAllColumns = () => {
     setVisibleColumns((prev) => {
       const updated = { ...prev };
-      Object.keys(updated).forEach((key) => {
+      for (const key of Object.keys(updated)) {
         updated[key] = false;
-      });
+      }
       return updated;
     });
   };
@@ -67,13 +65,13 @@ export function useColumnVisibility({ initialColumns = [], defaultVisible = true
   };
 
   return {
-    visibleColumns,
-    toggleColumn,
-    showColumn,
-    hideColumn,
-    showAllColumns,
-    hideAllColumns,
-    isColumnVisible,
     getVisibleColumns,
+    hideAllColumns,
+    hideColumn,
+    isColumnVisible,
+    showAllColumns,
+    showColumn,
+    toggleColumn,
+    visibleColumns,
   };
 }

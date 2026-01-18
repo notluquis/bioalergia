@@ -5,8 +5,8 @@ interface Props {
 }
 
 interface State {
-  hasError: boolean;
   error: Error | null;
+  hasError: boolean;
 }
 
 /**
@@ -16,11 +16,11 @@ interface State {
 export class ChunkErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { error: null, hasError: false };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { error, hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -63,16 +63,16 @@ export class ChunkErrorBoundary extends Component<Props, State> {
             <div className="bg-primary/10 text-primary ring-primary/5 mx-auto mb-6 flex h-24 w-24 animate-pulse items-center justify-center rounded-full ring-8">
               <svg
                 className="h-12 w-12"
-                xmlns="http://www.w3.org/2000/svg"
                 fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
                 stroke="currentColor"
+                strokeWidth={1.5}
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
               >
                 <path
+                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
                 />
               </svg>
             </div>
@@ -86,8 +86,8 @@ export class ChunkErrorBoundary extends Component<Props, State> {
 
             <div className="mt-8">
               <button
-                onClick={this.handleReset}
                 className="btn btn-primary btn-lg ring-primary/20 w-full rounded-2xl shadow-lg ring"
+                onClick={this.handleReset}
               >
                 Actualizar Ahora
               </button>

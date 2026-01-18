@@ -5,7 +5,7 @@ import { useSupplyManagement } from "@/features/supplies/hooks/useSupplyManageme
 
 export default function Supplies() {
   const { can } = useAuth();
-  const { requests, commonSupplies, refresh, handleStatusChange } = useSupplyManagement();
+  const { commonSupplies, handleStatusChange, refresh, requests } = useSupplyManagement();
 
   const canCreate = can("create", "SupplyRequest");
   const canUpdate = can("update", "SupplyRequest");
@@ -14,7 +14,7 @@ export default function Supplies() {
     <div className="mx-auto max-w-7xl space-y-6">
       {canCreate && <SupplyRequestForm commonSupplies={commonSupplies} onSuccess={refresh} />}
 
-      <SupplyRequestsTable requests={requests} onStatusChange={canUpdate ? handleStatusChange : () => {}} />
+      <SupplyRequestsTable onStatusChange={canUpdate ? handleStatusChange : () => {}} requests={requests} />
     </div>
   );
 }

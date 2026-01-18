@@ -27,19 +27,19 @@ export default function TopParticipantsPieChart({ data }: TopParticipantsPieChar
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer height={280} width="100%">
       <PieChart>
         <Pie
-          data={chartData}
           cx="50%"
           cy="50%"
-          labelLine={false}
-          label={(entry) => entry.name}
-          outerRadius={80}
+          data={chartData}
           dataKey="value"
+          label={(entry) => entry.name}
+          labelLine={false}
+          outerRadius={80}
         >
           {chartData.map((_, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            <Cell fill={COLORS[index % COLORS.length]} key={`cell-${index}`} />
           ))}
         </Pie>
         <Tooltip

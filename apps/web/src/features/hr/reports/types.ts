@@ -1,31 +1,31 @@
-export type ReportGranularity = "day" | "week" | "month";
-
 export interface EmployeeWorkData {
+  avgDailyMinutes: number;
+  dailyBreakdown: Record<string, number>;
   employeeId: number;
   fullName: string;
+  monthlyBreakdown: Record<string, number>;
+  overtimePercentage: number;
   role: string;
-  totalMinutes: number;
-  totalOvertimeMinutes: number;
   // New metrics
   totalDays: number;
-  avgDailyMinutes: number;
-  overtimePercentage: number;
 
-  dailyBreakdown: Record<string, number>;
+  totalMinutes: number;
+  totalOvertimeMinutes: number;
   weeklyBreakdown: Record<string, number>;
-  monthlyBreakdown: Record<string, number>;
 }
 
 export interface ReportData {
-  granularity: ReportGranularity;
-  period: {
-    start: string;
-    end: string;
-  };
-  selectedEmployees: EmployeeWorkData[];
   comparison?: {
+    difference: number;
     employee1Id: number;
     employee2Id: number;
-    difference: number;
   };
+  granularity: ReportGranularity;
+  period: {
+    end: string;
+    start: string;
+  };
+  selectedEmployees: EmployeeWorkData[];
 }
+
+export type ReportGranularity = "day" | "month" | "week";

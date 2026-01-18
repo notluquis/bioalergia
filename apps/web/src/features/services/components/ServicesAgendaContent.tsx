@@ -11,12 +11,12 @@ import { LOADING_SPINNER_MD } from "@/lib/styles";
 
 export default function ServicesAgendaContent() {
   const {
-    canManage,
-    unifiedAgendaItems,
-    aggregatedLoading,
     aggregatedError,
+    aggregatedLoading,
+    canManage,
     handleAgendaRegisterPayment,
     handleAgendaUnlinkPayment,
+    unifiedAgendaItems,
   } = useServicesOverview();
 
   const totals = unifiedAgendaItems.reduce(
@@ -27,26 +27,26 @@ export default function ServicesAgendaContent() {
       if (dueDate.isSame(dayjs(), "month")) acc.month += item.schedule.expected_amount;
       return acc;
     },
-    { day: 0, week: 0, month: 0 }
+    { day: 0, month: 0, week: 0 }
   );
 
   if (aggregatedLoading && unifiedAgendaItems.length === 0) {
     return (
       <section className="space-y-8">
         <ServicesHero
-          title="Agenda de servicios"
-          description="Visualiza los pagos programados, sus estados y registra conciliaciones rápidamente."
-          breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Agenda" }]}
           actions={
             <Link to="/services">
               <Button variant="ghost">Volver al panel</Button>
             </Link>
           }
+          breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Agenda" }]}
+          description="Visualiza los pagos programados, sus estados y registra conciliaciones rápidamente."
+          title="Agenda de servicios"
         />
 
         <ServicesSurface className="flex min-h-64 items-center justify-center">
           <div className="text-base-content/70 flex items-center gap-3 text-sm">
-            <span className={LOADING_SPINNER_MD} aria-hidden="true" />
+            <span aria-hidden="true" className={LOADING_SPINNER_MD} />
             <span>Cargando agenda consolidada...</span>
           </div>
         </ServicesSurface>
@@ -57,14 +57,14 @@ export default function ServicesAgendaContent() {
   return (
     <section className="space-y-8">
       <ServicesHero
-        title="Agenda de servicios"
-        description="Visualiza los pagos programados, sus estados y registra conciliaciones rápidamente."
-        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Agenda" }]}
         actions={
           <Link to="/services">
             <Button variant="ghost">Volver al panel</Button>
           </Link>
         }
+        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Agenda" }]}
+        description="Visualiza los pagos programados, sus estados y registra conciliaciones rápidamente."
+        title="Agenda de servicios"
       />
 
       <ServicesSurface>
@@ -75,10 +75,10 @@ export default function ServicesAgendaContent() {
         </div>
 
         <ServicesUnifiedAgenda
+          canManage={canManage}
+          error={aggregatedError}
           items={unifiedAgendaItems}
           loading={aggregatedLoading}
-          error={aggregatedError}
-          canManage={canManage}
           onRegisterPayment={handleAgendaRegisterPayment}
           onUnlinkPayment={handleAgendaUnlinkPayment}
         />

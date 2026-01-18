@@ -10,16 +10,16 @@ import type { LeaderboardDisplayRow, ParticipantCounterpartRow, ParticipantMonth
 // --- Leaderboard Columns ---
 
 export interface LeaderboardMeta {
-  participantId: string;
-  onSelect: (key: string) => void;
   detailLoading: boolean;
+  onSelect: (key: string) => void;
+  participantId: string;
 }
 
 export const getLeaderboardColumns = (): ColumnDef<LeaderboardDisplayRow>[] => [
   {
     accessorKey: "displayName",
-    header: "Titular",
     cell: ({ row }) => <div className="font-medium">{row.getValue("displayName")}</div>,
+    header: "Titular",
   },
   {
     accessorKey: "rut",
@@ -35,12 +35,10 @@ export const getLeaderboardColumns = (): ColumnDef<LeaderboardDisplayRow>[] => [
   },
   {
     accessorKey: "outgoingAmount",
-    header: "Egresos ($)",
     cell: ({ row }) => fmtCLP(row.getValue("outgoingAmount")),
+    header: "Egresos ($)",
   },
   {
-    id: "action",
-    header: "Acción",
     cell: ({ row, table }) => {
       const meta = table.options.meta as LeaderboardMeta;
       const participantKey = row.original.selectKey;
@@ -48,16 +46,18 @@ export const getLeaderboardColumns = (): ColumnDef<LeaderboardDisplayRow>[] => [
 
       return (
         <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => participantKey && meta.onSelect(participantKey)}
-          disabled={meta.detailLoading || !participantKey}
           className="h-8"
+          disabled={meta.detailLoading || !participantKey}
+          onClick={() => participantKey && meta.onSelect(participantKey)}
+          size="sm"
+          variant="ghost"
         >
           {meta.detailLoading && isActive ? "Cargando..." : "Ver detalle"}
         </Button>
       );
     },
+    header: "Acción",
+    id: "action",
   },
 ];
 
@@ -66,10 +66,10 @@ export const getLeaderboardColumns = (): ColumnDef<LeaderboardDisplayRow>[] => [
 export const getMonthlyColumns = (): ColumnDef<ParticipantMonthlyRow>[] => [
   {
     accessorKey: "month",
-    header: "Mes",
     cell: ({ getValue }) => (
       <div className="font-medium capitalize">{dayjs(getValue<string>()).format("MMMM YYYY")}</div>
     ),
+    header: "Mes",
   },
   {
     accessorKey: "outgoingCount",
@@ -77,8 +77,8 @@ export const getMonthlyColumns = (): ColumnDef<ParticipantMonthlyRow>[] => [
   },
   {
     accessorKey: "outgoingAmount",
-    header: "Monto",
     cell: ({ row }) => fmtCLP(row.getValue("outgoingAmount")),
+    header: "Monto",
   },
 ];
 
@@ -86,8 +86,6 @@ export const getMonthlyColumns = (): ColumnDef<ParticipantMonthlyRow>[] => [
 
 export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[] => [
   {
-    id: "holder",
-    header: "Titular",
     cell: ({ row }) => {
       const { bankAccountHolder, counterpart, identificationNumber } = row.original;
       const formattedRut = identificationNumber ? formatRut(String(identificationNumber)) : "";
@@ -99,19 +97,19 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
         </div>
       );
     },
+    header: "Titular",
+    id: "holder",
   },
   {
-    id: "info",
-    header: "Info",
     cell: ({ row }) => {
       const {
-        bankName,
         bankAccountNumber,
         bankAccountType,
         bankBranch,
-        withdrawId,
-        identificationType,
+        bankName,
         identificationNumber,
+        identificationType,
+        withdrawId,
       } = row.original;
 
       // Format bank info
@@ -142,15 +140,17 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
         </div>
       );
     },
+    header: "Info",
+    id: "info",
   },
   {
-    id: "amount",
-    header: "Monto",
     cell: ({ row }) => (
       <div className="whitespace-nowrap">
         <div className="text-sm font-medium">{fmtCLP(row.original.outgoingAmount)}</div>
         <div className="text-base-content/60 text-xs">{row.original.outgoingCount} txs</div>
       </div>
     ),
+    header: "Monto",
+    id: "amount",
   },
 ];

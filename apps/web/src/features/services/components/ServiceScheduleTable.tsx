@@ -3,20 +3,21 @@ import { useMemo } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 
 import type { ServiceSchedule } from "../types";
+
 import { getColumns } from "./ServiceScheduleColumns";
 
 interface ServiceScheduleTableProps {
-  schedules: ServiceSchedule[];
   canManage: boolean;
   onRegisterPayment: (schedule: ServiceSchedule) => void;
   onUnlinkPayment: (schedule: ServiceSchedule) => void;
+  schedules: ServiceSchedule[];
 }
 
 export function ServiceScheduleTable({
-  schedules,
   canManage,
   onRegisterPayment,
   onUnlinkPayment,
+  schedules,
 }: ServiceScheduleTableProps) {
   const actions = useMemo(
     () => ({
@@ -31,8 +32,8 @@ export function ServiceScheduleTable({
   return (
     <div className="bg-base-100 overflow-hidden">
       <DataTable
-        data={schedules}
         columns={columns}
+        data={schedules}
         enableToolbar={false} // Small sub-table usually doesn't need search/filter toolbar
         pagination={{ pageIndex: 0, pageSize: 100 }} // Show all rows by default for schedules
       />

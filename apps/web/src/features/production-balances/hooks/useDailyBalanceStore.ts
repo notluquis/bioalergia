@@ -4,65 +4,58 @@ import dayjs from "dayjs";
 import { useMemo } from "react";
 
 import type { BalanceSummary, DailyBalanceFormData, DayCell, DayStatus, WeekData } from "../types";
+
 import { calculateSummary, getDayAbbrev } from "../utils";
 
 // Default empty form values
 const defaultFormData: DailyBalanceFormData = {
-  tarjeta: 0,
-  transferencia: 0,
-  efectivo: 0,
-  gastos: 0,
   consultas: 0,
   controles: 0,
-  tests: 0,
-  vacunas: 0,
+  efectivo: 0,
+  gastos: 0,
   licencias: 0,
-  roxair: 0,
-  otros: 0,
   nota: "",
+  otros: 0,
+  roxair: 0,
+  tarjeta: 0,
+  tests: 0,
+  transferencia: 0,
+  vacunas: 0,
 };
 
 export interface DailyBalanceState {
-  // Current selected date
-  selectedDate: string;
-
   // Current Entry ID (if exists in DB)
-  currentEntryId: number | null;
+  currentEntryId: null | number;
 
   // Form data for current day
   formData: DailyBalanceFormData;
 
-  // Original data (to detect changes)
-  originalData: DailyBalanceFormData;
-
-  // Week data for navigation
-  weekData: WeekData | null;
-
   // State flags
   isLoading: boolean;
+
   isSaving: boolean;
+
   lastSaved: Date | null;
+
+  // Original data (to detect changes)
+  originalData: DailyBalanceFormData;
+  // Current selected date
+  selectedDate: string;
+  // Week data for navigation
+  weekData: null | WeekData;
 }
 
 // 1. Base Store
 export const dailyBalanceStore = new Store<DailyBalanceState>({
-  selectedDate: dayjs().format("YYYY-MM-DD"),
   currentEntryId: null,
   formData: { ...defaultFormData },
-  originalData: { ...defaultFormData },
-  weekData: null,
   isLoading: false,
   isSaving: false,
   lastSaved: null,
+  originalData: { ...defaultFormData },
+  selectedDate: dayjs().format("YYYY-MM-DD"),
+  weekData: null,
 });
-
-// 2. Helper Logic
-function computeStatus(data: DailyBalanceFormData, summary: BalanceSummary): DayStatus {
-  const hasData = data.tarjeta > 0 || data.transferencia > 0 || data.efectivo > 0;
-  if (!hasData) return "empty";
-  if (summary.cuadra) return "balanced";
-  return "unbalanced";
-}
 
 export function generateWeekData(centerDate: string, entries: Record<string, number>): WeekData {
   const center = dayjs(centerDate);
@@ -80,17 +73,25 @@ export function generateWeekData(centerDate: string, entries: Record<string, num
       date: dateStr,
       dayName: getDayAbbrev(dateStr),
       dayNumber: d.date(),
-      total,
-      status: total > 0 ? "balanced" : "empty",
       isSelected: dateStr === centerDate,
       isToday: dateStr === dayjs().format("YYYY-MM-DD"),
+      status: total > 0 ? "balanced" : "empty",
+      total,
     });
   }
 
   return {
-    weekLabel: `${startOfWeek.format("D")} – ${endOfWeek.format("D MMM YYYY")}`,
     days,
+    weekLabel: `${startOfWeek.format("D")} – ${endOfWeek.format("D MMM YYYY")}`,
   };
+}
+
+// 2. Helper Logic
+function computeStatus(data: DailyBalanceFormData, summary: BalanceSummary): DayStatus {
+  const hasData = data.tarjeta > 0 || data.transferencia > 0 || data.efectivo > 0;
+  if (!hasData) return "empty";
+  if (summary.cuadra) return "balanced";
+  return "unbalanced";
 }
 
 // 3. Standalone Actions
@@ -112,9 +113,9 @@ export const setFormData = (data: DailyBalanceFormData) => {
 export const setOriginalData = (data: DailyBalanceFormData, id?: number) => {
   dailyBalanceStore.setState((s) => ({
     ...s,
-    originalData: data,
-    formData: data,
     currentEntryId: id ?? null,
+    formData: data,
+    originalData: data,
   }));
 };
 
@@ -133,19 +134,19 @@ export const setIsSaving = (saving: boolean) => {
 export const markSaved = (newId?: number) => {
   dailyBalanceStore.setState((s) => ({
     ...s,
-    originalData: { ...s.formData },
-    lastSaved: new Date(),
     currentEntryId: newId ?? s.currentEntryId,
+    lastSaved: new Date(),
+    originalData: { ...s.formData },
   }));
 };
 
 export const resetForm = () => {
   dailyBalanceStore.setState((s) => ({
     ...s,
-    formData: { ...defaultFormData },
-    originalData: { ...defaultFormData },
     currentEntryId: null,
+    formData: { ...defaultFormData },
     isDirty: false,
+    originalData: { ...defaultFormData },
     summary: { ...calculateSummary(defaultFormData) }, // Initial summary logic if needed in store? No, store is clean.
   }));
 };
@@ -164,18 +165,18 @@ export function useDailyBalanceStore() {
 
   return {
     ...state,
-    summary,
-    status,
     isDirty,
-    // Actions
-    setSelectedDate,
-    updateField,
-    setFormData,
-    setOriginalData,
-    setWeekData,
-    setIsLoading,
-    setIsSaving,
     markSaved,
     resetForm,
+    setFormData,
+    setIsLoading,
+    setIsSaving,
+    setOriginalData,
+    // Actions
+    setSelectedDate,
+    setWeekData,
+    status,
+    summary,
+    updateField,
   };
 }

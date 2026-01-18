@@ -10,32 +10,32 @@ import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "link" | "outline" | "error" | "success" | "tertiary" | "danger";
-  size?: "xs" | "sm" | "md" | "lg";
   as?: React.ElementType;
+  fullWidth?: boolean;
   href?: string;
   isLoading?: boolean;
-  fullWidth?: boolean;
+  size?: "lg" | "md" | "sm" | "xs";
+  variant?: "danger" | "error" | "ghost" | "link" | "outline" | "primary" | "secondary" | "success" | "tertiary";
 }
 
 // Map variants to Tailwind classes
 const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
-  primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
-  secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+  danger: "bg-error text-error-content hover:bg-error/90",
+  error: "bg-error text-error-content hover:bg-error/90",
   ghost: "hover:bg-base-content/10 bg-transparent",
   link: "text-primary underline-offset-4 hover:underline bg-transparent",
   outline: "border border-base-content/20 bg-transparent hover:bg-base-content/5",
-  error: "bg-error text-error-content hover:bg-error/90",
-  danger: "bg-error text-error-content hover:bg-error/90",
+  primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
+  secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
   success: "bg-success text-success-content hover:bg-success/90",
   tertiary: "text-primary hover:bg-primary/10 bg-transparent",
 };
 
 const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
-  xs: "h-7 px-2 text-xs rounded-md",
-  sm: "h-8 px-3 text-sm rounded-lg",
-  md: "h-10 px-4 text-sm rounded-xl",
   lg: "h-12 px-6 text-base rounded-2xl",
+  md: "h-10 px-4 text-sm rounded-xl",
+  sm: "h-8 px-3 text-sm rounded-lg",
+  xs: "h-7 px-2 text-xs rounded-md",
 };
 
 /**
@@ -44,17 +44,17 @@ const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
-      variant = "primary",
-      size = "md",
-      className,
       as,
-      href,
       children,
-      isLoading,
+      className,
       disabled,
       fullWidth,
-      type = "button",
+      href,
+      isLoading,
       onClick,
+      size = "md",
+      type = "button",
+      variant = "primary",
       ...props
     },
     ref
@@ -75,9 +75,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       const Component = as || "a";
       return (
         <Component
-          href={href}
-          className={cn(baseClasses, (disabled || isLoading) && "pointer-events-none opacity-50")}
           aria-disabled={disabled || isLoading}
+          className={cn(baseClasses, (disabled || isLoading) && "pointer-events-none opacity-50")}
+          href={href}
           {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
         >
           {isLoading && <span className="loading loading-spinner loading-sm" />}
@@ -90,11 +90,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const Component = as || "button";
     return (
       <Component
-        ref={ref}
-        type={type}
         className={baseClasses}
         disabled={disabled || isLoading}
         onClick={onClick}
+        ref={ref}
+        type={type}
         {...props}
       >
         {isLoading && <span className="loading loading-spinner loading-sm" />}

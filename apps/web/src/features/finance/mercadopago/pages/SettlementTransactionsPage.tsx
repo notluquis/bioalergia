@@ -25,13 +25,13 @@ export default function SettlementTransactionsPage() {
   // Query Data - Load all data within date range
   // DataTable handles pagination client-side automatically
   const { data: rows, isLoading } = useFindManySettlementTransaction({
+    orderBy: { transactionDate: "desc" },
     where: {
       transactionDate: {
         gte: appliedFilters.from ? new Date(appliedFilters.from) : undefined,
         lte: appliedFilters.to ? new Date(appliedFilters.to) : undefined,
       },
     },
-    orderBy: { transactionDate: "desc" },
   });
 
   const handleFilterChange = (update: Partial<typeof draftFilters>) => {
@@ -53,22 +53,32 @@ export default function SettlementTransactionsPage() {
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold uppercase">Desde</span>
             <Input
+              className="input-sm"
+              onChange={(e) => {
+                handleFilterChange({ from: e.target.value });
+              }}
               type="date"
               value={draftFilters.from}
-              onChange={(e) => handleFilterChange({ from: e.target.value })}
-              className="input-sm"
             />
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-xs font-semibold uppercase">Hasta</span>
             <Input
+              className="input-sm"
+              onChange={(e) => {
+                handleFilterChange({ to: e.target.value });
+              }}
               type="date"
               value={draftFilters.to}
-              onChange={(e) => handleFilterChange({ to: e.target.value })}
-              className="input-sm"
             />
           </div>
-          <Button variant="primary" size="sm" onClick={() => setAppliedFilters(draftFilters)}>
+          <Button
+            onClick={() => {
+              setAppliedFilters(draftFilters);
+            }}
+            size="sm"
+            variant="primary"
+          >
             Filtrar
           </Button>
         </div>

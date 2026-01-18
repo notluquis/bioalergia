@@ -1,35 +1,36 @@
-import "dayjs/locale/es";
-
 import dayjs from "dayjs";
 
-import Button from "@/components/ui/Button";
 import type { CalendarSyncStep } from "@/features/calendar/types";
+
+import Button from "@/components/ui/Button";
 import { numberFormatter } from "@/lib/format";
 import { LOADING_SPINNER_SM } from "@/lib/styles";
 
-type SyncProgressStatus = "pending" | "in_progress" | "completed" | "error";
+import "dayjs/locale/es";
+
+interface LastSyncInfo {
+  excluded: number;
+  fetchedAt: string;
+  inserted: number;
+  logId?: number;
+  skipped: number;
+  updated: number;
+}
 
 type SyncProgressEntry = CalendarSyncStep & { status: SyncProgressStatus };
 
-interface LastSyncInfo {
-  inserted: number;
-  updated: number;
-  skipped: number;
-  excluded: number;
-  fetchedAt: string;
-  logId?: number;
-}
-
 interface SyncProgressPanelProps {
-  syncing: boolean;
-  syncError: string | null;
-  syncProgress: SyncProgressEntry[];
-  syncDurationMs: number | null;
   lastSyncInfo?: LastSyncInfo | null;
   onSyncNow?: () => void;
-  showSyncButton?: boolean;
   showLastSyncInfo?: boolean;
+  showSyncButton?: boolean;
+  syncDurationMs: null | number;
+  syncError: null | string;
+  syncing: boolean;
+  syncProgress: SyncProgressEntry[];
 }
+
+type SyncProgressStatus = "completed" | "error" | "in_progress" | "pending";
 
 const formatDuration = (value: number) => {
   if (!value) return null;
@@ -38,14 +39,14 @@ const formatDuration = (value: number) => {
 };
 
 export function SyncProgressPanel({
-  syncing,
-  syncError,
-  syncProgress,
-  syncDurationMs,
   lastSyncInfo,
   onSyncNow,
-  showSyncButton = false,
   showLastSyncInfo = false,
+  showSyncButton = false,
+  syncDurationMs,
+  syncError,
+  syncing,
+  syncProgress,
 }: SyncProgressPanelProps) {
   const hasProgress = syncProgress.length > 0;
   if (!syncing && !syncError && !hasProgress) {
@@ -53,38 +54,38 @@ export function SyncProgressPanel({
   }
 
   const statusLabelMap: Record<SyncProgressStatus, string> = {
-    pending: "Pendiente",
-    in_progress: "En progreso",
     completed: "Listo",
     error: "Error",
+    in_progress: "En progreso",
+    pending: "Pendiente",
   };
 
   const badgeClass: Record<SyncProgressStatus, string> = {
-    pending: "bg-base-200 text-base-content/70",
-    in_progress: "bg-primary/15 text-primary",
     completed: "bg-secondary/20 text-secondary",
     error: "bg-error/20 text-error",
+    in_progress: "bg-primary/15 text-primary",
+    pending: "bg-base-200 text-base-content/70",
   };
 
   const dotClass: Record<SyncProgressStatus, string> = {
-    pending: "bg-base-300",
-    in_progress: "bg-primary animate-pulse",
     completed: "bg-secondary",
     error: "bg-error",
+    in_progress: "bg-primary animate-pulse",
+    pending: "bg-base-300",
   };
 
   const detailLabels: Record<string, string> = {
     calendars: "Calendarios",
     events: "Eventos",
     inserted: "Nuevas",
-    updated: "Actualizadas",
     stored: "Snapshot",
+    updated: "Actualizadas",
   };
 
   const formatDetails = (details: Record<string, unknown>) => {
     const parts: string[] = [];
-    Object.entries(details ?? {}).forEach(([key, rawValue]) => {
-      if (rawValue == null) return;
+    for (const [key, rawValue] of Object.entries(details ?? {})) {
+      if (rawValue == null) continue;
       const label = detailLabels[key] ?? key;
       if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
         parts.push(`${label}: ${numberFormatter.format(rawValue)}`);
@@ -93,7 +94,7 @@ export function SyncProgressPanel({
       } else if (typeof rawValue === "string" && rawValue.length > 0) {
         parts.push(`${label}: ${rawValue}`);
       }
-    });
+    }
     return parts.join(" · ");
   };
 
@@ -117,7 +118,7 @@ export function SyncProgressPanel({
               })()}
             </p>
           </div>
-          {syncing && <span className={LOADING_SPINNER_SM} aria-label="Sincronizando" />}
+          {syncing && <span aria-label="Sincronizando" className={LOADING_SPINNER_SM} />}
           {syncError && <span className="text-error text-xs font-semibold">Revisa los detalles abajo.</span>}
           {!syncing && syncDurationMs != null && !syncError && (
             <span className="bg-base-200 text-base-content/70 rounded-full px-3 py-1 text-xs">
@@ -132,7 +133,7 @@ export function SyncProgressPanel({
               : dayjs().format("DD MMM YYYY · HH:mm")}
           </span>
           {showSyncButton && onSyncNow && (
-            <Button type="button" variant="secondary" size="sm" disabled={syncing} onClick={onSyncNow}>
+            <Button disabled={syncing} onClick={onSyncNow} size="sm" type="button" variant="secondary">
               {syncing ? "Sincronizando..." : "Sincronizar ahora"}
             </Button>
           )}
@@ -164,7 +165,7 @@ export function SyncProgressPanel({
             const details = formatDetails(step.details);
             const duration = formatDuration(step.durationMs);
             return (
-              <li key={step.id} className="border-base-300/60 bg-base-100/70 rounded-2xl border px-4 py-3">
+              <li className="border-base-300/60 bg-base-100/70 rounded-2xl border px-4 py-3" key={step.id}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className={`h-2.5 w-2.5 rounded-full ${dotClass[step.status]}`} />

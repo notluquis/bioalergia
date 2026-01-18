@@ -5,58 +5,41 @@ import { useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 
+import type { DailyBalanceFormData } from "../types";
+
 import { dailyBalanceApi, type ProductionBalanceApiItem } from "../api";
 import { productionBalanceKeys } from "../queries";
-import type { DailyBalanceFormData } from "../types";
 import { generateWeekData, useDailyBalanceStore } from "./useDailyBalanceStore";
 
 const AUTOSAVE_DELAY_MS = 2000;
 
 const DATE_FORMAT = "YYYY-MM-DD";
 
-// Helper to map API item to Form Data
-function mapApiToForm(item: ProductionBalanceApiItem): DailyBalanceFormData {
-  return {
-    tarjeta: item.ingresoTarjetas,
-    transferencia: item.ingresoTransferencias,
-    efectivo: item.ingresoEfectivo,
-    gastos: item.gastosDiarios,
-    consultas: item.consultasMonto,
-    controles: item.controlesMonto,
-    tests: item.testsMonto,
-    vacunas: item.vacunasMonto,
-    licencias: item.licenciasMonto,
-    roxair: item.roxairMonto,
-    otros: item.otrosAbonos || 0,
-    nota: item.comentarios || "",
-  };
-}
-
 /**
  * Hook for Daily Balance form logic with autosave
  */
 export function useDailyBalanceForm() {
-  const { success, error: showError } = useToast();
+  const { error: showError, success } = useToast();
   const queryClient = useQueryClient();
-  const autosaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autosaveTimeout = useRef<null | ReturnType<typeof setTimeout>>(null);
 
   const {
-    selectedDate,
+    currentEntryId,
     formData,
     isDirty,
     isSaving,
     lastSaved,
-    summary,
-    status,
-    weekData,
-    currentEntryId,
-    setSelectedDate,
-    updateField,
-    setOriginalData,
-    setWeekData,
-    setIsSaving,
     markSaved,
     resetForm,
+    selectedDate,
+    setIsSaving,
+    setOriginalData,
+    setSelectedDate,
+    setWeekData,
+    status,
+    summary,
+    updateField,
+    weekData,
   } = useDailyBalanceStore();
 
   // Fetch entry for selected date (and week context)
@@ -69,7 +52,7 @@ export function useDailyBalanceForm() {
   // Find item by balanceDate (formatted as YYYY-MM-DD or comparison)
   // ZenStack likely returns full ISO string "2024-01-01T00:00:00.000Z"
   // So we must compare prefix or use dayjs
-  const selectedDayItem = weekQuery.data?.find((item) => item.balanceDate.startsWith(selectedDate)) || null;
+  const selectedDayItem = weekQuery.data.find((item) => item.balanceDate.startsWith(selectedDate)) || null;
 
   // Load data when query succeeds (if day changes or we just loaded data)
   useEffect(() => {
@@ -89,7 +72,7 @@ export function useDailyBalanceForm() {
   useEffect(() => {
     const entries: Record<string, number> = {};
     if (weekQuery.data) {
-      weekQuery.data.forEach((item) => {
+      for (const item of weekQuery.data) {
         // total? We might need to calculate it if backend doesn't send 'total'
         // But for now, let's assume 'total' might be calculated?
         // Wait, schema does NOT have 'total'. I need to calculate it?
@@ -104,7 +87,7 @@ export function useDailyBalanceForm() {
         if (dateKey) {
           entries[dateKey] = calculatedTotal;
         }
-      });
+      }
     }
     const week = generateWeekData(selectedDate, entries);
     setWeekData(week);
@@ -118,19 +101,19 @@ export function useDailyBalanceForm() {
       // transform to schema format
       const payload = {
         balanceDate: new Date(selectedDate).toISOString(),
-        ingresoTarjetas: data.tarjeta,
-        ingresoTransferencias: data.transferencia,
-        ingresoEfectivo: data.efectivo,
-        gastosDiarios: data.gastos,
-        otrosAbonos: data.otros,
         comentarios: data.nota,
         consultasMonto: data.consultas,
         controlesMonto: data.controles,
+        createdBy: user?.id, // Ensure user is connected
+        gastosDiarios: data.gastos,
+        ingresoEfectivo: data.efectivo,
+        ingresoTarjetas: data.tarjeta,
+        ingresoTransferencias: data.transferencia,
+        licenciasMonto: data.licencias,
+        otrosAbonos: data.otros,
+        roxairMonto: data.roxair,
         testsMonto: data.tests,
         vacunasMonto: data.vacunas,
-        licenciasMonto: data.licencias,
-        roxairMonto: data.roxair,
-        createdBy: user?.id, // Ensure user is connected
       };
 
       if (currentEntryId) {
@@ -146,18 +129,18 @@ export function useDailyBalanceForm() {
     onMutate: () => {
       setIsSaving(true);
     },
-    onSuccess: (response) => {
-      markSaved(response.item.id);
-      success("Balance guardado");
-      // Invalidate the week query so dots update
-      queryClient.invalidateQueries({ queryKey: productionBalanceKeys.all });
-    },
     onError: (err) => {
       setIsSaving(false);
       showError(err instanceof Error ? err.message : "Error al guardar");
     },
     onSettled: () => {
       setIsSaving(false);
+    },
+    onSuccess: (response) => {
+      markSaved(response.item.id);
+      success("Balance guardado");
+      // Invalidate the week query so dots update
+      void queryClient.invalidateQueries({ queryKey: productionBalanceKeys.all });
     },
   });
 
@@ -224,24 +207,42 @@ export function useDailyBalanceForm() {
   );
 
   return {
-    // State
-    selectedDate,
+    finalize,
     formData,
+    goToNextWeek,
+    goToPrevWeek,
+    goToToday,
     isDirty,
     isLoading: weekQuery.isLoading,
     isSaving,
     lastSaved,
-    summary,
-    status,
-    weekData,
 
+    save,
+    selectDate,
+    // State
+    selectedDate,
+    status,
+    summary,
     // Actions
     updateField,
-    save,
-    finalize,
-    selectDate,
-    goToPrevWeek,
-    goToNextWeek,
-    goToToday,
+    weekData,
+  };
+}
+
+// Helper to map API item to Form Data
+function mapApiToForm(item: ProductionBalanceApiItem): DailyBalanceFormData {
+  return {
+    consultas: item.consultasMonto,
+    controles: item.controlesMonto,
+    efectivo: item.ingresoEfectivo,
+    gastos: item.gastosDiarios,
+    licencias: item.licenciasMonto,
+    nota: item.comentarios || "",
+    otros: item.otrosAbonos || 0,
+    roxair: item.roxairMonto,
+    tarjeta: item.ingresoTarjetas,
+    tests: item.testsMonto,
+    transferencia: item.ingresoTransferencias,
+    vacunas: item.vacunasMonto,
   };
 }

@@ -7,61 +7,61 @@ import { logger } from "@/lib/logger";
 
 import { useAuth } from "./AuthContext";
 
-export type AppSettings = {
-  orgName: string;
-  tagline: string;
-  primaryColor: string;
-  secondaryColor: string;
-  logoUrl: string;
-  faviconUrl: string;
+export interface AppSettings {
+  calendarDailyMaxDays: string;
+  calendarExcludeSummaries: string;
+  calendarSyncLookaheadDays: string;
+  calendarSyncStart: string;
+  calendarTimeZone: string;
+  cpanelUrl: string;
+  dbConsoleUrl: string;
   dbDisplayHost: string;
   dbDisplayName: string;
-  dbConsoleUrl: string;
-  cpanelUrl: string;
+  faviconUrl: string;
+  logoUrl: string;
   orgAddress: string;
+  orgName: string;
   orgPhone: string;
-  primaryCurrency: string;
-  supportEmail: string;
   pageTitle: string;
-  calendarTimeZone: string;
-  calendarSyncStart: string;
-  calendarSyncLookaheadDays: string;
-  calendarExcludeSummaries: string;
-  calendarDailyMaxDays: string;
-};
+  primaryColor: string;
+  primaryCurrency: string;
+  secondaryColor: string;
+  supportEmail: string;
+  tagline: string;
+}
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  orgName: APP_CONFIG.name,
   orgAddress: "",
+  orgName: APP_CONFIG.name,
   orgPhone: "",
   ...APP_CONFIG.defaults,
 };
 
-export type SettingsContextType = {
-  settings: AppSettings;
-  loading: boolean;
-  updateSettings: (next: AppSettings) => Promise<void>;
+export interface SettingsContextType {
   canEdit: (...roles: string[]) => boolean;
-};
+  loading: boolean;
+  settings: AppSettings;
+  updateSettings: (next: AppSettings) => Promise<void>;
+}
 
 export const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const { user, hasRole } = useAuth();
+  const { hasRole, user } = useAuth();
   const queryClient = useQueryClient();
 
-  const settingsQuery = useQuery<AppSettings, Error>({
-    queryKey: ["settings", user?.id],
+  const settingsQuery = useQuery<AppSettings>({
     enabled: Boolean(user),
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       logger.info("[settings] fetch:start", { userId: user?.id ?? null });
       // Use internal settings endpoint
-      type InternalSettingsResponse = {
+      interface InternalSettingsResponse {
         internal?: {
-          upsertChunkSize?: number | string;
           envUpsertChunkSize?: string;
+          upsertChunkSize?: number | string;
         };
-      };
+      }
       const payload = await apiClient.get<InternalSettingsResponse>("/api/settings/internal");
 
       // Map internal structure to AppSettings or return defaults if not found
@@ -77,14 +77,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       // If they are missing, we should return DEFAULT_SETTINGS from the fetch or mock it.
 
       // Correcting the endpoint to avoid 400.
-      if (!payload) return DEFAULT_SETTINGS;
+      // if (!payload) return DEFAULT_SETTINGS;
 
       // Ensure we return AppSettings structure.
       // If payload only has internal, we merge with defaults.
       return { ...DEFAULT_SETTINGS, ...payload };
     },
+    queryKey: ["settings", user?.id],
     staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -95,14 +95,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [user, queryClient]);
 
   useEffect(() => {
-    if (settingsQuery.isError && settingsQuery.error) {
+    if (settingsQuery.isError) {
       logger.error("[settings] fetch:error", settingsQuery.error);
     }
   }, [settingsQuery.isError, settingsQuery.error]);
 
   const updateSettings = async (next: AppSettings) => {
     logger.info("[settings] update:start", next);
-    const payload = await apiClient.put<{ status: string; settings?: AppSettings; message?: string }>(
+    const payload = await apiClient.put<{ message?: string; settings?: AppSettings; status: string }>(
       "/api/settings/internal",
       next
     );
@@ -139,7 +139,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const loading = Boolean(user) && settingsQuery.isFetching;
 
-  const value: SettingsContextType = { settings: currentSettings, loading, updateSettings, canEdit: hasRole };
+  const value: SettingsContextType = { canEdit: hasRole, loading, settings: currentSettings, updateSettings };
 
   return <SettingsContext value={value}>{children}</SettingsContext>;
 }

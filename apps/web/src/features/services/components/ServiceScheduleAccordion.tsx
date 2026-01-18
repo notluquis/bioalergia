@@ -7,32 +7,45 @@ import { currencyFormatter } from "@/lib/format";
 
 import type { ServiceSchedule, ServiceSummary } from "../types";
 
-type ServiceScheduleAccordionProps = {
-  service: ServiceSummary;
-  schedules: ServiceSchedule[];
+interface ScheduleGroup {
+  dateKey: string;
+  items: ServiceSchedule[];
+  label: string;
+}
+
+interface ServiceScheduleAccordionProps {
   canManage: boolean;
   onRegisterPayment: (schedule: ServiceSchedule) => void;
   onUnlinkPayment: (schedule: ServiceSchedule) => void;
-};
-
-type ScheduleGroup = {
-  dateKey: string;
-  label: string;
-  items: ServiceSchedule[];
-};
+  schedules: ServiceSchedule[];
+  service: ServiceSummary;
+}
 
 const dateFormatter = new Intl.DateTimeFormat("es-CL", {
-  weekday: "long",
   day: "numeric",
   month: "short",
+  weekday: "long",
 });
 
+function canUnlink(schedule: ServiceSchedule) {
+  if (!schedule.transaction_id) return false;
+  if (schedule.status !== "PAID") return false;
+  return true;
+}
+
+export default ServiceScheduleAccordion;
+
+function capitalize(value: string) {
+  if (value.length === 0) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 function ServiceScheduleAccordion({
-  service,
-  schedules,
   canManage,
   onRegisterPayment,
   onUnlinkPayment,
+  schedules,
+  service,
 }: ServiceScheduleAccordionProps) {
   const groups = (() => {
     if (schedules.length === 0) return [];
@@ -50,16 +63,16 @@ function ServiceScheduleAccordion({
         let label: string;
 
         switch (diff) {
+          case -1: {
+            label = "Ayer";
+            break;
+          }
           case 0: {
             label = "Hoy";
             break;
           }
           case 1: {
             label = "Mañana";
-            break;
-          }
-          case -1: {
-            label = "Ayer";
             break;
           }
           default: {
@@ -69,7 +82,7 @@ function ServiceScheduleAccordion({
           }
         }
 
-        map.set(key, { dateKey: key, label, items: [] });
+        map.set(key, { dateKey: key, items: [], label });
       }
       map.get(key)!.items.push(schedule);
     }
@@ -89,9 +102,9 @@ function ServiceScheduleAccordion({
     const todayKey = today();
     setExpanded((prev) => {
       const next: Record<string, boolean> = {};
-      groups.forEach((group) => {
+      for (const group of groups) {
         next[group.dateKey] = prev[group.dateKey] ?? group.dateKey === todayKey;
-      });
+      }
       return next;
     });
   }, [groups]);
@@ -123,11 +136,13 @@ function ServiceScheduleAccordion({
         {groups.map((group) => {
           const isExpanded = expanded[group.dateKey] ?? false;
           return (
-            <article key={group.dateKey} className="border-base-300 bg-base-200 rounded-xl border shadow-sm">
+            <article className="border-base-300 bg-base-200 rounded-xl border shadow-sm" key={group.dateKey}>
               <button
-                type="button"
-                onClick={() => toggleGroup(group.dateKey)}
                 className="hover:bg-base-200 flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors"
+                onClick={() => {
+                  toggleGroup(group.dateKey);
+                }}
+                type="button"
               >
                 <div>
                   <p className="text-base-content text-sm font-semibold capitalize">{group.label}</p>
@@ -143,22 +158,22 @@ function ServiceScheduleAccordion({
                   ⌃
                 </span>
               </button>
-              <div className={`${isExpanded ? "border-base-300 space-y-2 border-t px-4 py-3" : "hidden"}`}>
+              <div className={isExpanded ? "border-base-300 space-y-2 border-t px-4 py-3" : "hidden"}>
                 {group.items.map((item) => {
                   const dueDate = dayjs(item.due_date);
                   const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
                   const isOverdue = item.status === "PENDING" && diffDays < 0;
                   const statusClasses = {
-                    PENDING: "bg-warning/20 text-warning",
-                    PARTIAL: "bg-warning/20 text-warning",
                     PAID: "bg-success/20 text-success",
+                    PARTIAL: "bg-warning/20 text-warning",
+                    PENDING: "bg-warning/20 text-warning",
                     SKIPPED: "bg-base-200 text-base-content/60",
                   } as const;
 
                   return (
                     <div
-                      key={item.id}
                       className="border-base-300 bg-base-200 hover:border-primary/40 rounded-xl border p-3 shadow-inner transition"
+                      key={item.id}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
@@ -192,12 +207,23 @@ function ServiceScheduleAccordion({
                       {canManage && (
                         <div className="mt-3 flex flex-wrap items-center gap-3">
                           {(item.status === "PENDING" || item.status === "PARTIAL") && (
-                            <Button size="sm" onClick={() => onRegisterPayment(item)}>
+                            <Button
+                              onClick={() => {
+                                onRegisterPayment(item);
+                              }}
+                              size="sm"
+                            >
                               Registrar pago
                             </Button>
                           )}
                           {item.transaction_id && item.status === "PAID" && canUnlink(item) && (
-                            <Button size="sm" variant="secondary" onClick={() => onUnlinkPayment(item)}>
+                            <Button
+                              onClick={() => {
+                                onUnlinkPayment(item);
+                              }}
+                              size="sm"
+                              variant="secondary"
+                            >
                               Desvincular pago
                             </Button>
                           )}
@@ -213,17 +239,4 @@ function ServiceScheduleAccordion({
       </div>
     </section>
   );
-}
-
-export default ServiceScheduleAccordion;
-
-function capitalize(value: string) {
-  if (value.length === 0) return value;
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function canUnlink(schedule: ServiceSchedule) {
-  if (!schedule.transaction_id) return false;
-  if (schedule.status !== "PAID") return false;
-  return true;
 }

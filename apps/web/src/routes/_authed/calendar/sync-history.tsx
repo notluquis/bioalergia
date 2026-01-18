@@ -13,10 +13,10 @@ export const Route = createFileRoute("/_authed/calendar/sync-history")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  loader: ({ context }) => context.queryClient.ensureQueryData(calendarSyncQueries.logs(50)),
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <CalendarSyncHistoryPage />
     </Suspense>
   ),
+  loader: ({ context }) => context.queryClient.ensureQueryData(calendarSyncQueries.logs(50)),
 });

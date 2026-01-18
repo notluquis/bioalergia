@@ -14,12 +14,12 @@ export const Route = createFileRoute("/_authed/finanzas/personal-credits")({
     // if (!context.auth.can("read", "PersonalCredit")) { ... }
     return;
   },
-  loader: async ({ context: { queryClient } }) => {
-    await queryClient.ensureQueryData(personalFinanceQueries.list());
-  },
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <PersonalCreditsPage />
     </Suspense>
   ),
+  loader: async ({ context: { queryClient } }) => {
+    await queryClient.ensureQueryData(personalFinanceQueries.list());
+  },
 });

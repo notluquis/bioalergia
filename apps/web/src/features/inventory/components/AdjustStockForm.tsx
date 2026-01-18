@@ -7,12 +7,12 @@ import { InventoryItem, InventoryMovement } from "../types";
 
 interface AdjustStockFormProps {
   item: InventoryItem;
-  onSave: (movement: InventoryMovement) => void;
   onCancel: () => void;
+  onSave: (movement: InventoryMovement) => void;
   saving: boolean;
 }
 
-export default function AdjustStockForm({ item, onSave, onCancel, saving }: AdjustStockFormProps) {
+export default function AdjustStockForm({ item, onCancel, onSave, saving }: AdjustStockFormProps) {
   const [quantityChange, setQuantityChange] = useState("");
   const [reason, setReason] = useState("");
 
@@ -26,7 +26,7 @@ export default function AdjustStockForm({ item, onSave, onCancel, saving }: Adju
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+    <form className="space-y-4 text-sm" onSubmit={handleSubmit}>
       <div>
         <h3 className="text-lg font-bold">{item.name}</h3>
         <p className="text-base-content/60">Stock actual: {item.current_stock}</p>
@@ -34,26 +34,30 @@ export default function AdjustStockForm({ item, onSave, onCancel, saving }: Adju
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Input
           label="Cantidad a agregar/quitar"
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setQuantityChange(event.target.value);
+          }}
+          placeholder="Ej: 20 (agrega) o -15 (quita)"
+          required
           type="number"
           value={quantityChange}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setQuantityChange(event.target.value)}
-          required
-          placeholder="Ej: 20 (agrega) o -15 (quita)"
         />
         <Input
           label="Razón del ajuste"
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setReason(event.target.value);
+          }}
+          placeholder="Ej: Compra inicial, uso en procedimiento"
+          required
           type="text"
           value={reason}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => setReason(event.target.value)}
-          required
-          placeholder="Ej: Compra inicial, uso en procedimiento"
         />
       </div>
       <div className="flex items-center justify-end gap-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel}>
+        <Button onClick={onCancel} type="button" variant="secondary">
           Cancelar
         </Button>
-        <Button type="submit" variant="primary" disabled={saving}>
+        <Button disabled={saving} type="submit" variant="primary">
           {saving ? "Guardando..." : "Ajustar Stock"}
         </Button>
       </div>

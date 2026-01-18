@@ -13,7 +13,7 @@ import {
 import Input from "@/components/ui/Input";
 
 interface DataTableViewOptionsProps<TData> {
-  table: Table<TData>;
+  readonly table: Table<TData>;
 }
 
 export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps<TData>) {
@@ -30,7 +30,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="ml-auto hidden h-8 lg:flex">
+        <Button className="ml-auto hidden h-8 lg:flex" size="sm" variant="outline">
           <Settings2 className="mr-2 h-4 w-4" />
           Columnas
         </Button>
@@ -39,11 +39,15 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
         <DropdownMenuLabel>Alternar columnas</DropdownMenuLabel>
         <div className="border-b px-2 py-2">
           <Input
-            placeholder="Buscar..."
             className="h-8"
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+            }} // Prevent closing on space
+            placeholder="Buscar..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.stopPropagation()} // Prevent closing on space
           />
         </div>
         <div className="flex-1 overflow-y-auto p-1">
@@ -51,13 +55,17 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
             const label = typeof column.columnDef.header === "string" ? column.columnDef.header : column.id;
             return (
               <DropdownMenuCheckboxItem
-                key={column.id}
-                className="capitalize"
                 checked={column.getIsVisible()}
-                onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                onSelect={(e) => e.preventDefault()}
+                className="capitalize"
+                key={column.id}
+                onCheckedChange={(value) => {
+                  column.toggleVisibility(value);
+                }}
+                onSelect={(e) => {
+                  e.preventDefault();
+                }}
               >
-                {label as string}
+                {label}
               </DropdownMenuCheckboxItem>
             );
           })}

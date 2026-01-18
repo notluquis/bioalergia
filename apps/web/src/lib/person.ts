@@ -3,9 +3,32 @@
  */
 
 export interface PersonNameData {
-  names?: string | null;
-  fatherName?: string | null;
-  motherName?: string | null;
+  fatherName?: null | string;
+  motherName?: null | string;
+  names?: null | string;
+}
+
+/**
+ * Extract person from API response that wraps it
+ * Handles both { person: {...} } and direct person object
+ */
+export function extractPersonFromResponse<T extends Record<string, unknown>>(
+  response: null | T | undefined
+): null | (T extends { person: infer P } ? P : T) {
+  if (!response) return null;
+  if ("person" in response && response.person !== undefined && response.person !== null) {
+    return response.person as T extends { person: infer P } ? P : T;
+  }
+  return response as T extends { person: infer P } ? P : T;
+}
+
+/**
+ * Safe person name formatter for display
+ * Shows full name or components based on availability
+ */
+export function formatPersonDisplay(person?: null | PersonNameData): string {
+  const fullName = getPersonFullName(person);
+  return fullName || "No identificado";
 }
 
 /**
@@ -13,7 +36,7 @@ export interface PersonNameData {
  * Safe: returns empty string if person is null/undefined
  * Smart: avoids duplicating surnames if they're already in the names field
  */
-export function getPersonFullName(person?: PersonNameData | null): string {
+export function getPersonFullName(person?: null | PersonNameData): string {
   if (!person) return "";
 
   const names = person.names?.trim() || "";
@@ -52,7 +75,7 @@ export function getPersonFullName(person?: PersonNameData | null): string {
  * Get initials for avatar placeholder (2 characters max)
  * Safe: returns "?" if names is null/undefined
  */
-export function getPersonInitials(person?: PersonNameData | null): string {
+export function getPersonInitials(person?: null | PersonNameData): string {
   if (!person?.names) return "?";
 
   // Try to get first char of first name + first char of last name
@@ -67,27 +90,4 @@ export function getPersonInitials(person?: PersonNameData | null): string {
   // If no father name, use second char of first name
   const secondInitial = person.names.charAt(1)?.toUpperCase() || "";
   return secondInitial ? `${firstInitial}${secondInitial}` : firstInitial;
-}
-
-/**
- * Extract person from API response that wraps it
- * Handles both { person: {...} } and direct person object
- */
-export function extractPersonFromResponse<T extends Record<string, unknown>>(
-  response: T | null | undefined
-): (T extends { person: infer P } ? P : T) | null {
-  if (!response) return null;
-  if ("person" in response && response.person !== undefined && response.person !== null) {
-    return response.person as T extends { person: infer P } ? P : T;
-  }
-  return response as T extends { person: infer P } ? P : T;
-}
-
-/**
- * Safe person name formatter for display
- * Shows full name or components based on availability
- */
-export function formatPersonDisplay(person?: PersonNameData | null): string {
-  const fullName = getPersonFullName(person);
-  return fullName || "No identificado";
 }

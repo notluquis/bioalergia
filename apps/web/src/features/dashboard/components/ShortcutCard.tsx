@@ -3,15 +3,15 @@ import { useNavigate } from "@tanstack/react-router";
 import Button from "@/components/ui/Button";
 
 export default function ShortcutCard({
-  title,
-  description,
-  to,
   accent,
+  description,
+  title,
+  to,
 }: {
-  title: string;
-  description: string;
-  to: string;
   accent: "primary" | "secondary";
+  description: string;
+  title: string;
+  to: string;
 }) {
   const accentClass = accent === "primary" ? "text-primary" : "text-secondary";
 
@@ -29,7 +29,7 @@ export default function ShortcutCard({
 function ShortcutButton({ to }: { to: string }) {
   const navigate = useNavigate();
   return (
-    <Button type="button" variant="primary" onClick={() => navigate({ to: to })} className="mt-5">
+    <Button className="mt-5" onClick={() => navigate({ to: to })} type="button" variant="primary">
       Abrir
     </Button>
   );

@@ -3,11 +3,11 @@ import DOMPurify from "dompurify";
 import { cn } from "@/lib/utils";
 
 interface FormattedEventDescriptionProps {
-  text: string;
   className?: string;
+  text: string;
 }
 
-export function FormattedEventDescription({ text, className }: FormattedEventDescriptionProps) {
+export function FormattedEventDescription({ className, text }: FormattedEventDescriptionProps) {
   const htmlContent = (() => {
     let html = text;
 
@@ -37,8 +37,8 @@ export function FormattedEventDescription({ text, className }: FormattedEventDes
 
     // 4. Sanitize to prevent XSS attacks
     return DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: ["span", "div", "a", "br", "strong", "em", "ul", "li"],
       ALLOWED_ATTR: ["class", "href", "target", "rel"],
+      ALLOWED_TAGS: ["span", "div", "a", "br", "strong", "em", "ul", "li"],
     });
   })();
 

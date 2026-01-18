@@ -24,21 +24,21 @@ export default function Header() {
     const crumbs: string[] = [];
 
     switch (parts[0]) {
+      case "calendar": {
+        crumbs.push("Calendario");
+        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Calendario";
+
+        break;
+      }
       case "finanzas": {
         crumbs.push("Finanzas");
         titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Finanzas";
 
         break;
       }
-      case "services": {
-        crumbs.push("Servicios");
-        titleText = "Servicios";
-
-        break;
-      }
-      case "calendar": {
-        crumbs.push("Calendario");
-        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Calendario";
+      case "hr": {
+        crumbs.push("RRHH");
+        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "RRHH";
 
         break;
       }
@@ -48,9 +48,9 @@ export default function Header() {
 
         break;
       }
-      case "hr": {
-        crumbs.push("RRHH");
-        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "RRHH";
+      case "services": {
+        crumbs.push("Servicios");
+        titleText = "Servicios";
 
         break;
       }
@@ -68,7 +68,7 @@ export default function Header() {
 
   const handleLogout = async () => {
     await logout();
-    navigate({ to: "/login", replace: true });
+    void navigate({ replace: true, to: "/login" });
   };
 
   return (
@@ -100,11 +100,13 @@ export default function Header() {
         </div>
         <ThemeToggle />
         <button
-          type="button"
-          onClick={handleLogout}
-          className="btn btn-circle border-base-300/70 bg-base-100/80 text-base-content hover:bg-error/10 hover:border-error/40 hover:text-error border shadow-sm transition-all duration-300"
           aria-label="Cerrar sesión"
+          className="btn btn-circle border-base-300/70 bg-base-100/80 text-base-content hover:bg-error/10 hover:border-error/40 hover:text-error border shadow-sm transition-all duration-300"
+          onClick={() => {
+            void handleLogout();
+          }}
           title="Cerrar sesión"
+          type="button"
         >
           <span className="bg-base-200/50 flex h-6 w-6 items-center justify-center rounded-full shadow-inner transition-all duration-300">
             <LogOut className="h-4 w-4" />

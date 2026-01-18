@@ -15,6 +15,11 @@ export const Route = createFileRoute("/_authed/calendar/daily")({
       throw routeApi.redirect({ to: "/" });
     }
   },
+  component: () => (
+    <Suspense fallback={<PageLoader />}>
+      <CalendarDailyPage />
+    </Suspense>
+  ),
   loader: async ({ context }) => {
     const defaults = computeDefaultFilters({});
     await Promise.all([
@@ -22,9 +27,4 @@ export const Route = createFileRoute("/_authed/calendar/daily")({
       context.queryClient.ensureQueryData(calendarQueries.daily(defaults)),
     ]);
   },
-  component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <CalendarDailyPage />
-    </Suspense>
-  ),
 });

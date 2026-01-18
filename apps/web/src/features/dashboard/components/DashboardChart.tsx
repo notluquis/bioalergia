@@ -6,7 +6,7 @@ export default function DashboardChart({
   data,
   loading,
 }: {
-  data: Array<{ month: string; in: number; out: number; net: number }>;
+  data: { in: number; month: string; net: number; out: number }[];
   loading: boolean;
 }) {
   if (loading) {
@@ -32,7 +32,7 @@ export default function DashboardChart({
           const inHeight = maxValue ? Math.max((row.in / maxValue) * 140, 4) : 4;
           const outHeight = maxValue ? Math.max((row.out / maxValue) * 140, 4) : 4;
           return (
-            <div key={row.month} className="flex min-w-20 flex-col items-center gap-2">
+            <div className="flex min-w-20 flex-col items-center gap-2" key={row.month}>
               <div className="border-base-300 bg-base-200 flex h-40 w-full items-end gap-2 rounded-xl border p-2">
                 <div className="bg-success/80 flex-1 rounded-full shadow-sm" style={{ height: `${inHeight}px` }} />
                 <div className="bg-error/80 flex-1 rounded-full shadow-sm" style={{ height: `${outHeight}px` }} />

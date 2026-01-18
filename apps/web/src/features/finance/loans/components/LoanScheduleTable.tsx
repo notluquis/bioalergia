@@ -3,20 +3,21 @@
 import { DataTable } from "@/components/data-table/DataTable";
 
 import type { LoanSchedule } from "../types";
+
 import { getColumns } from "./LoanScheduleColumns";
 
 interface LoanScheduleTableProps {
-  schedules: LoanSchedule[];
+  canManage: boolean;
   onRegisterPayment: (schedule: LoanSchedule) => void;
   onUnlinkPayment: (schedule: LoanSchedule) => void;
-  canManage: boolean;
+  schedules: LoanSchedule[];
 }
 
 export default function LoanScheduleTable({
-  schedules,
+  canManage,
   onRegisterPayment,
   onUnlinkPayment,
-  canManage,
+  schedules,
 }: LoanScheduleTableProps) {
   const actions = {
     onRegisterPayment,
@@ -28,11 +29,11 @@ export default function LoanScheduleTable({
   return (
     <div className="border-base-300 bg-base-100 overflow-hidden rounded-2xl border shadow-sm">
       <DataTable
-        data={schedules}
         columns={columns}
+        data={schedules}
         enableToolbar={false}
-        pagination={{ pageIndex: 0, pageSize: 100 }}
         noDataMessage="No hay cronograma disponible."
+        pagination={{ pageIndex: 0, pageSize: 100 }}
       />
     </div>
   );

@@ -6,12 +6,12 @@ export const backupKeys = {
   all: ["backups"] as const,
   lists: () =>
     queryOptions({
-      queryKey: ["backups"],
       queryFn: fetchBackups,
+      queryKey: ["backups"],
     }),
   tables: (fileId: string) =>
     queryOptions({
-      queryKey: ["backup-tables", fileId],
       queryFn: () => fetchTables(fileId),
+      queryKey: ["backup-tables", fileId],
     }),
 };

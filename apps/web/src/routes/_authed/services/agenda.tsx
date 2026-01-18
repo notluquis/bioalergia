@@ -13,12 +13,12 @@ export const Route = createFileRoute("/_authed/services/agenda")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(serviceQueries.list());
-  },
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <AgendaPage />
     </Suspense>
   ),
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(serviceQueries.list());
+  },
 });
