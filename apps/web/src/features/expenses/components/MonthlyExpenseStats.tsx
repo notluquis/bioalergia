@@ -7,7 +7,7 @@ interface MonthlyExpenseStatsProps {
   stats: MonthlyExpenseStatsRow[];
 }
 
-export default function MonthlyExpenseStats({ loading, stats }: MonthlyExpenseStatsProps) {
+export default function MonthlyExpenseStats({ loading, stats }: Readonly<MonthlyExpenseStatsProps>) {
   if (loading) {
     return <p className="text-base-content/50 text-xs">Calculando estadísticas…</p>;
   }

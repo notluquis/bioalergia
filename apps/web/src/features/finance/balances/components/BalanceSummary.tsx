@@ -12,7 +12,7 @@ export interface BalanceSummaryProps {
 
 type MismatchDay = NonNullable<BalancesApiResponse>["days"][number];
 
-export function BalanceSummary({ error, loading, report }: BalanceSummaryProps) {
+export function BalanceSummary({ error, loading, report }: Readonly<BalanceSummaryProps>) {
   const { hasRecordedBalances, lastExpected, lastRecorded, mismatchDays } = useBalanceReportSummary(report);
 
   if (loading) {
@@ -121,7 +121,7 @@ function formatSignedCLP(value: number) {
   return value >= 0 ? fmtCLP(value) : `-${fmtCLP(Math.abs(value))}`;
 }
 
-function MismatchSummary({ mismatchDays }: { mismatchDays: MismatchDay[] }) {
+function MismatchSummary({ mismatchDays }: Readonly<{ mismatchDays: MismatchDay[] }>) {
   return (
     <div className="space-y-2 rounded-2xl border border-rose-200/70 bg-rose-50/60 px-4 py-3">
       <p className="font-semibold text-rose-600">
