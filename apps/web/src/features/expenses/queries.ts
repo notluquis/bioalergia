@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import type { ExpenseFilters } from "./hooks/useMonthlyExpenses";
+import type { ExpenseFilters } from "./hooks/use-monthly-expenses";
 
 import { fetchMonthlyExpenseDetail, fetchMonthlyExpenses, fetchMonthlyExpenseStats } from "./api";
 
