@@ -7,7 +7,7 @@ import Input from "@/components/ui/Input";
 import { Transaction } from "@/features/finance/types";
 import { fmtCLP } from "@/lib/format";
 
-import { AccountGroup } from "./AssociatedAccounts.helpers";
+import { AccountGroup } from "./associated-accounts.helpers";
 
 // --- Main Table: Account Groups ---
 

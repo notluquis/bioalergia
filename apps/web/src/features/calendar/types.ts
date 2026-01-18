@@ -104,7 +104,7 @@ export interface CalendarEventDetail {
   eventUpdatedAt: null | string;
   hangoutLink: null | string;
   location: null | string;
-  rawEvent: null | unknown;
+  rawEvent: unknown;
   startDate: null | string;
   startDateTime: null | string;
   startTimeZone: null | string;
