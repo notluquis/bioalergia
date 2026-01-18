@@ -100,7 +100,7 @@ export default function AssociatedAccounts({
     },
   });
 
-  async function handleAddAccount() {
+  function handleAddAccount() {
     if (!selectedId) {
       setError("Guarda la contraparte antes de agregar cuentas");
       toastError("Guarda la contraparte antes de agregar cuentas");
@@ -212,7 +212,7 @@ export default function AssociatedAccounts({
     },
   });
 
-  async function handleAttachRut(rut: null | string | undefined) {
+  function handleAttachRut(rut: null | string | undefined) {
     if (!selectedId) {
       setError("Selecciona una contraparte para vincular");
       toastError("Selecciona una contraparte antes de vincular un RUT");
@@ -414,7 +414,9 @@ export default function AssociatedAccounts({
               {selectedId && suggestion.rut && (
                 <Button
                   disabled={attachRutMutation.isPending}
-                  onClick={() => handleAttachRut(suggestion.rut)}
+                  onClick={() => {
+                    handleAttachRut(suggestion.rut);
+                  }}
                   size="xs"
                   variant="secondary"
                 >
@@ -595,7 +597,12 @@ export default function AssociatedAccounts({
             >
               Cancelar
             </Button>
-            <Button disabled={addAccountMutation.isPending} onClick={() => void handleAddAccount()}>
+            <Button
+              disabled={addAccountMutation.isPending}
+              onClick={() => {
+                handleAddAccount();
+              }}
+            >
               {addAccountMutation.isPending ? "Guardando..." : "Agregar cuenta"}
             </Button>
           </div>

@@ -141,7 +141,7 @@ export default function CounterpartForm({
                   value={field.state.value}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                  <p className="text-error mt-1 text-xs">{(field.state.meta.errors as string[]).join(", ")}</p>
                 )}
               </div>
             )}
@@ -162,7 +162,7 @@ export default function CounterpartForm({
                   value={field.state.value}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                  <p className="text-error mt-1 text-xs">{(field.state.meta.errors as string[]).join(", ")}</p>
                 )}
               </div>
             )}
@@ -184,7 +184,7 @@ export default function CounterpartForm({
                   <option value="JURIDICAL">Empresa</option>
                 </Input>
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                  <p className="text-error mt-1 text-xs">{(field.state.meta.errors as string[]).join(", ")}</p>
                 )}
               </div>
             )}
@@ -209,7 +209,7 @@ export default function CounterpartForm({
                   ))}
                 </Input>
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                  <p className="text-error mt-1 text-xs">{(field.state.meta.errors as string[]).join(", ")}</p>
                 )}
               </div>
             )}
@@ -235,7 +235,7 @@ export default function CounterpartForm({
                   value={field.state.value ?? ""}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                  <p className="text-error mt-1 text-xs">{(field.state.meta.errors as string[]).join(", ")}</p>
                 )}
               </div>
             )}
@@ -257,7 +257,7 @@ export default function CounterpartForm({
                     value={field.state.value}
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                    <p className="text-error mt-1 text-xs">{(field.state.meta.errors as string[]).join(", ")}</p>
                   )}
                 </div>
               )}
