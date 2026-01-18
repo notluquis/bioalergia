@@ -27,7 +27,7 @@ import {
   AccountTransactionFilter,
   buildAccountTransactionFilter,
   DateRange,
-} from "./AssociatedAccounts.helpers";
+} from "./associated-accounts.helpers";
 import { getAccountGroupColumns, getQuickViewColumns } from "./AssociatedAccountsColumns";
 
 interface AssociatedAccountsProps {

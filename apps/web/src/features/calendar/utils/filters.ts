@@ -7,7 +7,7 @@ export const unique = (values: string[]) => [...new Set(values)].toSorted((a, b)
 export function arraysEqual(a: string[], b: string[]) {
   if (a.length !== b.length) return false;
   for (const [i, element] of a.entries()) {
-    if (element !== b[i]) return false;
+    if (element !== b[i]) return false; // eslint-disable-line security/detect-object-injection -- safe array iteration
   }
   return true;
 }
