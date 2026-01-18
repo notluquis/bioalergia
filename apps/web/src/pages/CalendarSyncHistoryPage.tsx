@@ -1,4 +1,3 @@
-import type { SyncLog } from "@finanzas/db";
 import dayjs from "dayjs";
 import { CheckCircle, ChevronDown, ChevronRight, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { useState } from "react";
@@ -24,12 +23,14 @@ const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
   }
 
   // Group by action (safe - action is a controlled string from data)
-  const grouped = details.reduce<Record<string, ChangeDetail[]>>((acc, item) => {
+  const grouped: Record<string, ChangeDetail[]> = {};
+  for (const item of details) {
     const action = item.action ?? "unknown";
-    if (!acc[action]) acc[action] = [];
-    acc[action].push(item);
-    return acc;
-  }, {});
+    // eslint-disable-next-line security/detect-object-injection
+    grouped[action] ??= [];
+    // eslint-disable-next-line security/detect-object-injection
+    grouped[action].push(item);
+  }
 
   const actionLabels: Record<string, { color: string; label: string }> = {
     created: { color: "text-success", label: "Insertados" },
@@ -80,7 +81,7 @@ const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
 };
 
 export default function CalendarSyncHistoryPage() {
-  const [expandedId, setExpandedId] = useState<bigint | null>(null);
+  const [expandedId, setExpandedId] = useState<null | number>(null);
 
   const {
     hasRunningSyncFromOtherSource,
@@ -105,7 +106,7 @@ export default function CalendarSyncHistoryPage() {
   });
   const isSyncing = syncing || hasRunningSyncFromOtherSource || hasRunningSyncInHistory;
 
-  const toggleExpanded = (id: bigint) => {
+  const toggleExpanded = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
@@ -184,7 +185,7 @@ export default function CalendarSyncHistoryPage() {
 
           return (
             <div className="divide-base-200 divide-y">
-              {syncLogs.map((log: SyncLog) => {
+              {syncLogs.map((log) => {
                 const isExpanded = expandedId === log.id;
                 const duration = log.finishedAt ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s") : null;
 
@@ -226,13 +227,13 @@ export default function CalendarSyncHistoryPage() {
                       {/* Metrics */}
                       <div className="flex gap-2 text-xs">
                         <span className="bg-success/10 text-success rounded px-1.5 py-0.5" title="Insertados">
-                          +{log.inserted ?? 0}
+                          +{log.inserted}
                         </span>
                         <span className="bg-info/10 text-info rounded px-1.5 py-0.5" title="Actualizados">
-                          ~{log.updated ?? 0}
+                          ~{log.updated}
                         </span>
                         <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5" title="Omitidos">
-                          -{log.skipped ?? 0}
+                          -{log.skipped}
                         </span>
                       </div>
 
@@ -262,19 +263,19 @@ export default function CalendarSyncHistoryPage() {
                               </div>
                               <div>
                                 <span className="text-base-content/60 block text-xs">Insertados</span>
-                                <span className="text-success text-lg font-bold">{log.inserted ?? 0}</span>
+                                <span className="text-success text-lg font-bold">{log.inserted}</span>
                               </div>
                               <div>
                                 <span className="text-base-content/60 block text-xs">Actualizados</span>
-                                <span className="text-info text-lg font-bold">{log.updated ?? 0}</span>
+                                <span className="text-info text-lg font-bold">{log.updated}</span>
                               </div>
                               <div>
                                 <span className="text-base-content/60 block text-xs">Omitidos</span>
-                                <span className="text-warning text-lg font-bold">{log.skipped ?? 0}</span>
+                                <span className="text-warning text-lg font-bold">{log.skipped}</span>
                               </div>
                               <div>
                                 <span className="text-base-content/60 block text-xs">Excluidos</span>
-                                <span className="text-base-content/70 text-lg font-bold">{log.excluded ?? 0}</span>
+                                <span className="text-base-content/70 text-lg font-bold">{log.excluded}</span>
                               </div>
                             </div>
 
