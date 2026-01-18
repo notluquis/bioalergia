@@ -623,11 +623,18 @@ export function parseCalendarMetadata(input: {
       const text = `${summary} ${description}`;
       const doseNumber = detectDoseNumber(text);
       if (doseNumber !== null) {
-        // Dose progression: 1st=0.1ml, 2nd=0.2ml, 3rd=0.3ml, 4th=0.4ml, 5th=0.5ml
-        const doseValue = Math.min(doseNumber * 0.1, 0.5);
+        // Dose progression: 1st=0.15ml, 2nd=0.3ml, 3rd/4th/5th=0.5ml
+        let doseValue: number;
+        if (doseNumber === 1) {
+          doseValue = 0.15;
+        } else if (doseNumber === 2) {
+          doseValue = 0.3;
+        } else {
+          doseValue = 0.5; // 3rd, 4th, 5th doses
+        }
         const formatter = new Intl.NumberFormat("es-CL", {
-          minimumFractionDigits: 1,
-          maximumFractionDigits: 1,
+          minimumFractionDigits: doseValue === 0.15 ? 2 : 1,
+          maximumFractionDigits: 2,
         });
         finalDosage = `${formatter.format(doseValue)} ml`;
       }
