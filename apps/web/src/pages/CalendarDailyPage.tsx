@@ -4,7 +4,6 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { Filter } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
@@ -12,7 +11,7 @@ import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
 // Components
 import { DailyStatsCards } from "@/features/calendar/components/DailyStatsCards";
 import { DayNavigation } from "@/features/calendar/components/DayNavigation";
-import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { today } from "@/lib/dates";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -29,7 +28,6 @@ function CalendarDailyPage() {
     availableCategories,
     availableEventTypes,
     daily,
-    error,
     filters,
     loading,
     resetFilters,
@@ -110,12 +108,6 @@ function CalendarDailyPage() {
           />
         )}
       </header>
-
-      {error && (
-        <Alert className="mt-4" variant="error">
-          {error}
-        </Alert>
-      )}
 
       {/* Stats Cards - Compact summary */}
       {selectedDayEntry && (

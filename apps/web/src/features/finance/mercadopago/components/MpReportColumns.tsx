@@ -20,9 +20,9 @@ export const getMpReportColumns = (
     header: "ID",
   },
   {
-    accessorFn: (row) => row.date_created || row.begin_date,
+    accessorFn: (row) => row.date_created ?? row.begin_date,
     cell: ({ row }) => {
-      const date = row.original.date_created || row.original.begin_date;
+      const date = row.original.date_created ?? row.original.begin_date;
       return <span className="text-sm whitespace-nowrap">{date ? dayjs(date).format("DD/MM/YY HH:mm") : "-"}</span>;
     },
     header: "Creado",
@@ -50,7 +50,7 @@ export const getMpReportColumns = (
     accessorKey: "file_name",
     cell: ({ row }) => (
       <div className="text-base-content/70 max-w-40 truncate font-mono text-xs" title={row.original.file_name}>
-        {row.original.file_name || <span className="opacity-50">-</span>}
+        {row.original.file_name ?? <span className="opacity-50">-</span>}
       </div>
     ),
     header: "Archivo",
@@ -93,7 +93,9 @@ export const getMpReportColumns = (
           <Button
             className="h-9 w-9 p-0 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
             disabled={downloadPending || report.status === "pending" || !report.file_name}
-            onClick={(e) => report.file_name && handleDownload(e, report.file_name)}
+            onClick={(e) => {
+              if (report.file_name) handleDownload(e, report.file_name);
+            }}
             title={report.status === "pending" ? "Reporte aún generándose" : "Descargar"}
             variant="ghost"
           >
@@ -102,7 +104,9 @@ export const getMpReportColumns = (
           <Button
             className="h-9 w-9 p-0 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
             disabled={processPending || report.status === "pending" || !report.file_name}
-            onClick={(e) => report.file_name && handleProcess(e, report.file_name)}
+            onClick={(e) => {
+              if (report.file_name) handleProcess(e, report.file_name);
+            }}
             title={report.status === "pending" ? "Reporte aún generándose" : "Sincronizar a BD"}
             variant="ghost"
           >

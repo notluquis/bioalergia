@@ -7,10 +7,10 @@ import { deleteRole, reassignRoleUsers, roleKeys, roleQueries } from "@/features
 import { Role } from "@/types/roles";
 
 interface DeleteRoleModalProps {
-  allRoles: Role[];
-  isOpen: boolean;
-  onClose: () => void;
-  role: Role;
+  readonly allRoles: Role[];
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly role: Role;
 }
 
 export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleModalProps) {
@@ -58,7 +58,7 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
   );
 }
 
-function DeleteRoleForm({ allRoles, onClose, role }: Omit<DeleteRoleModalProps, "isOpen">) {
+function DeleteRoleForm({ allRoles, onClose, role }: Readonly<Omit<DeleteRoleModalProps, "isOpen">>) {
   const [targetRoleId, setTargetRoleId] = useState<string>("");
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -101,7 +101,7 @@ function DeleteRoleForm({ allRoles, onClose, role }: Omit<DeleteRoleModalProps, 
         <p>¿Estás seguro que deseas eliminar este rol? Esta acción no se puede deshacer.</p>
 
         {hasUsers ? (
-          <div className="bg-warning/10 border-warning/20 space-y-3 rounded-lg border p-4">
+          <div className="bg-warning/10 border-warning-soft-hover space-y-3 rounded-lg border p-4">
             <div className="text-warning flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-5 w-5" />
               <div className="font-medium">Usuarios afectados</div>

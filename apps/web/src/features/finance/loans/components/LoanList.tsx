@@ -5,11 +5,11 @@ import Button from "@/components/ui/Button";
 import type { LoanSummary } from "../types";
 
 interface LoanListProps {
-  canManage: boolean;
-  loans: LoanSummary[];
-  onCreateRequest: () => void;
-  onSelect: (publicId: string) => void;
-  selectedId: null | string;
+  readonly canManage: boolean;
+  readonly loans: LoanSummary[];
+  readonly onCreateRequest: () => void;
+  readonly onSelect: (publicId: string) => void;
+  readonly selectedId: null | string;
 }
 
 export function LoanList({ canManage, loans, onCreateRequest, onSelect, selectedId }: LoanListProps) {
@@ -35,7 +35,7 @@ export function LoanList({ canManage, loans, onCreateRequest, onSelect, selected
             COMPLETED: "bg-success",
             DEFAULTED: "bg-error",
           };
-          const indicatorColor = indicatorColors[loan.status] || "bg-warning";
+          const indicatorColor = indicatorColors[loan.status];
 
           return (
             <button

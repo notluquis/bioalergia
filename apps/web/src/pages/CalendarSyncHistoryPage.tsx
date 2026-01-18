@@ -10,7 +10,7 @@ import Button from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { SyncDetailModal } from "@/features/calendar/components/SyncDetailModal";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
-import { useCalendarEvents } from "@/features/calendar/hooks/useCalendarEvents";
+import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { numberFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 

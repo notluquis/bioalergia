@@ -44,7 +44,7 @@ export default function LoginPage() {
     try {
       const result = await login(email, password);
 
-      if (result?.status === "mfa_required" && result.userId) {
+      if (result.status === "mfa_required" && result.userId) {
         setTempUserId(result.userId);
         setStep("mfa");
         setLoading(false);
@@ -270,7 +270,7 @@ export default function LoginPage() {
         {/* Success Transition */}
         {isSuccess && (
           <div className="animate-in fade-in zoom-in flex flex-col items-center justify-center gap-4 py-8 duration-500">
-            <div className="bg-success/20 text-success flex size-16 scale-110 items-center justify-center rounded-full transition-transform duration-700">
+            <div className="bg-success-soft-hover text-success flex size-16 scale-110 items-center justify-center rounded-full transition-transform duration-700">
               <svg className="size-8" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
                 <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>

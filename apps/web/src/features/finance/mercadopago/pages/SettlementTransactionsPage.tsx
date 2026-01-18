@@ -89,7 +89,7 @@ export default function SettlementTransactionsPage() {
           <CardContent className="p-0">
             <DataTable
               columns={columns}
-              data={rows || []}
+              data={rows ?? []}
               isLoading={isLoading}
               noDataMessage="No se encontraron conciliaciones en el rango seleccionado."
             />

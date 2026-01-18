@@ -11,14 +11,14 @@ export function formatAmount(amount: null | number | string | undefined, currenc
   if (typeof amount === "number") {
     numericAmount = amount;
   } else {
-    const strAmount = String(amount);
+    const strAmount = amount;
     numericAmount = Number.parseFloat(strAmount);
   }
 
   if (Number.isNaN(numericAmount)) return "-";
 
   return new Intl.NumberFormat("es-CL", {
-    currency: currency || "CLP",
+    currency: currency ?? "CLP",
     minimumFractionDigits: 0,
     style: "currency",
   }).format(numericAmount);

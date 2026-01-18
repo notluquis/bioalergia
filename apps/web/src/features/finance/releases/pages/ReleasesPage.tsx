@@ -8,7 +8,7 @@ import { DataTable } from "@/components/data-table/DataTable";
 import Input from "@/components/ui/Input";
 import { financeKeys } from "@/features/finance/queries";
 
-import { columns } from "../components/columns";
+import { columns } from "../components/ReleaseColumns";
 
 export default function ReleasesPage() {
   const [page, setPage] = useState(0);
@@ -37,7 +37,7 @@ export default function ReleasesPage() {
 
       <DataTable
         columns={columns}
-        data={data?.data || []}
+        data={data.data}
         initialPinning={{ left: ["expander", "sourceId"], right: [] }}
         onPaginationChange={(updater: Updater<PaginationState>) => {
           if (typeof updater === "function") {
@@ -49,7 +49,7 @@ export default function ReleasesPage() {
             setPageSize(updater.pageSize);
           }
         }}
-        pageCount={data?.totalPages || -1}
+        pageCount={data.totalPages}
         pagination={{
           pageIndex: page,
           pageSize: pageSize,
