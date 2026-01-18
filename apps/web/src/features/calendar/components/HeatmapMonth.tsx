@@ -105,19 +105,39 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
     return [...paddingStart, ...days];
   }, [month, statsByDate, maxValue]);
 
-  // KEEP useMemo: Aggregation over dates array
+  // KEEP useMemo: Aggregation over dates array with past/future split
   const monthTotals = useMemo(() => {
+    const today = dayjs();
     let events = 0;
     let expected = 0;
     let paid = 0;
+    let expectedFuture = 0; // Expected from today onwards
+    let expectedPast = 0; // Expected before today
+    let paidPast = 0; // Paid before today
+
     for (const d of dates) {
       if (d.type === "day") {
         events += d.total;
         expected += d.amountExpected;
         paid += d.amountPaid;
+
+        // Split by past/future relative to today
+        if (d.date.isBefore(today, "day")) {
+          expectedPast += d.amountExpected;
+          paidPast += d.amountPaid;
+        } else {
+          // Today and future days
+          expectedFuture += d.amountExpected;
+        }
       }
     }
-    return { events, expected, paid };
+
+    // Overdue: what should have been paid but wasn't (past days only)
+    const overdue = expectedPast - paidPast;
+    // Remaining: what's left to pay from today onwards
+    const remaining = expectedFuture + overdue;
+
+    return { events, expected, overdue, paid, remaining };
   }, [dates]);
 
   return (
@@ -208,15 +228,48 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
           <div className="text-base-content/60 flex flex-wrap items-center justify-between gap-2">
             <span className="font-semibold">Σ {monthTotals.events} eventos</span>
             <div className="flex flex-wrap gap-x-3 gap-y-1">
-              <span>
-                Esperado: <span className="font-medium">{fmtCLP(monthTotals.expected)}</span>
-              </span>
-              <span>
-                Pagado: <span className="font-medium">{fmtCLP(monthTotals.paid)}</span>
-              </span>
-              <span>
-                Restante: <span className="font-medium">{fmtCLP(monthTotals.expected - monthTotals.paid)}</span>
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="cursor-help">
+                    Esperado: <span className="font-medium">{fmtCLP(monthTotals.expected)}</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="bg-base-300 border-base-content/10 text-base-content max-w-xs rounded-lg border p-2 text-xs">
+                  Total esperado del mes completo
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="cursor-help">
+                    Pagado: <span className="font-medium">{fmtCLP(monthTotals.paid)}</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="bg-base-300 border-base-content/10 text-base-content max-w-xs rounded-lg border p-2 text-xs">
+                  Total pagado del mes completo
+                </TooltipContent>
+              </Tooltip>
+              {monthTotals.overdue > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-error cursor-help">
+                      Atrasado: <span className="font-medium">{fmtCLP(monthTotals.overdue)}</span>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-base-300 border-base-content/10 text-base-content max-w-xs rounded-lg border p-2 text-xs">
+                    Lo que debió estar pagado antes de hoy pero no se pagó
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="cursor-help">
+                    Restante: <span className="font-medium">{fmtCLP(monthTotals.remaining)}</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="bg-base-300 border-base-content/10 text-base-content max-w-xs rounded-lg border p-2 text-xs">
+                  Lo que falta pagar desde hoy en adelante (incluye atrasos)
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </div>
