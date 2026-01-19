@@ -21,8 +21,10 @@ function substituteConditionVariables(
 
   for (const [key, value] of Object.entries(conditions)) {
     if (typeof value === "string") {
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional placeholder string stored in DB
       if (value === "${userId}") {
         result[key] = context.userId;
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional placeholder string stored in DB
       } else if (value === "${personId}") {
         result[key] = context.personId || null;
       } else {
