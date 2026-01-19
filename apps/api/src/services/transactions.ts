@@ -122,7 +122,8 @@ export async function getParticipantLeaderboard(params: {
   mode?: "combined" | "incoming" | "outgoing";
 }) {
   const { from, to, limit } = params;
-  let query = kysely
+  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
+  let query = (kysely as any)
     .selectFrom("transactions")
     .select([
       sql<string>`COALESCE(metadata->>'recipient_rut', metadata->>'rut', metadata->>'identification_number')`.as(
@@ -215,7 +216,8 @@ export async function getParticipantInsight(
   const { from, to } = params;
 
   // 1. Monthly Stats
-  let monthlyQuery = kysely
+  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
+  let monthlyQuery = (kysely as any)
     .selectFrom("transactions")
     .select([
       sql<string>`to_char(transaction_date, 'YYYY-MM-01')`.as("month"),
@@ -228,7 +230,8 @@ export async function getParticipantInsight(
         "incomingAmount",
       ),
     ])
-    .where((eb) =>
+    // biome-ignore lint/suspicious/noExplicitAny: Kysely expression builder type
+    .where((eb: any) =>
       eb.or([
         sql`metadata->>'recipient_rut' = ${participantId}`,
         sql`metadata->>'rut' = ${participantId}`,
@@ -245,7 +248,8 @@ export async function getParticipantInsight(
   const monthlyStats = await monthlyQuery.execute();
 
   // 2. Counterparts (Details) - Reuse leaderboard logic but filtered by ID
-  let counterpartsQuery = kysely
+  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
+  let counterpartsQuery = (kysely as any)
     .selectFrom("transactions")
     .select([
       sql<string>`COALESCE(metadata->>'recipient_rut', metadata->>'rut', metadata->>'identification_number')`.as(
@@ -272,7 +276,8 @@ export async function getParticipantInsight(
         "incomingAmount",
       ),
     ])
-    .where((eb) =>
+    // biome-ignore lint/suspicious/noExplicitAny: Kysely expression builder type
+    .where((eb: any) =>
       eb.or([
         sql`metadata->>'recipient_rut' = ${participantId}`,
         sql`metadata->>'rut' = ${participantId}`,
@@ -330,7 +335,8 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
   const { from, to } = params;
 
   // Monthly
-  const monthly = await kysely
+  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
+  const monthly = await (kysely as any)
     .selectFrom("transactions")
     .select([
       sql<string>`to_char(transaction_date, 'YYYY-MM-01')`.as("month"),
@@ -349,7 +355,8 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
     .execute();
 
   // By Type
-  const byType = await kysely
+  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
+  const byType = await (kysely as any)
     .selectFrom("transactions")
     .select(["transaction_type as description", sql<number>`sum(transaction_amount)`.as("total")])
     .where("transaction_date", ">=", from)
@@ -365,7 +372,8 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
   }));
 
   // Totals
-  const totalsQuery = await kysely
+  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
+  const totalsQuery = await (kysely as any)
     .selectFrom("transactions")
     .select([
       sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
