@@ -178,6 +178,12 @@ model UserRoleAssignment {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
+  
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,delete', auth().status == 'ACTIVE')
+  
   @@map("user_role_assignments")
 }
 
