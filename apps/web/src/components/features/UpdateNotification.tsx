@@ -1,6 +1,6 @@
+import { useRegisterSW } from "virtual:pwa-register/react";
 import { X } from "lucide-react";
 import { useState } from "react";
-import { useRegisterSW } from "virtual:pwa-register/react";
 
 import Button from "@/components/ui/Button";
 
@@ -39,7 +39,7 @@ export function UpdateNotification() {
             () => {
               resolve();
             },
-            { once: true }
+            { once: true },
           );
           // Fallback timeout in case controllerchange doesn't fire
           setTimeout(resolve, 1000);
@@ -70,7 +70,12 @@ export function UpdateNotification() {
       <div className="border-primary/20 bg-base-100 rounded-2xl border p-4 shadow-2xl">
         <div className="flex items-start gap-3">
           <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-            <svg className="text-primary h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="text-primary h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                 strokeLinecap="round"
@@ -81,7 +86,9 @@ export function UpdateNotification() {
           </div>
           <div className="flex-1">
             <h3 className="text-base-content text-sm font-semibold">Nueva versión disponible</h3>
-            <p className="text-base-content/70 mt-1 text-xs">Actualiza cuando estés listo. No perderás tu progreso.</p>
+            <p className="text-base-content/70 mt-1 text-xs">
+              Actualiza cuando estés listo. No perderás tu progreso.
+            </p>
             <div className="mt-3 flex gap-2">
               <Button className="flex-1" disabled={isUpdating} onClick={handleUpdate} size="sm">
                 {isUpdating ? "Actualizando..." : "Actualizar"}

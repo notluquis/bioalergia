@@ -150,7 +150,15 @@ export interface ServiceTemplate {
   payload: Partial<CreateServicePayload>;
 }
 
-export type ServiceType = "BUSINESS" | "LEASE" | "OTHER" | "PERSONAL" | "SOFTWARE" | "SUPPLIER" | "TAX" | "UTILITY";
+export type ServiceType =
+  | "BUSINESS"
+  | "LEASE"
+  | "OTHER"
+  | "PERSONAL"
+  | "SOFTWARE"
+  | "SUPPLIER"
+  | "TAX"
+  | "UTILITY";
 
 export interface SummaryTotals {
   activeCount: number;

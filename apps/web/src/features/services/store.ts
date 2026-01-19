@@ -76,7 +76,10 @@ export const servicesActions = {
       ...state,
       paymentForm: {
         note: schedule.note ?? "",
-        paidAmount: schedule.paid_amount == null ? String(schedule.effective_amount) : String(schedule.paid_amount),
+        paidAmount:
+          schedule.paid_amount == null
+            ? String(schedule.effective_amount)
+            : String(schedule.paid_amount),
         paidDate: schedule.paid_date ?? today(),
         transactionId: schedule.transaction?.id ? String(schedule.transaction.id) : "",
       },

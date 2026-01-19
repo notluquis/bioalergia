@@ -3,7 +3,12 @@ import type { ChangeEvent } from "react";
 import Input from "@/components/ui/Input";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
-import type { ServiceObligationType, ServiceOwnership, ServiceRecurrenceType, ServiceType } from "../../types";
+import type {
+  ServiceObligationType,
+  ServiceOwnership,
+  ServiceRecurrenceType,
+  ServiceType,
+} from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
 
 interface ServiceClassificationSectionProps {

@@ -1,4 +1,4 @@
-import { type ChangeEvent } from "react";
+import type { ChangeEvent } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -25,7 +25,11 @@ const STATUS_LABELS: Record<ServiceSummary["status"], string> = {
 
 const STATUS_ORDER: ServiceSummary["status"][] = ["ACTIVE", "INACTIVE", "ARCHIVED"];
 
-export default function ServicesFilterPanel({ filters, onChange, services }: ServicesFilterPanelProps) {
+export default function ServicesFilterPanel({
+  filters,
+  onChange,
+  services,
+}: ServicesFilterPanelProps) {
   const typeOptions = (() => {
     const counts = new Map<ServiceType, number>();
     for (const service of services) {
@@ -67,7 +71,9 @@ export default function ServicesFilterPanel({ filters, onChange, services }: Ser
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-base-content text-sm font-semibold">Filtros rápidos</p>
-          <p className="text-base-content/50 text-xs">Filtra por estado, tipo o busca por nombre/detalle.</p>
+          <p className="text-base-content/50 text-xs">
+            Filtra por estado, tipo o busca por nombre/detalle.
+          </p>
         </div>
         <Button
           className="text-primary text-xs font-semibold tracking-wide uppercase hover:underline"
@@ -93,7 +99,9 @@ export default function ServicesFilterPanel({ filters, onChange, services }: Ser
         </div>
 
         <div>
-          <p className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Estado</p>
+          <p className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">
+            Estado
+          </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {STATUS_ORDER.map((status) => (
               <Button
@@ -117,7 +125,9 @@ export default function ServicesFilterPanel({ filters, onChange, services }: Ser
         </div>
 
         <div>
-          <p className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Tipo de servicio</p>
+          <p className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">
+            Tipo de servicio
+          </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {typeOptions.map(([type, count]) => {
               const isActive = filters.types.size === 0 || filters.types.has(type);

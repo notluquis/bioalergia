@@ -4,10 +4,8 @@
  */
 
 import { useState } from "react";
-
-import type { Employee } from "@/features/hr/employees/types";
-
 import Checkbox from "@/components/ui/Checkbox";
+import type { Employee } from "@/features/hr/employees/types";
 
 interface EmployeeAuditSelectorProps {
   employees: Employee[];
@@ -27,7 +25,9 @@ export default function EmployeeAuditSelector({
   const [isOpen, setIsOpen] = useState(false);
 
   const activeEmployees = employees.filter((emp) => emp.status === "ACTIVE");
-  const selectedNames = selectedIds.map((id) => activeEmployees.find((e) => e.id === id)?.full_name).filter(Boolean);
+  const selectedNames = selectedIds
+    .map((id) => activeEmployees.find((e) => e.id === id)?.full_name)
+    .filter(Boolean);
 
   const isMaxed = selectedIds.length >= MAX_EMPLOYEES;
 
@@ -70,7 +70,12 @@ export default function EmployeeAuditSelector({
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path d="M19 14l-7 7m0 0l-7-7m7 7V3" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+          <path
+            d="M19 14l-7 7m0 0l-7-7m7 7V3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+          />
         </svg>
       </button>
 

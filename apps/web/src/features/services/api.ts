@@ -28,28 +28,33 @@ export async function fetchServices(): Promise<ServiceListResponse> {
 
 export async function regenerateServiceSchedules(
   publicId: string,
-  payload: RegenerateServicePayload
+  payload: RegenerateServicePayload,
 ): Promise<ServiceDetailResponse> {
   return apiClient.post<ServiceDetailResponse>(`/api/services/${publicId}/schedules`, payload);
 }
 
 export async function registerServicePayment(
   scheduleId: number,
-  payload: ServicePaymentPayload
+  payload: ServicePaymentPayload,
 ): Promise<{ schedule: ServiceSchedule; status: "ok" }> {
   return apiClient.post<{ schedule: ServiceSchedule; status: "ok" }>(
     `/api/services/schedules/${scheduleId}/pay`,
-    payload
+    payload,
   );
 }
 
-export async function unlinkServicePayment(scheduleId: number): Promise<{ schedule: ServiceSchedule; status: "ok" }> {
+export async function unlinkServicePayment(
+  scheduleId: number,
+): Promise<{ schedule: ServiceSchedule; status: "ok" }> {
   return apiClient.post<{ schedule: ServiceSchedule; status: "ok" }>(
     `/api/services/schedules/${scheduleId}/unlink`,
-    {}
+    {},
   );
 }
 
-export async function updateService(publicId: string, payload: CreateServicePayload): Promise<ServiceDetailResponse> {
+export async function updateService(
+  publicId: string,
+  payload: CreateServicePayload,
+): Promise<ServiceDetailResponse> {
   return apiClient.put<ServiceDetailResponse>(`/api/services/${publicId}`, payload);
 }

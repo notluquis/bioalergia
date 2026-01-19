@@ -1,4 +1,4 @@
-import ky, { HTTPError, Options } from "ky";
+import ky, { HTTPError, type Options } from "ky";
 import superjson from "superjson";
 import { z } from "zod";
 
@@ -152,8 +152,10 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
 export const apiClient = {
   delete: <T>(url: string, options?: RequestOptions) => request<T>("DELETE", url, options),
   get: <T>(url: string, options?: RequestOptions) => request<T>("GET", url, options),
-  post: <T>(url: string, body: object, options?: RequestOptions) => request<T>("POST", url, { ...options, body }),
-  put: <T>(url: string, body: object, options?: RequestOptions) => request<T>("PUT", url, { ...options, body }),
+  post: <T>(url: string, body: object, options?: RequestOptions) =>
+    request<T>("POST", url, { ...options, body }),
+  put: <T>(url: string, body: object, options?: RequestOptions) =>
+    request<T>("PUT", url, { ...options, body }),
 };
 
 // Upload Files - simplified with Ky
@@ -176,7 +178,11 @@ export interface UploadResult {
 }
 export type UploadSummary = z.infer<typeof UploadSummarySchema>;
 
-export async function uploadFiles(files: File[], endpoint: string, logContext: string): Promise<UploadResult[]> {
+export async function uploadFiles(
+  files: File[],
+  endpoint: string,
+  logContext: string,
+): Promise<UploadResult[]> {
   const aggregated: UploadResult[] = [];
 
   for (const file of files) {

@@ -1,10 +1,9 @@
-import { calendar, calendar_v3 } from "@googleapis/calendar";
-import { randomUUID } from "crypto";
-import { promises as fs } from "fs";
-import { JWT } from "google-auth-library";
-import path from "path";
-import { googleCalendarConfig } from "../../config";
+import { randomUUID } from "node:crypto";
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { db } from "@finanzas/db";
+import { calendar, type calendar_v3 } from "@googleapis/calendar";
+import { JWT } from "google-auth-library";
 import { logEvent, logWarn } from "../logger";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
@@ -12,7 +11,7 @@ const CREDENTIALS_PATH = path.resolve(
   process.cwd(),
   "storage",
   "google-calendar",
-  "credentials.json"
+  "credentials.json",
 );
 const WEBHOOK_BASE_URL = process.env.PUBLIC_URL || "http://localhost:5000";
 const WEBHOOK_ENDPOINT = `${WEBHOOK_BASE_URL}/api/calendar/webhook`;
@@ -33,24 +32,16 @@ async function getCalendarClient(): Promise<CalendarClient | null> {
   let privateKey: string | undefined;
 
   // Try environment variables first (Railway approach)
-  if (
-    process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
-    process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-  ) {
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) {
     clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     // Railway may escape newlines as literal \n, convert them back
-    privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(
-      /\\n/g,
-      "\n"
-    );
+    privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, "\n");
     logEvent("google_calendar_auth_from_env", { clientEmail });
   } else {
     // Fall back to credentials file
     try {
       await fs.access(CREDENTIALS_PATH);
-      const credentials = JSON.parse(
-        await fs.readFile(CREDENTIALS_PATH, "utf-8")
-      );
+      const credentials = JSON.parse(await fs.readFile(CREDENTIALS_PATH, "utf-8"));
       clientEmail = credentials.client_email;
       privateKey = credentials.private_key;
       logEvent("google_calendar_auth_from_file", {
@@ -59,8 +50,7 @@ async function getCalendarClient(): Promise<CalendarClient | null> {
       });
     } catch {
       logWarn("google_calendar_credentials_not_found", {
-        envMissing:
-          "GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
+        envMissing: "GOOGLE_SERVICE_ACCOUNT_EMAIL or GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
         filePath: CREDENTIALS_PATH,
         hint: "Set env vars or provide credentials.json file",
       });
@@ -93,7 +83,7 @@ async function getCalendarClient(): Promise<CalendarClient | null> {
  */
 export async function registerWatchChannel(
   calendarGoogleId: string,
-  calendarDbId: number
+  calendarDbId: number,
 ): Promise<{ channelId: string; resourceId: string; expiration: Date } | null> {
   try {
     const client = await getCalendarClient();
@@ -104,9 +94,7 @@ export async function registerWatchChannel(
     }
 
     const channelId = randomUUID();
-    const expiration = new Date(
-      Date.now() + CHANNEL_TTL_DAYS * 24 * 60 * 60 * 1000
-    );
+    const expiration = new Date(Date.now() + CHANNEL_TTL_DAYS * 24 * 60 * 60 * 1000);
 
     logEvent("register_watch_channel_start", {
       calendarGoogleId,
@@ -178,10 +166,7 @@ export async function registerWatchChannel(
  * @param channelId - Channel ID to stop
  * @param resourceId - Resource ID from Google
  */
-export async function stopWatchChannel(
-  channelId: string,
-  resourceId: string
-): Promise<boolean> {
+export async function stopWatchChannel(channelId: string, resourceId: string): Promise<boolean> {
   try {
     const client = await getCalendarClient();
 
@@ -224,9 +209,7 @@ export async function stopWatchChannel(
  */
 export async function renewWatchChannels(): Promise<void> {
   try {
-    const expirationThreshold = new Date(
-      Date.now() + RENEWAL_BUFFER_DAYS * 24 * 60 * 60 * 1000
-    );
+    const expirationThreshold = new Date(Date.now() + RENEWAL_BUFFER_DAYS * 24 * 60 * 60 * 1000);
 
     // Find channels expiring soon
     const expiring = await db.calendarWatchChannel.findMany({
@@ -250,10 +233,7 @@ export async function renewWatchChannels(): Promise<void> {
       await stopWatchChannel(channel.channelId, channel.resourceId);
 
       // Register new channel
-      const result = await registerWatchChannel(
-        channel.calendar.googleId,
-        channel.calendarId
-      );
+      const result = await registerWatchChannel(channel.calendar.googleId, channel.calendarId);
 
       if (result) {
         logEvent("renew_watch_channel_success", {
@@ -327,14 +307,10 @@ export async function setupAllWatchChannels(): Promise<void> {
       },
     });
 
-    const calendarsWithChannels = new Set(
-      existingChannels.map((ch) => ch.calendarId)
-    );
+    const calendarsWithChannels = new Set(existingChannels.map((ch) => ch.calendarId));
 
     // Find calendars without watch channels
-    const calendarsNeedingChannels = calendars.filter(
-      (cal) => !calendarsWithChannels.has(cal.id)
-    );
+    const calendarsNeedingChannels = calendars.filter((cal) => !calendarsWithChannels.has(cal.id));
 
     logEvent("setup_watch_channels_start", {
       totalCalendars: calendars.length,

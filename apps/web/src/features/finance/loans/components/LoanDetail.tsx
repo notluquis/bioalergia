@@ -128,7 +128,9 @@ export function LoanDetail({
       <section className="border-base-300 bg-base-200 text-base-content grid gap-4 rounded-2xl border p-4 text-sm sm:grid-cols-4">
         <div>
           <p className="text-base-content/50 text-xs tracking-wide uppercase">Capital</p>
-          <p className="text-base-content text-lg font-semibold">${loan.principal_amount.toLocaleString("es-CL")}</p>
+          <p className="text-base-content text-lg font-semibold">
+            ${loan.principal_amount.toLocaleString("es-CL")}
+          </p>
         </div>
         <div>
           <p className="text-base-content/50 text-xs tracking-wide uppercase">Total esperado</p>
@@ -138,7 +140,9 @@ export function LoanDetail({
         </div>
         <div>
           <p className="text-base-content/50 text-xs tracking-wide uppercase">Pagado</p>
-          <p className="text-success text-lg font-semibold">${(summary?.total_paid ?? 0).toLocaleString("es-CL")}</p>
+          <p className="text-success text-lg font-semibold">
+            ${(summary?.total_paid ?? 0).toLocaleString("es-CL")}
+          </p>
         </div>
         <div>
           <p className="text-base-content/50 text-xs tracking-wide uppercase">Saldo</p>
@@ -175,7 +179,10 @@ export function LoanDetail({
             max={360}
             min={1}
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setRegenerateForm((prev) => ({ ...prev, totalInstallments: Number(event.target.value) }));
+              setRegenerateForm((prev) => ({
+                ...prev,
+                totalInstallments: Number(event.target.value),
+              }));
             }}
             type="number"
             value={regenerateForm.totalInstallments ?? loan.total_installments}
@@ -214,7 +221,9 @@ export function LoanDetail({
             <option value="MONTHLY">Mensual</option>
           </Input>
           {regenerateError && (
-            <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{regenerateError}</p>
+            <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
+              {regenerateError}
+            </p>
           )}
           <div className="flex justify-end gap-3">
             <Button

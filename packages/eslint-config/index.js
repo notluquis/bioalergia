@@ -1,14 +1,14 @@
 import js from "@eslint/js";
-import tseslint from "typescript-eslint";
-import unicorn from "eslint-plugin-unicorn";
-import sonarjs from "eslint-plugin-sonarjs";
-import security from "eslint-plugin-security";
-import perfectionist from "eslint-plugin-perfectionist";
-import unusedImports from "eslint-plugin-unused-imports";
-import checkFile from "eslint-plugin-check-file";
-import turbo from "eslint-plugin-turbo";
 import prettier from "eslint-config-prettier";
+import checkFile from "eslint-plugin-check-file";
+import perfectionist from "eslint-plugin-perfectionist";
+import security from "eslint-plugin-security";
+import sonarjs from "eslint-plugin-sonarjs";
+import turbo from "eslint-plugin-turbo";
+import unicorn from "eslint-plugin-unicorn";
+import unusedImports from "eslint-plugin-unused-imports";
 import globals from "globals";
+import tseslint from "typescript-eslint";
 
 export const config = [
   js.configs.recommended,

@@ -1,4 +1,4 @@
-import { Column } from "@tanstack/react-table";
+import type { Column } from "@tanstack/react-table";
 import { PlusCircle } from "lucide-react";
 import * as React from "react";
 
@@ -32,7 +32,9 @@ export function DataTableFacetedFilter<TData, TValue>({
   const selectedValues = new Set(column?.getFilterValue() as string[]);
   const [search, setSearch] = React.useState("");
 
-  const filteredOptions = options.filter((option) => option.label.toLowerCase().includes(search.toLowerCase()));
+  const filteredOptions = options.filter((option) =>
+    option.label.toLowerCase().includes(search.toLowerCase()),
+  );
 
   return (
     <DropdownMenu>
@@ -43,8 +45,12 @@ export function DataTableFacetedFilter<TData, TValue>({
           {selectedValues.size > 0 && (
             <>
               <div className="bg-base-300 mx-2 h-4 w-px" />
-              <div className="badge badge-sm badge-secondary hidden lg:flex">{selectedValues.size}</div>
-              <div className="badge badge-sm badge-secondary flex lg:hidden">{selectedValues.size}</div>
+              <div className="badge badge-sm badge-secondary hidden lg:flex">
+                {selectedValues.size}
+              </div>
+              <div className="badge badge-sm badge-secondary flex lg:hidden">
+                {selectedValues.size}
+              </div>
             </>
           )}
         </Button>

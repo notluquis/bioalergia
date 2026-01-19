@@ -1,15 +1,13 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Suspense } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import { formatCurrency } from "@/lib/utils";
-
-import type { PersonalCredit } from "../types";
-
 import { CreateCreditForm } from "../components/CreateCreditForm";
 import { personalFinanceQueries } from "../queries";
+import type { PersonalCredit } from "../types";
 
 const columns: ColumnDef<PersonalCredit>[] = [
   {
@@ -36,7 +34,10 @@ const columns: ColumnDef<PersonalCredit>[] = [
 
       return (
         <div className="bg-base-200 dark:bg-base-700 h-2.5 w-full rounded-full">
-          <div className="bg-primary h-2.5 rounded-full transition-all" style={{ width: `${percent}%` }}></div>
+          <div
+            className="bg-primary h-2.5 rounded-full transition-all"
+            style={{ width: `${percent}%` }}
+          ></div>
         </div>
       );
     },

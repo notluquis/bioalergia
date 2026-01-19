@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
 import { getInventoryCategories } from "../api";
-import { InventoryCategory, InventoryItem } from "../types";
+import type { InventoryCategory, InventoryItem } from "../types";
 
 interface InventoryItemFormProps {
   item?: InventoryItem | null;
@@ -13,7 +14,12 @@ interface InventoryItemFormProps {
   saving: boolean;
 }
 
-export default function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryItemFormProps) {
+export default function InventoryItemForm({
+  item,
+  onCancel,
+  onSave,
+  saving,
+}: InventoryItemFormProps) {
   const [form, setForm] = useState({
     ...item,
     category_id: item?.category_id ?? null,
@@ -47,7 +53,10 @@ export default function InventoryItemForm({ item, onCancel, onSave, saving }: In
           as="select"
           label="Categoría"
           onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-            setForm({ ...form, category_id: event.target.value ? Number(event.target.value) : null });
+            setForm({
+              ...form,
+              category_id: event.target.value ? Number(event.target.value) : null,
+            });
           }}
           value={form.category_id == null ? "" : String(form.category_id)}
         >

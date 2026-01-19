@@ -3,10 +3,8 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-
-import type { TimesheetEntryWithEmployee } from "../types";
-
 import { fetchMultiEmployeeTimesheets } from "../api";
+import type { TimesheetEntryWithEmployee } from "../types";
 
 export interface AuditDateRange {
   end: string;
@@ -19,7 +17,10 @@ interface UseTimesheetAuditOptions {
 }
 
 export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOptions) {
-  const sortedRanges = useMemo(() => ranges.toSorted((a, b) => a.start.localeCompare(b.start)), [ranges]);
+  const sortedRanges = useMemo(
+    () => ranges.toSorted((a, b) => a.start.localeCompare(b.start)),
+    [ranges],
+  );
   const firstDay = sortedRanges[0]?.start;
   const lastDay = sortedRanges.at(-1)?.end;
 

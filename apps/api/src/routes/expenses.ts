@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -38,10 +38,7 @@ app.get("/:publicId", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Expense");
   if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  return reply(c, 
-    { status: "error", message: "MonthlyExpense feature not yet implemented" },
-    501
-  );
+  return reply(c, { status: "error", message: "MonthlyExpense feature not yet implemented" }, 501);
 });
 
 // POST / - Create expense
@@ -52,10 +49,7 @@ app.post("/", async (c) => {
   const canCreate = await hasPermission(user.id, "create", "Expense");
   if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  return reply(c, 
-    { status: "error", message: "MonthlyExpense feature not yet implemented" },
-    501
-  );
+  return reply(c, { status: "error", message: "MonthlyExpense feature not yet implemented" }, 501);
 });
 
 // PUT /:publicId - Update expense
@@ -66,10 +60,7 @@ app.put("/:publicId", async (c) => {
   const canUpdate = await hasPermission(user.id, "update", "Expense");
   if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  return reply(c, 
-    { status: "error", message: "MonthlyExpense feature not yet implemented" },
-    501
-  );
+  return reply(c, { status: "error", message: "MonthlyExpense feature not yet implemented" }, 501);
 });
 
 // POST /:publicId/link - Link transaction to expense
@@ -80,10 +71,7 @@ app.post("/:publicId/link", async (c) => {
   const canUpdate = await hasPermission(user.id, "update", "Expense");
   if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  return reply(c, 
-    { status: "error", message: "MonthlyExpense feature not yet implemented" },
-    501
-  );
+  return reply(c, { status: "error", message: "MonthlyExpense feature not yet implemented" }, 501);
 });
 
 // POST /:publicId/unlink - Unlink transaction from expense
@@ -94,10 +82,7 @@ app.post("/:publicId/unlink", async (c) => {
   const canUpdate = await hasPermission(user.id, "update", "Expense");
   if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  return reply(c, 
-    { status: "error", message: "MonthlyExpense feature not yet implemented" },
-    501
-  );
+  return reply(c, { status: "error", message: "MonthlyExpense feature not yet implemented" }, 501);
 });
 
 export default app;

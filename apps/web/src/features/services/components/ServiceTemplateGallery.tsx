@@ -101,7 +101,9 @@ export default function ServiceTemplateGallery({ onApply }: ServiceTemplateGalle
   return (
     <section className="border-base-300 text-base-content bg-base-100 space-y-4 border p-4 text-sm">
       <div className="flex flex-col gap-1">
-        <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">Plantillas rápidas</h2>
+        <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
+          Plantillas rápidas
+        </h2>
         <p className="text-base-content/50 text-xs">
           Usa plantillas predefinidas para acelerar la creación de servicios.
         </p>

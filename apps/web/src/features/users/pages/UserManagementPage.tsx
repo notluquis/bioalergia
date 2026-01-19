@@ -12,9 +12,6 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Key, Shield, UserCog, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
-
-import type { User } from "@/features/users/types";
-
 import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -22,6 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteUserPasskey, resetUserPassword, toggleUserMfa } from "@/features/users/api";
 import { getColumns } from "@/features/users/components/columns";
+import type { User } from "@/features/users/types";
 import { getPersonFullName } from "@/lib/person";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -62,13 +60,14 @@ export default function UserManagementPage() {
           mfaEnabled: u.mfaEnabled ?? false,
           passkeysCount: ((u as { passkeys?: unknown[] }).passkeys ?? []).length,
           person: {
-            fatherName: (u as { person?: { fatherName?: null | string } }).person?.fatherName ?? null,
+            fatherName:
+              (u as { person?: { fatherName?: null | string } }).person?.fatherName ?? null,
             names: (u as { person?: { names?: string } }).person?.names ?? "",
             rut: (u as { person?: { rut?: string } }).person?.rut ?? "",
           },
           role: (u as { roles?: { role?: { name?: string } }[] }).roles?.[0]?.role?.name ?? "",
           status: u.status as User["status"],
-        })
+        }),
       );
   }, [usersData]);
 
@@ -152,7 +151,7 @@ export default function UserManagementPage() {
         }
       },
     }),
-    [deleteUserMutation, error, queryClient, success, updateUserMutation]
+    [deleteUserMutation, error, queryClient, success, updateUserMutation],
   );
 
   const columns = useMemo(() => getColumns(actions), [actions]);
@@ -191,7 +190,9 @@ export default function UserManagementPage() {
   // Filter users based on role filter (client side)
   const filteredUsers = useMemo(() => {
     if (roleFilter === "ALL") return users;
-    return users.filter((u) => u.role === roleFilter || (u.role || "").toUpperCase() === roleFilter.toUpperCase());
+    return users.filter(
+      (u) => u.role === roleFilter || (u.role || "").toUpperCase() === roleFilter.toUpperCase(),
+    );
   }, [users, roleFilter]);
 
   return (
@@ -274,7 +275,12 @@ export default function UserManagementPage() {
           </Link>
         </div>
 
-        <DataTable columns={columns} data={filteredUsers} enableToolbar={true} isLoading={isLoading} />
+        <DataTable
+          columns={columns}
+          data={filteredUsers}
+          enableToolbar={true}
+          isLoading={isLoading}
+        />
       </div>
 
       <Modal

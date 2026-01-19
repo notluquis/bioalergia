@@ -2,10 +2,10 @@ import { useStore } from "@tanstack/react-form";
 import { useMemo } from "react";
 
 import { StatCard } from "@/components/ui/StatCard";
-import { type CalendarUnclassifiedEvent } from "@/features/calendar/types";
+import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 
-import { type FormValues } from "../schemas";
+import type { FormValues } from "../schemas";
 
 interface ClassificationTotalsProps {
   events: CalendarUnclassifiedEvent[];
@@ -17,7 +17,10 @@ export function ClassificationTotals({ events, form }: Readonly<ClassificationTo
   // Subscribe to entries values via TanStack Form's useStore
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
-  const watchedEntries = useStore(form.store, (state: any) => (state as { values: FormValues }).values.entries);
+  const watchedEntries = useStore(
+    form.store,
+    (state: any) => (state as { values: FormValues }).values.entries,
+  );
 
   const totals = useMemo(() => {
     let expected = 0;

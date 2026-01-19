@@ -1,4 +1,11 @@
-export const CASHBACK_KEYWORDS = ["cashback", "meli+", "melidolar", "meli dolar", "melidólar", "meli-dolar"];
+export const CASHBACK_KEYWORDS = [
+  "cashback",
+  "meli+",
+  "melidolar",
+  "meli dolar",
+  "melidólar",
+  "meli-dolar",
+];
 
 export interface CashbackCandidate {
   description?: null | string;

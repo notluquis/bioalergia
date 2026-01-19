@@ -14,10 +14,13 @@ export async function generateTimesheetPdfBase64(
   employee: Employee,
   summaryRow: TimesheetSummaryRow,
   bulkRows: BulkRow[],
-  monthLabel: string
+  monthLabel: string,
 ): Promise<null | string> {
   try {
-    const [{ default: jsPDF }, autoTableModule] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
+    const [{ default: jsPDF }, autoTableModule] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable"),
+    ]);
     const autoTable = autoTableModule.default ?? autoTableModule;
     const doc = new jsPDF();
 
@@ -82,7 +85,12 @@ export async function generateTimesheetPdfBase64(
 
     const detailBody = bulkRows
       .filter((row) => row.entrada || row.salida)
-      .map((row) => [dayjs(row.date).format("DD-MM-YYYY"), row.entrada || "-", row.salida || "-", row.overtime || "-"]);
+      .map((row) => [
+        dayjs(row.date).format("DD-MM-YYYY"),
+        row.entrada || "-",
+        row.salida || "-",
+        row.overtime || "-",
+      ]);
 
     if (detailBody.length > 0) {
       autoTable(doc, {
@@ -110,7 +118,7 @@ export async function generateTimesheetPdfBase64(
         () => {
           resolve(null);
         },
-        { once: true }
+        { once: true },
       );
       reader.readAsDataURL(pdfBlob);
     });

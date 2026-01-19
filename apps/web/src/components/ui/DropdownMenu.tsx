@@ -21,7 +21,7 @@ const DropdownMenuContent = React.forwardRef<
         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",
         "data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-        className
+        className,
       )}
       ref={ref}
       sideOffset={sideOffset}
@@ -42,7 +42,7 @@ const DropdownMenuItem = React.forwardRef<
       "focus:bg-base-200 focus:text-base-content relative flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors outline-none select-none",
       "data-disabled:pointer-events-none data-disabled:opacity-50",
       inset && "pl-8",
-      className
+      className,
     )}
     ref={ref}
     {...props}
@@ -54,7 +54,11 @@ const DropdownMenuSeparator = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
 >(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.Separator className={cn("bg-base-200 -mx-1 my-1 h-px", className)} ref={ref} {...props} />
+  <DropdownMenuPrimitive.Separator
+    className={cn("bg-base-200 -mx-1 my-1 h-px", className)}
+    ref={ref}
+    {...props}
+  />
 ));
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 
@@ -81,7 +85,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     className={cn(
       "focus:bg-base-200 focus:text-base-content relative flex cursor-pointer items-center rounded-lg py-2 pr-2 pl-8 text-sm transition-colors outline-none select-none",
       "data-disabled:pointer-events-none data-disabled:opacity-50",
-      className
+      className,
     )}
     ref={ref}
     {...props}
@@ -90,11 +94,19 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       <div
         className={cn(
           "flex h-4 w-4 items-center justify-center rounded border transition-colors",
-          checked ? "border-primary bg-primary text-primary-content" : "border-base-content/30 bg-base-100"
+          checked
+            ? "border-primary bg-primary text-primary-content"
+            : "border-base-content/30 bg-base-100",
         )}
       >
         <DropdownMenuPrimitive.ItemIndicator>
-          <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+          <svg
+            className="h-3 w-3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={3}
+            viewBox="0 0 24 24"
+          >
             <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </DropdownMenuPrimitive.ItemIndicator>

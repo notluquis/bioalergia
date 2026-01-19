@@ -1,15 +1,11 @@
 import { db } from "@finanzas/db";
 
-import { CalendarEventRecord } from "../lib/google/google-calendar";
-import { logEvent, logWarn } from "../lib/logger";
+import type { CalendarEventRecord } from "../lib/google/google-calendar";
 
 export async function loadSettings() {
   const settings = await db.setting.findMany();
   return settings.reduce(
-    (
-      acc: Record<string, string>,
-      curr: { key: string; value: string | null },
-    ) => {
+    (acc: Record<string, string>, curr: { key: string; value: string | null }) => {
       acc[curr.key] = curr.value || "";
       return acc;
     },
@@ -29,7 +25,7 @@ export async function createCalendarSyncLogEntry(data: {
 
   if (running) {
     // Check if it's stale (> 15 minutes old) to avoid permanent lock
-    const diff = new Date().getTime() - running.startedAt.getTime();
+    const diff = Date.now() - running.startedAt.getTime();
     const STALE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes (reduced from 15)
     if (diff < STALE_TIMEOUT_MS) {
       throw new Error("Sincronización ya en curso");
@@ -102,15 +98,10 @@ export async function listCalendarSyncLogs(
         limit?: number;
       },
 ) {
-  let options =
-    typeof limitOrOptions === "number"
-      ? { limit: limitOrOptions }
-      : limitOrOptions;
+  const options = typeof limitOrOptions === "number" ? { limit: limitOrOptions } : limitOrOptions;
   const { start, end, limit = 50 } = options || {};
 
-  const where: NonNullable<
-    Parameters<typeof db.calendarSyncLog.findMany>[0]
-  >["where"] = {};
+  const where: NonNullable<Parameters<typeof db.calendarSyncLog.findMany>[0]>["where"] = {};
   if (start) {
     where.startedAt = { gte: start };
   }
@@ -164,10 +155,7 @@ export async function listUnclassifiedCalendarEvents(
   const conditions: any[] = [];
 
   // If no specific filters, default to show events missing ANY classifiable field
-  if (
-    !filters ||
-    Object.keys(filters).filter((k) => k !== "filterMode").length === 0
-  ) {
+  if (!filters || Object.keys(filters).filter((k) => k !== "filterMode").length === 0) {
     conditions.push(
       { category: null },
       { category: "" },
@@ -320,7 +308,7 @@ export async function updateCalendarEventClassification(
   });
 }
 
-import { EventCreateInput } from "../lib/db-types";
+import type { EventCreateInput } from "../lib/db-types";
 
 export async function createCalendarEvent(data: CalendarEventRecord) {
   // Look up internal calendar ID
@@ -340,9 +328,7 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
     summary: data.summary,
     description: data.description,
     startDate: data.start?.date ? new Date(data.start.date) : undefined,
-    startDateTime: data.start?.dateTime
-      ? new Date(data.start.dateTime)
-      : undefined,
+    startDateTime: data.start?.dateTime ? new Date(data.start.dateTime) : undefined,
     startTimeZone: data.start?.timeZone,
     endDate: data.end?.date ? new Date(data.end.date) : undefined,
     endDateTime: data.end?.dateTime ? new Date(data.end.dateTime) : undefined,

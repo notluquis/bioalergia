@@ -1,6 +1,10 @@
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
+import {
+  counterpartAccountPayloadSchema,
+  counterpartAccountUpdateSchema,
+  counterpartPayloadSchema,
+} from "../lib/entity-schemas";
 import {
   createCounterpart,
   getCounterpartById,
@@ -9,11 +13,7 @@ import {
   updateCounterpartAccount,
   upsertCounterpartAccount,
 } from "../services/counterparts";
-import {
-  counterpartPayloadSchema,
-  counterpartAccountPayloadSchema,
-  counterpartAccountUpdateSchema,
-} from "../lib/entity-schemas";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -36,7 +36,7 @@ app.get("/:id", async (c) => {
   if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
-  if (isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (Number.isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
 
   const result = await getCounterpartById(id);
   if (!result) return reply(c, { status: "error", message: "Not found" }, 404);
@@ -59,10 +59,7 @@ app.post("/", async (c) => {
   const parsed = counterpartPayloadSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
-      { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
-    );
+    return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
   }
 
   const result = await createCounterpart(parsed.data);
@@ -81,16 +78,13 @@ app.put("/:id", async (c) => {
   if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
-  if (isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (Number.isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
 
   const body = await c.req.json();
   const parsed = counterpartPayloadSchema.partial().safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
-      { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
-    );
+    return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
   }
 
   const result = await updateCounterpart(id, parsed.data);
@@ -115,10 +109,7 @@ app.post("/:id/accounts", async (c) => {
   const parsed = counterpartAccountPayloadSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
-      { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
-    );
+    return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
   }
 
   const result = await upsertCounterpartAccount(id, {
@@ -141,10 +132,7 @@ app.put("/accounts/:accountId", async (c) => {
   const parsed = counterpartAccountUpdateSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
-      { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
-    );
+    return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
   }
 
   const result = await updateCounterpartAccount(accountId, parsed.data);

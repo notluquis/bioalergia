@@ -58,7 +58,7 @@ if (!googleServiceAccountEmail) {
 }
 
 const googleServiceAccountPrivateKey = normalizePrivateKey(
-  process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+  process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
 );
 if (!googleServiceAccountPrivateKey) {
   googleCalendarEnvMissing.push("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY");
@@ -70,9 +70,7 @@ if (!googleCalendarIds) {
 }
 
 const syncStartDate = process.env.GOOGLE_CALENDAR_SYNC_START ?? "2000-01-01";
-const syncLookAheadDaysParsed = Number(
-  process.env.GOOGLE_CALENDAR_SYNC_LOOKAHEAD_DAYS ?? "365"
-);
+const syncLookAheadDaysParsed = Number(process.env.GOOGLE_CALENDAR_SYNC_LOOKAHEAD_DAYS ?? "365");
 const syncLookAheadDays =
   Number.isFinite(syncLookAheadDaysParsed) && syncLookAheadDaysParsed > 0
     ? Math.floor(syncLookAheadDaysParsed)
@@ -93,6 +91,6 @@ export const googleCalendarConfig: GoogleCalendarConfig | null =
 
 if (googleCalendarEnvMissing.length > 0) {
   console.warn(
-    `[config] Google Calendar sync deshabilitado. Variables faltantes: ${googleCalendarEnvMissing.join(", ")}`
+    `[config] Google Calendar sync deshabilitado. Variables faltantes: ${googleCalendarEnvMissing.join(", ")}`,
   );
 }

@@ -7,10 +7,7 @@ import { createMiddleware } from "hono/factory";
  * @param seconds - Duration in seconds for max-age
  * @param directive - Cache directive (default: 'private')
  */
-export const cacheControl = (
-  seconds: number,
-  directive: "private" | "public" = "private"
-) => {
+export const cacheControl = (seconds: number, directive: "private" | "public" = "private") => {
   return createMiddleware(async (c, next) => {
     await next();
 

@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import { type CalendarEventDetail } from "@/features/calendar/types";
+import type { CalendarEventDetail } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +26,9 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
       {/* Time Column - Start, Color Bar, Duration, End */}
       <div className="flex flex-col items-center gap-0.5 text-center">
         {/* Start Time */}
-        <span className="text-sm font-bold tabular-nums">{start ? start.format("HH:mm") : "--:--"}</span>
+        <span className="text-sm font-bold tabular-nums">
+          {start ? start.format("HH:mm") : "--:--"}
+        </span>
 
         {/* Category Color Indicator */}
         <div className={cn("min-h-6 w-1.5 flex-1 rounded-full", indicatorColor)} />
@@ -56,17 +58,22 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
           {event.amountExpected != null && (
             <div className="flex items-center gap-1">
               <span className="text-[10px] uppercase opacity-60">Esperado</span>
-              <span className="text-base-content font-medium">{currencyFormatter.format(event.amountExpected)}</span>
+              <span className="text-base-content font-medium">
+                {currencyFormatter.format(event.amountExpected)}
+              </span>
             </div>
           )}
           {event.amountPaid != null && (
             <div className="flex items-center gap-1">
               <span className="text-[10px] uppercase opacity-60">Pagado</span>
-              <span className="text-success font-medium">{currencyFormatter.format(event.amountPaid)}</span>
+              <span className="text-success font-medium">
+                {currencyFormatter.format(event.amountPaid)}
+              </span>
             </div>
           )}
           {event.attended != null &&
-            (event.attended || (event.startDateTime && dayjs(event.startDateTime).isBefore(dayjs()))) && (
+            (event.attended ||
+              (event.startDateTime && dayjs(event.startDateTime).isBefore(dayjs()))) && (
               <span className={cn("font-medium", event.attended ? "text-success" : "text-error")}>
                 {event.attended ? "✓ Asistió" : "✗ No asistió"}
               </span>
@@ -74,7 +81,9 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
         </div>
 
         {/* Description */}
-        {event.description && <FormattedEventDescription className="mt-1" text={event.description} />}
+        {event.description && (
+          <FormattedEventDescription className="mt-1" text={event.description} />
+        )}
       </div>
 
       {/* Right Column - Category Badges */}

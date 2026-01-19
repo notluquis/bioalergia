@@ -139,11 +139,7 @@ export async function getDoctoraliaDoctorsWithAddresses(facilityId: number) {
 // BOOKING STATISTICS
 // ============================================================
 
-export async function getDoctoraliaBookingStats(
-  addressId: number,
-  startDate: Date,
-  endDate: Date,
-) {
+export async function getDoctoraliaBookingStats(addressId: number, startDate: Date, endDate: Date) {
   const bookings = await db.doctoraliaBooking.groupBy({
     by: ["status"],
     where: {
@@ -163,7 +159,7 @@ export async function getDoctoraliaBookingStats(
 
   return {
     total: Object.values(stats).reduce((a, b) => a + b, 0),
-    booked: stats["booked"] ?? 0,
-    canceled: stats["canceled"] ?? 0,
+    booked: stats.booked ?? 0,
+    canceled: stats.canceled ?? 0,
   };
 }

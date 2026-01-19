@@ -1,8 +1,5 @@
 import { Check, ChevronDown, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react";
 import { Fragment, useState } from "react";
-
-import type { Permission, Role } from "@/types/roles";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
+import type { Permission, Role } from "@/types/roles";
 
 import { BulkToggleCell } from "./BulkToggleCell";
 
@@ -69,7 +67,8 @@ export function PermissionsMatrixTable({
     }));
   };
 
-  const displayRoles = viewModeRole === "all" ? roles : roles.filter((r) => r.id.toString() === viewModeRole);
+  const displayRoles =
+    viewModeRole === "all" ? roles : roles.filter((r) => r.id.toString() === viewModeRole);
 
   const gridTemplateColumns = `320px repeat(${displayRoles.length}, minmax(140px, 1fr))`;
 
@@ -89,7 +88,10 @@ export function PermissionsMatrixTable({
               <span className="line-clamp-2 text-base leading-tight font-bold" title={role.name}>
                 {role.name}
               </span>
-              <span className="line-clamp-2 text-xs font-normal opacity-70" title={role.description || ""}>
+              <span
+                className="line-clamp-2 text-xs font-normal opacity-70"
+                title={role.description || ""}
+              >
                 {role.description || "Sin descripción"}
               </span>
 

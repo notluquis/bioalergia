@@ -7,14 +7,13 @@
 
 import { db } from "@finanzas/db";
 import type {
-  DoctoraliaFacility,
-  DoctoraliaDoctor,
   DoctoraliaAddress,
-  DoctoraliaService,
-  DoctoraliaSlot,
   DoctoraliaBooking,
   DoctoraliaCalendarBreak,
+  DoctoraliaDoctor,
+  DoctoraliaFacility,
   DoctoraliaInsuranceProvider,
+  DoctoraliaService,
 } from "./doctoralia-types.js";
 
 // ============================================================
@@ -50,10 +49,7 @@ export async function listFacilities() {
 // DOCTORS
 // ============================================================
 
-export async function upsertDoctor(
-  facilityId: number,
-  doctor: DoctoraliaDoctor,
-) {
+export async function upsertDoctor(facilityId: number, doctor: DoctoraliaDoctor) {
   return db.doctoraliaDoctor.upsert({
     where: {
       facilityId_externalId: {
@@ -76,10 +72,7 @@ export async function upsertDoctor(
   });
 }
 
-export async function getDoctorByExternalId(
-  facilityId: number,
-  externalId: string,
-) {
+export async function getDoctorByExternalId(facilityId: number, externalId: string) {
   return db.doctoraliaDoctor.findUnique({
     where: {
       facilityId_externalId: {
@@ -101,10 +94,7 @@ export async function listDoctorsByFacility(facilityId: number) {
 // ADDRESSES
 // ============================================================
 
-export async function upsertAddress(
-  doctorId: number,
-  address: DoctoraliaAddress,
-) {
+export async function upsertAddress(doctorId: number, address: DoctoraliaAddress) {
   return db.doctoraliaAddress.upsert({
     where: {
       doctorId_externalId: {
@@ -131,10 +121,7 @@ export async function upsertAddress(
   });
 }
 
-export async function getAddressByExternalId(
-  doctorId: number,
-  externalId: string,
-) {
+export async function getAddressByExternalId(doctorId: number, externalId: string) {
   return db.doctoraliaAddress.findUnique({
     where: {
       doctorId_externalId: {
@@ -155,10 +142,7 @@ export async function listAddressesByDoctor(doctorId: number) {
 // SERVICES
 // ============================================================
 
-export async function upsertService(
-  addressId: number,
-  service: DoctoraliaService,
-) {
+export async function upsertService(addressId: number, service: DoctoraliaService) {
   return db.doctoraliaService.upsert({
     where: {
       addressId_externalId: {
@@ -221,10 +205,7 @@ export async function upsertInsuranceProvider(
 // BOOKINGS
 // ============================================================
 
-export async function upsertBooking(
-  addressId: number,
-  booking: DoctoraliaBooking,
-) {
+export async function upsertBooking(addressId: number, booking: DoctoraliaBooking) {
   return db.doctoraliaBooking.upsert({
     where: {
       addressId_externalId: {
@@ -265,11 +246,7 @@ export async function upsertBooking(
   });
 }
 
-export async function listBookingsByAddress(
-  addressId: number,
-  startAt: Date,
-  endAt: Date,
-) {
+export async function listBookingsByAddress(addressId: number, startAt: Date, endAt: Date) {
   return db.doctoraliaBooking.findMany({
     where: {
       addressId,
@@ -286,10 +263,7 @@ export async function listBookingsByAddress(
 // CALENDAR BREAKS
 // ============================================================
 
-export async function upsertBreak(
-  addressId: number,
-  breakData: DoctoraliaCalendarBreak,
-) {
+export async function upsertBreak(addressId: number, breakData: DoctoraliaCalendarBreak) {
   return db.doctoraliaCalendarBreak.upsert({
     where: {
       addressId_externalId: {
@@ -312,10 +286,7 @@ export async function upsertBreak(
   });
 }
 
-export async function deleteBreakByExternalId(
-  addressId: number,
-  externalId: string,
-) {
+export async function deleteBreakByExternalId(addressId: number, externalId: string) {
   return db.doctoraliaCalendarBreak.delete({
     where: {
       addressId_externalId: {
@@ -351,11 +322,7 @@ export async function replaceSlots(
   }
 }
 
-export async function listSlotsByAddress(
-  addressId: number,
-  startAt: Date,
-  endAt: Date,
-) {
+export async function listSlotsByAddress(addressId: number, startAt: Date, endAt: Date) {
   return db.doctoraliaSlot.findMany({
     where: {
       addressId,
@@ -372,10 +339,7 @@ export async function listSlotsByAddress(
 // SYNC LOGS
 // ============================================================
 
-export async function createSyncLog(params: {
-  triggerSource?: string;
-  triggerUserId?: number;
-}) {
+export async function createSyncLog(params: { triggerSource?: string; triggerUserId?: number }) {
   return db.doctoraliaSyncLog.create({
     data: {
       triggerSource: params.triggerSource,

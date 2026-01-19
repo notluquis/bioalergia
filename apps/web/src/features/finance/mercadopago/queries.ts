@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { type MpReportType, MPService } from "@/services/mercadopago";
+import { MPService, type MpReportType } from "@/services/mercadopago";
 
 export const mercadoPagoKeys = {
   all: ["mp-reports"] as const,

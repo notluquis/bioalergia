@@ -19,7 +19,9 @@ export const getHRReportsColumns = (): ColumnDef<EmployeeWorkData>[] => [
         <div className="bg-primary/20 h-6 w-1 rounded-full" />
         <div>
           <div className="font-bold">{row.original.fullName}</div>
-          <div className="text-[10px] tracking-widest uppercase opacity-50">{row.original.role}</div>
+          <div className="text-[10px] tracking-widest uppercase opacity-50">
+            {row.original.role}
+          </div>
         </div>
       </div>
     ),
@@ -40,7 +42,9 @@ export const getHRReportsColumns = (): ColumnDef<EmployeeWorkData>[] => [
   },
   {
     accessorKey: "avgDailyMinutes",
-    cell: ({ getValue }) => <div className="text-right font-mono">{minutesToTime(getValue() as number)}</div>,
+    cell: ({ getValue }) => (
+      <div className="text-right font-mono">{minutesToTime(getValue() as number)}</div>
+    ),
     footer: () => <div className="text-right font-bold">-</div>,
     header: "Diario",
     meta: {

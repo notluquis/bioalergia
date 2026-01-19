@@ -16,7 +16,12 @@ interface AlertProps {
   variant?: "error" | "info" | "success" | "warning";
 }
 
-export default function Alert({ children, className = "", onClose, variant = "error" }: Readonly<AlertProps>) {
+export default function Alert({
+  children,
+  className = "",
+  onClose,
+  variant = "error",
+}: Readonly<AlertProps>) {
   const variantMap = {
     error: "alert-error text-white",
     info: "alert-info text-white",

@@ -1,8 +1,6 @@
 import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
-
-import type { CalendarSyncLog } from "@/features/calendar/types";
-
 import Modal from "@/components/ui/Modal";
+import type { CalendarSyncLog } from "@/features/calendar/types";
 import { numberFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +29,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
               if (log.status === "SUCCESS") return "bg-success/10 text-success";
               if (log.status === "ERROR") return "bg-error/10 text-error";
               return "bg-warning/10 text-warning";
-            })()
+            })(),
           )}
         >
           {(() => {
@@ -83,7 +81,9 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
 
               {log.changeDetails.updated && log.changeDetails.updated.length > 0 && (
                 <div>
-                  <h4 className="text-info mb-2 font-medium">Actualizados ({log.changeDetails.updated.length})</h4>
+                  <h4 className="text-info mb-2 font-medium">
+                    Actualizados ({log.changeDetails.updated.length})
+                  </h4>
                   <ul className="list-disc space-y-1 pl-4 opacity-80">
                     {log.changeDetails.updated.map((item, i) => {
                       const summary = typeof item === "string" ? item : item.summary;
@@ -95,7 +95,9 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
 
               {log.changeDetails.excluded && log.changeDetails.excluded.length > 0 && (
                 <div>
-                  <h4 className="text-warning mb-2 font-medium">Excluidos ({log.changeDetails.excluded.length})</h4>
+                  <h4 className="text-warning mb-2 font-medium">
+                    Excluidos ({log.changeDetails.excluded.length})
+                  </h4>
                   <ul className="list-disc space-y-1 pl-4 opacity-80">
                     {log.changeDetails.excluded.map((item, i) => (
                       <li key={i}>{item}</li>
@@ -117,10 +119,16 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
   );
 }
 
-function StatBox({ color, label, value }: Readonly<{ color?: string; label: string; value: number }>) {
+function StatBox({
+  color,
+  label,
+  value,
+}: Readonly<{ color?: string; label: string; value: number }>) {
   return (
     <div className="bg-base-100 border-base-200 flex flex-col items-center justify-center rounded-xl border p-3 text-center shadow-sm">
-      <span className="text-base-content/60 mb-1 text-xs font-medium tracking-wider uppercase">{label}</span>
+      <span className="text-base-content/60 mb-1 text-xs font-medium tracking-wider uppercase">
+        {label}
+      </span>
       <span className={cn("text-2xl font-bold", color)}>{numberFormatter.format(value)}</span>
     </div>
   );

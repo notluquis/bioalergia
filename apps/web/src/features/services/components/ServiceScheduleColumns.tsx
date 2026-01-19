@@ -1,4 +1,4 @@
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
@@ -28,18 +28,24 @@ export const getColumns = (
     onRegisterPayment: (schedule: ServiceSchedule) => void;
     onUnlinkPayment: (schedule: ServiceSchedule) => void;
   },
-  canManage: boolean
+  canManage: boolean,
 ): ColumnDef<ServiceSchedule>[] => [
   {
     accessorKey: "period_start",
     cell: ({ row }) => (
-      <span className="text-base-content font-semibold">{dayjs(row.original.period_start).format("MMM YYYY")}</span>
+      <span className="text-base-content font-semibold">
+        {dayjs(row.original.period_start).format("MMM YYYY")}
+      </span>
     ),
     header: "Periodo",
   },
   {
     accessorKey: "due_date",
-    cell: ({ row }) => <span className="text-base-content">{dayjs(row.original.due_date).format("DD MMM YYYY")}</span>,
+    cell: ({ row }) => (
+      <span className="text-base-content">
+        {dayjs(row.original.due_date).format("DD MMM YYYY")}
+      </span>
+    ),
     header: "Vencimiento",
   },
   {
@@ -48,20 +54,25 @@ export const getColumns = (
       const schedule = row.original;
       return (
         <div className="space-y-0.5">
-          <div className="text-base-content font-semibold">${schedule.effective_amount.toLocaleString("es-CL")}</div>
+          <div className="text-base-content font-semibold">
+            ${schedule.effective_amount.toLocaleString("es-CL")}
+          </div>
           {schedule.late_fee_amount > 0 && (
             <div className="text-error text-xs">
               Incluye recargo ${schedule.late_fee_amount.toLocaleString("es-CL")}
             </div>
           )}
-          {schedule.late_fee_amount === 0 && schedule.expected_amount !== schedule.effective_amount && (
-            <div className="text-base-content/50 text-xs">Monto ajustado</div>
-          )}
+          {schedule.late_fee_amount === 0 &&
+            schedule.expected_amount !== schedule.effective_amount && (
+              <div className="text-base-content/50 text-xs">Monto ajustado</div>
+            )}
           {schedule.overdue_days > 0 && schedule.status === "PENDING" && (
             <div className="text-error text-xs">{schedule.overdue_days} días de atraso</div>
           )}
           {schedule.late_fee_amount > 0 && (
-            <div className="text-base-content/50 text-xs">Base ${schedule.expected_amount.toLocaleString("es-CL")}</div>
+            <div className="text-base-content/50 text-xs">
+              Base ${schedule.expected_amount.toLocaleString("es-CL")}
+            </div>
           )}
         </div>
       );
@@ -74,7 +85,9 @@ export const getColumns = (
       const schedule = row.original;
       const badgeClass = getStatusBadgeClass(schedule.status, schedule.due_date);
       return (
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${badgeClass}`}>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${badgeClass}`}
+        >
           {getStatusLabel(schedule.status)}
         </span>
       );
@@ -86,7 +99,11 @@ export const getColumns = (
       const schedule = row.original;
       return (
         <div className="space-y-1">
-          <div>{schedule.paid_amount == null ? "—" : `$${schedule.paid_amount.toLocaleString("es-CL")}`}</div>
+          <div>
+            {schedule.paid_amount == null
+              ? "—"
+              : `$${schedule.paid_amount.toLocaleString("es-CL")}`}
+          </div>
           <div className="text-base-content/50 text-xs">
             {schedule.paid_date ? dayjs(schedule.paid_date).format("DD MMM YYYY") : "—"}
           </div>
@@ -105,7 +122,9 @@ export const getColumns = (
       return (
         <div className="space-y-1">
           <div className="font-medium">ID #{schedule.transaction.id}</div>
-          <div className="text-base-content/50 text-xs">{schedule.transaction.description ?? "(sin descripción)"}</div>
+          <div className="text-base-content/50 text-xs">
+            {schedule.transaction.description ?? "(sin descripción)"}
+          </div>
         </div>
       );
     },

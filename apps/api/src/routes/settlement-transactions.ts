@@ -1,7 +1,6 @@
+import { authDb } from "@finanzas/db";
 import { Hono } from "hono";
 import { z } from "zod";
-
-import { authDb } from "@finanzas/db";
 
 import { getSessionUser, hasPermission } from "../auth";
 import { reply } from "../utils/reply";
@@ -33,8 +32,7 @@ app.get("/", async (c) => {
     return c.json({ status: "error", message: "Invalid params" }, 400);
   }
 
-  const { page, pageSize, from, to, paymentMethod, transactionType, search } =
-    parsed.data;
+  const { page, pageSize, from, to, paymentMethod, transactionType, search } = parsed.data;
   const offset = (page - 1) * pageSize;
 
   // Build where clause
@@ -49,10 +47,7 @@ app.get("/", async (c) => {
   }
 
   if (paymentMethod) {
-    where.OR = [
-      { paymentMethod: paymentMethod },
-      { paymentMethodType: paymentMethod },
-    ];
+    where.OR = [{ paymentMethod: paymentMethod }, { paymentMethodType: paymentMethod }];
   }
 
   if (transactionType) {
@@ -108,10 +103,7 @@ app.get("/:id", async (c) => {
   });
 
   if (!transaction) {
-    return c.json(
-      { status: "error", message: "Transacción no encontrada" },
-      404
-    );
+    return c.json({ status: "error", message: "Transacción no encontrada" }, 404);
   }
 
   return c.json({ status: "ok", data: transaction });

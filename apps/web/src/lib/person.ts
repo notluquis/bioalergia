@@ -13,7 +13,7 @@ export interface PersonNameData {
  * Handles both { person: {...} } and direct person object
  */
 export function extractPersonFromResponse<T extends Record<string, unknown>>(
-  response: null | T | undefined
+  response: null | T | undefined,
 ): null | (T extends { person: infer P } ? P : T) {
   if (!response) return null;
   if ("person" in response && response.person !== undefined && response.person !== null) {

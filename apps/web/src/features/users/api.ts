@@ -24,12 +24,17 @@ export async function fetchUsers(): Promise<User[]> {
   return res.users;
 }
 
-export async function inviteUser(payload: Record<string, unknown>): Promise<{ tempPassword?: string; userId: number }> {
+export async function inviteUser(
+  payload: Record<string, unknown>,
+): Promise<{ tempPassword?: string; userId: number }> {
   return apiClient.post("/api/users/invite", payload);
 }
 
 export async function resetUserPassword(userId: number): Promise<string> {
-  const res = await apiClient.post<{ tempPassword: string }>(`/api/users/${userId}/reset-password`, {});
+  const res = await apiClient.post<{ tempPassword: string }>(
+    `/api/users/${userId}/reset-password`,
+    {},
+  );
   return res.tempPassword;
 }
 
@@ -38,9 +43,12 @@ export async function setupUser(payload: Record<string, unknown>): Promise<void>
 }
 
 export async function toggleUserMfa(userId: number, enabled: boolean): Promise<void> {
-  const res = await apiClient.post<{ message?: string; status: string }>(`/api/users/${userId}/mfa/toggle`, {
-    enabled,
-  });
+  const res = await apiClient.post<{ message?: string; status: string }>(
+    `/api/users/${userId}/mfa/toggle`,
+    {
+      enabled,
+    },
+  );
   if (res.status !== "ok") {
     throw new Error(res.message || "Error al cambiar estado MFA");
   }

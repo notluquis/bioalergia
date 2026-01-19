@@ -1,4 +1,4 @@
-import dayjs, { Dayjs } from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
 
 /**
  * Utilidades de fecha para evitar duplicación de patrones comunes con dayjs.

@@ -264,17 +264,17 @@
 
 /* Dark mode adjustments - using :is() for cleaner selectors (2025) */
 :root:is(
-  [data-theme="dark"],
-  [data-theme="business"],
-  [data-theme="night"],
-  [data-theme="forest"],
-  [data-theme="black"],
-  [data-theme="luxury"],
-  [data-theme="dracula"],
-  [data-theme="coffee"],
-  [data-theme="dim"],
-  [data-theme="sunset"]
-) {
+    [data-theme="dark"],
+    [data-theme="business"],
+    [data-theme="night"],
+    [data-theme="forest"],
+    [data-theme="black"],
+    [data-theme="luxury"],
+    [data-theme="dracula"],
+    [data-theme="coffee"],
+    [data-theme="dim"],
+    [data-theme="sunset"]
+  ) {
   & .event--subcutaneous {
     background: hsl(210 60% 25% / 0.6);
     color: hsl(210 80% 85%);

@@ -33,33 +33,24 @@
  *
  * @module @finanzas/db/hooks
  */
-import {
-  type ClientHooks,
-  useClientQueries,
-} from "@zenstackhq/tanstack-query/react";
+import { type ClientHooks, useClientQueries } from "@zenstackhq/tanstack-query/react";
 
-import { schema, type SchemaType } from "../schema-lite.js";
+import { type SchemaType, schema } from "../schema-lite.js";
 
 // Type helper for extracting hook parameters
 type Hooks = ClientHooks<SchemaType>;
 
-export function useCountTransaction(
-  ...args: Parameters<Hooks["transaction"]["useCount"]>
-) {
+export function useCountTransaction(...args: Parameters<Hooks["transaction"]["useCount"]>) {
   const { transaction } = useClientQueries(schema);
   return transaction.useCount(...args);
 }
 
-export function useCreateCounterpart(
-  ...args: Parameters<Hooks["counterpart"]["useCreate"]>
-) {
+export function useCreateCounterpart(...args: Parameters<Hooks["counterpart"]["useCreate"]>) {
   const { counterpart } = useClientQueries(schema);
   return counterpart.useCreate(...args);
 }
 
-export function useCreateEmployee(
-  ...args: Parameters<Hooks["employee"]["useCreate"]>
-) {
+export function useCreateEmployee(...args: Parameters<Hooks["employee"]["useCreate"]>) {
   const { employee } = useClientQueries(schema);
   return employee.useCreate(...args);
 }
@@ -71,9 +62,7 @@ export function useCreateInventoryCategory(
   return inventoryCategory.useCreate(...args);
 }
 
-export function useCreateInventoryItem(
-  ...args: Parameters<Hooks["inventoryItem"]["useCreate"]>
-) {
+export function useCreateInventoryItem(...args: Parameters<Hooks["inventoryItem"]["useCreate"]>) {
   const { inventoryItem } = useClientQueries(schema);
   return inventoryItem.useCreate(...args);
 }
@@ -115,9 +104,7 @@ export function useDeleteUser(...args: Parameters<Hooks["user"]["useDelete"]>) {
   return user.useDelete(...args);
 }
 
-export function useFindManyAuditLog(
-  ...args: Parameters<Hooks["auditLog"]["useFindMany"]>
-) {
+export function useFindManyAuditLog(...args: Parameters<Hooks["auditLog"]["useFindMany"]>) {
   const { auditLog } = useClientQueries(schema);
   return auditLog.useFindMany(...args);
 }
@@ -129,25 +116,19 @@ export function useFindManyCalendarSyncLog(
   return calendarSyncLog.useFindMany(...args);
 }
 
-export function useFindManyCommonSupply(
-  ...args: Parameters<Hooks["commonSupply"]["useFindMany"]>
-) {
+export function useFindManyCommonSupply(...args: Parameters<Hooks["commonSupply"]["useFindMany"]>) {
   const { commonSupply } = useClientQueries(schema);
   return commonSupply.useFindMany(...args);
 }
 
 // Counterparts & Audit
-export function useFindManyCounterpart(
-  ...args: Parameters<Hooks["counterpart"]["useFindMany"]>
-) {
+export function useFindManyCounterpart(...args: Parameters<Hooks["counterpart"]["useFindMany"]>) {
   const { counterpart } = useClientQueries(schema);
   return counterpart.useFindMany(...args);
 }
 
 // HR
-export function useFindManyEmployee(
-  ...args: Parameters<Hooks["employee"]["useFindMany"]>
-) {
+export function useFindManyEmployee(...args: Parameters<Hooks["employee"]["useFindMany"]>) {
   const { employee } = useClientQueries(schema);
   return employee.useFindMany(...args);
 }
@@ -167,16 +148,12 @@ export function useFindManyInventoryItem(
   return inventoryItem.useFindMany(...args);
 }
 
-export function useFindManyLoan(
-  ...args: Parameters<Hooks["loan"]["useFindMany"]>
-) {
+export function useFindManyLoan(...args: Parameters<Hooks["loan"]["useFindMany"]>) {
   const { loan } = useClientQueries(schema);
   return loan.useFindMany(...args);
 }
 
-export function useFindManyLoanSchedule(
-  ...args: Parameters<Hooks["loanSchedule"]["useFindMany"]>
-) {
+export function useFindManyLoanSchedule(...args: Parameters<Hooks["loanSchedule"]["useFindMany"]>) {
   const { loanSchedule } = useClientQueries(schema);
   return loanSchedule.useFindMany(...args);
 }
@@ -188,17 +165,13 @@ export function useFindManyReleaseTransaction(
   return releaseTransaction.useFindMany(...args);
 }
 
-export function useFindManyRole(
-  ...args: Parameters<Hooks["role"]["useFindMany"]>
-) {
+export function useFindManyRole(...args: Parameters<Hooks["role"]["useFindMany"]>) {
   const { role } = useClientQueries(schema);
   return role.useFindMany(...args);
 }
 
 // Services
-export function useFindManyService(
-  ...args: Parameters<Hooks["service"]["useFindMany"]>
-) {
+export function useFindManyService(...args: Parameters<Hooks["service"]["useFindMany"]>) {
   const { service } = useClientQueries(schema);
   return service.useFindMany(...args);
 }
@@ -218,81 +191,59 @@ export function useFindManySupplyRequest(
 }
 
 // Sync Logs
-export function useFindManySyncLog(
-  ...args: Parameters<Hooks["syncLog"]["useFindMany"]>
-) {
+export function useFindManySyncLog(...args: Parameters<Hooks["syncLog"]["useFindMany"]>) {
   const { syncLog } = useClientQueries(schema);
   return syncLog.useFindMany(...args);
 }
 
 // Finance
-export function useFindManyTransaction(
-  ...args: Parameters<Hooks["transaction"]["useFindMany"]>
-) {
+export function useFindManyTransaction(...args: Parameters<Hooks["transaction"]["useFindMany"]>) {
   const { transaction } = useClientQueries(schema);
   return transaction.useFindMany(...args);
 }
 
 // User & Auth
-export function useFindManyUser(
-  ...args: Parameters<Hooks["user"]["useFindMany"]>
-) {
+export function useFindManyUser(...args: Parameters<Hooks["user"]["useFindMany"]>) {
   const { user } = useClientQueries(schema);
   return user.useFindMany(...args);
 }
 
-export function useFindUniqueLoan(
-  ...args: Parameters<Hooks["loan"]["useFindUnique"]>
-) {
+export function useFindUniqueLoan(...args: Parameters<Hooks["loan"]["useFindUnique"]>) {
   const { loan } = useClientQueries(schema);
   return loan.useFindUnique(...args);
 }
 
-export function useFindUniqueService(
-  ...args: Parameters<Hooks["service"]["useFindUnique"]>
-) {
+export function useFindUniqueService(...args: Parameters<Hooks["service"]["useFindUnique"]>) {
   const { service } = useClientQueries(schema);
   return service.useFindUnique(...args);
 }
 
-export function useUpdateCounterpart(
-  ...args: Parameters<Hooks["counterpart"]["useUpdate"]>
-) {
+export function useUpdateCounterpart(...args: Parameters<Hooks["counterpart"]["useUpdate"]>) {
   const { counterpart } = useClientQueries(schema);
   return counterpart.useUpdate(...args);
 }
 
-export function useUpdateEmployee(
-  ...args: Parameters<Hooks["employee"]["useUpdate"]>
-) {
+export function useUpdateEmployee(...args: Parameters<Hooks["employee"]["useUpdate"]>) {
   const { employee } = useClientQueries(schema);
   return employee.useUpdate(...args);
 }
 
-export function useUpdateInventoryItem(
-  ...args: Parameters<Hooks["inventoryItem"]["useUpdate"]>
-) {
+export function useUpdateInventoryItem(...args: Parameters<Hooks["inventoryItem"]["useUpdate"]>) {
   const { inventoryItem } = useClientQueries(schema);
   return inventoryItem.useUpdate(...args);
 }
 
-export function useUpdateLoanSchedule(
-  ...args: Parameters<Hooks["loanSchedule"]["useUpdate"]>
-) {
+export function useUpdateLoanSchedule(...args: Parameters<Hooks["loanSchedule"]["useUpdate"]>) {
   const { loanSchedule } = useClientQueries(schema);
   return loanSchedule.useUpdate(...args);
 }
 
-export function useUpdateService(
-  ...args: Parameters<Hooks["service"]["useUpdate"]>
-) {
+export function useUpdateService(...args: Parameters<Hooks["service"]["useUpdate"]>) {
   const { service } = useClientQueries(schema);
   return service.useUpdate(...args);
 }
 
-export function useUpdateSupplyRequest(
-  ...args: Parameters<Hooks["supplyRequest"]["useUpdate"]>
-) {
+export function useUpdateSupplyRequest(...args: Parameters<Hooks["supplyRequest"]["useUpdate"]>) {
   const { supplyRequest } = useClientQueries(schema);
   return supplyRequest.useUpdate(...args);
 }

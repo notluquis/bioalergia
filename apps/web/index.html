@@ -9,7 +9,7 @@
       // CAPTURE PHASE handler for script/link load failures (404s)
       window.addEventListener(
         "error",
-        function (e) {
+        (e) => {
           if (e.target && (e.target.tagName === "SCRIPT" || e.target.tagName === "LINK")) {
             console.warn("Resource load failure detected:", e.target.src || e.target.href);
             attemptRecovery();
@@ -19,7 +19,7 @@
       ); // CAPTURE PHASE is critical for resource errors
 
       // BUBBLE PHASE handler for runtime errors (chunk imports)
-      window.addEventListener("error", function (e) {
+      window.addEventListener("error", (e) => {
         var msg = e.message || "";
         if (
           /Failed to fetch dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i.test(
@@ -40,8 +40,8 @@
 
           // Nuclear cache clear
           if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function (regs) {
-              regs.forEach(function (r) {
+            navigator.serviceWorker.getRegistrations().then((regs) => {
+              regs.forEach((r) => {
                 r.unregister();
               });
             });
@@ -49,14 +49,10 @@
           if ("caches" in window) {
             caches
               .keys()
-              .then(function (names) {
-                return Promise.all(
-                  names.map(function (n) {
-                    return caches.delete(n);
-                  })
-                );
-              })
-              .then(function () {
+              .then((names) => Promise.all(
+                  names.map((n) => caches.delete(n))
+                ))
+              .then(() => {
                 window.location.reload();
               });
           } else {
@@ -66,7 +62,7 @@
       }
     </script>
     <script>
-      (function () {
+      (() => {
         var THEME_KEY = "bioalergia:theme";
         var theme = "dark";
         try {
@@ -74,13 +70,13 @@
           if (stored === "light" || stored === "dark") {
             theme = stored;
           } else if (stored === "system" || !stored) {
-            if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+            if (window.matchMedia?.("(prefers-color-scheme: light)").matches) {
               theme = "light";
             } else {
               theme = "dark";
             }
           }
-        } catch (e) {}
+        } catch (_e) {}
         var html = document.documentElement;
         if (theme === "dark") {
           html.setAttribute("data-theme", "bioalergia-dark");

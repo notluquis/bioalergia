@@ -1,11 +1,7 @@
-import { config as reactConfig } from "@finanzas/eslint-config/react";
 import jestDom from "eslint-plugin-jest-dom";
-import pluginRouter from "@tanstack/eslint-plugin-router";
-import path from "node:path";
-
 export default [
-  ...reactConfig,
-  ...pluginRouter.configs["flat/recommended"],
+  // ...reactConfig, // Delegated to Biome
+  // ...pluginRouter.configs["flat/recommended"], // Delegated to Biome (mostly)
   {
     ignores: [
       "dist",
@@ -22,7 +18,15 @@ export default [
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ["*.js", "*.mjs", "*.cjs", "*.ts", "*.tsx", "*.config.ts", "eslint.config.js"],
+          allowDefaultProject: [
+            "*.js",
+            "*.mjs",
+            "*.cjs",
+            "*.ts",
+            "*.tsx",
+            "*.config.ts",
+            "eslint.config.js",
+          ],
           defaultProject: "tsconfig.json",
         },
         tsconfigRootDir: import.meta.dirname,

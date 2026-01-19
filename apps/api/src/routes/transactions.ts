@@ -1,9 +1,9 @@
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
-import { listTransactions, TransactionFilters } from "../services/transactions";
 import { transactionsQuerySchema } from "../lib/financial-schemas";
 import { mapTransaction } from "../lib/mappers";
+import { listTransactions, type TransactionFilters } from "../services/transactions";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -22,13 +22,14 @@ app.get("/", async (c) => {
   const parsed = transactionsQuerySchema.safeParse(query);
 
   if (!parsed.success) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message: "Filtros inválidos",
         issues: parsed.error.issues,
       },
-      400
+      400,
     );
   }
 
@@ -52,11 +53,7 @@ app.get("/", async (c) => {
     includeTest: includeTestData,
   };
 
-  const { total, transactions } = await listTransactions(
-    filters,
-    pageSize,
-    offset
-  );
+  const { total, transactions } = await listTransactions(filters, pageSize, offset);
   const data = transactions.map(mapTransaction);
 
   return reply(c, {
@@ -85,8 +82,7 @@ app.get("/participants", async (c) => {
   const to = query.to ? new Date(query.to) : undefined;
   const limit = query.limit ? Number(query.limit) : undefined;
 
-  const { getParticipantLeaderboard } =
-    await import("../services/transactions");
+  const { getParticipantLeaderboard } = await import("../services/transactions");
   try {
     const result = await getParticipantLeaderboard({ from, to, limit });
     return reply(c, result);

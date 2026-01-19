@@ -1,8 +1,6 @@
-import { z } from "zod";
-
+import type { z } from "zod";
+import type { classificationSchema } from "@/features/calendar/schemas";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
-
-import { classificationSchema } from "@/features/calendar/schemas";
 
 export interface ParsedPayload {
   amountExpected: null | number;
@@ -26,7 +24,7 @@ export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
 
 export function buildPayload(
   entry: z.infer<typeof classificationSchema>,
-  event: CalendarUnclassifiedEvent
+  event: CalendarUnclassifiedEvent,
 ): ParsedPayload {
   const category = entry.category?.trim() ?? null;
   const resolvedCategory = category ?? event.category;
@@ -35,7 +33,9 @@ export function buildPayload(
   const attended = entry.attended;
   const dosage = entry.dosage?.trim() ? entry.dosage.trim() : null;
   const treatmentStage =
-    resolvedCategory === "Tratamiento subcutáneo" && entry.treatmentStage?.trim() ? entry.treatmentStage.trim() : null;
+    resolvedCategory === "Tratamiento subcutáneo" && entry.treatmentStage?.trim()
+      ? entry.treatmentStage.trim()
+      : null;
 
   return {
     amountExpected,

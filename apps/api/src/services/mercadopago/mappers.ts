@@ -1,17 +1,11 @@
-import { SettlementTransaction, ReleaseTransaction, db } from "@finanzas/db";
+import type { db } from "@finanzas/db";
 
 // Infer Input types from the db client
-type SettlementManyArgs = Parameters<
-  typeof db.settlementTransaction.createMany
->[0];
+type SettlementManyArgs = Parameters<typeof db.settlementTransaction.createMany>[0];
 type ReleaseManyArgs = Parameters<typeof db.releaseTransaction.createMany>[0];
 
 // Extract the single item type from 'data' which can be T | T[]
-type ExtractDataInput<T> = T extends { data: infer D }
-  ? D extends (infer U)[]
-    ? U
-    : D
-  : never;
+type ExtractDataInput<T> = T extends { data: infer D } ? (D extends (infer U)[] ? U : D) : never;
 
 type SettlementTransactionInput = ExtractDataInput<SettlementManyArgs>;
 type ReleaseTransactionInput = ExtractDataInput<ReleaseManyArgs>;
@@ -50,9 +44,7 @@ export function parseJson(val: any): any {
 }
 
 // Mapper for Settlement Report
-export function mapRowToSettlementTransaction(
-  row: any
-): SettlementTransactionInput {
+export function mapRowToSettlementTransaction(row: any): SettlementTransactionInput {
   return {
     sourceId: row.SOURCE_ID || "", // Empty = will be skipped as invalid
     transactionDate: parseDate(row.TRANSACTION_DATE),
@@ -77,7 +69,7 @@ export function mapRowToSettlementTransaction(
     financingFeeAmount: parseDecimal(row.FINANCING_FEE_AMOUNT),
     shippingFeeAmount: parseDecimal(row.SHIPPING_FEE_AMOUNT),
     taxesAmount: parseDecimal(row.TAXES_AMOUNT),
-    installments: parseInt(row.INSTALLMENTS || "0") || null,
+    installments: parseInt(row.INSTALLMENTS || "0", 10) || null,
     taxDetail: row.TAX_DETAIL || null,
     taxesDisaggregated: parseJson(row.TAXES_DISAGGREGATED) || undefined,
     description: row.DESCRIPTION || null,
@@ -132,7 +124,7 @@ export function mapRowToReleaseTransaction(row: any): ReleaseTransactionInput {
     shippingFeeAmount: parseDecimal(row.SHIPPING_FEE_AMOUNT),
     taxesAmount: parseDecimal(row.TAXES_AMOUNT),
     couponAmount: parseDecimal(row.COUPON_AMOUNT),
-    installments: parseInt(row.INSTALLMENTS || "0") || null,
+    installments: parseInt(row.INSTALLMENTS || "0", 10) || null,
     paymentMethod: row.PAYMENT_METHOD || null,
     taxDetail: row.TAX_DETAIL || null,
     taxAmountTelco: parseDecimal(row.TAX_AMOUNT_TELCO),

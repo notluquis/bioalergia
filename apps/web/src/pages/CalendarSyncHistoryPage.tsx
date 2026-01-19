@@ -59,17 +59,24 @@ const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
               </h5>
               <div className="bg-base-200/50 max-h-40 space-y-1 overflow-y-auto rounded-lg p-2">
                 {items.slice(0, 50).map((item, idx) => (
-                  <div className="border-base-300 flex items-start gap-2 border-b pb-1 text-xs last:border-0" key={idx}>
+                  <div
+                    className="border-base-300 flex items-start gap-2 border-b pb-1 text-xs last:border-0"
+                    key={idx}
+                  >
                     <span className="text-base-content/70 flex-1 truncate" title={item.summary}>
                       {item.summary ?? item.eventId ?? "Sin título"}
                     </span>
                     {item.fields && item.fields.length > 0 && (
-                      <span className="text-base-content/50 shrink-0 font-mono">[{item.fields.join(", ")}]</span>
+                      <span className="text-base-content/50 shrink-0 font-mono">
+                        [{item.fields.join(", ")}]
+                      </span>
                     )}
                   </div>
                 ))}
                 {items.length > 50 && (
-                  <p className="text-base-content/50 pt-1 text-center text-xs">...y {items.length - 50} más</p>
+                  <p className="text-base-content/50 pt-1 text-center text-xs">
+                    ...y {items.length - 50} más
+                  </p>
                 )}
               </div>
             </div>
@@ -143,7 +150,12 @@ export default function CalendarSyncHistoryPage() {
           </span>
         </div>
         <div className="flex gap-2">
-          <Button disabled={isLoading || isSyncing} onClick={() => refetch()} size="sm" variant="ghost">
+          <Button
+            disabled={isLoading || isSyncing}
+            onClick={() => refetch()}
+            size="sm"
+            variant="ghost"
+          >
             <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
             <span className="hidden sm:inline">Actualizar</span>
           </Button>
@@ -187,7 +199,9 @@ export default function CalendarSyncHistoryPage() {
             <div className="divide-base-200 divide-y">
               {syncLogs.map((log) => {
                 const isExpanded = expandedId === log.id;
-                const duration = log.finishedAt ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s") : null;
+                const duration = log.finishedAt
+                  ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s")
+                  : null;
 
                 return (
                   <div className="bg-base-100" key={log.id.toString()}>
@@ -201,7 +215,11 @@ export default function CalendarSyncHistoryPage() {
                     >
                       {/* Expand Icon */}
                       <span className="text-base-content/40">
-                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
                       </span>
 
                       {/* Status */}
@@ -209,15 +227,24 @@ export default function CalendarSyncHistoryPage() {
 
                       {/* Date */}
                       <div className="min-w-24">
-                        <div className="text-sm font-medium">{dayjs(log.startedAt).format("DD/MM/YYYY")}</div>
-                        <div className="text-base-content/50 text-xs">{dayjs(log.startedAt).format("HH:mm:ss")}</div>
+                        <div className="text-sm font-medium">
+                          {dayjs(log.startedAt).format("DD/MM/YYYY")}
+                        </div>
+                        <div className="text-base-content/50 text-xs">
+                          {dayjs(log.startedAt).format("HH:mm:ss")}
+                        </div>
                       </div>
 
                       {/* Source */}
                       <div className="flex-1">
-                        <span className="badge badge-ghost font-mono text-xs">{log.triggerSource}</span>
+                        <span className="badge badge-ghost font-mono text-xs">
+                          {log.triggerSource}
+                        </span>
                         {log.triggerLabel && (
-                          <span className="text-base-content/60 ml-2 text-xs" title={log.triggerLabel}>
+                          <span
+                            className="text-base-content/60 ml-2 text-xs"
+                            title={log.triggerLabel}
+                          >
                             {log.triggerLabel.slice(0, 30)}
                             {log.triggerLabel.length > 30 ? "..." : ""}
                           </span>
@@ -226,13 +253,22 @@ export default function CalendarSyncHistoryPage() {
 
                       {/* Metrics */}
                       <div className="flex gap-2 text-xs">
-                        <span className="bg-success/10 text-success rounded px-1.5 py-0.5" title="Insertados">
+                        <span
+                          className="bg-success/10 text-success rounded px-1.5 py-0.5"
+                          title="Insertados"
+                        >
                           +{log.inserted}
                         </span>
-                        <span className="bg-info/10 text-info rounded px-1.5 py-0.5" title="Actualizados">
+                        <span
+                          className="bg-info/10 text-info rounded px-1.5 py-0.5"
+                          title="Actualizados"
+                        >
                           ~{log.updated}
                         </span>
-                        <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5" title="Omitidos">
+                        <span
+                          className="bg-warning/10 text-warning rounded px-1.5 py-0.5"
+                          title="Omitidos"
+                        >
                           -{log.skipped}
                         </span>
                       </div>
@@ -249,7 +285,9 @@ export default function CalendarSyncHistoryPage() {
                         <div className="grid gap-6 md:grid-cols-2">
                           {/* Stats Summary */}
                           <div>
-                            <h4 className="mb-3 text-sm font-semibold">Resumen de la Sincronización</h4>
+                            <h4 className="mb-3 text-sm font-semibold">
+                              Resumen de la Sincronización
+                            </h4>
                             <div className="bg-base-100 grid grid-cols-2 gap-3 rounded-lg p-3">
                               <div>
                                 <span className="text-base-content/60 block text-xs">ID</span>
@@ -262,27 +300,41 @@ export default function CalendarSyncHistoryPage() {
                                 </span>
                               </div>
                               <div>
-                                <span className="text-base-content/60 block text-xs">Insertados</span>
-                                <span className="text-success text-lg font-bold">{log.inserted}</span>
+                                <span className="text-base-content/60 block text-xs">
+                                  Insertados
+                                </span>
+                                <span className="text-success text-lg font-bold">
+                                  {log.inserted}
+                                </span>
                               </div>
                               <div>
-                                <span className="text-base-content/60 block text-xs">Actualizados</span>
+                                <span className="text-base-content/60 block text-xs">
+                                  Actualizados
+                                </span>
                                 <span className="text-info text-lg font-bold">{log.updated}</span>
                               </div>
                               <div>
                                 <span className="text-base-content/60 block text-xs">Omitidos</span>
-                                <span className="text-warning text-lg font-bold">{log.skipped}</span>
+                                <span className="text-warning text-lg font-bold">
+                                  {log.skipped}
+                                </span>
                               </div>
                               <div>
-                                <span className="text-base-content/60 block text-xs">Excluidos</span>
-                                <span className="text-base-content/70 text-lg font-bold">{log.excluded}</span>
+                                <span className="text-base-content/60 block text-xs">
+                                  Excluidos
+                                </span>
+                                <span className="text-base-content/70 text-lg font-bold">
+                                  {log.excluded}
+                                </span>
                               </div>
                             </div>
 
                             {/* Error Message */}
                             {log.errorMessage && (
                               <div className="mt-4">
-                                <span className="text-error mb-1 block text-xs font-bold">Mensaje de Error</span>
+                                <span className="text-error mb-1 block text-xs font-bold">
+                                  Mensaje de Error
+                                </span>
                                 <div className="bg-error/10 text-error max-h-32 overflow-auto rounded-lg p-2 font-mono text-xs">
                                   {log.errorMessage}
                                 </div>

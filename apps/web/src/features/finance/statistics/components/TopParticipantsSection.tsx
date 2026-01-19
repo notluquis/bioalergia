@@ -18,7 +18,11 @@ interface TopParticipantsSectionProps {
   loading: boolean;
 }
 
-export default function TopParticipantsSection({ data, error, loading }: TopParticipantsSectionProps) {
+export default function TopParticipantsSection({
+  data,
+  error,
+  loading,
+}: TopParticipantsSectionProps) {
   return (
     <div className="bg-base-100 border-base-200 rounded-2xl border p-6 shadow-sm">
       <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
@@ -35,7 +39,9 @@ export default function TopParticipantsSection({ data, error, loading }: TopPart
       {error && <Alert variant="error">{error}</Alert>}
 
       {!loading && !error && data.length === 0 && (
-        <div className="text-base-content/60 py-8 text-center text-sm">No hay datos de contrapartes para mostrar</div>
+        <div className="text-base-content/60 py-8 text-center text-sm">
+          No hay datos de contrapartes para mostrar
+        </div>
       )}
 
       {!loading && !error && data.length > 0 && (
@@ -65,12 +71,15 @@ export default function TopParticipantsSection({ data, error, loading }: TopPart
                   <div>
                     <div className="font-medium">{participant.personName}</div>
                     <div className="text-base-content/60 text-xs">
-                      {participant.count} {participant.count === 1 ? "transacción" : "transacciones"}
+                      {participant.count}{" "}
+                      {participant.count === 1 ? "transacción" : "transacciones"}
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-mono text-sm font-semibold">${participant.total.toLocaleString("es-CL")}</div>
+                  <div className="font-mono text-sm font-semibold">
+                    ${participant.total.toLocaleString("es-CL")}
+                  </div>
                 </div>
               </div>
             ))}

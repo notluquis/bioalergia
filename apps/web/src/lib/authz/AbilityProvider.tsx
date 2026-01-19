@@ -1,6 +1,6 @@
 // src/lib/authz/AbilityProvider.tsx
 
-import { MongoAbility } from "@casl/ability";
+import type { MongoAbility } from "@casl/ability";
 import { createContextualCan } from "@casl/react";
 import React, { createContext } from "react";
 

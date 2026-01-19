@@ -228,7 +228,13 @@ export default function FinanzasStatsPage() {
           <MonthlyFlowChart data={data.monthly} />
 
           {/* Daily Balances Summary */}
-          {balancesReport && <BalanceSummary error={balancesError} loading={balancesLoading} report={balancesReport} />}
+          {balancesReport && (
+            <BalanceSummary
+              error={balancesError}
+              loading={balancesLoading}
+              report={balancesReport}
+            />
+          )}
 
           {/* Two Column Grid: Movement Types + Top Participants */}
           <div className="grid gap-6 lg:grid-cols-2">
@@ -265,7 +271,9 @@ export default function FinanzasStatsPage() {
                   <span className="text-base-content/70">Promedio mensual:</span>
                   <span className="text-primary font-mono font-semibold">
                     $
-                    {data.monthly.length > 0 ? Math.round(totals.net / data.monthly.length).toLocaleString("es-CL") : 0}
+                    {data.monthly.length > 0
+                      ? Math.round(totals.net / data.monthly.length).toLocaleString("es-CL")
+                      : 0}
                   </span>
                 </div>
               </div>
@@ -273,7 +281,11 @@ export default function FinanzasStatsPage() {
           </div>
 
           {/* Top Participants Section */}
-          <TopParticipantsSection data={topParticipants} error={participantsError} loading={participantsLoading} />
+          <TopParticipantsSection
+            data={topParticipants}
+            error={participantsError}
+            loading={participantsLoading}
+          />
         </div>
       )}
 

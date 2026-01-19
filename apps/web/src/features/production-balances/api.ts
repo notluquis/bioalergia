@@ -59,16 +59,22 @@ interface ApiSuccessResponse<T> {
 
 export const dailyBalanceApi = {
   createBalance: async (data: DailyBalancePayload) => {
-    return apiClient.post<ApiSuccessResponse<ProductionBalanceApiItem>>("/api/daily-production-balances", data);
+    return apiClient.post<ApiSuccessResponse<ProductionBalanceApiItem>>(
+      "/api/daily-production-balances",
+      data,
+    );
   },
 
   getBalances: async (from: string, to: string) => {
     return apiClient.get<ApiListResponse<ProductionBalanceApiItem>>(
-      `/api/daily-production-balances?from=${from}&to=${to}`
+      `/api/daily-production-balances?from=${from}&to=${to}`,
     );
   },
 
   updateBalance: async (id: number, data: DailyBalancePayload) => {
-    return apiClient.put<ApiSuccessResponse<ProductionBalanceApiItem>>(`/api/daily-production-balances/${id}`, data);
+    return apiClient.put<ApiSuccessResponse<ProductionBalanceApiItem>>(
+      `/api/daily-production-balances/${id}`,
+      data,
+    );
   },
 };

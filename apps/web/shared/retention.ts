@@ -27,7 +27,10 @@ export function formatRetentionPercent(rate: number): string {
  * If employee has a custom rate (not a default), use it
  * Otherwise use the standard rate for the given year
  */
-export function getEffectiveRetentionRate(employeeRate: null | number | undefined, year: number): number {
+export function getEffectiveRetentionRate(
+  employeeRate: null | number | undefined,
+  year: number,
+): number {
   const yearRate = getRetentionRateForYear(year);
 
   // If employee has no rate, use year default

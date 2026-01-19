@@ -1,29 +1,33 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Download, Loader2, RefreshCw } from "lucide-react";
-
-import type { MPReport } from "@/services/mercadopago";
-
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import type { MPReport } from "@/services/mercadopago";
 
 export const getMpReportColumns = (
   handleDownload: (e: React.MouseEvent, fileName: string) => void,
   handleProcess: (e: React.MouseEvent, fileName: string) => void,
   downloadPending: boolean,
   processPending: boolean,
-  processingFile: null | string
+  processingFile: null | string,
 ): ColumnDef<MPReport>[] => [
   {
     accessorKey: "id",
-    cell: ({ row }) => <span className="text-base-content/60 font-mono text-xs">#{row.original.id}</span>,
+    cell: ({ row }) => (
+      <span className="text-base-content/60 font-mono text-xs">#{row.original.id}</span>
+    ),
     header: "ID",
   },
   {
     accessorFn: (row) => row.date_created ?? row.begin_date,
     cell: ({ row }) => {
       const date = row.original.date_created ?? row.original.begin_date;
-      return <span className="text-sm whitespace-nowrap">{date ? dayjs(date).format("DD/MM/YY HH:mm") : "-"}</span>;
+      return (
+        <span className="text-sm whitespace-nowrap">
+          {date ? dayjs(date).format("DD/MM/YY HH:mm") : "-"}
+        </span>
+      );
     },
     header: "Creado",
     id: "date",
@@ -49,7 +53,10 @@ export const getMpReportColumns = (
   {
     accessorKey: "file_name",
     cell: ({ row }) => (
-      <div className="text-base-content/70 max-w-40 truncate font-mono text-xs" title={row.original.file_name}>
+      <div
+        className="text-base-content/70 max-w-40 truncate font-mono text-xs"
+        title={row.original.file_name}
+      >
         {row.original.file_name ?? <span className="opacity-50">-</span>}
       </div>
     ),
@@ -60,7 +67,7 @@ export const getMpReportColumns = (
       <span
         className={cn(
           "badge badge-sm font-medium",
-          row.original.created_from === "schedule" ? "badge-outline opacity-80" : "badge-ghost"
+          row.original.created_from === "schedule" ? "badge-outline opacity-80" : "badge-ghost",
         )}
       >
         {row.original.created_from === "schedule" ? "Automático" : "Manual"}
@@ -99,7 +106,11 @@ export const getMpReportColumns = (
             title={report.status === "pending" ? "Reporte aún generándose" : "Descargar"}
             variant="ghost"
           >
-            {downloadPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+            {downloadPending ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Download className="h-5 w-5" />
+            )}
           </Button>
           <Button
             className="h-9 w-9 p-0 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"

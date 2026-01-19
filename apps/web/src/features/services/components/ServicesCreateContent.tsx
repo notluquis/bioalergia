@@ -8,7 +8,8 @@ import { SERVICE_TEMPLATES } from "@/features/services/components/ServiceTemplat
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 
 export default function ServicesCreateContent() {
-  const { applyTemplate, canManage, createError, handleCreateService, selectedTemplate } = useServicesOverview();
+  const { applyTemplate, canManage, createError, handleCreateService, selectedTemplate } =
+    useServicesOverview();
 
   if (!canManage) {
     return <Alert variant="error">Solo administradores pueden crear servicios.</Alert>;

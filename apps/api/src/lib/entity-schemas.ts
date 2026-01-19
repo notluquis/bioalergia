@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { dateRegex, moneySchema, clpInt } from "./financial-schemas";
+import { dateRegex, moneySchema } from "./financial-schemas";
 
 // --- Service Schemas ---
 
@@ -14,21 +14,12 @@ const serviceFrequencyEnum = z.enum([
   "ONCE",
 ]);
 
-const serviceOwnershipEnum = z.enum([
-  "COMPANY",
-  "OWNER",
-  "MIXED",
-  "THIRD_PARTY",
-]);
+const serviceOwnershipEnum = z.enum(["COMPANY", "OWNER", "MIXED", "THIRD_PARTY"]);
 const serviceObligationEnum = z.enum(["SERVICE", "DEBT", "LOAN", "OTHER"]);
 const serviceRecurrenceEnum = z.enum(["RECURRING", "ONE_OFF"]);
 const serviceIndexationEnum = z.enum(["NONE", "UF"]);
 const serviceLateFeeModeEnum = z.enum(["NONE", "FIXED", "PERCENTAGE"]);
-const serviceEmissionModeEnum = z.enum([
-  "FIXED_DAY",
-  "DATE_RANGE",
-  "SPECIFIC_DATE",
-]);
+const serviceEmissionModeEnum = z.enum(["FIXED_DAY", "DATE_RANGE", "SPECIFIC_DATE"]);
 
 // Base object schema WITHOUT refinements (for .partial() compatibility in Zod v4)
 const serviceBaseSchema = z.object({
@@ -36,16 +27,7 @@ const serviceBaseSchema = z.object({
   detail: z.string().max(255).optional().nullable(),
   category: z.string().max(120).optional().nullable(),
   serviceType: z
-    .enum([
-      "BUSINESS",
-      "PERSONAL",
-      "SUPPLIER",
-      "TAX",
-      "UTILITY",
-      "LEASE",
-      "SOFTWARE",
-      "OTHER",
-    ])
+    .enum(["BUSINESS", "PERSONAL", "SUPPLIER", "TAX", "UTILITY", "LEASE", "SOFTWARE", "OTHER"])
     .default("BUSINESS"),
   ownership: serviceOwnershipEnum.optional().default("COMPANY"),
   obligationType: serviceObligationEnum.optional().default("SERVICE"),
@@ -54,22 +36,11 @@ const serviceBaseSchema = z.object({
   defaultAmount: moneySchema,
   amountIndexation: serviceIndexationEnum.optional().default("NONE"),
   counterpartId: z.coerce.number().int().positive().optional().nullable(),
-  counterpartAccountId: z.coerce
-    .number()
-    .int()
-    .positive()
-    .optional()
-    .nullable(),
+  counterpartAccountId: z.coerce.number().int().positive().optional().nullable(),
   accountReference: z.string().max(191).optional().nullable(),
   emissionMode: serviceEmissionModeEnum.optional().default("FIXED_DAY"),
   emissionDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
-  emissionStartDay: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(31)
-    .optional()
-    .nullable(),
+  emissionStartDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
   emissionEndDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
   emissionExactDate: z.string().regex(dateRegex).optional().nullable(),
   dueDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
@@ -77,21 +48,12 @@ const serviceBaseSchema = z.object({
   monthsToGenerate: z.coerce.number().int().positive().max(60).optional(),
   lateFeeMode: serviceLateFeeModeEnum.optional().default("NONE"),
   lateFeeValue: z.coerce.number().min(0).optional().nullable(),
-  lateFeeGraceDays: z.coerce
-    .number()
-    .int()
-    .min(0)
-    .max(31)
-    .optional()
-    .nullable(),
+  lateFeeGraceDays: z.coerce.number().int().min(0).max(31).optional().nullable(),
   notes: z.string().max(500).optional().nullable(),
 });
 
 // Service refinement function (shared between create and update)
-const serviceRefinement = (
-  data: z.infer<typeof serviceBaseSchema>,
-  ctx: z.RefinementCtx
-) => {
+const serviceRefinement = (data: z.infer<typeof serviceBaseSchema>, ctx: z.RefinementCtx) => {
   if (data.emissionMode === "DATE_RANGE") {
     if (data.emissionStartDay == null || data.emissionEndDay == null) {
       ctx.addIssue({
@@ -137,8 +99,7 @@ const serviceRefinement = (
 };
 
 // Create schema with refinements
-export const serviceCreateSchema =
-  serviceBaseSchema.superRefine(serviceRefinement);
+export const serviceCreateSchema = serviceBaseSchema.superRefine(serviceRefinement);
 
 // Update schema: partial of base object (no refinement issues in Zod v4)
 // Refinements are applied after partial for update operations
@@ -187,12 +148,10 @@ export const counterpartAccountPayloadSchema = z.object({
     .nullable(),
 });
 
-export const counterpartAccountUpdateSchema = counterpartAccountPayloadSchema
-  .partial()
-  .extend({
-    concept: z.string().max(191).optional().nullable(),
-    metadata: counterpartAccountPayloadSchema.shape.metadata.optional(),
-  });
+export const counterpartAccountUpdateSchema = counterpartAccountPayloadSchema.partial().extend({
+  concept: z.string().max(191).optional().nullable(),
+  metadata: counterpartAccountPayloadSchema.shape.metadata.optional(),
+});
 
 // --- Role Schemas ---
 

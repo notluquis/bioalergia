@@ -4,13 +4,11 @@ export function mapTransaction(row: any) {
     transactionDate: row.transactionDate.toISOString(),
     description: row.description,
     transactionType: row.transactionType,
-    transactionAmount:
-      row.transactionAmount != null ? Number(row.transactionAmount) : null,
+    transactionAmount: row.transactionAmount != null ? Number(row.transactionAmount) : null,
     status: row.status,
     externalReference: row.externalReference,
     sourceId: row.sourceId,
     paymentMethod: row.paymentMethod,
-    settlementNetAmount:
-      row.settlementNetAmount != null ? Number(row.settlementNetAmount) : null,
+    settlementNetAmount: row.settlementNetAmount != null ? Number(row.settlementNetAmount) : null,
   };
 }

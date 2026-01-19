@@ -53,8 +53,14 @@ function CalendarDailyPage() {
       const twoWeeksForward = current.add(2, "week").format("YYYY-MM-DD");
 
       // Extend the range rather than replacing (to keep already loaded data context)
-      const newFrom = currentFrom.isValid() && currentFrom.isBefore(twoWeeksBack) ? appliedFilters.from : twoWeeksBack;
-      const newTo = currentTo.isValid() && currentTo.isAfter(twoWeeksForward) ? appliedFilters.to : twoWeeksForward;
+      const newFrom =
+        currentFrom.isValid() && currentFrom.isBefore(twoWeeksBack)
+          ? appliedFilters.from
+          : twoWeeksBack;
+      const newTo =
+        currentTo.isValid() && currentTo.isAfter(twoWeeksForward)
+          ? appliedFilters.to
+          : twoWeeksForward;
 
       updateFilters("from", newFrom);
       updateFilters("to", newTo);

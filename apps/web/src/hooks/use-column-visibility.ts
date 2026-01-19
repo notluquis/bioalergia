@@ -7,7 +7,10 @@ export interface UseColumnVisibilityOptions {
   initialColumns?: string[];
 }
 
-export function useColumnVisibility({ defaultVisible = true, initialColumns = [] }: UseColumnVisibilityOptions = {}) {
+export function useColumnVisibility({
+  defaultVisible = true,
+  initialColumns = [],
+}: UseColumnVisibilityOptions = {}) {
   const [visibleColumns, setVisibleColumns] = useState<ColumnVisibility>(() => {
     return initialColumns.reduce<ColumnVisibility>((acc, col) => {
       acc[col] = defaultVisible;

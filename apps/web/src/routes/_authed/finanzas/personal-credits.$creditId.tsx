@@ -4,7 +4,9 @@ import { lazy, Suspense } from "react";
 import PageLoader from "@/components/ui/PageLoader";
 import { personalFinanceQueries } from "@/features/personal-finance/queries";
 
-const PersonalCreditDetailsPage = lazy(() => import("@/features/personal-finance/pages/PersonalCreditDetailsPage"));
+const PersonalCreditDetailsPage = lazy(
+  () => import("@/features/personal-finance/pages/PersonalCreditDetailsPage"),
+);
 
 export const Route = createFileRoute("/_authed/finanzas/personal-credits/$creditId")({
   beforeLoad: () => {

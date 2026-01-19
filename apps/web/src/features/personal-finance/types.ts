@@ -15,7 +15,7 @@ export const createCreditSchema = z.object({
         installmentNumber: z.number().int(),
         interestAmount: z.number().optional(),
         otherCharges: z.number().optional(),
-      })
+      }),
     )
     .optional(),
   interestRate: z.number().optional(),

@@ -21,7 +21,7 @@ interface FetchReleaseTransactionsResponse {
 }
 
 export async function fetchReleaseTransactions(
-  params: FetchReleaseTransactionsParams
+  params: FetchReleaseTransactionsParams,
 ): Promise<FetchReleaseTransactionsResponse> {
   const searchParams = new URLSearchParams();
   if (params.page) searchParams.set("page", String(params.page));
@@ -31,5 +31,7 @@ export async function fetchReleaseTransactions(
   if (params.search) searchParams.set("search", params.search);
   if (params.descriptions?.length) searchParams.set("descriptions", params.descriptions.join(","));
 
-  return apiClient.get<FetchReleaseTransactionsResponse>(`api/release-transactions?${searchParams.toString()}`);
+  return apiClient.get<FetchReleaseTransactionsResponse>(
+    `api/release-transactions?${searchParams.toString()}`,
+  );
 }

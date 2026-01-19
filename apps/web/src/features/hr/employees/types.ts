@@ -1,4 +1,4 @@
-import { Employee as DbEmployee, EmployeeSalaryType, EmployeeStatus } from "@/types/schema";
+import type { Employee as DbEmployee, EmployeeSalaryType, EmployeeStatus } from "@/types/schema";
 
 export type Employee = DbEmployee & {
   full_name: string; // Computed field often used in frontend

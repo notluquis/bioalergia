@@ -13,10 +13,26 @@
   --fc-border-color: var(--color-base-300);
   --fc-button-bg-color: var(--color-primary);
   --fc-button-border-color: var(--color-primary);
-  --fc-button-hover-bg-color: color-mix(in hsl, var(--color-primary) 85%, var(--color-base-content) 15%);
-  --fc-button-hover-border-color: color-mix(in hsl, var(--color-primary) 85%, var(--color-base-content) 15%);
-  --fc-button-active-bg-color: color-mix(in hsl, var(--color-primary) 75%, var(--color-base-content) 25%);
-  --fc-button-active-border-color: color-mix(in hsl, var(--color-primary) 75%, var(--color-base-content) 25%);
+  --fc-button-hover-bg-color: color-mix(
+    in hsl,
+    var(--color-primary) 85%,
+    var(--color-base-content) 15%
+  );
+  --fc-button-hover-border-color: color-mix(
+    in hsl,
+    var(--color-primary) 85%,
+    var(--color-base-content) 15%
+  );
+  --fc-button-active-bg-color: color-mix(
+    in hsl,
+    var(--color-primary) 75%,
+    var(--color-base-content) 25%
+  );
+  --fc-button-active-border-color: color-mix(
+    in hsl,
+    var(--color-primary) 75%,
+    var(--color-base-content) 25%
+  );
   --fc-today-bg-color: color-mix(in hsl, var(--color-primary) 15%, transparent);
   --fc-now-indicator-color: var(--color-warning);
 }
@@ -44,11 +60,11 @@
 
 /* Timesheet event styling */
 .timesheet-audit-event {
-  padding: 4px 6px !important;
-  font-size: 0.75rem !important;
-  font-weight: 500 !important;
-  border-radius: 4px !important;
-  white-space: normal !important;
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 4px;
+  white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -76,8 +92,8 @@
   }
 
   .timesheet-audit-event {
-    padding: 2px 4px !important;
-    font-size: 0.625rem !important;
+    padding: 2px 4px;
+    font-size: 0.625rem;
   }
 }
 

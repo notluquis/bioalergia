@@ -1,13 +1,13 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { FocusEvent } from "react";
+import type { FocusEvent } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Transaction } from "@/features/finance/types";
+import type { Transaction } from "@/features/finance/types";
 import { fmtCLP } from "@/lib/format";
 
-import { AccountGroup } from "./associated-accounts.helpers";
+import type { AccountGroup } from "./associated-accounts.helpers";
 
 // --- Main Table: Account Groups ---
 
@@ -16,7 +16,7 @@ const accountGroupHelper = createColumnHelper<AccountGroup>();
 export const getAccountGroupColumns = (
   summaryByGroup: Map<string, { count: number; total: number }>,
   onConceptChange: (group: AccountGroup, concept: string) => void,
-  onQuickView: (group: AccountGroup) => void
+  onQuickView: (group: AccountGroup) => void,
 ) => [
   accountGroupHelper.accessor("label", {
     cell: ({ row }) => {
@@ -31,7 +31,9 @@ export const getAccountGroupColumns = (
             </span>
           )}
           {group.accounts.length > 1 && (
-            <div className="text-base-content/90 text-xs">{group.accounts.length} identificadores vinculados</div>
+            <div className="text-base-content/90 text-xs">
+              {group.accounts.length} identificadores vinculados
+            </div>
           )}
         </div>
       );
@@ -86,7 +88,9 @@ export const getAccountGroupColumns = (
             Ver movimientos
           </Button>
           <div className="text-base-content/60 text-xs">
-            {summaryInfo ? `${summaryInfo.count} mov. · ${fmtCLP(summaryInfo.total)}` : "Sin movimientos en el rango"}
+            {summaryInfo
+              ? `${summaryInfo.count} mov. · ${fmtCLP(summaryInfo.total)}`
+              : "Sin movimientos en el rango"}
           </div>
         </div>
       );
@@ -118,7 +122,9 @@ export const getQuickViewColumns = () => [
     header: "Destino",
   }),
   quickViewHelper.accessor("transactionAmount", {
-    cell: ({ getValue }) => <div className="text-right">{getValue() == null ? "-" : fmtCLP(getValue())}</div>,
+    cell: ({ getValue }) => (
+      <div className="text-right">{getValue() == null ? "-" : fmtCLP(getValue())}</div>
+    ),
     header: () => <div className="text-right">Monto</div>,
   }),
 ];

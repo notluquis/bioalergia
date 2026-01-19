@@ -7,9 +7,7 @@ async function main() {
     console.log(`Total Events in DB: ${eventCount}`);
 
     const calendars = await db.calendar.findMany();
-    console.log(
-      `Calendars: ${calendars.map((c) => `${c.googleId} (ID: ${c.id})`).join(", ")}`
-    );
+    console.log(`Calendars: ${calendars.map((c) => `${c.googleId} (ID: ${c.id})`).join(", ")}`);
 
     if (eventCount > 0) {
       const sampleEvents = await db.event.findMany({

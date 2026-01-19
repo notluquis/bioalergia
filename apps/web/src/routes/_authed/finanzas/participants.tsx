@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_authed/finanzas/participants")({
         ...range,
         limit: 10,
         mode: "outgoing",
-      })
+      }),
     );
   },
 });

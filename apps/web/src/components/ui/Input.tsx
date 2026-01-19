@@ -22,7 +22,8 @@ const BASE_CLASSES =
   "w-full transition-all duration-200 ease-apple placeholder:text-base-content/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary";
 
 const LABEL_CLASSES = "label pt-0 pb-2";
-const LABEL_TEXT_CLASSES = "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";
+const LABEL_TEXT_CLASSES =
+  "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";
 
 interface InputBaseProps {
   containerClassName?: string;
@@ -41,7 +42,10 @@ type InputProps = InputBaseProps &
   };
 
 type InputSize = "lg" | "md" | "sm" | "xs";
-type Props = (InputProps & { as?: "input" }) | (SelectProps & { as: "select" }) | (TextareaProps & { as: "textarea" });
+type Props =
+  | (InputProps & { as?: "input" })
+  | (SelectProps & { as: "select" })
+  | (TextareaProps & { as: "textarea" });
 type SelectProps = InputBaseProps & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size">;
 
 type TextareaProps = InputBaseProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
@@ -57,7 +61,17 @@ const getDescribedById = (error?: string, helper?: string, inputId?: string) => 
 };
 
 export default function Input(props: Props) {
-  const { as = "input", className, containerClassName, error, helper, label, size = "md", type, ...rest } = props;
+  const {
+    as = "input",
+    className,
+    containerClassName,
+    error,
+    helper,
+    label,
+    size = "md",
+    type,
+    ...rest
+  } = props;
   const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
 
   const generatedId = React.useId();
@@ -74,7 +88,7 @@ export default function Input(props: Props) {
 
     (isPassword || props.rightElement) && "pr-14",
     BASE_CLASSES,
-    className
+    className,
   );
 
   const textareaClasses = cn(
@@ -82,7 +96,7 @@ export default function Input(props: Props) {
     size === "xs" || size === "sm" ? "text-xs" : "text-sm",
     error && getErrorClasses("textarea"),
     BASE_CLASSES,
-    className
+    className,
   );
 
   const selectClasses = cn(
@@ -91,10 +105,13 @@ export default function Input(props: Props) {
     SELECT_SIZE_CLASSES[size],
     error && getErrorClasses("select"),
     BASE_CLASSES,
-    className
+    className,
   );
 
-  const helperClasses = cn("label-text-alt mt-1.5 ml-1 text-xs text-base-content/70", error && "text-error");
+  const helperClasses = cn(
+    "label-text-alt mt-1.5 ml-1 text-xs text-base-content/70",
+    error && "text-error",
+  );
 
   const describedById = getDescribedById(error, helper, inputId);
   const ariaProps = {
@@ -116,7 +133,11 @@ export default function Input(props: Props) {
     }
     if (as === "select") {
       return (
-        <select className={selectClasses} {...ariaProps} {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}>
+        <select
+          className={selectClasses}
+          {...ariaProps}
+          {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}
+        >
           {props.children}
         </select>
       );

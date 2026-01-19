@@ -1,8 +1,6 @@
 import dayjs from "dayjs";
-
-import type { CalendarSyncStep } from "@/features/calendar/types";
-
 import Button from "@/components/ui/Button";
+import type { CalendarSyncStep } from "@/features/calendar/types";
 import { numberFormatter } from "@/lib/format";
 import { LOADING_SPINNER_SM } from "@/lib/styles";
 
@@ -120,7 +118,9 @@ export function SyncProgressPanel({
             </p>
           </div>
           {syncing && <span aria-label="Sincronizando" className={LOADING_SPINNER_SM} />}
-          {syncError && <span className="text-error text-xs font-semibold">Revisa los detalles abajo.</span>}
+          {syncError && (
+            <span className="text-error text-xs font-semibold">Revisa los detalles abajo.</span>
+          )}
           {!syncing && syncDurationMs != null && !syncError && (
             <span className="bg-base-200 text-base-content/70 rounded-full px-3 py-1 text-xs">
               Duración total: {formatDuration(syncDurationMs)}
@@ -134,7 +134,13 @@ export function SyncProgressPanel({
               : dayjs().format("DD MMM YYYY · HH:mm")}
           </span>
           {showSyncButton && onSyncNow && (
-            <Button disabled={syncing} onClick={onSyncNow} size="sm" type="button" variant="secondary">
+            <Button
+              disabled={syncing}
+              onClick={onSyncNow}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
               {syncing ? "Sincronizando..." : "Sincronizar ahora"}
             </Button>
           )}
@@ -166,13 +172,18 @@ export function SyncProgressPanel({
             const details = formatDetails(step.details);
             const duration = formatDuration(step.durationMs);
             return (
-              <li className="border-base-300/60 bg-base-100/70 rounded-2xl border px-4 py-3" key={step.id}>
+              <li
+                className="border-base-300/60 bg-base-100/70 rounded-2xl border px-4 py-3"
+                key={step.id}
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className={`h-2.5 w-2.5 rounded-full ${dotClass[step.status]}`} />
                     <p className="text-base-content text-sm font-semibold">{step.label}</p>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeClass[step.status]}`}>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeClass[step.status]}`}
+                  >
                     {status}
                   </span>
                 </div>

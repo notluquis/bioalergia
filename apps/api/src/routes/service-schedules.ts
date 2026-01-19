@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -20,10 +20,7 @@ app.post("/:id/pay", async (c) => {
   }
 
   // TODO: Implement when ServiceSchedule model is added to schema
-  return reply(c, 
-    { status: "error", message: "ServiceSchedule feature not yet implemented" },
-    501
-  );
+  return reply(c, { status: "error", message: "ServiceSchedule feature not yet implemented" }, 501);
 });
 
 // POST /:id/unlink - Unlink payment from a service schedule
@@ -40,10 +37,7 @@ app.post("/:id/unlink", async (c) => {
   }
 
   // TODO: Implement when ServiceSchedule model is added to schema
-  return reply(c, 
-    { status: "error", message: "ServiceSchedule feature not yet implemented" },
-    501
-  );
+  return reply(c, { status: "error", message: "ServiceSchedule feature not yet implemented" }, 501);
 });
 
 export default app;

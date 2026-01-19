@@ -6,7 +6,10 @@ import type { DailyBalanceFormData } from "../types";
 
 interface EntryFormProps {
   disabled?: boolean;
-  onChange: <K extends keyof DailyBalanceFormData>(field: K, value: DailyBalanceFormData[K]) => void;
+  onChange: <K extends keyof DailyBalanceFormData>(
+    field: K,
+    value: DailyBalanceFormData[K],
+  ) => void;
   values: DailyBalanceFormData;
 }
 

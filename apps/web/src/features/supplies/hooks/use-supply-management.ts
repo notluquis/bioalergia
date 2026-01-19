@@ -1,11 +1,9 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 
 import { useToast } from "@/context/ToastContext";
-
-import type { CommonSupply, StructuredSupplies, SupplyRequest } from "../types";
-
 import { updateSupplyRequestStatus } from "../api";
 import { supplyKeys, supplyQueries } from "../queries";
+import type { CommonSupply, StructuredSupplies, SupplyRequest } from "../types";
 
 interface UseSupplyManagementResult {
   commonSupplies: CommonSupply[];
@@ -26,20 +24,23 @@ export function useSupplyManagement(): UseSupplyManagementResult {
   const { data: commonSupplies } = useSuspenseQuery(supplyQueries.common());
 
   // 3. Process Data (Memoization handled by React 19 Compiler or fast enough for now)
-  const structuredSupplies: StructuredSupplies = commonSupplies.reduce<StructuredSupplies>((acc, supply) => {
-    if (!supply.name) return acc;
-    if (!acc[supply.name]) {
-      acc[supply.name] = {};
-    }
-    const brand = supply.brand || "N/A";
-    if (!acc[supply.name]![brand]) {
-      acc[supply.name]![brand] = [];
-    }
-    if (supply.model) {
-      acc[supply.name]![brand]!.push(supply.model);
-    }
-    return acc;
-  }, {});
+  const structuredSupplies: StructuredSupplies = commonSupplies.reduce<StructuredSupplies>(
+    (acc, supply) => {
+      if (!supply.name) return acc;
+      if (!acc[supply.name]) {
+        acc[supply.name] = {};
+      }
+      const brand = supply.brand || "N/A";
+      if (!acc[supply.name]![brand]) {
+        acc[supply.name]![brand] = [];
+      }
+      if (supply.model) {
+        acc[supply.name]![brand]!.push(supply.model);
+      }
+      return acc;
+    },
+    {},
+  );
 
   // 4. Mutations
   const updateMutation = useMutation({

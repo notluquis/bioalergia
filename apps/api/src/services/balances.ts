@@ -21,10 +21,7 @@ export interface BalancesApiResponse {
   } | null;
 }
 
-export async function getBalancesReport(
-  from: string,
-  to: string,
-): Promise<BalancesApiResponse> {
+export async function getBalancesReport(from: string, to: string): Promise<BalancesApiResponse> {
   const previous = await db.dailyBalance.findFirst({
     where: {
       date: { lt: new Date(dayjs(from).startOf("day").toISOString()) },
@@ -55,9 +52,7 @@ export async function getBalancesReport(
     },
   });
 
-  const balanceMap = new Map(
-    existingBalances.map((b) => [dayjs(b.date).format("YYYY-MM-DD"), b]),
-  );
+  const balanceMap = new Map(existingBalances.map((b) => [dayjs(b.date).format("YYYY-MM-DD"), b]));
 
   const days: DailyBalanceRecord[] = [];
   let runningBalance = previous ? Number(previous.amount) : 0;
@@ -88,8 +83,7 @@ export async function getBalancesReport(
 
     const record = balanceMap.get(dateStr);
     const recordedBalance = record ? Number(record.amount) : null;
-    const difference =
-      recordedBalance !== null ? recordedBalance - expectedBalance : null;
+    const difference = recordedBalance !== null ? recordedBalance - expectedBalance : null;
 
     days.push({
       date: dateStr,
@@ -125,11 +119,7 @@ export async function getBalancesReport(
 
 import { Decimal } from "decimal.js";
 
-export async function upsertDailyBalance(
-  date: string,
-  amount: number,
-  note?: string,
-) {
+export async function upsertDailyBalance(date: string, amount: number, note?: string) {
   return db.dailyBalance.upsert({
     where: { date: new Date(date) },
     update: {

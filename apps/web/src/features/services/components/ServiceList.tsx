@@ -27,7 +27,9 @@ export function ServiceList({
     <aside className="border-base-300/60 bg-base-100/80 text-base-content flex h-full min-h-80 flex-col gap-4 rounded-2xl border p-5 text-sm shadow-inner">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Servicios</h2>
+          <h2 className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">
+            Servicios
+          </h2>
           <p className="text-base-content/60 text-xs">Suscripciones y gastos recurrentes.</p>
         </div>
         {canManage && (
@@ -40,7 +42,10 @@ export function ServiceList({
         {loading &&
           services.length === 0 &&
           skeletons.map((value) => (
-            <div className="border-base-300/60 bg-base-200/60 rounded-2xl border p-4 shadow-sm" key={value}>
+            <div
+              className="border-base-300/60 bg-base-200/60 rounded-2xl border p-4 shadow-sm"
+              key={value}
+            >
               <div className="skeleton-line mb-3 w-3/4" />
               <div className="text-base-content/50 flex gap-2 text-xs">
                 <span className="skeleton-line w-20" />
@@ -96,10 +101,15 @@ export function ServiceList({
                 <div>
                   <p className="text-sm font-semibold tracking-tight">{service.name}</p>
                   {service.detail && (
-                    <p className="text-base-content/50 text-xs tracking-wide uppercase">{service.detail}</p>
+                    <p className="text-base-content/50 text-xs tracking-wide uppercase">
+                      {service.detail}
+                    </p>
                   )}
                 </div>
-                <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`} />
+                <span
+                  aria-hidden="true"
+                  className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`}
+                />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
                 <span className="text-base-content font-semibold">

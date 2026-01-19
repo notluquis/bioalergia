@@ -182,14 +182,14 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                           cell.isToday,
                       },
                       !cell.isToday &&
-                        "hover:ring-primary hover:ring-offset-base-100 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2"
+                        "hover:ring-primary hover:ring-offset-base-100 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2",
                     )}
                   >
                     {/* Day Number - Top Left, smaller */}
                     <span
                       className={clsx(
                         "absolute top-0.5 left-1 text-[10px] leading-none opacity-60",
-                        cell.total > 0 && "text-[9px] font-normal opacity-80" // Adjust if has data
+                        cell.total > 0 && "text-[9px] font-normal opacity-80", // Adjust if has data
                       )}
                     >
                       {cell.dayNumber}

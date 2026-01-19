@@ -14,7 +14,10 @@ export default function Supplies() {
     <div className="mx-auto max-w-7xl space-y-6">
       {canCreate && <SupplyRequestForm commonSupplies={commonSupplies} onSuccess={refresh} />}
 
-      <SupplyRequestsTable onStatusChange={canUpdate ? handleStatusChange : () => {}} requests={requests} />
+      <SupplyRequestsTable
+        onStatusChange={canUpdate ? handleStatusChange : () => {}}
+        requests={requests}
+      />
     </div>
   );
 }

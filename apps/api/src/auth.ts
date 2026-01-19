@@ -22,9 +22,7 @@ const COOKIE_NAME = "finanzas_session";
  * Extract and verify PASETO token from request
  * Supports both Authorization header and cookie
  */
-export async function getSessionUser(
-  ctx: Context
-): Promise<AuthSession | null> {
+export async function getSessionUser(ctx: Context): Promise<AuthSession | null> {
   // 1. Check Authorization header
   let token = ctx.req.header("Authorization")?.replace("Bearer ", "");
 
@@ -32,9 +30,7 @@ export async function getSessionUser(
   if (!token) {
     const cookieHeader = ctx.req.header("Cookie");
     if (cookieHeader) {
-      const cookies = Object.fromEntries(
-        cookieHeader.split(";").map((c) => c.trim().split("="))
-      );
+      const cookies = Object.fromEntries(cookieHeader.split(";").map((c) => c.trim().split("=")));
       token = cookies[COOKIE_NAME];
     }
   }
@@ -92,7 +88,7 @@ export function createAuthContext(user: AuthSession | null) {
 export async function hasPermission(
   userId: number,
   action: string,
-  subject: string
+  subject: string,
 ): Promise<boolean> {
   // Use existing authz service
   const { getAbilityRulesForUser } = await import("./services/authz");
@@ -108,10 +104,7 @@ export async function hasPermission(
   // Check if any rule grants the required permission
   for (const rule of rules) {
     // Check for exact match
-    if (
-      rule.action === action &&
-      rule.subject.toLowerCase() === subject.toLowerCase()
-    ) {
+    if (rule.action === action && rule.subject.toLowerCase() === subject.toLowerCase()) {
       // console.log(`[hasPermission] MATCH: ${rule.action}:${rule.subject}`);
       return true;
     }

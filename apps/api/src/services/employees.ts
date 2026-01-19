@@ -1,12 +1,11 @@
-import { db, EmployeeSalaryType, EmployeeStatus } from "@finanzas/db";
+import { db, type EmployeeSalaryType, type EmployeeStatus } from "@finanzas/db";
 import { Decimal } from "decimal.js";
-import {
-  EmployeeCreateInput,
-  EmployeeWhereInput,
-  EmployeeUpdateInput,
-  EmployeeTimesheetWhereInput,
+import type {
   EmployeeTimesheetCreateInput,
   EmployeeTimesheetUpdateInput,
+  EmployeeTimesheetWhereInput,
+  EmployeeUpdateInput,
+  EmployeeWhereInput,
   PersonUpdateInput,
 } from "../lib/db-types";
 
@@ -28,18 +27,10 @@ interface EmployeePayload {
   metadata?: Record<string, unknown> | null;
 }
 
-type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 // Helper to convert metadata to compatible JSON
-function toJsonValue(
-  value: Record<string, unknown> | null | undefined,
-): JsonValue | undefined {
+function toJsonValue(value: Record<string, unknown> | null | undefined): JsonValue | undefined {
   if (value === undefined) return undefined;
   if (value === null) return null;
   return value as unknown as JsonValue;
@@ -174,18 +165,10 @@ export async function createEmployee(
         personId: person.id,
         position: payload.role || "Sin cargo",
         salaryType: (payload.salary_type as EmployeeSalaryType) || "FIXED",
-        baseSalary: payload.fixed_salary
-          ? new Decimal(payload.fixed_salary)
-          : new Decimal(0),
-        hourlyRate: payload.hourly_rate
-          ? new Decimal(payload.hourly_rate)
-          : undefined,
-        overtimeRate: payload.overtime_rate
-          ? new Decimal(payload.overtime_rate)
-          : undefined,
-        retentionRate: payload.retention_rate
-          ? new Decimal(payload.retention_rate)
-          : undefined,
+        baseSalary: payload.fixed_salary ? new Decimal(payload.fixed_salary) : new Decimal(0),
+        hourlyRate: payload.hourly_rate ? new Decimal(payload.hourly_rate) : undefined,
+        overtimeRate: payload.overtime_rate ? new Decimal(payload.overtime_rate) : undefined,
+        retentionRate: payload.retention_rate ? new Decimal(payload.retention_rate) : undefined,
         metadata: toJsonValue(payload.metadata) ?? undefined,
         bankName: payload.bank_name,
         bankAccountType: payload.bank_account_type,
@@ -239,11 +222,7 @@ export async function deactivateEmployee(id: number) {
   });
 }
 
-export async function listEmployeeTimesheets(
-  employeeId: number,
-  from?: Date,
-  to?: Date,
-) {
+export async function listEmployeeTimesheets(employeeId: number, from?: Date, to?: Date) {
   const where: EmployeeTimesheetWhereInput = {
     employeeId,
   };
@@ -260,18 +239,13 @@ export async function listEmployeeTimesheets(
   });
 }
 
-export async function createEmployeeTimesheet(
-  data: EmployeeTimesheetCreateInput,
-) {
+export async function createEmployeeTimesheet(data: EmployeeTimesheetCreateInput) {
   return await db.employeeTimesheet.create({
     data,
   });
 }
 
-export async function updateEmployeeTimesheet(
-  id: number,
-  data: EmployeeTimesheetUpdateInput,
-) {
+export async function updateEmployeeTimesheet(id: number, data: EmployeeTimesheetUpdateInput) {
   return await db.employeeTimesheet.update({
     where: { id: BigInt(id) },
     data,

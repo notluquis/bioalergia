@@ -3,11 +3,9 @@ import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
 import { today } from "@/lib/dates";
-
+import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import type { CounterpartAccount } from "../../counterparts/types";
 import type { CreateServicePayload } from "../types";
-
-import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import {
   BasicInfoSection,
   CounterpartSection,
@@ -119,7 +117,11 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   useEffect(() => {
     setForm((prev) => {
       if (emissionMode === "FIXED_DAY") {
-        if (prev.emissionStartDay !== null || prev.emissionEndDay !== null || prev.emissionExactDate) {
+        if (
+          prev.emissionStartDay !== null ||
+          prev.emissionEndDay !== null ||
+          prev.emissionExactDate
+        ) {
           return {
             ...prev,
             emissionDay: prev.emissionDay ?? 1,
@@ -153,7 +155,11 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
         return prev;
       }
       if (prev.emissionMode === "SPECIFIC_DATE") {
-        if (prev.emissionDay !== null || prev.emissionStartDay !== null || prev.emissionEndDay !== null) {
+        if (
+          prev.emissionDay !== null ||
+          prev.emissionStartDay !== null ||
+          prev.emissionEndDay !== null
+        ) {
           return {
             ...prev,
             emissionDay: null,
@@ -179,7 +185,9 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   };
 
   const effectiveMonths =
-    form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE" ? 1 : (form.monthsToGenerate ?? 12);
+    form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE"
+      ? 1
+      : (form.monthsToGenerate ?? 12);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -197,7 +205,8 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
         dueDay: form.dueDay ?? null,
         emissionDay: emissionMode === "FIXED_DAY" ? (form.emissionDay ?? null) : null,
         emissionEndDay: emissionMode === "DATE_RANGE" ? (form.emissionEndDay ?? null) : null,
-        emissionExactDate: emissionMode === "SPECIFIC_DATE" ? (form.emissionExactDate ?? undefined) : null,
+        emissionExactDate:
+          emissionMode === "SPECIFIC_DATE" ? (form.emissionExactDate ?? undefined) : null,
         emissionMode,
         emissionStartDay: emissionMode === "DATE_RANGE" ? (form.emissionStartDay ?? null) : null,
         frequency: form.frequency,
@@ -208,7 +217,10 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
           if (form.lateFeeValue === null || form.lateFeeValue === undefined) return null;
           return Number(form.lateFeeValue);
         })(),
-        monthsToGenerate: form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE" ? 1 : form.monthsToGenerate,
+        monthsToGenerate:
+          form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE"
+            ? 1
+            : form.monthsToGenerate,
         name: form.name.trim(),
         notes: form.notes?.trim() ? form.notes.trim() : undefined,
         obligationType: form.obligationType,

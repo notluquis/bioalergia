@@ -20,19 +20,19 @@ export function getRetentionRateForYear(year: number): number {
  */
 export function getEffectiveRetentionRate(
   employeeRate: number | undefined | null,
-  year: number
+  year: number,
 ): number {
   const yearRate = getRetentionRateForYear(year);
-  
+
   // If employee has no rate, use year default
   if (!employeeRate) return yearRate;
-  
+
   // If employee has custom rate (different from any historical default), use it
   const isDefaultRate = employeeRate === 0.145 || employeeRate === 0.1525;
   if (!isDefaultRate) {
     return employeeRate;
   }
-  
+
   // Employee has a default rate, use the year's rate
   return yearRate;
 }

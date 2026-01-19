@@ -1,15 +1,13 @@
-import { skipToken, useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  skipToken,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { type ChangeEvent, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
-
-import type {
-  CreateMonthlyExpensePayload,
-  LinkMonthlyExpenseTransactionPayload,
-  MonthlyExpense,
-  MonthlyExpenseDetail,
-} from "../types";
-
 import {
   createMonthlyExpense,
   linkMonthlyExpenseTransaction,
@@ -18,6 +16,12 @@ import {
 } from "../api";
 // Update payload matches Create payload for PUT operations
 import { expenseKeys } from "../queries";
+import type {
+  CreateMonthlyExpensePayload,
+  LinkMonthlyExpenseTransactionPayload,
+  MonthlyExpense,
+  MonthlyExpenseDetail,
+} from "../types";
 
 export interface ExpenseFilters {
   category?: null | string;
@@ -48,12 +52,16 @@ export function useMonthlyExpenses() {
   selectedIdRef.current = selectedId;
 
   // 1. Fetch List
-  const { data: expensesResponse, isLoading: loadingList } = useSuspenseQuery(expenseKeys.list(filters));
+  const { data: expensesResponse, isLoading: loadingList } = useSuspenseQuery(
+    expenseKeys.list(filters),
+  );
 
   const expenses = expensesResponse.expenses.map((e) => normalizeExpense(e));
 
   // 2. Fetch Stats
-  const { data: statsResponse, isLoading: statsLoading } = useSuspenseQuery(expenseKeys.stats(filters));
+  const { data: statsResponse, isLoading: statsLoading } = useSuspenseQuery(
+    expenseKeys.stats(filters),
+  );
 
   const statsData = statsResponse.stats;
 
@@ -100,7 +108,13 @@ export function useMonthlyExpenses() {
   });
 
   const linkMutation = useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: LinkMonthlyExpenseTransactionPayload }) => {
+    mutationFn: async ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: LinkMonthlyExpenseTransactionPayload;
+    }) => {
       return linkMonthlyExpenseTransaction(id, payload);
     },
     onError: (err) => {
@@ -155,7 +169,10 @@ export function useMonthlyExpenses() {
     setLinkModalOpen(false);
   };
 
-  const handleLinkFieldChange = (field: "amount" | "transactionId", event: ChangeEvent<HTMLInputElement>) => {
+  const handleLinkFieldChange = (
+    field: "amount" | "transactionId",
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
     setLinkForm((prev) => ({ ...prev, [field]: event.target.value }));
   };
 

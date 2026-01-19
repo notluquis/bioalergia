@@ -1,6 +1,5 @@
-import webpush from "web-push";
 import { db } from "@finanzas/db";
-import { logEvent, logWarn } from "../lib/logger";
+import webpush from "web-push";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
@@ -12,7 +11,7 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 
 export async function subscribeToPush(
   userId: number,
-  subscription: { endpoint: string; keys: any }
+  subscription: { endpoint: string; keys: any },
 ) {
   return await db.pushSubscription.upsert({
     where: { endpoint: subscription.endpoint },
@@ -30,7 +29,7 @@ export async function subscribeToPush(
 
 export async function sendPushNotification(
   userId: number,
-  payload: { title: string; body: string; icon?: string; url?: string }
+  payload: { title: string; body: string; icon?: string; url?: string },
 ) {
   const subscriptions = await db.pushSubscription.findMany({
     where: { userId },
@@ -54,9 +53,9 @@ export async function sendPushNotification(
           endpoint: sub.endpoint,
           keys: sub.keys as unknown as { p256dh: string; auth: string },
         },
-        notificationPayload
-      )
-    )
+        notificationPayload,
+      ),
+    ),
   );
 
   let sent = 0;

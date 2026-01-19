@@ -28,7 +28,12 @@ export default function ChunkLoadErrorPage() {
         {/* Icon */}
         <div className="flex justify-center">
           <div className="bg-warning/10 flex h-20 w-20 items-center justify-center rounded-full">
-            <svg className="text-warning h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="text-warning h-10 w-10"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 d="M12 9v2m0 4v2m0 0v2m-6-4h12M7.5 3h9A2.5 2.5 0 0119 5.5v13A2.5 2.5 0 0116.5 21h-9A2.5 2.5 0 015 18.5v-13A2.5 2.5 0 017.5 3z"
                 strokeLinecap="round"
@@ -43,7 +48,8 @@ export default function ChunkLoadErrorPage() {
         <div>
           <h1 className="text-base-content text-3xl font-bold">Actualización Necesaria</h1>
           <p className="text-base-content/70 mt-2 text-sm">
-            Se ha detectado una nueva versión de la aplicación. Por favor, recarga la página para continuar.
+            Se ha detectado una nueva versión de la aplicación. Por favor, recarga la página para
+            continuar.
           </p>
         </div>
 
@@ -62,13 +68,18 @@ export default function ChunkLoadErrorPage() {
           <button className="btn btn-primary w-full" onClick={handleRetry}>
             Recargar Ahora
           </button>
-          <button className="btn btn-ghost w-full text-xs" onClick={() => (globalThis.location.href = "/login")}>
+          <button
+            className="btn btn-ghost w-full text-xs"
+            onClick={() => (globalThis.location.href = "/login")}
+          >
             Ir a Login
           </button>
         </div>
 
         {/* Footer */}
-        <p className="text-base-content/40 text-xs">Si el problema persiste, contacta al administrador.</p>
+        <p className="text-base-content/40 text-xs">
+          Si el problema persiste, contacta al administrador.
+        </p>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { ColumnDef, Row } from "@tanstack/react-table";
+import type { ColumnDef, Row } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
@@ -100,12 +100,20 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
   },
   {
     accessorKey: "totalIn",
-    cell: ({ row }) => <div className="text-success text-right text-xs">{fmtCLP(Math.abs(row.original.totalIn))}</div>,
+    cell: ({ row }) => (
+      <div className="text-success text-right text-xs">
+        {fmtCLP(Math.abs(row.original.totalIn))}
+      </div>
+    ),
     header: () => <div className="text-right">Ingresos</div>,
   },
   {
     accessorKey: "totalOut",
-    cell: ({ row }) => <div className="text-error text-right text-xs">-{fmtCLP(Math.abs(row.original.totalOut))}</div>,
+    cell: ({ row }) => (
+      <div className="text-error text-right text-xs">
+        -{fmtCLP(Math.abs(row.original.totalOut))}
+      </div>
+    ),
     header: () => <div className="text-right">Egresos</div>,
   },
   {
@@ -113,7 +121,9 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
     cell: ({ row }) => {
       const val = row.original.netChange;
       return (
-        <div className={`text-right text-xs font-semibold ${val >= 0 ? "text-success" : "text-error"}`}>
+        <div
+          className={`text-right text-xs font-semibold ${val >= 0 ? "text-success" : "text-error"}`}
+        >
           {val >= 0 ? fmtCLP(val) : `-${fmtCLP(Math.abs(val))}`}
         </div>
       );

@@ -1,48 +1,46 @@
 // apps/api - Hono + ZenStack Query-as-a-Service
-import { serve } from "@hono/node-server";
 
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { authDb, schema } from "@finanzas/db";
+import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
+import { RPCApiHandler } from "@zenstackhq/server/api";
+import { createHonoHandler } from "@zenstackhq/server/hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { serveStatic } from "@hono/node-server/serve-static";
-import { createHonoHandler } from "@zenstackhq/server/hono";
-import { RPCApiHandler } from "@zenstackhq/server/api";
-import { schema, authDb } from "@finanzas/db";
-import { getSessionUser, createAuthContext } from "./auth";
-import { authRoutes } from "./routes/auth";
-import { userRoutes } from "./routes/users";
-import { mercadopagoRoutes } from "./routes/mercadopago";
-import backupRoutes from "./routes/backups";
-import notificationRoutes from "./routes/notifications";
-
-import { csvUploadRoutes } from "./routes/csv-upload";
-import { calendarRoutes } from "./routes/calendar";
-import { shareTargetRoutes } from "./routes/share-target";
-import { inventoryRoutes } from "./routes/inventory";
-import { suppliesRoutes } from "./routes/supplies";
-import loanRoutes from "./routes/loans";
-import transactionRoutes from "./routes/transactions";
-import balanceRoutes from "./routes/balances";
-import dailyProductionRoutes from "./routes/daily-production-balances";
-import counterpartRoutes from "./routes/counterparts";
-import serviceRoutes from "./routes/services";
-import roleRoutes from "./routes/roles";
-import { settingsRoutes } from "./routes/settings";
-import employeeRoutes from "./routes/employees";
-import loanScheduleRoutes from "./routes/loan-schedules";
-import serviceScheduleRoutes from "./routes/service-schedules";
-import timesheetRoutes from "./routes/timesheets";
-import peopleRoutes from "./routes/people";
-import expenseRoutes from "./routes/expenses";
-import releaseTransactionRoutes from "./routes/release-transactions";
-import settlementTransactionRoutes from "./routes/settlement-transactions";
-import { readFile } from "fs/promises";
-import { join } from "path";
-import { integrationRoutes } from "./routes/integrations";
-import { doctoraliaRoutes } from "./routes/doctoralia";
-import { personalFinanceRoutes } from "./routes/personal-finance";
-
+import { createAuthContext, getSessionUser } from "./auth";
 import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler";
 import { setupAllWatchChannels } from "./lib/google/google-calendar-watch";
+import { authRoutes } from "./routes/auth";
+import backupRoutes from "./routes/backups";
+import balanceRoutes from "./routes/balances";
+import { calendarRoutes } from "./routes/calendar";
+import counterpartRoutes from "./routes/counterparts";
+import { csvUploadRoutes } from "./routes/csv-upload";
+import dailyProductionRoutes from "./routes/daily-production-balances";
+import { doctoraliaRoutes } from "./routes/doctoralia";
+import employeeRoutes from "./routes/employees";
+import expenseRoutes from "./routes/expenses";
+import { integrationRoutes } from "./routes/integrations";
+import { inventoryRoutes } from "./routes/inventory";
+import loanScheduleRoutes from "./routes/loan-schedules";
+import loanRoutes from "./routes/loans";
+import { mercadopagoRoutes } from "./routes/mercadopago";
+import notificationRoutes from "./routes/notifications";
+import peopleRoutes from "./routes/people";
+import { personalFinanceRoutes } from "./routes/personal-finance";
+import releaseTransactionRoutes from "./routes/release-transactions";
+import roleRoutes from "./routes/roles";
+import serviceScheduleRoutes from "./routes/service-schedules";
+import serviceRoutes from "./routes/services";
+import { settingsRoutes } from "./routes/settings";
+import settlementTransactionRoutes from "./routes/settlement-transactions";
+import { shareTargetRoutes } from "./routes/share-target";
+import { suppliesRoutes } from "./routes/supplies";
+import timesheetRoutes from "./routes/timesheets";
+import transactionRoutes from "./routes/transactions";
+import { userRoutes } from "./routes/users";
 
 const app = new Hono();
 
@@ -52,11 +50,7 @@ app.use("*", async (c, next) => {
 
   // UTF-8 encoding for JSON responses
   const contentType = c.res.headers.get("Content-Type");
-  if (
-    contentType &&
-    contentType.includes("application/json") &&
-    !contentType.includes("charset")
-  ) {
+  if (contentType?.includes("application/json") && !contentType.includes("charset")) {
     c.res.headers.set("Content-Type", "application/json; charset=utf-8");
   }
 
@@ -108,8 +102,7 @@ const authRateLimiter = rateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: 50, // 50 requests per 15 minutes per IP
   standardHeaders: "draft-6",
-  keyGenerator: (c) =>
-    c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "anonymous",
+  keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "anonymous",
 });
 
 // Apply rate limiting to sensitive routes
@@ -180,7 +173,7 @@ const zenStackHandler = createHonoHandler({
       // Authenticated: apply access control policies AND audit logging
       const policyClient = authDb.$setAuth(authContext);
 
-      const ip = ctx.req.header("x-forwarded-for") || "unknown";
+      const _ip = ctx.req.header("x-forwarded-for") || "unknown";
 
       // Inject Audit Plugin
       // This ensures every write operation via the content-aware client is logged
@@ -237,10 +230,7 @@ console.log(`🚀 Finanzas API starting on port ${port}`);
 
 // Initialize Calendar features (Scheduler + Watch Channels)
 // Run this after server starts to avoid blocking startup (though these are async anyway)
-if (
-  process.env.NODE_ENV === "production" ||
-  process.env.ENABLE_CALENDAR_SYNC === "true"
-) {
+if (process.env.NODE_ENV === "production" || process.env.ENABLE_CALENDAR_SYNC === "true") {
   startGoogleCalendarScheduler();
   setupAllWatchChannels().catch((err) => {
     console.error("Failed to setup watch channels:", err);

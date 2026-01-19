@@ -1,8 +1,8 @@
-import { Hono } from "hono";
-import { reply } from "../utils/reply";
-import { getSessionUser, hasPermission } from "../auth";
 import { db } from "@finanzas/db";
+import { Hono } from "hono";
+import { getSessionUser, hasPermission } from "../auth";
 import { cacheControl } from "../lib/cache-control";
+import { reply } from "../utils/reply";
 
 export type Variables = {
   user: any;
@@ -32,9 +32,7 @@ settingsRoutes.get("/internal", requireAuth, cacheControl(3600), async (c) => {
     where: { key: { in: ["internal.upsertChunkSize"] } },
   });
 
-  const upsertChunkSize = settings.find(
-    (s) => s.key === "internal.upsertChunkSize"
-  )?.value;
+  const upsertChunkSize = settings.find((s) => s.key === "internal.upsertChunkSize")?.value;
 
   return reply(c, {
     internal: {

@@ -285,7 +285,7 @@ export default function CSVUploadPage() {
         const matchingHeader = headers.find(
           (h) =>
             h.toLowerCase() === field.name.toLowerCase() ||
-            h.toLowerCase().replaceAll("_", "") === field.name.toLowerCase()
+            h.toLowerCase().replaceAll("_", "") === field.name.toLowerCase(),
         );
         if (matchingHeader) {
           autoMapping[field.name] = matchingHeader;
@@ -357,7 +357,9 @@ export default function CSVUploadPage() {
   const isValidMapping = (() => {
     if (!currentTable) return false;
     const requiredFields = currentTable.fields.filter((f) => f.required);
-    return requiredFields.every((field) => columnMapping[field.name] && columnMapping[field.name] !== "");
+    return requiredFields.every(
+      (field) => columnMapping[field.name] && columnMapping[field.name] !== "",
+    );
   })();
 
   const columns: ColumnDef<FieldDefinition>[] = [
@@ -377,7 +379,9 @@ export default function CSVUploadPage() {
     },
     {
       accessorKey: "type",
-      cell: ({ row }) => <span className="badge badge-xs badge-ghost font-mono">{row.original.type}</span>,
+      cell: ({ row }) => (
+        <span className="badge badge-xs badge-ghost font-mono">{row.original.type}</span>
+      ),
       header: "Tipo",
     },
     {
@@ -388,7 +392,7 @@ export default function CSVUploadPage() {
             "w-full max-w-xs transition-colors",
             row.original.required && !columnMapping[row.original.name]
               ? "border-error focus:border-error text-error"
-              : ""
+              : "",
           )}
           onChange={(e) => {
             handleColumnMapChange(row.original.name, e.target.value);
@@ -446,7 +450,12 @@ export default function CSVUploadPage() {
             <CardContent>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                 <div className="w-full sm:w-1/3">
-                  <Input as="select" className="w-full" onChange={handleTableChange} value={selectedTable}>
+                  <Input
+                    as="select"
+                    className="w-full"
+                    onChange={handleTableChange}
+                    value={selectedTable}
+                  >
                     <option value="">-- Seleccionar tabla --</option>
                     {allowedTableOptions.map((table) => (
                       <option key={table.value} value={table.value}>
@@ -458,11 +467,16 @@ export default function CSVUploadPage() {
 
                 {currentTable && (
                   <div className="bg-base-200/50 flex-1 rounded-lg p-4">
-                    <h3 className="mb-2 text-xs font-bold tracking-wide uppercase opacity-70">Campos requeridos</h3>
+                    <h3 className="mb-2 text-xs font-bold tracking-wide uppercase opacity-70">
+                      Campos requeridos
+                    </h3>
                     <div className="flex flex-wrap gap-2">
                       {currentTable.fields.map((field) => (
                         <span
-                          className={cn("badge badge-sm", field.required ? "badge-primary" : "badge-ghost opacity-60")}
+                          className={cn(
+                            "badge badge-sm",
+                            field.required ? "badge-primary" : "badge-ghost opacity-60",
+                          )}
                           key={field.name}
                         >
                           {field.name}
@@ -518,8 +532,8 @@ export default function CSVUploadPage() {
                       <span className="font-medium">Importación completada</span>
                       {previewData && (
                         <span className="text-xs opacity-90">
-                          {previewData.inserted ?? 0} insertados · {previewData.updated ?? 0} actualizados ·{" "}
-                          {previewData.skipped ?? 0} omitidos
+                          {previewData.inserted ?? 0} insertados · {previewData.updated ?? 0}{" "}
+                          actualizados · {previewData.skipped ?? 0} omitidos
                         </span>
                       )}
                     </div>
@@ -554,10 +568,14 @@ export default function CSVUploadPage() {
                 <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
                   <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
                     <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Insertar</div>
-                    <div className="text-success text-2xl font-bold">{previewData.toInsert ?? 0}</div>
+                    <div className="text-success text-2xl font-bold">
+                      {previewData.toInsert ?? 0}
+                    </div>
                   </div>
                   <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
-                    <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Actualizar</div>
+                    <div className="mb-1 text-xs tracking-wider uppercase opacity-70">
+                      Actualizar
+                    </div>
                     <div className="text-info text-2xl font-bold">{previewData.toUpdate ?? 0}</div>
                   </div>
                   <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">

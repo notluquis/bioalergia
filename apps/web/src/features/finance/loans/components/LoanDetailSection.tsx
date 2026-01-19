@@ -1,9 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-
-import type { LoanSchedule, RegenerateSchedulePayload } from "@/features/finance/loans/types";
-
 import LoanDetail from "@/features/finance/loans/components/LoanDetail";
 import { loanKeys } from "@/features/finance/loans/queries";
+import type { LoanSchedule, RegenerateSchedulePayload } from "@/features/finance/loans/types";
 
 interface LoanDetailSectionProps {
   canManage: boolean;

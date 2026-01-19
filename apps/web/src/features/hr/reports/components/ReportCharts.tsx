@@ -64,7 +64,15 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
       <div className="h-80 w-full">
         <ResponsiveContainer height="100%" width="100%">
           <PieChart>
-            <Pie cx="50%" cy="45%" data={pieData} dataKey="value" innerRadius={70} outerRadius={90} paddingAngle={5}>
+            <Pie
+              cx="50%"
+              cy="45%"
+              data={pieData}
+              dataKey="value"
+              innerRadius={70}
+              outerRadius={90}
+              paddingAngle={5}
+            >
               {reportData.map((_, idx) => (
                 <Cell
                   fill={chartColors[idx % chartColors.length]}

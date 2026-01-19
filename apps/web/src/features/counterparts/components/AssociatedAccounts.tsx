@@ -2,9 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
-
-import type { Transaction } from "@/features/finance/types";
-
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -12,23 +9,32 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { fetchTransactions } from "@/features/finance/api";
+import type { Transaction } from "@/features/finance/types";
 import { today } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
-
-import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion, CounterpartSummary } from "../types";
-
-import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions, updateCounterpartAccount } from "../api";
+import {
+  addCounterpartAccount,
+  attachCounterpartRut,
+  fetchAccountSuggestions,
+  updateCounterpartAccount,
+} from "../api";
+import type {
+  Counterpart,
+  CounterpartAccount,
+  CounterpartAccountSuggestion,
+  CounterpartSummary,
+} from "../types";
+import { getAccountGroupColumns, getQuickViewColumns } from "./AssociatedAccountsColumns";
 import {
   ACCOUNT_FORM_DEFAULT,
+  type AccountForm,
+  type AccountGroup,
+  type AccountTransactionFilter,
   accountFilterKey,
-  AccountForm,
-  AccountGroup,
-  AccountTransactionFilter,
   buildAccountTransactionFilter,
-  DateRange,
+  type DateRange,
 } from "./associated-accounts.helpers";
-import { getAccountGroupColumns, getQuickViewColumns } from "./AssociatedAccountsColumns";
 
 interface AssociatedAccountsProps {
   detail: null | { accounts: CounterpartAccount[]; counterpart: Counterpart };
@@ -130,8 +136,13 @@ export default function AssociatedAccounts({
   }
 
   const updateAccountMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof updateCounterpartAccount>[1] }) =>
-      updateCounterpartAccount(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload: Parameters<typeof updateCounterpartAccount>[1];
+    }) => updateCounterpartAccount(id, payload),
     onError: (err: Error) => {
       setError(err.message);
       toastError(err.message);
@@ -162,8 +173,8 @@ export default function AssociatedAccounts({
           updateAccount({
             id: account.id,
             payload: { concept: nextConcept },
-          })
-        )
+          }),
+        ),
       );
     } catch {
       // Error handled by mutation onError
@@ -332,7 +343,9 @@ export default function AssociatedAccounts({
       }
       const uniqueFilters = Object.values(normalized);
 
-      const results = await Promise.all(uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange)));
+      const results = await Promise.all(
+        uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange)),
+      );
       const merged = results.flat();
 
       const dedup = new Map<number, Transaction>();
@@ -343,12 +356,17 @@ export default function AssociatedAccounts({
       }
 
       const sorted = [...dedup.values()].toSorted(
-        (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf()
+        (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf(),
       );
 
       return sorted;
     },
-    queryKey: ["associated-accounts-transactions", quickViewGroup, activeRange.from, activeRange.to],
+    queryKey: [
+      "associated-accounts-transactions",
+      quickViewGroup,
+      activeRange.from,
+      activeRange.to,
+    ],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -362,7 +380,11 @@ export default function AssociatedAccounts({
     total: rows.reduce((sum: number, row: Transaction) => sum + (row.transactionAmount ?? 0), 0),
   };
 
-  const accountGroupColumns = getAccountGroupColumns(summaryByGroup, handleGroupConceptChange, handleQuickView);
+  const accountGroupColumns = getAccountGroupColumns(
+    summaryByGroup,
+    handleGroupConceptChange,
+    handleQuickView,
+  );
 
   const quickViewColumns = getQuickViewColumns();
 
@@ -383,7 +405,11 @@ export default function AssociatedAccounts({
 
   const renderSuggestions = () => {
     if (accountSuggestions.length === 0) {
-      return <span className="text-base-content/60 text-xs">No hay sugerencias para este identificador.</span>;
+      return (
+        <span className="text-base-content/60 text-xs">
+          No hay sugerencias para este identificador.
+        </span>
+      );
     }
     return (
       <div className="border-base-300 bg-base-100 max-h-48 overflow-y-auto rounded-xl border">
@@ -395,9 +421,13 @@ export default function AssociatedAccounts({
             <span className="text-base-content font-semibold">{suggestion.accountIdentifier}</span>
             <span className="text-base-content/90">{suggestion.holder ?? "(sin titular)"}</span>
             {suggestion.bankAccountNumber && (
-              <span className="text-base-content/90 text-xs">Cuenta {suggestion.bankAccountNumber}</span>
+              <span className="text-base-content/90 text-xs">
+                Cuenta {suggestion.bankAccountNumber}
+              </span>
             )}
-            {suggestion.rut && <span className="text-base-content/90 text-xs">RUT {formatRut(suggestion.rut)}</span>}
+            {suggestion.rut && (
+              <span className="text-base-content/90 text-xs">RUT {formatRut(suggestion.rut)}</span>
+            )}
             <span className="text-base-content/90 text-xs">
               {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
             </span>
@@ -478,7 +508,9 @@ export default function AssociatedAccounts({
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-base-content/60 text-xs tracking-[0.3em] uppercase">Resumen mensual</p>
+                <p className="text-base-content/60 text-xs tracking-[0.3em] uppercase">
+                  Resumen mensual
+                </p>
                 <h3 className="text-base-content text-lg font-semibold">Transferencias</h3>
                 <p className="text-base-content/60 text-xs">{quickViewGroup.label}</p>
                 <p className="text-base-content/50 text-xs">
@@ -526,7 +558,9 @@ export default function AssociatedAccounts({
                 Año en curso
               </Button>
             </div>
-            <div className="surface-recessed border-base-300/70 border p-4">{renderQuickViewContent()}</div>
+            <div className="surface-recessed border-base-300/70 border p-4">
+              {renderQuickViewContent()}
+            </div>
           </div>
         ) : (
           <div className="border-base-300/70 bg-base-100/40 text-base-content/60 rounded-[28px] border border-dashed p-8 text-center text-sm">

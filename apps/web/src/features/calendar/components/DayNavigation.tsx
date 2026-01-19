@@ -12,7 +12,12 @@ interface DayNavigationProps {
   selectedDate: string;
 }
 
-export function DayNavigation({ className, onSelect, rightSlot, selectedDate }: Readonly<DayNavigationProps>) {
+export function DayNavigation({
+  className,
+  onSelect,
+  rightSlot,
+  selectedDate,
+}: Readonly<DayNavigationProps>) {
   const current = dayjs(selectedDate);
   const today = dayjs();
 
@@ -80,7 +85,7 @@ export function DayNavigation({ className, onSelect, rightSlot, selectedDate }: 
                   isSelected
                     ? "bg-primary text-primary-content z-10 scale-105 font-semibold shadow-md"
                     : "hover:bg-base-200/50 text-base-content/60",
-                  isToday && !isSelected && "bg-base-200 text-base-content font-medium"
+                  isToday && !isSelected && "bg-base-200 text-base-content font-medium",
                 )}
                 key={date.toString()}
                 onClick={() => {
@@ -93,12 +98,14 @@ export function DayNavigation({ className, onSelect, rightSlot, selectedDate }: 
                 <span
                   className={cn(
                     "text-[10px] tracking-wider uppercase",
-                    isSelected ? "text-primary-content/80" : "text-base-content/50"
+                    isSelected ? "text-primary-content/80" : "text-base-content/50",
                   )}
                 >
                   {date.format("ddd")}
                 </span>
-                <span className={cn("text-lg leading-none tabular-nums", isSelected && "font-bold")}>
+                <span
+                  className={cn("text-lg leading-none tabular-nums", isSelected && "font-bold")}
+                >
                   {date.format("D")}
                 </span>
               </button>

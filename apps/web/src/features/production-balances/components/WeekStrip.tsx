@@ -57,7 +57,9 @@ export function WeekStrip({
           <button className="btn btn-ghost btn-xs btn-square" onClick={onPrevWeek} type="button">
             <ChevronLeft className="size-4" />
           </button>
-          <span className="text-base-content/80 text-sm font-medium">SEM {weekData?.weekLabel ?? "..."}</span>
+          <span className="text-base-content/80 text-sm font-medium">
+            SEM {weekData?.weekLabel ?? "..."}
+          </span>
           <button className="btn btn-ghost btn-xs btn-square" onClick={onNextWeek} type="button">
             <ChevronRight className="size-4" />
           </button>
@@ -116,7 +118,7 @@ function DayCellButton({
         "relative flex flex-col items-center justify-center rounded-xl p-2 transition-all",
         "hover:bg-base-content/5 focus:ring-primary/20 focus:ring-2 focus:outline-none",
         isSelected && "bg-base-content/10 ring-primary ring-2",
-        isToday && !isSelected && "ring-primary/30 ring-1"
+        isToday && !isSelected && "ring-primary/30 ring-1",
       )}
       onClick={onClick}
       type="button"
@@ -131,7 +133,7 @@ function DayCellButton({
       <span
         className={cn(
           "mt-1 text-sm font-semibold tabular-nums",
-          day.total === 0 ? "text-base-content/40" : "text-base-content"
+          day.total === 0 ? "text-base-content/40" : "text-base-content",
         )}
       >
         {day.total === 0 ? "$0" : fmtCLP(day.total)}

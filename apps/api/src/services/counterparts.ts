@@ -108,7 +108,7 @@ export async function upsertCounterpartAccount(
     accountNumber: string;
     bankName?: string | null;
     accountType?: string | null;
-  }
+  },
 ) {
   const existing = await db.counterpartAccount.findFirst({
     where: {
@@ -137,10 +137,7 @@ export async function upsertCounterpartAccount(
   }
 }
 
-export async function updateCounterpartAccount(
-  accountId: number,
-  payload: any
-) {
+export async function updateCounterpartAccount(accountId: number, payload: any) {
   return await db.counterpartAccount.update({
     where: { id: accountId },
     data: payload,

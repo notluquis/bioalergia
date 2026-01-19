@@ -21,7 +21,9 @@ export default function MonthlyExpenseList({
     <div className="muted-scrollbar h-full overflow-y-auto pr-2">
       <div className="flex items-center justify-between pb-3">
         <div>
-          <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">Gastos</h2>
+          <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
+            Gastos
+          </h2>
           <p className="text-base-content/50 text-xs">Registros de gastos mensuales y puntuales.</p>
         </div>
         {onCreateRequest && (
@@ -50,7 +52,9 @@ export default function MonthlyExpenseList({
                 <div>
                   <p className="text-base-content text-sm font-semibold">{expense.name}</p>
                   {expense.category && (
-                    <p className="text-base-content/50 text-xs tracking-wide uppercase">{expense.category}</p>
+                    <p className="text-base-content/50 text-xs tracking-wide uppercase">
+                      {expense.category}
+                    </p>
                   )}
                 </div>
                 <span className="text-base-content text-sm font-semibold">

@@ -2,16 +2,18 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-
-import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
-
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
-import { fetchServiceDetail, regenerateServiceSchedules, updateService } from "@/features/services/api";
+import {
+  fetchServiceDetail,
+  regenerateServiceSchedules,
+  updateService,
+} from "@/features/services/api";
 import ServiceForm from "@/features/services/components/ServiceForm";
 import ServiceScheduleAccordion from "@/features/services/components/ServiceScheduleAccordion";
 import ServiceScheduleTable from "@/features/services/components/ServiceScheduleTable";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
 import { fmtCLP } from "@/lib/format";
 
 export default function ServiceEditPage() {
@@ -38,7 +40,10 @@ export default function ServiceEditPage() {
     },
   });
 
-  const handleRegenerate = async (serviceId: string, payload?: { months?: number; startDate?: string }) => {
+  const handleRegenerate = async (
+    serviceId: string,
+    payload?: { months?: number; startDate?: string },
+  ) => {
     try {
       const updated = await regenerateServiceSchedules(serviceId, payload ?? {});
       queryClient.setQueryData(["service-detail", id], updated);
@@ -137,7 +142,9 @@ export default function ServiceEditPage() {
           </Button>
         }
         breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Editar" }]}
-        description={service ? service.name : "Ajusta los datos y cronogramas del servicio seleccionado."}
+        description={
+          service ? service.name : "Ajusta los datos y cronogramas del servicio seleccionado."
+        }
         title="Editar servicio"
       />
 
@@ -147,24 +154,40 @@ export default function ServiceEditPage() {
       <ServicesSurface className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)] lg:items-start">
           <aside className="border-base-300/60 bg-base-100/80 text-base-content space-y-4 rounded-2xl border p-4 text-sm shadow-inner">
-            <h2 className="text-base-content/80 text-sm font-semibold tracking-wide uppercase">Resumen</h2>
+            <h2 className="text-base-content/80 text-sm font-semibold tracking-wide uppercase">
+              Resumen
+            </h2>
             <div className="space-y-3">
               {summaryCards.map((card) => (
-                <div className="border-base-300 bg-base-200 rounded-2xl border p-3" key={card.label}>
-                  <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">{card.label}</p>
+                <div
+                  className="border-base-300 bg-base-200 rounded-2xl border p-3"
+                  key={card.label}
+                >
+                  <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
+                    {card.label}
+                  </p>
                   <p className="text-base-content mt-1 text-lg font-semibold">{card.value}</p>
                   {card.helper && <p className="text-base-content/50 text-xs">{card.helper}</p>}
                 </div>
               ))}
             </div>
             <div className="space-y-2">
-              <h3 className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">Historial</h3>
+              <h3 className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
+                Historial
+              </h3>
               <ol className="text-base-content/60 space-y-2 text-xs">
                 {historyItems.map((item) => (
-                  <li className="border-base-300 bg-base-200 rounded-xl border p-3" key={item.title}>
+                  <li
+                    className="border-base-300 bg-base-200 rounded-xl border p-3"
+                    key={item.title}
+                  >
                     <p className="text-base-content font-semibold">{item.title}</p>
-                    {item.description && <p className="text-base-content/50 text-xs">{item.description}</p>}
-                    <p className="text-base-content/40 text-xs tracking-wide uppercase">{item.date}</p>
+                    {item.description && (
+                      <p className="text-base-content/50 text-xs">{item.description}</p>
+                    )}
+                    <p className="text-base-content/40 text-xs tracking-wide uppercase">
+                      {item.date}
+                    </p>
                   </li>
                 ))}
               </ol>
@@ -173,7 +196,9 @@ export default function ServiceEditPage() {
 
           <div className="space-y-6">
             <section className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
-              <h2 className="text-base-content/80 text-sm font-semibold tracking-wide uppercase">Datos generales</h2>
+              <h2 className="text-base-content/80 text-sm font-semibold tracking-wide uppercase">
+                Datos generales
+              </h2>
               {initialValues && (
                 <ServiceForm
                   initialValues={initialValues}
@@ -217,7 +242,9 @@ export default function ServiceEditPage() {
   );
 }
 
-function mapServiceToForm(service: ServiceDetailResponse["service"]): Partial<CreateServicePayload> {
+function mapServiceToForm(
+  service: ServiceDetailResponse["service"],
+): Partial<CreateServicePayload> {
   return {
     accountReference: service.account_reference ?? undefined,
     amountIndexation: service.amount_indexation,

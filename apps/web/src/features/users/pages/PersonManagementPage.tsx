@@ -16,7 +16,9 @@ export default function PersonManagementPage() {
   const { data: people } = useSuspenseQuery(peopleQueries.list());
 
   const filteredPeople = people.filter(
-    (p) => (p.names?.toLowerCase() ?? "").includes(search.toLowerCase()) || (p.rut ?? "").includes(search)
+    (p) =>
+      (p.names?.toLowerCase() ?? "").includes(search.toLowerCase()) ||
+      (p.rut ?? "").includes(search),
   );
 
   return (
@@ -44,7 +46,9 @@ export default function PersonManagementPage() {
       {/* People List */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredPeople.length === 0 ? (
-          <p className="text-base-content/40 col-span-full text-center">No se encontraron personas</p>
+          <p className="text-base-content/40 col-span-full text-center">
+            No se encontraron personas
+          </p>
         ) : (
           filteredPeople.map((person) => (
             <div
@@ -88,7 +92,11 @@ export default function PersonManagementPage() {
                 </div>
 
                 <div className="border-base-200 mt-4 flex justify-end border-t pt-4">
-                  <Button onClick={() => navigate({ to: `/settings/people/${person.id}` })} size="xs" variant="ghost">
+                  <Button
+                    onClick={() => navigate({ to: `/settings/people/${person.id}` })}
+                    size="xs"
+                    variant="ghost"
+                  >
                     Ver Detalles
                   </Button>
                 </div>

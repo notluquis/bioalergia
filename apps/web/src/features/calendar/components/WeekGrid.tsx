@@ -77,7 +77,9 @@ function groupEventsByDay(events: CalendarEventDetail[], weekStart: dayjs.Dayjs)
   }
 
   for (const event of events) {
-    const eventDate = event.startDateTime ? dayjs(event.startDateTime).format("YYYY-MM-DD") : event.startDate;
+    const eventDate = event.startDateTime
+      ? dayjs(event.startDateTime).format("YYYY-MM-DD")
+      : event.startDate;
 
     // eslint-disable-next-line security/detect-object-injection -- eventDate is YYYY-MM-DD format, safe access
     if (eventDate && days[eventDate]) {
@@ -197,7 +199,11 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
   });
 
   return (
-    <div aria-label="Calendario semanal" className={cn("week-grid", loading && "week-grid--loading")} role="grid">
+    <div
+      aria-label="Calendario semanal"
+      className={cn("week-grid", loading && "week-grid--loading")}
+      role="grid"
+    >
       {/* Header row */}
       <div className="week-grid__header" role="row">
         <div aria-label="Hora" className="week-grid__time-header" role="columnheader" />
@@ -231,7 +237,10 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
 
         {/* Day columns */}
         {days.map((day) => (
-          <div className={cn("week-grid__day-column", day.isToday && "week-grid__day-column--today")} key={day.key}>
+          <div
+            className={cn("week-grid__day-column", day.isToday && "week-grid__day-column--today")}
+            key={day.key}
+          >
             {/* Hour grid lines */}
             {hours.map((hour) => (
               <div className="week-grid__hour-cell" key={hour} />
@@ -269,10 +278,15 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                 // Build tooltip text (always complete info)
                 const timeStr = start ? start.format("HH:mm") : "";
                 const endTimeStr = end ? end.format("HH:mm") : "";
-                const amountStr = event.amountExpected == null ? "" : currencyFormatter.format(event.amountExpected);
-                const tooltipLines = [event.summary ?? "(Sin título)", `${timeStr} - ${endTimeStr}`, amountStr].filter(
-                  Boolean
-                );
+                const amountStr =
+                  event.amountExpected == null
+                    ? ""
+                    : currencyFormatter.format(event.amountExpected);
+                const tooltipLines = [
+                  event.summary ?? "(Sin título)",
+                  `${timeStr} - ${endTimeStr}`,
+                  amountStr,
+                ].filter(Boolean);
 
                 // Title - prioritize this over time for readability
                 const title = event.summary?.trim() ?? "(Sin título)";
@@ -450,7 +464,8 @@ function getCategoryClass(category: null | string | undefined): string {
   if (!category) return "event--default";
   const cat = category.toLowerCase();
   if (cat.includes("subcutáneo") || cat.includes("subcutaneo")) return "event--subcutaneous";
-  if (cat.includes("test") || cat.includes("examen") || cat.includes("exámenes")) return "event--test";
+  if (cat.includes("test") || cat.includes("examen") || cat.includes("exámenes"))
+    return "event--test";
   if (cat.includes("inyección") || cat.includes("inyeccion")) return "event--injection";
   if (cat.includes("mantención") || cat.includes("mantencion")) return "event--subcutaneous";
   return "event--default";

@@ -1,16 +1,8 @@
-import { createHash } from "crypto";
-import {
-  createReadStream,
-  createWriteStream,
-  readFileSync,
-  statSync,
-  unlinkSync,
-  writeFileSync,
-} from "fs";
-import { pipeline } from "stream/promises";
-import { createGunzip, createGzip } from "zlib";
-
-import { db, schema } from "@finanzas/db";
+import { createHash } from "node:crypto";
+import { createReadStream, createWriteStream, statSync, unlinkSync } from "node:fs";
+import { pipeline } from "node:stream/promises";
+import { createGzip } from "node:zlib";
+import { db } from "@finanzas/db";
 
 import { uploadToDrive } from "./drive";
 
@@ -25,14 +17,7 @@ export interface BackupResult {
 }
 
 export interface BackupProgress {
-  step:
-    | "init"
-    | "exporting"
-    | "compressing"
-    | "uploading"
-    | "cleanup"
-    | "done"
-    | "error";
+  step: "init" | "exporting" | "compressing" | "uploading" | "cleanup" | "done" | "error";
   progress: number; // 0-100
   message: string;
 }
@@ -89,9 +74,7 @@ function getAllModelNames(): string[] {
 /**
  * Creates a database backup.
  */
-export async function createBackup(
-  onProgress?: ProgressCallback,
-): Promise<BackupResult> {
+export async function createBackup(onProgress?: ProgressCallback): Promise<BackupResult> {
   const startTime = Date.now();
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const filename = `backup_${timestamp}.json.gz`;
@@ -108,7 +91,7 @@ export async function createBackup(
   const tableStats: Record<string, { count: number; hash: string }> = {};
 
   // Scope variables for cleanup in catch block
-  let success = false;
+  let _success = false;
   let writeStream: ReturnType<typeof createWriteStream> | undefined;
 
   try {
@@ -129,12 +112,11 @@ export async function createBackup(
     // We manually slice the JSON to insert "data" key
     // Header: {"version":"1.0",...,"tables":[...]}
     // Target: {"version":"1.0",...,"tables":[...], "data": { ... }}
-    writeStream.write(header.slice(0, -1) + ',"data":{');
+    writeStream.write(`${header.slice(0, -1)},"data":{`);
 
     for (let i = 0; i < totalModels; i++) {
       const modelName = allModels[i];
-      const camelModelName =
-        modelName.charAt(0).toLowerCase() + modelName.slice(1);
+      const camelModelName = modelName.charAt(0).toLowerCase() + modelName.slice(1);
       const progress = Math.round(10 + (i / totalModels) * 50);
 
       onProgress?.({
@@ -205,9 +187,7 @@ export async function createBackup(
           }
         } else {
           writeStream.write("[]"); // Empty array for missing delegate
-          console.warn(
-            `⚠️ Model delegate not found for ${modelName} (tried ${camelModelName})`,
-          );
+          console.warn(`⚠️ Model delegate not found for ${modelName} (tried ${camelModelName})`);
         }
       } catch (error) {
         writeStream.write("[]"); // Fail safe
@@ -227,9 +207,7 @@ export async function createBackup(
     });
 
     const jsonStats = statSync(jsonPath);
-    console.log(
-      `[Backup] JSON file generated at ${jsonPath}, size: ${jsonStats.size} bytes`,
-    );
+    console.log(`[Backup] JSON file generated at ${jsonPath}, size: ${jsonStats.size} bytes`);
 
     onProgress?.({
       step: "compressing",
@@ -293,7 +271,7 @@ export async function createBackup(
     const sizeBytes = stats.size;
 
     onProgress?.({ step: "done", progress: 100, message: "Backup completed" });
-    success = true;
+    _success = true;
 
     return {
       filename,
@@ -363,9 +341,7 @@ export function startBackup() {
         const lastBackup = existingBackups[0];
 
         if (lastBackup && lastBackup.customChecksum === res.checksum) {
-          console.log(
-            `[Backup] Duplicate checksum detected (${res.checksum}). Skipping upload.`,
-          );
+          console.log(`[Backup] Duplicate checksum detected (${res.checksum}). Skipping upload.`);
 
           jobs[jobId].status = "completed";
           jobs[jobId].progress = 100;
@@ -391,10 +367,7 @@ export function startBackup() {
           return; // EXIT EARLY
         }
       } catch (dedupeError) {
-        console.warn(
-          "[Backup] Deduplication check failed, proceeding with upload:",
-          dedupeError,
-        );
+        console.warn("[Backup] Deduplication check failed, proceeding with upload:", dedupeError);
       }
 
       // Upload to Drive
@@ -469,12 +442,7 @@ export async function getBackupDiff(fileId: string) {
   const allModels = getAllModelNames();
   const diffs: Array<{
     table: string;
-    status:
-      | "match"
-      | "count_mismatch"
-      | "content_mismatch"
-      | "missing_local"
-      | "missing_remote";
+    status: "match" | "count_mismatch" | "content_mismatch" | "missing_local" | "missing_remote";
     localCount: number;
     remoteCount: number;
   }> = [];

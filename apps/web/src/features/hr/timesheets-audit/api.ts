@@ -13,7 +13,7 @@ import type { TimesheetEntryWithEmployee } from "./types";
 export async function fetchMultiEmployeeTimesheets(
   employeeIds: number[],
   from: string,
-  to: string
+  to: string,
 ): Promise<TimesheetEntryWithEmployee[]> {
   if (employeeIds.length === 0) {
     return [];
@@ -26,7 +26,7 @@ export async function fetchMultiEmployeeTimesheets(
   });
 
   const response = await apiClient.get<{ entries: TimesheetEntryWithEmployee[] }>(
-    `/api/timesheets/multi-detail?${params.toString()}`
+    `/api/timesheets/multi-detail?${params.toString()}`,
   );
 
   return response.entries || [];

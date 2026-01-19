@@ -18,7 +18,9 @@ export function DashboardPersonalLiabilities() {
 
   const upcomingPayments = [...activeCredits]
     .filter((c) => c.nextPaymentDate && new Date(c.nextPaymentDate) >= new Date())
-    .toSorted((a, b) => new Date(a.nextPaymentDate!).getTime() - new Date(b.nextPaymentDate!).getTime());
+    .toSorted(
+      (a, b) => new Date(a.nextPaymentDate!).getTime() - new Date(b.nextPaymentDate!).getTime(),
+    );
 
   const nextPayment = upcomingPayments[0];
 
@@ -55,8 +57,12 @@ export function DashboardPersonalLiabilities() {
                 <span className="text-base-content/70 text-xs font-medium">Próximo Pago</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-semibold">{formatCurrency(nextPayment.nextPaymentAmount ?? 0)}</span>
-                <span className="text-base-content/60 truncate text-xs">{nextPayment.institution}</span>
+                <span className="text-sm font-semibold">
+                  {formatCurrency(nextPayment.nextPaymentAmount ?? 0)}
+                </span>
+                <span className="text-base-content/60 truncate text-xs">
+                  {nextPayment.institution}
+                </span>
               </div>
             </div>
           ) : (

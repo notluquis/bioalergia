@@ -1,6 +1,6 @@
-import { OTP } from "otplib";
-import { NodeCryptoPlugin } from "@otplib/plugin-crypto-node";
 import { ScureBase32Plugin } from "@otplib/plugin-base32-scure";
+import { NodeCryptoPlugin } from "@otplib/plugin-crypto-node";
+import { OTP } from "otplib";
 import qrcode from "qrcode";
 
 // Instantiate OTP with plugins (defaults to 'totp' strategy)
@@ -40,10 +40,7 @@ export async function generateMfaSecret(email: string) {
  * @param token The 6-digit code provided by the user.
  * @param secret The user's stored MFA secret.
  */
-export async function verifyMfaToken(
-  token: string,
-  secret: string
-): Promise<boolean> {
+export async function verifyMfaToken(token: string, secret: string): Promise<boolean> {
   try {
     // Verify using instance with plugins
     // verify() returns Promise<VerifyResult> { valid: boolean, ... }

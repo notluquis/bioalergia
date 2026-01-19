@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
-import { MpReportType, MPService } from "@/services/mercadopago";
+import { MPService, type MpReportType } from "@/services/mercadopago";
 
 const schema = z
   .object({
@@ -44,7 +44,9 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
     },
     onSuccess: (reports) => {
       const count = reports.length;
-      showSuccess(count === 1 ? "Solicitud de reporte enviada" : `${count} reportes solicitados exitosamente`);
+      showSuccess(
+        count === 1 ? "Solicitud de reporte enviada" : `${count} reportes solicitados exitosamente`,
+      );
       void queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
       form.reset();
       setProgress(null);
@@ -80,8 +82,8 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
       >
         <p className="text-base-content/70 text-sm">
           Selecciona el rango de fechas para generar el reporte de{" "}
-          {reportType === "release" ? "liberación de fondos" : "conciliación"}. Si el rango es mayor a 60 días, se
-          crearán múltiples reportes automáticamente.
+          {reportType === "release" ? "liberación de fondos" : "conciliación"}. Si el rango es mayor
+          a 60 días, se crearán múltiples reportes automáticamente.
         </p>
 
         <form.Field name="begin_date">

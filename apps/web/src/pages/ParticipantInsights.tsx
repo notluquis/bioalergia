@@ -47,7 +47,10 @@ export default function ParticipantInsightsPage() {
     <section className={PAGE_CONTAINER}>
       <Card>
         <CardContent className="p-6">
-          <form className="grid items-end gap-6 sm:grid-cols-2 lg:grid-cols-4" onSubmit={handleSubmit}>
+          <form
+            className="grid items-end gap-6 sm:grid-cols-2 lg:grid-cols-4"
+            onSubmit={handleSubmit}
+          >
             <Input
               enterKeyHint="search"
               inputMode="numeric"
@@ -104,7 +107,9 @@ export default function ParticipantInsightsPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Ranking de retiros</h2>
-            <p className="text-base-content/70 text-sm">Contrapartes con mayores egresos en el rango seleccionado.</p>
+            <p className="text-base-content/70 text-sm">
+              Contrapartes con mayores egresos en el rango seleccionado.
+            </p>
           </div>
           <div className="flex flex-wrap gap-4">
             <div className="w-32">
@@ -157,7 +162,11 @@ export default function ParticipantInsightsPage() {
                   participantId,
                 } as LeaderboardMeta
               }
-              noDataMessage={leaderboardLoading ? "Cargando ranking..." : "Sin participantes en el rango seleccionado."}
+              noDataMessage={
+                leaderboardLoading
+                  ? "Cargando ranking..."
+                  : "Sin participantes en el rango seleccionado."
+              }
             />
           </CardContent>
         </Card>

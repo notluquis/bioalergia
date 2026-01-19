@@ -1,16 +1,12 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
-
-import type { Transaction } from "@/features/finance/types";
-
 import { fetchTransactions } from "@/features/finance/api";
-
-import type { ServicePaymentPayload } from "../types";
-
+import type { Transaction } from "@/features/finance/types";
 import { extractErrorMessage, registerServicePayment } from "../api";
 import { serviceKeys } from "../queries";
 import { servicesActions, servicesStore } from "../store";
+import type { ServicePaymentPayload } from "../types";
 
 export function useServicePayment() {
   const queryClient = useQueryClient();
@@ -55,7 +51,8 @@ export function useServicePayment() {
       return payload.data
         .filter(
           (tx) =>
-            typeof tx.transactionAmount === "number" && Math.abs(tx.transactionAmount - expectedAmount) <= tolerance
+            typeof tx.transactionAmount === "number" &&
+            Math.abs(tx.transactionAmount - expectedAmount) <= tolerance,
         )
         .slice(0, 8);
     },
@@ -96,7 +93,9 @@ export function useServicePayment() {
     if (!tx.transactionAmount) return;
     servicesActions.updatePaymentForm({
       paidAmount: String(tx.transactionAmount),
-      paidDate: tx.transactionDate ? dayjs(tx.transactionDate).format("YYYY-MM-DD") : paymentForm.paidDate,
+      paidDate: tx.transactionDate
+        ? dayjs(tx.transactionDate).format("YYYY-MM-DD")
+        : paymentForm.paidDate,
       transactionId: String(tx.id),
     });
   };

@@ -13,7 +13,13 @@ interface BasicInfoSectionProps {
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
 }
 
-export function BasicInfoSection({ category, detail, name, notes, onChange }: BasicInfoSectionProps) {
+export function BasicInfoSection({
+  category,
+  detail,
+  name,
+  notes,
+  onChange,
+}: BasicInfoSectionProps) {
   return (
     <section className={GRID_2_COL_MD}>
       <Input

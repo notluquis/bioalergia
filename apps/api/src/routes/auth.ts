@@ -4,11 +4,11 @@
  * Handles login, logout, session, MFA, and passkey authentication
  */
 
-import { Hono } from "hono";
-import type { AuthenticatorTransportFuture } from "@simplewebauthn/server";
-import { setCookie, getCookie, deleteCookie } from "hono/cookie";
-import { signToken, verifyToken } from "../lib/paseto";
 import { db } from "@finanzas/db";
+import type { AuthenticatorTransportFuture } from "@simplewebauthn/server";
+import { Hono } from "hono";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
+import { signToken, verifyToken } from "../lib/paseto";
 
 const COOKIE_NAME = "finanzas_session";
 const COOKIE_OPTIONS = {
@@ -35,7 +35,7 @@ async function issueToken(session: AuthSession): Promise<string> {
       email: session.email,
       roles: session.roles,
     },
-    "2d"
+    "2d",
   );
 }
 
@@ -48,10 +48,7 @@ authRoutes.post("/login", async (c) => {
   const { email, password } = body;
 
   if (!email || !password) {
-    return c.json(
-      { status: "error", message: "Email y contrase?a requeridos" },
-      400
-    );
+    return c.json({ status: "error", message: "Email y contrase?a requeridos" }, 400);
   }
 
   // Find user with ZenStack
@@ -74,24 +71,15 @@ authRoutes.post("/login", async (c) => {
   });
 
   if (!user || !user.passwordHash) {
-    return c.json(
-      { status: "error", message: "Credenciales incorrectas" },
-      401
-    );
+    return c.json({ status: "error", message: "Credenciales incorrectas" }, 401);
   }
 
   // Import crypto verification (Argon2)
   const { verifyPassword, hashPassword } = await import("../lib/crypto.js");
-  const { valid, needsRehash } = await verifyPassword(
-    password,
-    user.passwordHash
-  );
+  const { valid, needsRehash } = await verifyPassword(password, user.passwordHash);
 
   if (!valid) {
-    return c.json(
-      { status: "error", message: "Credenciales incorrectas" },
-      401
-    );
+    return c.json({ status: "error", message: "Credenciales incorrectas" }, 401);
   }
 
   // Auto-upgrade legacy bcrypt hashes to Argon2
@@ -141,10 +129,7 @@ authRoutes.post("/login/mfa", async (c) => {
   const { userId, token: mfaToken } = body;
 
   if (!userId || !mfaToken) {
-    return c.json(
-      { status: "error", message: "userId y token requeridos" },
-      400
-    );
+    return c.json({ status: "error", message: "userId y token requeridos" }, 400);
   }
 
   const user = await db.user.findUnique({
@@ -343,10 +328,7 @@ const RP_ID = process.env.RP_ID || "intranet.bioalergia.cl";
 const ORIGIN = process.env.ORIGIN || "https://intranet.bioalergia.cl";
 
 // In-memory challenge store (for simplicity - should use Redis in production)
-const challengeStore = new Map<
-  string,
-  { challenge: string; userId?: number; expires: number }
->();
+const challengeStore = new Map<string, { challenge: string; userId?: number; expires: number }>();
 
 function storeChallenge(key: string, challenge: string, userId?: number): void {
   challengeStore.set(key, {
@@ -356,9 +338,7 @@ function storeChallenge(key: string, challenge: string, userId?: number): void {
   });
 }
 
-function getChallenge(
-  key: string
-): { challenge: string; userId?: number } | null {
+function getChallenge(key: string): { challenge: string; userId?: number } | null {
   const entry = challengeStore.get(key);
   if (!entry) return null;
   if (Date.now() > entry.expires) {
@@ -372,8 +352,7 @@ function getChallenge(
 // PASSKEY LOGIN OPTIONS
 authRoutes.get("/passkey/login/options", async (c) => {
   try {
-    const { generateAuthenticationOptions } =
-      await import("@simplewebauthn/server");
+    const { generateAuthenticationOptions } = await import("@simplewebauthn/server");
 
     // Use empty allowCredentials for discoverable (usernameless) login
     const options = await generateAuthenticationOptions({
@@ -388,18 +367,14 @@ authRoutes.get("/passkey/login/options", async (c) => {
     return c.json(options);
   } catch (error) {
     console.error("[passkey] login options error:", error);
-    return c.json(
-      { status: "error", message: "Error generando opciones" },
-      500
-    );
+    return c.json({ status: "error", message: "Error generando opciones" }, 500);
   }
 });
 
 // PASSKEY LOGIN VERIFY
 authRoutes.post("/passkey/login/verify", async (c) => {
   try {
-    const { verifyAuthenticationResponse } =
-      await import("@simplewebauthn/server");
+    const { verifyAuthenticationResponse } = await import("@simplewebauthn/server");
     const body = await c.req.json();
     const { body: authResponse, challenge } = body;
 
@@ -410,10 +385,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     // Verify challenge exists
     const storedChallenge = getChallenge(`login:${challenge}`);
     if (!storedChallenge) {
-      return c.json(
-        { status: "error", message: "Challenge inv?lido o expirado" },
-        400
-      );
+      return c.json({ status: "error", message: "Challenge inv?lido o expirado" }, 400);
     }
 
     // Find passkey by credential ID
@@ -431,10 +403,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     });
 
     if (!passkey || !passkey.user) {
-      return c.json(
-        { status: "error", message: "Credencial no encontrada" },
-        401
-      );
+      return c.json({ status: "error", message: "Credencial no encontrada" }, 401);
     }
     const user = passkey.user;
 
@@ -448,9 +417,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
         id: passkey.credentialId,
         publicKey: new Uint8Array(passkey.publicKey),
         counter: Number(passkey.counter),
-        transports:
-          (passkey.transports as AuthenticatorTransportFuture[] | null) ||
-          undefined,
+        transports: (passkey.transports as AuthenticatorTransportFuture[] | null) || undefined,
       },
     });
 
@@ -501,8 +468,7 @@ authRoutes.get("/passkey/register/options", async (c) => {
   }
 
   try {
-    const { generateRegistrationOptions } =
-      await import("@simplewebauthn/server");
+    const { generateRegistrationOptions } = await import("@simplewebauthn/server");
     const decoded = await verifyToken(token);
     const userId = Number(decoded.sub);
     const email = String(decoded.email);
@@ -537,10 +503,7 @@ authRoutes.get("/passkey/register/options", async (c) => {
     return c.json(options);
   } catch (error) {
     console.error("[passkey] register options error:", error);
-    return c.json(
-      { status: "error", message: "Error generando opciones" },
-      500
-    );
+    return c.json({ status: "error", message: "Error generando opciones" }, 500);
   }
 });
 
@@ -552,8 +515,7 @@ authRoutes.post("/passkey/register/verify", async (c) => {
   }
 
   try {
-    const { verifyRegistrationResponse } =
-      await import("@simplewebauthn/server");
+    const { verifyRegistrationResponse } = await import("@simplewebauthn/server");
     const decoded = await verifyToken(sessionToken);
     const userId = Number(decoded.sub);
 
@@ -581,8 +543,7 @@ authRoutes.post("/passkey/register/verify", async (c) => {
       return c.json({ status: "error", message: "Verificaci?n fallida" }, 400);
     }
 
-    const { credential, credentialDeviceType, credentialBackedUp } =
-      verification.registrationInfo;
+    const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
 
     // Save credential to Passkey table
     await db.passkey.create({
@@ -595,7 +556,7 @@ authRoutes.post("/passkey/register/verify", async (c) => {
         webAuthnUserID: String(userId),
         deviceType: credentialDeviceType,
         backedUp: credentialBackedUp,
-        friendlyName: "Passkey (" + new Date().toLocaleDateString() + ")",
+        friendlyName: `Passkey (${new Date().toLocaleDateString()})`,
       },
     });
 
@@ -628,9 +589,6 @@ authRoutes.delete("/passkey/remove", async (c) => {
     return c.json({ status: "ok", message: "Passkey eliminado" });
   } catch (error) {
     console.error("[passkey] remove error:", error);
-    return c.json(
-      { status: "error", message: "Error eliminando passkey" },
-      500
-    );
+    return c.json({ status: "error", message: "Error eliminando passkey" }, 500);
   }
 });

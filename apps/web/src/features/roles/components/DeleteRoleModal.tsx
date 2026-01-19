@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 
 import { useToast } from "@/context/ToastContext";
 import { deleteRole, reassignRoleUsers, roleKeys, roleQueries } from "@/features/roles/api";
-import { Role } from "@/types/roles";
+import type { Role } from "@/types/roles";
 
 interface DeleteRoleModalProps {
   readonly allRoles: Role[];
@@ -58,7 +58,11 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
   );
 }
 
-function DeleteRoleForm({ allRoles, onClose, role }: Readonly<Omit<DeleteRoleModalProps, "isOpen">>) {
+function DeleteRoleForm({
+  allRoles,
+  onClose,
+  role,
+}: Readonly<Omit<DeleteRoleModalProps, "isOpen">>) {
   const [targetRoleId, setTargetRoleId] = useState<string>("");
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -82,7 +86,10 @@ function DeleteRoleForm({ allRoles, onClose, role }: Readonly<Omit<DeleteRoleMod
       const errorWithDetails = err as Error & { details?: unknown };
       if ("details" in errorWithDetails && Array.isArray(errorWithDetails.details)) {
         const issues = errorWithDetails.details
-          .map((i: { message: string; path: (number | string)[] }) => `${i.path.join(".")}: ${i.message}`)
+          .map(
+            (i: { message: string; path: (number | string)[] }) =>
+              `${i.path.join(".")}: ${i.message}`,
+          )
           .join("\n");
         message = `Error:\n${issues}`;
       }
@@ -107,8 +114,8 @@ function DeleteRoleForm({ allRoles, onClose, role }: Readonly<Omit<DeleteRoleMod
               <div className="font-medium">Usuarios afectados</div>
             </div>
             <p className="text-sm">
-              Hay <strong>{users.length} usuarios</strong> asignados a este rol. Debes moverlos a otro rol antes de
-              eliminarlo.
+              Hay <strong>{users.length} usuarios</strong> asignados a este rol. Debes moverlos a
+              otro rol antes de eliminarlo.
             </p>
 
             <ul className="bg-base-100 max-h-32 space-y-1 overflow-y-auto rounded p-2 text-xs">
@@ -145,7 +152,9 @@ function DeleteRoleForm({ allRoles, onClose, role }: Readonly<Omit<DeleteRoleMod
             </div>
           </div>
         ) : (
-          <p className="text-sm opacity-70">No hay usuarios asignados a este rol. Es seguro eliminarlo.</p>
+          <p className="text-sm opacity-70">
+            No hay usuarios asignados a este rol. Es seguro eliminarlo.
+          </p>
         )}
       </div>
 

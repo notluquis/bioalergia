@@ -1,8 +1,6 @@
 import { createColumnHelper } from "@tanstack/react-table";
-
-import type { User } from "@/features/users/types";
-
 import Button from "@/components/ui/Button";
+import type { User } from "@/features/users/types";
 import { BADGE_SM } from "@/lib/styles";
 
 import { MfaStatusCell, PasskeyStatusCell, SecurityCell, UserCell } from "./UserAccessCells";
@@ -11,7 +9,10 @@ import { MfaStatusCell, PasskeyStatusCell, SecurityCell, UserCell } from "./User
 
 const columnHelper = createColumnHelper<User>();
 
-export const getUserAccessColumns = (onToggleMfa: (userId: number, enabled: boolean) => void, isPending: boolean) => [
+export const getUserAccessColumns = (
+  onToggleMfa: (userId: number, enabled: boolean) => void,
+  isPending: boolean,
+) => [
   columnHelper.accessor("email", {
     cell: ({ getValue }) => <UserCell email={getValue()} />,
     header: "Usuario",

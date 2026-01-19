@@ -5,9 +5,8 @@ import { Suspense } from "react";
 import { z } from "zod";
 
 import { useToast } from "@/context/ToastContext";
-import { createRole, type RoleUser, updateRole } from "@/features/roles/api";
-import { roleKeys, roleQueries } from "@/features/roles/api";
-import { Role } from "@/types/roles";
+import { createRole, type RoleUser, roleKeys, roleQueries, updateRole } from "@/features/roles/api";
+import type { Role } from "@/types/roles";
 
 interface RoleFormModalProps {
   isOpen: boolean;
@@ -17,7 +16,10 @@ interface RoleFormModalProps {
 
 const formSchema = z.object({
   description: z.string().max(255, "La descripción no puede exceder los 255 caracteres").optional(),
-  name: z.string().min(1, "El nombre es obligatorio").max(50, "El nombre no puede exceder los 50 caracteres"),
+  name: z
+    .string()
+    .min(1, "El nombre es obligatorio")
+    .max(50, "El nombre no puede exceder los 50 caracteres"),
 });
 
 interface RoleBaseFormProps {
@@ -76,14 +78,20 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
       const errorWithDetails = err as Error & { details?: unknown };
       if ("details" in errorWithDetails && Array.isArray(errorWithDetails.details)) {
         const issues = errorWithDetails.details
-          .map((i: { message: string; path: (number | string)[] }) => `${i.path.join(".")}: ${i.message}`)
+          .map(
+            (i: { message: string; path: (number | string)[] }) =>
+              `${i.path.join(".")}: ${i.message}`,
+          )
           .join("\n");
         message = `Datos inválidos:\n${issues}`;
       }
       toast.error(message, "Error");
     },
     onSuccess: () => {
-      toast.success("Los cambios se han guardado correctamente.", roleEntity ? "Rol actualizado" : "Rol creado");
+      toast.success(
+        "Los cambios se han guardado correctamente.",
+        roleEntity ? "Rol actualizado" : "Rol creado",
+      );
       void queryClient.invalidateQueries({ queryKey: roleKeys.all });
       onClose();
     },
@@ -107,7 +115,10 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
       return (
         <div className="max-h-32 space-y-1 overflow-y-auto">
           {userData.map((u) => (
-            <div className="hover:bg-base-100 flex items-center justify-between rounded p-1 text-xs" key={u.id}>
+            <div
+              className="hover:bg-base-100 flex items-center justify-between rounded p-1 text-xs"
+              key={u.id}
+            >
               <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : "Sin nombre"}</span>
               <span className="opacity-50">{u.email}</span>
             </div>

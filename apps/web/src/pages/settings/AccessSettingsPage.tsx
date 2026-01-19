@@ -18,7 +18,8 @@ export default function AccessSettingsPage() {
   const { data: users } = useSuspenseQuery(userKeys.adminList());
 
   const toggleMfaMutation = useMutation({
-    mutationFn: ({ enabled, userId }: { enabled: boolean; userId: number }) => toggleUserMfa(userId, enabled),
+    mutationFn: ({ enabled, userId }: { enabled: boolean; userId: number }) =>
+      toggleUserMfa(userId, enabled),
     onError: (err) => {
       toastError(err instanceof Error ? err.message : "Error desconocido");
     },
@@ -101,7 +102,9 @@ export default function AccessSettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-xl">Gestión de usuarios</CardTitle>
-              <CardDescription>Administra el nivel de seguridad de cada cuenta de usuario</CardDescription>
+              <CardDescription>
+                Administra el nivel de seguridad de cada cuenta de usuario
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -117,14 +120,17 @@ export default function AccessSettingsPage() {
                   <h3 className="text-info font-semibold">Recomendaciones de seguridad</h3>
                   <ul className="text-base-content/70 mt-2 space-y-1 text-sm">
                     <li>
-                      • <strong>MFA (Autenticación Multifactor):</strong> Añade una capa extra de seguridad solicitando
-                      un código de verificación además de la contraseña.
+                      • <strong>MFA (Autenticación Multifactor):</strong> Añade una capa extra de
+                      seguridad solicitando un código de verificación además de la contraseña.
                     </li>
                     <li>
-                      • <strong>Passkey (Biometría):</strong> Permite iniciar sesión de forma segura usando huella
-                      digital, reconocimiento facial o clave de dispositivo.
+                      • <strong>Passkey (Biometría):</strong> Permite iniciar sesión de forma segura
+                      usando huella digital, reconocimiento facial o clave de dispositivo.
                     </li>
-                    <li>• Se recomienda que todos los usuarios activen ambas opciones para máxima seguridad.</li>
+                    <li>
+                      • Se recomienda que todos los usuarios activen ambas opciones para máxima
+                      seguridad.
+                    </li>
                   </ul>
                 </div>
               </div>

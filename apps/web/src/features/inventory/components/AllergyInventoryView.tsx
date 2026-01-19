@@ -3,13 +3,16 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { fmtCLP, formatDate } from "@/lib/format";
-
+import { inventoryKeys } from "../queries";
 import type { AllergyInventoryOverview } from "../types";
 
-import { inventoryKeys } from "../queries";
-
 function AllergyInventoryView() {
-  const { data, isFetching, isLoading: loading, refetch } = useSuspenseQuery(inventoryKeys.allergyOverview());
+  const {
+    data,
+    isFetching,
+    isLoading: loading,
+    refetch,
+  } = useSuspenseQuery(inventoryKeys.allergyOverview());
 
   const error = null;
 
@@ -39,8 +42,12 @@ function AllergyInventoryView() {
     <section className="surface-recessed space-y-4 rounded-3xl p-6 shadow-inner">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-base-content/60 text-xs tracking-[0.3em] uppercase">Insumos de alergia</p>
-          <h3 className="text-base-content text-xl font-semibold">Reactivos y haptenos con proveedores</h3>
+          <p className="text-base-content/60 text-xs tracking-[0.3em] uppercase">
+            Insumos de alergia
+          </p>
+          <h3 className="text-base-content text-xl font-semibold">
+            Reactivos y haptenos con proveedores
+          </h3>
           <p className="text-base-content/70 text-xs">
             Agrupados por tipo/categoría. Revisa stock, precio y cuentas disponibles.
           </p>
@@ -50,18 +57,27 @@ function AllergyInventoryView() {
         </Button>
       </div>
       {error && <Alert variant="error">{error}</Alert>}
-      {loading && data.length === 0 && <p className="text-base-content/60 text-xs">Cargando datos…</p>}
-      {!loading && data.length === 0 && <p className="text-base-content/60 text-xs">No hay insumos registrados aún.</p>}
+      {loading && data.length === 0 && (
+        <p className="text-base-content/60 text-xs">Cargando datos…</p>
+      )}
+      {!loading && data.length === 0 && (
+        <p className="text-base-content/60 text-xs">No hay insumos registrados aún.</p>
+      )}
       <div className="space-y-6">
         {[...grouped.values()].map((group) => (
           <div className="space-y-4" key={group.typeName}>
             <div className="flex items-center justify-between">
               <h4 className="text-base-content text-lg font-semibold">{group.typeName}</h4>
-              <span className="text-base-content/70 text-xs">{group.categories.size} categorías</span>
+              <span className="text-base-content/70 text-xs">
+                {group.categories.size} categorías
+              </span>
             </div>
             <div className="space-y-4">
               {[...group.categories.entries()].map(([categoryName, items]) => (
-                <div className="border-base-300/60 bg-base-100/80 rounded-2xl border p-4 shadow-sm" key={categoryName}>
+                <div
+                  className="border-base-300/60 bg-base-100/80 rounded-2xl border p-4 shadow-sm"
+                  key={categoryName}
+                >
                   <div className="flex items-center justify-between">
                     <p className="text-base-content text-sm font-semibold">{categoryName}</p>
                     <span className="text-base-content/60 text-xs">{items.length} insumos</span>
@@ -105,7 +121,9 @@ function ProviderCard({ provider }: { provider: AllergyInventoryOverview["provid
     <div className="border-base-200 bg-base-200/80 space-y-1 rounded-xl border px-3 py-2">
       <div className="flex items-center justify-between">
         <span className="font-semibold">{provider.provider_name}</span>
-        <span className="text-base-content/50 text-xs tracking-wide uppercase">{provider.provider_rut}</span>
+        <span className="text-base-content/50 text-xs tracking-wide uppercase">
+          {provider.provider_rut}
+        </span>
       </div>
       <p className="text-base-content/70 text-xs">
         Precio: {provider.current_price == null ? "Sin precio" : fmtCLP(provider.current_price)}
@@ -116,7 +134,9 @@ function ProviderCard({ provider }: { provider: AllergyInventoryOverview["provid
       <p className="text-base-content/60 text-[11px]">
         Último precio: {provider.last_price_check ? formatDate(provider.last_price_check) : "Nunca"}
       </p>
-      <p className="text-base-content/60 text-[11px]">Cuentas: {provider.accounts.join(", ") || "Sin cuentas"}</p>
+      <p className="text-base-content/60 text-[11px]">
+        Cuentas: {provider.accounts.join(", ") || "Sin cuentas"}
+      </p>
     </div>
   );
 }

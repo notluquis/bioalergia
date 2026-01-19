@@ -10,7 +10,10 @@ interface SupplyRequestsTableProps {
   requests: SupplyRequest[];
 }
 
-export default function SupplyRequestsTable({ onStatusChange, requests }: SupplyRequestsTableProps) {
+export default function SupplyRequestsTable({
+  onStatusChange,
+  requests,
+}: SupplyRequestsTableProps) {
   const { can } = useAuth();
   const isAdmin = can("update", "SupplyRequest");
 
@@ -24,7 +27,9 @@ export default function SupplyRequestsTable({ onStatusChange, requests }: Supply
 
   return (
     <div className="bg-base-100 rounded-lg p-6 shadow-md">
-      <h2 className="mb-4 text-xl font-semibold">{isAdmin ? "Todas las solicitudes" : "Solicitudes activas"}</h2>
+      <h2 className="mb-4 text-xl font-semibold">
+        {isAdmin ? "Todas las solicitudes" : "Solicitudes activas"}
+      </h2>
       <DataTable
         columns={columns}
         columnVisibility={columnVisibility}

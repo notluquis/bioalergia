@@ -14,11 +14,7 @@ export function checkMpConfig() {
 }
 
 // Generic fetcher for both report types
-export async function mpFetch(
-  endpoint: string,
-  baseUrl: string,
-  options: RequestInit = {}
-) {
+export async function mpFetch(endpoint: string, baseUrl: string, options: RequestInit = {}) {
   checkMpConfig();
   const url = endpoint ? `${baseUrl}${endpoint}` : baseUrl;
 
@@ -49,8 +45,6 @@ export async function safeMpJson(res: Response) {
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error(
-      `Failed to parse MP response: ${text.substring(0, 100)}...`
-    );
+    throw new Error(`Failed to parse MP response: ${text.substring(0, 100)}...`);
   }
 }

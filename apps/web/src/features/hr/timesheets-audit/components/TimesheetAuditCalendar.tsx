@@ -15,7 +15,11 @@ import { LOADING_SPINNER_MD } from "@/lib/styles";
 
 import type { CalendarEventData, TimesheetEntryWithEmployee } from "../types";
 
-import { calculateDurationHours, formatDuration, getOverlappingEmployeesForDate } from "../utils/overlap-detection";
+import {
+  calculateDurationHours,
+  formatDuration,
+  getOverlappingEmployeesForDate,
+} from "../utils/overlap-detection";
 
 import "./TimesheetAuditCalendar.css";
 
@@ -45,7 +49,7 @@ function clampSeconds(value: number) {
  */
 function convertToCalendarEvents(
   entries: TimesheetEntryWithEmployee[],
-  overlappingEmployeesByDate: Map<string, Set<number>>
+  overlappingEmployeesByDate: Map<string, Set<number>>,
 ): CalendarEventData[] {
   return entries
     .filter((entry) => entry.start_time && entry.end_time)
@@ -131,7 +135,9 @@ function toFullCalendarEvents(calendarEvents: CalendarEventData[]): {
         allDay: false,
         backgroundColor: event.has_overlap ? "var(--color-error)" : "var(--color-accent)",
         borderColor: event.has_overlap ? "var(--color-error)" : "var(--color-accent)",
-        classNames: ["timesheet-audit-event", event.has_overlap ? "has-overlap" : ""].filter(Boolean),
+        classNames: ["timesheet-audit-event", event.has_overlap ? "has-overlap" : ""].filter(
+          Boolean,
+        ),
         end: endIso,
         extendedProps: {
           duration_hours: event.duration_hours,
@@ -197,7 +203,9 @@ export default function TimesheetAuditCalendar({
       return entries;
     }
     return entries.filter((entry) =>
-      visibleDateRanges.some((range) => entry.work_date >= range.start && entry.work_date <= range.end)
+      visibleDateRanges.some(
+        (range) => entry.work_date >= range.start && entry.work_date <= range.end,
+      ),
     );
   })();
 
@@ -236,7 +244,10 @@ export default function TimesheetAuditCalendar({
       const normalizedStart = normalizeTimeComponent(entry.start_time);
       const normalizedEnd = normalizeTimeComponent(entry.end_time);
       if (normalizedStart) {
-        minSeconds = Math.min(minSeconds, timeStringToSeconds(normalizedStart) - SLOT_BUFFER_SECONDS);
+        minSeconds = Math.min(
+          minSeconds,
+          timeStringToSeconds(normalizedStart) - SLOT_BUFFER_SECONDS,
+        );
       }
       if (normalizedEnd) {
         maxSeconds = Math.max(maxSeconds, timeStringToSeconds(normalizedEnd) + SLOT_BUFFER_SECONDS);

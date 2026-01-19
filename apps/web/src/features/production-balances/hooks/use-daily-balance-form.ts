@@ -4,11 +4,9 @@ import { useCallback, useEffect, useRef } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-
-import type { DailyBalanceFormData } from "../types";
-
 import { dailyBalanceApi, type ProductionBalanceApiItem } from "../api";
 import { productionBalanceKeys } from "../queries";
+import type { DailyBalanceFormData } from "../types";
 import { generateWeekData, useDailyBalanceStore } from "./use-daily-balance-store";
 
 const AUTOSAVE_DELAY_MS = 2000;
@@ -52,7 +50,8 @@ export function useDailyBalanceForm() {
   // Find item by balanceDate (formatted as YYYY-MM-DD or comparison)
   // ZenStack likely returns full ISO string "2024-01-01T00:00:00.000Z"
   // So we must compare prefix or use dayjs
-  const selectedDayItem = weekQuery.data.find((item) => item.balanceDate.startsWith(selectedDate)) || null;
+  const selectedDayItem =
+    weekQuery.data.find((item) => item.balanceDate.startsWith(selectedDate)) || null;
 
   // Load data when query succeeds (if day changes or we just loaded data)
   useEffect(() => {
@@ -66,7 +65,7 @@ export function useDailyBalanceForm() {
       // Only reset if we are not currently saving (to avoid race conditions)
       resetForm();
     }
-  }, [selectedDayItem, weekQuery.isSuccess, setOriginalData, resetForm, selectedDate]);
+  }, [selectedDayItem, weekQuery.isSuccess, setOriginalData, resetForm]);
 
   // Generate week data with real status
   useEffect(() => {
@@ -82,7 +81,10 @@ export function useDailyBalanceForm() {
         // Let's compute a simple total or 0 if missing.
         // Actually, we can sum the fields.
         const calculatedTotal =
-          item.ingresoTarjetas + item.ingresoTransferencias + item.ingresoEfectivo + item.otrosAbonos;
+          item.ingresoTarjetas +
+          item.ingresoTransferencias +
+          item.ingresoEfectivo +
+          item.otrosAbonos;
         const dateKey = item.balanceDate.split("T")[0];
         if (dateKey) {
           entries[dateKey] = calculatedTotal;
@@ -168,7 +170,7 @@ export function useDailyBalanceForm() {
         clearTimeout(autosaveTimeout.current);
       }
     };
-  }, [isDirty, formData, save]);
+  }, [isDirty, save]);
 
   // Finalize day
   const finalize = useCallback(() => {
@@ -203,7 +205,7 @@ export function useDailyBalanceForm() {
     (date: string) => {
       setSelectedDate(date);
     },
-    [setSelectedDate]
+    [setSelectedDate],
   );
 
   return {

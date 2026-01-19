@@ -1,4 +1,4 @@
-import { Table } from "@tanstack/react-table";
+import type { Table } from "@tanstack/react-table";
 import { Download, X } from "lucide-react";
 import Papa from "papaparse";
 

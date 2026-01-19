@@ -5,7 +5,7 @@
  * Secret is lazily initialized on first use.
  */
 
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
 import { V3 } from "paseto";
 import { getOrCreateTokenSecret } from "./token-secret";
 
@@ -33,10 +33,7 @@ async function getKey(): Promise<Buffer> {
   return KEY;
 }
 
-export async function signToken(
-  payload: Record<string, unknown>,
-  expiresIn: string = "2d"
-) {
+export async function signToken(payload: Record<string, unknown>, expiresIn: string = "2d") {
   const key = await getKey();
   return V3.encrypt(payload, key, { expiresIn });
 }

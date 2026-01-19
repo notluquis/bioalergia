@@ -2,7 +2,8 @@ import dayjs from "dayjs";
 
 import type { CalendarFilters } from "../types";
 
-export const unique = (values: string[]) => [...new Set(values)].toSorted((a, b) => a.localeCompare(b));
+export const unique = (values: string[]) =>
+  [...new Set(values)].toSorted((a, b) => a.localeCompare(b));
 
 export function arraysEqual(a: string[], b: string[]) {
   if (a.length !== b.length) return false;
@@ -41,9 +42,13 @@ export const computeDefaultFilters = (settings: {
 }): CalendarFilters => {
   const syncStart = settings.calendarSyncStart?.trim() ?? "2000-01-01";
   const lookaheadRaw = Number(settings.calendarSyncLookaheadDays ?? "365");
-  const lookahead = Number.isFinite(lookaheadRaw) && lookaheadRaw > 0 ? Math.min(Math.floor(lookaheadRaw), 1095) : 365;
+  const lookahead =
+    Number.isFinite(lookaheadRaw) && lookaheadRaw > 0
+      ? Math.min(Math.floor(lookaheadRaw), 1095)
+      : 365;
   const defaultMax = Number(settings.calendarDailyMaxDays ?? "28");
-  const configuredMax = Number.isFinite(defaultMax) && defaultMax > 0 ? Math.min(Math.floor(defaultMax), 365) : 28;
+  const configuredMax =
+    Number.isFinite(defaultMax) && defaultMax > 0 ? Math.min(Math.floor(defaultMax), 365) : 28;
   // Default to ±2 weeks from today for faster initial load
   const defaultFrom = dayjs().subtract(2, "week");
   const defaultTo = dayjs().add(2, "week");

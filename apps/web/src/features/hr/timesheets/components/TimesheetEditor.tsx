@@ -1,9 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { lazy, Suspense, useEffect, useState } from "react";
-
-import type { BulkRow, TimesheetSummaryRow, TimesheetUpsertEntry } from "@/features/hr/timesheets/types";
-
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
@@ -16,11 +13,24 @@ import {
 import EmailPreviewModal from "@/features/hr/timesheets/components/EmailPreviewModal";
 import TimesheetDetailTable from "@/features/hr/timesheets/components/TimesheetDetailTable";
 import { generateTimesheetPdfBase64 } from "@/features/hr/timesheets/pdf-utils";
-import { buildBulkRows, formatDateLabel, hasRowData, isRowDirty, parseDuration } from "@/features/hr/timesheets/utils";
+import type {
+  BulkRow,
+  TimesheetSummaryRow,
+  TimesheetUpsertEntry,
+} from "@/features/hr/timesheets/types";
+import {
+  buildBulkRows,
+  formatDateLabel,
+  hasRowData,
+  isRowDirty,
+  parseDuration,
+} from "@/features/hr/timesheets/utils";
 
 import type { Employee } from "../../employees/types";
 
-const TimesheetExportPDF = lazy(() => import("@/features/hr/timesheets/components/TimesheetExportPDF"));
+const TimesheetExportPDF = lazy(
+  () => import("@/features/hr/timesheets/components/TimesheetExportPDF"),
+);
 
 interface TimesheetEditorProps {
   readonly activeEmployees: Employee[];
@@ -66,7 +76,11 @@ export default function TimesheetEditor({
   // --- Mutations ---
 
   const upsertMutation = useMutation({
-    mutationFn: async (args: { employeeId: number; entries: TimesheetUpsertEntry[]; removeIds: number[] }) => {
+    mutationFn: async (args: {
+      employeeId: number;
+      entries: TimesheetUpsertEntry[];
+      removeIds: number[];
+    }) => {
       return bulkUpsertTimesheets(args.employeeId, args.entries, args.removeIds);
     },
     onError: (err) => {
@@ -147,9 +161,12 @@ export default function TimesheetEditor({
       if (data.status !== "ok") throw new Error(data.message || "Error al preparar el email");
 
       // Download .eml
-      const emlBlob = new Blob([Uint8Array.from(atob(data.emlBase64), (c) => c.codePointAt(0) ?? 0)], {
-        type: "message/rfc822",
-      });
+      const emlBlob = new Blob(
+        [Uint8Array.from(atob(data.emlBase64), (c) => c.codePointAt(0) ?? 0)],
+        {
+          type: "message/rfc822",
+        },
+      );
       const url = URL.createObjectURL(emlBlob);
       const link = document.createElement("a");
       link.href = url;
@@ -170,7 +187,11 @@ export default function TimesheetEditor({
     }
   }
 
-  const handleRowChange = (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => {
+  const handleRowChange = (
+    index: number,
+    field: keyof Omit<BulkRow, "date" | "entryId">,
+    value: string,
+  ) => {
     setBulkRows((prev) => {
       const currentRow = prev[index];
       if (!currentRow || currentRow[field] === value) return prev;
@@ -242,7 +263,7 @@ export default function TimesheetEditor({
 
   const processBulkRow = (
     row: BulkRow,
-    initial: BulkRow
+    initial: BulkRow,
   ): { entry?: TimesheetUpsertEntry; error?: string; removeId?: number } => {
     if (!isRowDirty(row, initial)) return {};
 
@@ -259,7 +280,8 @@ export default function TimesheetEditor({
     }
 
     const comment = row.comment.trim() || null;
-    const hasContent = Boolean(row.entrada) || Boolean(row.salida) || overtime > 0 || Boolean(comment);
+    const hasContent =
+      Boolean(row.entrada) || Boolean(row.salida) || overtime > 0 || Boolean(comment);
 
     if (!hasContent && row.entryId) {
       return { removeId: row.entryId };

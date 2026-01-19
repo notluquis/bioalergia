@@ -1,7 +1,7 @@
 import { type QueryKey, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { uploadFiles, type UploadResult } from "@/lib/api-client";
+import { type UploadResult, uploadFiles } from "@/lib/api-client";
 import { logger } from "@/lib/logger";
 
 type FileValidator = (file: File) => Promise<{ headersCount: number; missing: string[] }>;
@@ -78,7 +78,9 @@ export function useFileUpload({
 
     // Validación opcional de archivos
     if (validator) {
-      const analyses = await Promise.all(selected.map(async (file) => ({ file, ...(await validator(file)) })));
+      const analyses = await Promise.all(
+        selected.map(async (file) => ({ file, ...(await validator(file)) })),
+      );
 
       const problematic = analyses.filter((item) => item.missing.length);
       logger.info(
@@ -87,19 +89,19 @@ export function useFileUpload({
           file: file.name,
           headersCount,
           missing,
-        }))
+        })),
       );
 
       if (problematic.length > 0 && confirmOnValidationWarning) {
         const message = problematic
           .map(
             ({ file, headersCount, missing }) =>
-              `${file.name}: faltan ${missing.join(", ")} · columnas detectadas: ${headersCount}`
+              `${file.name}: faltan ${missing.join(", ")} · columnas detectadas: ${headersCount}`,
           )
           .join("\n");
 
         const proceed = globalThis.confirm(
-          `Advertencia: algunos archivos no contienen todas las columnas esperadas.\n\n${message}\n\n¿Deseas continuar igualmente?`
+          `Advertencia: algunos archivos no contienen todas las columnas esperadas.\n\n${message}\n\n¿Deseas continuar igualmente?`,
         );
 
         if (!proceed) {

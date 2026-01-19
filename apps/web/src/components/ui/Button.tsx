@@ -15,7 +15,16 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   href?: string;
   isLoading?: boolean;
   size?: "lg" | "md" | "sm" | "xs";
-  variant?: "danger" | "error" | "ghost" | "link" | "outline" | "primary" | "secondary" | "success" | "tertiary";
+  variant?:
+    | "danger"
+    | "error"
+    | "ghost"
+    | "link"
+    | "outline"
+    | "primary"
+    | "secondary"
+    | "success"
+    | "tertiary";
 }
 
 // Map variants to Tailwind classes
@@ -57,7 +66,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant = "primary",
       ...props
     },
-    ref
+    ref,
   ) => {
     const baseClasses = cn(
       "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200",
@@ -69,7 +78,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       // eslint-disable-next-line security/detect-object-injection
       sizeClasses[size],
       fullWidth && "w-full",
-      className
+      className,
     );
 
     // Handle polymorphic rendering with href
@@ -106,7 +115,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {children}
       </Component>
     );
-  }
+  },
 );
 
 Button.displayName = "Button";

@@ -1,10 +1,7 @@
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
-import {
-  sendPushNotification,
-  subscribeToPush,
-} from "../services/notifications";
+import { sendPushNotification, subscribeToPush } from "../services/notifications";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 

@@ -1,8 +1,6 @@
 import { Link } from "@tanstack/react-router";
-
-import type { NavItem } from "@/lib/nav-generator";
-
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/Tooltip";
+import type { NavItem } from "@/lib/nav-generator";
 import { cn } from "@/lib/utils";
 
 interface SidebarItemProps {
@@ -27,10 +25,12 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
             <div
               className={cn(
                 "relative flex items-center rounded-xl transition-all duration-200 ease-in-out",
-                isMobile ? "w-full justify-start px-4 py-3" : "mx-auto h-12 w-12 justify-center p-0",
+                isMobile
+                  ? "w-full justify-start px-4 py-3"
+                  : "mx-auto h-12 w-12 justify-center p-0",
                 isActive
                   ? "bg-primary/10 text-primary font-semibold"
-                  : "text-base-content/60 hover:text-base-content hover:bg-base-content/5"
+                  : "text-base-content/60 hover:text-base-content hover:bg-base-content/5",
               )}
             >
               {/* Active Indicator */}
@@ -38,7 +38,9 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
                 <span
                   className={cn(
                     "bg-primary absolute rounded-full transition-all duration-300",
-                    isMobile ? "top-1/2 left-0 h-6 w-1 -translate-y-1/2" : "top-2 -right-0.5 h-8 w-1"
+                    isMobile
+                      ? "top-1/2 left-0 h-6 w-1 -translate-y-1/2"
+                      : "top-2 -right-0.5 h-8 w-1",
                   )}
                 />
               )}
@@ -47,7 +49,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
               <item.icon
                 className={cn(
                   "h-6 w-6 transform-gpu transition-transform duration-200 will-change-transform",
-                  isActive ? "scale-110" : "group-hover:scale-110"
+                  isActive ? "scale-110" : "group-hover:scale-110",
                 )}
                 strokeWidth={isActive ? 2.5 : 2}
               />

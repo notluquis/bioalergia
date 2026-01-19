@@ -1,5 +1,6 @@
 import { ChevronDown } from "lucide-react";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
@@ -11,7 +12,11 @@ interface CollapsibleNavSectionProps {
   readonly title: string;
 }
 
-export default function CollapsibleNavSection({ children, className, title }: CollapsibleNavSectionProps) {
+export default function CollapsibleNavSection({
+  children,
+  className,
+  title,
+}: CollapsibleNavSectionProps) {
   const [isOpen, setIsOpen] = useState(true);
 
   return (

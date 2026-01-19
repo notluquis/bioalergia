@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
@@ -11,7 +11,7 @@ const TanStackRouterDevtools =
     : lazy(() =>
         import("@tanstack/router-devtools").then((res) => ({
           default: res.TanStackRouterDevtools,
-        }))
+        })),
       );
 
 import type { NavConfig, RoutePermission } from "@/types/navigation";

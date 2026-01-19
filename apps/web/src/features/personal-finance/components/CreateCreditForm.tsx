@@ -178,7 +178,7 @@ export function CreateCreditForm() {
                     label="Cuotas"
                     onBlur={field.handleBlur}
                     onChange={(e) => {
-                      field.handleChange(Number.parseInt(e.target.value) || 1);
+                      field.handleChange(Number.parseInt(e.target.value, 10) || 1);
                     }}
                     type="number"
                     value={field.state.value}
@@ -198,7 +198,11 @@ export function CreateCreditForm() {
                       field.handleChange(new Date(e.target.value));
                     }}
                     type="date"
-                    value={field.state.value ? new Date(field.state.value).toISOString().split("T")[0] : ""}
+                    value={
+                      field.state.value
+                        ? new Date(field.state.value).toISOString().split("T")[0]
+                        : ""
+                    }
                   />
                 </div>
               )}

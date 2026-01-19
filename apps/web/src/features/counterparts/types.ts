@@ -1,6 +1,6 @@
 import type { Transaction } from "@/features/finance/types";
 
-import { CounterpartCategory, PersonType } from "@/types/schema";
+import type { CounterpartCategory, PersonType } from "@/types/schema";
 
 export interface AccountGroup {
   accounts: CounterpartAccount[];
@@ -90,4 +90,4 @@ export interface TransactionsApiResponse {
   status: "error" | "ok";
 }
 
-export { type CounterpartCategory } from "@/types/schema";
+export type { CounterpartCategory } from "@/types/schema";

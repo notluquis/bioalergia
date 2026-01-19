@@ -1,8 +1,8 @@
-import { Hono } from "hono";
-import { getSessionUser, hasPermission, type AuthSession } from "../auth";
 import fs from "node:fs";
 import path from "node:path";
+import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { type AuthSession, getSessionUser, hasPermission } from "../auth";
 
 type Variables = {
   user: AuthSession;
@@ -11,7 +11,7 @@ type Variables = {
 export const shareTargetRoutes = new Hono<{ Variables: Variables }>();
 
 // Ensure uploads directory exists
-const uploadDir = path.join(process.cwd(), "..", "..", "uploads", "shared"); // Adjust path relative to apps/api?
+const _uploadDir = path.join(process.cwd(), "..", "..", "uploads", "shared"); // Adjust path relative to apps/api?
 // Actually process.cwd() in apps/api likely points to apps/api root or monorepo root depending on how it's run.
 // If running from monorepo root: uploads/shared.
 // If running from apps/api: ../../uploads/shared?
@@ -20,8 +20,7 @@ const uploadDir = path.join(process.cwd(), "..", "..", "uploads", "shared"); // 
 // I'll stick to `process.cwd()/uploads/shared` but ensuring it's robust.
 // Given strict Hono/ZenStack structure, maybe we should be careful.
 // I'll use `process.env.UPLOAD_DIR` or default to `./uploads` in `apps/api`.
-const UPLOAD_ROOT =
-  process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads", "shared");
+const UPLOAD_ROOT = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads", "shared");
 
 if (!fs.existsSync(UPLOAD_ROOT)) {
   fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
@@ -51,7 +50,7 @@ shareTargetRoutes.post(
   async (c) => {
     try {
       const body = await c.req.parseBody();
-      const media = body["media"]; // Can be File or string or array
+      const media = body.media; // Can be File or string or array
 
       const { title, text, url } = body;
       console.log(`[ShareTarget] Received:`, { title, text, url });
@@ -75,7 +74,7 @@ shareTargetRoutes.post(
         return c.redirect("/finanzas/movements", 303);
       }
 
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
       const originalName = file.name;
       const ext = path.extname(originalName);
       const name = path.basename(originalName, ext).replace(/[^a-z0-9]/gi, "_");
@@ -99,5 +98,5 @@ shareTargetRoutes.post(
       console.error("[ShareTarget] Error:", err);
       return c.text("Error processing share", 500);
     }
-  }
+  },
 );

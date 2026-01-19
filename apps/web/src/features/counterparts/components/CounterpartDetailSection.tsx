@@ -31,9 +31,13 @@ export default function CounterpartDetailSection({
       <ServicesSurface className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-base-content/60 text-xs tracking-[0.3em] uppercase">Contraparte activa</p>
+            <p className="text-base-content/60 text-xs tracking-[0.3em] uppercase">
+              Contraparte activa
+            </p>
             <h3 className="text-base-content text-lg font-semibold">{detail.counterpart.name}</h3>
-            {detail.counterpart.rut && <p className="text-base-content/70 text-xs">RUT {detail.counterpart.rut}</p>}
+            {detail.counterpart.rut && (
+              <p className="text-base-content/70 text-xs">RUT {detail.counterpart.rut}</p>
+            )}
           </div>
           <Button
             disabled={!canUpdate}

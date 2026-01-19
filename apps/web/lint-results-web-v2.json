@@ -1,7 +1,0 @@
-
-> @finanzas/web@0.1.0 lint /Users/notluquis/finanzas-app/apps/web
-> eslint . --report-unused-disable-directives --max-warnings 0 -- --format json
-
-/Users/notluquis/finanzas-app/apps/web:
- ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @finanzas/web@0.1.0 lint: `eslint . --report-unused-disable-directives --max-warnings 0 -- --format json`
-Exit status 2

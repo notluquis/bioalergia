@@ -23,18 +23,26 @@ export async function fetchLoans(): Promise<LoanListResponse> {
 
 export async function regenerateSchedules(
   publicId: string,
-  payload: RegenerateSchedulePayload
+  payload: RegenerateSchedulePayload,
 ): Promise<LoanDetailResponse> {
   return apiClient.post<LoanDetailResponse>(`/api/loans/${publicId}/schedules`, payload);
 }
 
 export async function registerLoanPayment(
   scheduleId: number,
-  payload: LoanPaymentPayload
+  payload: LoanPaymentPayload,
 ): Promise<{ schedule: LoanSchedule; status: "ok" }> {
-  return apiClient.post<{ schedule: LoanSchedule; status: "ok" }>(`/api/loan-schedules/${scheduleId}/pay`, payload);
+  return apiClient.post<{ schedule: LoanSchedule; status: "ok" }>(
+    `/api/loan-schedules/${scheduleId}/pay`,
+    payload,
+  );
 }
 
-export async function unlinkLoanPayment(scheduleId: number): Promise<{ schedule: LoanSchedule; status: "ok" }> {
-  return apiClient.post<{ schedule: LoanSchedule; status: "ok" }>(`/api/loan-schedules/${scheduleId}/unlink`, {});
+export async function unlinkLoanPayment(
+  scheduleId: number,
+): Promise<{ schedule: LoanSchedule; status: "ok" }> {
+  return apiClient.post<{ schedule: LoanSchedule; status: "ok" }>(
+    `/api/loan-schedules/${scheduleId}/unlink`,
+    {},
+  );
 }

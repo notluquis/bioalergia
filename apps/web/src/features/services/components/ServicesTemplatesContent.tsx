@@ -12,7 +12,9 @@ export default function ServicesTemplatesContent() {
   return (
     <section className="space-y-8">
       {!canManage && (
-        <Alert variant="warning">Solo administradores pueden crear o editar servicios mediante plantillas.</Alert>
+        <Alert variant="warning">
+          Solo administradores pueden crear o editar servicios mediante plantillas.
+        </Alert>
       )}
 
       <ServicesHero

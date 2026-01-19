@@ -23,13 +23,25 @@ export function calculateStats(data: EmployeeWorkData[], periodCount = 1) {
   // Ej: 1600 horas / (10 empleados * 1 mes) = 160h promedio/emp/mes
   const averageHours = totalHours / (data.length * Math.max(periodCount, 1));
 
-  const maxEmployee = data.reduce((max, emp) => (emp.totalMinutes > max.totalMinutes ? emp : max), data[0]!);
-  const minEmployee = data.reduce((min, emp) => (emp.totalMinutes < min.totalMinutes ? emp : min), data[0]!);
+  const maxEmployee = data.reduce(
+    (max, emp) => (emp.totalMinutes > max.totalMinutes ? emp : max),
+    data[0]!,
+  );
+  const minEmployee = data.reduce(
+    (min, emp) => (emp.totalMinutes < min.totalMinutes ? emp : min),
+    data[0]!,
+  );
 
   return {
     averageHours: Number.parseFloat(averageHours.toFixed(2)),
-    maxEmployee: { hours: Number.parseFloat((maxEmployee.totalMinutes / 60).toFixed(2)), name: maxEmployee.fullName },
-    minEmployee: { hours: Number.parseFloat((minEmployee.totalMinutes / 60).toFixed(2)), name: minEmployee.fullName },
+    maxEmployee: {
+      hours: Number.parseFloat((maxEmployee.totalMinutes / 60).toFixed(2)),
+      name: maxEmployee.fullName,
+    },
+    minEmployee: {
+      hours: Number.parseFloat((minEmployee.totalMinutes / 60).toFixed(2)),
+      name: minEmployee.fullName,
+    },
     totalHours: Number.parseFloat(totalHours.toFixed(2)),
   };
 }
@@ -107,7 +119,10 @@ export function prepareChartData(data: EmployeeWorkData, granularity: ReportGran
 /**
  * Prepara datos comparativos
  */
-export function prepareComparisonData(employees: EmployeeWorkData[], granularity: ReportGranularity) {
+export function prepareComparisonData(
+  employees: EmployeeWorkData[],
+  granularity: ReportGranularity,
+) {
   if (employees.length === 0) return [];
 
   const breakdownKeyMap = {
@@ -143,7 +158,7 @@ export function processEmployeeData(
   employeeId: number,
   fullName: string,
   role: string,
-  entries: TimesheetEntry[]
+  entries: TimesheetEntry[],
 ): EmployeeWorkData {
   const totalMinutes = entries.reduce((sum, e) => sum + e.worked_minutes, 0);
   const totalOvertimeMinutes = entries.reduce((sum, e) => sum + e.overtime_minutes, 0);
@@ -154,7 +169,9 @@ export function processEmployeeData(
 
   const avgDailyMinutes = totalDays > 0 ? Math.round(totalMinutes / totalDays) : 0;
   const overtimePercentage =
-    totalMinutes > 0 ? Number.parseFloat(((totalOvertimeMinutes / totalMinutes) * 100).toFixed(1)) : 0;
+    totalMinutes > 0
+      ? Number.parseFloat(((totalOvertimeMinutes / totalMinutes) * 100).toFixed(1))
+      : 0;
 
   return {
     avgDailyMinutes,

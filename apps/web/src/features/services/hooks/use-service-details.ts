@@ -4,12 +4,10 @@ import { useEffect } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { logger } from "@/lib/logger";
-
-import type { ServiceDetailResponse, ServiceListResponse } from "../types";
-
 import { fetchServiceDetail } from "../api";
 import { serviceKeys } from "../queries";
 import { servicesActions, servicesStore } from "../store";
+import type { ServiceDetailResponse, ServiceListResponse } from "../types";
 
 export function useServiceDetails(services: ServiceListResponse["services"]) {
   const { can } = useAuth();
@@ -26,7 +24,9 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
   const { data: allDetails } = useSuspenseQuery({
     queryFn: async () => {
       if (services.length === 0 || !canView) return {};
-      const results = await Promise.allSettled(services.map((service) => fetchServiceDetail(service.public_id)));
+      const results = await Promise.allSettled(
+        services.map((service) => fetchServiceDetail(service.public_id)),
+      );
 
       const detailsMap: Record<string, ServiceDetailResponse> = {};
       const failures: { id: string; reason: unknown }[] = [];
@@ -55,10 +55,10 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
   // Sync selectedId (if needed, though store usually drives this)
   useEffect(() => {
     // Legacy behavior synced ref here, but component should be reactive to store
-  }, [selectedId]);
+  }, []);
 
   const unifiedAgendaItems = Object.values(allDetails).flatMap((item) =>
-    item.schedules.map((schedule) => ({ schedule, service: item.service }))
+    item.schedules.map((schedule) => ({ schedule, service: item.service })),
   );
 
   return {

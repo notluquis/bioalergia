@@ -1,17 +1,16 @@
-import { Hono } from "hono";
-import { reply } from "../utils/reply";
 import dayjs from "dayjs";
+import { Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
-import {
-  createProductionBalance,
-  getProductionBalanceById,
-  listProductionBalances,
-  updateProductionBalance,
-} from "../services/daily-production-balances";
 import {
   productionBalancePayloadSchema,
   productionBalanceQuerySchema,
 } from "../lib/financial-schemas";
+import {
+  createProductionBalance,
+  listProductionBalances,
+  updateProductionBalance,
+} from "../services/daily-production-balances";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -25,9 +24,7 @@ function mapResponse(p: any) {
   // I need to replicate the calculation logic (subtotals) either here or in service.
   // Let's do it here for now to keep service simple CRUD.
   const subtotalIngresos =
-    (p.ingresoTarjetas || 0) +
-    (p.ingresoTransferencias || 0) +
-    (p.ingresoEfectivo || 0);
+    (p.ingresoTarjetas || 0) + (p.ingresoTransferencias || 0) + (p.ingresoEfectivo || 0);
   const totalIngresos = subtotalIngresos - (p.gastosDiarios || 0);
   const total = totalIngresos + (p.otrosAbonos || 0);
 
@@ -69,7 +66,8 @@ app.get("/", async (c) => {
   const parsed = productionBalanceQuerySchema.safeParse(query);
 
   if (!parsed.success) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message: "Parámetros inválidos",
@@ -81,8 +79,7 @@ app.get("/", async (c) => {
 
   const today = dayjs();
   const toDate = parsed.data.to ?? today.format("YYYY-MM-DD");
-  const fromDate =
-    parsed.data.from ?? today.subtract(30, "day").format("YYYY-MM-DD");
+  const fromDate = parsed.data.from ?? today.subtract(30, "day").format("YYYY-MM-DD");
 
   const items = await listProductionBalances(fromDate, toDate);
   return reply(c, {
@@ -104,7 +101,8 @@ app.post("/", async (c) => {
   const parsed = productionBalancePayloadSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message: "Payload inválido",
@@ -146,7 +144,8 @@ app.put("/:id", async (c) => {
   const parsed = productionBalancePayloadSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message: "Payload inválido",

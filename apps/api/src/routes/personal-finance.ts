@@ -1,9 +1,9 @@
+import { authDb } from "@finanzas/db";
+import { zValidator } from "@hono/zod-validator";
+import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
-import { getSessionUser, createAuthContext } from "../auth";
-import { authDb } from "@finanzas/db";
-import { Decimal } from "decimal.js";
+import { createAuthContext, getSessionUser } from "../auth";
 
 export const personalFinanceRoutes = new Hono();
 
@@ -81,58 +81,46 @@ personalFinanceRoutes.get("/credits/:id", async (c) => {
 });
 
 // POST /credits - Create new credit
-personalFinanceRoutes.post(
-  "/credits",
-  zValidator("json", createCreditSchema),
-  async (c) => {
-    const db = await getAuthDb(c);
-    const data = c.req.valid("json");
+personalFinanceRoutes.post("/credits", zValidator("json", createCreditSchema), async (c) => {
+  const db = await getAuthDb(c);
+  const data = c.req.valid("json");
 
-    // If installments are provided, use them. Otherwise we might need logic to generate them.
-    // For MVP Phase 1, we assume frontend provides the schedule or we just create header.
-    // Let's enforce installments for now to ensure data completeness, or handle empty.
+  // If installments are provided, use them. Otherwise we might need logic to generate them.
+  // For MVP Phase 1, we assume frontend provides the schedule or we just create header.
+  // Let's enforce installments for now to ensure data completeness, or handle empty.
 
-    // Transactional create
+  // Transactional create
 
-    const newCredit = await db.personalCredit.create({
-      data: {
-        bankName: data.bankName,
-        creditNumber: data.creditNumber,
-        description: data.description,
-        totalAmount: new Decimal(data.totalAmount),
-        currency: data.currency,
-        interestRate: data.interestRate
-          ? new Decimal(data.interestRate)
-          : undefined,
-        startDate: data.startDate,
-        totalInstallments: data.totalInstallments,
-        status: "ACTIVE",
-        installments: {
-          create: data.installments?.map((inst) => ({
-            installmentNumber: inst.installmentNumber,
-            dueDate: inst.dueDate,
-            amount: new Decimal(inst.amount),
-            capitalAmount: inst.capitalAmount
-              ? new Decimal(inst.capitalAmount)
-              : undefined,
-            interestAmount: inst.interestAmount
-              ? new Decimal(inst.interestAmount)
-              : undefined,
-            otherCharges: inst.otherCharges
-              ? new Decimal(inst.otherCharges)
-              : undefined,
-            status: "PENDING",
-          })),
-        },
+  const newCredit = await db.personalCredit.create({
+    data: {
+      bankName: data.bankName,
+      creditNumber: data.creditNumber,
+      description: data.description,
+      totalAmount: new Decimal(data.totalAmount),
+      currency: data.currency,
+      interestRate: data.interestRate ? new Decimal(data.interestRate) : undefined,
+      startDate: data.startDate,
+      totalInstallments: data.totalInstallments,
+      status: "ACTIVE",
+      installments: {
+        create: data.installments?.map((inst) => ({
+          installmentNumber: inst.installmentNumber,
+          dueDate: inst.dueDate,
+          amount: new Decimal(inst.amount),
+          capitalAmount: inst.capitalAmount ? new Decimal(inst.capitalAmount) : undefined,
+          interestAmount: inst.interestAmount ? new Decimal(inst.interestAmount) : undefined,
+          otherCharges: inst.otherCharges ? new Decimal(inst.otherCharges) : undefined,
+          status: "PENDING",
+        })),
       },
-      include: {
-        installments: true,
-      },
-    });
+    },
+    include: {
+      installments: true,
+    },
+  });
 
-    return c.json(newCredit, 201);
-  },
-);
+  return c.json(newCredit, 201);
+});
 
 // POST /credits/:id/installments/:number/pay - Pay an installment
 personalFinanceRoutes.post(

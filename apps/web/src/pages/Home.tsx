@@ -36,7 +36,11 @@ export default function Home() {
   const leaderboardParams = { from, limit: 5, mode: "outgoing" as const, to };
 
   if (!canReadDashboard) {
-    return <div className="text-base-content/60 p-8 text-center">No tienes permisos para ver el panel principal.</div>;
+    return (
+      <div className="text-base-content/60 p-8 text-center">
+        No tienes permisos para ver el panel principal.
+      </div>
+    );
   }
 
   return (
@@ -164,7 +168,9 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
               key={link.to}
               to={link.to}
             >
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${link.bg} ${link.color}`}>
+              <div
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${link.bg} ${link.color}`}
+              >
                 <link.icon className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">

@@ -1,16 +1,16 @@
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { formatAmount } from "@/features/finance/utils";
 
-import { SettlementTransaction } from "../types";
+import type { SettlementTransaction } from "../types";
 
 const moneyColumn = (
   accessorKey: keyof SettlementTransaction,
   header: string,
   align: "center" | "right" = "right",
-  isNegative = false
+  isNegative = false,
 ): ColumnDef<SettlementTransaction> => ({
   accessorKey,
   cell: ({ row }) => {
@@ -19,7 +19,8 @@ const moneyColumn = (
     if (amount == null) return <div className={`text-${align}`}>-</div>;
 
     let className = `text-${align}`;
-    if (accessorKey === "settlementNetAmount" && Number(amount) > 0) className += " text-success font-medium";
+    if (accessorKey === "settlementNetAmount" && Number(amount) > 0)
+      className += " text-success font-medium";
     if (isNegative) className += " text-error";
 
     return <div className={className}>{formatAmount(amount as number | string, currency)}</div>;
@@ -28,7 +29,10 @@ const moneyColumn = (
   minSize: 100,
 });
 
-const dateColumn = (accessorKey: keyof SettlementTransaction, header: string): ColumnDef<SettlementTransaction> => ({
+const dateColumn = (
+  accessorKey: keyof SettlementTransaction,
+  header: string,
+): ColumnDef<SettlementTransaction> => ({
   accessorKey,
   cell: ({ row }) => {
     const val = row.getValue(accessorKey);
@@ -78,7 +82,9 @@ export const columns: ColumnDef<SettlementTransaction>[] = [
   {
     accessorKey: "transactionType",
     cell: ({ row }) => (
-      <span className="badge badge-outline badge-sm whitespace-nowrap">{row.original.transactionType}</span>
+      <span className="badge badge-outline badge-sm whitespace-nowrap">
+        {row.original.transactionType}
+      </span>
     ),
     header: "Tipo",
     minSize: 150,

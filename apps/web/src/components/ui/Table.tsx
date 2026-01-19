@@ -116,7 +116,12 @@ function TableBody({
   return <tbody>{content}</tbody>;
 }
 
-function TableHeader<T extends string>({ columns, onSort, sortState, visibleColumns }: Readonly<TableHeaderProps<T>>) {
+function TableHeader<T extends string>({
+  columns,
+  onSort,
+  sortState,
+  visibleColumns,
+}: Readonly<TableHeaderProps<T>>) {
   const getSortIcon = (column: T) => {
     if (sortState?.column !== column) return null;
     return sortState.direction === "asc" ? (
@@ -135,9 +140,11 @@ function TableHeader<T extends string>({ columns, onSort, sortState, visibleColu
             <th
               className={cn(
                 "text-base-content/70 px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase",
-                column.sortable && onSort && "hover:bg-base-200 hover:text-primary cursor-pointer transition-colors",
+                column.sortable &&
+                  onSort &&
+                  "hover:bg-base-200 hover:text-primary cursor-pointer transition-colors",
                 column.align === "center" && "text-center",
-                column.align === "right" && "text-right"
+                column.align === "right" && "text-right",
               )}
               key={column.key}
               onClick={

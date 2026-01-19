@@ -5,7 +5,7 @@
  * No hardcoded values - the secret is generated on first use and reused thereafter.
  */
 
-import { randomBytes } from "crypto";
+import { randomBytes } from "node:crypto";
 import { db } from "@finanzas/db";
 
 const SECRET_KEY = "system.tokenSecret";

@@ -68,11 +68,17 @@ export function StatCard({
   const sizes = sizeClasses[size];
 
   return (
-    <article className={cn("border-base-300 bg-base-100 rounded-2xl border shadow-sm", sizes.container, className)}>
+    <article
+      className={cn(
+        "border-base-300 bg-base-100 rounded-2xl border shadow-sm",
+        sizes.container,
+        className,
+      )}
+    >
       <p
         className={cn(
           "text-base-content/60 flex items-center gap-1.5 font-semibold tracking-wide uppercase",
-          sizes.title
+          sizes.title,
         )}
       >
         {Icon && <Icon className="h-4 w-4" />}

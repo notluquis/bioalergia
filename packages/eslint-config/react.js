@@ -1,11 +1,11 @@
-import { config as baseConfig } from "./index.js";
-import react from "eslint-plugin-react";
-import reactHooks from "eslint-plugin-react-hooks";
-import reactRefresh from "eslint-plugin-react-refresh";
-import jsxA11y from "eslint-plugin-jsx-a11y";
 import tanstackQuery from "@tanstack/eslint-plugin-query";
 import prettier from "eslint-config-prettier";
+import jsxA11y from "eslint-plugin-jsx-a11y";
+import react from "eslint-plugin-react";
 import reactCompiler from "eslint-plugin-react-compiler";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+import { config as baseConfig } from "./index.js";
 
 export const config = [
   ...baseConfig,
@@ -24,10 +24,7 @@ export const config = [
     rules: {
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "react-compiler/react-compiler": "error",
 
       // Override naming convention for React Components (PascalCase)

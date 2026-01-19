@@ -68,7 +68,13 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?:
   Wallet,
 };
 
-const SECTION_ORDER: NavSection[] = ["Calendario", "Finanzas", "Servicios", "Operaciones", "Sistema"];
+const SECTION_ORDER: NavSection[] = [
+  "Calendario",
+  "Finanzas",
+  "Servicios",
+  "Operaciones",
+  "Sistema",
+];
 
 interface ExtractedNavItem extends Omit<NavItem, "icon"> {
   iconKey: string;
@@ -105,7 +111,7 @@ export function generateNavSections(): NavSectionData[] {
           label: item.label,
           requiredPermission: item.requiredPermission,
           to: item.to,
-        })
+        }),
       );
 
     sections.push({

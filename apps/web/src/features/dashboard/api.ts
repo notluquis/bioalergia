@@ -15,6 +15,8 @@ export async function fetchRecentMovements(): Promise<Transaction[]> {
 
 export async function fetchStats(from: string, to: string): Promise<StatsResponse> {
   const searchParams = new URLSearchParams({ from, to });
-  const res = await apiClient.get<StatsResponse>(`/api/transactions/stats?${searchParams.toString()}`);
+  const res = await apiClient.get<StatsResponse>(
+    `/api/transactions/stats?${searchParams.toString()}`,
+  );
   return res;
 }

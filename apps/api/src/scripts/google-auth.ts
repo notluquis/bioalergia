@@ -1,7 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
+import * as readline from "node:readline";
 import { OAuth2Client } from "google-auth-library";
-import * as readline from "readline";
-import fs from "fs";
-import path from "path";
 
 // Simple .env parser to avoid adding dotenv dependency if not present
 function loadEnv() {
@@ -36,17 +36,11 @@ async function main() {
 
   if (!clientId || !clientSecret) {
     console.error("❌ Error: Missing env vars.");
-    console.error(
-      "Please set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in .env"
-    );
+    console.error("Please set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in .env");
     process.exit(1);
   }
 
-  const oAuth2Client = new OAuth2Client(
-    clientId,
-    clientSecret,
-    "urn:ietf:wg:oauth:2.0:oob"
-  );
+  const oAuth2Client = new OAuth2Client(clientId, clientSecret, "urn:ietf:wg:oauth:2.0:oob");
 
   const authUrl = oAuth2Client.generateAuthUrl({
     access_type: "offline",
@@ -70,9 +64,7 @@ async function main() {
       console.log("\n✅ Authorization successful!");
       console.log("\nAdd this REFRESH TOKEN to your .env file:\n");
       console.log(`GOOGLE_OAUTH_REFRESH_TOKEN=${tokens.refresh_token}`);
-      console.log(
-        "\n(This token will allow the app to upload backups indefinitely)"
-      );
+      console.log("\n(This token will allow the app to upload backups indefinitely)");
       process.exit(0);
     } catch (error) {
       console.error("\n❌ Error retrieving access token:", error);

@@ -1,8 +1,8 @@
-import { db } from '../packages/db/src/client.js';
+import { db } from "../packages/db/src/client.js";
 
 async function main() {
-  console.log('🔄 Iniciando migración de timezone offsets (sumando 6 horas)...');
-  
+  console.log("🔄 Iniciando migración de timezone offsets (sumando 6 horas)...");
+
   // Ajustar start_time sumando 6 horas
   const startResult = await db.$executeRaw`
     UPDATE employee_timesheets
@@ -10,7 +10,7 @@ async function main() {
     WHERE start_time IS NOT NULL
   `;
   console.log(`✅ start_time ajustado: ${startResult} registros`);
-  
+
   // Ajustar end_time sumando 6 horas
   const endResult = await db.$executeRaw`
     UPDATE employee_timesheets
@@ -18,7 +18,7 @@ async function main() {
     WHERE end_time IS NOT NULL
   `;
   console.log(`✅ end_time ajustado: ${endResult} registros`);
-  
+
   // Verificar los cambios
   const sample = await db.$queryRaw`
     SELECT 
@@ -30,16 +30,16 @@ async function main() {
     ORDER BY work_date DESC
     LIMIT 10
   `;
-  
-  console.log('\n📊 Muestra de registros actualizados:');
+
+  console.log("\n📊 Muestra de registros actualizados:");
   console.table(sample);
-  
-  console.log('\n✨ Migración completada exitosamente');
+
+  console.log("\n✨ Migración completada exitosamente");
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error durante la migración:', e);
+    console.error("❌ Error durante la migración:", e);
     process.exit(1);
   })
   .finally(async () => {

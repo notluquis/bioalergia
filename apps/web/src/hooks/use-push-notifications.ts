@@ -22,7 +22,7 @@ export function usePushNotifications() {
       setPermission(Notification.permission);
       checkSubscription();
     }
-  }, []);
+  }, [checkSubscription]);
 
   const checkSubscription = async () => {
     if ("serviceWorker" in navigator) {
@@ -121,7 +121,8 @@ export function usePushNotifications() {
 
   return {
     isSubscribed,
-    loading: subscribeMutation.isPending || unsubscribeMutation.isPending || sendTestMutation.isPending,
+    loading:
+      subscribeMutation.isPending || unsubscribeMutation.isPending || sendTestMutation.isPending,
     permission,
     sendTestNotification,
     toggleSubscription,

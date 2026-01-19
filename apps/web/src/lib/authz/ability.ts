@@ -1,4 +1,9 @@
-import { AbilityBuilder, createMongoAbility, MongoAbility, RawRuleOf } from "@casl/ability";
+import {
+  AbilityBuilder,
+  createMongoAbility,
+  type MongoAbility,
+  type RawRuleOf,
+} from "@casl/ability";
 
 export type AppAbility = MongoAbility;
 

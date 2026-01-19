@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowLeftIcon } from "lucide-react";
 import { Suspense } from "react";
 
@@ -11,9 +11,12 @@ import { formatCurrency } from "@/lib/utils";
 
 import { PayInstallmentModal } from "../components/PayInstallmentModal";
 import { personalFinanceQueries } from "../queries";
-import { PersonalCreditInstallment } from "../types";
+import type { PersonalCreditInstallment } from "../types";
 
-const installmentColumns = (currency: string, creditId: number): ColumnDef<PersonalCreditInstallment>[] => [
+const installmentColumns = (
+  currency: string,
+  creditId: number,
+): ColumnDef<PersonalCreditInstallment>[] => [
   {
     accessorKey: "installmentNumber",
     cell: ({ row }) => <span className="font-medium">{row.original.installmentNumber}</span>,
@@ -26,14 +29,18 @@ const installmentColumns = (currency: string, creditId: number): ColumnDef<Perso
   },
   {
     accessorKey: "amount",
-    cell: ({ row }) => <div className="text-right">{formatCurrency(Number(row.original.amount), currency)}</div>,
+    cell: ({ row }) => (
+      <div className="text-right">{formatCurrency(Number(row.original.amount), currency)}</div>
+    ),
     header: ({ column: _column }) => <div className="text-right">Monto</div>,
   },
   {
     accessorKey: "status",
     cell: ({ row }) => (
       <div className="flex justify-center">
-        <Badge variant={row.original.status === "PAID" ? "success" : "outline"}>{row.original.status}</Badge>
+        <Badge variant={row.original.status === "PAID" ? "success" : "outline"}>
+          {row.original.status}
+        </Badge>
       </div>
     ),
     header: "Estado",
@@ -41,7 +48,9 @@ const installmentColumns = (currency: string, creditId: number): ColumnDef<Perso
   {
     cell: ({ row }) => (
       <div className="flex justify-end">
-        {row.original.status !== "PAID" && <PayInstallmentModal creditId={creditId} installment={row.original} />}
+        {row.original.status !== "PAID" && (
+          <PayInstallmentModal creditId={creditId} installment={row.original} />
+        )}
       </div>
     ),
     header: ({ column: _column }) => <div className="text-right">Acción</div>,
@@ -68,7 +77,9 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
         <h1 className="text-3xl font-bold tracking-tight">
           {credit.bankName} - {credit.description || credit.creditNumber}
         </h1>
-        <div className={`badge ${credit.status === "ACTIVE" ? "badge-primary" : "badge-ghost"}`}>{credit.status}</div>
+        <div className={`badge ${credit.status === "ACTIVE" ? "badge-primary" : "badge-ghost"}`}>
+          {credit.status}
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -77,7 +88,9 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
             <CardTitle className="text-sm font-medium">Monto Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(Number(credit.totalAmount), credit.currency)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(Number(credit.totalAmount), credit.currency)}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -86,8 +99,11 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {credit.installments?.filter((i: PersonalCreditInstallment) => i.status === "PAID").length} /{" "}
-              {credit.totalInstallments}
+              {
+                credit.installments?.filter((i: PersonalCreditInstallment) => i.status === "PAID")
+                  .length
+              }{" "}
+              / {credit.totalInstallments}
             </div>
           </CardContent>
         </Card>

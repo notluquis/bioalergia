@@ -24,7 +24,7 @@ export function ServiceScheduleTable({
       onRegisterPayment,
       onUnlinkPayment,
     }),
-    [onRegisterPayment, onUnlinkPayment]
+    [onRegisterPayment, onUnlinkPayment],
   );
 
   const columns = useMemo(() => getColumns(actions, canManage), [actions, canManage]);

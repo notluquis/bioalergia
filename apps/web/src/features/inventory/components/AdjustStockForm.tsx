@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
-import { InventoryItem, InventoryMovement } from "../types";
+import type { InventoryItem, InventoryMovement } from "../types";
 
 interface AdjustStockFormProps {
   item: InventoryItem;

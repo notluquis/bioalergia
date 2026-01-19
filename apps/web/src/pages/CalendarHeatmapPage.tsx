@@ -10,9 +10,12 @@ import { Card } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { fetchCalendarSummary } from "@/features/calendar/api";
 import HeatmapMonth from "@/features/calendar/components/HeatmapMonth";
-import { MultiSelectFilter, type MultiSelectOption } from "@/features/calendar/components/MultiSelectFilter";
+import {
+  MultiSelectFilter,
+  type MultiSelectOption,
+} from "@/features/calendar/components/MultiSelectFilter";
 import { NULL_CATEGORY_VALUE } from "@/features/calendar/constants";
-import { type CalendarFilters } from "@/features/calendar/types";
+import type { CalendarFilters } from "@/features/calendar/types";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -46,7 +49,9 @@ function arraysEqual(a: string[], b: string[]): boolean {
 function CalendarHeatmapPage() {
   // React Compiler auto-memoizes function calls in useState initializer
   const [filters, setFilters] = useState<HeatmapFilters>(() => createInitialFilters());
-  const [appliedFilters, setAppliedFilters] = useState<HeatmapFilters>(() => createInitialFilters());
+  const [appliedFilters, setAppliedFilters] = useState<HeatmapFilters>(() =>
+    createInitialFilters(),
+  );
 
   const { t } = useTranslation();
   // React Compiler auto-stabilizes helper functions
@@ -72,11 +77,13 @@ function CalendarHeatmapPage() {
   const isDirty = !filtersEqual(filters, appliedFilters);
 
   // React Compiler auto-memoizes array transformations
-  const availableCategories: MultiSelectOption[] = (summary?.available.categories ?? []).map((entry) => {
-    const value = entry.category ?? NULL_CATEGORY_VALUE;
-    const label = entry.category ?? "Sin clasificación";
-    return { label: `${label} · ${numberFormatter.format(entry.total)}`, value };
-  });
+  const availableCategories: MultiSelectOption[] = (summary?.available.categories ?? []).map(
+    (entry) => {
+      const value = entry.category ?? NULL_CATEGORY_VALUE;
+      const label = entry.category ?? "Sin clasificación";
+      return { label: `${label} · ${numberFormatter.format(entry.total)}`, value };
+    },
+  );
 
   // KEEP useMemo: Heavy Map operation iterating over all events
   const statsByDate = useMemo(() => {
@@ -98,8 +105,12 @@ function CalendarHeatmapPage() {
     const sourceFrom = summary?.filters.from || filters.from;
     const sourceTo = summary?.filters.to || filters.to;
 
-    let start = sourceFrom ? dayjs(sourceFrom).startOf("month") : dayjs().startOf("month").subtract(1, "month");
-    let end = sourceTo ? dayjs(sourceTo).startOf("month") : dayjs().startOf("month").add(1, "month");
+    let start = sourceFrom
+      ? dayjs(sourceFrom).startOf("month")
+      : dayjs().startOf("month").subtract(1, "month");
+    let end = sourceTo
+      ? dayjs(sourceTo).startOf("month")
+      : dayjs().startOf("month").add(1, "month");
 
     if (!start.isValid()) {
       start = dayjs().startOf("month").subtract(1, "month");
@@ -123,7 +134,7 @@ function CalendarHeatmapPage() {
   // KEEP useMemo: Set creation from mapped array
   const heatmapMonthKeys = useMemo(
     () => new Set(heatmapMonths.map((month) => month.format("YYYY-MM"))),
-    [heatmapMonths]
+    [heatmapMonths],
   );
 
   // KEEP useMemo: Iterates over all events to find max value
@@ -143,7 +154,9 @@ function CalendarHeatmapPage() {
   const handleToggle = (key: "categories", value: string) => {
     setFilters((prev) => ({
       ...prev,
-      [key]: prev[key].includes(value) ? prev[key].filter((item) => item !== value) : [...prev[key], value],
+      [key]: prev[key].includes(value)
+        ? prev[key].filter((item) => item !== value)
+        : [...prev[key], value],
     }));
   };
 
@@ -193,7 +206,7 @@ function CalendarHeatmapPage() {
           <ChevronDown
             className={clsx(
               "text-base-content/40 h-5 w-5 transition-transform duration-300",
-              showAdvanced && "rotate-180"
+              showAdvanced && "rotate-180",
             )}
           />
         </button>
@@ -201,7 +214,7 @@ function CalendarHeatmapPage() {
         <div
           className={clsx(
             "grid transition-[grid-template-rows] duration-300 ease-in-out",
-            showAdvanced ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+            showAdvanced ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
           )}
         >
           <div className="overflow-hidden">
@@ -263,7 +276,9 @@ function CalendarHeatmapPage() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">{tc("heatmapSection")}</h2>
+          <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
+            {tc("heatmapSection")}
+          </h2>
           <span className="text-base-content/60 text-xs">
             {tc("heatmapRange", {
               end: rangeEndLabel,

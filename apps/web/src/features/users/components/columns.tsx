@@ -1,6 +1,15 @@
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Fingerprint, Key, Lock, MoreVertical, Shield, ShieldCheck, Trash2, UserCog } from "lucide-react";
+import {
+  Fingerprint,
+  Key,
+  Lock,
+  MoreVertical,
+  Shield,
+  ShieldCheck,
+  Trash2,
+  UserCog,
+} from "lucide-react";
 
 import {
   DropdownMenu,
@@ -9,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
-import { User } from "@/features/users/types";
+import type { User } from "@/features/users/types";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
 import { BADGE_SM } from "@/lib/styles";
 import { cn } from "@/lib/utils";
@@ -61,14 +70,19 @@ export const getColumns = (actions: {
     filterFn: (row, _id, value) => {
       const user = row.original;
       const search = value.toLowerCase();
-      return user.email.toLowerCase().includes(search) || getPersonFullName(user.person).toLowerCase().includes(search);
+      return (
+        user.email.toLowerCase().includes(search) ||
+        getPersonFullName(user.person).toLowerCase().includes(search)
+      );
     },
     header: "Usuario",
   },
   {
     accessorKey: "role",
     cell: ({ row }) => (
-      <span className="badge badge-ghost badge-sm font-medium whitespace-nowrap">{row.original.role}</span>
+      <span className="badge badge-ghost badge-sm font-medium whitespace-nowrap">
+        {row.original.role}
+      </span>
     ),
     header: "Rol",
   },
@@ -124,7 +138,9 @@ export const getColumns = (actions: {
   {
     accessorKey: "createdAt",
     cell: ({ row }) => (
-      <span className="text-base-content/70 text-sm">{dayjs(row.original.createdAt).format("DD MMM YYYY")}</span>
+      <span className="text-base-content/70 text-sm">
+        {dayjs(row.original.createdAt).format("DD MMM YYYY")}
+      </span>
     ),
     header: "Creado",
   },

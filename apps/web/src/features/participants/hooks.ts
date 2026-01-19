@@ -1,10 +1,8 @@
-import { keepPreviousData, useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { keepPreviousData, type UseQueryOptions, useQuery } from "@tanstack/react-query";
 
 import { queryKeys } from "@/lib/query-keys";
-
-import type { ParticipantLeaderboardResponse, ParticipantSummaryRow } from "./types";
-
 import { fetchParticipantLeaderboard } from "./api";
+import type { ParticipantLeaderboardResponse, ParticipantSummaryRow } from "./types";
 
 interface LeaderboardParams {
   from?: string;
@@ -15,7 +13,10 @@ interface LeaderboardParams {
 
 export function useParticipantLeaderboardQuery(
   params: LeaderboardParams,
-  options?: Pick<UseQueryOptions<ParticipantLeaderboardResponse, Error, ParticipantSummaryRow[]>, "enabled">
+  options?: Pick<
+    UseQueryOptions<ParticipantLeaderboardResponse, Error, ParticipantSummaryRow[]>,
+    "enabled"
+  >,
 ) {
   return useQuery<ParticipantLeaderboardResponse, Error, ParticipantSummaryRow[]>({
     placeholderData: keepPreviousData,

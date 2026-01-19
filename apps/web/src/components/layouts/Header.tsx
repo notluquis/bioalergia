@@ -56,7 +56,9 @@ export default function Header() {
       }
       case "settings": {
         crumbs.push("Configuración");
-        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Configuración";
+        titleText = parts[1]
+          ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1)
+          : "Configuración";
 
         break;
       }
