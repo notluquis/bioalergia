@@ -45,6 +45,7 @@ export default function MovementTypeList({ data }: MovementTypeListProps) {
           {items.map((item, index) => (
             <div
               className="hover:bg-base-200/50 flex items-center justify-between rounded-lg border border-transparent p-2 transition-colors"
+              // biome-ignore lint/suspicious/noArrayIndexKey: simple list
               key={index}
             >
               <span className="text-sm">{item.description ?? "Sin categoría"}</span>

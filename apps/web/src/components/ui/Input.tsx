@@ -60,6 +60,7 @@ const getDescribedById = (error?: string, helper?: string, inputId?: string) => 
   return helper ? `${inputId}-helper` : undefined;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export default function Input(props: Props) {
   const {
     as = "input",

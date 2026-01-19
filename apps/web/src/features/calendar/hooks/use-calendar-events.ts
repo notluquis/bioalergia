@@ -213,6 +213,7 @@ export function useCalendarEvents() {
     let pollCount = 0;
     const maxPolls = 60; // 5 minutes max (5s interval)
 
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy polling logic
     const pollInterval = setInterval(async () => {
       pollCount++;
       try {

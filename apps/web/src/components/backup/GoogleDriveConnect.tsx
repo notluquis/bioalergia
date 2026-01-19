@@ -65,6 +65,7 @@ function GoogleDriveConnect() {
     if (error) {
       const errorMessage = Object.hasOwn(ERROR_MESSAGES, error)
         ? // eslint-disable-next-line security/detect-object-injection, @typescript-eslint/no-non-null-assertion
+          // biome-ignore lint/style/noNonNullAssertion: legacy logic
           ERROR_MESSAGES[error]!
         : `Error de conexión: ${error}`;
       showError(errorMessage);

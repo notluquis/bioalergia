@@ -57,6 +57,7 @@ export async function uploadToDrive(
     });
 
     return {
+      // biome-ignore lint/style/noNonNullAssertion: legacy google types
       fileId: response.data.id!,
       webViewLink: response.data.webViewLink || null,
       md5Checksum: response.data.md5Checksum || null,
@@ -101,8 +102,11 @@ export async function listBackups(): Promise<BackupFile[]> {
     });
 
     return (response.data.files || []).map((f) => ({
+      // biome-ignore lint/style/noNonNullAssertion: legacy google types
       id: f.id!,
+      // biome-ignore lint/style/noNonNullAssertion: legacy google types
       name: f.name!,
+      // biome-ignore lint/style/noNonNullAssertion: legacy google types
       createdTime: f.createdTime!,
       size: f.size || "0",
       webViewLink: f.webViewLink || undefined,
@@ -139,7 +143,9 @@ export async function cleanupOldBackups(
 
     for (const file of files) {
       try {
+        // biome-ignore lint/style/noNonNullAssertion: legacy google types
         await drive.files.delete({ fileId: file.id!, supportsAllDrives: true });
+        // biome-ignore lint/style/noNonNullAssertion: legacy google types
         deletedFiles.push(file.name!);
       } catch (deleteError) {
         const parsed = parseGoogleError(deleteError);
@@ -167,8 +173,11 @@ export async function getBackupInfo(fileId: string): Promise<BackupFile | null> 
     });
 
     return {
+      // biome-ignore lint/style/noNonNullAssertion: legacy google types
       id: response.data.id!,
+      // biome-ignore lint/style/noNonNullAssertion: legacy google types
       name: response.data.name!,
+      // biome-ignore lint/style/noNonNullAssertion: legacy google types
       createdTime: response.data.createdTime!,
       size: response.data.size || "0",
       webViewLink: response.data.webViewLink || undefined,
@@ -276,6 +285,7 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
           const decompressed: Buffer[] = [];
 
           gunzip.on("data", (chunk: Buffer) => decompressed.push(chunk));
+          // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy stream processing
           gunzip.on("end", () => {
             try {
               // We only have the beginning of the file, so it's invalid JSON.

@@ -2,17 +2,17 @@ import { db } from "@finanzas/db";
 import { calendar, type calendar_v3 } from "@googleapis/calendar";
 import { JWT } from "google-auth-library";
 import { compileExcludePatterns, googleCalendarConfig } from "../../config";
+import type { CalendarEventRecord } from "../../lib/google/google-calendar";
 import {
   removeGoogleCalendarEvents,
   upsertGoogleCalendarEvents,
 } from "../../lib/google/google-calendar-store";
-import { type CalendarEventRecord } from "../../lib/google/google-calendar";
 import { parseCalendarMetadata } from "../../modules/calendar/parsers";
 
 function isEventExcluded(
   summary: string | null | undefined,
   description: string | null | undefined,
-  patterns: RegExp[]
+  patterns: RegExp[],
 ): boolean {
   const text = `${summary ?? ""}\n${description ?? ""}`.toLowerCase();
   return patterns.some((regex) => regex.test(text));
@@ -81,12 +81,12 @@ export class CalendarSyncService {
       try {
         console.log(`[CalendarSync] Starting sync for ${calendarId}`);
         const result = await this.syncCalendar(calendarId);
-        
+
         results.inserted += result.inserted;
         results.updated += result.updated;
         results.deleted += result.deleted;
         results.eventsFetched += result.eventsFetched;
-        
+
         results.details.inserted.push(...result.details.inserted);
         results.details.updated.push(...result.details.updated);
         results.details.deleted.push(...result.details.deleted);
@@ -125,11 +125,12 @@ export class CalendarSyncService {
 
     try {
       return await this.performSync(calendarId, currentSyncToken);
+      // biome-ignore lint/suspicious/noExplicitAny: catch error
     } catch (error: any) {
       // Handle 410 Gone: Sync token is invalid -> Clear token and retry full sync
       if (error.code === 410 || error.message?.includes("410")) {
         console.warn(
-          `[CalendarSync] 410 Gone for ${calendarId}. Clearing syncToken and retrying full sync.`
+          `[CalendarSync] 410 Gone for ${calendarId}. Clearing syncToken and retrying full sync.`,
         );
         await db.calendar.update({
           where: { googleId: calendarId },
@@ -145,9 +146,10 @@ export class CalendarSyncService {
   /**
    * Internal sync execution loop handling pagination and syncToken
    */
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy sync logic
   private async performSync(
     calendarId: string,
-    syncToken: string | null | undefined
+    syncToken: string | null | undefined,
   ): Promise<{
     inserted: number;
     updated: number;
@@ -161,9 +163,9 @@ export class CalendarSyncService {
     };
   }> {
     const client = await this.getClient();
-    let pageToken: string | undefined = undefined;
-    let nextSyncToken: string | undefined = undefined;
-    
+    let pageToken: string | undefined;
+    let nextSyncToken: string | undefined;
+
     // Config for full sync (fallback)
     // Note: We ignore timeMin/timeMax if syncToken is present per Google API specs
     const timeZone = googleCalendarConfig?.timeZone ?? "America/Santiago";
@@ -172,7 +174,7 @@ export class CalendarSyncService {
     let totalUpdated = 0;
     let totalDeleted = 0;
     let totalFetched = 0;
-    let isFullSync = !syncToken;
+    const isFullSync = !syncToken;
 
     const details = {
       inserted: [] as string[],
@@ -185,7 +187,7 @@ export class CalendarSyncService {
         calendarId,
         pageToken,
         singleEvents: true, // Expand recurring events
-        maxResults: 2500,   // Maximize page size
+        maxResults: 2500, // Maximize page size
       };
 
       if (syncToken) {
@@ -195,7 +197,7 @@ export class CalendarSyncService {
         // Fallback to "syncStartDate" from config if doing full sync
         // NOTE: Incremental sync (with token) ignores these date ranges!
         params.timeMin = new Date(
-          googleCalendarConfig?.syncStartDate ?? "2024-01-01"
+          googleCalendarConfig?.syncStartDate ?? "2024-01-01",
         ).toISOString();
         // Lookahead
         const lookAheadDays = googleCalendarConfig?.syncLookAheadDays ?? 365;
@@ -212,9 +214,9 @@ export class CalendarSyncService {
       // Classify items into Upsert (Active) vs Delete (Cancelled)
       const toUpsert: CalendarEventRecord[] = [];
       const toDelete: { calendarId: string; eventId: string; summary?: string }[] = [];
-      
+
       const excludePatterns = compileExcludePatterns(
-        googleCalendarConfig?.excludeSummarySources ?? []
+        googleCalendarConfig?.excludeSummarySources ?? [],
       );
 
       for (const item of items) {
@@ -222,14 +224,14 @@ export class CalendarSyncService {
 
         // Check exclusion patterns
         if (isEventExcluded(item.summary, item.description, excludePatterns)) {
-             // Treat excluded events as "to delete" if they exist in DB?
-             // Legacy behavior: "excludedEvents" are passed to "removeGoogleCalendarEvents".
-             toDelete.push({
-                calendarId,
-                eventId: item.id,
-                summary: item.summary ?? undefined,
-             });
-             continue;
+          // Treat excluded events as "to delete" if they exist in DB?
+          // Legacy behavior: "excludedEvents" are passed to "removeGoogleCalendarEvents".
+          toDelete.push({
+            calendarId,
+            eventId: item.id,
+            summary: item.summary ?? undefined,
+          });
+          continue;
         }
 
         if (item.status === "cancelled") {
@@ -282,13 +284,13 @@ export class CalendarSyncService {
         const result = await upsertGoogleCalendarEvents(toUpsert);
         totalInserted += result.inserted;
         totalUpdated += result.updated;
-        
+
         // Aggregate details
         if (details.inserted.length < 50) {
-            details.inserted.push(...result.details.inserted);
+          details.inserted.push(...result.details.inserted);
         }
         if (details.updated.length < 50) {
-            details.updated.push(...result.details.updated);
+          details.updated.push(...result.details.updated);
         }
       }
 
@@ -296,13 +298,13 @@ export class CalendarSyncService {
         const deletedSummaries = await removeGoogleCalendarEvents(toDelete);
         totalDeleted += toDelete.length;
         if (details.deleted.length < 50) {
-            details.deleted.push(...deletedSummaries);
+          details.deleted.push(...deletedSummaries);
         }
       }
 
       // Pagination
       pageToken = response.data.nextPageToken ?? undefined;
-      
+
       // Capture next sync token from the LAST page
       if (response.data.nextSyncToken) {
         nextSyncToken = response.data.nextSyncToken;
@@ -324,7 +326,7 @@ export class CalendarSyncService {
       deleted: totalDeleted,
       eventsFetched: totalFetched,
       fullSync: isFullSync,
-      details
+      details,
     };
   }
 }

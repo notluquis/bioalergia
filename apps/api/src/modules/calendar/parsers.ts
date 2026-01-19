@@ -329,6 +329,7 @@ function normalizeAmountRaw(raw: string): number | null {
   return normalized;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy parser
 function extractAmounts(summary: string, description: string) {
   let amountExpected: number | null = null;
   let amountPaid: number | null = null;
@@ -563,6 +564,7 @@ function detectTreatmentStage(summary: string, description: string): string | nu
 // MAIN EXPORT
 // ============================================================================
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy parser logic
 export function parseCalendarMetadata(input: {
   summary?: string | null;
   description?: string | null;

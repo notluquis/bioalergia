@@ -168,7 +168,9 @@ async function main() {
         bankName: "BCI",
         creditNumber: bciCreditNumber,
         description: "Crédito Consumo BCI",
+        // biome-ignore lint/suspicious/noExplicitAny: script data
         totalAmount: 11304563 as any, // From "Monto Solicitado"
+        // biome-ignore lint/suspicious/noExplicitAny: script data
         interestRate: 1.32 as any,
         startDate: parseDate("18/08/2025"), // Fecha de curse
         totalInstallments: 48,
@@ -189,7 +191,9 @@ async function main() {
           creditId: bciCredit.id,
           installmentNumber: parseInt(num, 10),
           dueDate: parseDate(dateStr),
+          // biome-ignore lint/suspicious/noExplicitAny: script data
           amount: amount as any,
+          // biome-ignore lint/suspicious/noExplicitAny: script data
           paidAmount: paidAmount as any,
           status: paidAmount ? "PAID" : "PENDING",
         },
@@ -209,7 +213,9 @@ async function main() {
         bankName: "Falabella",
         creditNumber: falaCreditNumber,
         description: "Crédito Consumo Falabella",
+        // biome-ignore lint/suspicious/noExplicitAny: script data
         totalAmount: 12900000 as any, // Monto Liquido
+        // biome-ignore lint/suspicious/noExplicitAny: script data
         interestRate: 1.66 as any,
         startDate: parseDate("21/08/2025"),
         totalInstallments: 48,
@@ -229,8 +235,10 @@ async function main() {
           creditId: falaCredit.id,
           installmentNumber: parseInt(num, 10),
           dueDate: parseDate(dateStr),
+          // biome-ignore lint/suspicious/noExplicitAny: script data
           amount: amount as any,
           status: isPaid ? "PAID" : "PENDING",
+          // biome-ignore lint/suspicious/noExplicitAny: script data
           paidAmount: isPaid ? (amount as any) : null, // Estimating
         },
       });
@@ -249,6 +257,7 @@ async function main() {
         bankName: "Itaú",
         creditNumber: itauCreditNumber,
         description: "Hipoteca Depto 116",
+        // biome-ignore lint/suspicious/noExplicitAny: script data
         totalAmount: 1821.0 as any, // UF
         currency: "UF",
         startDate: parseDate("29/08/2025"),
@@ -264,6 +273,7 @@ async function main() {
           creditId: itauCredit.id,
           installmentNumber: 1,
           dueDate: parseDate("12/01/2026"),
+          // biome-ignore lint/suspicious/noExplicitAny: script data
           amount: 16.24 as any,
           status: "PENDING",
         },
@@ -271,6 +281,7 @@ async function main() {
           creditId: itauCredit.id,
           installmentNumber: 2,
           dueDate: parseDate("10/02/2026"),
+          // biome-ignore lint/suspicious/noExplicitAny: script data
           amount: 9.68 as any,
           status: "PENDING",
         },
@@ -283,4 +294,4 @@ async function main() {
   console.log("Done!");
 }
 
-main();
+void main();

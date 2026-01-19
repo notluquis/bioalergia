@@ -42,4 +42,4 @@ async function main() {
   console.log("--- DIAGNOSTIC END ---");
 }
 
-main();
+void main();

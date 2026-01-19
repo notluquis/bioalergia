@@ -46,6 +46,7 @@ export function DayNavigation({
           {rightSlot}
           <div className="bg-base-200 flex gap-0.5 rounded-lg p-1">
             <button
+              type="button"
               aria-label="Día anterior"
               className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
               onClick={handlePrev}
@@ -54,6 +55,7 @@ export function DayNavigation({
             </button>
 
             <button
+              type="button"
               className="hover:bg-base-100 rounded-md px-2 py-1 text-xs font-semibold uppercase transition-colors"
               onClick={handleToday}
             >
@@ -61,6 +63,7 @@ export function DayNavigation({
             </button>
 
             <button
+              type="button"
               aria-label="Día siguiente"
               className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
               onClick={handleNext}
@@ -80,6 +83,7 @@ export function DayNavigation({
 
             return (
               <button
+                type="button"
                 className={cn(
                   "relative mx-0.5 flex min-w-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 transition-all duration-200",
                   isSelected

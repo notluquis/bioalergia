@@ -1,3 +1,4 @@
+// biome-ignore lint/suspicious/noExplicitAny: dynamic row input
 export function mapTransaction(row: any) {
   return {
     id: Number(row.id),

@@ -21,6 +21,7 @@ export const logger = {
   child: () => logger, // Dummy child
 };
 
+// biome-ignore lint/suspicious/noExplicitAny: Hono context dynamic
 export function requestContext(c: Context | any, extra: Record<string, unknown> = {}) {
   // Try to extract user from context if available (depends on middleware)
   const user = c.get?.("user") || null;

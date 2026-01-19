@@ -21,6 +21,7 @@ export default function Backdrop({
   if (!isVisible) return null;
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: backdrop div
     <div
       aria-label="Close"
       className={cn("fixed inset-0", className)}

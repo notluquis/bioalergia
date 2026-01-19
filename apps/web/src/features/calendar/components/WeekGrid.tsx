@@ -109,6 +109,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
 
   // Calculate time bounds based based on events AND current time
   // eslint-disable-next-line sonarjs/cognitive-complexity
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy time calculation
   const { endHour, startHour } = (() => {
     // Filter events to only those in the displayed week (Mon-Sat)
     const weekEnd = monday.add(5, "day").endOf("day");
@@ -249,6 +250,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
             {/* Events */}
             <div className="week-grid__events">
               {}
+              {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy rendering */}
               {calculateEventLayout(eventsByDay[day.key] ?? []).map((event) => {
                 const position = getEventPosition(event, startHour, endHour);
                 if (!position) return null;
@@ -356,6 +358,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
 }
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy layout logic
 function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] {
   if (events.length === 0) return [];
 

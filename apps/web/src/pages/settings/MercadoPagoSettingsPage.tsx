@@ -126,6 +126,7 @@ export default function MercadoPagoSettingsPage() {
         {/* Tabs */}
         <div className="tabs tabs-boxed bg-base-200/50 w-full p-1 sm:w-auto" role="tablist">
           <button
+            type="button"
             className={cn(
               "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
               activeTab === "release" &&
@@ -139,6 +140,7 @@ export default function MercadoPagoSettingsPage() {
             Liberación
           </button>
           <button
+            type="button"
             className={cn(
               "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
               activeTab === "settlement" &&
@@ -216,6 +218,7 @@ export default function MercadoPagoSettingsPage() {
                 <p className="text-error mb-2 font-medium">Errores encontrados:</p>
                 <ul className="text-error/80 list-inside list-disc space-y-1 text-xs">
                   {lastImportStats.errors.slice(0, 5).map((err, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static list
                     <li key={i}>{err}</li>
                   ))}
                   {lastImportStats.errors.length > 5 && (

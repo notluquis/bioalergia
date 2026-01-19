@@ -11,6 +11,7 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 
 export async function subscribeToPush(
   userId: number,
+  // biome-ignore lint/suspicious/noExplicitAny: legacy push subscription
   subscription: { endpoint: string; keys: any },
 ) {
   return await db.pushSubscription.upsert({

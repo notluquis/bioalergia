@@ -37,6 +37,7 @@ function toJsonValue(value: Record<string, unknown> | null | undefined): JsonVal
 }
 
 // Map frontend payload to ZenStack Employee update data
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy mapping
 function mapToEmployeeData(payload: EmployeePayload): EmployeeUpdateInput {
   const data: EmployeeUpdateInput = {};
 

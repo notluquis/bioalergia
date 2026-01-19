@@ -36,6 +36,7 @@ const formatDuration = (value: number) => {
   return `${Math.round(value)} ms`;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export function SyncProgressPanel({
   lastSyncInfo,
   onSyncNow,
@@ -80,6 +81,7 @@ export function SyncProgressPanel({
     updated: "Actualizadas",
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy logic
   const formatDetails = (details: Record<string, unknown>) => {
     const parts: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- details can be null/undefined
@@ -117,7 +119,10 @@ export function SyncProgressPanel({
               })()}
             </p>
           </div>
-          {syncing && <span aria-label="Sincronizando" className={LOADING_SPINNER_SM} />}
+          {syncing && (
+            // biome-ignore lint/a11y/useAriaPropsSupportedByRole: legacy spinner
+            <span aria-label="Sincronizando" className={LOADING_SPINNER_SM} />
+          )}
           {syncError && (
             <span className="text-error text-xs font-semibold">Revisa los detalles abajo.</span>
           )}

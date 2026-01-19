@@ -97,7 +97,9 @@ function normalizeTimeString(time: string): string | null {
   if (!match) return null;
 
   const [, hours, minutes, seconds = "00"] = match;
+  // biome-ignore lint/style/noNonNullAssertion: regex match guarantee
   const h = parseInt(hours!, 10);
+  // biome-ignore lint/style/noNonNullAssertion: regex match guarantee
   const m = parseInt(minutes!, 10);
   const s = parseInt(seconds, 10);
 
@@ -165,6 +167,7 @@ function dateToTimeString(date: Date | string | null): string | null {
     const match = date.match(/^(\d{1,2}):(\d{2})/);
     if (match) {
       const [, hours, minutes] = match;
+      // biome-ignore lint/style/noNonNullAssertion: regex match guarantee
       return `${hours!.padStart(2, "0")}:${minutes}`;
     }
     // Try parsing as date/time
@@ -357,6 +360,7 @@ export async function upsertTimesheetEntry(
       overtime_minutes: result.overtime_minutes,
       comment: result.comment,
     };
+    // biome-ignore lint/suspicious/noExplicitAny: error handling
   } catch (error: any) {
     console.error("[timesheets] upsert error details:", {
       message: error.message,
@@ -414,6 +418,7 @@ export async function updateTimesheetEntry(
     });
 
     return mapTimesheetEntry(entry);
+    // biome-ignore lint/suspicious/noExplicitAny: error handling
   } catch (error: any) {
     console.error("[timesheets] update error details:", {
       id,
@@ -617,6 +622,7 @@ export function buildEmployeeSummary(
 /**
  * Build monthly summary for all employees (or a specific one)
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy builder
 export async function buildMonthlySummary(from: string, to: string, employeeId?: number) {
   const employees = await listEmployees();
   const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));

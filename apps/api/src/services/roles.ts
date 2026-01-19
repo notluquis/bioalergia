@@ -13,6 +13,7 @@ export async function listRoles() {
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: dynamic payload
 export async function createRole(data: any) {
   const existing = await db.role.findFirst({
     where: { name: { equals: data.name, mode: "insensitive" } },
@@ -25,6 +26,7 @@ export async function createRole(data: any) {
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: dynamic payload
 export async function updateRole(id: number, data: any) {
   if (data.name) {
     const existing = await db.role.findFirst({
@@ -140,6 +142,7 @@ export async function syncPermissions() {
         } else {
           skipped++;
         }
+        // biome-ignore lint/suspicious/noExplicitAny: unknown error type
       } catch (e: any) {
         console.error(`[syncPermissions] Failed to sync ${action}:${subject}:`, e.message);
         errors.push(`${action}:${subject} (${e.message})`);

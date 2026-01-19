@@ -15,6 +15,7 @@ import { reply } from "../utils/reply";
 const app = new Hono();
 
 // Helper to map record for response (mimicking legacy mapProductionBalance)
+// biome-ignore lint/suspicious/noExplicitAny: legacy mapper
 function mapResponse(p: any) {
   // Logic mostly in service via DB naming, but need to reconstruct some calculated fields if not in DB result
   // The service implementation returns DB objects.

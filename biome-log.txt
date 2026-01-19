@@ -1,0 +1,281 @@
+apps/api/src/config.ts:82:30 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    80 │   googleCalendarEnvMissing.length === 0
+    81 │     ? {
+  > 82 │         serviceAccountEmail: googleServiceAccountEmail!,
+       │                              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    83 │         privateKey: googleServiceAccountPrivateKey!,
+    84 │         calendarIds: googleCalendarIds!,
+  
+
+apps/api/src/config.ts:83:21 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    81 │     ? {
+    82 │         serviceAccountEmail: googleServiceAccountEmail!,
+  > 83 │         privateKey: googleServiceAccountPrivateKey!,
+       │                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    84 │         calendarIds: googleCalendarIds!,
+    85 │         timeZone: process.env.GOOGLE_CALENDAR_TIMEZONE ?? "America/Santiago",
+  
+
+apps/api/src/config.ts:84:22 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    82 │         serviceAccountEmail: googleServiceAccountEmail!,
+    83 │         privateKey: googleServiceAccountPrivateKey!,
+  > 84 │         calendarIds: googleCalendarIds!,
+       │                      ^^^^^^^^^^^^^^^^^^
+    85 │         timeZone: process.env.GOOGLE_CALENDAR_TIMEZONE ?? "America/Santiago",
+    86 │         syncStartDate,
+  
+
+apps/api/src/lib/google/google-calendar-queries.ts:118:10 lint/complexity/noExcessiveCognitiveComplexity ━━━━━━━━━━
+
+  ! Excessive complexity of 26 detected (max: 15).
+  
+    117 │ // Helper: Apply filters to a Kysely query
+  > 118 │ function applyFilters(query: any, filters: CalendarEventFilters) {
+        │          ^^^^^^^^^^^^
+    119 │   let q = query;
+    120 │ 
+  
+  i Please refactor this function to reduce its complexity score from 26 to the max allowed complexity 15.
+  
+
+apps/api/src/lib/google/google-calendar-queries.ts:118:30 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    117 │ // Helper: Apply filters to a Kysely query
+  > 118 │ function applyFilters(query: any, filters: CalendarEventFilters) {
+        │                              ^^^
+    119 │   let q = query;
+    120 │ 
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps/api/src/lib/google/google-calendar-queries.ts:161:24 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    160 │     if (hasNull && validCategories.length > 0) {
+  > 161 │       q = q.where((eb: any) =>
+        │                        ^^^
+    162 │         eb.or([eb("e.category", "in", validCategories), eb("e.category", "is", null)]),
+    163 │       );
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps/api/src/lib/google/google-calendar-queries.ts:173:22 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    171 │   if (filters.search) {
+    172 │     const term = `%${filters.search}%`;
+  > 173 │     q = q.where((eb: any) =>
+        │                      ^^^
+    174 │       eb.or([eb("e.summary", "ilike", term), eb("e.description", "ilike", term)]),
+    175 │     );
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps/api/src/lib/parsers.ts:323:10 lint/complexity/noExcessiveCognitiveComplexity ━━━━━━━━━━
+
+  ! Excessive complexity of 48 detected (max: 15).
+  
+    321 │ }
+    322 │ 
+  > 323 │ function extractAmounts(summary: string, description: string) {
+        │          ^^^^^^^^^^^^^^
+    324 │   let amountExpected: number | null = null;
+    325 │   let amountPaid: number | null = null;
+  
+  i Please refactor this function to reduce its complexity score from 48 to the max allowed complexity 15.
+  
+
+apps/api/src/modules/calendar/parsers.ts:332:10 lint/complexity/noExcessiveCognitiveComplexity ━━━━━━━━━━
+
+  ! Excessive complexity of 54 detected (max: 15).
+  
+    330 │ }
+    331 │ 
+  > 332 │ function extractAmounts(summary: string, description: string) {
+        │          ^^^^^^^^^^^^^^
+    333 │   let amountExpected: number | null = null;
+    334 │   let amountPaid: number | null = null;
+  
+  i Please refactor this function to reduce its complexity score from 54 to the max allowed complexity 15.
+  
+
+apps/api/src/routes/settlement-transactions.ts:39:16 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    38 │   // Build where clause
+  > 39 │   const where: any = {};
+       │                ^^^
+    40 │ 
+    41 │   if (from) {
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps/api/src/routes/timesheets.ts:469:42 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    468 │     // Get retention rate
+  > 469 │     const summaryYear = month ? parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
+        │                                          ^^^^^^^^^^^^^^^^^^^^
+    470 │     const employeeRate = summary.retentionRate || summary.retention_rate || null;
+    471 │     const effectiveRate = employeeRate ?? (summaryYear >= 2024 ? 0.1275 : 0.1);
+  
+
+apps/api/src/services/calendar.ts:20:16 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    18 │   const staleDate = new Date(Date.now() - STALE_TIMEOUT_MS);
+    19 │ 
+  > 20 │   const where: any = {
+       │                ^^^
+    21 │     status: "RUNNING",
+    22 │   };
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps/api/src/services/calendar.ts:165:23 lint/complexity/noExcessiveCognitiveComplexity ━━━━━━━━━━
+
+  ! Excessive complexity of 23 detected (max: 15).
+  
+    163 │ };
+    164 │ 
+  > 165 │ export async function listUnclassifiedCalendarEvents(
+        │                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    166 │   limit: number,
+    167 │   offset: number = 0,
+  
+  i Please refactor this function to reduce its complexity score from 23 to the max allowed complexity 15.
+  
+
+apps/api/src/services/calendar.ts:173:21 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    172 │   // Build conditions based on filters
+  > 173 │   const conditions: any[] = [];
+        │                     ^^^
+    174 │ 
+    175 │   // If no specific filters, default to show events missing ANY classifiable field
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps/api/src/services/calendar.ts:213:20 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    212 │   // Build where clause based on filter mode
+  > 213 │   let whereClause: any = {};
+        │                    ^^^
+    214 │ 
+    215 │   // Optimize: Exclude ignored events at DB level to prevent empty pages
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps/api/src/services/drive.ts:148:27 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    146 │         // biome-ignore lint/style/noNonNullAssertion: legacy google types
+    147 │         await drive.files.delete({ fileId: file.id!, supportsAllDrives: true });
+  > 148 │         deletedFiles.push(file.name!);
+        │                           ^^^^^^^^^^
+    149 │       } catch (deleteError) {
+    150 │         const parsed = parseGoogleError(deleteError);
+  
+
+apps/api/src/services/mercadopago/index.ts:23:55 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    21 │   async createReport(
+    22 │     type: "release" | "settlement",
+  > 23 │     range: { begin_date: string; end_date: string } | any,
+       │                                                       ^^^
+    24 │   ) {
+    25 │     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps/web/src/App.tsx:195:23 lint/a11y/useAriaPropsSupportedByRole ━━━━━━━━━━
+
+  ! The ARIA attribute 'aria-label' is not supported by this element.
+  
+    193 │                   <TooltipTrigger asChild>
+    194 │                     <div className="text-base-content/70 flex cursor-help items-center gap-2 text-xs">
+  > 195 │                       <span
+        │                       ^^^^^
+  > 196 │                         aria-label="Sistema operativo"
+  > 197 │                         className="bg-success/70 inline-flex h-2 w-2 rounded-full"
+  > 198 │                       />
+        │                       ^^
+    199 │                     </div>
+    200 │                   </TooltipTrigger>
+  
+  i Ensure that ARIA attributes are valid for the role of the element.
+  
+
+apps/web/src/components/backup/GoogleDriveConnect.tsx:68:11 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    66 │       const errorMessage = Object.hasOwn(ERROR_MESSAGES, error)
+    67 │         ? // eslint-disable-next-line security/detect-object-injection, @typescript-eslint/no-non-null-assertion
+  > 68 │           ERROR_MESSAGES[error]!
+       │           ^^^^^^^^^^^^^^^^^^^^^^
+    69 │         : `Error de conexión: ${error}`;
+    70 │       showError(errorMessage);
+  
+
+apps/web/src/components/features/UpdateNotification.tsx:73:13 lint/a11y/noSvgWithoutTitle ━━━━━━━━━━
+
+  ! Alternative text title element cannot be empty
+  
+    71 │         <div className="flex items-start gap-3">
+    72 │           <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+  > 73 │             <svg
+       │             ^^^^
+  > 74 │               className="text-primary h-6 w-6"
+  > 75 │               fill="none"
+  > 76 │               stroke="currentColor"
+  > 77 │               viewBox="0 0 24 24"
+  > 78 │             >
+       │             ^
+    79 │               <path
+    80 │                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+  
+  i For accessibility purposes, SVGs should have an alternative text, provided via title element. If the svg element has role="img", you should add the aria-label or aria-labelledby attribute.
+  
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 207.
+Checked 558 files in 11s. No fixes applied.
+Found 11 errors.
+Found 216 warnings.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+

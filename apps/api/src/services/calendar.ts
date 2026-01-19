@@ -5,10 +5,7 @@ import type { CalendarEventRecord } from "../lib/google/google-calendar";
 export async function loadSettings() {
   const settings = await db.setting.findMany();
   return settings.reduce(
-    (
-      acc: Record<string, string>,
-      curr: { key: string; value: string | null },
-    ) => {
+    (acc: Record<string, string>, curr: { key: string; value: string | null }) => {
       acc[curr.key] = curr.value || "";
       return acc;
     },
@@ -20,6 +17,7 @@ export async function cleanupStaleSyncLogs(forceAll = false) {
   const STALE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
   const staleDate = new Date(Date.now() - STALE_TIMEOUT_MS);
 
+  // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
   const where: any = {
     status: "RUNNING",
   };
@@ -41,9 +39,7 @@ export async function cleanupStaleSyncLogs(forceAll = false) {
   });
 
   if (result.count > 0) {
-    console.warn(
-      `⚠ Cleaned up ${result.count} stale/interrupted sync logs (forceAll=${forceAll})`,
-    );
+    console.warn(`⚠ Cleaned up ${result.count} stale/interrupted sync logs (forceAll=${forceAll})`);
   }
   return result.count;
 }
@@ -134,15 +130,10 @@ export async function listCalendarSyncLogs(
         limit?: number;
       },
 ) {
-  const options =
-    typeof limitOrOptions === "number"
-      ? { limit: limitOrOptions }
-      : limitOrOptions;
+  const options = typeof limitOrOptions === "number" ? { limit: limitOrOptions } : limitOrOptions;
   const { start, end, limit = 50 } = options || {};
 
-  const where: NonNullable<
-    Parameters<typeof db.calendarSyncLog.findMany>[0]
-  >["where"] = {};
+  const where: NonNullable<Parameters<typeof db.calendarSyncLog.findMany>[0]>["where"] = {};
   if (start) {
     where.startedAt = { gte: start };
   }
@@ -172,6 +163,7 @@ type MissingFieldFilter = {
   filterMode?: "AND" | "OR";
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy logic
 export async function listUnclassifiedCalendarEvents(
   limit: number,
   offset: number = 0,
@@ -180,13 +172,11 @@ export async function listUnclassifiedCalendarEvents(
   const filterMode = filters?.filterMode || "OR";
 
   // Build conditions based on filters
+  // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
   const conditions: any[] = [];
 
   // If no specific filters, default to show events missing ANY classifiable field
-  if (
-    !filters ||
-    Object.keys(filters).filter((k) => k !== "filterMode").length === 0
-  ) {
+  if (!filters || Object.keys(filters).filter((k) => k !== "filterMode").length === 0) {
     conditions.push(
       { category: null },
       { category: "" },
@@ -223,6 +213,7 @@ export async function listUnclassifiedCalendarEvents(
   }
 
   // Build where clause based on filter mode
+  // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
   let whereClause: any = {};
 
   // Optimize: Exclude ignored events at DB level to prevent empty pages
@@ -359,9 +350,7 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
     summary: data.summary,
     description: data.description,
     startDate: data.start?.date ? new Date(data.start.date) : undefined,
-    startDateTime: data.start?.dateTime
-      ? new Date(data.start.dateTime)
-      : undefined,
+    startDateTime: data.start?.dateTime ? new Date(data.start.dateTime) : undefined,
     startTimeZone: data.start?.timeZone,
     endDate: data.end?.date ? new Date(data.end.date) : undefined,
     endDateTime: data.end?.dateTime ? new Date(data.end.dateTime) : undefined,

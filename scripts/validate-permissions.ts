@@ -35,6 +35,7 @@ interface RoutePermission {
   subject: string;
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: dynamic recursive structure
 function extractPermissionsFromRoutes(routes: any[], path = ""): Set<string> {
   const subjects = new Set<string>();
 

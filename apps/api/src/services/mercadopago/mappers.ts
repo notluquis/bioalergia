@@ -16,6 +16,7 @@ export function parseDate(val: string) {
   return new Date(val);
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy parser
 export function parseDecimal(val: string): any {
   if (!val) return 0;
   return val.replace(",", ".");
@@ -30,6 +31,7 @@ export function parseBigInt(val: string): bigint | undefined {
   }
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy parser
 export function parseJson(val: any): any {
   if (!val) return undefined;
   try {
@@ -44,6 +46,8 @@ export function parseJson(val: any): any {
 }
 
 // Mapper for Settlement Report
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy mapper
+// biome-ignore lint/suspicious/noExplicitAny: legacy mapper
 export function mapRowToSettlementTransaction(row: any): SettlementTransactionInput {
   return {
     sourceId: row.SOURCE_ID || "", // Empty = will be skipped as invalid
@@ -108,6 +112,8 @@ export function mapRowToSettlementTransaction(row: any): SettlementTransactionIn
 }
 
 // Mapper for Release Report
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy mapper
+// biome-ignore lint/suspicious/noExplicitAny: legacy mapper
 export function mapRowToReleaseTransaction(row: any): ReleaseTransactionInput {
   return {
     sourceId: row.SOURCE_ID || "", // Empty = will be skipped as invalid

@@ -79,6 +79,7 @@ export default function Header() {
         {breadcrumbs.length > 0 && (
           <div className="text-base-content/60 flex items-center gap-1 text-xs">
             {breadcrumbs.map((crumb, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: simple breadcrumb list
               <React.Fragment key={i}>
                 <span>{crumb}</span>
                 <ChevronRight className="h-3 w-3" />

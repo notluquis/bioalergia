@@ -156,6 +156,7 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
 // PREVIEW (VALIDATE WITHOUT INSERTING)
 // ============================================================
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy csv preview
 csvUploadRoutes.post("/preview", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
@@ -265,6 +266,7 @@ csvUploadRoutes.post("/preview", async (c) => {
 // IMPORT (INSERT/UPDATE DATA)
 // ============================================================
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy csv import
 csvUploadRoutes.post("/import", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);

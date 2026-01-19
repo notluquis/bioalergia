@@ -60,6 +60,7 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
           {Array.from({ length: 6 }).map((_, idx) => (
             <div
               className="border-base-300 bg-base-200/60 flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3"
+              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton items
               key={`skeleton-balance-${idx}`}
             >
               <span className="skeleton-line w-24" />

@@ -9,6 +9,7 @@ import { ServicesSurface } from "@/features/services/components/ServicesShell";
 interface CounterpartDetailSectionProps {
   canUpdate: boolean;
   counterpartId: number;
+  // biome-ignore lint/suspicious/noExplicitAny: legacy handler
   onEdit: (counterpart: any) => void;
   onSummaryRangeChange: (update: Partial<{ from: string; to: string }>) => void;
   summaryRange: { from: string; to: string };

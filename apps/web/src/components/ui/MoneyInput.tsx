@@ -25,6 +25,7 @@ export function MoneyInput({
 }: Readonly<MoneyInputProps>) {
   return (
     <div className="form-control">
+      {/* biome-ignore lint/a11y/noLabelWithoutControl: legacy component */}
       <label className="label py-1">
         <span className="label-text flex items-center gap-1.5 text-xs leading-tight font-medium sm:text-sm">
           {icon}

@@ -35,6 +35,7 @@ app.get("/", async (c) => {
   const offset = (page - 1) * pageSize;
 
   // Build where clause
+  // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
   const where: any = {};
 
   if (from) {

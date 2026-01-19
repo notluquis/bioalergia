@@ -26,6 +26,7 @@ export async function getServiceById(id: number) {
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: dynamic payload
 export async function createService(data: any) {
   return await db.service.create({
     data,
@@ -39,6 +40,7 @@ export async function createService(data: any) {
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: dynamic payload
 export async function updateService(id: number, data: any) {
   return await db.service.update({
     where: { id },

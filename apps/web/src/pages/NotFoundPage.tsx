@@ -18,6 +18,7 @@ export default function NotFoundPage() {
       </p>
       <div className="flex gap-4">
         <button
+          type="button"
           className="btn btn-outline"
           onClick={() => {
             globalThis.history.back();
@@ -26,7 +27,7 @@ export default function NotFoundPage() {
           <ArrowLeft size={18} />
           Volver
         </button>
-        <button className="btn btn-primary" onClick={() => navigate({ to: "/" })}>
+        <button type="button" className="btn btn-primary" onClick={() => navigate({ to: "/" })}>
           <Home size={18} />
           Ir al Inicio
         </button>

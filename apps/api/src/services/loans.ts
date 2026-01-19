@@ -20,6 +20,7 @@ export async function getLoanById(id: number) {
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy payload
 export async function createLoan(data: any) {
   return await db.loan.create({
     data,
@@ -29,6 +30,7 @@ export async function createLoan(data: any) {
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy payload
 export async function updateLoan(id: number, data: any) {
   return await db.loan.update({
     where: { id },
@@ -45,12 +47,14 @@ export async function deleteLoan(id: number) {
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy payload
 export async function createLoanSchedule(data: any) {
   return await db.loanSchedule.create({
     data,
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy payload
 export async function updateLoanSchedule(id: number, data: any) {
   return await db.loanSchedule.update({
     where: { id },

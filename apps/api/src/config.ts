@@ -79,8 +79,11 @@ const syncLookAheadDays =
 export const googleCalendarConfig: GoogleCalendarConfig | null =
   googleCalendarEnvMissing.length === 0
     ? {
+        // biome-ignore lint/style/noNonNullAssertion: env var validated
         serviceAccountEmail: googleServiceAccountEmail!,
+        // biome-ignore lint/style/noNonNullAssertion: env var validated
         privateKey: googleServiceAccountPrivateKey!,
+        // biome-ignore lint/style/noNonNullAssertion: env var validated
         calendarIds: googleCalendarIds!,
         timeZone: process.env.GOOGLE_CALENDAR_TIMEZONE ?? "America/Santiago",
         syncStartDate,

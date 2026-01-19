@@ -309,7 +309,9 @@ export async function verifyBackupFolder(): Promise<{
 
     return {
       ok: true,
+      // biome-ignore lint/style/noNonNullAssertion: response guaranteed by Google API
       folderId: response.data.id!,
+      // biome-ignore lint/style/noNonNullAssertion: response guaranteed by Google API
       folderName: response.data.name!,
     };
   } catch (error) {

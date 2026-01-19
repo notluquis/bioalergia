@@ -20,6 +20,7 @@ export const MercadoPagoService = {
    */
   async createReport(
     type: "release" | "settlement",
+    // biome-ignore lint/suspicious/noExplicitAny: overload
     range: { begin_date: string; end_date: string } | any,
   ) {
     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;

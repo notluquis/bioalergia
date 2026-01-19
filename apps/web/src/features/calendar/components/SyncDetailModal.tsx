@@ -73,6 +73,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
                   </h4>
                   <ul className="list-disc space-y-1 pl-4 opacity-80">
                     {log.changeDetails.inserted.map((item, i) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: static string list
                       <li key={i}>{item}</li>
                     ))}
                   </ul>
