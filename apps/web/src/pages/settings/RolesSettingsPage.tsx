@@ -96,8 +96,7 @@ export default function RolesSettingsPage() {
     const currentPermissionIds = role.permissions.map((p) => p.permissionId);
     const hasPermission = currentPermissionIds.includes(permissionId);
 
-    let newPermissionIds: number[];
-    newPermissionIds = hasPermission
+    const newPermissionIds = hasPermission
       ? currentPermissionIds.filter((id) => id !== permissionId)
       : [...currentPermissionIds, permissionId];
 
@@ -172,11 +171,16 @@ export default function RolesSettingsPage() {
                   syncMutation.mutate();
                 }}
                 title="Sincronizar permisos"
+                type="button"
               >
                 <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
               </button>
 
-              <button className="btn btn-primary btn-sm gap-2" onClick={handleCreateRole}>
+              <button
+                className="btn btn-primary btn-sm gap-2"
+                onClick={handleCreateRole}
+                type="button"
+              >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Nuevo rol</span>
               </button>
