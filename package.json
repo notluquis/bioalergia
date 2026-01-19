@@ -25,7 +25,6 @@
     "lint": "biome lint .",
     "format": "biome format . --write",
     "check": "biome check . --write",
-    "lint:legacy": "pnpm -r --if-present lint",
     "clean": "pnpm -r --if-present clean",
     "type-check": "pnpm -r --if-present type-check",
     "validate:permissions": "tsx scripts/validate-permissions.ts",

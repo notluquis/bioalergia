@@ -27,6 +27,7 @@ export async function getCounterpartById(id: number) {
   };
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy payload
 export async function createCounterpart(data: any) {
   // Use transaction to upsert Person and create Counterpart
   return await db.$transaction(async (tx) => {
@@ -74,6 +75,7 @@ export async function createCounterpart(data: any) {
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy payload
 export async function updateCounterpart(id: number, data: any) {
   return await db.$transaction(async (tx) => {
     const counterpart = await tx.counterpart.findUnique({ where: { id } });
@@ -137,6 +139,7 @@ export async function upsertCounterpartAccount(
   }
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy payload
 export async function updateCounterpartAccount(accountId: number, payload: any) {
   return await db.counterpartAccount.update({
     where: { id: accountId },

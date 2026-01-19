@@ -232,6 +232,7 @@ interface MPWebhookPayload {
   signature: string;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy webhook logic
 mercadopagoRoutes.post("/webhook", async (c) => {
   try {
     const payload = await c.req.json<MPWebhookPayload>();

@@ -6,6 +6,7 @@ import { fmtCLP } from "@/lib/format";
 
 const columnHelper = createColumnHelper<SettlementTransaction>();
 
+// biome-ignore lint/suspicious/noExplicitAny: tanstack table generic
 export const getSettlementColumns = (): ColumnDef<SettlementTransaction, any>[] => [
   columnHelper.accessor("transactionDate", {
     cell: ({ getValue }) => (

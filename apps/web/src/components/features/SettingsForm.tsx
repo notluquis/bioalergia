@@ -41,6 +41,7 @@ const fields: { helper?: string; key: keyof AppSettings; label: string; type?: s
   { helper: "Ejemplo: CLP, USD", key: "primaryCurrency", label: "Moneda principal" },
 ];
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy form
 export default function SettingsForm() {
   const { settings, updateSettings } = useSettings();
   const { hasRole } = useAuth();
@@ -167,6 +168,7 @@ export default function SettingsForm() {
   const displayedLogo = logoPreview ?? (form.logoUrl || FALLBACK_LOGO_PATH);
   const displayedFavicon = faviconPreview ?? (form.faviconUrl || FALLBACK_FAVICON_PATH);
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy logic
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("saving");

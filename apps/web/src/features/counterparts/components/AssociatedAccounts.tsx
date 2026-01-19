@@ -239,6 +239,7 @@ export default function AssociatedAccounts({
     attachRutMutation.mutate({ id: selectedId, rut });
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy grouping logic
   const accountGrouping = (() => {
     const groups = new Map<string, AccountGroup>();
     const identifierToKey = new Map<string, string>();
@@ -334,6 +335,7 @@ export default function AssociatedAccounts({
     enabled: !!quickViewGroup,
     queryFn: async () => {
       // safe to assert quickViewGroup is present due to enabled
+      // biome-ignore lint/style/noNonNullAssertion: enabled check
       const accounts = quickViewGroup!.accounts;
       const filters = accounts.map((account) => buildAccountTransactionFilter(account));
       const normalized: Record<string, AccountTransactionFilter> = {};
@@ -393,6 +395,7 @@ export default function AssociatedAccounts({
     return (
       <div className="border-base-200 overflow-hidden rounded-lg border">
         <DataTable
+          // biome-ignore lint/suspicious/noExplicitAny: tanstack table generic
           columns={quickViewColumns as ColumnDef<Transaction, any>[]}
           data={rows}
           enableToolbar={false}
@@ -495,6 +498,7 @@ export default function AssociatedAccounts({
 
       <div className="border-base-200 bg-base-100 overflow-hidden rounded-lg border">
         <DataTable
+          // biome-ignore lint/suspicious/noExplicitAny: tanstack table generic
           columns={accountGroupColumns as ColumnDef<AccountGroup, any>[]}
           data={accountGroups}
           enableToolbar={false}

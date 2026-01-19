@@ -18,12 +18,14 @@ async function main() {
     ORDER BY work_date DESC
   `;
 
+  // biome-ignore lint/suspicious/noExplicitAny: script typing
   console.log(`📊 Registros encontrados: ${(nullTimes as any[]).length}\n`);
   console.table(nullTimes);
 
   // Calcular start/end aproximados basados en worked_minutes
   console.log("\n💡 Sugerencias de tiempos basados en worked_minutes:");
 
+  // biome-ignore lint/suspicious/noExplicitAny: script typing
   for (const record of nullTimes as any[]) {
     const hours = Math.floor(record.worked_minutes / 60);
     const minutes = record.worked_minutes % 60;

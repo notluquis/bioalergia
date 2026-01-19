@@ -14,11 +14,9 @@ export type TransactionFilters = {
   includeTest?: boolean;
 };
 
-export async function listTransactions(
-  filters: TransactionFilters,
-  limit = 100,
-  offset = 0,
-) {
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy filtering logic
+export async function listTransactions(filters: TransactionFilters, limit = 100, offset = 0) {
+  // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
   const where: any = {};
 
   if (filters.from || filters.to) {
@@ -29,10 +27,8 @@ export async function listTransactions(
 
   if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
     where.transactionAmount = {};
-    if (filters.minAmount !== undefined)
-      where.transactionAmount.gte = filters.minAmount;
-    if (filters.maxAmount !== undefined)
-      where.transactionAmount.lte = filters.maxAmount;
+    if (filters.minAmount !== undefined) where.transactionAmount.gte = filters.minAmount;
+    if (filters.maxAmount !== undefined) where.transactionAmount.lte = filters.maxAmount;
   }
 
   if (filters.status) {
@@ -100,12 +96,14 @@ export async function getTransactionById(id: number) {
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: dynamic payload
 export async function createTransaction(data: any) {
   return await db.transaction.create({
     data,
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy batch op
 export async function createTransactionsBatch(data: any[]) {
   return await db.transaction.createMany({
     data,
@@ -136,15 +134,11 @@ export async function getParticipantLeaderboard(params: {
       sql<string>`COALESCE(metadata->>'bank_account_number', metadata->>'account_number')`.as(
         "bankAccountNumber",
       ),
-      sql<string>`COALESCE(metadata->>'bank_name', metadata->>'bank')`.as(
-        "bankName",
-      ),
+      sql<string>`COALESCE(metadata->>'bank_name', metadata->>'bank')`.as("bankName"),
       sql<string>`COALESCE(metadata->>'bank_account_type', metadata->>'account_type')`.as(
         "bankAccountType",
       ),
-      sql<string>`COALESCE(metadata->>'withdraw_id', metadata->>'id')`.as(
-        "withdrawId",
-      ),
+      sql<string>`COALESCE(metadata->>'withdraw_id', metadata->>'id')`.as("withdrawId"),
       // Determine participant key (prefer RUT, then Account, then Name)
       sql<string>`COALESCE(metadata->>'recipient_rut', metadata->>'rut', metadata->>'identification_number', metadata->>'bank_account_number', metadata->>'account_number', 'unknown')`.as(
         "participant",
@@ -156,15 +150,11 @@ export async function getParticipantLeaderboard(params: {
       // Metrics
       sql<number>`count(*)`.as("totalCount"),
       sql<number>`sum(transaction_amount)`.as("totalAmount"),
-      sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as(
-        "outgoingCount",
-      ),
+      sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as("outgoingCount"),
       sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
         "outgoingAmount",
       ),
-      sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as(
-        "incomingCount",
-      ),
+      sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as("incomingCount"),
       sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
         "incomingAmount",
       ),
@@ -197,6 +187,7 @@ export async function getParticipantLeaderboard(params: {
 
   return {
     status: "ok",
+    // biome-ignore lint/suspicious/noExplicitAny: kysely raw result
     participants: stats.map((s: any) => ({
       participant: s.participant,
       displayName: s.displayName,
@@ -228,15 +219,11 @@ export async function getParticipantInsight(
     .selectFrom("transactions")
     .select([
       sql<string>`to_char(transaction_date, 'YYYY-MM-01')`.as("month"),
-      sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as(
-        "outgoingCount",
-      ),
+      sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as("outgoingCount"),
       sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
         "outgoingAmount",
       ),
-      sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as(
-        "incomingCount",
-      ),
+      sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as("incomingCount"),
       sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
         "incomingAmount",
       ),
@@ -270,25 +257,17 @@ export async function getParticipantInsight(
       sql<string>`COALESCE(metadata->>'bank_account_number', metadata->>'account_number')`.as(
         "bankAccountNumber",
       ),
-      sql<string>`COALESCE(metadata->>'bank_name', metadata->>'bank')`.as(
-        "bankName",
-      ),
+      sql<string>`COALESCE(metadata->>'bank_name', metadata->>'bank')`.as("bankName"),
       sql<string>`COALESCE(metadata->>'bank_account_type', metadata->>'account_type')`.as(
         "bankAccountType",
       ),
-      sql<string>`COALESCE(metadata->>'withdraw_id', metadata->>'id')`.as(
-        "withdrawId",
-      ),
+      sql<string>`COALESCE(metadata->>'withdraw_id', metadata->>'id')`.as("withdrawId"),
       //
-      sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as(
-        "outgoingCount",
-      ),
+      sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as("outgoingCount"),
       sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
         "outgoingAmount",
       ),
-      sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as(
-        "incomingCount",
-      ),
+      sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as("incomingCount"),
       sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
         "incomingAmount",
       ),
@@ -311,16 +290,15 @@ export async function getParticipantInsight(
     ])
     .orderBy("outgoingAmount", "desc");
 
-  if (from)
-    counterpartsQuery = counterpartsQuery.where("transaction_date", ">=", from);
-  if (to)
-    counterpartsQuery = counterpartsQuery.where("transaction_date", "<=", to);
+  if (from) counterpartsQuery = counterpartsQuery.where("transaction_date", ">=", from);
+  if (to) counterpartsQuery = counterpartsQuery.where("transaction_date", "<=", to);
 
   const counterparts = await counterpartsQuery.execute();
 
   return {
     status: "ok",
     participant: participantId,
+    // biome-ignore lint/suspicious/noExplicitAny: kysely raw result
     monthly: monthlyStats.map((s: any) => ({
       month: s.month,
       outgoingCount: Number(s.outgoingCount),
@@ -328,6 +306,7 @@ export async function getParticipantInsight(
       incomingCount: Number(s.incomingCount),
       incomingAmount: Number(s.incomingAmount),
     })),
+    // biome-ignore lint/suspicious/noExplicitAny: kysely raw result
     counterparts: counterparts.map((s: any) => ({
       counterpart: s.bankAccountHolder || "Desconocido",
       counterpartId: s.identificationNumber,
@@ -372,19 +351,16 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
   // By Type
   const byType = await kysely
     .selectFrom("transactions")
-    .select([
-      "transaction_type as description",
-      sql<number>`sum(transaction_amount)`.as("total"),
-    ])
+    .select(["transaction_type as description", sql<number>`sum(transaction_amount)`.as("total")])
     .where("transaction_date", ">=", from)
     .where("transaction_date", "<=", to)
     .groupBy("transaction_type")
     .execute();
 
+  // biome-ignore lint/suspicious/noExplicitAny: kysely raw result
   const byTypeMapped = byType.map((t: any) => ({
     description: t.description,
-    direction:
-      Number(t.total) > 0 ? "IN" : Number(t.total) < 0 ? "OUT" : "NEUTRO",
+    direction: Number(t.total) > 0 ? "IN" : Number(t.total) < 0 ? "OUT" : "NEUTRO",
     total: Math.abs(Number(t.total)),
   }));
 
@@ -412,6 +388,7 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
 
   return {
     status: "ok",
+    // biome-ignore lint/suspicious/noExplicitAny: kysely raw result
     monthly: monthly.map((m: any) => ({
       month: m.month,
       in: Number(m.in),

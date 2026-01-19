@@ -43,6 +43,7 @@ const dateColumn = (
   minSize: 120,
 });
 
+// biome-ignore lint/suspicious/noExplicitAny: tanstack table generic
 export const columns: ColumnDef<SettlementTransaction, any>[] = [
   {
     cell: ({ row }) => {

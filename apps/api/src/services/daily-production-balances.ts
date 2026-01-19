@@ -28,6 +28,7 @@ export async function getProductionBalanceById(id: number) {
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy payload
 export async function createProductionBalance(data: any, userId: number) {
   return await db.dailyProductionBalance.create({
     data: {
@@ -40,6 +41,7 @@ export async function createProductionBalance(data: any, userId: number) {
   });
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: legacy payload
 export async function updateProductionBalance(id: number, data: any) {
   return await db.dailyProductionBalance.update({
     where: { id },

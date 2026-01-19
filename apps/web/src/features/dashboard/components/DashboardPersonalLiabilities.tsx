@@ -18,9 +18,10 @@ export function DashboardPersonalLiabilities() {
 
   const upcomingPayments = [...activeCredits]
     .filter((c) => c.nextPaymentDate && new Date(c.nextPaymentDate) >= new Date())
-    .toSorted(
-      (a, b) => new Date(a.nextPaymentDate!).getTime() - new Date(b.nextPaymentDate!).getTime(),
-    );
+    .toSorted((a, b) => {
+      // biome-ignore lint/style/noNonNullAssertion: filtered above
+      return new Date(a.nextPaymentDate!).getTime() - new Date(b.nextPaymentDate!).getTime();
+    });
 
   const nextPayment = upcomingPayments[0];
 

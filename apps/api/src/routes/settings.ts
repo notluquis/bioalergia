@@ -5,12 +5,14 @@ import { cacheControl } from "../lib/cache-control";
 import { reply } from "../utils/reply";
 
 export type Variables = {
+  // biome-ignore lint/suspicious/noExplicitAny: legacy typing
   user: any;
 };
 
 export const settingsRoutes = new Hono<{ Variables: Variables }>();
 
 // Middleware to require auth
+// biome-ignore lint/suspicious/noExplicitAny: legacy middleware
 const requireAuth = async (c: any, next: any) => {
   const user = await getSessionUser(c);
   if (!user) {

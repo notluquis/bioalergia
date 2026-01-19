@@ -58,6 +58,7 @@ app.post("/", async (c) => {
   try {
     const result = await createRole(parsed.data);
     return reply(c, result);
+    // biome-ignore lint/suspicious/noExplicitAny: error handling
   } catch (e: any) {
     return reply(c, { status: "error", message: e.message }, 400);
   }
@@ -83,6 +84,7 @@ app.put("/:id", async (c) => {
   try {
     const result = await updateRole(id, parsed.data);
     return reply(c, result);
+    // biome-ignore lint/suspicious/noExplicitAny: error handling
   } catch (e: any) {
     return reply(c, { status: "error", message: e.message }, 400);
   }
@@ -133,6 +135,7 @@ app.post("/permissions/sync", async (c) => {
 
     const result = await syncPermissions();
     return reply(c, { status: "ok", ...result });
+    // biome-ignore lint/suspicious/noExplicitAny: error handling
   } catch (e: any) {
     console.error("[syncPermissions] Error details:", e);
     return reply(c, { status: "error", message: e.message }, 500);

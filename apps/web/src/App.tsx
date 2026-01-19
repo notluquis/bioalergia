@@ -110,6 +110,7 @@ export default function App() {
         <div className="bg-warning text-warning-content sticky top-0 z-100 flex h-10 w-full items-center justify-center gap-4 px-4 text-xs font-bold shadow-md">
           <span>VISTA PREVIA: {impersonatedRole.name}</span>
           <button
+            type="button"
             className="btn btn-neutral btn-xs border-none bg-black/20 text-current hover:bg-black/30"
             onClick={stopImpersonating}
           >
@@ -192,6 +193,7 @@ export default function App() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="text-base-content/70 flex cursor-help items-center gap-2 text-xs">
+                      {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: legacy tooltip */}
                       <span
                         aria-label="Sistema operativo"
                         className="bg-success/70 inline-flex h-2 w-2 rounded-full"

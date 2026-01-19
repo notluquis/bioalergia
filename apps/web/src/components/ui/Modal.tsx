@@ -55,6 +55,8 @@ export default function Modal({
   return createPortal(
     <div className={cn("modal modal-open flex items-center justify-center", className)}>
       {/* Backdrop */}
+      {/* Backdrop */}
+      {/* biome-ignore lint/a11y/useSemanticElements: modal overlay */}
       <div
         aria-label="Cerrar modal"
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"

@@ -10,6 +10,7 @@ import type { FormValues } from "../schemas";
 interface ClassificationTotalsProps {
   events: CalendarUnclassifiedEvent[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: tanstack form
   form: any;
 }
 
@@ -19,6 +20,7 @@ export function ClassificationTotals({ events, form }: Readonly<ClassificationTo
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
   const watchedEntries = useStore(
     form.store,
+    // biome-ignore lint/suspicious/noExplicitAny: zustand store access
     (state: any) => (state as { values: FormValues }).values.entries,
   );
 

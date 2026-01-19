@@ -11,6 +11,7 @@ export function useCalendarSync() {
       const response = await apiClient.post<{ message: string }>("/api/calendar/events/sync", {});
       return response;
     },
+    // biome-ignore lint/suspicious/noExplicitAny: react query
     onSuccess: (data: any) => {
       toast.success("Sincronización iniciada", {
         description: data.message || "La sincronización se está ejecutando en segundo plano.",
@@ -21,6 +22,7 @@ export function useCalendarSync() {
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
       queryClient.invalidateQueries({ queryKey: ["calendar-sync-logs"] });
     },
+    // biome-ignore lint/suspicious/noExplicitAny: react query
     onError: (error: any) => {
       toast.error("Error al sincronizar", {
         description: error.message || "Ocurrió un error inesperado.",

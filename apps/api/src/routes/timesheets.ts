@@ -466,6 +466,7 @@ app.post("/prepare-email", async (c) => {
     };
 
     // Get retention rate
+    // biome-ignore lint/style/noNonNullAssertion: legacy logic
     const summaryYear = month ? parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
     const employeeRate = summary.retentionRate || summary.retention_rate || null;
     const effectiveRate = employeeRate ?? (summaryYear >= 2024 ? 0.1275 : 0.1);

@@ -22,6 +22,7 @@ const formatDifference = (diff: null | number) => {
 };
 
 // Custom Cell for the "Registrado" Input
+// biome-ignore lint/suspicious/noExplicitAny: tanstack generic
 const RecordedBalanceCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;
@@ -42,6 +43,7 @@ const RecordedBalanceCell = ({ row, table }: { row: Row<DailyBalanceDay>; table:
 };
 
 // Custom Cell for the "Nota" Textarea
+// biome-ignore lint/suspicious/noExplicitAny: tanstack generic
 const NoteCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;
@@ -62,6 +64,7 @@ const NoteCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => 
 };
 
 // Custom Cell for Actions (Save Button)
+// biome-ignore lint/suspicious/noExplicitAny: tanstack generic
 const ActionsCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;

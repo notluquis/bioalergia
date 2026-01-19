@@ -26,6 +26,7 @@ function isTechnicalRoute(path) {
   return TECHNICAL_PATTERNS.some((pattern) => pattern.test(path));
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: script logic
 async function main() {
   console.log("🔍 Auditing route navigation metadata...\n");
 

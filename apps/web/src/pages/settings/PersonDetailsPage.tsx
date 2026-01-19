@@ -26,6 +26,7 @@ export default function PersonDetailsPage() {
     return (
       <div className="space-y-6">
         <button
+          type="button"
           className="btn btn-ghost btn-sm gap-2"
           onClick={() => navigate({ to: "/settings/people" })}
         >
@@ -40,6 +41,7 @@ export default function PersonDetailsPage() {
   return (
     <div className="space-y-6">
       <button
+        type="button"
         className="btn btn-ghost btn-sm gap-2"
         onClick={() => navigate({ to: "/settings/people" })}
       >

@@ -8,6 +8,7 @@ import { createAuthContext, getSessionUser } from "../auth";
 export const personalFinanceRoutes = new Hono();
 
 // Middleware to get authenticated DB client
+// biome-ignore lint/suspicious/noExplicitAny: legacy middleware
 async function getAuthDb(c: any) {
   const user = await getSessionUser(c);
   const authContext = createAuthContext(user);

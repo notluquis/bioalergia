@@ -9,6 +9,7 @@ interface ChangeDetail {
   summary?: string;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
   if (!data) return null;
 
@@ -90,7 +91,7 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
                 {items.slice(0, 50).map((item, idx) => (
                   <div
                     className="border-base-300 flex items-start gap-2 border-b pb-1 text-xs last:border-0"
-                    // eslint-disable-next-line react/no-array-index-key
+                    // biome-ignore lint/suspicious/noArrayIndexKey: simple list
                     key={idx}
                   >
                     <span className="text-base-content/70 flex-1 truncate" title={item.summary}>

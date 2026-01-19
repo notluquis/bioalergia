@@ -74,6 +74,7 @@ function getAllModelNames(): string[] {
 /**
  * Creates a database backup.
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy backup logic
 export async function createBackup(onProgress?: ProgressCallback): Promise<BackupResult> {
   const startTime = Date.now();
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
@@ -130,6 +131,7 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
       writeStream.write(`"${modelName}":`);
 
       try {
+        // biome-ignore lint/suspicious/noExplicitAny: dynamic db access
         const dbRecord = db as Record<string, any>;
         const modelDelegate = dbRecord[camelModelName];
 
@@ -145,6 +147,7 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
           let skip = 0;
 
           while (true) {
+            // biome-ignore lint/suspicious/noExplicitAny: dynamic result type
             const batch: any[] = await modelDelegate.findMany({
               take: BATCH_SIZE,
               skip: skip,
@@ -306,8 +309,11 @@ function calculateChecksum(filepath: string): Promise<string> {
 }
 
 // Simple managers for jobs/history
+// biome-ignore lint/suspicious/noExplicitAny: simple memory store
 const jobs: Record<string, any> = {};
+// biome-ignore lint/suspicious/noExplicitAny: simple memory store
 const history: any[] = [];
+// biome-ignore lint/suspicious/noExplicitAny: simple memory store
 const logs: any[] = [];
 
 export function getLogs(limit: number) {
@@ -450,6 +456,7 @@ export async function getBackupDiff(fileId: string) {
   for (const model of allModels) {
     const remote = backupStats[model];
     // Cast strict type
+    // biome-ignore lint/suspicious/noExplicitAny: dynamic db model access
     const modelDelegate = (db as any)[model];
 
     if (!modelDelegate || typeof modelDelegate.findMany !== "function") {

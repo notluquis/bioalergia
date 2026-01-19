@@ -48,6 +48,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
     // Convert Web Stream to Node Stream
     const nodeStream = Readable.fromWeb(body as import("stream/web").ReadableStream);
 
+    // biome-ignore lint/suspicious/noExplicitAny: legacy csv parsing
     const rows: any[] = [];
     let isFirstRow = true;
 
@@ -57,6 +58,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
         .pipe(csv({ separator: ";" }))
         .on("data", (row) => {
           // Clean keys (trim whitespace)
+          // biome-ignore lint/suspicious/noExplicitAny: legacy csv parsing
           const cleanRow: any = {};
           for (const key in row) {
             const cleanKey = key.trim();
@@ -120,6 +122,8 @@ interface BatchStats {
 }
 
 // Save batch to DB with detailed statistics
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy batch processing
+// biome-ignore lint/suspicious/noExplicitAny: legacy batch processing
 async function saveReportBatch(rows: any[], reportType: string): Promise<BatchStats> {
   const batchStats: BatchStats = {
     valid: 0,
