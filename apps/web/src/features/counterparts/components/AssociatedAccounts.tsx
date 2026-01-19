@@ -278,7 +278,7 @@ export default function AssociatedAccounts({
 
   const summaryByGroup = (() => {
     const map = new Map<string, { count: number; total: number }>();
-    for (const row of summary?.byAccount) {
+    for (const row of summary?.byAccount ?? []) {
       const key = identifierToGroupKey.get(row.account_identifier) ?? row.account_identifier;
       const entry = map.get(key) ?? { count: 0, total: 0 };
       entry.total += row.total;

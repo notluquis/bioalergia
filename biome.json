@@ -22,8 +22,6 @@
     "rules": {
       "recommended": true,
       "correctness": {
-        "noUnusedVariables": "off",
-        "noUnusedImports": "off",
         "noInnerDeclarations": "off",
         "useExhaustiveDependencies": "off"
       },
@@ -42,7 +40,8 @@
         "noLabelWithoutControl": "off",
         "useButtonType": "off",
         "useSemanticElements": "off",
-        "useAriaPropsSupportedByRole": "off"
+        "useAriaPropsSupportedByRole": "off",
+        "useFocusableInteractive": "off"
       }
     }
   },

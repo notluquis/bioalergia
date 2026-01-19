@@ -31,7 +31,7 @@ export async function createCounterpart(data: any) {
   // Use transaction to upsert Person and create Counterpart
   return await db.$transaction(async (tx) => {
     // Upsert Person by RUT if provided, otherwise create new
-    let person;
+    let person: Person | null = null;
     if (data.rut && data.rut.trim() !== "") {
       person = await tx.person.upsert({
         where: { rut: data.rut },
