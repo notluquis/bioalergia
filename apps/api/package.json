@@ -33,7 +33,7 @@
     "google-auth-library": "^10.5.0",
     "hono": "^4.11.4",
     "hono-rate-limiter": "^0.5.3",
-    "kysely": "^0.28.9",
+    "kysely": "^0.28.10",
     "node-cron": "^4.2.1",
     "otplib": "^13.1.1",
     "paseto": "^3.1.4",

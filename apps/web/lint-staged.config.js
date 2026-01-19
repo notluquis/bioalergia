@@ -1,4 +1,3 @@
 export default {
-  "*.{ts,tsx,js,jsx}": ["prettier --write", "eslint --fix"],
-  "*.{json,md,css}": ["prettier --write --ignore-unknown"],
+  "*.{ts,tsx,js,jsx,json,md}": ["biome format --write --no-errors-on-unmatched"],
 };
