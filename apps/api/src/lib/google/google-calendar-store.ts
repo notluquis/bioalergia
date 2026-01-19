@@ -31,7 +31,9 @@ async function getCalendarInternalId(googleId: string): Promise<number | null> {
   }
 }
 
-export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) {
+export async function upsertGoogleCalendarEvents(
+  events: CalendarEventRecord[],
+) {
   if (events.length === 0)
     return {
       inserted: 0,
@@ -44,10 +46,13 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
   let updated = 0;
   let skipped = 0;
   const insertedSummaries: string[] = [];
-  const updatedSummaries: (string | { summary: string; changes: string[] })[] = [];
+  const updatedSummaries: (string | { summary: string; changes: string[] })[] =
+    [];
 
   // 1. Pre-resolve all calendars
-  const distinctCalendarIds = Array.from(new Set(events.map((e) => e.calendarId)));
+  const distinctCalendarIds = Array.from(
+    new Set(events.map((e) => e.calendarId)),
+  );
 
   // Ensure all calendars exist and cache their IDs
   for (const googleId of distinctCalendarIds) {
@@ -82,10 +87,14 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
           summary: event.summary,
           description: event.description,
           startDate: event.start?.date ? new Date(event.start.date) : null,
-          startDateTime: event.start?.dateTime ? new Date(event.start.dateTime) : null,
+          startDateTime: event.start?.dateTime
+            ? new Date(event.start.dateTime)
+            : null,
           startTimeZone: event.start?.timeZone,
           endDate: event.end?.date ? new Date(event.end.date) : null,
-          endDateTime: event.end?.dateTime ? new Date(event.end.dateTime) : null,
+          endDateTime: event.end?.dateTime
+            ? new Date(event.end.dateTime)
+            : null,
           endTimeZone: event.end?.timeZone,
           eventCreatedAt: event.created ? new Date(event.created) : null,
           eventUpdatedAt: event.updated ? new Date(event.updated) : null,
@@ -188,9 +197,10 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
 }
 
 export async function removeGoogleCalendarEvents(
-  events: { calendarId: string; eventId: string }[],
-) {
-  if (events.length === 0) return;
+  events: { calendarId: string; eventId: string; summary?: string | null }[],
+): Promise<string[]> {
+  const deletedSummaries: string[] = [];
+  if (events.length === 0) return deletedSummaries;
 
   for (const event of events) {
     const calendarInternalId = await getCalendarInternalId(event.calendarId);
@@ -201,13 +211,43 @@ export async function removeGoogleCalendarEvents(
       continue;
     }
 
-    await db.event.deleteMany({
-      where: {
-        calendarId: calendarInternalId,
-        externalEventId: event.eventId,
-      },
-    });
+    // Try to get summary from event itself, or lookup in DB before deletion
+    let summary = event.summary;
+    if (!summary) {
+      try {
+        const existing = await db.event.findUnique({
+          where: {
+            calendarId_externalEventId: {
+              calendarId: calendarInternalId,
+              externalEventId: event.eventId,
+            },
+          },
+          select: { summary: true },
+        });
+        summary = existing?.summary;
+      } catch {
+        // Ignore lookup errors
+      }
+    }
+
+    try {
+      await db.event.deleteMany({
+        where: {
+          calendarId: calendarInternalId,
+          externalEventId: event.eventId,
+        },
+      });
+
+      // Only add to list if we have space (limit 20 for logs)
+      if (deletedSummaries.length < 20) {
+        deletedSummaries.push(summary || "Evento eliminado (sin título)");
+      }
+    } catch (error) {
+      console.error(`Error deleting event ${event.eventId}:`, error);
+    }
   }
+
+  return deletedSummaries;
 }
 
 /**
@@ -226,10 +266,14 @@ interface DiffableEvent {
   endDate?: Date | null;
 }
 
-function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): string[] {
+function computeEventDiff(
+  existing: DiffableEvent,
+  incoming: DiffableEvent,
+): string[] {
   const changes: string[] = [];
 
-  const normalize = (val: unknown) => (val === null || val === undefined ? "" : String(val).trim());
+  const normalize = (val: unknown) =>
+    val === null || val === undefined ? "" : String(val).trim();
 
   const diff = (label: string, oldVal: unknown, newVal: unknown) => {
     const o = normalize(oldVal);
@@ -239,7 +283,8 @@ function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): str
       const shortO = o.length > 30 ? `${o.slice(0, 30)}...` : o;
       const shortN = n.length > 30 ? `${n.slice(0, 30)}...` : n;
       // Only log if there is actual content to show
-      if (shortO || shortN) changes.push(`${label}: "${shortO}" -> "${shortN}"`);
+      if (shortO || shortN)
+        changes.push(`${label}: "${shortO}" -> "${shortN}"`);
     }
   };
 

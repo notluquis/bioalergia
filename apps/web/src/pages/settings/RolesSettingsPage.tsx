@@ -11,9 +11,7 @@ import { PermissionsMatrixTable } from "@/features/roles/components/PermissionsM
 import { RoleFormModal } from "@/features/roles/components/RoleFormModal";
 import { roleKeys } from "@/features/roles/queries";
 import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
-import { extractPermissionsFromRoutes } from "@/lib/route-utils";
 import { cn } from "@/lib/utils";
-import { routeTree } from "@/routeTree.gen";
 import type { Permission, Role } from "@/types/roles";
 
 // --- Page Component ---
@@ -259,8 +257,6 @@ function processNavSections(
   // This helps finding permissions even if they are not in the main nav structure
   // Although not strictly used for filtering navigation, it's useful context
   // or could be used to validation if we wanted to enforce strict matching.
-  const _routePermissions = extractPermissionsFromRoutes(routeTree);
-
   // 2. Map existing permissions to sections
   const mappedSections = navSections
     .map((section: NavSectionData) => {
