@@ -1,6 +1,6 @@
 import { Zap, ZapOff } from "lucide-react";
 
-import { usePerformanceMode } from "@/hooks/usePerformanceMode";
+import { usePerformanceMode } from "@/hooks/use-performance-mode";
 
 export function PerformanceIndicator() {
   const { mode, reason } = usePerformanceMode();

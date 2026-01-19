@@ -8,7 +8,7 @@ import type { Employee } from "@/features/hr/employees/types";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { useSettings } from "@/context/SettingsContext";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api-client";
 import { fmtCLP } from "@/lib/format";
 
 import type { BulkRow, TimesheetSummaryRow } from "../types";

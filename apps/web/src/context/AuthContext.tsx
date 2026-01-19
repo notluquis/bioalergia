@@ -4,7 +4,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useS
 
 import type { Role } from "@/types/roles";
 
-import { apiClient, ApiError } from "@/lib/apiClient";
+import { apiClient, ApiError } from "@/lib/api-client";
 import { ability, updateAbility } from "@/lib/authz/ability";
 import { logger } from "@/lib/logger";
 

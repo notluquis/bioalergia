@@ -5,7 +5,7 @@ import Button from "@/components/ui/Button";
 import ServiceForm from "@/features/services/components/ServiceForm";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import { SERVICE_TEMPLATES } from "@/features/services/components/ServiceTemplateGallery";
-import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
+import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 
 export default function ServicesCreateContent() {
   const { applyTemplate, canManage, createError, handleCreateService, selectedTemplate } = useServicesOverview();

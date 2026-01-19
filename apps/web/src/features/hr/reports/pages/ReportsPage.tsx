@@ -13,7 +13,7 @@ import Input from "@/components/ui/Input";
 import StatCard from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
-import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
+import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import { LOADING_SPINNER_SM, PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 

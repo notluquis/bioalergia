@@ -1,6 +1,6 @@
 import type { ReleaseTransaction } from "@finanzas/db/models";
 
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api-client";
 
 interface FetchReleaseTransactionsParams {
   descriptions?: string[];

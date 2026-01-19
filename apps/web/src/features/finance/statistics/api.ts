@@ -2,7 +2,7 @@
  * Statistics API
  */
 
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api-client";
 
 import type { StatsResponse, TopParticipantData } from "./types";
 

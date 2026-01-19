@@ -4,7 +4,7 @@ import { Suspense, useEffect } from "react";
 
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 interface AuthUrlResponse {

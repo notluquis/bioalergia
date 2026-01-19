@@ -3,7 +3,7 @@ import { queryOptions } from "@tanstack/react-query";
 import type { Permission, Role } from "@/types/roles";
 
 import { fetchEmployees } from "@/features/hr/employees/api";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api-client";
 
 export const roleKeys = {
   all: ["roles"] as const,

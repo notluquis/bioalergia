@@ -1,9 +1,9 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { usePagination } from "./usePagination";
+import { usePagination } from "./use-pagination";
 
-describe("usePagination", () => {
+describe("use-pagination", () => {
   it("should initialize with default values", () => {
     const { result } = renderHook(() => usePagination());
     expect(result.current.pagination.page).toBe(1);

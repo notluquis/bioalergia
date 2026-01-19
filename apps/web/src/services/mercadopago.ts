@@ -4,7 +4,7 @@
  */
 
 import { MpReportType } from "../../shared/mercadopago";
-import { apiClient } from "../lib/apiClient";
+import { apiClient } from "../lib/api-client";
 
 /**
  * Statistics returned after processing a report
@@ -98,8 +98,8 @@ export const MPService = {
       const endDate = new Date(chunk.end);
       endDate.setUTCHours(23, 59, 59, 999);
 
-      const beginStr = beginDate.toISOString().split(".")[0] + "Z";
-      const endStr = endDate.toISOString().split(".")[0] + "Z";
+      const beginStr = (beginDate.toISOString().split(".")[0] ?? "") + "Z";
+      const endStr = (endDate.toISOString().split(".")[0] ?? "") + "Z";
 
       const report = await MPService.createReport(beginStr, endStr, type);
       reports.push(report);

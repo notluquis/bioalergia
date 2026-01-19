@@ -3,7 +3,7 @@ import Alert from "@/components/ui/Alert";
 import { useAuth } from "@/context/AuthContext";
 
 import { columns } from "./components/columns";
-import { usePayouts } from "./hooks/usePayouts";
+import { usePayouts } from "./hooks/use-payouts";
 
 export default function PayoutsPage() {
   const { can } = useAuth();

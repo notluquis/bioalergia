@@ -1,7 +1,7 @@
 import { type QueryKey, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { uploadFiles, type UploadResult } from "@/lib/apiClient";
+import { uploadFiles, type UploadResult } from "@/lib/api-client";
 import { logger } from "@/lib/logger";
 
 type FileValidator = (file: File) => Promise<{ headersCount: number; missing: string[] }>;

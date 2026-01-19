@@ -1,7 +1,7 @@
 import { useAuth } from "@/context/AuthContext";
 import SupplyRequestForm from "@/features/supplies/components/SupplyRequestForm";
 import SupplyRequestsTable from "@/features/supplies/components/SupplyRequestsTable";
-import { useSupplyManagement } from "@/features/supplies/hooks/useSupplyManagement";
+import { useSupplyManagement } from "@/features/supplies/hooks/use-supply-management";
 
 export default function Supplies() {
   const { can } = useAuth();

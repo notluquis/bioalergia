@@ -9,7 +9,7 @@ import {
   getMonthlyColumns,
   type LeaderboardMeta,
 } from "@/features/participants/components/ParticipantColumns";
-import { useParticipantInsightsData } from "@/features/participants/hooks/useParticipantInsightsData";
+import { useParticipantInsightsData } from "@/features/participants/hooks/use-participant-insights-data";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
 export default function ParticipantInsightsPage() {

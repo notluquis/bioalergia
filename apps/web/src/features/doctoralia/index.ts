@@ -6,7 +6,7 @@
 export * from "./api";
 
 // Hooks
-export * from "./hooks/useDoctoralia";
+export * from "./hooks/use-doctoralia";
 
 // Types
 export * from "./types";

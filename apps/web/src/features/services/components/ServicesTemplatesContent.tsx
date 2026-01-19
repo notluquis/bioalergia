@@ -4,7 +4,7 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import ServiceTemplateGallery from "@/features/services/components/ServiceTemplateGallery";
-import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
+import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 
 export default function ServicesTemplatesContent() {
   const { applyTemplate, canManage } = useServicesOverview();

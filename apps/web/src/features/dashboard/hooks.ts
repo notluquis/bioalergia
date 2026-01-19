@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 
 import type { Transaction } from "../finance/types";
 

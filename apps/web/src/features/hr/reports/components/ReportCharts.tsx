@@ -21,7 +21,7 @@ import {
 
 import type { EmployeeWorkData, ReportGranularity } from "../types";
 
-import { getChartColors } from "../utils/chartColors";
+import { getChartColors } from "../utils/chart-colors";
 
 /** Chart data record with period key and dynamic employee name keys */
 type ChartDataRecord = Record<string, number | string>;
