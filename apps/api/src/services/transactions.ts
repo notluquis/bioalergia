@@ -112,7 +112,6 @@ export async function createTransactionsBatch(data: any[]) {
 }
 
 // Participants Logic
-import { kysely } from "@finanzas/db";
 import { sql } from "kysely";
 
 export async function getParticipantLeaderboard(params: {
@@ -122,9 +121,10 @@ export async function getParticipantLeaderboard(params: {
   mode?: "combined" | "incoming" | "outgoing";
 }) {
   const { from, to, limit } = params;
-  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
-  let query = (kysely as any)
-    .selectFrom("transactions")
+  // ZenStack Query Builder handles the mapping (Model Key: Transaction)
+  // Note: We must use Model Field Names (e.g. transactionDate) not DB columns
+  let query = db.$qb
+    .selectFrom("Transaction")
     .select([
       sql<string>`COALESCE(metadata->>'recipient_rut', metadata->>'rut', metadata->>'identification_number')`.as(
         "identificationNumber",
@@ -173,10 +173,12 @@ export async function getParticipantLeaderboard(params: {
     .orderBy("outgoingAmount", "desc");
 
   if (from) {
-    query = query.where("transaction_date", ">=", from);
+    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+    query = query.where("transactionDate", ">=", from as any);
   }
   if (to) {
-    query = query.where("transaction_date", "<=", to);
+    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+    query = query.where("transactionDate", "<=", to as any);
   }
   if (limit) {
     query = query.limit(limit);
@@ -216,11 +218,11 @@ export async function getParticipantInsight(
   const { from, to } = params;
 
   // 1. Monthly Stats
-  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
-  let monthlyQuery = (kysely as any)
-    .selectFrom("transactions")
+  // ZenStack Query Builder: Use Model Fields
+  let monthlyQuery = db.$qb
+    .selectFrom("Transaction")
     .select([
-      sql<string>`to_char(transaction_date, 'YYYY-MM-01')`.as("month"),
+      sql<string>`to_char(transaction_date, 'YYYY-MM-01')`.as("month"), // SQL helper uses raw DB names inside template strings
       sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as("outgoingCount"),
       sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
         "outgoingAmount",
@@ -233,24 +235,26 @@ export async function getParticipantInsight(
     // biome-ignore lint/suspicious/noExplicitAny: Kysely expression builder type
     .where((eb: any) =>
       eb.or([
-        sql`metadata->>'recipient_rut' = ${participantId}`,
-        sql`metadata->>'rut' = ${participantId}`,
-        sql`metadata->>'identification_number' = ${participantId}`,
-        sql`metadata->>'bank_account_number' = ${participantId}`,
+        sql<boolean>`metadata->>'recipient_rut' = ${participantId}`,
+        sql<boolean>`metadata->>'rut' = ${participantId}`,
+        sql<boolean>`metadata->>'identification_number' = ${participantId}`,
+        sql<boolean>`metadata->>'bank_account_number' = ${participantId}`,
       ]),
     )
     .groupBy("month")
     .orderBy("month", "desc");
 
-  if (from) monthlyQuery = monthlyQuery.where("transaction_date", ">=", from);
-  if (to) monthlyQuery = monthlyQuery.where("transaction_date", "<=", to);
+  // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+  if (from) monthlyQuery = monthlyQuery.where("transactionDate", ">=", from as any);
+  // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+  if (to) monthlyQuery = monthlyQuery.where("transactionDate", "<=", to as any);
 
   const monthlyStats = await monthlyQuery.execute();
 
   // 2. Counterparts (Details) - Reuse leaderboard logic but filtered by ID
-  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
-  let counterpartsQuery = (kysely as any)
-    .selectFrom("transactions")
+  // ZenStack Query Builder
+  let counterpartsQuery = db.$qb
+    .selectFrom("Transaction")
     .select([
       sql<string>`COALESCE(metadata->>'recipient_rut', metadata->>'rut', metadata->>'identification_number')`.as(
         "identificationNumber",
@@ -279,10 +283,10 @@ export async function getParticipantInsight(
     // biome-ignore lint/suspicious/noExplicitAny: Kysely expression builder type
     .where((eb: any) =>
       eb.or([
-        sql`metadata->>'recipient_rut' = ${participantId}`,
-        sql`metadata->>'rut' = ${participantId}`,
-        sql`metadata->>'identification_number' = ${participantId}`,
-        sql`metadata->>'bank_account_number' = ${participantId}`,
+        sql<boolean>`metadata->>'recipient_rut' = ${participantId}`,
+        sql<boolean>`metadata->>'rut' = ${participantId}`,
+        sql<boolean>`metadata->>'identification_number' = ${participantId}`,
+        sql<boolean>`metadata->>'bank_account_number' = ${participantId}`,
       ]),
     )
     .groupBy([
@@ -295,8 +299,10 @@ export async function getParticipantInsight(
     ])
     .orderBy("outgoingAmount", "desc");
 
-  if (from) counterpartsQuery = counterpartsQuery.where("transaction_date", ">=", from);
-  if (to) counterpartsQuery = counterpartsQuery.where("transaction_date", "<=", to);
+  // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+  if (from) counterpartsQuery = counterpartsQuery.where("transactionDate", ">=", from as any);
+  // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+  if (to) counterpartsQuery = counterpartsQuery.where("transactionDate", "<=", to as any);
 
   const counterparts = await counterpartsQuery.execute();
 
@@ -335,9 +341,8 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
   const { from, to } = params;
 
   // Monthly
-  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
-  const monthly = await (kysely as any)
-    .selectFrom("transactions")
+  const monthly = await db.$qb
+    .selectFrom("Transaction")
     .select([
       sql<string>`to_char(transaction_date, 'YYYY-MM-01')`.as("month"),
       sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
@@ -348,20 +353,23 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
       ),
       sql<number>`sum(transaction_amount)`.as("net"),
     ])
-    .where("transaction_date", ">=", from)
-    .where("transaction_date", "<=", to)
+    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+    .where("transactionDate", ">=", from as any)
+    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+    .where("transactionDate", "<=", to as any)
     .groupBy("month")
     .orderBy("month", "asc")
     .execute();
 
   // By Type
-  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
-  const byType = await (kysely as any)
-    .selectFrom("transactions")
-    .select(["transaction_type as description", sql<number>`sum(transaction_amount)`.as("total")])
-    .where("transaction_date", ">=", from)
-    .where("transaction_date", "<=", to)
-    .groupBy("transaction_type")
+  const byType = await db.$qb
+    .selectFrom("Transaction")
+    .select([(eb) => eb.ref("transactionType").as("description"), sql<number>`sum(transaction_amount)`.as("total")])
+    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+    .where("transactionDate", ">=", from as any)
+    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+    .where("transactionDate", "<=", to as any)
+    .groupBy("transactionType")
     .execute();
 
   // biome-ignore lint/suspicious/noExplicitAny: kysely raw result
@@ -372,9 +380,8 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
   }));
 
   // Totals
-  // biome-ignore lint/suspicious/noExplicitAny: ZenStack schema mismatch
-  const totalsQuery = await (kysely as any)
-    .selectFrom("transactions")
+  const totalsQuery = await db.$qb
+    .selectFrom("Transaction")
     .select([
       sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
         "in",
@@ -384,8 +391,10 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
       ),
       sql<number>`sum(transaction_amount)`.as("net"),
     ])
-    .where("transaction_date", ">=", from)
-    .where("transaction_date", "<=", to)
+    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+    .where("transactionDate", ">=", from as any)
+    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+    .where("transactionDate", "<=", to as any)
     .executeTakeFirst();
 
   const totals = {
