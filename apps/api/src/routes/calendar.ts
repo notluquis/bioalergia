@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { type Context, Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { googleCalendarConfig } from "../config";
-import { syncGoogleCalendarOnce } from "../lib/google/google-calendar";
+// import { syncGoogleCalendarOnce } from "../lib/google/google-calendar"; // Deprecated
 import {
   type CalendarEventFilters,
   getCalendarAggregates,
@@ -24,7 +24,8 @@ import {
   loadSettings,
   type UnclassifiedEvent,
   updateCalendarEventClassification,
-} from "../services/calendar";
+  calendarSyncService,
+} from "../services/calendar"; // Ensure calendarSyncService is exported from services/calendar OR import directly from modules/calendar/service
 import { reply } from "../utils/reply";
 
 export const calendarRoutes = new Hono();
@@ -37,14 +38,18 @@ function ensureArray(value: string | string[] | undefined): string[] {
 }
 
 // Helper to normalize search
-function normalizeSearch(value: string | string[] | undefined): string | undefined {
+function normalizeSearch(
+  value: string | string[] | undefined,
+): string | undefined {
   if (!value) return undefined;
   if (Array.isArray(value)) return value[0]?.trim() || undefined;
   return value.trim() || undefined;
 }
 
 // Helper to normalize date
-function normalizeDate(value: string | string[] | undefined): string | undefined {
+function normalizeDate(
+  value: string | string[] | undefined,
+): string | undefined {
   if (!value) return undefined;
   const val = Array.isArray(value) ? value[0] : value;
   if (!val || !dayjs(val).isValid()) return undefined;
@@ -56,10 +61,14 @@ function coercePositiveInteger(value: unknown): number | undefined {
   return Number.isFinite(num) && num > 0 ? Math.floor(num) : undefined;
 }
 
-async function buildFilters(query: Record<string, string | string[] | undefined>) {
+async function buildFilters(
+  query: Record<string, string | string[] | undefined>,
+) {
   const settings = await loadSettings();
   const configStart =
-    settings["calendar.syncStart"]?.trim() || googleCalendarConfig?.syncStartDate || "2000-01-01";
+    settings["calendar.syncStart"]?.trim() ||
+    googleCalendarConfig?.syncStartDate ||
+    "2000-01-01";
 
   const baseStart = configStart;
   const lookaheadRaw = Number(settings["calendar.syncLookaheadDays"] ?? "365");
@@ -127,10 +136,19 @@ const requireAuth = async (c: Context, next: any) => {
 // ============================================================
 calendarRoutes.get("/events/summary", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
-  const canReadHeatmap = await hasPermission(user.id, "read", "CalendarHeatmap");
+  const canReadSchedule = await hasPermission(
+    user.id,
+    "read",
+    "CalendarSchedule",
+  );
+  const canReadHeatmap = await hasPermission(
+    user.id,
+    "read",
+    "CalendarHeatmap",
+  );
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
 
   if (!canReadSchedule && !canReadHeatmap && !canReadEvents) {
@@ -153,7 +171,8 @@ calendarRoutes.get("/events/summary", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.get("/events/daily", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
@@ -180,11 +199,16 @@ calendarRoutes.get("/events/daily", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canSync = await hasPermission(user.id, "update", "CalendarSetting");
   // Also allow if they can manage events broadly, though strictly it's a setting op
-  const canManageEvents = await hasPermission(user.id, "update", "CalendarEvent");
+  const canManageEvents = await hasPermission(
+    user.id,
+    "update",
+    "CalendarEvent",
+  );
 
   if (!canSync && !canManageEvents) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -198,24 +222,20 @@ calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
   });
 
   // Start sync in background (fire and forget)
-  syncGoogleCalendarOnce()
+  // Start sync in background (fire and forget)
+  calendarSyncService.syncAll()
     .then(async (result) => {
-      // Build excluded summaries form payload
-      const excludedSummaries = result.payload.excludedEvents
-        .slice(0, 20)
-        .map((e) => e.summary?.slice(0, 50) || "(sin título)");
-
       await finalizeCalendarSyncLogEntry(logId, {
         status: "SUCCESS",
-        fetchedAt: new Date(result.payload.fetchedAt),
-        inserted: result.upsertResult.inserted,
-        updated: result.upsertResult.updated,
-        skipped: result.upsertResult.skipped,
-        excluded: result.payload.excludedEvents.length,
+        fetchedAt: new Date(), // We don't track exact fetch start time per calendar, using now is close enough or I could return it
+        inserted: result.inserted,
+        updated: result.updated,
+        skipped: 0, // Not tracked in new service aggregates yet
+        excluded: result.deleted,
         changeDetails: {
-          inserted: result.upsertResult.details.inserted,
-          updated: result.upsertResult.details.updated,
-          excluded: excludedSummaries,
+          inserted: result.details.inserted,
+          updated: result.details.updated,
+          excluded: result.details.deleted,
         },
       });
       console.log(`✅ Sync completed successfully (logId: ${logId})`);
@@ -244,10 +264,15 @@ calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canReadLogs = await hasPermission(user.id, "read", "CalendarSyncLog");
-  const canReadSettings = await hasPermission(user.id, "update", "CalendarSetting"); // Settings page shows logs
+  const canReadSettings = await hasPermission(
+    user.id,
+    "update",
+    "CalendarSetting",
+  ); // Settings page shows logs
 
   if (!canReadLogs && !canReadSettings) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -259,7 +284,8 @@ calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
     logs: logs.map((log: any) => ({
       id: Number(log.id),
       triggerSource: log.triggerSource,
-      triggerUserId: log.triggerUserId != null ? Number(log.triggerUserId) : null,
+      triggerUserId:
+        log.triggerUserId != null ? Number(log.triggerUserId) : null,
       triggerLabel: log.triggerLabel ?? null,
       status: log.status,
       startedAt: log.startedAt,
@@ -280,10 +306,15 @@ calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.get("/classification-options", async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   // Allow if user has ANY calendar read capability
-  const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
+  const canReadSchedule = await hasPermission(
+    user.id,
+    "read",
+    "CalendarSchedule",
+  );
   const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
 
@@ -303,9 +334,14 @@ calendarRoutes.get("/classification-options", async (c: Context) => {
 // ============================================================
 calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canUpdateEvents = await hasPermission(user.id, "update", "CalendarEvent");
+  const canUpdateEvents = await hasPermission(
+    user.id,
+    "update",
+    "CalendarEvent",
+  );
 
   if (!canUpdateEvents) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -314,13 +350,21 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
   const query = c.req.query();
   const limitParam = query.limit;
   const limitRaw = limitParam
-    ? Number.parseInt(String(Array.isArray(limitParam) ? limitParam[0] : limitParam), 10)
+    ? Number.parseInt(
+        String(Array.isArray(limitParam) ? limitParam[0] : limitParam),
+        10,
+      )
     : 50;
-  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : 50;
+  const limit = Number.isFinite(limitRaw)
+    ? Math.min(Math.max(limitRaw, 1), 500)
+    : 50;
 
   const offsetParam = query.offset;
   const offsetRaw = offsetParam
-    ? Number.parseInt(String(Array.isArray(offsetParam) ? offsetParam[0] : offsetParam), 10)
+    ? Number.parseInt(
+        String(Array.isArray(offsetParam) ? offsetParam[0] : offsetParam),
+        10,
+      )
     : 0;
   const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
 
@@ -346,7 +390,9 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
     hasFilters ? filters : undefined,
   );
 
-  const filteredRows = rows.filter((row: UnclassifiedEvent) => !isIgnoredEvent(row.summary));
+  const filteredRows = rows.filter(
+    (row: UnclassifiedEvent) => !isIgnoredEvent(row.summary),
+  );
 
   return reply(c, {
     status: "ok",
@@ -380,7 +426,8 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.post("/events/classify", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canClassify = await hasPermission(user.id, "update", "CalendarEvent");
 
@@ -422,11 +469,20 @@ calendarRoutes.post("/events/classify", requireAuth, async (c) => {
 // GET /api/calendar/calendars
 calendarRoutes.get("/calendars", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   // Allow if they have any broad listing/settings access
-  const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
-  const canReadSettings = await hasPermission(user.id, "update", "CalendarSetting");
+  const canReadSchedule = await hasPermission(
+    user.id,
+    "read",
+    "CalendarSchedule",
+  );
+  const canReadSettings = await hasPermission(
+    user.id,
+    "update",
+    "CalendarSetting",
+  );
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
 
   if (!canReadSchedule && !canReadSettings && !canReadEvents) {
@@ -434,7 +490,9 @@ calendarRoutes.get("/calendars", async (c) => {
   }
 
   /* eslint-disable-next-line @typescript-eslint/consistent-type-definitions */
-  type CalendarWithCount = Awaited<ReturnType<typeof db.calendar.findMany>>[number] & {
+  type CalendarWithCount = Awaited<
+    ReturnType<typeof db.calendar.findMany>
+  >[number] & {
     _count: { events: number };
   };
 
@@ -467,9 +525,14 @@ calendarRoutes.get("/calendars", async (c) => {
 // ============================================================
 calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
+  const canReadSchedule = await hasPermission(
+    user.id,
+    "read",
+    "CalendarSchedule",
+  );
   const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
   const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
 
@@ -497,14 +560,22 @@ calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
   const endParam = query.end;
 
   if (!startParam || !endParam) {
-    return reply(c, { status: "error", message: "Missing start or end date" }, 400);
+    return reply(
+      c,
+      { status: "error", message: "Missing start or end date" },
+      400,
+    );
   }
 
   const start = new Date(startParam);
   const end = new Date(endParam);
 
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return reply(c, { status: "error", message: "Invalid start or end date" }, 400);
+    return reply(
+      c,
+      { status: "error", message: "Invalid start or end date" },
+      400,
+    );
   }
 
   const filterConditions: {
@@ -567,7 +638,9 @@ let lastWebhookChannelId: string | null = null;
 
 function executeWebhookSync(channelId: string) {
   webhookSyncTimer = null;
-  console.log(`[webhook] 🚀 Executing debounced sync: ${channelId.slice(0, 8)}...`);
+  console.log(
+    `[webhook] 🚀 Executing debounced sync: ${channelId.slice(0, 8)}...`,
+  );
 
   createCalendarSyncLogEntry({
     triggerSource: "webhook",
@@ -575,46 +648,53 @@ function executeWebhookSync(channelId: string) {
     triggerLabel: `channel:${channelId.slice(0, 8)}`,
   })
     .then((logId) => {
-      syncGoogleCalendarOnce()
+      // Webhook usually targets a specific resource but legacy syncGoogleCalendarOnce did ALL?
+      // "executeWebhookSync" takes a channelId.
+      // If we want to be precise, we need to map channelId -> calendarId (via DB?).
+      // Legacy behavior: syncGoogleCalendarOnce() synced everything regardless of channelId.
+      // We will stick to syncAll() for now to be safe, or we could optimize later.
+      calendarSyncService.syncAll()
         .then(async (result) => {
           console.log(`[webhook] Sync result:`, {
-            fetched: result.payload.events.length,
-            excluded: result.payload.excludedEvents.length,
-            inserted: result.upsertResult.inserted,
-            updated: result.upsertResult.updated,
-            skipped: result.upsertResult.skipped,
+            fetched: result.eventsFetched,
+            excluded: result.deleted,
+            inserted: result.inserted,
+            updated: result.updated,
           });
-
-          const excludedSummaries = result.payload.excludedEvents
-            .slice(0, 20)
-            .map((e) => e.summary?.slice(0, 50) || "(sin título)");
 
           await finalizeCalendarSyncLogEntry(logId, {
             status: "SUCCESS",
-            fetchedAt: new Date(result.payload.fetchedAt),
-            inserted: result.upsertResult.inserted,
-            updated: result.upsertResult.updated,
-            skipped: result.upsertResult.skipped,
-            excluded: result.payload.excludedEvents.length,
-            changeDetails: {
-              inserted: result.upsertResult.details.inserted,
-              updated: result.upsertResult.details.updated,
-              excluded: excludedSummaries,
+            fetchedAt: new Date(),
+            inserted: result.inserted,
+            updated: result.updated,
+            skipped: 0,
+            excluded: result.deleted,
+             changeDetails: {
+              inserted: result.details.inserted,
+              updated: result.details.updated,
+              excluded: result.details.deleted,
             },
           });
-          console.log(`[webhook] ✅ Sync completed: ${channelId.slice(0, 8)}...`);
+          console.log(
+            `[webhook] ✅ Sync completed: ${channelId.slice(0, 8)}...`,
+          );
         })
         .catch(async (err) => {
           await finalizeCalendarSyncLogEntry(logId, {
             status: "ERROR",
             errorMessage: err instanceof Error ? err.message : String(err),
           });
-          console.error(`[webhook] ❌ Sync failed: ${channelId.slice(0, 8)}...`, err.message);
+          console.error(
+            `[webhook] ❌ Sync failed: ${channelId.slice(0, 8)}...`,
+            err.message,
+          );
         });
     })
     .catch((err) => {
       if (err.message === "Sincronización ya en curso") {
-        console.log(`[webhook] ℹ️ Sync skipped (already in progress): ${channelId.slice(0, 8)}...`);
+        console.log(
+          `[webhook] ℹ️ Sync skipped (already in progress): ${channelId.slice(0, 8)}...`,
+        );
       } else {
         console.error(`[webhook] ❌ Failed to create log entry:`, err.message);
       }
@@ -668,7 +748,8 @@ calendarRoutes.post("/webhook", async (c) => {
 
 calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canReclassify = await hasPermission(user.id, "update", "CalendarEvent");
   if (!canReclassify) {
@@ -676,7 +757,8 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
   }
 
   // Dynamic import to avoid cycles if any, though imports up top are fine
-  const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue");
+  const { startJob, updateJobProgress, completeJob, failJob } =
+    await import("../lib/jobQueue");
 
   const events = await db.event.findMany({
     where: {
@@ -741,7 +823,10 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
         });
 
         const updateData: EventUpdate["data"] = {};
-        if ((event.category === null || event.category === "") && metadata.category) {
+        if (
+          (event.category === null || event.category === "") &&
+          metadata.category
+        ) {
           updateData.category = metadata.category;
           fieldCounts.category++;
         }
@@ -771,7 +856,11 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
         }
 
         if (i % 50 === 0 || i === events.length - 1) {
-          updateJobProgress(jobId, i + 1, `Analizando ${i + 1}/${events.length} eventos...`);
+          updateJobProgress(
+            jobId,
+            i + 1,
+            `Analizando ${i + 1}/${events.length} eventos...`,
+          );
         }
       }
 
@@ -811,14 +900,16 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
 
 calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user)
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canReclassify = await hasPermission(user.id, "update", "CalendarEvent");
   if (!canReclassify) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue");
+  const { startJob, updateJobProgress, completeJob, failJob } =
+    await import("../lib/jobQueue");
 
   const events = await db.event.findMany({
     select: {
@@ -880,7 +971,11 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
         updates.push({ id: event.id, data: updateData });
 
         if (i % 100 === 0 || i === events.length - 1) {
-          updateJobProgress(jobId, i + 1, `Analizando ${i + 1}/${events.length} eventos...`);
+          updateJobProgress(
+            jobId,
+            i + 1,
+            `Analizando ${i + 1}/${events.length} eventos...`,
+          );
         }
       }
 
@@ -889,7 +984,9 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
       for (let i = 0; i < updates.length; i += BATCH_SIZE) {
         const batch = updates.slice(i, i + BATCH_SIZE);
         await db.$transaction(
-          batch.map((u) => db.event.update({ where: { id: u.id }, data: u.data })),
+          batch.map((u) =>
+            db.event.update({ where: { id: u.id }, data: u.data }),
+          ),
         );
         processed += batch.length;
 
@@ -922,7 +1019,11 @@ calendarRoutes.get("/events/job/:jobId", requireAuth, async (c) => {
   const job = getJobStatus(jobId);
 
   if (!job) {
-    return reply(c, { status: "error", message: "Job not found or expired" }, 404);
+    return reply(
+      c,
+      { status: "error", message: "Job not found or expired" },
+      404,
+    );
   }
 
   return reply(c, {

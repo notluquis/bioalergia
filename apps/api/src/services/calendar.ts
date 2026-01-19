@@ -5,12 +5,47 @@ import type { CalendarEventRecord } from "../lib/google/google-calendar";
 export async function loadSettings() {
   const settings = await db.setting.findMany();
   return settings.reduce(
-    (acc: Record<string, string>, curr: { key: string; value: string | null }) => {
+    (
+      acc: Record<string, string>,
+      curr: { key: string; value: string | null },
+    ) => {
       acc[curr.key] = curr.value || "";
       return acc;
     },
     {} as Record<string, string>,
   );
+}
+
+export async function cleanupStaleSyncLogs(forceAll = false) {
+  const STALE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+  const staleDate = new Date(Date.now() - STALE_TIMEOUT_MS);
+
+  const where: any = {
+    status: "RUNNING",
+  };
+
+  // If not forcing all (e.g. startup), only cleanup those that have timed out
+  if (!forceAll) {
+    where.startedAt = { lt: staleDate };
+  }
+
+  const result = await db.calendarSyncLog.updateMany({
+    where,
+    data: {
+      status: "ERROR",
+      errorMessage: forceAll
+        ? "System restarted while sync was in progress"
+        : "Sync timeout - automatically marked as stale",
+      endedAt: new Date(),
+    },
+  });
+
+  if (result.count > 0) {
+    console.warn(
+      `⚠ Cleaned up ${result.count} stale/interrupted sync logs (forceAll=${forceAll})`,
+    );
+  }
+  return result.count;
 }
 
 export async function createCalendarSyncLogEntry(data: {
@@ -26,11 +61,11 @@ export async function createCalendarSyncLogEntry(data: {
   if (running) {
     // Check if it's stale (> 15 minutes old) to avoid permanent lock
     const diff = Date.now() - running.startedAt.getTime();
-    const STALE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes (reduced from 15)
+    const STALE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes (increased to support large syncs)
     if (diff < STALE_TIMEOUT_MS) {
       throw new Error("Sincronización ya en curso");
     }
-    // If stale (>15min), mark as ERROR and proceed
+    // If stale (>15min), clean it up specifically
     console.warn(
       `⚠ Cleaning up stale sync log ${running.id} (${Math.round(diff / 1000 / 60)}min old)`,
     );
@@ -39,6 +74,7 @@ export async function createCalendarSyncLogEntry(data: {
       data: {
         status: "ERROR",
         errorMessage: `Sync timeout - marked as stale after ${Math.round(diff / 1000 / 60)} minutes`,
+        endedAt: new Date(),
       },
     });
   }
@@ -98,10 +134,15 @@ export async function listCalendarSyncLogs(
         limit?: number;
       },
 ) {
-  const options = typeof limitOrOptions === "number" ? { limit: limitOrOptions } : limitOrOptions;
+  const options =
+    typeof limitOrOptions === "number"
+      ? { limit: limitOrOptions }
+      : limitOrOptions;
   const { start, end, limit = 50 } = options || {};
 
-  const where: NonNullable<Parameters<typeof db.calendarSyncLog.findMany>[0]>["where"] = {};
+  const where: NonNullable<
+    Parameters<typeof db.calendarSyncLog.findMany>[0]
+  >["where"] = {};
   if (start) {
     where.startedAt = { gte: start };
   }
@@ -110,21 +151,8 @@ export async function listCalendarSyncLogs(
   }
 
   // Cleanup: mark stale RUNNING syncs as ERROR before querying
-  const STALE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-  const staleDate = new Date(Date.now() - STALE_TIMEOUT_MS);
+  await cleanupStaleSyncLogs(false);
 
-  await db.calendarSyncLog.updateMany({
-    where: {
-      status: "RUNNING",
-      startedAt: { lt: staleDate },
-    },
-    data: {
-      status: "ERROR",
-      errorMessage: "Sync timeout - automatically marked as stale",
-    },
-  });
-
-  // Correction: Query SyncLog, not Event
   const logs = await db.calendarSyncLog.findMany({
     where,
     orderBy: { startedAt: "desc" },
@@ -155,7 +183,10 @@ export async function listUnclassifiedCalendarEvents(
   const conditions: any[] = [];
 
   // If no specific filters, default to show events missing ANY classifiable field
-  if (!filters || Object.keys(filters).filter((k) => k !== "filterMode").length === 0) {
+  if (
+    !filters ||
+    Object.keys(filters).filter((k) => k !== "filterMode").length === 0
+  ) {
     conditions.push(
       { category: null },
       { category: "" },
@@ -328,7 +359,9 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
     summary: data.summary,
     description: data.description,
     startDate: data.start?.date ? new Date(data.start.date) : undefined,
-    startDateTime: data.start?.dateTime ? new Date(data.start.dateTime) : undefined,
+    startDateTime: data.start?.dateTime
+      ? new Date(data.start.dateTime)
+      : undefined,
     startTimeZone: data.start?.timeZone,
     endDate: data.end?.date ? new Date(data.end.date) : undefined,
     endDateTime: data.end?.dateTime ? new Date(data.end.dateTime) : undefined,
@@ -349,3 +382,5 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
     data: createData,
   });
 }
+
+export { calendarSyncService } from "../modules/calendar/service";

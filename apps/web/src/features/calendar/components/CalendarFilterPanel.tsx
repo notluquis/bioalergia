@@ -11,6 +11,7 @@ import Input from "@/components/ui/Input";
 import { numberFormatter } from "@/lib/format";
 
 import { NULL_CATEGORY_VALUE, NULL_EVENT_TYPE_VALUE } from "../constants";
+import { useCalendarSync } from "../hooks/useCalendarSync";
 import type { CalendarFilters } from "../types";
 import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
 
@@ -98,6 +99,8 @@ export function CalendarFilterPanel({
     onApply();
   };
 
+  const { syncNow, syncing } = useCalendarSync();
+
   return (
     <Card className="animate-in slide-in-from-top-2 duration-200">
       <form className="flex flex-wrap items-end gap-3 p-3" onSubmit={handleSubmit}>
@@ -170,6 +173,21 @@ export function CalendarFilterPanel({
 
         {/* Action Buttons */}
         <div className="flex gap-2">
+          <Button
+            disabled={syncing || loading}
+            onClick={(e) => {
+              e.preventDefault();
+              syncNow();
+            }}
+            size="sm"
+            type="button"
+            variant="outline"
+            className="mr-auto"
+            title="Sincronizar con Google Calendar"
+          >
+            {syncing ? "Sincronizando..." : "Sincronizar"}
+          </Button>
+
           <Button
             disabled={loading || !isDirty}
             onClick={onReset}
