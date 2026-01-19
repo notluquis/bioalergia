@@ -16,10 +16,10 @@
     "build": "tsr generate && tsc && vite build",
     "build:fast": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css,md,json}\"",
-    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,css,md,json}\"",
+    "lint": "biome lint .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "format:check": "biome check .",
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "clean": "rm -rf dist",
@@ -72,7 +72,7 @@
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.51.4",
-    "@finanzas/eslint-config": "workspace:*",
+
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/eslint-plugin-router": "^1.141.0",
@@ -89,8 +89,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "concurrently": "^9.2.1",
     "daisyui": "^5.5.14",
-    "eslint": "^9.39.2",
-    "eslint-plugin-jest-dom": "^5.5.0",
+
     "husky": "^9.1.7",
     "jsdom": "^27.4.0",
     "lint-staged": "^16.2.7",
