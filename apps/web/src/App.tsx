@@ -4,9 +4,9 @@ import React from "react";
 
 import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
 import { UpdateNotification } from "./components/features/UpdateNotification";
-import Header from "./components/Layout/Header";
-import { BottomNav } from "./components/Layout/MobileNav";
-import Sidebar from "./components/Layout/Sidebar";
+import Header from "./components/layouts/Header";
+import { BottomNav } from "./components/layouts/MobileNav";
+import Sidebar from "./components/layouts/Sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/ui/Tooltip";
 import { useAuth } from "./context/AuthContext";
 import { useSettings } from "./context/SettingsContext";

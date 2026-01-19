@@ -396,7 +396,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
               disabled={!canRestore || restoreMutation.isPending}
               isLoading={restoreMutation.isPending}
               onClick={() => {
-                restoreMutation.mutate();
+                restoreMutation.mutate(undefined);
               }}
               title={canRestore ? undefined : "Requiere permiso para restaurar"}
               variant="primary"

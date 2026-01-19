@@ -587,7 +587,7 @@ export default function ReportsPage() {
                       data={reportData}
                       enableToolbar={false}
                       enableVirtualization={false}
-                      meta={meta}
+                      meta={meta as unknown as Record<string, unknown>}
                       noDataMessage="No hay datos para mostrar."
                     />
                   </div>

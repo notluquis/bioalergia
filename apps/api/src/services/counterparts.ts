@@ -1,4 +1,4 @@
-import { db } from "@finanzas/db";
+import { db, type Person } from "@finanzas/db";
 
 export async function listCounterparts() {
   return await db.counterpart.findMany({
@@ -137,7 +137,10 @@ export async function upsertCounterpartAccount(
   }
 }
 
-export async function updateCounterpartAccount(accountId: number, payload: any) {
+export async function updateCounterpartAccount(
+  accountId: number,
+  payload: any,
+) {
   return await db.counterpartAccount.update({
     where: { id: accountId },
     data: payload,
