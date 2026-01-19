@@ -504,9 +504,10 @@ export async function syncGoogleCalendarOnce() {
   const upsertDurationMs = performance.now() - upsertStart;
 
   let removeDurationMs = 0;
+  let deletedDetails: string[] = [];
   if (payload.excludedEvents.length) {
     const removeStart = performance.now();
-    await removeGoogleCalendarEvents(payload.excludedEvents);
+    deletedDetails = await removeGoogleCalendarEvents(payload.excludedEvents);
     removeDurationMs = performance.now() - removeStart;
   }
 
@@ -519,6 +520,7 @@ export async function syncGoogleCalendarOnce() {
   return {
     payload,
     upsertResult,
+    deletedDetails,
     ...paths,
     metrics: {
       fetchDurationMs,

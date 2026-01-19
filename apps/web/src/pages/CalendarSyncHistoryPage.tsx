@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { ChevronDown, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
@@ -29,8 +30,8 @@ export default function CalendarSyncHistoryPage() {
   const hasRunningSyncInHistory = syncLogs.some((log) => {
     if (log.status !== "RUNNING") return false;
     const started = dayjs(log.startedAt);
-    // Match backend stale timeout: 5 minutes
-    return started.isValid() && Date.now() - started.valueOf() < 5 * 60 * 1000;
+    // Match backend stale timeout: 15 minutes
+    return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000;
   });
   const isSyncing = syncing || hasRunningSyncFromOtherSource || hasRunningSyncInHistory;
 

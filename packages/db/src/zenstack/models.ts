@@ -5,8 +5,8 @@
 
 /* eslint-disable */
 
-import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
-import { type SchemaType as $Schema, schema as $schema } from "./schema.js";
+import { schema as $schema, type SchemaType as $Schema } from "./schema.js";
+import { type ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
 export type Passkey = $ModelResult<$Schema, "Passkey">;

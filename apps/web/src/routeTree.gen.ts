@@ -21,9 +21,9 @@ import { Route as AuthedCalendarRouteImport } from "./routes/_authed/calendar";
 import { Route as AuthedCalendarClassifyRouteImport } from "./routes/_authed/calendar/classify";
 import { Route as AuthedCalendarDailyRouteImport } from "./routes/_authed/calendar/daily";
 import { Route as AuthedCalendarHeatmapRouteImport } from "./routes/_authed/calendar/heatmap";
-import { Route as AuthedCalendarIndexRouteImport } from "./routes/_authed/calendar/index";
 import { Route as AuthedCalendarScheduleRouteImport } from "./routes/_authed/calendar/schedule";
 import { Route as AuthedCalendarSyncHistoryRouteImport } from "./routes/_authed/calendar/sync-history";
+import { Route as AuthedDevRoutesAuditRouteImport } from "./routes/_authed/dev/routes-audit";
 import { Route as AuthedFinanzasRouteImport } from "./routes/_authed/finanzas";
 import { Route as AuthedFinanzasConciliacionesRouteImport } from "./routes/_authed/finanzas/conciliaciones";
 import { Route as AuthedFinanzasCounterpartsRouteImport } from "./routes/_authed/finanzas/counterparts";
@@ -45,7 +45,6 @@ import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/time
 import { Route as AuthedIndexRouteImport } from "./routes/_authed/index";
 import { Route as AuthedOnboardingRouteImport } from "./routes/_authed/onboarding";
 import { Route as AuthedOperationsRouteImport } from "./routes/_authed/operations";
-import { Route as AuthedOperationsIndexRouteImport } from "./routes/_authed/operations/index";
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory";
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies";
 import { Route as AuthedServicesRouteImport } from "./routes/_authed/services";
@@ -133,11 +132,6 @@ const AuthedServicesIndexRoute = AuthedServicesIndexRouteImport.update({
   path: "/",
   getParentRoute: () => AuthedServicesRoute,
 } as any);
-const AuthedOperationsIndexRoute = AuthedOperationsIndexRouteImport.update({
-  id: "/",
-  path: "/",
-  getParentRoute: () => AuthedOperationsRoute,
-} as any);
 const AuthedHrIndexRoute = AuthedHrIndexRouteImport.update({
   id: "/",
   path: "/",
@@ -147,11 +141,6 @@ const AuthedFinanzasIndexRoute = AuthedFinanzasIndexRouteImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => AuthedFinanzasRoute,
-} as any);
-const AuthedCalendarIndexRoute = AuthedCalendarIndexRouteImport.update({
-  id: "/",
-  path: "/",
-  getParentRoute: () => AuthedCalendarRoute,
 } as any);
 const AuthedSettingsUsersRoute = AuthedSettingsUsersRouteImport.update({
   id: "/users",
@@ -288,6 +277,11 @@ const AuthedFinanzasConciliacionesRoute = AuthedFinanzasConciliacionesRouteImpor
   path: "/conciliaciones",
   getParentRoute: () => AuthedFinanzasRoute,
 } as any);
+const AuthedDevRoutesAuditRoute = AuthedDevRoutesAuditRouteImport.update({
+  id: "/dev/routes-audit",
+  path: "/dev/routes-audit",
+  getParentRoute: () => AuthedRoute,
+} as any);
 const AuthedCalendarSyncHistoryRoute = AuthedCalendarSyncHistoryRouteImport.update({
   id: "/sync-history",
   path: "/sync-history",
@@ -336,7 +330,6 @@ const AuthedFinanzasPersonalCreditsCreditIdRoute =
   } as any);
 
 export interface FileRoutesByFullPath {
-  "/": typeof AuthedIndexRoute;
   "/login": typeof LoginRoute;
   "/account": typeof AuthedAccountRoute;
   "/calendar": typeof AuthedCalendarRouteWithChildren;
@@ -346,11 +339,13 @@ export interface FileRoutesByFullPath {
   "/operations": typeof AuthedOperationsRouteWithChildren;
   "/services": typeof AuthedServicesRouteWithChildren;
   "/settings": typeof AuthedSettingsRouteWithChildren;
+  "/": typeof AuthedIndexRoute;
   "/calendar/classify": typeof AuthedCalendarClassifyRoute;
   "/calendar/daily": typeof AuthedCalendarDailyRoute;
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute;
   "/calendar/schedule": typeof AuthedCalendarScheduleRoute;
   "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute;
+  "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute;
   "/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute;
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute;
   "/finanzas/liberaciones": typeof AuthedFinanzasLiberacionesRoute;
@@ -378,10 +373,8 @@ export interface FileRoutesByFullPath {
   "/settings/people": typeof AuthedSettingsPeopleRouteWithChildren;
   "/settings/roles": typeof AuthedSettingsRolesRoute;
   "/settings/users": typeof AuthedSettingsUsersRouteWithChildren;
-  "/calendar/": typeof AuthedCalendarIndexRoute;
   "/finanzas/": typeof AuthedFinanzasIndexRoute;
   "/hr/": typeof AuthedHrIndexRoute;
-  "/operations/": typeof AuthedOperationsIndexRoute;
   "/services/": typeof AuthedServicesIndexRoute;
   "/settings/": typeof AuthedSettingsIndexRoute;
   "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute;
@@ -392,13 +385,16 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/login": typeof LoginRoute;
   "/account": typeof AuthedAccountRoute;
+  "/calendar": typeof AuthedCalendarRouteWithChildren;
   "/onboarding": typeof AuthedOnboardingRoute;
+  "/operations": typeof AuthedOperationsRouteWithChildren;
   "/": typeof AuthedIndexRoute;
   "/calendar/classify": typeof AuthedCalendarClassifyRoute;
   "/calendar/daily": typeof AuthedCalendarDailyRoute;
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute;
   "/calendar/schedule": typeof AuthedCalendarScheduleRoute;
   "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute;
+  "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute;
   "/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute;
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute;
   "/finanzas/liberaciones": typeof AuthedFinanzasLiberacionesRoute;
@@ -426,10 +422,8 @@ export interface FileRoutesByTo {
   "/settings/people": typeof AuthedSettingsPeopleRouteWithChildren;
   "/settings/roles": typeof AuthedSettingsRolesRoute;
   "/settings/users": typeof AuthedSettingsUsersRouteWithChildren;
-  "/calendar": typeof AuthedCalendarIndexRoute;
   "/finanzas": typeof AuthedFinanzasIndexRoute;
   "/hr": typeof AuthedHrIndexRoute;
-  "/operations": typeof AuthedOperationsIndexRoute;
   "/services": typeof AuthedServicesIndexRoute;
   "/settings": typeof AuthedSettingsIndexRoute;
   "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute;
@@ -455,6 +449,7 @@ export interface FileRoutesById {
   "/_authed/calendar/heatmap": typeof AuthedCalendarHeatmapRoute;
   "/_authed/calendar/schedule": typeof AuthedCalendarScheduleRoute;
   "/_authed/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute;
+  "/_authed/dev/routes-audit": typeof AuthedDevRoutesAuditRoute;
   "/_authed/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute;
   "/_authed/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute;
   "/_authed/finanzas/liberaciones": typeof AuthedFinanzasLiberacionesRoute;
@@ -482,10 +477,8 @@ export interface FileRoutesById {
   "/_authed/settings/people": typeof AuthedSettingsPeopleRouteWithChildren;
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute;
   "/_authed/settings/users": typeof AuthedSettingsUsersRouteWithChildren;
-  "/_authed/calendar/": typeof AuthedCalendarIndexRoute;
   "/_authed/finanzas/": typeof AuthedFinanzasIndexRoute;
   "/_authed/hr/": typeof AuthedHrIndexRoute;
-  "/_authed/operations/": typeof AuthedOperationsIndexRoute;
   "/_authed/services/": typeof AuthedServicesIndexRoute;
   "/_authed/settings/": typeof AuthedSettingsIndexRoute;
   "/_authed/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute;
@@ -496,7 +489,6 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
-    | "/"
     | "/login"
     | "/account"
     | "/calendar"
@@ -506,11 +498,13 @@ export interface FileRouteTypes {
     | "/operations"
     | "/services"
     | "/settings"
+    | "/"
     | "/calendar/classify"
     | "/calendar/daily"
     | "/calendar/heatmap"
     | "/calendar/schedule"
     | "/calendar/sync-history"
+    | "/dev/routes-audit"
     | "/finanzas/conciliaciones"
     | "/finanzas/counterparts"
     | "/finanzas/liberaciones"
@@ -538,10 +532,8 @@ export interface FileRouteTypes {
     | "/settings/people"
     | "/settings/roles"
     | "/settings/users"
-    | "/calendar/"
     | "/finanzas/"
     | "/hr/"
-    | "/operations/"
     | "/services/"
     | "/settings/"
     | "/finanzas/personal-credits/$creditId"
@@ -552,13 +544,16 @@ export interface FileRouteTypes {
   to:
     | "/login"
     | "/account"
+    | "/calendar"
     | "/onboarding"
+    | "/operations"
     | "/"
     | "/calendar/classify"
     | "/calendar/daily"
     | "/calendar/heatmap"
     | "/calendar/schedule"
     | "/calendar/sync-history"
+    | "/dev/routes-audit"
     | "/finanzas/conciliaciones"
     | "/finanzas/counterparts"
     | "/finanzas/liberaciones"
@@ -586,10 +581,8 @@ export interface FileRouteTypes {
     | "/settings/people"
     | "/settings/roles"
     | "/settings/users"
-    | "/calendar"
     | "/finanzas"
     | "/hr"
-    | "/operations"
     | "/services"
     | "/settings"
     | "/finanzas/personal-credits/$creditId"
@@ -614,6 +607,7 @@ export interface FileRouteTypes {
     | "/_authed/calendar/heatmap"
     | "/_authed/calendar/schedule"
     | "/_authed/calendar/sync-history"
+    | "/_authed/dev/routes-audit"
     | "/_authed/finanzas/conciliaciones"
     | "/_authed/finanzas/counterparts"
     | "/_authed/finanzas/liberaciones"
@@ -641,10 +635,8 @@ export interface FileRouteTypes {
     | "/_authed/settings/people"
     | "/_authed/settings/roles"
     | "/_authed/settings/users"
-    | "/_authed/calendar/"
     | "/_authed/finanzas/"
     | "/_authed/hr/"
-    | "/_authed/operations/"
     | "/_authed/services/"
     | "/_authed/settings/"
     | "/_authed/finanzas/personal-credits/$creditId"
@@ -670,7 +662,7 @@ declare module "@tanstack/react-router" {
     "/_authed": {
       id: "/_authed";
       path: "";
-      fullPath: "/";
+      fullPath: "";
       preLoaderRoute: typeof AuthedRouteImport;
       parentRoute: typeof rootRouteImport;
     };
@@ -751,13 +743,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedServicesIndexRouteImport;
       parentRoute: typeof AuthedServicesRoute;
     };
-    "/_authed/operations/": {
-      id: "/_authed/operations/";
-      path: "/";
-      fullPath: "/operations/";
-      preLoaderRoute: typeof AuthedOperationsIndexRouteImport;
-      parentRoute: typeof AuthedOperationsRoute;
-    };
     "/_authed/hr/": {
       id: "/_authed/hr/";
       path: "/";
@@ -771,13 +756,6 @@ declare module "@tanstack/react-router" {
       fullPath: "/finanzas/";
       preLoaderRoute: typeof AuthedFinanzasIndexRouteImport;
       parentRoute: typeof AuthedFinanzasRoute;
-    };
-    "/_authed/calendar/": {
-      id: "/_authed/calendar/";
-      path: "/";
-      fullPath: "/calendar/";
-      preLoaderRoute: typeof AuthedCalendarIndexRouteImport;
-      parentRoute: typeof AuthedCalendarRoute;
     };
     "/_authed/settings/users": {
       id: "/_authed/settings/users";
@@ -968,6 +946,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedFinanzasConciliacionesRouteImport;
       parentRoute: typeof AuthedFinanzasRoute;
     };
+    "/_authed/dev/routes-audit": {
+      id: "/_authed/dev/routes-audit";
+      path: "/dev/routes-audit";
+      fullPath: "/dev/routes-audit";
+      preLoaderRoute: typeof AuthedDevRoutesAuditRouteImport;
+      parentRoute: typeof AuthedRoute;
+    };
     "/_authed/calendar/sync-history": {
       id: "/_authed/calendar/sync-history";
       path: "/sync-history";
@@ -1040,7 +1025,6 @@ interface AuthedCalendarRouteChildren {
   AuthedCalendarHeatmapRoute: typeof AuthedCalendarHeatmapRoute;
   AuthedCalendarScheduleRoute: typeof AuthedCalendarScheduleRoute;
   AuthedCalendarSyncHistoryRoute: typeof AuthedCalendarSyncHistoryRoute;
-  AuthedCalendarIndexRoute: typeof AuthedCalendarIndexRoute;
 }
 
 const AuthedCalendarRouteChildren: AuthedCalendarRouteChildren = {
@@ -1049,7 +1033,6 @@ const AuthedCalendarRouteChildren: AuthedCalendarRouteChildren = {
   AuthedCalendarHeatmapRoute: AuthedCalendarHeatmapRoute,
   AuthedCalendarScheduleRoute: AuthedCalendarScheduleRoute,
   AuthedCalendarSyncHistoryRoute: AuthedCalendarSyncHistoryRoute,
-  AuthedCalendarIndexRoute: AuthedCalendarIndexRoute,
 };
 
 const AuthedCalendarRouteWithChildren = AuthedCalendarRoute._addFileChildren(
@@ -1118,13 +1101,11 @@ const AuthedHrRouteWithChildren = AuthedHrRoute._addFileChildren(AuthedHrRouteCh
 interface AuthedOperationsRouteChildren {
   AuthedOperationsInventoryRoute: typeof AuthedOperationsInventoryRoute;
   AuthedOperationsSuppliesRoute: typeof AuthedOperationsSuppliesRoute;
-  AuthedOperationsIndexRoute: typeof AuthedOperationsIndexRoute;
 }
 
 const AuthedOperationsRouteChildren: AuthedOperationsRouteChildren = {
   AuthedOperationsInventoryRoute: AuthedOperationsInventoryRoute,
   AuthedOperationsSuppliesRoute: AuthedOperationsSuppliesRoute,
-  AuthedOperationsIndexRoute: AuthedOperationsIndexRoute,
 };
 
 const AuthedOperationsRouteWithChildren = AuthedOperationsRoute._addFileChildren(
@@ -1215,6 +1196,7 @@ interface AuthedRouteChildren {
   AuthedServicesRoute: typeof AuthedServicesRouteWithChildren;
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren;
   AuthedIndexRoute: typeof AuthedIndexRoute;
+  AuthedDevRoutesAuditRoute: typeof AuthedDevRoutesAuditRoute;
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -1227,6 +1209,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedServicesRoute: AuthedServicesRouteWithChildren,
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedDevRoutesAuditRoute: AuthedDevRoutesAuditRoute,
 };
 
 const AuthedRouteWithChildren = AuthedRoute._addFileChildren(AuthedRouteChildren);
