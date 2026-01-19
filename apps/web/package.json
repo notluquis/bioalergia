@@ -75,7 +75,7 @@
 
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/vite": "^4.1.18",
-    "@tanstack/eslint-plugin-router": "^1.141.0",
+
     "@tanstack/router-cli": "^1.151.6",
     "@tanstack/router-plugin": "^1.151.6",
     "@testing-library/jest-dom": "^6.9.1",
