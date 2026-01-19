@@ -17,8 +17,42 @@ interface ChangeDetail {
 const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
   if (!data) return null;
 
-  const details = data as ChangeDetail[];
-  if (!Array.isArray(details) || details.length === 0) {
+  // Backend sends: { inserted: string[], updated: (string | {summary, changes})[], excluded: string[] }
+  // Component expects: ChangeDetail[] with action field
+  const rawDetails = data as {
+    excluded?: string[];
+    inserted?: string[];
+    updated?: (string | { changes: string[]; summary: string })[];
+  };
+
+  const details: ChangeDetail[] = [];
+
+  // Transform inserted
+  if (rawDetails.inserted && Array.isArray(rawDetails.inserted)) {
+    for (const summary of rawDetails.inserted) {
+      details.push({ action: "created", summary });
+    }
+  }
+
+  // Transform updated
+  if (rawDetails.updated && Array.isArray(rawDetails.updated)) {
+    for (const item of rawDetails.updated) {
+      if (typeof item === "string") {
+        details.push({ action: "updated", summary: item });
+      } else {
+        details.push({ action: "updated", fields: item.changes, summary: item.summary });
+      }
+    }
+  }
+
+  // Transform excluded
+  if (rawDetails.excluded && Array.isArray(rawDetails.excluded)) {
+    for (const summary of rawDetails.excluded) {
+      details.push({ action: "deleted", summary });
+    }
+  }
+
+  if (details.length === 0) {
     return <p className="text-base-content/50 text-sm italic">No hay cambios detallados.</p>;
   }
 
