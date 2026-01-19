@@ -1,4 +1,4 @@
-import { db, kysely } from "@finanzas/db";
+import { db } from "@finanzas/db";
 
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
@@ -317,25 +317,30 @@ export async function upsertTimesheetEntry(
   }
 
   try {
-    // Use raw Kysely to avoid ZenStack Date type issues with TIME columns
-    // ZenStack types expect Date but PostgreSQL TIME needs string format
-    const result = await kysely
-      .insertInto("employee_timesheets")
+    // Use ZenStack Query Builder (Kysely) with Model Name
+    // This handles mapping to table "employee_timesheets" and requires CamelCase fields
+    const result = await db.$qb
+      .insertInto("EmployeeTimesheet")
       .values({
-        employee_id: payload.employee_id,
-        work_date: workDateObj,
-        start_time: startTimeStr,
-        end_time: endTimeStr,
-        worked_minutes: workedMinutes,
-        overtime_minutes: payload.overtime_minutes,
+        employeeId: payload.employee_id,
+        // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
+        workDate: workDateObj as any,
+        // biome-ignore lint/suspicious/noExplicitAny: PG TIME requires string, Schema expects Date
+        startTime: startTimeStr as any,
+        // biome-ignore lint/suspicious/noExplicitAny: PG TIME requires string, Schema expects Date
+        endTime: endTimeStr as any,
+        workedMinutes: workedMinutes,
+        overtimeMinutes: payload.overtime_minutes,
         comment: payload.comment ?? null,
       })
       .onConflict((oc) =>
-        oc.columns(["employee_id", "work_date"]).doUpdateSet({
-          start_time: startTimeStr,
-          end_time: endTimeStr,
-          worked_minutes: workedMinutes,
-          overtime_minutes: payload.overtime_minutes,
+        oc.columns(["employeeId", "workDate"]).doUpdateSet({
+          // biome-ignore lint/suspicious/noExplicitAny: PG TIME requires string
+          startTime: startTimeStr as any,
+          // biome-ignore lint/suspicious/noExplicitAny: PG TIME requires string
+          endTime: endTimeStr as any,
+          workedMinutes: workedMinutes,
+          overtimeMinutes: payload.overtime_minutes,
           comment: payload.comment ?? null,
         }),
       )
@@ -344,21 +349,21 @@ export async function upsertTimesheetEntry(
 
     console.log("[timesheets] upsert result from DB:", {
       id: result.id,
-      start_time: result.start_time,
-      end_time: result.end_time,
-      start_type: typeof result.start_time,
-      end_type: typeof result.end_time,
+      start_time: result.startTime,
+      end_time: result.endTime,
+      start_type: typeof result.startTime,
+      end_type: typeof result.endTime,
     });
 
     return {
       id: Number(result.id),
-      employee_id: result.employee_id,
-      work_date: formatDateOnly(new Date(result.work_date as Date)),
-      start_time: result.start_time as string | null,
-      end_time: result.end_time as string | null,
-      worked_minutes: result.worked_minutes,
-      overtime_minutes: result.overtime_minutes,
-      comment: result.comment,
+      employee_id: result.employeeId,
+      work_date: formatDateOnly(new Date(result.workDate)),
+      start_time: result.startTime ? dateToTimeString(result.startTime) : "",
+      end_time: result.endTime ? dateToTimeString(result.endTime) : "",
+      worked_minutes: result.workedMinutes,
+      overtime_minutes: result.overtimeMinutes,
+      comment: result.comment || "",
     };
     // biome-ignore lint/suspicious/noExplicitAny: error handling
   } catch (error: any) {

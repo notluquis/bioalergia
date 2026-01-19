@@ -1,4 +1,4 @@
-import { kysely } from "@finanzas/db";
+import { db } from "@finanzas/db";
 import dayjs from "dayjs";
 import { sql } from "kysely";
 import { googleCalendarConfig } from "../../config";
@@ -147,11 +147,11 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
   // Here we just add where clauses assuming table aliases 'e' (Event) and 'c' (Calendar)
 
   if (filters.calendarIds && filters.calendarIds.length > 0) {
-    q = q.where("c.google_id", "in", filters.calendarIds);
+    q = q.where("c.googleId", "in", filters.calendarIds);
   }
 
   if (filters.eventTypes && filters.eventTypes.length > 0) {
-    q = q.where("e.event_type", "in", filters.eventTypes);
+    q = q.where("e.eventType", "in", filters.eventTypes);
   }
 
   if (filters.categories && filters.categories.length > 0) {
@@ -197,9 +197,9 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
 export async function getCalendarAggregates(
   filters: CalendarEventFilters,
 ): Promise<CalendarAggregateResult> {
-  const baseQuery = kysely
-    .selectFrom("events as e")
-    .leftJoin("calendars as c", "e.calendar_id", "c.id");
+  const baseQuery = db.$qb
+    .selectFrom("Event as e")
+    .leftJoin("Calendar as c", "e.calendarId", "c.id");
 
   const filteredQuery = applyFilters(baseQuery, filters);
 
@@ -275,9 +275,9 @@ export async function getCalendarAggregates(
   // Actually, available filters usually respect the date range but ignore specific selection of that filter?
   // For simplicity, let's query available filters based on date range ONLY.
 
-  const dateRangeQuery = kysely
-    .selectFrom("events as e")
-    .leftJoin("calendars as c", "e.calendar_id", "c.id");
+  const dateRangeQuery = db.$qb
+    .selectFrom("Event as e")
+    .leftJoin("Calendar as c", "e.calendarId", "c.id");
 
   let initialQ = dateRangeQuery;
   if (filters.from && dayjs(filters.from).isValid()) {
@@ -291,13 +291,19 @@ export async function getCalendarAggregates(
 
   const [availCalendars, availEventTypes, availCategories] = await Promise.all([
     initialQ
-      .select(["c.google_id as calendarId", sql<number>`count(e.id)`.as("total")])
-      .groupBy("c.google_id")
+      .select(["c.googleId as calendarId", sql<number>`count(e.id)`.as("total")]) // sql alias uses raw names? Or can strict select use string?
+      // "c.google_id as calendarId" is a string select. ZenStack QB expects valid Model Paths.
+      // "c.googleId as calendarId" ?
+      // If I use string select in Kysely, it parses "col as alias".
+      // ZenStack matches "c.googleId".
+      // Let's use `eb` for safety or CamelCase string.
+      // .select(["c.googleId as calendarId", ...])
+      .groupBy("c.googleId")
       .orderBy("total", "desc")
       .execute(),
     initialQ
-      .select(["e.event_type as eventType", sql<number>`count(e.id)`.as("total")])
-      .groupBy("e.event_type")
+      .select(["e.eventType as eventType", sql<number>`count(e.id)`.as("total")])
+      .groupBy("e.eventType")
       .orderBy("total", "desc")
       .execute(),
     initialQ
@@ -409,9 +415,9 @@ export async function getCalendarEventsByDate(
   filters: CalendarEventFilters,
   options: { maxDays?: number } = {},
 ): Promise<CalendarEventsByDateResult> {
-  const baseQuery = kysely
-    .selectFrom("events as e")
-    .leftJoin("calendars as c", "e.calendar_id", "c.id");
+  const baseQuery = db.$qb
+    .selectFrom("Event as e")
+    .leftJoin("Calendar as c", "e.calendarId", "c.id");
 
   const filteredQuery = applyFilters(baseQuery, filters);
 
@@ -446,7 +452,7 @@ export async function getCalendarEventsByDate(
   };
 
   let eventsQuery = applyFilters(
-    kysely.selectFrom("events as e").leftJoin("calendars as c", "e.calendar_id", "c.id"),
+    db.$qb.selectFrom("Event as e").leftJoin("Calendar as c", "e.calendarId", "c.id"),
     filtersWithoutDates,
   );
 
@@ -460,34 +466,39 @@ export async function getCalendarEventsByDate(
 
   const events = await eventsQuery
     .select([
-      "c.google_id as calendarId",
-      "e.external_event_id as eventId",
-      "e.event_status as status",
-      "e.event_type as eventType",
+      "c.googleId as calendarId",
+      "e.externalEventId as eventId",
+      "e.status as status", // Map 'status' model field to 'status' alias (redundant but consistent)
+      // Check Schema: Event has 'status' field?
+      // model Event { ... status String? ... }
+      // The original code was: "e.event_status as status".
+      // Schema likely maps @map("event_status").
+      // So I must use "e.status".
+      "e.eventType as eventType",
       "e.category",
       "e.summary",
       "e.description",
-      "e.start_date as startDate",
-      "e.start_date_time as startDateTime",
-      "e.start_time_zone as startTimeZone",
-      "e.end_date as endDate",
-      "e.end_date_time as endDateTime",
-      "e.end_time_zone as endTimeZone",
-      "e.color_id as colorId",
+      "e.startDate as startDate",
+      "e.startDateTime as startDateTime",
+      "e.startTimeZone as startTimeZone",
+      "e.endDate as endDate",
+      "e.endDateTime as endDateTime",
+      "e.endTimeZone as endTimeZone",
+      "e.colorId as colorId",
       "e.location",
       "e.transparency",
       "e.visibility",
-      "e.hangout_link as hangoutLink",
-      "e.event_created_at as eventCreatedAt",
-      "e.event_updated_at as eventUpdatedAt",
-      "e.amount_expected as amountExpected",
-      "e.amount_paid as amountPaid",
+      "e.hangoutLink as hangoutLink",
+      "e.createdAt as eventCreatedAt",
+      "e.updatedAt as eventUpdatedAt",
+      "e.amountExpected as amountExpected",
+      "e.amountPaid as amountPaid",
       "e.attended",
       "e.dosage",
-      "e.treatment_stage as treatmentStage",
-      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("eventDateString"), // helper for grouping
+      "e.treatmentStage as treatmentStage",
+      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("eventDateString"), // helper for grouping: use raw SQL names 
     ])
-    .orderBy("e.start_date_time", "desc")
+    .orderBy("e.startDateTime", "desc")
     .execute();
 
   // Group by date
