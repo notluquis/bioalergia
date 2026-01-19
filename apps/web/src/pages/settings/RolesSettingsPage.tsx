@@ -314,7 +314,7 @@ function processNavSections(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const systemItems: any[] = Array.from(groupedBySubject.entries()).map(([subject, perms]) => {
       return {
-        // No icon for system permissions
+        icon: undefined, // No icon for system permissions
         label: `${subject} (Sistema)`,
         permissionIds: perms.map((p) => p.id),
         relatedPermissions: perms,
