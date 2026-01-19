@@ -96,7 +96,7 @@ export default function RolesSettingsPage() {
     const currentPermissionIds = role.permissions.map((p) => p.permissionId);
     const hasPermission = currentPermissionIds.includes(permissionId);
 
-    let newPermissionIds;
+    let newPermissionIds: number[];
     newPermissionIds = hasPermission
       ? currentPermissionIds.filter((id) => id !== permissionId)
       : [...currentPermissionIds, permissionId];
@@ -110,7 +110,7 @@ export default function RolesSettingsPage() {
     // Check if ALL provided permissions are already present
     const allPresent = permissionIdsToToggle.every((id) => currentPermissionIds.includes(id));
 
-    let newPermissionIds;
+    let newPermissionIds: number[];
     if (allPresent) {
       // If all are present, remove them (toggle off)
       newPermissionIds = currentPermissionIds.filter((id) => !permissionIdsToToggle.includes(id));
