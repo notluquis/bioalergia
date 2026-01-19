@@ -11,7 +11,9 @@ import { PermissionsMatrixTable } from "@/features/roles/components/PermissionsM
 import { RoleFormModal } from "@/features/roles/components/RoleFormModal";
 import { roleKeys } from "@/features/roles/queries";
 import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
+import { extractPermissionsFromRoutes } from "@/lib/route-utils";
 import { cn } from "@/lib/utils";
+import { routeTree } from "@/routeTree.gen";
 import type { Permission, Role } from "@/types/roles";
 
 // --- Page Component ---
@@ -253,7 +255,14 @@ function processNavSections(
   allPermissions: Permission[],
   usedPermissionIds: Set<number>,
 ) {
-  return navSections
+  // 1. Get permissions explicitly defined in routes
+  // This helps finding permissions even if they are not in the main nav structure
+  // Although not strictly used for filtering navigation, it's useful context
+  // or could be used to validation if we wanted to enforce strict matching.
+  const _routePermissions = extractPermissionsFromRoutes(routeTree);
+
+  // 2. Map existing permissions to sections
+  const mappedSections = navSections
     .map((section: NavSectionData) => {
       const itemsWithPermissions = section.items
         .map((item: NavItem) => {
@@ -261,6 +270,7 @@ function processNavSections(
 
           if (item.requiredPermission) {
             const subject = item.requiredPermission.subject;
+            // Match by exact subject (case insensitive)
             const related = allPermissions.filter(
               (p) => p.subject.toLowerCase() === subject.toLowerCase(),
             );
@@ -270,6 +280,8 @@ function processNavSections(
           const uniquePermissions = [...new Map(perms.map((p) => [p.id, p])).values()];
           for (const p of uniquePermissions) usedPermissionIds.add(p.id);
 
+          // Show item even if no permissions found in DB yet, but ideally we want them matched
+          // If 0 permissions, it shows up as an empty row in matrix which is fine or we filter it
           if (uniquePermissions.length === 0) return null;
 
           return {
@@ -290,4 +302,35 @@ function processNavSections(
       };
     })
     .filter((section) => section.items.length > 0);
+
+  // 3. Find permissions NOT used in nav sections (System/Technical permissions)
+  const technicalPermissions = allPermissions.filter((p) => !usedPermissionIds.has(p.id));
+
+  // For now, show all remaining permissions in a "System" section if any
+  if (technicalPermissions.length > 0) {
+    // Group by subject to make it readable
+    const groupedBySubject = new Map<string, Permission[]>();
+    for (const p of technicalPermissions) {
+      const existing = groupedBySubject.get(p.subject) || [];
+      groupedBySubject.set(p.subject, [...existing, p]);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const systemItems: any[] = Array.from(groupedBySubject.entries()).map(([subject, perms]) => {
+      return {
+        // No icon for system permissions
+        label: `${subject} (Sistema)`,
+        permissionIds: perms.map((p) => p.id),
+        relatedPermissions: perms,
+      };
+    });
+
+    mappedSections.push({
+      title: "Otros Permisos de Sistema",
+      items: systemItems,
+      permissionIds: technicalPermissions.map((p) => p.id),
+    });
+  }
+
+  return mappedSections;
 }

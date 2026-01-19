@@ -8,6 +8,10 @@ import { timesheetQueries } from "@/features/hr/timesheets/queries";
 const TimesheetsPage = lazy(() => import("@/features/hr/timesheets/pages/TimesheetsPage"));
 
 export const Route = createFileRoute("/_authed/hr/timesheets")({
+  staticData: {
+    nav: { iconKey: "Clock", label: "Control Horario", order: 4, section: "Operaciones" },
+    permission: { action: "read", subject: "TimesheetList" },
+  },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "TimesheetList")) {
       const routeApi = getRouteApi("/_authed/hr/timesheets");

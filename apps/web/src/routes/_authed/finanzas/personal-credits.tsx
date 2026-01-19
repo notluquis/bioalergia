@@ -9,6 +9,10 @@ const PersonalCreditsPage = lazy(
 );
 
 export const Route = createFileRoute("/_authed/finanzas/personal-credits")({
+  staticData: {
+    nav: { iconKey: "Banknote", label: "Créditos", order: 21, section: "Finanzas" },
+    permission: { action: "read", subject: "PersonalCredit" },
+  },
   beforeLoad: () => {
     // Permission check - Assuming 'PersonalCredit' subject.
     // If not yet seeded, this might deny access if strict.

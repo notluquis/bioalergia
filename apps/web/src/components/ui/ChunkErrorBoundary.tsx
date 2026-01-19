@@ -95,6 +95,7 @@ export class ChunkErrorBoundary extends Component<Props, State> {
               <button
                 className="btn btn-primary btn-lg ring-primary/20 w-full rounded-2xl shadow-lg ring"
                 onClick={this.handleReset}
+                type="button"
               >
                 Actualizar Ahora
               </button>

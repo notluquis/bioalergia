@@ -6,6 +6,10 @@ import PageLoader from "@/components/ui/PageLoader";
 const PayoutsPage = lazy(() => import("@/features/payouts/PayoutsPage"));
 
 export const Route = createFileRoute("/_authed/finanzas/payouts")({
+  staticData: {
+    nav: { iconKey: "Wallet", label: "Liquidaciones", order: 20, section: "Finanzas" },
+    permission: { action: "read", subject: "ReleaseTransaction" },
+  },
   beforeLoad: ({ context }) => {
     // Assuming simple permission check for now using 'read' 'Finance' as a broad category or specific if 'ReleaseTransaction' is mapped in Ability.
     // Ideally this matches the check inside the component or API.
