@@ -120,7 +120,7 @@ export function DataTableToolbar<TData>({
         {enableExport && (
           <Button className="h-8" onClick={handleExport} size="sm" variant="outline">
             <Download className="mr-2 h-4 w-4" />
-            Exportar
+            Exportar CSV
           </Button>
         )}
         <DataTableViewOptions table={table} />
