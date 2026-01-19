@@ -6,9 +6,15 @@ import PageLoader from "@/components/ui/PageLoader";
 const Counterparts = lazy(() => import("@/pages/Counterparts"));
 
 export const Route = createFileRoute("/_authed/finanzas/counterparts")({
+  staticData: {
+    nav: { iconKey: "Users2", label: "Contrapartes", order: 5, section: "Finanzas" },
+    permission: { action: "read", subject: "Counterpart" },
+    title: "Contrapartes",
+  },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "Counterpart")) {
       const routeApi = getRouteApi("/_authed/finanzas/counterparts");
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }
   },

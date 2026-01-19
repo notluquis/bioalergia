@@ -33,7 +33,6 @@ import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedFinanzasIndexRouteImport } from "./routes/_authed/finanzas/index"
 import { Route as AuthedCalendarIndexRouteImport } from "./routes/_authed/calendar/index"
 import { Route as AuthedSettingsUsersRouteImport } from "./routes/_authed/settings/users"
-import { Route as AuthedSettingsSyncHistoryRouteImport } from "./routes/_authed/settings/sync-history"
 import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles"
 import { Route as AuthedSettingsPeopleRouteImport } from "./routes/_authed/settings/people"
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago"
@@ -159,12 +158,6 @@ const AuthedSettingsUsersRoute = AuthedSettingsUsersRouteImport.update({
   path: "/users",
   getParentRoute: () => AuthedSettingsRoute,
 } as any)
-const AuthedSettingsSyncHistoryRoute =
-  AuthedSettingsSyncHistoryRouteImport.update({
-    id: "/sync-history",
-    path: "/sync-history",
-    getParentRoute: () => AuthedSettingsRoute,
-  } as any)
 const AuthedSettingsRolesRoute = AuthedSettingsRolesRouteImport.update({
   id: "/roles",
   path: "/roles",
@@ -355,6 +348,7 @@ const AuthedFinanzasPersonalCreditsCreditIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  "/": typeof AuthedIndexRoute
   "/login": typeof LoginRoute
   "/account": typeof AuthedAccountRoute
   "/calendar": typeof AuthedCalendarRouteWithChildren
@@ -364,7 +358,6 @@ export interface FileRoutesByFullPath {
   "/operations": typeof AuthedOperationsRouteWithChildren
   "/services": typeof AuthedServicesRouteWithChildren
   "/settings": typeof AuthedSettingsRouteWithChildren
-  "/": typeof AuthedIndexRoute
   "/calendar/classify": typeof AuthedCalendarClassifyRoute
   "/calendar/daily": typeof AuthedCalendarDailyRoute
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute
@@ -396,7 +389,6 @@ export interface FileRoutesByFullPath {
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/people": typeof AuthedSettingsPeopleRouteWithChildren
   "/settings/roles": typeof AuthedSettingsRolesRoute
-  "/settings/sync-history": typeof AuthedSettingsSyncHistoryRoute
   "/settings/users": typeof AuthedSettingsUsersRouteWithChildren
   "/calendar/": typeof AuthedCalendarIndexRoute
   "/finanzas/": typeof AuthedFinanzasIndexRoute
@@ -445,7 +437,6 @@ export interface FileRoutesByTo {
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/people": typeof AuthedSettingsPeopleRouteWithChildren
   "/settings/roles": typeof AuthedSettingsRolesRoute
-  "/settings/sync-history": typeof AuthedSettingsSyncHistoryRoute
   "/settings/users": typeof AuthedSettingsUsersRouteWithChildren
   "/calendar": typeof AuthedCalendarIndexRoute
   "/finanzas": typeof AuthedFinanzasIndexRoute
@@ -502,7 +493,6 @@ export interface FileRoutesById {
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/_authed/settings/people": typeof AuthedSettingsPeopleRouteWithChildren
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute
-  "/_authed/settings/sync-history": typeof AuthedSettingsSyncHistoryRoute
   "/_authed/settings/users": typeof AuthedSettingsUsersRouteWithChildren
   "/_authed/calendar/": typeof AuthedCalendarIndexRoute
   "/_authed/finanzas/": typeof AuthedFinanzasIndexRoute
@@ -518,6 +508,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | "/"
     | "/login"
     | "/account"
     | "/calendar"
@@ -527,7 +518,6 @@ export interface FileRouteTypes {
     | "/operations"
     | "/services"
     | "/settings"
-    | "/"
     | "/calendar/classify"
     | "/calendar/daily"
     | "/calendar/heatmap"
@@ -559,7 +549,6 @@ export interface FileRouteTypes {
     | "/settings/mercadopago"
     | "/settings/people"
     | "/settings/roles"
-    | "/settings/sync-history"
     | "/settings/users"
     | "/calendar/"
     | "/finanzas/"
@@ -608,7 +597,6 @@ export interface FileRouteTypes {
     | "/settings/mercadopago"
     | "/settings/people"
     | "/settings/roles"
-    | "/settings/sync-history"
     | "/settings/users"
     | "/calendar"
     | "/finanzas"
@@ -664,7 +652,6 @@ export interface FileRouteTypes {
     | "/_authed/settings/mercadopago"
     | "/_authed/settings/people"
     | "/_authed/settings/roles"
-    | "/_authed/settings/sync-history"
     | "/_authed/settings/users"
     | "/_authed/calendar/"
     | "/_authed/finanzas/"
@@ -695,7 +682,7 @@ declare module "@tanstack/react-router" {
     "/_authed": {
       id: "/_authed"
       path: ""
-      fullPath: ""
+      fullPath: "/"
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -809,13 +796,6 @@ declare module "@tanstack/react-router" {
       path: "/users"
       fullPath: "/settings/users"
       preLoaderRoute: typeof AuthedSettingsUsersRouteImport
-      parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/settings/sync-history": {
-      id: "/_authed/settings/sync-history"
-      path: "/sync-history"
-      fullPath: "/settings/sync-history"
-      preLoaderRoute: typeof AuthedSettingsSyncHistoryRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/roles": {
@@ -1220,7 +1200,6 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsMercadopagoRoute: typeof AuthedSettingsMercadopagoRoute
   AuthedSettingsPeopleRoute: typeof AuthedSettingsPeopleRouteWithChildren
   AuthedSettingsRolesRoute: typeof AuthedSettingsRolesRoute
-  AuthedSettingsSyncHistoryRoute: typeof AuthedSettingsSyncHistoryRoute
   AuthedSettingsUsersRoute: typeof AuthedSettingsUsersRouteWithChildren
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
 }
@@ -1234,7 +1213,6 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsMercadopagoRoute: AuthedSettingsMercadopagoRoute,
   AuthedSettingsPeopleRoute: AuthedSettingsPeopleRouteWithChildren,
   AuthedSettingsRolesRoute: AuthedSettingsRolesRoute,
-  AuthedSettingsSyncHistoryRoute: AuthedSettingsSyncHistoryRoute,
   AuthedSettingsUsersRoute: AuthedSettingsUsersRouteWithChildren,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
 }

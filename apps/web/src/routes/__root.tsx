@@ -14,6 +14,17 @@ const TanStackRouterDevtools =
         }))
       );
 
+import type { NavConfig, RoutePermission } from "@/types/navigation";
+
+// Extend the router's static data interface
+declare module "@tanstack/react-router" {
+  interface StaticDataRouteOption {
+    nav?: NavConfig;
+    permission?: RoutePermission;
+    title?: string;
+  }
+}
+
 // Router Context - shared across all routes
 export interface RouterContext {
   auth: AuthContextType;
