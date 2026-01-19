@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/dist", "!**/.turbo", "!**/node_modules"]
+    "includes": ["**", "!**/dist", "!**/.turbo", "!**/node_modules", "!**/*.css"]
   },
   "formatter": {
     "enabled": true,
@@ -24,20 +24,16 @@
       "correctness": {
         "noUnusedVariables": "off",
         "noUnusedImports": "off",
-        "noInnerDeclarations": "off"
+        "noInnerDeclarations": "off",
+        "useExhaustiveDependencies": "off"
       },
       "suspicious": {
         "noAssignInExpressions": "off",
         "noExplicitAny": "off",
-        "noArrayIndexKey": "off",
-        "noImplicitAnyLet": "off",
-        "useIterableCallbackReturn": "off",
-        "noShadowRestrictedNames": "off",
-        "noTemplateCurlyInString": "off"
+        "noArrayIndexKey": "off"
       },
       "style": {
         "useBlockStatements": "off",
-
         "useSelfClosingElements": "off",
         "noNonNullAssertion": "off"
       },
@@ -47,9 +43,6 @@
         "useButtonType": "off",
         "useSemanticElements": "off",
         "useAriaPropsSupportedByRole": "off"
-      },
-      "security": {
-        "noDangerouslySetInnerHtml": "off"
       }
     }
   },
