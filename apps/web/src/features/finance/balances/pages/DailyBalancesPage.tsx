@@ -11,8 +11,8 @@ import Input from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
 import { DailyBalancesPanel } from "@/features/finance/balances/components/DailyBalancesPanel";
-import { useDailyBalanceManagement } from "@/features/finance/balances/hooks/useDailyBalanceManagement";
-import { useQuickDateRange } from "@/features/finance/balances/hooks/useQuickDateRange";
+import { useDailyBalanceManagement } from "@/features/finance/balances/hooks/use-daily-balance-management";
+import { useQuickDateRange } from "@/features/finance/balances/hooks/use-quick-date-range";
 import { balanceKeys } from "@/features/finance/balances/queries";
 import { deriveInitialBalance, formatBalanceInput } from "@/features/finance/balances/utils";
 import { today } from "@/lib/dates";
@@ -44,10 +44,6 @@ export default function DailyBalances() {
   });
 
   useEffect(() => {
-    if (!report) {
-      setDrafts({});
-      return;
-    }
     const nextDrafts: Record<string, BalanceDraft> = {};
     for (const day of report.days) {
       nextDrafts[day.date] = {
@@ -58,7 +54,7 @@ export default function DailyBalances() {
     setDrafts(nextDrafts);
   }, [report, setDrafts]);
 
-  const derivedInitial = report ? deriveInitialBalance(report) : null;
+  const derivedInitial = deriveInitialBalance(report);
 
   return (
     <section className="space-y-4">
