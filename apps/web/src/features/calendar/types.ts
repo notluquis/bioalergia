@@ -163,7 +163,7 @@ export interface CalendarSyncLog {
   errorMessage: null | string;
   excluded: number;
   fetchedAt: null | string;
-  finishedAt: null | string;
+  endedAt: null | string;
   id: number;
   inserted: number;
   skipped: number;

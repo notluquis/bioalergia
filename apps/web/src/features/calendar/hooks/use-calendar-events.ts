@@ -229,8 +229,8 @@ export function useCalendarEvents() {
         if (currentLog.status === "SUCCESS") {
           clearInterval(pollInterval);
           setSyncDurationMs(
-            currentLog.finishedAt && currentLog.startedAt
-              ? new Date(currentLog.finishedAt).getTime() - new Date(currentLog.startedAt).getTime()
+            currentLog.endedAt && currentLog.startedAt
+              ? new Date(currentLog.endedAt).getTime() - new Date(currentLog.startedAt).getTime()
               : null,
           );
           setSyncProgress(

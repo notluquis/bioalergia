@@ -199,8 +199,8 @@ export default function CalendarSyncHistoryPage() {
             <div className="divide-base-200 divide-y">
               {syncLogs.map((log) => {
                 const isExpanded = expandedId === log.id;
-                const duration = log.finishedAt
-                  ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s")
+                const duration = log.endedAt
+                  ? dayjs(log.endedAt).diff(dayjs(log.startedAt), "s")
                   : null;
 
                 return (
