@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
+import Input from "@/components/ui/Input";
 // Import dynamically to avoid bundling in prod if not tree-shaken correctly by router
 // But for this dev page we can import directly for simplicity as the route itself should be dev-only
 import { auditRouteNavigation } from "@/lib/route-utils";
@@ -148,7 +148,7 @@ function RoutesAuditPage() {
               placeholder="Search routes..."
               className="pl-8"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -200,7 +200,7 @@ function RoutesAuditPage() {
                   {route.status === "valid" && (
                     <Badge
                       variant="outline"
-                      className="text-success border-success/20 bg-success/10"
+                      className="text-success border-success-soft-hover bg-success/10"
                     >
                       <CheckCircle className="mr-1 size-3" /> Valid
                     </Badge>
