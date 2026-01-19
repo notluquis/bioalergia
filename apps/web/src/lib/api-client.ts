@@ -108,7 +108,7 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
 }
 
 async function request<T>(method: string, url: string, options?: RequestOptions): Promise<T> {
-  const { body, query, responseType = "json", retry, ...fetchOptions } = options || {};
+  const { body, query, responseType = "json", retry, ...fetchOptions } = options ?? {};
 
   const finalUrl = buildUrlWithQuery(url, query);
 

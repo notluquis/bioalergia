@@ -88,7 +88,7 @@ function CalendarHeatmapPage() {
   // KEEP useMemo: Heavy Map operation iterating over all events
   const statsByDate = useMemo(() => {
     const map = new Map<string, { amountExpected: number; amountPaid: number; total: number }>();
-    for (const entry of summary?.aggregates.byDate) {
+    for (const entry of summary?.aggregates.byDate ?? []) {
       // Server now returns dates as "YYYY-MM-DD" strings via TO_CHAR in SQL
       const key = String(entry.date).slice(0, 10);
       map.set(key, {
