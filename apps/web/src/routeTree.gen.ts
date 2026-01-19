@@ -43,7 +43,6 @@ import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index";
 import { Route as AuthedHrReportsRouteImport } from "./routes/_authed/hr/reports";
 import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/timesheets";
 import { Route as AuthedIndexRouteImport } from "./routes/_authed/index";
-import { Route as AuthedOnboardingRouteImport } from "./routes/_authed/onboarding";
 import { Route as AuthedOperationsRouteImport } from "./routes/_authed/operations";
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory";
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies";
@@ -67,7 +66,13 @@ import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settin
 import { Route as AuthedSettingsUsersRouteImport } from "./routes/_authed/settings/users";
 import { Route as AuthedSettingsUsersAddRouteImport } from "./routes/_authed/settings/users.add";
 import { Route as LoginRouteImport } from "./routes/login";
+import { Route as OnboardingRouteImport } from "./routes/onboarding";
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: "/onboarding",
+  path: "/onboarding",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const LoginRoute = LoginRouteImport.update({
   id: "/login",
   path: "/login",
@@ -95,11 +100,6 @@ const AuthedServicesRoute = AuthedServicesRouteImport.update({
 const AuthedOperationsRoute = AuthedOperationsRouteImport.update({
   id: "/operations",
   path: "/operations",
-  getParentRoute: () => AuthedRoute,
-} as any);
-const AuthedOnboardingRoute = AuthedOnboardingRouteImport.update({
-  id: "/onboarding",
-  path: "/onboarding",
   getParentRoute: () => AuthedRoute,
 } as any);
 const AuthedHrRoute = AuthedHrRouteImport.update({
@@ -330,16 +330,16 @@ const AuthedFinanzasPersonalCreditsCreditIdRoute =
   } as any);
 
 export interface FileRoutesByFullPath {
+  "/": typeof AuthedIndexRoute;
   "/login": typeof LoginRoute;
+  "/onboarding": typeof OnboardingRoute;
   "/account": typeof AuthedAccountRoute;
   "/calendar": typeof AuthedCalendarRouteWithChildren;
   "/finanzas": typeof AuthedFinanzasRouteWithChildren;
   "/hr": typeof AuthedHrRouteWithChildren;
-  "/onboarding": typeof AuthedOnboardingRoute;
   "/operations": typeof AuthedOperationsRouteWithChildren;
   "/services": typeof AuthedServicesRouteWithChildren;
   "/settings": typeof AuthedSettingsRouteWithChildren;
-  "/": typeof AuthedIndexRoute;
   "/calendar/classify": typeof AuthedCalendarClassifyRoute;
   "/calendar/daily": typeof AuthedCalendarDailyRoute;
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute;
@@ -384,9 +384,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   "/login": typeof LoginRoute;
+  "/onboarding": typeof OnboardingRoute;
   "/account": typeof AuthedAccountRoute;
   "/calendar": typeof AuthedCalendarRouteWithChildren;
-  "/onboarding": typeof AuthedOnboardingRoute;
   "/operations": typeof AuthedOperationsRouteWithChildren;
   "/": typeof AuthedIndexRoute;
   "/calendar/classify": typeof AuthedCalendarClassifyRoute;
@@ -435,11 +435,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   "/_authed": typeof AuthedRouteWithChildren;
   "/login": typeof LoginRoute;
+  "/onboarding": typeof OnboardingRoute;
   "/_authed/account": typeof AuthedAccountRoute;
   "/_authed/calendar": typeof AuthedCalendarRouteWithChildren;
   "/_authed/finanzas": typeof AuthedFinanzasRouteWithChildren;
   "/_authed/hr": typeof AuthedHrRouteWithChildren;
-  "/_authed/onboarding": typeof AuthedOnboardingRoute;
   "/_authed/operations": typeof AuthedOperationsRouteWithChildren;
   "/_authed/services": typeof AuthedServicesRouteWithChildren;
   "/_authed/settings": typeof AuthedSettingsRouteWithChildren;
@@ -489,16 +489,16 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
+    | "/"
     | "/login"
+    | "/onboarding"
     | "/account"
     | "/calendar"
     | "/finanzas"
     | "/hr"
-    | "/onboarding"
     | "/operations"
     | "/services"
     | "/settings"
-    | "/"
     | "/calendar/classify"
     | "/calendar/daily"
     | "/calendar/heatmap"
@@ -543,9 +543,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo;
   to:
     | "/login"
+    | "/onboarding"
     | "/account"
     | "/calendar"
-    | "/onboarding"
     | "/operations"
     | "/"
     | "/calendar/classify"
@@ -593,11 +593,11 @@ export interface FileRouteTypes {
     | "__root__"
     | "/_authed"
     | "/login"
+    | "/onboarding"
     | "/_authed/account"
     | "/_authed/calendar"
     | "/_authed/finanzas"
     | "/_authed/hr"
-    | "/_authed/onboarding"
     | "/_authed/operations"
     | "/_authed/services"
     | "/_authed/settings"
@@ -648,10 +648,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren;
   LoginRoute: typeof LoginRoute;
+  OnboardingRoute: typeof OnboardingRoute;
 }
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
+    "/onboarding": {
+      id: "/onboarding";
+      path: "/onboarding";
+      fullPath: "/onboarding";
+      preLoaderRoute: typeof OnboardingRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     "/login": {
       id: "/login";
       path: "/login";
@@ -662,7 +670,7 @@ declare module "@tanstack/react-router" {
     "/_authed": {
       id: "/_authed";
       path: "";
-      fullPath: "";
+      fullPath: "/";
       preLoaderRoute: typeof AuthedRouteImport;
       parentRoute: typeof rootRouteImport;
     };
@@ -692,13 +700,6 @@ declare module "@tanstack/react-router" {
       path: "/operations";
       fullPath: "/operations";
       preLoaderRoute: typeof AuthedOperationsRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
-    "/_authed/onboarding": {
-      id: "/_authed/onboarding";
-      path: "/onboarding";
-      fullPath: "/onboarding";
-      preLoaderRoute: typeof AuthedOnboardingRouteImport;
       parentRoute: typeof AuthedRoute;
     };
     "/_authed/hr": {
@@ -1191,7 +1192,6 @@ interface AuthedRouteChildren {
   AuthedCalendarRoute: typeof AuthedCalendarRouteWithChildren;
   AuthedFinanzasRoute: typeof AuthedFinanzasRouteWithChildren;
   AuthedHrRoute: typeof AuthedHrRouteWithChildren;
-  AuthedOnboardingRoute: typeof AuthedOnboardingRoute;
   AuthedOperationsRoute: typeof AuthedOperationsRouteWithChildren;
   AuthedServicesRoute: typeof AuthedServicesRouteWithChildren;
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren;
@@ -1204,7 +1204,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCalendarRoute: AuthedCalendarRouteWithChildren,
   AuthedFinanzasRoute: AuthedFinanzasRouteWithChildren,
   AuthedHrRoute: AuthedHrRouteWithChildren,
-  AuthedOnboardingRoute: AuthedOnboardingRoute,
   AuthedOperationsRoute: AuthedOperationsRouteWithChildren,
   AuthedServicesRoute: AuthedServicesRouteWithChildren,
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
@@ -1217,6 +1216,7 @@ const AuthedRouteWithChildren = AuthedRoute._addFileChildren(AuthedRouteChildren
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
+  OnboardingRoute: OnboardingRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
