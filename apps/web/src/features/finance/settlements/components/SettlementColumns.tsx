@@ -35,7 +35,7 @@ const dateColumn = (
 ): ColumnDef<SettlementTransaction> => ({
   accessorKey,
   cell: ({ row }) => {
-    const val = row.getValue(accessorKey);
+    const val = row.getValue(accessorKey) as string | number | Date | null;
     if (!val) return "-";
     return dayjs(val).format("DD/MM/YY HH:mm");
   },
@@ -43,7 +43,7 @@ const dateColumn = (
   minSize: 120,
 });
 
-export const columns: ColumnDef<SettlementTransaction>[] = [
+export const columns: ColumnDef<SettlementTransaction, any>[] = [
   {
     cell: ({ row }) => {
       return row.getCanExpand() ? (

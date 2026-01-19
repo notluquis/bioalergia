@@ -7,7 +7,6 @@ import {
   getCounterpartsColumns,
   getLeaderboardColumns,
   getMonthlyColumns,
-  type LeaderboardMeta,
 } from "@/features/participants/components/ParticipantColumns";
 import { useParticipantInsightsData } from "@/features/participants/hooks/use-participant-insights-data";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -160,7 +159,7 @@ export default function ParticipantInsightsPage() {
                   detailLoading,
                   onSelect: handleSelectParticipant,
                   participantId,
-                } as LeaderboardMeta
+                } as unknown as Record<string, unknown>
               }
               noDataMessage={
                 leaderboardLoading

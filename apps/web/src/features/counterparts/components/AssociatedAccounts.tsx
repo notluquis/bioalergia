@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
@@ -392,7 +393,7 @@ export default function AssociatedAccounts({
     return (
       <div className="border-base-200 overflow-hidden rounded-lg border">
         <DataTable
-          columns={quickViewColumns}
+          columns={quickViewColumns as ColumnDef<Transaction, any>[]}
           data={rows}
           enableToolbar={false}
           enableVirtualization={false}
@@ -494,7 +495,7 @@ export default function AssociatedAccounts({
 
       <div className="border-base-200 bg-base-100 overflow-hidden rounded-lg border">
         <DataTable
-          columns={accountGroupColumns}
+          columns={accountGroupColumns as ColumnDef<AccountGroup, any>[]}
           data={accountGroups}
           enableToolbar={false}
           enableVirtualization={false}

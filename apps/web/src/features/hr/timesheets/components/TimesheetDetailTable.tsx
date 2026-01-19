@@ -1,3 +1,4 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
@@ -111,12 +112,12 @@ export default function TimesheetDetailTable({
 
       <div className="muted-scrollbar border-base-200 transform-gpu overflow-x-auto rounded-lg border">
         <DataTable
-          columns={columns}
+          columns={columns as ColumnDef<BulkRow, any>[]}
           data={bulkRows}
           enableToolbar={false}
           enableVirtualization={false}
           isLoading={loadingDetail}
-          meta={meta}
+          meta={meta as unknown as Record<string, unknown>}
           noDataMessage={
             employeeOptions.length > 0
               ? "Selecciona un trabajador para ver o editar sus horas."

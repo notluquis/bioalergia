@@ -141,7 +141,7 @@ export default function CounterpartForm({
                 />
                 {field.state.meta.errors.length > 0 && (
                   <p className="text-error mt-1 text-xs">
-                    {(field.state.meta.errors as string[]).join(", ")}
+                    {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
               </div>
@@ -164,7 +164,7 @@ export default function CounterpartForm({
                 />
                 {field.state.meta.errors.length > 0 && (
                   <p className="text-error mt-1 text-xs">
-                    {(field.state.meta.errors as string[]).join(", ")}
+                    {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
               </div>
@@ -188,7 +188,7 @@ export default function CounterpartForm({
                 </Input>
                 {field.state.meta.errors.length > 0 && (
                   <p className="text-error mt-1 text-xs">
-                    {(field.state.meta.errors as string[]).join(", ")}
+                    {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
               </div>
@@ -215,7 +215,7 @@ export default function CounterpartForm({
                 </Input>
                 {field.state.meta.errors.length > 0 && (
                   <p className="text-error mt-1 text-xs">
-                    {(field.state.meta.errors as string[]).join(", ")}
+                    {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
               </div>
@@ -243,7 +243,7 @@ export default function CounterpartForm({
                 />
                 {field.state.meta.errors.length > 0 && (
                   <p className="text-error mt-1 text-xs">
-                    {(field.state.meta.errors as string[]).join(", ")}
+                    {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
               </div>
@@ -267,7 +267,7 @@ export default function CounterpartForm({
                   />
                   {field.state.meta.errors.length > 0 && (
                     <p className="text-error mt-1 text-xs">
-                      {(field.state.meta.errors as string[]).join(", ")}
+                      {field.state.meta.errors.map((err) => String(err)).join(", ")}
                     </p>
                   )}
                 </div>
