@@ -339,6 +339,7 @@ export function DataTable<TData, TValue>({
                           ? null
                           : flexRender(header.column.columnDef.header, header.getContext())}
                         <button
+                          type="button"
                           aria-label="Resize column"
                           className={`bg-base-300 absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none opacity-0 select-none group-hover:opacity-100 ${
                             header.column.getIsResizing() ? "bg-primary w-1.5 opacity-100" : ""

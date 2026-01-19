@@ -216,7 +216,7 @@ export default function SettingsForm() {
       </div>
       <div className={GRID_2_COL_MD}>
         {fields.map(({ helper, key, label, type }) => (
-          <label className="text-base-content flex flex-col gap-2 text-sm" key={key}>
+          <div className="text-base-content flex flex-col gap-2 text-sm" key={key}>
             <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
               {label}
             </span>
@@ -268,7 +268,7 @@ export default function SettingsForm() {
                 );
               })()
             )}
-          </label>
+          </div>
         ))}
         <div className="border-base-300 bg-base-200 col-span-full space-y-3 rounded-2xl border p-4">
           <div className="flex items-center justify-between gap-2">

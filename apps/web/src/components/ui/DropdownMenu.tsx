@@ -101,6 +101,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       >
         <DropdownMenuPrimitive.ItemIndicator>
           <svg
+            aria-hidden="true"
             className="h-3 w-3"
             fill="none"
             stroke="currentColor"
