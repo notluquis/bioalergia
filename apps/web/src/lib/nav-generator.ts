@@ -150,6 +150,28 @@ function extractNavItems(route: any): ExtractedNavItem[] {
       to: to,
     });
   }
+  // In development, warn about routes that might be missing nav
+  else if (process.env.NODE_ENV === "development") {
+    const fullPath = route.fullPath || route.path;
+    const hasPermission = !!route.options?.staticData?.permission;
+    const hideFromNav = route.options?.staticData?.hideFromNav === true;
+
+    // Only warn for non-technical routes with permission but no nav
+    if (fullPath && hasPermission && !hideFromNav) {
+      // Import isTechnicalRoute dynamically to avoid circular deps
+      import("./route-utils")
+        .then(({ isTechnicalRoute }) => {
+          if (!isTechnicalRoute(fullPath)) {
+            console.warn(
+              `⚠️  Route "${fullPath}" has permission but no nav metadata. Add staticData.nav or hideFromNav: true`,
+            );
+          }
+        })
+        .catch(() => {
+          // Silently ignore if route-utils not available yet
+        });
+    }
+  }
 
   // Process children
   if (route.children) {
