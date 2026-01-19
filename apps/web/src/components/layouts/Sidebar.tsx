@@ -135,6 +135,7 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
+                  type="button"
                   className={cn(
                     "hover:bg-base-200/50 group flex cursor-pointer items-center transition-all outline-none",
                     isMobile

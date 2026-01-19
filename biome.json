@@ -21,27 +21,31 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "complexity": {
+        "recommended": true
+      },
+      "performance": {
+        "recommended": true
+      },
       "correctness": {
+        "recommended": true,
         "noInnerDeclarations": "off",
-        "useExhaustiveDependencies": "off"
+        "useExhaustiveDependencies": "warn"
       },
       "suspicious": {
+        "recommended": true,
         "noAssignInExpressions": "off",
         "noExplicitAny": "off",
         "noArrayIndexKey": "off"
       },
       "style": {
+        "recommended": true,
         "useBlockStatements": "off",
         "useSelfClosingElements": "off",
         "noNonNullAssertion": "off"
       },
       "a11y": {
-        "noSvgWithoutTitle": "off",
-        "noLabelWithoutControl": "off",
-        "useButtonType": "off",
-        "useSemanticElements": "off",
-        "useAriaPropsSupportedByRole": "off",
-        "useFocusableInteractive": "off"
+        "recommended": true
       }
     }
   },
