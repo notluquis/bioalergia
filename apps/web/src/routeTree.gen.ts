@@ -330,7 +330,6 @@ const AuthedFinanzasPersonalCreditsCreditIdRoute =
   } as any);
 
 export interface FileRoutesByFullPath {
-  "/": typeof AuthedIndexRoute;
   "/login": typeof LoginRoute;
   "/onboarding": typeof OnboardingRoute;
   "/account": typeof AuthedAccountRoute;
@@ -340,6 +339,7 @@ export interface FileRoutesByFullPath {
   "/operations": typeof AuthedOperationsRouteWithChildren;
   "/services": typeof AuthedServicesRouteWithChildren;
   "/settings": typeof AuthedSettingsRouteWithChildren;
+  "/": typeof AuthedIndexRoute;
   "/calendar/classify": typeof AuthedCalendarClassifyRoute;
   "/calendar/daily": typeof AuthedCalendarDailyRoute;
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute;
@@ -489,7 +489,6 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
-    | "/"
     | "/login"
     | "/onboarding"
     | "/account"
@@ -499,6 +498,7 @@ export interface FileRouteTypes {
     | "/operations"
     | "/services"
     | "/settings"
+    | "/"
     | "/calendar/classify"
     | "/calendar/daily"
     | "/calendar/heatmap"
@@ -670,7 +670,7 @@ declare module "@tanstack/react-router" {
     "/_authed": {
       id: "/_authed";
       path: "";
-      fullPath: "/";
+      fullPath: "";
       preLoaderRoute: typeof AuthedRouteImport;
       parentRoute: typeof rootRouteImport;
     };
