@@ -5,6 +5,7 @@
     "node": ">=25.0.0",
     "pnpm": ">=10.28.0"
   },
+  "packageManager": "pnpm@10.28.0",
   "pnpm": {
     "onlyBuiltDependencies": [
       "@swc/core",
