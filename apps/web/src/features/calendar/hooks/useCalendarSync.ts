@@ -5,10 +5,11 @@ import { apiClient } from "../../../lib/api-client";
 export function useCalendarSync() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async () => {
-      const response = await apiClient.post("/api/calendar/events/sync");
-      return response.data;
+      // Pass empty object as body
+      const response = await apiClient.post<{ message: string }>("/api/calendar/events/sync", {});
+      return response;
     },
     onSuccess: (data: any) => {
       toast.success("Sincronización iniciada", {
@@ -26,4 +27,10 @@ export function useCalendarSync() {
       });
     },
   });
+
+  return {
+    syncNow: mutation.mutate,
+    syncing: mutation.isPending,
+    ...mutation,
+  };
 }

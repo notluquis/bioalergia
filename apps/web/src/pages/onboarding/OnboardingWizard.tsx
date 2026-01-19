@@ -1,4 +1,4 @@
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -49,6 +49,7 @@ interface ProfileData {
 
 export default function OnboardingWizard() {
   const { refreshSession, user } = useAuth();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [error, setError] = useState<null | string>(null);
@@ -163,13 +164,29 @@ export default function OnboardingWizard() {
         names: cleanNames,
         password,
       });
-      await refreshSession();
+
+      // Force invalidation of auth session to ensure we get fresh data
+      await queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+
+      // Attempt to refresh session context
+      try {
+        await refreshSession();
+      } catch (e) {
+        console.error("Session refresh failed after setup:", e);
+        // Continue anyway, as the backend setup likely succeeded
+      }
     },
-    onError: () => {
-      setError("Error al finalizar la configuración. Inténtalo de nuevo.");
+    onError: (err) => {
+      console.error("Onboarding setup failed:", err);
+      // Detailed error for better UX
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      setError(
+        msg || "Error al finalizar la configuración. Verifica tu conexión e inténtalo de nuevo.",
+      );
     },
     onSuccess: () => {
-      void navigate({ to: "/" });
+      // Force hard redirect to ensure layout re-evaluation
+      void navigate({ to: "/", replace: true });
     },
   });
 
