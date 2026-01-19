@@ -1,20 +1,27 @@
 import { apiClient } from "@/lib/api-client";
 
-import type { TimesheetEntry, TimesheetPayload, TimesheetSummaryResponse, TimesheetUpsertEntry } from "./types";
+import type {
+  TimesheetEntry,
+  TimesheetPayload,
+  TimesheetSummaryResponse,
+  TimesheetUpsertEntry,
+} from "./types";
 
 export async function bulkUpsertTimesheets(
   employeeId: number,
   entries: TimesheetUpsertEntry[] = [],
-  removeIds: number[] = []
+  removeIds: number[] = [],
 ) {
-  const data = await apiClient.post<{ inserted: number; message?: string; removed: number; status: string }>(
-    "/api/timesheets/bulk",
-    {
-      employee_id: employeeId,
-      entries,
-      remove_ids: removeIds.length > 0 ? removeIds : undefined,
-    }
-  );
+  const data = await apiClient.post<{
+    inserted: number;
+    message?: string;
+    removed: number;
+    status: string;
+  }>("/api/timesheets/bulk", {
+    employee_id: employeeId,
+    entries,
+    remove_ids: removeIds.length > 0 ? removeIds : undefined,
+  });
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al procesar registros");
@@ -23,7 +30,9 @@ export async function bulkUpsertTimesheets(
 }
 
 export async function deleteTimesheet(id: number) {
-  const data = await apiClient.delete<{ message?: string; status: string }>(`/api/timesheets/${id}`);
+  const data = await apiClient.delete<{ message?: string; status: string }>(
+    `/api/timesheets/${id}`,
+  );
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al eliminar registro");
@@ -51,7 +60,7 @@ export async function fetchTimesheetDetail(employeeId: number, month: string) {
 
 export async function fetchTimesheetMonths() {
   const data = await apiClient.get<{ months: string[]; monthsWithData: string[]; status: string }>(
-    "/api/timesheets/months"
+    "/api/timesheets/months",
   );
   if (data.status !== "ok") {
     throw new Error("No se pudieron cargar los meses");
@@ -68,7 +77,7 @@ export async function fetchTimesheetSummary(month: string, employeeId?: null | n
 
   const data = await apiClient.get<TimesheetSummaryResponse & { message?: string; status: string }>(
     "/api/timesheets/summary",
-    { query }
+    { query },
   );
 
   if (data.status !== "ok") {
@@ -96,10 +105,12 @@ export async function prepareTimesheetEmail(payload: {
     workedMinutes: number;
   };
 }) {
-  const data = await apiClient.post<{ emlBase64: string; filename: string; message?: string; status: string }>(
-    "/api/timesheets/prepare-email",
-    payload
-  );
+  const data = await apiClient.post<{
+    emlBase64: string;
+    filename: string;
+    message?: string;
+    status: string;
+  }>("/api/timesheets/prepare-email", payload);
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al preparar el email");
@@ -111,7 +122,7 @@ export async function prepareTimesheetEmail(payload: {
 export async function updateTimesheet(id: number, payload: Partial<TimesheetPayload>) {
   const data = await apiClient.put<{ entry: TimesheetEntry; message?: string; status: string }>(
     `/api/timesheets/${id}`,
-    payload
+    payload,
   );
 
   if (data.status !== "ok") {
@@ -123,7 +134,7 @@ export async function updateTimesheet(id: number, payload: Partial<TimesheetPayl
 export async function upsertTimesheet(payload: TimesheetPayload) {
   const data = await apiClient.post<{ entry: TimesheetEntry; message?: string; status: string }>(
     "/api/timesheets",
-    payload
+    payload,
   );
 
   if (data.status !== "ok") {

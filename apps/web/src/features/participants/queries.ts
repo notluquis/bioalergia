@@ -25,7 +25,8 @@ export const participantQueries = {
   detail: (params: ParticipantDetailParams) =>
     queryOptions({
       enabled: Boolean(params.participantId),
-      queryFn: () => fetchParticipantInsight(params.participantId, { from: params.from, to: params.to }),
+      queryFn: () =>
+        fetchParticipantInsight(params.participantId, { from: params.from, to: params.to }),
       queryKey: participantKeys.detail(params),
       staleTime: 5 * 60 * 1000,
     }),

@@ -3,10 +3,8 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { logger } from "@/lib/logger";
-
-import type { BalanceDraft } from "../types";
-
 import { saveBalance } from "../api";
+import type { BalanceDraft } from "../types";
 import { parseBalanceInput } from "../utils";
 
 interface UseDailyBalanceManagementProps {
@@ -53,7 +51,8 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
       await loadBalances();
       logger.info("[balances] save:success", { balance: parsedValue, date });
     } catch (error_) {
-      const message = error_ instanceof Error ? error_.message : "No se pudo guardar el saldo diario";
+      const message =
+        error_ instanceof Error ? error_.message : "No se pudo guardar el saldo diario";
       setError(message);
       showError(message);
       logger.error("[balances] save:error", message);

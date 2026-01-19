@@ -3,18 +3,15 @@
  * Migrated from apps/web/server/routes/supplies.ts
  */
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
+import { getSessionUser, hasPermission } from "../auth";
+import { supplyRequestSchema, updateSupplyRequestStatusSchema } from "../lib/inventory-schemas";
 import {
   createSupplyRequest,
   getCommonSupplies,
   getSupplyRequests,
   updateSupplyRequestStatus,
 } from "../services/supplies";
-import {
-  supplyRequestSchema,
-  updateSupplyRequestStatusSchema,
-} from "../lib/inventory-schemas";
-import { getSessionUser, hasPermission } from "../auth";
+import { reply } from "../utils/reply";
 
 export const suppliesRoutes = new Hono();
 
@@ -55,13 +52,14 @@ suppliesRoutes.post("/requests", async (c) => {
   const body = await c.req.json();
   const parsed = supplyRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message: "Datos inválidos",
         issues: parsed.error.issues,
       },
-      400
+      400,
     );
   }
 

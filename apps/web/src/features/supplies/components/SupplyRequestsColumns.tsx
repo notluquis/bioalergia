@@ -15,7 +15,9 @@ interface SupplyRequestsTableMeta {
 export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
   {
     accessorKey: "id",
-    cell: ({ getValue }) => <span className="text-base-content font-medium">{getValue() as number}</span>,
+    cell: ({ getValue }) => (
+      <span className="text-base-content font-medium">{getValue() as number}</span>
+    ),
     header: "ID",
   },
   {

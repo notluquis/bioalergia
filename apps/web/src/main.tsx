@@ -59,14 +59,22 @@ async function handleChunkLoadError() {
 // Global error handler for chunk load failures (runs before React mounts)
 globalThis.addEventListener("error", (event) => {
   const message = event.message;
-  if (/Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
+  if (
+    /Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(
+      message,
+    )
+  ) {
     handleChunkLoadError();
   }
 });
 
 globalThis.addEventListener("unhandledrejection", (event) => {
   const message = event.reason?.message ?? String(event.reason);
-  if (/Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
+  if (
+    /Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(
+      message,
+    )
+  ) {
     event.preventDefault();
     handleChunkLoadError();
   }
@@ -131,7 +139,7 @@ const ReactQueryDevtools =
     : React.lazy(() =>
         import("@tanstack/react-query-devtools").then((res) => ({
           default: res.ReactQueryDevtools,
-        }))
+        })),
       );
 
 // ============================================================================
@@ -164,5 +172,5 @@ ReactDOM.createRoot(document.querySelector("#root")!).render(
         </QueryClientProvider>
       </ChunkErrorBoundary>
     </GlobalError>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

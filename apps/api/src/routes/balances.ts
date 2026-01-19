@@ -1,11 +1,8 @@
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
+import { balancesQuerySchema, balanceUpsertSchema } from "../lib/financial-schemas";
 import { getBalancesReport, upsertDailyBalance } from "../services/balances";
-import {
-  balancesQuerySchema,
-  balanceUpsertSchema,
-} from "../lib/financial-schemas";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -20,10 +17,7 @@ app.get("/", async (c) => {
   const parsed = balancesQuerySchema.safeParse(query);
 
   if (!parsed.success || !parsed.data.from || !parsed.data.to) {
-    return reply(c, 
-      { status: "error", message: "Parameters 'from' and 'to' are required" },
-      400,
-    );
+    return reply(c, { status: "error", message: "Parameters 'from' and 'to' are required" }, 400);
   }
 
   const report = await getBalancesReport(parsed.data.from, parsed.data.to);
@@ -41,7 +35,8 @@ app.post("/", async (c) => {
   const parsed = balanceUpsertSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message: "Datos inválidos",
@@ -51,11 +46,7 @@ app.post("/", async (c) => {
     );
   }
 
-  await upsertDailyBalance(
-    parsed.data.date,
-    parsed.data.balance,
-    parsed.data.note,
-  );
+  await upsertDailyBalance(parsed.data.date, parsed.data.balance, parsed.data.note);
   return reply(c, { status: "ok" });
 });
 

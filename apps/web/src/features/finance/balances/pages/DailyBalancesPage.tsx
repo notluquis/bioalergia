@@ -2,9 +2,6 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
-
-import type { BalanceDraft } from "@/features/finance/balances/types";
-
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -14,6 +11,7 @@ import { DailyBalancesPanel } from "@/features/finance/balances/components/Daily
 import { useDailyBalanceManagement } from "@/features/finance/balances/hooks/use-daily-balance-management";
 import { useQuickDateRange } from "@/features/finance/balances/hooks/use-quick-date-range";
 import { balanceKeys } from "@/features/finance/balances/queries";
+import type { BalanceDraft } from "@/features/finance/balances/types";
 import { deriveInitialBalance, formatBalanceInput } from "@/features/finance/balances/utils";
 import { today } from "@/lib/dates";
 
@@ -39,9 +37,10 @@ export default function DailyBalances() {
     await refetch();
   };
 
-  const { drafts, error, handleDraftChange, handleSave, saving, setDrafts } = useDailyBalanceManagement({
-    loadBalances: reloadBalances,
-  });
+  const { drafts, error, handleDraftChange, handleSave, saving, setDrafts } =
+    useDailyBalanceManagement({
+      loadBalances: reloadBalances,
+    });
 
   useEffect(() => {
     const nextDrafts: Record<string, BalanceDraft> = {};
@@ -114,7 +113,12 @@ export default function DailyBalances() {
                   ))}
                 </Input>
                 <div className="flex items-end">
-                  <Button className="w-full" disabled={isFetching} onClick={() => refetch()} size="sm">
+                  <Button
+                    className="w-full"
+                    disabled={isFetching}
+                    onClick={() => refetch()}
+                    size="sm"
+                  >
                     {isFetching ? "..." : "Actualizar"}
                   </Button>
                 </div>

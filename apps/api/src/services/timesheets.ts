@@ -10,13 +10,9 @@ dayjs.extend(timezone);
 const TIMEZONE = "America/Santiago";
 
 import { roundCurrency } from "../lib/currency";
+import type { EmployeeTimesheet, EmployeeTimesheetUpdateInput } from "../lib/db-types";
 import { logEvent, logWarn } from "../lib/logger";
 import { getEffectiveRetentionRate } from "../lib/retention";
-import {
-  type EmployeeTimesheet,
-  type EmployeeTimesheetWhereInput,
-  type EmployeeTimesheetUpdateInput,
-} from "../lib/db-types";
 import { formatDateOnly, getNthBusinessDay } from "../lib/time";
 import { getEmployeeById, listEmployees } from "./employees";
 
@@ -203,9 +199,7 @@ function mapTimesheetEntry(entry: EmployeeTimesheet): TimesheetEntry {
 
 // Repository Functions
 
-export async function getTimesheetEntryById(
-  id: number,
-): Promise<TimesheetEntry> {
+export async function getTimesheetEntryById(id: number): Promise<TimesheetEntry> {
   const entry = await db.employeeTimesheet.findUnique({
     where: { id: BigInt(id) },
   });
@@ -299,12 +293,8 @@ export async function upsertTimesheetEntry(
 
   // Convert time strings directly to HH:MM:SS format for PostgreSQL TIME columns
   // No timezone conversion - keep as-is from user input
-  const startTimeStr = payload.start_time
-    ? normalizeTimeString(payload.start_time)
-    : null;
-  const endTimeStr = payload.end_time
-    ? normalizeTimeString(payload.end_time)
-    : null;
+  const startTimeStr = payload.start_time ? normalizeTimeString(payload.start_time) : null;
+  const endTimeStr = payload.end_time ? normalizeTimeString(payload.end_time) : null;
 
   console.log("[timesheets] upsert input:", {
     payload_start: payload.start_time,
@@ -502,11 +492,7 @@ export function normalizeTimesheetPayload(data: {
  */
 export function computePayDate(role: string, periodStart: string): string {
   const startDate = new Date(periodStart);
-  const nextMonthFirstDay = new Date(
-    startDate.getFullYear(),
-    startDate.getMonth() + 1,
-    1,
-  );
+  const nextMonthFirstDay = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
 
   const roleUpper = role.toUpperCase();
 
@@ -516,11 +502,7 @@ export function computePayDate(role: string, periodStart: string): string {
     roleUpper.includes("TECNICO EN ENFERMERIA NIVEL SUPERIOR")
   ) {
     return formatDateOnly(
-      new Date(
-        nextMonthFirstDay.getFullYear(),
-        nextMonthFirstDay.getMonth(),
-        5,
-      ),
+      new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5),
     );
   }
 
@@ -538,9 +520,7 @@ export function computePayDate(role: string, periodStart: string): string {
   }
 
   // Otros: día 5 calendario del mes siguiente
-  return formatDateOnly(
-    new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5),
-  );
+  return formatDateOnly(new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5));
 }
 
 /**
@@ -576,10 +556,7 @@ export function buildEmployeeSummary(
 
   // Get year from period start (format: YYYY-MM-DD)
   const periodYear = parseInt(data.periodStart.split("-")[0], 10);
-  const retentionRate = getEffectiveRetentionRate(
-    Number(employee.retentionRate ?? 0),
-    periodYear,
-  );
+  const retentionRate = getEffectiveRetentionRate(Number(employee.retentionRate ?? 0), periodYear);
   const payDate = computePayDate(employee.position, data.periodStart);
 
   // Handle FIXED salary employees differently
@@ -640,15 +617,9 @@ export function buildEmployeeSummary(
 /**
  * Build monthly summary for all employees (or a specific one)
  */
-export async function buildMonthlySummary(
-  from: string,
-  to: string,
-  employeeId?: number,
-) {
+export async function buildMonthlySummary(from: string, to: string, employeeId?: number) {
   const employees = await listEmployees();
-  const employeeMap = new Map(
-    employees.map((employee) => [employee.id, employee]),
-  );
+  const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
 
   const summaryData = await db.employeeTimesheet.groupBy({
     by: ["employeeId"],
@@ -697,10 +668,7 @@ export async function buildMonthlySummary(
   // Include FIXED salary employees without timesheets
   for (const employee of employees) {
     // Skip if already processed or not active
-    if (
-      employeesWithTimesheets.has(employee.id) ||
-      employee.status !== "ACTIVE"
-    ) {
+    if (employeesWithTimesheets.has(employee.id) || employee.status !== "ACTIVE") {
       continue;
     }
     // Skip if filtering by specific employee and this isn't it

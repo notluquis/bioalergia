@@ -2,12 +2,10 @@ import { formatRetentionPercent } from "@shared/retention";
 import dayjs from "dayjs";
 import type { CellHookData } from "jspdf-autotable";
 import React from "react";
-
-import type { Employee } from "@/features/hr/employees/types";
-
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { useSettings } from "@/context/SettingsContext";
+import type { Employee } from "@/features/hr/employees/types";
 import { apiClient } from "@/lib/api-client";
 import { fmtCLP } from "@/lib/format";
 
@@ -71,18 +69,28 @@ export default function TimesheetExportPDF({
   summary,
 }: TimesheetExportPDFProps) {
   const { settings } = useSettings();
-  const defaultCols: readonly TimesheetColumnKey[] = ["date", "entrada", "salida", "worked", "overtime"];
+  const defaultCols: readonly TimesheetColumnKey[] = [
+    "date",
+    "entrada",
+    "salida",
+    "worked",
+    "overtime",
+  ];
   const [selectedCols, setSelectedCols] = React.useState<TimesheetColumnKey[]>(
-    columns.length > 0 ? columns : [...defaultCols]
+    columns.length > 0 ? columns : [...defaultCols],
   );
   const [showOptions, setShowOptions] = React.useState(false);
-  const pdfLibsRef = React.useRef<null | { autoTable: AutoTableFactory["default"]; jsPDF: JsPdfFactory["default"] }>(
-    null
-  );
+  const pdfLibsRef = React.useRef<null | {
+    autoTable: AutoTableFactory["default"];
+    jsPDF: JsPdfFactory["default"];
+  }>(null);
 
   async function loadPdfLibs() {
     if (!pdfLibsRef.current) {
-      const [{ default: jsPDF }, autoTableModule] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
+      const [{ default: jsPDF }, autoTableModule] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
       const autoTable = autoTableModule.default ?? autoTableModule;
       pdfLibsRef.current = { autoTable, jsPDF };
     }
@@ -130,10 +138,14 @@ export default function TimesheetExportPDF({
       const orgPhone = settings.orgPhone || "";
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("Honorarios por servicios prestados", pageWidth - margin, headerTopY + 2, { align: "right" });
+      doc.text("Honorarios por servicios prestados", pageWidth - margin, headerTopY + 2, {
+        align: "right",
+      });
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      const rightLines = [orgName, orgAddress, orgPhone ? `Tel: ${orgPhone}` : null].filter(Boolean) as string[];
+      const rightLines = [orgName, orgAddress, orgPhone ? `Tel: ${orgPhone}` : null].filter(
+        Boolean,
+      ) as string[];
       let rightY = headerTopY + 8;
       for (const line of rightLines) {
         doc.text(line, pageWidth - margin, rightY, { align: "right" });
@@ -158,7 +170,9 @@ export default function TimesheetExportPDF({
       // Capitalizar primera letra
       periodEs = periodEs.charAt(0).toUpperCase() + periodEs.slice(1);
       // Usar payDate del summary (ya calculado en el backend) en lugar de recalcular
-      const payDateFormatted = summary?.payDate ? dayjs(summary.payDate).format("DD-MM-YYYY") : null;
+      const payDateFormatted = summary?.payDate
+        ? dayjs(summary.payDate).format("DD-MM-YYYY")
+        : null;
       const infoStartY = Math.max(logoBottomY, rightY) + 6;
       doc.setFontSize(10);
       doc.text(`Prestador: ${employee?.full_name || "-"}`, margin, infoStartY);
@@ -203,7 +217,9 @@ export default function TimesheetExportPDF({
           previewWindow.opener = null;
           previewWindow.location.href = pdfDataUri;
         } else {
-          alert("No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes.");
+          alert(
+            "No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes.",
+          );
         }
       } else {
         doc.save(`Honorarios_${safeName}_${monthLabel}.pdf`);
@@ -331,9 +347,14 @@ function drawDetailTable({
   selectedCols,
   startY,
 }: DetailTableProps) {
-  const hasAnyOvertime = bulkRows.some((row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00");
-  const baseColKeys: TimesheetColumnKey[] = selectedCols.length > 0 ? selectedCols : [...defaultCols];
-  const colKeys: TimesheetColumnKey[] = hasAnyOvertime ? baseColKeys : baseColKeys.filter((k) => k !== "overtime");
+  const hasAnyOvertime = bulkRows.some(
+    (row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00",
+  );
+  const baseColKeys: TimesheetColumnKey[] =
+    selectedCols.length > 0 ? selectedCols : [...defaultCols];
+  const colKeys: TimesheetColumnKey[] = hasAnyOvertime
+    ? baseColKeys
+    : baseColKeys.filter((k) => k !== "overtime");
 
   const workedRows = bulkRows.filter((row) => row.entrada || row.salida);
 
@@ -359,7 +380,7 @@ function drawDetailTable({
           return assertUnreachable(key);
         }
       }
-    })
+    }),
   );
 
   if (body.length === 0) {
@@ -378,7 +399,12 @@ function drawDetailTable({
       4: { halign: "center" },
     },
     head: [colKeys.map((k) => labels[k] ?? k.toUpperCase())],
-    headStyles: { fillColor: [241, 167, 34], fontSize: 9, fontStyle: "bold", textColor: [255, 255, 255] },
+    headStyles: {
+      fillColor: [241, 167, 34],
+      fontSize: 9,
+      fontStyle: "bold",
+      textColor: [255, 255, 255],
+    },
     margin: { left: margin, right: margin },
     startY,
     styles: { cellPadding: 1, fontSize: 8, overflow: "linebreak" },
@@ -397,7 +423,14 @@ function drawDetailTable({
   });
 }
 
-function drawSummaryTable({ autoTable, doc, infoStartY, margin, pageWidth, summary }: SummaryTableProps) {
+function drawSummaryTable({
+  autoTable,
+  doc,
+  infoStartY,
+  margin,
+  pageWidth,
+  summary,
+}: SummaryTableProps) {
   const summaryHead = [["Concepto", "Valor"]];
   const hasOvertime = summary && (summary.overtimeMinutes > 0 || (summary.extraAmount || 0) > 0);
 
@@ -411,7 +444,7 @@ function drawSummaryTable({ autoTable, doc, infoStartY, margin, pageWidth, summa
       ["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)],
       ["Subtotal", fmtCLP(summary.subtotal || 0)],
       [`Retención (${retentionPercent})`, `-${fmtCLP(summary.retention || 0)}`],
-      ["Total Líquido", fmtCLP(summary.net || 0)]
+      ["Total Líquido", fmtCLP(summary.net || 0)],
     );
   }
 

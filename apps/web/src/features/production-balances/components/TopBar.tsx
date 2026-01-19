@@ -67,8 +67,12 @@ export function TopBar({
       <div>
         <h1 className="text-xl font-bold">Balance diario</h1>
         <div className="mt-1 flex items-center gap-2">
-          <span className="text-base-content/80 text-lg font-medium capitalize">{formatDateFull(date)}</span>
-          <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", statusColors[status])}>
+          <span className="text-base-content/80 text-lg font-medium capitalize">
+            {formatDateFull(date)}
+          </span>
+          <span
+            className={cn("rounded-full px-2 py-0.5 text-xs font-medium", statusColors[status])}
+          >
             {statusLabels[status]}
           </span>
         </div>
@@ -92,7 +96,9 @@ export function TopBar({
           {!isSaving && <Save className="size-4" />}
           <span className="hidden sm:inline">Guardar</span>
           {showShortcut && (
-            <kbd className="bg-base-content/10 ml-1 hidden rounded px-1.5 py-0.5 text-xs sm:inline">⌘S</kbd>
+            <kbd className="bg-base-content/10 ml-1 hidden rounded px-1.5 py-0.5 text-xs sm:inline">
+              ⌘S
+            </kbd>
           )}
         </button>
 

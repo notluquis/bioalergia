@@ -12,12 +12,20 @@ interface LoanListProps {
   readonly selectedId: null | string;
 }
 
-export function LoanList({ canManage, loans, onCreateRequest, onSelect, selectedId }: LoanListProps) {
+export function LoanList({
+  canManage,
+  loans,
+  onCreateRequest,
+  onSelect,
+  selectedId,
+}: LoanListProps) {
   return (
     <aside className="text-base-content bg-base-100 flex h-full flex-col gap-4 p-6 text-sm">
       <header className="flex items-center justify-between">
         <div>
-          <h2 className="text-base-content/90 text-xs font-semibold tracking-wide uppercase">Préstamos</h2>
+          <h2 className="text-base-content/90 text-xs font-semibold tracking-wide uppercase">
+            Préstamos
+          </h2>
           <p className="text-base-content/60 text-xs">Resumen rápido de capital y estado.</p>
         </div>
         {canManage && (
@@ -57,7 +65,10 @@ export function LoanList({ canManage, loans, onCreateRequest, onSelect, selected
                     {loan.borrower_name} · {loan.borrower_type === "PERSON" ? "Persona" : "Empresa"}
                   </p>
                 </div>
-                <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`} />
+                <span
+                  aria-hidden="true"
+                  className={`h-2.5 w-2.5 rounded-full ${indicatorColor} shadow-inner`}
+                />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
                 <span className="text-base-content font-semibold">
@@ -66,7 +77,9 @@ export function LoanList({ canManage, loans, onCreateRequest, onSelect, selected
                 <span className="text-base-content/60">
                   {loan.paid_installments}/{loan.total_installments} cuotas
                 </span>
-                <span className="text-base-content/60">Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}</span>
+                <span className="text-base-content/60">
+                  Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}
+                </span>
               </div>
               <div className="bg-base-100/60 mt-2 h-2 w-full overflow-hidden rounded-full">
                 <div

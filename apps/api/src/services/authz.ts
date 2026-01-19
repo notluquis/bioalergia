@@ -15,7 +15,7 @@ export interface CASLRule {
  */
 function substituteConditionVariables(
   conditions: Record<string, unknown>,
-  context: { userId: number; personId?: number }
+  context: { userId: number; personId?: number },
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
@@ -29,10 +29,7 @@ function substituteConditionVariables(
         result[key] = value;
       }
     } else if (typeof value === "object" && value !== null) {
-      result[key] = substituteConditionVariables(
-        value as Record<string, unknown>,
-        context
-      );
+      result[key] = substituteConditionVariables(value as Record<string, unknown>, context);
     } else {
       result[key] = value;
     }
@@ -45,9 +42,7 @@ function substituteConditionVariables(
  * Fetches all permissions for a given user from the database and transforms them
  * into a CASL Ability rule set.
  */
-export async function getAbilityRulesForUser(
-  userId: number
-): Promise<CASLRule[]> {
+export async function getAbilityRulesForUser(userId: number): Promise<CASLRule[]> {
   const userWithRolesAndPermissions = await db.user.findUnique({
     where: { id: userId },
     include: {
@@ -90,13 +85,10 @@ export async function getAbilityRulesForUser(
       };
 
       // Apply conditions if present (with variable substitution)
-      if (
-        rolePermission.conditions &&
-        typeof rolePermission.conditions === "object"
-      ) {
+      if (rolePermission.conditions && typeof rolePermission.conditions === "object") {
         rule.conditions = substituteConditionVariables(
           rolePermission.conditions as Record<string, unknown>,
-          context
+          context,
         );
       }
 

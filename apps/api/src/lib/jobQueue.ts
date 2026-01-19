@@ -66,11 +66,7 @@ export function startJob(type: string, total: number): string {
 /**
  * Update job progress
  */
-export function updateJobProgress(
-  jobId: string,
-  progress: number,
-  message?: string,
-): void {
+export function updateJobProgress(jobId: string, progress: number, message?: string): void {
   const job = jobs.get(jobId);
   if (!job) return;
 
@@ -119,7 +115,5 @@ export function getJobStatus(jobId: string): JobState | null {
  * Get all active jobs of a specific type
  */
 export function getActiveJobsByType(type: string): JobState[] {
-  return Array.from(jobs.values()).filter(
-    (job) => job.type === type && job.status === "running",
-  );
+  return Array.from(jobs.values()).filter((job) => job.type === type && job.status === "running");
 }

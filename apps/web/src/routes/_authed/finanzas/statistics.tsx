@@ -3,7 +3,9 @@ import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
 
-const FinanzasStatsPage = lazy(() => import("@/features/finance/statistics/pages/FinanzasStatsPage"));
+const FinanzasStatsPage = lazy(
+  () => import("@/features/finance/statistics/pages/FinanzasStatsPage"),
+);
 
 export const Route = createFileRoute("/_authed/finanzas/statistics")({
   staticData: {

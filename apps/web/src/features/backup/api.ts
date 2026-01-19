@@ -17,7 +17,10 @@ export const triggerBackup = async (): Promise<{ job: BackupJob }> => {
   return { job };
 };
 
-export const triggerRestore = async (fileId: string, tables?: string[]): Promise<{ job: RestoreJob }> => {
+export const triggerRestore = async (
+  fileId: string,
+  tables?: string[],
+): Promise<{ job: RestoreJob }> => {
   const job = await apiClient.post<RestoreJob>(`/api/backups/${fileId}/restore`, { tables });
   return { job };
 };

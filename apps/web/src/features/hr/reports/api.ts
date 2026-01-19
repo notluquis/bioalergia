@@ -2,7 +2,11 @@ import { apiClient } from "@/lib/api-client";
 
 import type { TimesheetEntry } from "../timesheets/types";
 
-export async function fetchEmployeeTimesheets(employeeId: number, startDate: string, endDate: string) {
+export async function fetchEmployeeTimesheets(
+  employeeId: number,
+  startDate: string,
+  endDate: string,
+) {
   const data = await apiClient.get<{
     entries: TimesheetEntry[];
     from: string;
@@ -42,7 +46,11 @@ export async function fetchGlobalTimesheetRange(startDate: string, endDate: stri
   return data.entries;
 }
 
-export async function fetchMultiMonthTimesheets(employeeIds: number[], startMonth: string, endMonth: string) {
+export async function fetchMultiMonthTimesheets(
+  employeeIds: number[],
+  startMonth: string,
+  endMonth: string,
+) {
   const data = await apiClient.get<{
     data: Record<string, { entries: TimesheetEntry[]; month: string }>;
     message?: string;

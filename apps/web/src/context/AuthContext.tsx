@@ -1,12 +1,10 @@
-import { MongoAbility, RawRuleOf } from "@casl/ability";
+import type { MongoAbility, RawRuleOf } from "@casl/ability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
-
-import type { Role } from "@/types/roles";
-
-import { apiClient, ApiError } from "@/lib/api-client";
+import { ApiError, apiClient } from "@/lib/api-client";
 import { ability, updateAbility } from "@/lib/authz/ability";
 import { logger } from "@/lib/logger";
+import type { Role } from "@/types/roles";
 
 export interface AuthContextType {
   can: (action: string, subject: string, field?: string) => boolean;
@@ -35,7 +33,9 @@ export interface AuthUser {
   status: string;
 }
 
-export type LoginResult = { status: "mfa_required"; userId: number } | { status: "ok"; user: AuthUser };
+export type LoginResult =
+  | { status: "mfa_required"; userId: number }
+  | { status: "ok"; user: AuthUser };
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -130,10 +130,12 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const login = async (email: string, password: string): Promise<LoginResult> => {
     logger.info("[auth] login:start", { email });
-    const payload = await apiClient.post<{ message?: string; status: string; user?: AuthUser; userId: number }>(
-      "/api/auth/login",
-      { email, password }
-    );
+    const payload = await apiClient.post<{
+      message?: string;
+      status: string;
+      user?: AuthUser;
+      userId: number;
+    }>("/api/auth/login", { email, password });
 
     if (payload.status === "mfa_required") {
       logger.info("[auth] login:mfa_required", { userId: payload.userId });
@@ -151,10 +153,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const loginWithMfa = async (userId: number, token: string) => {
     logger.info("[auth] mfa:start", { userId });
-    const payload = await apiClient.post<{ message?: string; status: string; user?: AuthUser }>("/api/auth/login/mfa", {
-      token,
-      userId,
-    });
+    const payload = await apiClient.post<{ message?: string; status: string; user?: AuthUser }>(
+      "/api/auth/login/mfa",
+      {
+        token,
+        userId,
+      },
+    );
 
     if (payload.status !== "ok" || !payload.user) {
       throw new Error(payload.message ?? "Código MFA inválido");
@@ -168,7 +173,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     logger.info("[auth] passkey:start");
     const payload = await apiClient.post<{ message?: string; status: string; user?: AuthUser }>(
       "/api/auth/passkey/login/verify",
-      { body: authResponse, challenge }
+      { body: authResponse, challenge },
     );
 
     if (payload.status !== "ok" || !payload.user) {

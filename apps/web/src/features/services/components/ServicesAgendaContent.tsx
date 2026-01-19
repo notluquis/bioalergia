@@ -27,7 +27,7 @@ export default function ServicesAgendaContent() {
       if (dueDate.isSame(dayjs(), "month")) acc.month += item.schedule.expected_amount;
       return acc;
     },
-    { day: 0, month: 0, week: 0 }
+    { day: 0, month: 0, week: 0 },
   );
 
   if (aggregatedLoading && unifiedAgendaItems.length === 0) {

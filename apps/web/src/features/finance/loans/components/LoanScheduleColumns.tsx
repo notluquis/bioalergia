@@ -1,4 +1,4 @@
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
@@ -19,11 +19,13 @@ export const getColumns = (
     onRegisterPayment: (schedule: LoanSchedule) => void;
     onUnlinkPayment: (schedule: LoanSchedule) => void;
   },
-  canManage: boolean
+  canManage: boolean,
 ): ColumnDef<LoanSchedule>[] => [
   {
     accessorKey: "installment_number",
-    cell: ({ row }) => <span className="text-base-content/70 font-medium">{row.original.installment_number}</span>,
+    cell: ({ row }) => (
+      <span className="text-base-content/70 font-medium">{row.original.installment_number}</span>
+    ),
     header: "#",
   },
   {
@@ -60,7 +62,9 @@ export const getColumns = (
   {
     accessorKey: "expected_amount",
     cell: ({ row }) => (
-      <div className="text-right font-bold">{currencyFormatter.format(row.original.expected_amount)}</div>
+      <div className="text-right font-bold">
+        {currencyFormatter.format(row.original.expected_amount)}
+      </div>
     ),
     header: () => <div className="text-right">Cuota</div>,
   },
@@ -86,7 +90,9 @@ export const getColumns = (
 
       return (
         <div className="flex justify-center">
-          <div className={`badge badge-sm font-semibold capitalize ${badgeClass}`}>{statusLabel}</div>
+          <div className={`badge badge-sm font-semibold capitalize ${badgeClass}`}>
+            {statusLabel}
+          </div>
         </div>
       );
     },
@@ -101,9 +107,13 @@ export const getColumns = (
       }
       return (
         <div className="flex flex-col items-end">
-          <span className="text-success font-bold">{currencyFormatter.format(schedule.paid_amount)}</span>
+          <span className="text-success font-bold">
+            {currencyFormatter.format(schedule.paid_amount)}
+          </span>
           {schedule.paid_date && (
-            <span className="text-base-content/50 text-[10px]">{dayjs(schedule.paid_date).format("DD MMM")}</span>
+            <span className="text-base-content/50 text-[10px]">
+              {dayjs(schedule.paid_date).format("DD MMM")}
+            </span>
           )}
         </div>
       );

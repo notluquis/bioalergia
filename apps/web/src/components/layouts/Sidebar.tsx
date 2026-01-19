@@ -35,13 +35,17 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
   const visibleSections = getNavSections()
     .map((section) => {
       const filteredItems = section.items.filter((item) => {
-        return !(item.requiredPermission && !can(item.requiredPermission.action, item.requiredPermission.subject));
+        return !(
+          item.requiredPermission &&
+          !can(item.requiredPermission.action, item.requiredPermission.subject)
+        );
       });
       return { ...section, items: filteredItems };
     })
     .filter((section) => section.items.length > 0);
 
-  const displayName = user?.name ?? (user?.email ? (user.email.split("@")[0] ?? "Usuario") : "Usuario");
+  const displayName =
+    user?.name ?? (user?.email ? (user.email.split("@")[0] ?? "Usuario") : "Usuario");
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -53,19 +57,27 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
           isMobile
             ? "safe-area-left fixed inset-y-0 left-0 w-64 rounded-r-3xl border-r shadow-2xl"
             : "bg-base-100 border-base-200 relative w-20 rounded-2xl border shadow-xl",
-          isMobile && (isOpen ? "translate-x-0" : "-translate-x-full")
+          isMobile && (isOpen ? "translate-x-0" : "-translate-x-full"),
         )}
       >
-        <aside aria-label="Navegación principal" className="flex h-full w-full flex-col overflow-hidden">
+        <aside
+          aria-label="Navegación principal"
+          className="flex h-full w-full flex-col overflow-hidden"
+        >
           {/* Header / Logo */}
           <div
             className={cn(
               "flex h-20 shrink-0 items-center justify-center transition-all duration-300",
-              isMobile ? "px-5" : "px-0"
+              isMobile ? "px-5" : "px-0",
             )}
           >
             {/* Logo Container */}
-            <div className={cn("relative flex items-center justify-center transition-all duration-300", "h-12 w-12")}>
+            <div
+              className={cn(
+                "relative flex items-center justify-center transition-all duration-300",
+                "h-12 w-12",
+              )}
+            >
               <img
                 alt="Bioalergia"
                 className={cn("h-10 w-10 object-contain transition-all duration-300")}
@@ -81,7 +93,10 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
               <div className="space-y-4" key={section.title}>
                 {/* Section Separator (Desktop) */}
                 {index > 0 && !isMobile && (
-                  <div aria-hidden="true" className="border-base-content/10 mx-auto w-10 border-t pb-2" />
+                  <div
+                    aria-hidden="true"
+                    className="border-base-content/10 mx-auto w-10 border-t pb-2"
+                  />
                 )}
 
                 {/* Section Title (Only visible on mobile) */}
@@ -114,7 +129,7 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
           <div
             className={cn(
               "border-base-200/50 bg-base-100/30 mt-auto shrink-0 border-t pt-4 pb-8 transition-all duration-300",
-              isMobile ? "px-3" : "flex flex-col items-center justify-center px-0"
+              isMobile ? "px-3" : "flex flex-col items-center justify-center px-0",
             )}
           >
             <DropdownMenu>
@@ -122,7 +137,9 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                 <button
                   className={cn(
                     "hover:bg-base-200/50 group flex cursor-pointer items-center transition-all outline-none",
-                    isMobile ? "w-full gap-3 rounded-2xl px-3 py-2" : "h-12 w-12 justify-center rounded-xl p-0"
+                    isMobile
+                      ? "w-full gap-3 rounded-2xl px-3 py-2"
+                      : "h-12 w-12 justify-center rounded-xl p-0",
                   )}
                 >
                   <div className="bg-base-200 border-base-300 h-10 w-10 shrink-0 overflow-hidden rounded-full border">

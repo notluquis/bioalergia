@@ -35,7 +35,8 @@ export default function AccountSettingsPage() {
   const setupMfaMutation = useMutation({
     mutationFn: () =>
       setupMfa().then((res) => {
-        if (res.status !== "ok") throw new Error(res.message ?? "Error al iniciar configuración MFA");
+        if (res.status !== "ok")
+          throw new Error(res.message ?? "Error al iniciar configuración MFA");
         return res;
       }),
     onError: (err) => {
@@ -82,7 +83,12 @@ export default function AccountSettingsPage() {
   });
 
   const handleDisableMfa = () => {
-    if (!confirm("¿Estás seguro de desactivar la autenticación de dos factores? Tu cuenta será menos segura.")) return;
+    if (
+      !confirm(
+        "¿Estás seguro de desactivar la autenticación de dos factores? Tu cuenta será menos segura.",
+      )
+    )
+      return;
     disableMfaMutation.mutate();
   };
 
@@ -95,8 +101,12 @@ export default function AccountSettingsPage() {
 
       const attResp = await startRegistration({ optionsJSON: options });
 
-      const verifyData = await verifyPasskeyRegistration({ body: attResp, challenge: options.challenge });
-      if (verifyData.status !== "ok") throw new Error(verifyData.message ?? "Error al verificar passkey");
+      const verifyData = await verifyPasskeyRegistration({
+        body: attResp,
+        challenge: options.challenge,
+      });
+      if (verifyData.status !== "ok")
+        throw new Error(verifyData.message ?? "Error al verificar passkey");
 
       return verifyData;
     },
@@ -126,15 +136,24 @@ export default function AccountSettingsPage() {
   });
 
   const handleDeletePasskey = () => {
-    if (!confirm("¿Estás seguro de eliminar tu passkey? Tendrás que usar tu contraseña para iniciar sesión.")) return;
+    if (
+      !confirm(
+        "¿Estás seguro de eliminar tu passkey? Tendrás que usar tu contraseña para iniciar sesión.",
+      )
+    )
+      return;
     deletePasskeyMutation.mutate();
   };
 
   return (
     <div className="space-y-6">
       <div className="space-y-1 px-6 pt-6">
-        <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Seguridad de la cuenta</h2>
-        <p className="text-base-content/70 text-sm">Gestiona tus métodos de autenticación para proteger tu cuenta.</p>
+        <h2 className="text-primary text-lg font-semibold drop-shadow-sm">
+          Seguridad de la cuenta
+        </h2>
+        <p className="text-base-content/70 text-sm">
+          Gestiona tus métodos de autenticación para proteger tu cuenta.
+        </p>
       </div>
 
       {/* MFA Section */}
@@ -145,7 +164,9 @@ export default function AccountSettingsPage() {
           </div>
           <div className="flex-1 space-y-4">
             <div>
-              <h3 className="text-base-content font-semibold">Autenticación de dos factores (MFA)</h3>
+              <h3 className="text-base-content font-semibold">
+                Autenticación de dos factores (MFA)
+              </h3>
               <p className="text-base-content/70 text-sm">
                 Añade una capa extra de seguridad usando una app como Google Authenticator o Authy.
               </p>
@@ -172,7 +193,9 @@ export default function AccountSettingsPage() {
                 {qrCodeUrl ? (
                   <div className="border-base-300 bg-base-200/50 rounded-xl border p-4">
                     <div className="mb-4 text-center">
-                      <p className="mb-2 text-sm font-medium">1. Escanea este código QR con tu app de autenticación:</p>
+                      <p className="mb-2 text-sm font-medium">
+                        1. Escanea este código QR con tu app de autenticación:
+                      </p>
                       <img
                         alt="QR Code"
                         className="mx-auto rounded-lg bg-white p-2 shadow-sm"
@@ -202,7 +225,11 @@ export default function AccountSettingsPage() {
                             enableMfaMutation.mutate(mfaToken);
                           }}
                         >
-                          {enableMfaMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : "Activar"}
+                          {enableMfaMutation.isPending ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            "Activar"
+                          )}
                         </Button>
                       </div>
                       <Button
@@ -225,7 +252,9 @@ export default function AccountSettingsPage() {
                       setupMfaMutation.mutate();
                     }}
                   >
-                    {setupMfaMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                    {setupMfaMutation.isPending ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : null}
                     Configurar MFA
                   </Button>
                 )}
@@ -245,7 +274,8 @@ export default function AccountSettingsPage() {
             <div>
               <h3 className="text-base-content font-semibold">Passkeys / biometría</h3>
               <p className="text-base-content/70 text-sm">
-                Inicia sesión sin contraseña usando tu huella dactilar, reconocimiento facial o PIN del dispositivo.
+                Inicia sesión sin contraseña usando tu huella dactilar, reconocimiento facial o PIN
+                del dispositivo.
               </p>
             </div>
 
@@ -295,7 +325,8 @@ export default function AccountSettingsPage() {
             )}
 
             <p className="text-base-content/50 text-xs">
-              Nota: Solo puedes tener un passkey activo por usuario. Registrar uno nuevo reemplazará el anterior.
+              Nota: Solo puedes tener un passkey activo por usuario. Registrar uno nuevo reemplazará
+              el anterior.
             </p>
           </div>
         </div>

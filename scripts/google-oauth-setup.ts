@@ -1,4 +1,5 @@
 #!/usr/bin/env npx tsx
+
 /**
  * Google OAuth Setup Script
  *
@@ -13,8 +14,8 @@
  *   2. Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET env vars
  */
 
+import * as readline from "node:readline";
 import { OAuth2Client } from "google-auth-library";
-import * as readline from "readline";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/drive.file", // Create/edit files
@@ -36,7 +37,9 @@ async function main() {
     console.error("   1. Ve a https://console.cloud.google.com/apis/credentials");
     console.error('   2. Crea "OAuth 2.0 Client ID" (tipo: Desktop app)');
     console.error("   3. Copia el Client ID y Client Secret");
-    console.error("   4. Ejecuta: GOOGLE_OAUTH_CLIENT_ID=xxx GOOGLE_OAUTH_CLIENT_SECRET=yyy npm run google:auth");
+    console.error(
+      "   4. Ejecuta: GOOGLE_OAUTH_CLIENT_ID=xxx GOOGLE_OAUTH_CLIENT_SECRET=yyy npm run google:auth",
+    );
     process.exit(1);
   }
 
@@ -84,7 +87,7 @@ async function main() {
     console.log(`GOOGLE_OAUTH_CLIENT_SECRET=${clientSecret}`);
     console.log(`GOOGLE_OAUTH_REFRESH_TOKEN=${tokens.refresh_token}`);
 
-    console.log("\n" + "━".repeat(60));
+    console.log(`\n${"━".repeat(60)}`);
     console.log("\n⚠️  IMPORTANTE: Guarda el refresh_token de forma segura.");
     console.log("    No expira a menos que revoques el acceso manualmente.\n");
 

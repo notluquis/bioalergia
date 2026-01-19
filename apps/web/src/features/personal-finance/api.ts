@@ -31,10 +31,17 @@ export const personalFinanceApi = {
   },
 
   // Pay Installment
-  payInstallment: async (creditId: number, installmentNumber: number, data: PayInstallmentInput) => {
-    return apiClient.post<any>(`/api/personal-finance/credits/${creditId}/installments/${installmentNumber}/pay`, {
-      ...data,
-      paymentDate: data.paymentDate.toISOString(),
-    });
+  payInstallment: async (
+    creditId: number,
+    installmentNumber: number,
+    data: PayInstallmentInput,
+  ) => {
+    return apiClient.post<any>(
+      `/api/personal-finance/credits/${creditId}/installments/${installmentNumber}/pay`,
+      {
+        ...data,
+        paymentDate: data.paymentDate.toISOString(),
+      },
+    );
   },
 };

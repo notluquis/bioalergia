@@ -43,7 +43,9 @@ function detectPerformanceMode(): PerformanceInfo {
 
   // Check connection
   if ("connection" in navigator) {
-    const conn = (navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }).connection;
+    const conn = (
+      navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }
+    ).connection;
     if (conn?.saveData) {
       score -= 20;
       reasons.push("Modo ahorro datos");

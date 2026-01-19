@@ -2,10 +2,6 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { useNavigate } from "@tanstack/react-router";
 import { Shield, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
-
-// type AvailableRole removed
-import type { Role } from "@/types/roles";
-
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import Input from "@/components/ui/Input";
@@ -14,6 +10,8 @@ import { fetchPeople } from "@/features/people/api";
 import { fetchRoles } from "@/features/roles/api";
 import { inviteUser } from "@/features/users/api";
 import { getPersonFullName } from "@/lib/person";
+// type AvailableRole removed
+import type { Role } from "@/types/roles";
 
 export default function AddUserPage() {
   const navigate = useNavigate();
@@ -52,7 +50,7 @@ export default function AddUserPage() {
         !p.user &&
         !p.hasUser &&
         !p.names.toLowerCase().includes("test") &&
-        !p.names.toLowerCase().includes("usuario prueba")
+        !p.names.toLowerCase().includes("usuario prueba"),
     ) || [];
 
   // Create user mutation
@@ -98,12 +96,15 @@ export default function AddUserPage() {
       <div className="space-y-2">
         <h1 className="text-primary text-3xl font-bold">Agregar usuario</h1>
         <p className="text-base-content/70">
-          Crea un nuevo usuario en el sistema. Se generará una contraseña temporal y el usuario deberá completar su
-          configuración de seguridad al iniciar sesión.
+          Crea un nuevo usuario en el sistema. Se generará una contraseña temporal y el usuario
+          deberá completar su configuración de seguridad al iniciar sesión.
         </p>
       </div>
 
-      <form className="surface-elevated space-y-6 rounded-3xl p-6 shadow-lg" onSubmit={handleSubmit}>
+      <form
+        className="surface-elevated space-y-6 rounded-3xl p-6 shadow-lg"
+        onSubmit={handleSubmit}
+      >
         {/* Opción de vincular a persona existente */}
         {availablePeople.length > 0 && (
           <div className="border-info/20 bg-info/5 rounded-xl border p-4">
@@ -113,7 +114,8 @@ export default function AddUserPage() {
                 <div>
                   <p className="text-info font-medium">Vincular a persona existente</p>
                   <p className="text-base-content/70 text-xs">
-                    Si esta persona ya existe en el sistema, puedes vincular el usuario directamente.
+                    Si esta persona ya existe en el sistema, puedes vincular el usuario
+                    directamente.
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -254,8 +256,8 @@ export default function AddUserPage() {
             <div className="space-y-1">
               <p className="text-primary font-medium">Seguridad reforzada</p>
               <p className="text-base-content/70 text-xs">
-                Si activas esta opción, el usuario estará <strong>obligado</strong> a configurar Passkey o MFA (Google
-                Authenticator) antes de poder usar el sistema.
+                Si activas esta opción, el usuario estará <strong>obligado</strong> a configurar
+                Passkey o MFA (Google Authenticator) antes de poder usar el sistema.
               </p>
             </div>
           </div>
@@ -271,7 +273,11 @@ export default function AddUserPage() {
         </div>
 
         <div className="flex justify-end gap-3 pt-4">
-          <Button onClick={() => navigate({ to: "/settings/users" })} type="button" variant="secondary">
+          <Button
+            onClick={() => navigate({ to: "/settings/users" })}
+            type="button"
+            variant="secondary"
+          >
             Cancelar
           </Button>
           <Button className="gap-2" disabled={loading} type="submit">

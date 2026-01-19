@@ -1,9 +1,7 @@
 import { formatRetentionPercent, getEffectiveRetentionRate } from "@shared/retention";
 import dayjs from "dayjs";
-
-import type { Employee } from "@/features/hr/employees/types";
-
 import Button from "@/components/ui/Button";
+import type { Employee } from "@/features/hr/employees/types";
 import { fmtCLP } from "@/lib/format";
 import { LOADING_SPINNER_SM } from "@/lib/styles";
 
@@ -62,7 +60,9 @@ export default function EmailPreviewModal({
   // Handle both camelCase and snake_case from backend
   const summaryData = summary as unknown as Record<string, unknown>;
   const employeeRate =
-    (summaryData.retentionRate as null | number) || (summaryData.retention_rate as null | number) || null;
+    (summaryData.retentionRate as null | number) ||
+    (summaryData.retention_rate as null | number) ||
+    null;
   const effectiveRate = getEffectiveRetentionRate(employeeRate, summaryYear);
   const retentionPercent = formatRetentionPercent(effectiveRate);
 
@@ -119,7 +119,9 @@ export default function EmailPreviewModal({
                 </div>
                 <div>
                   <p className="mb-1 text-xs text-green-800">Monto Bruto:</p>
-                  <p className="font-mono text-xl font-bold text-green-800">{fmtCLP(summary.subtotal)}</p>
+                  <p className="font-mono text-xl font-bold text-green-800">
+                    {fmtCLP(summary.subtotal)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -134,31 +136,42 @@ export default function EmailPreviewModal({
               <div className="divide-base-300 border-base-300 divide-y border-x border-b">
                 <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-3">
                   <div className="text-base-content">Horas totales</div>
-                  <div className="text-base-content text-right font-mono">{totalHoursFormatted}</div>
+                  <div className="text-base-content text-right font-mono">
+                    {totalHoursFormatted}
+                  </div>
                 </div>
                 <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-3">
                   <div className="text-base-content">Monto Bruto</div>
-                  <div className="text-base-content text-right font-mono">{fmtCLP(summary.subtotal)}</div>
+                  <div className="text-base-content text-right font-mono">
+                    {fmtCLP(summary.subtotal)}
+                  </div>
                 </div>
                 <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-3">
                   <div className="text-base-content">Retención ({retentionPercent})</div>
-                  <div className="text-base-content text-right font-mono">-{fmtCLP(summary.retention)}</div>
+                  <div className="text-base-content text-right font-mono">
+                    -{fmtCLP(summary.retention)}
+                  </div>
                 </div>
                 <div className="grid grid-cols-[1fr_auto] gap-x-3 bg-blue-700 px-3 py-3">
                   <div className="font-bold text-white">Total Líquido</div>
-                  <div className="text-right font-mono font-bold text-white">{fmtCLP(summary.net)}</div>
+                  <div className="text-right font-mono font-bold text-white">
+                    {fmtCLP(summary.net)}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Fecha de pago */}
             <div className="rounded-lg border border-amber-500 bg-amber-100 p-3 text-center text-sm">
-              <strong className="text-amber-800">📅 Fecha de pago estimada: {summary.payDate}</strong>
+              <strong className="text-amber-800">
+                📅 Fecha de pago estimada: {summary.payDate}
+              </strong>
             </div>
 
             {/* Nota de adjunto */}
             <div className="mt-3 rounded-lg border border-sky-500 bg-sky-100 p-3 text-sm text-sky-700">
-              <strong>📎 Adjunto:</strong> Se incluye el documento PDF con el detalle completo de horas trabajadas.
+              <strong>📎 Adjunto:</strong> Se incluye el documento PDF con el detalle completo de
+              horas trabajadas.
             </div>
           </div>
         </div>
@@ -168,7 +181,8 @@ export default function EmailPreviewModal({
           <p className="text-base-content/50 text-xs">
             {prepareStatus === "generating-pdf" && "Generando documento PDF..."}
             {prepareStatus === "preparing" && "Preparando archivo de email..."}
-            {prepareStatus === "done" && "✅ Archivo descargado - Ábrelo con doble click y presiona Enviar"}
+            {prepareStatus === "done" &&
+              "✅ Archivo descargado - Ábrelo con doble click y presiona Enviar"}
             {!prepareStatus && "Se descargará un archivo .eml que puedes abrir con Outlook."}
           </p>
           <div className="flex gap-3">

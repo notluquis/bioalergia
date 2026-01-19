@@ -32,11 +32,11 @@ export async function bookDoctoraliaSlot(
   doctorId: string,
   addressId: string,
   slotStart: string,
-  payload: BookSlotPayload
+  payload: BookSlotPayload,
 ): Promise<DoctoraliaBooking> {
   const response = await apiClient.post<{ booking: DoctoraliaBooking; status: "ok" }>(
     `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/slots/${encodeURIComponent(slotStart)}/book`,
-    { json: payload }
+    { json: payload },
   );
 
   if (response.status !== "ok") {
@@ -55,7 +55,7 @@ export async function cancelDoctoraliaBooking(
   doctorId: string,
   addressId: string,
   bookingId: string,
-  reason?: string
+  reason?: string,
 ): Promise<void> {
   const baseUrl = `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/bookings/${bookingId}`;
   const url = reason ? `${baseUrl}?reason=${encodeURIComponent(reason)}` : baseUrl;
@@ -73,7 +73,7 @@ export async function fetchDoctoraliaBookings(query: DoctoraliaBookingQuery): Pr
   const { addressId, doctorId, end, facilityId, start } = query;
   const response = await apiClient.get<DoctoraliaBookingsResponse>(
     `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/bookings`,
-    { query: { end, start } }
+    { query: { end, start } },
   );
 
   if (response.status !== "ok") {
@@ -91,7 +91,9 @@ export async function fetchDoctoraliaBookings(query: DoctoraliaBookingQuery): Pr
 // ============================================================
 
 export async function fetchDoctoraliaDoctors(facilityId: number): Promise<DoctoraliaDoctor[]> {
-  const response = await apiClient.get<DoctoraliaDoctorsResponse>(`/api/doctoralia/facilities/${facilityId}/doctors`);
+  const response = await apiClient.get<DoctoraliaDoctorsResponse>(
+    `/api/doctoralia/facilities/${facilityId}/doctors`,
+  );
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener los doctores");
@@ -118,7 +120,7 @@ export async function fetchDoctoraliaSlots(query: DoctoraliaSlotQuery): Promise<
   const { addressId, doctorId, end, facilityId, start } = query;
   const response = await apiClient.get<DoctoraliaSlotsResponse>(
     `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/slots`,
-    { query: { end, start } }
+    { query: { end, start } },
   );
 
   if (response.status !== "ok") {

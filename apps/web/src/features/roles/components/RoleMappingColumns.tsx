@@ -1,4 +1,4 @@
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 
 import type { Role as AvailableRole } from "@/types/roles";
 
@@ -11,7 +11,7 @@ export type ExtendedRoleMapping = RoleMapping & {
 
 export const getColumns = (
   availableRoles: AvailableRole[],
-  onRoleChange: (employeeRole: string, newAppRole: string) => void
+  onRoleChange: (employeeRole: string, newAppRole: string) => void,
 ): ColumnDef<ExtendedRoleMapping>[] => [
   {
     accessorKey: "employee_role",

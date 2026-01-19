@@ -63,7 +63,7 @@ function GoogleDriveConnect() {
     }
 
     if (error) {
-      const errorMessage = Object.prototype.hasOwnProperty.call(ERROR_MESSAGES, error)
+      const errorMessage = Object.hasOwn(ERROR_MESSAGES, error)
         ? // eslint-disable-next-line security/detect-object-injection, @typescript-eslint/no-non-null-assertion
           ERROR_MESSAGES[error]!
         : `Error de conexión: ${error}`;
@@ -136,7 +136,11 @@ function GoogleDriveConnect() {
       return <span>No conectado. Los backups a la nube podrían fallar.</span>;
     }
     if (!isValid) {
-      return <span className="text-warning">⚠️ {errorMsg ?? "Token inválido. Reconecta Google Drive."}</span>;
+      return (
+        <span className="text-warning">
+          ⚠️ {errorMsg ?? "Token inválido. Reconecta Google Drive."}
+        </span>
+      );
     }
     return <span>✓ Conectado y listo para backups ({sourceText}).</span>;
   };
@@ -175,7 +179,9 @@ function GoogleDriveConnect() {
                 disabled={isEnv || disconnectMutation.isPending}
                 onClick={() => {
                   if (
-                    confirm("¿Estás seguro de desconectar Google Drive? Los backups automáticos dejarán de funcionar.")
+                    confirm(
+                      "¿Estás seguro de desconectar Google Drive? Los backups automáticos dejarán de funcionar.",
+                    )
                   ) {
                     disconnectMutation.mutate();
                   }

@@ -5,9 +5,9 @@ import Button from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import Checkbox from "@/components/ui/Checkbox";
 import Input from "@/components/ui/Input";
-import { type CalendarUnclassifiedEvent } from "@/features/calendar/types";
+import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
-import { type FormValues } from "../schemas";
+import type { FormValues } from "../schemas";
 import { FormattedEventDescription } from "./FormattedEventDescription";
 
 interface ClassificationRowProps {
@@ -40,7 +40,7 @@ export function ClassificationRow({
   /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, security/detect-object-injection */
   const category = useStore(
     form.store,
-    (state: any) => (state as { values: FormValues }).values.entries[index]?.category ?? ""
+    (state: any) => (state as { values: FormValues }).values.entries[index]?.category ?? "",
   );
   /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, security/detect-object-injection */
   const isSubcutaneous = category === "Tratamiento subcutáneo";
@@ -49,8 +49,12 @@ export function ClassificationRow({
     <Card className="text-sm">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 p-5 pb-2">
         <div className="flex flex-col gap-1">
-          <span className="text-secondary/70 text-xs font-semibold tracking-wide uppercase">{event.calendarId}</span>
-          <h2 className="text-base-content text-lg font-semibold">{event.summary ?? "(Sin título)"}</h2>
+          <span className="text-secondary/70 text-xs font-semibold tracking-wide uppercase">
+            {event.calendarId}
+          </span>
+          <h2 className="text-base-content text-lg font-semibold">
+            {event.summary ?? "(Sin título)"}
+          </h2>
           <span className="text-base-content/60 text-xs">{formatEventDate(event)}</span>
         </div>
         <div className="text-base-content/60 flex flex-col items-end gap-2 text-xs">

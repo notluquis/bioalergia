@@ -2,12 +2,23 @@ import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 import TimeInput from "@/components/ui/TimeInput";
 
 import type { BulkRow } from "../types";
 
-import { calculateWorkedMinutes, computeStatus, formatDateLabel, isRowDirty, minutesToDuration } from "../utils";
+import {
+  calculateWorkedMinutes,
+  computeStatus,
+  formatDateLabel,
+  isRowDirty,
+  minutesToDuration,
+} from "../utils";
 
 export interface TimesheetTableMeta {
   canEdit: boolean;
@@ -17,7 +28,11 @@ export interface TimesheetTableMeta {
   onOpenOvertime: (date: string) => void;
   onRemoveEntry: (row: BulkRow) => void;
   onResetRow: (index: number) => void;
-  onRowChange: (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => void;
+  onRowChange: (
+    index: number,
+    field: keyof Omit<BulkRow, "date" | "entryId">,
+    value: string,
+  ) => void;
   onSalidaBlur: (index: number) => void;
   openOvertimeEditors: Set<string>;
   setCommentPreview: (data: null | { date: string; text: string }) => void;
@@ -80,10 +95,22 @@ const WorkedCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) =
   const duration = minutesToDuration(mins);
   const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
 
-  return <div className={`text-base-content tabular-nums ${isMarkedNotWorked ? "opacity-60" : ""}`}>{duration}</div>;
+  return (
+    <div className={`text-base-content tabular-nums ${isMarkedNotWorked ? "opacity-60" : ""}`}>
+      {duration}
+    </div>
+  );
 };
 
-const OvertimeCell = ({ index, meta, row }: { index: number; meta: TimesheetTableMeta; row: BulkRow }) => {
+const OvertimeCell = ({
+  index,
+  meta,
+  row,
+}: {
+  index: number;
+  meta: TimesheetTableMeta;
+  row: BulkRow;
+}) => {
   const isSunday = dayjs(row.date).day() === 0;
   const canEditRow = meta.canEdit && !isSunday;
   const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
@@ -128,7 +155,15 @@ const OvertimeCell = ({ index, meta, row }: { index: number; meta: TimesheetTabl
   );
 };
 
-const StatusCell = ({ index, meta, row }: { index: number; meta: TimesheetTableMeta; row: BulkRow }) => {
+const StatusCell = ({
+  index,
+  meta,
+  row,
+}: {
+  index: number;
+  meta: TimesheetTableMeta;
+  row: BulkRow;
+}) => {
   const initial = meta.initialRows[index];
   const dirty = isRowDirty(row, initial);
   const status = computeStatus(row, dirty);
@@ -151,7 +186,9 @@ const StatusCell = ({ index, meta, row }: { index: number; meta: TimesheetTableM
   const hasComment = Boolean(row.comment?.trim());
 
   const showBang = showWarning || hasComment;
-  const bangColor = showWarning ? "text-error hover:text-error/80" : "text-primary hover:text-primary/80";
+  const bangColor = showWarning
+    ? "text-error hover:text-error/80"
+    : "text-primary hover:text-primary/80";
   const tooltipParts: string[] = [];
   if (showWarning && warningText) tooltipParts.push(warningText);
   if (hasComment) tooltipParts.push(`Comentario: ${row.comment.trim()}`);
@@ -184,7 +221,15 @@ const StatusCell = ({ index, meta, row }: { index: number; meta: TimesheetTableM
   );
 };
 
-const ActionsCell = ({ index, meta, row }: { index: number; meta: TimesheetTableMeta; row: BulkRow }) => {
+const ActionsCell = ({
+  index,
+  meta,
+  row,
+}: {
+  index: number;
+  meta: TimesheetTableMeta;
+  row: BulkRow;
+}) => {
   const isSunday = dayjs(row.date).day() === 0;
   const canEditRow = meta.canEdit && !isSunday;
   const initial = meta.initialRows[index];
@@ -251,42 +296,68 @@ const columnHelper = createColumnHelper<BulkRow>();
 
 export const getTimesheetDetailColumns = () => [
   columnHelper.accessor("date", {
-    cell: ({ row, table }) => <DateCell meta={table.options.meta as TimesheetTableMeta} row={row.original} />,
+    cell: ({ row, table }) => (
+      <DateCell meta={table.options.meta as TimesheetTableMeta} row={row.original} />
+    ),
     header: "Fecha",
   }),
   columnHelper.accessor("entrada", {
     cell: ({ row, table }) => (
-      <InputCell field="entrada" index={row.index} meta={table.options.meta as TimesheetTableMeta} row={row.original} />
+      <InputCell
+        field="entrada"
+        index={row.index}
+        meta={table.options.meta as TimesheetTableMeta}
+        row={row.original}
+      />
     ),
     header: "Entrada",
   }),
   columnHelper.accessor("salida", {
     cell: ({ row, table }) => (
-      <InputCell field="salida" index={row.index} meta={table.options.meta as TimesheetTableMeta} row={row.original} />
+      <InputCell
+        field="salida"
+        index={row.index}
+        meta={table.options.meta as TimesheetTableMeta}
+        row={row.original}
+      />
     ),
     header: "Salida",
   }),
   columnHelper.display({
-    cell: ({ row, table }) => <WorkedCell meta={table.options.meta as TimesheetTableMeta} row={row.original} />,
+    cell: ({ row, table }) => (
+      <WorkedCell meta={table.options.meta as TimesheetTableMeta} row={row.original} />
+    ),
     header: "Trabajadas",
     id: "trabajadas",
   }),
   columnHelper.accessor("overtime", {
     cell: ({ row, table }) => (
-      <OvertimeCell index={row.index} meta={table.options.meta as TimesheetTableMeta} row={row.original} />
+      <OvertimeCell
+        index={row.index}
+        meta={table.options.meta as TimesheetTableMeta}
+        row={row.original}
+      />
     ),
     header: "Extras",
   }),
   columnHelper.display({
     cell: ({ row, table }) => (
-      <StatusCell index={row.index} meta={table.options.meta as TimesheetTableMeta} row={row.original} />
+      <StatusCell
+        index={row.index}
+        meta={table.options.meta as TimesheetTableMeta}
+        row={row.original}
+      />
     ),
     header: "Estado",
     id: "status",
   }),
   columnHelper.display({
     cell: ({ row, table }) => (
-      <ActionsCell index={row.index} meta={table.options.meta as TimesheetTableMeta} row={row.original} />
+      <ActionsCell
+        index={row.index}
+        meta={table.options.meta as TimesheetTableMeta}
+        row={row.original}
+      />
     ),
     header: "Acciones",
     id: "actions",

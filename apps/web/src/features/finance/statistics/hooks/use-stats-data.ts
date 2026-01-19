@@ -5,15 +5,11 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useState } from "react";
-
-import type { BalancesApiResponse } from "@/features/finance/balances/types";
-
 import { useAuth } from "@/context/AuthContext";
 import { balanceKeys } from "@/features/finance/balances/queries";
-
-import type { StatsResponse, TopParticipantData } from "../types";
-
+import type { BalancesApiResponse } from "@/features/finance/balances/types";
 import { statsKeys } from "../queries";
+import type { StatsResponse, TopParticipantData } from "../types";
 
 interface UseStatsDataResult {
   balancesError: null | string;
@@ -34,7 +30,9 @@ interface UseStatsDataResult {
 
 export function useStatsData(): UseStatsDataResult {
   const { can } = useAuth();
-  const [from, setFrom] = useState(dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD"));
+  const [from, setFrom] = useState(
+    dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD"),
+  );
   const [to, setTo] = useState(dayjs().format("YYYY-MM-DD"));
 
   const canView = can("read", "Transaction");

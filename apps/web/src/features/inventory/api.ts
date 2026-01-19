@@ -1,6 +1,11 @@
 import { apiClient } from "@/lib/api-client";
 
-import type { AllergyInventoryOverview, InventoryCategory, InventoryItem, InventoryMovement } from "./types";
+import type {
+  AllergyInventoryOverview,
+  InventoryCategory,
+  InventoryItem,
+  InventoryMovement,
+} from "./types";
 
 interface ApiResponse<T> {
   data: T;
@@ -9,7 +14,9 @@ interface ApiResponse<T> {
 }
 
 export async function createInventoryCategory(name: string): Promise<InventoryCategory> {
-  const res = await apiClient.post<ApiResponse<InventoryCategory>>("/api/inventory/categories", { name });
+  const res = await apiClient.post<ApiResponse<InventoryCategory>>("/api/inventory/categories", {
+    name,
+  });
   return res.data;
 }
 
@@ -31,7 +38,9 @@ export async function deleteInventoryItem(id: number): Promise<void> {
 }
 
 export async function fetchAllergyOverview(): Promise<AllergyInventoryOverview[]> {
-  const payload = await apiClient.get<ApiResponse<AllergyInventoryOverview[]>>("/api/inventory/allergy-overview");
+  const payload = await apiClient.get<ApiResponse<AllergyInventoryOverview[]>>(
+    "/api/inventory/allergy-overview",
+  );
   return payload.data ?? [];
 }
 
@@ -47,7 +56,7 @@ export async function getInventoryItems(): Promise<InventoryItem[]> {
 
 export async function updateInventoryItem(
   id: number,
-  item: Partial<Omit<InventoryItem, "id">>
+  item: Partial<Omit<InventoryItem, "id">>,
 ): Promise<InventoryItem> {
   const res = await apiClient.put<ApiResponse<InventoryItem>>(`/api/inventory/items/${id}`, item);
   return res.data;

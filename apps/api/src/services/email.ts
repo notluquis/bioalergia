@@ -269,9 +269,7 @@ ${
 `;
 
   // Nombre del archivo .eml
-  const safeName = data.employeeName
-    .replace(/[^a-zA-Z0-9_\- ]/g, "")
-    .replace(/\s+/g, "_");
+  const safeName = data.employeeName.replace(/[^a-zA-Z0-9_\- ]/g, "").replace(/\s+/g, "_");
   const safeMonth = data.month.replace(/\s+/g, "_");
   const filename = `Email_Boleta_${safeName}_${safeMonth}.eml`;
 

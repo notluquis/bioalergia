@@ -45,7 +45,8 @@ export default function ThemeToggle() {
     else setTheme(getPreferredThemeFromSystem() === "dark" ? "light" : "dark");
   };
 
-  const resolvedTheme: "dark" | "light" = theme === "system" ? getPreferredThemeFromSystem() : theme;
+  const resolvedTheme: "dark" | "light" =
+    theme === "system" ? getPreferredThemeFromSystem() : theme;
   const isDark = resolvedTheme === "dark";
   const icon = isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />;
   const getLabel = () => {
@@ -58,7 +59,9 @@ export default function ThemeToggle() {
     <button
       aria-label={label}
       className={`btn btn-circle border-base-300/70 bg-base-100/80 text-base-content border shadow-sm transition-all duration-300 ${
-        isDark ? "hover:bg-base-200/40 hover:border-primary/60" : "hover:bg-base-200/70 hover:border-primary/60"
+        isDark
+          ? "hover:bg-base-200/40 hover:border-primary/60"
+          : "hover:bg-base-200/70 hover:border-primary/60"
       }`}
       onClick={toggleTheme}
       type="button"

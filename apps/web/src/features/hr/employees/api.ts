@@ -22,7 +22,9 @@ export async function fetchEmployees(includeInactive = false): Promise<Employee[
     if (!emp.full_name && emp.person) {
       return {
         ...emp,
-        full_name: [emp.person.names, emp.person.fatherName, emp.person.motherName].filter(Boolean).join(" "),
+        full_name: [emp.person.names, emp.person.fatherName, emp.person.motherName]
+          .filter(Boolean)
+          .join(" "),
       };
     }
     return emp;
@@ -34,4 +36,4 @@ export async function updateEmployee(id: number, data: EmployeeUpdatePayload): P
   return res.employee;
 }
 
-export { type Employee, type EmployeePayload, type EmployeeUpdatePayload } from "./types";
+export type { Employee, EmployeePayload, EmployeeUpdatePayload } from "./types";

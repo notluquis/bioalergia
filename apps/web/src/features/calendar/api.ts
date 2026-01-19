@@ -61,7 +61,9 @@ interface CalendarSyncResponse {
   status: "accepted";
 }
 
-export async function classifyCalendarEvent(payload: CalendarEventClassificationPayload): Promise<void> {
+export async function classifyCalendarEvent(
+  payload: CalendarEventClassificationPayload,
+): Promise<void> {
   await apiClient.post<{ status: "ok" }>("/api/calendar/events/classify", payload);
 }
 
@@ -97,7 +99,7 @@ export async function fetchCalendarSummary(filters: CalendarFilters): Promise<Ca
 
 export async function fetchCalendarSyncLogs(limit = 50): Promise<CalendarSyncLog[]> {
   const response = await apiClient.get<{ logs: CalendarSyncLog[]; status: "ok" }>(
-    `/api/calendar/events/sync/logs?limit=${limit}`
+    `/api/calendar/events/sync/logs?limit=${limit}`,
   );
 
   return response.logs;
@@ -119,7 +121,7 @@ export async function fetchClassificationOptions(): Promise<ClassificationOption
 export async function fetchUnclassifiedCalendarEvents(
   limit = 50,
   offset = 0,
-  filters?: MissingFieldFilters
+  filters?: MissingFieldFilters,
 ): Promise<UnclassifiedEventsResponse> {
   const params = new URLSearchParams();
   params.set("limit", String(limit));

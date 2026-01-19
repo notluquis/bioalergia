@@ -17,7 +17,9 @@ export default function TopParticipantsWidget({
   return (
     <article className="surface-recessed space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-secondary text-base font-semibold drop-shadow-sm">Retiros destacados</h3>
+        <h3 className="text-secondary text-base font-semibold drop-shadow-sm">
+          Retiros destacados
+        </h3>
         <Link
           className="border-secondary/40 bg-secondary/15 text-secondary inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide uppercase"
           to="/finanzas/participants"
@@ -30,7 +32,8 @@ export default function TopParticipantsWidget({
       {!loading && data.length > 0 && (
         <ul className="text-base-content space-y-3 text-sm">
           {data.map((item) => {
-            const displayName = item.bankAccountHolder || item.displayName || item.participant || "Sin información";
+            const displayName =
+              item.bankAccountHolder || item.displayName || item.participant || "Sin información";
             const rutValue =
               item.identificationNumber && typeof item.identificationNumber === "string"
                 ? formatRut(item.identificationNumber)
@@ -47,15 +50,21 @@ export default function TopParticipantsWidget({
                   <p className="text-base-content/90 text-xs">
                     RUT {rut} · Cuenta {account}
                   </p>
-                  <p className="text-base-content/80 text-xs tracking-wide uppercase">{item.outgoingCount} retiros</p>
+                  <p className="text-base-content/80 text-xs tracking-wide uppercase">
+                    {item.outgoingCount} retiros
+                  </p>
                 </div>
-                <span className="text-base-content/70 text-xs font-semibold">{fmtCLP(item.outgoingAmount)}</span>
+                <span className="text-base-content/70 text-xs font-semibold">
+                  {fmtCLP(item.outgoingAmount)}
+                </span>
               </li>
             );
           })}
         </ul>
       )}
-      {!loading && data.length === 0 && <p className="text-base-content text-xs">Aún no hay retiros registrados.</p>}
+      {!loading && data.length === 0 && (
+        <p className="text-base-content text-xs">Aún no hay retiros registrados.</p>
+      )}
     </article>
   );
 }

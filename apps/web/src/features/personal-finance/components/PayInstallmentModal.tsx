@@ -9,7 +9,11 @@ import Modal from "@/components/ui/Modal";
 
 import { personalFinanceApi } from "../api";
 import { personalFinanceKeys } from "../queries";
-import { type PayInstallmentInput, payInstallmentSchema, type PersonalCreditInstallment } from "../types";
+import {
+  type PayInstallmentInput,
+  type PersonalCreditInstallment,
+  payInstallmentSchema,
+} from "../types";
 
 interface PayInstallmentModalProps {
   readonly creditId: number;
@@ -68,7 +72,8 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
         title={`Pagar Cuota #${installment.installmentNumber}`}
       >
         <div className="mb-4 text-sm text-gray-500">
-          Registrar pago de la cuota vencida el {new Date(installment.dueDate).toLocaleDateString()}.
+          Registrar pago de la cuota vencida el {new Date(installment.dueDate).toLocaleDateString()}
+          .
         </div>
 
         <form

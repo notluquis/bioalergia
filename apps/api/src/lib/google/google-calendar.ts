@@ -1,22 +1,17 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { performance } from "node:perf_hooks";
-
-import { calendar, calendar_v3 } from "@googleapis/calendar";
-import dayjs from "dayjs";
-import { promises as fs } from "fs";
-import { JWT } from "google-auth-library";
-import path from "path";
-
-import { compileExcludePatterns, googleCalendarConfig } from "../../config";
-import { parseCalendarMetadata } from "../../modules/calendar/parsers";
 // Removed self-import
 // import { CalendarEventRecord } from "./google-calendar";
 import { db } from "@finanzas/db";
+import { calendar, type calendar_v3 } from "@googleapis/calendar";
+import dayjs from "dayjs";
+import { JWT } from "google-auth-library";
+import { compileExcludePatterns, googleCalendarConfig } from "../../config";
+import { parseCalendarMetadata } from "../../modules/calendar/parsers";
 import { loadSettings } from "../../services/settings";
-import {
-  removeGoogleCalendarEvents,
-  upsertGoogleCalendarEvents,
-} from "./google-calendar-store";
 import { logEvent, logWarn } from "../logger";
+import { removeGoogleCalendarEvents, upsertGoogleCalendarEvents } from "./google-calendar-store";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 const STORAGE_ROOT = path.resolve(process.cwd(), "storage", "google-calendar");
@@ -78,10 +73,7 @@ export type SyncMetrics = {
 
 let cachedClient: CalendarClient | null = null;
 
-function isEventExcluded(
-  item: calendar_v3.Schema$Event,
-  patterns: RegExp[],
-): boolean {
+function isEventExcluded(item: calendar_v3.Schema$Event, patterns: RegExp[]): boolean {
   const text = `${item.summary ?? ""}\n${item.description ?? ""}`.toLowerCase();
   return patterns.some((regex) => regex.test(text));
 }
@@ -92,9 +84,7 @@ async function ensureStorageDir() {
 
 async function getCalendarClient(): Promise<CalendarClient> {
   if (!googleCalendarConfig) {
-    throw new Error(
-      "Google Calendar config not available. Check environment variables.",
-    );
+    throw new Error("Google Calendar config not available. Check environment variables.");
   }
   if (cachedClient) {
     return cachedClient;
@@ -120,20 +110,15 @@ type FetchRange = {
 
 async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
   if (!googleCalendarConfig) {
-    throw new Error(
-      "Google Calendar config not available. Check environment variables.",
-    );
+    throw new Error("Google Calendar config not available. Check environment variables.");
   }
 
   try {
     const settings = await loadSettings();
-    const timeZone =
-      settings.calendarTimeZone?.trim() || googleCalendarConfig.timeZone;
-    const syncStart =
-      settings.calendarSyncStart?.trim() || googleCalendarConfig.syncStartDate;
+    const timeZone = settings.calendarTimeZone?.trim() || googleCalendarConfig.timeZone;
+    const syncStart = settings.calendarSyncStart?.trim() || googleCalendarConfig.syncStartDate;
     const lookAheadRaw = Number(
-      settings.calendarSyncLookaheadDays ??
-        googleCalendarConfig.syncLookAheadDays,
+      settings.calendarSyncLookaheadDays ?? googleCalendarConfig.syncLookAheadDays,
     );
     const syncLookAheadDays =
       Number.isFinite(lookAheadRaw) && lookAheadRaw > 0
@@ -144,10 +129,7 @@ async function getRuntimeCalendarConfig(): Promise<CalendarRuntimeConfig> {
       .map((value) => value.trim())
       .filter(Boolean);
     const sources = Array.from(
-      new Set([
-        ...googleCalendarConfig.excludeSummarySources,
-        ...excludeSetting,
-      ]),
+      new Set([...googleCalendarConfig.excludeSummarySources, ...excludeSetting]),
     );
     const excludeSummaryPatterns = compileExcludePatterns(sources);
     return {
@@ -185,34 +167,24 @@ async function getLastSuccessfulSyncTime(): Promise<Date | null> {
   }
 }
 
-function buildFetchRange(
-  runtime: CalendarRuntimeConfig,
-  lastFetchedAt: Date | null,
-): FetchRange {
+function buildFetchRange(runtime: CalendarRuntimeConfig, lastFetchedAt: Date | null): FetchRange {
   const startDate = dayjs(runtime.syncStartDate);
   const configuredStart = startDate.isValid()
     ? startDate.startOf("day")
     : dayjs("2000-01-01").startOf("day");
-  const safetyStart = lastFetchedAt
-    ? dayjs(lastFetchedAt).subtract(5, "minute")
-    : null;
-  const effectiveStart =
-    safetyStart && safetyStart.isAfter(configuredStart)
-      ? safetyStart.startOf("minute")
-      : configuredStart;
-  const endDate = dayjs()
-    .add(runtime.syncLookAheadDays, "day")
-    .add(1, "day")
-    .startOf("day");
+  const safetyStart = lastFetchedAt ? dayjs(lastFetchedAt).subtract(5, "minute") : null;
+  const effectiveStart = safetyStart?.isAfter(configuredStart)
+    ? safetyStart.startOf("minute")
+    : configuredStart;
+  const endDate = dayjs().add(runtime.syncLookAheadDays, "day").add(1, "day").startOf("day");
 
   return {
     timeMin: effectiveStart.toISOString(),
     timeMax: endDate.toISOString(),
     timeZone: runtime.timeZone,
-    updatedMin:
-      safetyStart && safetyStart.isAfter(configuredStart)
-        ? safetyStart.startOf("minute").toISOString()
-        : undefined,
+    updatedMin: safetyStart?.isAfter(configuredStart)
+      ? safetyStart.startOf("minute").toISOString()
+      : undefined,
   };
 }
 
@@ -342,9 +314,7 @@ async function fetchCalendarEventsForId(
 
 export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPayload> {
   if (!googleCalendarConfig) {
-    throw new Error(
-      "Google Calendar config not available. Check environment variables.",
-    );
+    throw new Error("Google Calendar config not available. Check environment variables.");
   }
 
   const client = await getCalendarClient();
@@ -360,8 +330,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
   });
 
   const events: CalendarEventRecord[] = [];
-  const calendarsSummary: Array<{ calendarId: string; totalEvents: number }> =
-    [];
+  const calendarsSummary: Array<{ calendarId: string; totalEvents: number }> = [];
   const excludedEvents: Array<{
     calendarId: string;
     eventId: string;
@@ -437,10 +406,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
         } catch (retryError) {
           logWarn("googleCalendar.fetch.error", {
             calendarId,
-            error:
-              retryError instanceof Error
-                ? retryError.message
-                : String(retryError),
+            error: retryError instanceof Error ? retryError.message : String(retryError),
           });
         }
       } else {
@@ -478,9 +444,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
   };
 }
 
-export async function persistGoogleCalendarSnapshot(
-  payload: GoogleCalendarSyncPayload,
-) {
+export async function persistGoogleCalendarSnapshot(payload: GoogleCalendarSyncPayload) {
   await ensureStorageDir();
 
   const timestamp = payload.fetchedAt.replace(/[:.]/g, "-");

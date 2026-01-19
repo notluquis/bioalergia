@@ -58,7 +58,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
   });
 
   const hasErrors = useStore(form.store, (state) =>
-    Object.values(state.fieldMeta).some((meta) => meta.errors.length > 0)
+    Object.values(state.fieldMeta).some((meta) => meta.errors.length > 0),
   );
 
   return (
@@ -299,10 +299,19 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         )}
       </form.Field>
 
-      {hasErrors && <Alert variant="error">Por favor corrige los errores en el formulario antes de continuar.</Alert>}
+      {hasErrors && (
+        <Alert variant="error">
+          Por favor corrige los errores en el formulario antes de continuar.
+        </Alert>
+      )}
 
       <div className="flex justify-end gap-3">
-        <Button disabled={form.state.isSubmitting} onClick={onCancel} type="button" variant="secondary">
+        <Button
+          disabled={form.state.isSubmitting}
+          onClick={onCancel}
+          type="button"
+          variant="secondary"
+        >
           Cancelar
         </Button>
         <Button disabled={form.state.isSubmitting || !form.state.canSubmit} type="submit">

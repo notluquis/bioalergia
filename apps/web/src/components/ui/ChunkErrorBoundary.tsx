@@ -1,4 +1,4 @@
-import { Component, ErrorInfo, ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -27,7 +27,11 @@ export class ChunkErrorBoundary extends Component<Props, State> {
     console.error("Chunk load error caught:", error, errorInfo);
 
     // Detectar si es un error de chunk y hacer log
-    if (/Failed to fetch dynamically imported module|Importing a module script failed/i.test(error.message)) {
+    if (
+      /Failed to fetch dynamically imported module|Importing a module script failed/i.test(
+        error.message,
+      )
+    ) {
       console.warn("Dynamic import failed. A new version may be available. Consider reloading.");
     }
   }
@@ -78,9 +82,12 @@ export class ChunkErrorBoundary extends Component<Props, State> {
             </div>
 
             <div className="space-y-3">
-              <h1 className="text-base-content text-2xl font-bold tracking-tight">Acción Requerida</h1>
+              <h1 className="text-base-content text-2xl font-bold tracking-tight">
+                Acción Requerida
+              </h1>
               <p className="text-base-content/60 px-4 text-sm leading-relaxed">
-                Se detectó una nueva versión de Bioalergia. Necesitamos recargar la aplicación para activarla.
+                Se detectó una nueva versión de Bioalergia. Necesitamos recargar la aplicación para
+                activarla.
               </p>
             </div>
 

@@ -33,7 +33,9 @@ export function useJobProgress(jobId: null | string, options: UseJobProgressOpti
   const query = useSuspenseQuery({
     queryFn: async () => {
       if (!jobId) return null;
-      const response = await apiClient.get<{ job: JobState; status: string }>(`/api/calendar/events/job/${jobId}`);
+      const response = await apiClient.get<{ job: JobState; status: string }>(
+        `/api/calendar/events/job/${jobId}`,
+      );
       if (response.status !== "ok") {
         throw new Error("Failed to fetch job status");
       }
@@ -70,7 +72,7 @@ export function useJobProgress(jobId: null | string, options: UseJobProgressOpti
   // Reset notification state when jobId changes
   useEffect(() => {
     setHasNotified(false);
-  }, [jobId]);
+  }, []);
 
   const reset = () => {
     setHasNotified(false);

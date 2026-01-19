@@ -15,7 +15,9 @@ interface ServicesHeroProps {
 
 export function ServicesGrid({ children }: { children: ReactNode }) {
   return (
-    <div className="grid min-h-0 items-start gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">{children}</div>
+    <div className="grid min-h-0 items-start gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+      {children}
+    </div>
   );
 }
 
@@ -43,7 +45,9 @@ export function ServicesHero({ actions, breadcrumbs, description, title }: Servi
           </nav>
         )}
         <div className="space-y-1.5">
-          <h1 className="text-base-content text-2xl font-semibold drop-shadow-sm lg:text-3xl">{title}</h1>
+          <h1 className="text-base-content text-2xl font-semibold drop-shadow-sm lg:text-3xl">
+            {title}
+          </h1>
           <p className="text-base-content/70 text-sm">{description}</p>
         </div>
       </div>
@@ -52,7 +56,13 @@ export function ServicesHero({ actions, breadcrumbs, description, title }: Servi
   );
 }
 
-export function ServicesSurface({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function ServicesSurface({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <section className={`surface-recessed rounded-[28px] p-6 shadow-inner ${className}`}>
       <div className="space-y-6">{children}</div>

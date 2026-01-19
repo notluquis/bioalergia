@@ -24,7 +24,13 @@ export function calculateSummary(data: {
 }) {
   const totalMetodos = data.tarjeta + data.transferencia + data.efectivo;
   const totalServicios =
-    data.consultas + data.controles + data.tests + data.vacunas + data.licencias + data.roxair + data.otros;
+    data.consultas +
+    data.controles +
+    data.tests +
+    data.vacunas +
+    data.licencias +
+    data.roxair +
+    data.otros;
   const diferencia = totalMetodos - totalServicios;
   const cuadra = diferencia === 0;
 
@@ -42,7 +48,7 @@ export function calculateSummary(data: {
  * E.g. "2026-01-10" → "Sáb 10 Ene 2026"
  */
 export function formatDateFull(dateStr: string): string {
-  const date = new Date(dateStr + "T12:00:00"); // Avoid timezone issues
+  const date = new Date(`${dateStr}T12:00:00`); // Avoid timezone issues
   return date.toLocaleDateString("es-CL", {
     day: "numeric",
     month: "short",
@@ -69,7 +75,7 @@ export function formatSaveTime(date: Date): string {
  * Get day abbreviation for week strip
  */
 export function getDayAbbrev(dateStr: string): string {
-  const date = new Date(dateStr + "T12:00:00");
+  const date = new Date(`${dateStr}T12:00:00`);
   const day = date.getDay();
   // getDay() always returns 0-6, so this is safe
   return ["D", "L", "M", "X", "J", "V", "S"][day]!;

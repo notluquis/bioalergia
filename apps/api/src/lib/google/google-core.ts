@@ -6,9 +6,9 @@
  * - OAuth 2.0: Used for Drive backups to personal account
  */
 
-import { drive, drive_v3 } from "@googleapis/drive";
-import { OAuth2Client } from "google-auth-library";
 import { db } from "@finanzas/db";
+import { drive, type drive_v3 } from "@googleapis/drive";
+import { OAuth2Client } from "google-auth-library";
 
 import { googleCalendarConfig } from "../../config";
 
@@ -33,7 +33,7 @@ const getOAuthRedirectUri = () =>
 export function getGoogleCredentials(): { email: string; privateKey: string } {
   if (!googleCalendarConfig) {
     throw new Error(
-      "Google credentials not configured. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY."
+      "Google credentials not configured. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.",
     );
   }
   return {
@@ -119,16 +119,13 @@ export async function validateOAuthToken(): Promise<OAuthValidationResult> {
     };
   }
 
-  const source =
-    config.refreshToken === process.env.GOOGLE_OAUTH_REFRESH_TOKEN
-      ? "env"
-      : "db";
+  const source = config.refreshToken === process.env.GOOGLE_OAUTH_REFRESH_TOKEN ? "env" : "db";
 
   try {
     const oauth2Client = new OAuth2Client(
       config.clientId,
       config.clientSecret,
-      "urn:ietf:wg:oauth:2.0:oob"
+      "urn:ietf:wg:oauth:2.0:oob",
     );
 
     oauth2Client.setCredentials({
@@ -168,8 +165,7 @@ export async function validateOAuthToken(): Promise<OAuthValidationResult> {
       errorStr.includes("token has been expired or revoked")
     ) {
       errorCode = "token_expired";
-      userMessage =
-        "Token expirado. Reconecta Google Drive desde la configuración.";
+      userMessage = "Token expirado. Reconecta Google Drive desde la configuración.";
     } else if (errorStr.includes("revoked")) {
       errorCode = "token_revoked";
       userMessage = "Acceso revocado. Reconecta Google Drive.";
@@ -216,15 +212,13 @@ async function getOAuthClient(): Promise<OAuth2Client> {
 
   const config = await getOAuthConfig();
   if (!config) {
-    throw new Error(
-      "OAuth no configurado. Conecta Google Drive desde la configuración."
-    );
+    throw new Error("OAuth no configurado. Conecta Google Drive desde la configuración.");
   }
 
   const oauth2Client = new OAuth2Client(
     config.clientId,
     config.clientSecret,
-    getOAuthRedirectUri()
+    getOAuthRedirectUri(),
   );
 
   oauth2Client.setCredentials({
@@ -237,11 +231,8 @@ async function getOAuthClient(): Promise<OAuth2Client> {
     if (!token) throw new Error("No access token returned");
 
     logEvent("google.oauth.authenticated", {
-      clientId: config.clientId.substring(0, 20) + "...",
-      source:
-        config.refreshToken === process.env.GOOGLE_OAUTH_REFRESH_TOKEN
-          ? "env"
-          : "db",
+      clientId: `${config.clientId.substring(0, 20)}...`,
+      source: config.refreshToken === process.env.GOOGLE_OAUTH_REFRESH_TOKEN ? "env" : "db",
     });
   } catch (error) {
     const parsed = parseGoogleError(error);
@@ -294,7 +285,7 @@ export async function getBackupFolderId(): Promise<string> {
   }
 
   throw new Error(
-    "GOOGLE_BACKUP_FOLDER_ID no configurado. Crea una carpeta en tu Drive y agrega el ID como variable de entorno."
+    "GOOGLE_BACKUP_FOLDER_ID no configurado. Crea una carpeta en tu Drive y agrega el ID como variable de entorno.",
   );
 }
 

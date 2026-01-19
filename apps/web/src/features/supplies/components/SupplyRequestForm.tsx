@@ -6,10 +6,8 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { queryKeys } from "@/lib/query-keys";
-
-import type { CommonSupply, StructuredSupplies } from "../types";
-
 import { createSupplyRequest, type SupplyRequestPayload } from "../api";
+import type { CommonSupply, StructuredSupplies } from "../types";
 
 const supplyRequestSchema = z.object({
   notes: z.string().optional(),
@@ -48,8 +46,10 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
     onSubmit: async ({ value }) => {
       try {
         await createRequestMutation.mutateAsync({
-          brand: value.selectedBrand === "N/A" || !value.selectedBrand ? undefined : value.selectedBrand,
-          model: value.selectedModel === "N/A" || !value.selectedModel ? undefined : value.selectedModel,
+          brand:
+            value.selectedBrand === "N/A" || !value.selectedBrand ? undefined : value.selectedBrand,
+          model:
+            value.selectedModel === "N/A" || !value.selectedModel ? undefined : value.selectedModel,
           notes: value.notes || undefined,
           quantity: value.quantity,
           supplyName: value.selectedSupply,
@@ -88,9 +88,13 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
   }, {});
 
   const supplyNames = Object.keys(structuredSupplies);
-  const availableBrands = selectedSupply ? Object.keys(structuredSupplies[selectedSupply] ?? {}) : [];
+  const availableBrands = selectedSupply
+    ? Object.keys(structuredSupplies[selectedSupply] ?? {})
+    : [];
   const availableModels =
-    selectedSupply && selectedBrand ? (structuredSupplies[selectedSupply]?.[selectedBrand] ?? []) : [];
+    selectedSupply && selectedBrand
+      ? (structuredSupplies[selectedSupply]?.[selectedBrand] ?? [])
+      : [];
 
   return (
     <div className="card bg-base-100 mb-8 p-6 shadow-lg">

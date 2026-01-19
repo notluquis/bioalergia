@@ -1,10 +1,11 @@
-import { useCreateInventoryItem, useCreateInventoryMovement, useUpdateInventoryItem } from "@finanzas/db/hooks";
+import {
+  useCreateInventoryItem,
+  useCreateInventoryMovement,
+  useUpdateInventoryItem,
+} from "@finanzas/db/hooks";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Lock, PlusCircle } from "lucide-react";
 import { useState } from "react";
-
-import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
-
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -16,6 +17,7 @@ import AllergyInventoryView from "@/features/inventory/components/AllergyInvento
 import { columns } from "@/features/inventory/components/columns";
 import InventoryItemForm from "@/features/inventory/components/InventoryItemForm";
 import { inventoryKeys } from "@/features/inventory/queries";
+import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 
 export default function InventoryPage() {
@@ -66,7 +68,10 @@ export default function InventoryPage() {
   const updateItemMutation = useUpdateInventoryItem();
   const createMovementMutation = useCreateInventoryMovement();
 
-  const saving = createItemMutation.isPending || updateItemMutation.isPending || createMovementMutation.isPending;
+  const saving =
+    createItemMutation.isPending ||
+    updateItemMutation.isPending ||
+    createMovementMutation.isPending;
 
   async function handleSaveItem(itemData: Omit<InventoryItem, "id">) {
     setError(null);
@@ -163,13 +168,27 @@ export default function InventoryPage() {
 
       <AllergyInventoryView />
 
-      <Modal isOpen={isItemModalOpen} onClose={closeModal} title={editingItem ? "Editar item" : "Agregar nuevo item"}>
-        <InventoryItemForm item={editingItem} onCancel={closeModal} onSave={handleSaveItem} saving={saving} />
+      <Modal
+        isOpen={isItemModalOpen}
+        onClose={closeModal}
+        title={editingItem ? "Editar item" : "Agregar nuevo item"}
+      >
+        <InventoryItemForm
+          item={editingItem}
+          onCancel={closeModal}
+          onSave={handleSaveItem}
+          saving={saving}
+        />
       </Modal>
 
       {itemForStockAdjust && (
         <Modal isOpen={isAdjustStockModalOpen} onClose={closeModal} title="Ajustar stock">
-          <AdjustStockForm item={itemForStockAdjust} onCancel={closeModal} onSave={handleAdjustStock} saving={saving} />
+          <AdjustStockForm
+            item={itemForStockAdjust}
+            onCancel={closeModal}
+            onSave={handleAdjustStock}
+            saving={saving}
+          />
         </Modal>
       )}
     </section>

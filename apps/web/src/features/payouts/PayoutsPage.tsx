@@ -23,11 +23,18 @@ export default function PayoutsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-base-content text-2xl font-bold">Retiros de Fondos</h1>
-          <p className="text-base-content/70 text-sm">Historial de transferencias a cuenta bancaria (Payouts)</p>
+          <p className="text-base-content/70 text-sm">
+            Historial de transferencias a cuenta bancaria (Payouts)
+          </p>
         </div>
       </div>
 
-      <DataTable columns={columns} data={payouts} enableVirtualization noDataMessage="No hay retiros registrados." />
+      <DataTable
+        columns={columns}
+        data={payouts}
+        enableVirtualization
+        noDataMessage="No hay retiros registrados."
+      />
     </div>
   );
 }

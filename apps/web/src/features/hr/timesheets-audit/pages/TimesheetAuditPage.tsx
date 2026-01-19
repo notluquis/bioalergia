@@ -14,23 +14,34 @@ import Backdrop from "@/components/ui/Backdrop";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
-import { type AuditDateRange, useTimesheetAudit } from "@/features/hr/timesheets-audit/hooks/use-timesheet-audit";
-import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlap-detection";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
+import {
+  type AuditDateRange,
+  useTimesheetAudit,
+} from "@/features/hr/timesheets-audit/hooks/use-timesheet-audit";
+import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlap-detection";
 import { endOfMonth, monthsAgoEnd, monthsAgoStart, startOfMonth } from "@/lib/dates";
 import { INPUT_SEARCH_SM } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 import "dayjs/locale/es";
 
-const TimesheetAuditCalendar = lazy(() => import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar"));
+const TimesheetAuditCalendar = lazy(
+  () => import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar"),
+);
 
 dayjs.extend(isoWeek);
 dayjs.locale("es");
 
 const DATE_ISO_FORMAT = "YYYY-MM-DD";
 
-type QuickRange = "custom" | "last-month" | "last-week" | "this-month" | "this-week" | "two-months-ago";
+type QuickRange =
+  | "custom"
+  | "last-month"
+  | "last-week"
+  | "this-month"
+  | "this-week"
+  | "two-months-ago";
 
 interface WeekDefinition {
   end: string;
@@ -136,7 +147,10 @@ export default function TimesheetAuditPage() {
   // Calculate overlaps
   const overlapsByDate = detectAllOverlaps(entries);
   const totalOverlapDays = overlapsByDate.size;
-  const totalOverlapPairs = [...overlapsByDate.values()].reduce((sum, info) => sum + info.total_overlapping_pairs, 0);
+  const totalOverlapPairs = [...overlapsByDate.values()].reduce(
+    (sum, info) => sum + info.total_overlapping_pairs,
+    0,
+  );
 
   // Handlers
   const handleQuickRangeChange = (range: QuickRange) => {
@@ -196,7 +210,9 @@ export default function TimesheetAuditPage() {
         <div className="mb-4 flex items-center gap-3">
           <div className="badge badge-lg badge-primary">1</div>
           <h2 className="text-base-content text-lg font-semibold">Selecciona el periodo</h2>
-          {rangeSummary && <span className="text-base-content/60 ml-auto text-sm">({rangeSummary})</span>}
+          {rangeSummary && (
+            <span className="text-base-content/60 ml-auto text-sm">({rangeSummary})</span>
+          )}
         </div>
 
         {/* Quick Range Buttons */}
@@ -227,7 +243,10 @@ export default function TimesheetAuditPage() {
             >
               <span>Personalizar semanas específicas</span>
               <ChevronDown
-                className={cn("transform transition-transform duration-300", customWeeksOpen && "rotate-180")}
+                className={cn(
+                  "transform transition-transform duration-300",
+                  customWeeksOpen && "rotate-180",
+                )}
                 size={16}
               />
             </button>
@@ -254,7 +273,9 @@ export default function TimesheetAuditPage() {
                       onClick={handleSelectAllWeeks}
                       type="button"
                     >
-                      {selectedWeekKeys.length === weeksForMonth.length ? "Deseleccionar todas" : "Seleccionar todas"}
+                      {selectedWeekKeys.length === weeksForMonth.length
+                        ? "Deseleccionar todas"
+                        : "Seleccionar todas"}
                     </button>
                   )}
                 </div>
@@ -324,7 +345,11 @@ export default function TimesheetAuditPage() {
               );
             })}
             {selectedEmployeeIds.length > 0 && (
-              <button className="link link-error text-sm" onClick={handleClearEmployees} type="button">
+              <button
+                className="link link-error text-sm"
+                onClick={handleClearEmployees}
+                type="button"
+              >
                 Limpiar todos
               </button>
             )}
@@ -342,7 +367,11 @@ export default function TimesheetAuditPage() {
               type="button"
             >
               <span>+ Agregar empleado</span>
-              {showEmployeeDropdown ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {showEmployeeDropdown ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </button>
 
             {showEmployeeDropdown && (
@@ -377,7 +406,9 @@ export default function TimesheetAuditPage() {
                     {(() => {
                       if (filteredEmployees.length === 0) {
                         return (
-                          <li className="text-base-content/50 p-4 text-center text-sm">No se encontraron empleados</li>
+                          <li className="text-base-content/50 p-4 text-center text-sm">
+                            No se encontraron empleados
+                          </li>
                         );
                       }
                       return (
@@ -392,7 +423,10 @@ export default function TimesheetAuditPage() {
                                   }`}
                                   onClick={() => {
                                     handleEmployeeToggle(emp.id);
-                                    if (!isSelected && selectedEmployeeIds.length + 1 >= MAX_EMPLOYEES) {
+                                    if (
+                                      !isSelected &&
+                                      selectedEmployeeIds.length + 1 >= MAX_EMPLOYEES
+                                    ) {
                                       setShowEmployeeDropdown(false);
                                     }
                                   }}
@@ -415,11 +449,15 @@ export default function TimesheetAuditPage() {
         )}
 
         {selectedEmployeeIds.length === 0 && (
-          <p className="text-warning mt-2 text-sm">Selecciona al menos 1 empleado para ver la auditoría</p>
+          <p className="text-warning mt-2 text-sm">
+            Selecciona al menos 1 empleado para ver la auditoría
+          </p>
         )}
 
         {isMaxEmployees && (
-          <p className="text-base-content/60 mt-2 text-sm">Máximo {MAX_EMPLOYEES} empleados simultáneos</p>
+          <p className="text-base-content/60 mt-2 text-sm">
+            Máximo {MAX_EMPLOYEES} empleados simultáneos
+          </p>
         )}
       </div>
 
@@ -443,13 +481,17 @@ export default function TimesheetAuditPage() {
             </div>
             <div className="border-base-300 bg-base-100 rounded-xl border p-4">
               <div className="text-base-content/70 text-sm">Días con alertas</div>
-              <div className={`mt-2 text-2xl font-bold ${totalOverlapDays > 0 ? "text-warning" : "text-success"}`}>
+              <div
+                className={`mt-2 text-2xl font-bold ${totalOverlapDays > 0 ? "text-warning" : "text-success"}`}
+              >
                 {totalOverlapDays}
               </div>
             </div>
             <div className="border-base-300 bg-base-100 rounded-xl border p-4">
               <div className="text-base-content/70 text-sm">Conflictos</div>
-              <div className={`mt-2 text-2xl font-bold ${totalOverlapPairs > 0 ? "text-error" : "text-success"}`}>
+              <div
+                className={`mt-2 text-2xl font-bold ${totalOverlapPairs > 0 ? "text-error" : "text-success"}`}
+              >
                 {totalOverlapPairs}
               </div>
             </div>
@@ -466,7 +508,8 @@ export default function TimesheetAuditPage() {
                 <Users className="text-base-content/30 mb-4 h-12 w-12" />
                 <h3 className="text-base-content/70 text-lg font-semibold">Selecciona empleados</h3>
                 <p className="text-base-content/50 max-w-md text-sm">
-                  Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar solapamientos
+                  Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar
+                  solapamientos
                 </p>
               </div>
             </div>
@@ -516,7 +559,10 @@ export default function TimesheetAuditPage() {
           >
             <span>📋 Guía de interpretación</span>
             <ChevronDown
-              className={cn("transform transition-transform duration-300", legendOpen && "rotate-180")}
+              className={cn(
+                "transform transition-transform duration-300",
+                legendOpen && "rotate-180",
+              )}
               size={16}
             />
           </button>
@@ -534,21 +580,27 @@ export default function TimesheetAuditPage() {
                   <div className="bg-error mt-1 h-4 w-4 shrink-0 rounded" />
                   <div>
                     <p className="text-base-content font-semibold">Conflicto detectado</p>
-                    <p className="text-base-content/70 text-sm">Horarios traslapados entre empleados</p>
+                    <p className="text-base-content/70 text-sm">
+                      Horarios traslapados entre empleados
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="text-lg">👩‍⚕️</span>
                   <div>
                     <p className="text-base-content font-semibold">Compatibles</p>
-                    <p className="text-base-content/70 text-sm">Enfermero + TENS pueden coexistir</p>
+                    <p className="text-base-content/70 text-sm">
+                      Enfermero + TENS pueden coexistir
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="text-lg">⌛</span>
                   <div>
                     <p className="text-base-content font-semibold">Tooltip</p>
-                    <p className="text-base-content/70 text-sm">Pasa el cursor para ver detalles del conflicto</p>
+                    <p className="text-base-content/70 text-sm">
+                      Pasa el cursor para ver detalles del conflicto
+                    </p>
                   </div>
                 </div>
               </div>

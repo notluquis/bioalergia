@@ -1,16 +1,10 @@
-import { Hono } from "hono";
-import { reply } from "../utils/reply";
-import { getSessionUser, hasPermission } from "../auth";
 import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
-import {
-  createLoan,
-  deleteLoan,
-  getLoanById,
-  listLoans,
-  updateLoan,
-} from "../services/loans";
+import { Hono } from "hono";
+import { getSessionUser, hasPermission } from "../auth";
 import { loanCreateSchema } from "../lib/financial-schemas";
+import { createLoan, deleteLoan, getLoanById, listLoans, updateLoan } from "../services/loans";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -36,13 +30,14 @@ app.post("/", async (c) => {
   const parsed = loanCreateSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message: "Datos inválidos",
         issues: parsed.error.issues,
       },
-      400
+      400,
     );
   }
 
@@ -91,13 +86,14 @@ app.put("/:id", async (c) => {
   const parsed = loanCreateSchema.partial().safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
+    return reply(
+      c,
       {
         status: "error",
         message: "Datos inválidos",
         issues: parsed.error.issues,
       },
-      400
+      400,
     );
   }
 

@@ -4,7 +4,8 @@
  * Using native portal + dialog for full API compatibility.
  */
 import { X } from "lucide-react";
-import React, { useEffect } from "react";
+import type React from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
@@ -20,7 +21,14 @@ interface ModalProps {
   title: string;
 }
 
-export default function Modal({ boxClassName, children, className, isOpen, onClose, title }: ModalProps) {
+export default function Modal({
+  boxClassName,
+  children,
+  className,
+  isOpen,
+  onClose,
+  title,
+}: ModalProps) {
   // Lock body scroll when open
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "unset";
@@ -63,7 +71,7 @@ export default function Modal({ boxClassName, children, className, isOpen, onClo
         aria-modal="true"
         className={cn(
           "modal-box surface-elevated border-base-300/50 ring-base-300/30 relative z-10 w-full max-w-2xl rounded-[28px] border p-6 shadow-2xl ring-1",
-          boxClassName
+          boxClassName,
         )}
         role="dialog"
       >
@@ -84,6 +92,6 @@ export default function Modal({ boxClassName, children, className, isOpen, onClo
         <div className="mt-2">{children}</div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

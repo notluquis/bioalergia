@@ -4,13 +4,13 @@
  * Handles bulk data import via CSV with preview and validation
  */
 
-import { Hono } from "hono";
-import { reply } from "../utils/reply";
-import { verifyToken } from "../lib/paseto";
-import { hasPermission } from "../auth";
 import { db } from "@finanzas/db";
-import { Decimal } from "decimal.js";
 import dayjs from "dayjs";
+import { Decimal } from "decimal.js";
+import { Hono } from "hono";
+import { hasPermission } from "../auth";
+import { verifyToken } from "../lib/paseto";
+import { reply } from "../utils/reply";
 
 const COOKIE_NAME = "finanzas_session";
 
@@ -86,14 +86,10 @@ interface CSVRow {
 }
 
 // Helper to get auth
-async function getAuth(c: {
-  req: { header: (name: string) => string | undefined };
-}) {
+async function getAuth(c: { req: { header: (name: string) => string | undefined } }) {
   const cookieHeader = c.req.header("Cookie");
   if (!cookieHeader) return null;
-  const cookies = Object.fromEntries(
-    cookieHeader.split(";").map((c) => c.trim().split("="))
-  );
+  const cookies = Object.fromEntries(cookieHeader.split(";").map((c) => c.trim().split("=")));
   const token = cookies[COOKIE_NAME];
   if (!token) return null;
   try {
@@ -121,7 +117,7 @@ function cleanAmount(value: unknown): number {
     .replace(/\./g, "") // Remove dots (thousands separator in CLP)
     .replace(/,/g, "."); // Replace comma with dot (decimal separator)
   const num = Number(str);
-  return isNaN(num) ? 0 : num;
+  return Number.isNaN(num) ? 0 : num;
 }
 
 // Parse date from DD/M/YYYY or DD/MM/YYYY format
@@ -144,10 +140,7 @@ function parseFlexibleDate(value: unknown): string | null {
 }
 
 // Permission mapping
-const TABLE_PERMISSIONS: Record<
-  TableName,
-  { action: string; subject: string }
-> = {
+const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> = {
   people: { action: "create", subject: "Person" },
   employees: { action: "create", subject: "Employee" },
   counterparts: { action: "create", subject: "Counterpart" },
@@ -165,8 +158,7 @@ const TABLE_PERMISSIONS: Record<
 
 csvUploadRoutes.post("/preview", async (c) => {
   const auth = await getAuth(c);
-  if (!auth)
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const { table, data } = await c.req.json<{
     table: TableName;
@@ -174,23 +166,14 @@ csvUploadRoutes.post("/preview", async (c) => {
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
-    return reply(
-      c,
-      { status: "error", message: "Table and data array required" },
-      400
-    );
+    return reply(c, { status: "error", message: "Table and data array required" }, 400);
   }
 
   // Check permissions
   const required = TABLE_PERMISSIONS[table];
   if (required) {
-    const hasPerm = await hasPermission(
-      auth.userId,
-      required.action,
-      required.subject
-    );
-    if (!hasPerm)
-      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    const hasPerm = await hasPermission(auth.userId, required.action, required.subject);
+    if (!hasPerm) return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const errors: string[] = [];
@@ -206,10 +189,7 @@ csvUploadRoutes.post("/preview", async (c) => {
         const exists = await findPersonByRut(String(row.rut));
         if (exists) toUpdate++;
         else toInsert++;
-      } else if (
-        (table === "employees" || table === "counterparts") &&
-        row.rut
-      ) {
+      } else if ((table === "employees" || table === "counterparts") && row.rut) {
         const person = await findPersonByRut(String(row.rut));
         if (!person) {
           errors.push(`Fila ${i + 1}: Persona con RUT ${row.rut} no existe`);
@@ -266,7 +246,7 @@ csvUploadRoutes.post("/preview", async (c) => {
       } else {
         toInsert++;
       }
-    } catch (e) {
+    } catch (_e) {
       errors.push(`Fila ${i + 1}: Error de validación`);
       toSkip++;
     }
@@ -287,8 +267,7 @@ csvUploadRoutes.post("/preview", async (c) => {
 
 csvUploadRoutes.post("/import", async (c) => {
   const auth = await getAuth(c);
-  if (!auth)
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const { table, data } = await c.req.json<{
     table: TableName;
@@ -296,23 +275,14 @@ csvUploadRoutes.post("/import", async (c) => {
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
-    return reply(
-      c,
-      { status: "error", message: "Table and data array required" },
-      400
-    );
+    return reply(c, { status: "error", message: "Table and data array required" }, 400);
   }
 
   // Check permissions
   const required = TABLE_PERMISSIONS[table];
   if (required) {
-    const hasPerm = await hasPermission(
-      auth.userId,
-      required.action,
-      required.subject
-    );
-    if (!hasPerm)
-      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    const hasPerm = await hasPermission(auth.userId, required.action, required.subject);
+    if (!hasPerm) return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   let inserted = 0;
@@ -427,18 +397,12 @@ csvUploadRoutes.post("/import", async (c) => {
         const balanceDate = new Date(dateStr);
 
         const productionData = {
-          ingresoTarjetas: cleanAmount(
-            row.ingresoTarjetas || row["INGRESO TARJETAS"]
-          ),
+          ingresoTarjetas: cleanAmount(row.ingresoTarjetas || row["INGRESO TARJETAS"]),
           ingresoTransferencias: cleanAmount(
-            row.ingresoTransferencias || row["INGRESO TRANSFERENCIAS"]
+            row.ingresoTransferencias || row["INGRESO TRANSFERENCIAS"],
           ),
-          ingresoEfectivo: cleanAmount(
-            row.ingresoEfectivo || row["INGRESO EFECTIVO"]
-          ),
-          gastosDiarios: cleanAmount(
-            row.gastosDiarios || row["GASTOS DIARIOS"]
-          ),
+          ingresoEfectivo: cleanAmount(row.ingresoEfectivo || row["INGRESO EFECTIVO"]),
+          gastosDiarios: cleanAmount(row.gastosDiarios || row["GASTOS DIARIOS"]),
           otrosAbonos: cleanAmount(row.otrosAbonos || row["Otros/abonos"]),
           consultasMonto: cleanAmount(row.consultasMonto || row.CONSULTAS),
           controlesMonto: cleanAmount(row.controlesMonto || row.CONTROLES),
@@ -447,9 +411,7 @@ csvUploadRoutes.post("/import", async (c) => {
           licenciasMonto: cleanAmount(row.licenciasMonto || row.LICENCIAS),
           roxairMonto: cleanAmount(row.roxairMonto || row.ROXAIR),
           comentarios:
-            row.comentarios || row.Comentarios
-              ? String(row.comentarios || row.Comentarios)
-              : null,
+            row.comentarios || row.Comentarios ? String(row.comentarios || row.Comentarios) : null,
           status: (row.status as "DRAFT" | "FINAL") || "DRAFT",
           changeReason: row.changeReason ? String(row.changeReason) : null,
         };
@@ -477,20 +439,12 @@ csvUploadRoutes.post("/import", async (c) => {
         const person = row.rut ? await findPersonByRut(String(row.rut)) : null;
         const serviceData = {
           name: String(row.name),
-          serviceType: String(row.type || "BUSINESS") as
-            | "BUSINESS"
-            | "PERSONAL",
-          frequency: String(row.frequency || "MONTHLY") as
-            | "MONTHLY"
-            | "ONCE"
-            | "ANNUAL",
+          serviceType: String(row.type || "BUSINESS") as "BUSINESS" | "PERSONAL",
+          frequency: String(row.frequency || "MONTHLY") as "MONTHLY" | "ONCE" | "ANNUAL",
           defaultAmount: row.defaultAmount
             ? new Decimal(Number(row.defaultAmount))
             : new Decimal(0),
-          status: String(row.status || "ACTIVE") as
-            | "ACTIVE"
-            | "INACTIVE"
-            | "ARCHIVED",
+          status: String(row.status || "ACTIVE") as "ACTIVE" | "INACTIVE" | "ARCHIVED",
           counterpartId: person?.counterpart?.id || null,
         };
 
@@ -530,12 +484,8 @@ csvUploadRoutes.post("/import", async (c) => {
         const workDate = new Date(dateStr);
 
         // Parse times if provided
-        const startTime = row.startTime
-          ? new Date(`1970-01-01T${row.startTime}`)
-          : null;
-        const endTime = row.endTime
-          ? new Date(`1970-01-01T${row.endTime}`)
-          : null;
+        const startTime = row.startTime ? new Date(`1970-01-01T${row.startTime}`) : null;
+        const endTime = row.endTime ? new Date(`1970-01-01T${row.endTime}`) : null;
 
         const timesheetData = {
           employeeId: person.employee.id,
@@ -584,7 +534,7 @@ csvUploadRoutes.post("/import", async (c) => {
     "updated:",
     updated,
     "skipped:",
-    skipped
+    skipped,
   );
   return reply(c, {
     status: "ok",

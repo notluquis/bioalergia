@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,7 @@ export function SmoothCollapse({ children, className, isOpen }: Readonly<SmoothC
       className={cn(
         "grid transition-[grid-template-rows] duration-300 ease-out",
         isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-        className
+        className,
       )}
     >
       <div className="min-w-0 overflow-hidden">{children}</div>

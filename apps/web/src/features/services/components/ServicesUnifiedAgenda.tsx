@@ -119,22 +119,30 @@ export default function ServicesUnifiedAgenda({
       <header className="surface-muted text-base-content/70 grid gap-4 p-4 text-sm sm:grid-cols-3">
         <div>
           <p className="text-base-content/50 text-xs tracking-wide uppercase">Pagos hoy</p>
-          <p className="text-base-content text-xl font-semibold">{currencyFormatter.format(totals.day)}</p>
+          <p className="text-base-content text-xl font-semibold">
+            {currencyFormatter.format(totals.day)}
+          </p>
         </div>
         <div>
           <p className="text-base-content/50 text-xs tracking-wide uppercase">Semana en curso</p>
-          <p className="text-base-content text-xl font-semibold">{currencyFormatter.format(totals.week)}</p>
+          <p className="text-base-content text-xl font-semibold">
+            {currencyFormatter.format(totals.week)}
+          </p>
         </div>
         <div>
           <p className="text-base-content/50 text-xs tracking-wide uppercase">Mes en curso</p>
-          <p className="text-base-content text-xl font-semibold">{currencyFormatter.format(totals.month)}</p>
+          <p className="text-base-content text-xl font-semibold">
+            {currencyFormatter.format(totals.month)}
+          </p>
         </div>
       </header>
 
       <div className="surface-recessed text-base-content/70 space-y-3 p-4 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-base-content/50 text-sm font-semibold tracking-wide uppercase">Agenda unificada</h2>
+            <h2 className="text-base-content/50 text-sm font-semibold tracking-wide uppercase">
+              Agenda unificada
+            </h2>
             <p className="text-base-content/40 text-xs">
               Visualiza todos los pagos programados por fecha de vencimiento.
             </p>
@@ -148,12 +156,17 @@ export default function ServicesUnifiedAgenda({
         </div>
         {error && <p className="text-error text-xs">{error}</p>}
         {groups.length === 0 && !loading && !error && (
-          <p className="text-base-content/40 text-xs">No hay cuotas programadas en el periodo consultado.</p>
+          <p className="text-base-content/40 text-xs">
+            No hay cuotas programadas en el periodo consultado.
+          </p>
         )}
         {loading && groups.length === 0 && (
           <div className="space-y-2">
             {skeletons.map((value) => (
-              <div className="border-base-300/60 bg-base-200/60 rounded-2xl border p-4 shadow-inner" key={value}>
+              <div
+                className="border-base-300/60 bg-base-200/60 rounded-2xl border p-4 shadow-inner"
+                key={value}
+              >
                 <div className="flex items-center justify-between">
                   <span className="skeleton-line w-24" />
                   <span className="skeleton-line w-16" />
@@ -170,7 +183,10 @@ export default function ServicesUnifiedAgenda({
           {groups.map((group) => {
             const isExpanded = expanded[group.dateKey] ?? false;
             return (
-              <article className="surface-muted hover:border-primary/35 transition hover:shadow-lg" key={group.dateKey}>
+              <article
+                className="surface-muted hover:border-primary/35 transition hover:shadow-lg"
+                key={group.dateKey}
+              >
                 <Button
                   className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left"
                   onClick={() => {
@@ -180,7 +196,9 @@ export default function ServicesUnifiedAgenda({
                   variant="secondary"
                 >
                   <div>
-                    <p className="text-base-content text-sm font-semibold capitalize">{group.label}</p>
+                    <p className="text-base-content text-sm font-semibold capitalize">
+                      {group.label}
+                    </p>
                     <p className="text-base-content/40 text-xs">
                       {group.entries.length} {group.entries.length === 1 ? "servicio" : "servicios"}
                     </p>
@@ -211,8 +229,12 @@ export default function ServicesUnifiedAgenda({
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                              <p className="text-base-content text-sm font-semibold">{service.name}</p>
-                              {service.detail && <p className="text-base-content/40 text-xs">{service.detail}</p>}
+                              <p className="text-base-content text-sm font-semibold">
+                                {service.name}
+                              </p>
+                              {service.detail && (
+                                <p className="text-base-content/40 text-xs">{service.detail}</p>
+                              )}
                               <p className="text-base-content/40 mt-1 text-xs">
                                 {currencyFormatter.format(schedule.expected_amount)} · Vence el{" "}
                                 {dateFormatter.format(dueDate.toDate())}
@@ -223,7 +245,9 @@ export default function ServicesUnifiedAgenda({
                                 statusClasses[schedule.status]
                               }`}
                             >
-                              {schedule.status === "PENDING" && isOverdue ? "Pendiente · Vencido" : schedule.status}
+                              {schedule.status === "PENDING" && isOverdue
+                                ? "Pendiente · Vencido"
+                                : schedule.status}
                             </span>
                           </div>
                           {canManage && (

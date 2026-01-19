@@ -5,7 +5,11 @@ import Button from "@/components/ui/Button";
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
 
-import type { LeaderboardDisplayRow, ParticipantCounterpartRow, ParticipantMonthlyRow } from "../types";
+import type {
+  LeaderboardDisplayRow,
+  ParticipantCounterpartRow,
+  ParticipantMonthlyRow,
+} from "../types";
 
 // --- Leaderboard Columns ---
 
@@ -92,7 +96,9 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
 
       return (
         <div>
-          <div className="text-sm font-medium">{bankAccountHolder || counterpart || "(desconocido)"}</div>
+          <div className="text-sm font-medium">
+            {bankAccountHolder || counterpart || "(desconocido)"}
+          </div>
           <div className="text-base-content/60 mt-0.5 text-xs">{formattedRut || "-"}</div>
         </div>
       );
@@ -116,7 +122,9 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
       const bankParts: string[] = [];
       if (bankName) bankParts.push(bankName);
       if (bankAccountNumber) {
-        const accountLabel = bankAccountType ? `${bankAccountType} · ${bankAccountNumber}` : bankAccountNumber;
+        const accountLabel = bankAccountType
+          ? `${bankAccountType} · ${bankAccountNumber}`
+          : bankAccountNumber;
         bankParts.push(accountLabel);
       }
       if (bankBranch) bankParts.push(bankBranch);

@@ -1,18 +1,15 @@
 import { getRetentionRateForYear } from "@shared/retention";
 import { useMutation } from "@tanstack/react-query";
-import React, { useEffect, useState } from "react";
-
-import type { EmployeeSalaryType } from "@/types/schema";
-
+import type React from "react";
+import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { formatRut, normalizeRut, validateRut } from "@/lib/rut";
-
-import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "../types";
-
+import type { EmployeeSalaryType } from "@/types/schema";
 import { createEmployee, updateEmployee } from "../api";
+import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "../types";
 
 interface EmployeeFormProps {
   employee?: Employee | null;
@@ -65,7 +62,8 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
 
       // If employee rate equals current year rate, show empty (auto mode)
       // Otherwise show the custom rate
-      const rateToShow = Math.abs(employeeRate - currentYearRate) < 0.0001 ? "" : String(employeeRate * 100);
+      const rateToShow =
+        Math.abs(employeeRate - currentYearRate) < 0.0001 ? "" : String(employeeRate * 100);
 
       setForm({
         bankAccountNumber: employee.bankAccountNumber ?? "",
@@ -123,7 +121,10 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
 
     if (Array.isArray(details)) {
       const issues = details
-        .map((i: { message: string; path: (number | string)[] }) => `${i.path.join(".")}: ${i.message}`)
+        .map(
+          (i: { message: string; path: (number | string)[] }) =>
+            `${i.path.join(".")}: ${i.message}`,
+        )
         .join("\n");
       message = `Datos inválidos:\n${issues}`;
     }
@@ -145,7 +146,8 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
 
   // Mutation for updating employee
   const updateMutation = useMutation({
-    mutationFn: (data: { id: number; payload: EmployeeUpdatePayload }) => updateEmployee(data.id, data.payload),
+    mutationFn: (data: { id: number; payload: EmployeeUpdatePayload }) =>
+      updateEmployee(data.id, data.payload),
     onError: (err) => {
       handleMutationError(err);
     },
@@ -173,9 +175,11 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
       bank_account_type: form.bankAccountType.trim() || null,
       bank_name: form.bankName.trim() || null,
       email: form.email.trim() || null,
-      fixed_salary: form.salaryType === "FIXED" && form.fixedSalary ? Number(form.fixedSalary) : undefined,
+      fixed_salary:
+        form.salaryType === "FIXED" && form.fixedSalary ? Number(form.fixedSalary) : undefined,
       full_name: form.fullName.trim(),
-      hourly_rate: form.salaryType === "HOURLY" && form.hourlyRate ? Number(form.hourlyRate) : undefined,
+      hourly_rate:
+        form.salaryType === "HOURLY" && form.hourlyRate ? Number(form.hourlyRate) : undefined,
       overtime_rate: form.overtimeRate ? Number(form.overtimeRate) : null,
       // Convert percentage (e.g., 14.5) to decimal (0.145)
       // If empty/blank, use current year's default rate (auto mode)
@@ -349,7 +353,10 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
 
 // CLP currency formatting helpers
 function formatCLP(value: number | string): string {
-  const num = typeof value === "string" ? Number.parseFloat(value.replaceAll(".", "").replaceAll(",", "")) : value;
+  const num =
+    typeof value === "string"
+      ? Number.parseFloat(value.replaceAll(".", "").replaceAll(",", ""))
+      : value;
   if (Number.isNaN(num) || num === 0) return "";
   return num.toLocaleString("es-CL");
 }

@@ -150,11 +150,7 @@ const CONSULTA_PATTERNS = [
  * - retira roxair: "RETIRA ROXAIR (pagado): Alondra valenzuela"
  * - enviar roxair: "enviar roxair a Santino (pagado)"
  */
-const ROXAIR_PATTERNS = [
-  /\broxair\b/i,
-  /\bretira\s+roxair\b/i,
-  /\benviar\s+roxair\b/i,
-];
+const ROXAIR_PATTERNS = [/\broxair\b/i, /\bretira\s+roxair\b/i, /\benviar\s+roxair\b/i];
 
 /** Patterns for "Servicio de inyección" (Patient brings med or specific injection service) */
 const INJECTION_PATTERNS = [
@@ -281,9 +277,7 @@ export function isIgnoredEvent(summary: string | null | undefined): boolean {
 }
 
 /** Normalize event date to ISO string */
-export function normalizeEventDate(
-  value: string | null | undefined
-): string | null {
+export function normalizeEventDate(value: string | null | undefined): string | null {
   if (!value) return null;
   try {
     return dayjs(value).toISOString();
@@ -424,17 +418,13 @@ function extractAmounts(summary: string, description: string) {
 function refineAmounts(
   amounts: { amountExpected: number | null; amountPaid: number | null },
   summary: string,
-  description: string
+  description: string,
 ) {
   const text = `${summary} ${description}`;
   const isConfirmed = matchesAny(text, MONEY_CONFIRMED_PATTERNS);
 
   // If confirmed (llegó, envio, etc.) and only expected is set, assume paid
-  if (
-    isConfirmed &&
-    amounts.amountExpected != null &&
-    amounts.amountPaid == null
-  ) {
+  if (isConfirmed && amounts.amountExpected != null && amounts.amountPaid == null) {
     return { ...amounts, amountPaid: amounts.amountExpected };
   }
 
@@ -483,10 +473,7 @@ function classifyCategory(summary: string, description: string): string | null {
 // ATTENDANCE, DOSAGE, TREATMENT STAGE
 // ============================================================================
 
-function detectAttendance(
-  summary: string,
-  description: string
-): boolean | null {
+function detectAttendance(summary: string, description: string): boolean | null {
   const text = `${summary} ${description}`;
   return matchesAny(text, ATTENDED_PATTERNS) ? true : null;
 }
@@ -534,10 +521,7 @@ function extractDosage(summary: string, description: string): string | null {
   return null;
 }
 
-function detectTreatmentStage(
-  summary: string,
-  description: string
-): string | null {
+function detectTreatmentStage(summary: string, description: string): string | null {
   const text = `${summary} ${description}`;
 
   // Induction takes priority (e.g. "2da dosis clustoid" is Induction, even if "dosis clustoid" looks like maintenance)
@@ -546,10 +530,7 @@ function detectTreatmentStage(
   }
 
   // Maintenance keywords or 0.5 (with or without ml) = Mantención
-  if (
-    matchesAny(text, MAINTENANCE_PATTERNS) ||
-    /0[.,]5(\s*ml)?\b/i.test(text)
-  ) {
+  if (matchesAny(text, MAINTENANCE_PATTERNS) || /0[.,]5(\s*ml)?\b/i.test(text)) {
     return "Mantención";
   }
 

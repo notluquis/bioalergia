@@ -51,7 +51,10 @@ export function toNumber(value?: string): number | undefined {
     const lastDot = cleaned.lastIndexOf(".");
     const lastComma = cleaned.lastIndexOf(",");
     // Si la coma está después del último punto, es el separador decimal.
-    normalized = lastComma > lastDot ? cleaned.replaceAll(".", "").replace(",", ".") : cleaned.replaceAll(",", "");
+    normalized =
+      lastComma > lastDot
+        ? cleaned.replaceAll(".", "").replace(",", ".")
+        : cleaned.replaceAll(",", "");
   } else {
     normalized = cleaned.replaceAll(",", ".");
   }

@@ -9,7 +9,9 @@ export default function RecentMovementsWidget({ rows }: { rows: Transaction[] })
   return (
     <article className="surface-recessed space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-base-content text-base font-semibold drop-shadow-sm">Últimos movimientos</h3>
+        <h3 className="text-base-content text-base font-semibold drop-shadow-sm">
+          Últimos movimientos
+        </h3>
         <Link
           className="border-primary/45 bg-primary/15 text-primary inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide uppercase"
           to="/finanzas/statistics"

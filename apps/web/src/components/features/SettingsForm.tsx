@@ -1,9 +1,14 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import React, { Suspense, useEffect, useRef, useState } from "react";
+import type React from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { type AppSettings, useSettings } from "@/context/SettingsContext";
-import { fetchInternalSettings, updateInternalSettings, uploadBrandingAsset } from "@/features/settings/api";
+import {
+  fetchInternalSettings,
+  updateInternalSettings,
+  uploadBrandingAsset,
+} from "@/features/settings/api";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import Alert from "../ui/Alert";
@@ -23,7 +28,11 @@ const determineFaviconMode = determineAssetMode;
 const fields: { helper?: string; key: keyof AppSettings; label: string; type?: string }[] = [
   { key: "orgName", label: "Nombre de la organización" },
   { helper: "Texto corto que se muestra en el panel", key: "tagline", label: "Eslogan" },
-  { helper: "Texto que se mostrará en la pestaña del navegador", key: "pageTitle", label: "Título de la página" },
+  {
+    helper: "Texto que se mostrará en la pestaña del navegador",
+    key: "pageTitle",
+    label: "Título de la página",
+  },
   { key: "primaryColor", label: "Color primario", type: "color" },
   { key: "secondaryColor", label: "Color secundario", type: "color" },
   { key: "supportEmail", label: "Correo de soporte" },
@@ -44,7 +53,9 @@ export default function SettingsForm() {
   const [logoPreview, setLogoPreview] = useState<null | string>(null);
   const logoPreviewRef = useRef<null | string>(null);
 
-  const [faviconMode, setFaviconMode] = useState<"upload" | "url">(determineFaviconMode(settings.faviconUrl));
+  const [faviconMode, setFaviconMode] = useState<"upload" | "url">(
+    determineFaviconMode(settings.faviconUrl),
+  );
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [faviconPreview, setFaviconPreview] = useState<null | string>(null);
   const faviconPreviewRef = useRef<null | string>(null);
@@ -105,7 +116,8 @@ export default function SettingsForm() {
 
   // Mutations
   const uploadMutation = useMutation({
-    mutationFn: (args: { endpoint: string; file: File }) => uploadBrandingAsset(args.file, args.endpoint),
+    mutationFn: (args: { endpoint: string; file: File }) =>
+      uploadBrandingAsset(args.file, args.endpoint),
   });
 
   const handleChange = (key: keyof AppSettings, value: string) => {
@@ -165,13 +177,19 @@ export default function SettingsForm() {
 
       if (logoMode === "upload") {
         if (!logoFile) throw new Error("Selecciona un archivo de logo antes de guardar");
-        const url = await uploadMutation.mutateAsync({ endpoint: "/api/settings/logo/upload", file: logoFile });
+        const url = await uploadMutation.mutateAsync({
+          endpoint: "/api/settings/logo/upload",
+          file: logoFile,
+        });
         payload.logoUrl = url;
       }
 
       if (faviconMode === "upload") {
         if (!faviconFile) throw new Error("Selecciona un archivo de favicon antes de guardar");
-        const url = await uploadMutation.mutateAsync({ endpoint: "/api/settings/favicon/upload", file: faviconFile });
+        const url = await uploadMutation.mutateAsync({
+          endpoint: "/api/settings/favicon/upload",
+          file: faviconFile,
+        });
         payload.faviconUrl = url;
       }
 
@@ -192,12 +210,16 @@ export default function SettingsForm() {
     <form className="bg-base-100 space-y-6 p-6" onSubmit={handleSubmit}>
       <div className="space-y-1">
         <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Configuración General</h2>
-        <p className="text-base-content/70 text-sm">Personaliza la identidad visual y la información de contacto.</p>
+        <p className="text-base-content/70 text-sm">
+          Personaliza la identidad visual y la información de contacto.
+        </p>
       </div>
       <div className={GRID_2_COL_MD}>
         {fields.map(({ helper, key, label, type }) => (
           <label className="text-base-content flex flex-col gap-2 text-sm" key={key}>
-            <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">{label}</span>
+            <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
+              {label}
+            </span>
             {type === "color" ? (
               <Input
                 className="h-12 w-20 cursor-pointer px-0"
@@ -211,42 +233,40 @@ export default function SettingsForm() {
                 value={form[key]}
               />
             ) : (
-              <>
-                {(() => {
-                  const isEmail = key === "supportEmail";
-                  const isPhone = key === "orgPhone";
-                  const isName = key === "orgName";
+              (() => {
+                const isEmail = key === "supportEmail";
+                const isPhone = key === "orgPhone";
+                const isName = key === "orgName";
 
-                  const inputMode = (() => {
-                    if (isEmail) return "email";
-                    if (isPhone) return "tel";
-                    return "text";
-                  })();
-                  const autoComplete = (() => {
-                    if (isEmail) return "email";
-                    if (isPhone) return "tel";
-                    if (isName) return "name";
-                    return "off";
-                  })();
+                const inputMode = (() => {
+                  if (isEmail) return "email";
+                  if (isPhone) return "tel";
+                  return "text";
+                })();
+                const autoComplete = (() => {
+                  if (isEmail) return "email";
+                  if (isPhone) return "tel";
+                  if (isName) return "name";
+                  return "off";
+                })();
 
-                  return (
-                    <Input
-                      autoComplete={autoComplete}
-                      helper={helper}
-                      id={key}
-                      inputMode={inputMode}
-                      label={label}
-                      onChange={(event) => {
-                        handleChange(key, event.target.value);
-                      }}
-                      placeholder={label}
-                      type={isEmail ? "email" : "text"}
-                      // eslint-disable-next-line security/detect-object-injection
-                      value={form[key]}
-                    />
-                  );
-                })()}
-              </>
+                return (
+                  <Input
+                    autoComplete={autoComplete}
+                    helper={helper}
+                    id={key}
+                    inputMode={inputMode}
+                    label={label}
+                    onChange={(event) => {
+                      handleChange(key, event.target.value);
+                    }}
+                    placeholder={label}
+                    type={isEmail ? "email" : "text"}
+                    // eslint-disable-next-line security/detect-object-injection
+                    value={form[key]}
+                  />
+                );
+              })()
             )}
           </label>
         ))}
@@ -300,13 +320,22 @@ export default function SettingsForm() {
                   ref={logoInputRef}
                   type="file"
                 />
-                <Button onClick={() => logoInputRef.current?.click()} size="sm" type="button" variant="secondary">
+                <Button
+                  onClick={() => logoInputRef.current?.click()}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                >
                   Seleccionar archivo
                 </Button>
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="border-base-300 bg-base-100 flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border p-2">
-                  <img alt="Vista previa del logo" className="brand-logo--settings" src={displayedLogo} />
+                  <img
+                    alt="Vista previa del logo"
+                    className="brand-logo--settings"
+                    src={displayedLogo}
+                  />
                 </div>
                 <div className="text-base-content/70 text-xs">
                   <p>{logoPreview ? "Vista previa sin guardar" : "Logo actual"}</p>
@@ -370,13 +399,22 @@ export default function SettingsForm() {
                   ref={faviconInputRef}
                   type="file"
                 />
-                <Button onClick={() => faviconInputRef.current?.click()} size="sm" type="button" variant="secondary">
+                <Button
+                  onClick={() => faviconInputRef.current?.click()}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                >
                   Seleccionar archivo
                 </Button>
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="border-base-300 bg-base-100 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border p-2">
-                  <img alt="Vista previa del favicon" className="h-full w-full object-contain" src={displayedFavicon} />
+                  <img
+                    alt="Vista previa del favicon"
+                    className="h-full w-full object-contain"
+                    src={displayedFavicon}
+                  />
                 </div>
                 <div className="text-base-content/70 text-xs">
                   <p>{faviconPreview ? "Vista previa sin guardar" : "Favicon actual"}</p>
@@ -384,8 +422,8 @@ export default function SettingsForm() {
                 </div>
               </div>
               <span className="text-base-content/60 text-xs">
-                Usa imágenes cuadradas (ideal 512&nbsp;px) con fondo transparente cuando sea posible. Tamaño máximo
-                12&nbsp;MB.
+                Usa imágenes cuadradas (ideal 512&nbsp;px) con fondo transparente cuando sea
+                posible. Tamaño máximo 12&nbsp;MB.
               </span>
             </div>
           )}
@@ -482,7 +520,8 @@ function InternalSettingsSection() {
           <Button
             disabled={internalMutation.isPending}
             onClick={() => {
-              const body = upsertChunkSize === "" ? {} : { upsertChunkSize: Number(upsertChunkSize) };
+              const body =
+                upsertChunkSize === "" ? {} : { upsertChunkSize: Number(upsertChunkSize) };
               internalMutation.mutate(body);
             }}
             type="button"

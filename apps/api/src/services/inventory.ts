@@ -17,7 +17,7 @@ export async function deleteInventoryCategory(id: number) {
   const count = await db.inventoryItem.count({ where: { categoryId: id } });
   if (count > 0) {
     throw new Error(
-      "Cannot delete category with associated items. Please move or delete items first."
+      "Cannot delete category with associated items. Please move or delete items first.",
     );
   }
   await db.inventoryCategory.delete({
@@ -57,7 +57,7 @@ export async function updateInventoryItem(
     description?: string | null;
     currentStock?: number;
     categoryId?: number | null;
-  }
+  },
 ) {
   return await db.inventoryItem.update({
     where: { id },

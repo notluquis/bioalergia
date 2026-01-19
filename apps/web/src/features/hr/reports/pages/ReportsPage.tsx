@@ -1,11 +1,19 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import { BarChart2, BarChart3, Calendar, Check, Clock, Filter, List, Search, TrendingUp, X } from "lucide-react";
+import {
+  BarChart2,
+  BarChart3,
+  Calendar,
+  Check,
+  Clock,
+  Filter,
+  List,
+  Search,
+  TrendingUp,
+  X,
+} from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
-
-import type { Employee } from "@/features/hr/employees/types";
-
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -13,22 +21,23 @@ import Input from "@/components/ui/Input";
 import StatCard from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
+import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import { LOADING_SPINNER_SM, PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-
-import type { EmployeeWorkData, ReportGranularity } from "../types";
-
 import { fetchGlobalTimesheetRange } from "../api";
-import { getHRReportsColumns, HRReportsTableMeta } from "../components/HRReportsColumns";
+import { getHRReportsColumns, type HRReportsTableMeta } from "../components/HRReportsColumns";
+import type { EmployeeWorkData, ReportGranularity } from "../types";
 import { calculateStats, prepareComparisonData } from "../utils";
 
 import "dayjs/locale/es";
 
 // Lazy-load chart components (Recharts ~400KB)
-const TemporalChart = lazy(() => import("../components/ReportCharts").then((m) => ({ default: m.TemporalChart })));
+const TemporalChart = lazy(() =>
+  import("../components/ReportCharts").then((m) => ({ default: m.TemporalChart })),
+);
 const DistributionChart = lazy(() =>
-  import("../components/ReportCharts").then((m) => ({ default: m.DistributionChart }))
+  import("../components/ReportCharts").then((m) => ({ default: m.DistributionChart })),
 );
 
 dayjs.extend(isoWeek);
@@ -52,7 +61,9 @@ export default function ReportsPage() {
 
   // Selection state
   const [viewMode, setViewMode] = useState<ViewMode>("month");
-  const [startDate, setStartDate] = useState<string>(() => dayjs().startOf("month").format(DATE_FORMAT));
+  const [startDate, setStartDate] = useState<string>(() =>
+    dayjs().startOf("month").format(DATE_FORMAT),
+  );
   const [endDate, setEndDate] = useState<string>(() => dayjs().endOf("month").format(DATE_FORMAT));
   const [granularity, setGranularity] = useState<ReportGranularity>("month");
   const granularityLabel = { day: "día", month: "mes", week: "sem" }[granularity];
@@ -87,7 +98,9 @@ export default function ReportsPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const activeEmployees = employees.filter((emp) => emp.status === "ACTIVE" && emp.salaryType !== "FIXED");
+  const activeEmployees = employees.filter(
+    (emp) => emp.status === "ACTIVE" && emp.salaryType !== "FIXED",
+  );
 
   const filteredEmployees = (() => {
     if (!employeeSearch.trim()) return activeEmployees;
@@ -129,7 +142,11 @@ export default function ReportsPage() {
     enabled: isQueryEnabled,
     queryFn: async () => {
       const entries = await fetchGlobalTimesheetRange(dateParams!.start, dateParams!.end);
-      return processRawEntries(entries as unknown as RawTimesheetEntry[], selectedEmployeeIds, employees);
+      return processRawEntries(
+        entries as unknown as RawTimesheetEntry[],
+        selectedEmployeeIds,
+        employees,
+      );
     },
     queryKey: ["reports-data", dateParams, selectedEmployeeIds, timestamp, employees],
   });
@@ -203,7 +220,7 @@ export default function ReportsPage() {
               <button
                 className={cn(
                   "tab transition-all duration-200",
-                  viewMode === "month" && "tab-active bg-base-100 shadow-sm"
+                  viewMode === "month" && "tab-active bg-base-100 shadow-sm",
                 )}
                 onClick={() => {
                   setViewMode("month");
@@ -216,7 +233,7 @@ export default function ReportsPage() {
               <button
                 className={cn(
                   "tab transition-all duration-200",
-                  viewMode === "range" && "tab-active bg-base-100 shadow-sm"
+                  viewMode === "range" && "tab-active bg-base-100 shadow-sm",
                 )}
                 onClick={() => {
                   setViewMode("range");
@@ -229,7 +246,7 @@ export default function ReportsPage() {
               <button
                 className={cn(
                   "tab transition-all duration-200",
-                  viewMode === "all" && "tab-active bg-base-100 shadow-sm"
+                  viewMode === "all" && "tab-active bg-base-100 shadow-sm",
                 )}
                 onClick={() => {
                   setViewMode("all");
@@ -258,7 +275,8 @@ export default function ReportsPage() {
                   >
                     {months.map((month) => (
                       <option key={month} value={month}>
-                        {dayjs(`${month}-01`).format("MMMM YYYY")} {monthsWithData.has(month) ? "✓" : ""}
+                        {dayjs(`${month}-01`).format("MMMM YYYY")}{" "}
+                        {monthsWithData.has(month) ? "✓" : ""}
                       </option>
                     ))}
                   </select>
@@ -329,8 +347,13 @@ export default function ReportsPage() {
             {/* Employee Selector */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Empleados ({selectedEmployeeIds.length})</label>
-                <button className="link link-primary text-xs no-underline hover:underline" onClick={handleSelectAll}>
+                <label className="text-sm font-medium">
+                  Empleados ({selectedEmployeeIds.length})
+                </label>
+                <button
+                  className="link link-primary text-xs no-underline hover:underline"
+                  onClick={handleSelectAll}
+                >
                   {selectedEmployeeIds.length === filteredEmployees.length ? "Ninguno" : "Todos"}
                 </button>
               </div>
@@ -343,7 +366,9 @@ export default function ReportsPage() {
                     if (!emp) return null;
                     return (
                       <div className="badge badge-primary badge-sm gap-1 py-3 text-xs" key={id}>
-                        <span className="max-w-25 truncate">{emp.person?.names.split(" ")[0] ?? emp.full_name}</span>
+                        <span className="max-w-25 truncate">
+                          {emp.person?.names.split(" ")[0] ?? emp.full_name}
+                        </span>
                         <button
                           className="hover:text-white/80"
                           onClick={() => {
@@ -414,7 +439,7 @@ export default function ReportsPage() {
                                 "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors",
                                 isSelected
                                   ? "bg-primary/10 text-primary font-medium"
-                                  : "hover:bg-base-200 text-base-content"
+                                  : "hover:bg-base-200 text-base-content",
                               )}
                               key={emp.id}
                               onClick={() => {
@@ -428,7 +453,9 @@ export default function ReportsPage() {
                           );
                         })}
                         {filteredEmployees.length === 0 && (
-                          <div className="text-base-content/50 p-4 text-center text-sm">No hay resultados</div>
+                          <div className="text-base-content/50 p-4 text-center text-sm">
+                            No hay resultados
+                          </div>
                         )}
                       </div>
                     </div>
@@ -470,15 +497,20 @@ export default function ReportsPage() {
               </div>
               <h3 className="text-base-content text-xl font-bold">Sin datos para mostrar</h3>
               <p className="text-base-content/60 mt-2 max-w-sm">
-                Selecciona el periodo y los empleados que deseas analizar para generar gráficas y estadísticas
-                detalladas.
+                Selecciona el periodo y los empleados que deseas analizar para generar gráficas y
+                estadísticas detalladas.
               </p>
             </div>
           ) : (
             <>
               {/* KPI Grid */}
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <StatCard className="text-primary" icon={Clock} title="TOTAL HORAS" value={stats?.totalHours ?? 0} />
+                <StatCard
+                  className="text-primary"
+                  icon={Clock}
+                  title="TOTAL HORAS"
+                  value={stats?.totalHours ?? 0}
+                />
                 <StatCard
                   className="text-secondary"
                   icon={BarChart3}
@@ -501,7 +533,10 @@ export default function ReportsPage() {
                   title="PROM. DIARIO"
                   value={(() => {
                     if (reportData.length === 0) return 0;
-                    const avg = reportData.reduce((acc, e) => acc + e.avgDailyMinutes, 0) / reportData.length / 60;
+                    const avg =
+                      reportData.reduce((acc, e) => acc + e.avgDailyMinutes, 0) /
+                      reportData.length /
+                      60;
                     return Number.parseFloat(avg.toFixed(1));
                   })()}
                 />
@@ -515,7 +550,11 @@ export default function ReportsPage() {
                   </div>
                 }
               >
-                <TemporalChart chartData={chartData} granularity={granularity} reportData={reportData} />
+                <TemporalChart
+                  chartData={chartData}
+                  granularity={granularity}
+                  reportData={reportData}
+                />
               </Suspense>
 
               {/* Secondary Details Grid */}
@@ -535,7 +574,7 @@ export default function ReportsPage() {
                 <div
                   className={cn(
                     "bg-base-100 border-base-200 flex flex-col rounded-3xl border p-6 shadow-sm",
-                    reportData.length <= 1 && "lg:col-span-2"
+                    reportData.length <= 1 && "lg:col-span-2",
                   )}
                 >
                   <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
@@ -566,7 +605,7 @@ export default function ReportsPage() {
 function processRawEntries(
   entries: RawTimesheetEntry[],
   employeeIds: number[],
-  employees: Employee[]
+  employees: Employee[],
 ): EmployeeWorkData[] {
   const map = new Map<number, EmployeeWorkData>();
 
@@ -619,7 +658,9 @@ function processRawEntries(
     data.totalDays = uniqueDays;
     data.avgDailyMinutes = uniqueDays > 0 ? Math.round(data.totalMinutes / uniqueDays) : 0;
     data.overtimePercentage =
-      data.totalMinutes > 0 ? Number.parseFloat(((data.totalOvertimeMinutes / data.totalMinutes) * 100).toFixed(1)) : 0;
+      data.totalMinutes > 0
+        ? Number.parseFloat(((data.totalOvertimeMinutes / data.totalMinutes) * 100).toFixed(1))
+        : 0;
   }
 
   return [...map.values()];

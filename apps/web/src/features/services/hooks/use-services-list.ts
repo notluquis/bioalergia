@@ -2,12 +2,10 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 
 import { useAuth } from "@/context/AuthContext";
-
-import type { SummaryTotals } from "../types";
-
 import { extractErrorMessage } from "../api";
 import { serviceQueries } from "../queries";
 import { servicesActions, servicesStore } from "../store";
+import type { SummaryTotals } from "../types";
 
 export function useServicesList() {
   const { can } = useAuth();
@@ -49,11 +47,12 @@ export function useServicesList() {
         if (service.status === "ACTIVE") acc.activeCount += 1;
         return acc;
       },
-      { activeCount: 0, overdueCount: 0, pendingCount: 0, totalExpected: 0, totalPaid: 0 }
+      { activeCount: 0, overdueCount: 0, pendingCount: 0, totalExpected: 0, totalPaid: 0 },
     );
   })();
 
-  const collectionRate = summaryTotals.totalExpected > 0 ? summaryTotals.totalPaid / summaryTotals.totalExpected : 0;
+  const collectionRate =
+    summaryTotals.totalExpected > 0 ? summaryTotals.totalPaid / summaryTotals.totalExpected : 0;
 
   return {
     canView,

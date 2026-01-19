@@ -77,7 +77,15 @@ export type ServiceFrequency =
 
 export type ServiceStatus = "ACTIVE" | "ARCHIVED" | "INACTIVE";
 
-export type ServiceType = "BUSINESS" | "LEASE" | "OTHER" | "PERSONAL" | "SOFTWARE" | "SUPPLIER" | "TAX" | "UTILITY";
+export type ServiceType =
+  | "BUSINESS"
+  | "LEASE"
+  | "OTHER"
+  | "PERSONAL"
+  | "SOFTWARE"
+  | "SUPPLIER"
+  | "TAX"
+  | "UTILITY";
 
 export type TransactionDirection = "IN" | "NEUTRO" | "OUT";
 

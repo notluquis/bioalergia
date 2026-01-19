@@ -55,7 +55,8 @@ export function MultiSelectFilter({
   const { displayText, fullText } = getDisplayText();
 
   const labelClasses = "label pt-0 pb-2";
-  const labelTextClasses = "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";
+  const labelTextClasses =
+    "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";
 
   return (
     <div className="form-control w-full">
@@ -75,7 +76,10 @@ export function MultiSelectFilter({
           </button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="start" className="w-[--radix-dropdown-menu-trigger-width] min-w-50">
+        <DropdownMenuContent
+          align="start"
+          className="w-[--radix-dropdown-menu-trigger-width] min-w-50"
+        >
           <div className="max-h-60 overflow-y-auto p-1">
             {options.length === 0 ? (
               <div className="text-base-content/50 px-2 py-2 text-xs">Sin datos disponibles</div>

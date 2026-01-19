@@ -19,15 +19,13 @@ import {
   Upload,
 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
-
-import type { BackupFile, BackupJob, RestoreJob } from "@/features/backup/types";
-
 import GoogleDriveConnect from "@/components/backup/GoogleDriveConnect";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { triggerBackup, triggerRestore } from "@/features/backup/api";
 import { backupKeys } from "@/features/backup/queries";
+import type { BackupFile, BackupJob, RestoreJob } from "@/features/backup/types";
 import { formatFileSize } from "@/lib/format";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
@@ -48,7 +46,10 @@ export default function BackupSettingsPage() {
   const canCreate = can("create", "Backup");
 
   // SSE state for live progress only
-  const [liveJobs, setLiveJobs] = useState<{ backup: BackupJob | null; restore: null | RestoreJob }>({
+  const [liveJobs, setLiveJobs] = useState<{
+    backup: BackupJob | null;
+    restore: null | RestoreJob;
+  }>({
     backup: null,
     restore: null,
   });
@@ -137,7 +138,9 @@ export default function BackupSettingsPage() {
 
   const renderBackupListContent = () => {
     if (fullBackups.length === 0) {
-      return <div className="text-base-content/60 py-12 text-center">No hay backups disponibles</div>;
+      return (
+        <div className="text-base-content/60 py-12 text-center">No hay backups disponibles</div>
+      );
     }
 
     return (
@@ -162,7 +165,9 @@ export default function BackupSettingsPage() {
             <div className="flex items-center gap-3">
               <Loader2 className="text-primary size-5 animate-spin" />
               <span className="font-medium">
-                {currentBackup?.status === "running" ? "Backup en progreso" : "Restauración en progreso"}
+                {currentBackup?.status === "running"
+                  ? "Backup en progreso"
+                  : "Restauración en progreso"}
               </span>
             </div>
             <span className="text-base-content/60 font-mono text-sm">
@@ -239,7 +244,11 @@ export default function BackupSettingsPage() {
                 variant="primary"
               >
                 {!backupMutation.isPending &&
-                  (canCreate ? <Upload className="mr-1.5 size-4" /> : <Lock className="mr-1.5 size-4" />)}
+                  (canCreate ? (
+                    <Upload className="mr-1.5 size-4" />
+                  ) : (
+                    <Lock className="mr-1.5 size-4" />
+                  ))}
                 Crear Backup
               </Button>
             </div>
@@ -273,7 +282,9 @@ export default function BackupSettingsPage() {
                     </div>
                     <div>
                       <p className="font-medium">{backup.name}</p>
-                      <p className="text-base-content/60 text-xs">{dayjs(backup.createdTime).format("DD MMM HH:mm")}</p>
+                      <p className="text-base-content/60 text-xs">
+                        {dayjs(backup.createdTime).format("DD MMM HH:mm")}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -295,7 +306,9 @@ export default function BackupSettingsPage() {
               ))}
             </div>
           ) : (
-            <div className="text-base-content/60 py-12 text-center text-sm">No hay exports incrementales</div>
+            <div className="text-base-content/60 py-12 text-center text-sm">
+              No hay exports incrementales
+            </div>
           )}
         </div>
       </div>
@@ -312,7 +325,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
   const [isExpanded, setIsExpanded] = useState(false);
   const canRestore = can("update", "Backup");
 
-  const restoreMutation = useMutation<{ job: RestoreJob }, Error, string[] | void>({
+  const restoreMutation = useMutation<{ job: RestoreJob }, Error, string[] | undefined>({
     mutationFn: (tables) => triggerRestore(backup.id, tables ?? undefined),
     onError: (e) => {
       showError(e.message);
@@ -345,7 +358,8 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
               <p className="font-medium">{backup.name}</p>
             </div>
             <p className="text-base-content/60 text-sm">
-              {dayjs(backup.createdTime).format("DD MMM YYYY, HH:mm")} • {formatFileSize(Number(backup.size))}
+              {dayjs(backup.createdTime).format("DD MMM YYYY, HH:mm")} •{" "}
+              {formatFileSize(Number(backup.size))}
             </p>
           </div>
         </div>
@@ -371,7 +385,8 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
           <div className="bg-warning/10 text-warning mb-4 flex items-start gap-2 rounded-lg p-3 text-sm">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <span>
-              La restauración sobrescribirá datos existentes. Puedes restaurar todo o seleccionar tablas específicas.
+              La restauración sobrescribirá datos existentes. Puedes restaurar todo o seleccionar
+              tablas específicas.
             </span>
           </div>
 
@@ -390,7 +405,9 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
                 (canRestore ? <RotateCcw className="size-4" /> : <Lock className="size-4" />)}
               Restaurar Todo
             </Button>
-            <span className="text-base-content/60 self-center text-sm">o selecciona tablas específicas abajo</span>
+            <span className="text-base-content/60 self-center text-sm">
+              o selecciona tablas específicas abajo
+            </span>
           </div>
 
           <div className="bg-base-200/50 rounded-lg p-4">
@@ -433,7 +450,9 @@ function BackupTablesList({
   const { data: tables } = useSuspenseQuery(backupKeys.tables(backupId));
 
   const toggleTable = (table: string) => {
-    setSelectedTables((prev) => (prev.includes(table) ? prev.filter((t) => t !== table) : [...prev, table]));
+    setSelectedTables((prev) =>
+      prev.includes(table) ? prev.filter((t) => t !== table) : [...prev, table],
+    );
   };
 
   const selectAll = () => {
@@ -450,14 +469,16 @@ function BackupTablesList({
       </div>
 
       <div className="mb-3">
-        {tables.length === 0 && <p className="text-base-content/60 text-sm">No hay tablas en este backup.</p>}
+        {tables.length === 0 && (
+          <p className="text-base-content/60 text-sm">No hay tablas en este backup.</p>
+        )}
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
           {tables.map((table) => (
             <label
               className={cn(
                 "border-base-content/10 hover:bg-base-content/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
-                selectedTables.includes(table) ? "border-primary bg-primary/5" : ""
+                selectedTables.includes(table) ? "border-primary bg-primary/5" : "",
               )}
               key={table}
             >

@@ -6,11 +6,20 @@ import { useEffect, useRef, useState } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { calendarFilterStore, updateFilters } from "@/store/calendarFilters";
-
-import type { CalendarDaily, CalendarFilters, CalendarSummary, CalendarSyncLog, CalendarSyncStep } from "../types";
-
-import { fetchCalendarDaily, fetchCalendarSummary, fetchCalendarSyncLogs, syncCalendarEvents } from "../api";
+import {
+  fetchCalendarDaily,
+  fetchCalendarSummary,
+  fetchCalendarSyncLogs,
+  syncCalendarEvents,
+} from "../api";
 import { calendarSyncQueries } from "../queries";
+import type {
+  CalendarDaily,
+  CalendarFilters,
+  CalendarSummary,
+  CalendarSyncLog,
+  CalendarSyncStep,
+} from "../types";
 import { computeDefaultFilters, filtersEqual, normalizeFilters } from "../utils/filters";
 
 type SyncProgressEntry = CalendarSyncStep & { status: SyncProgressStatus };
@@ -138,7 +147,10 @@ export function useCalendarEvents() {
   const normalizedDraft = normalizeFilters(filters);
   const isDirty = !filtersEqual(normalizedDraft, normalizedApplied);
 
-  const handleUpdateFilters = <K extends keyof CalendarFilters>(key: K, value: CalendarFilters[K]) => {
+  const handleUpdateFilters = <K extends keyof CalendarFilters>(
+    key: K,
+    value: CalendarFilters[K],
+  ) => {
     updateFilters({ [key]: value } as Partial<CalendarFilters>);
   };
 
@@ -146,7 +158,8 @@ export function useCalendarEvents() {
     const draft = normalizeFilters(calendarFilterStore.state);
     const fromDate = dayjs(draft.from);
     const toDate = dayjs(draft.to);
-    const spanDays = fromDate.isValid() && toDate.isValid() ? Math.max(1, toDate.diff(fromDate, "day") + 1) : 1;
+    const spanDays =
+      fromDate.isValid() && toDate.isValid() ? Math.max(1, toDate.diff(fromDate, "day") + 1) : 1;
     const resolvedMaxDays = Math.min(Math.max(spanDays, draft.maxDays, 1), 365);
     const next = { ...draft, maxDays: resolvedMaxDays };
     setAppliedFilters(next);
@@ -176,7 +189,7 @@ export function useCalendarEvents() {
           durationMs: 0,
           details: {},
           status: index === 0 ? "in_progress" : "pending",
-        }))
+        })),
       );
     },
     onError: (err: unknown) => {
@@ -187,7 +200,7 @@ export function useCalendarEvents() {
         prev.map((entry) => ({
           ...entry,
           status: "error" as SyncProgressStatus,
-        }))
+        })),
       );
       setSyncing(false);
     },
@@ -218,7 +231,7 @@ export function useCalendarEvents() {
           setSyncDurationMs(
             currentLog.finishedAt && currentLog.startedAt
               ? new Date(currentLog.finishedAt).getTime() - new Date(currentLog.startedAt).getTime()
-              : null
+              : null,
           );
           setSyncProgress(
             SYNC_STEPS_TEMPLATE.map((step) => ({
@@ -227,7 +240,7 @@ export function useCalendarEvents() {
               id: step.id,
               label: step.label,
               status: "completed" as SyncProgressStatus,
-            }))
+            })),
           );
           setLastSyncInfo({
             excluded: currentLog.excluded,
@@ -258,7 +271,8 @@ export function useCalendarEvents() {
         // else: still RUNNING, keep polling
       } catch (error_) {
         clearInterval(pollInterval);
-        const message = error_ instanceof Error ? error_.message : "Error al verificar estado de sincronización";
+        const message =
+          error_ instanceof Error ? error_.message : "Error al verificar estado de sincronización";
         setSyncError(message);
         showError(message);
         setSyncing(false);

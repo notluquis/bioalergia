@@ -3,7 +3,7 @@
  * Reports list, create, and download functionality only
  */
 
-import { MpReportType } from "../../shared/mercadopago";
+import type { MpReportType } from "../../shared/mercadopago";
 import { apiClient } from "../lib/api-client";
 
 /**
@@ -39,9 +39,16 @@ function getBaseUrl(type: MpReportType = "release") {
 }
 
 export const MPService = {
-  createReport: async (beginDate: string, endDate: string, type: MpReportType = "release"): Promise<MPReport> => {
+  createReport: async (
+    beginDate: string,
+    endDate: string,
+    type: MpReportType = "release",
+  ): Promise<MPReport> => {
     const baseUrl = getBaseUrl(type);
-    return apiClient.post<MPReport>(`${baseUrl}/reports`, { begin_date: beginDate, end_date: endDate });
+    return apiClient.post<MPReport>(`${baseUrl}/reports`, {
+      begin_date: beginDate,
+      end_date: endDate,
+    });
   },
 
   /**
@@ -52,7 +59,7 @@ export const MPService = {
     beginDate: string,
     endDate: string,
     type: MpReportType,
-    onProgress?: (current: number, total: number) => void
+    onProgress?: (current: number, total: number) => void,
   ): Promise<MPReport[]> => {
     const MAX_DAYS = 60; // Safe margin below 62-day limit
     const start = new Date(beginDate);
@@ -98,8 +105,8 @@ export const MPService = {
       const endDate = new Date(chunk.end);
       endDate.setUTCHours(23, 59, 59, 999);
 
-      const beginStr = (beginDate.toISOString().split(".")[0] ?? "") + "Z";
-      const endStr = (endDate.toISOString().split(".")[0] ?? "") + "Z";
+      const beginStr = `${beginDate.toISOString().split(".")[0] ?? ""}Z`;
+      const endStr = `${endDate.toISOString().split(".")[0] ?? ""}Z`;
 
       const report = await MPService.createReport(beginStr, endStr, type);
       reports.push(report);
@@ -110,7 +117,9 @@ export const MPService = {
 
   downloadReport: async (fileName: string, type: MpReportType = "release"): Promise<Blob> => {
     const baseUrl = getBaseUrl(type);
-    return apiClient.get<Blob>(`${baseUrl}/reports/download/${encodeURIComponent(fileName)}`, { responseType: "blob" });
+    return apiClient.get<Blob>(`${baseUrl}/reports/download/${encodeURIComponent(fileName)}`, {
+      responseType: "blob",
+    });
   },
 
   listReports: async (type: MpReportType = "release"): Promise<MPReport[]> => {
@@ -127,4 +136,4 @@ export const MPService = {
   },
 };
 
-export { type MpReportType } from "../../shared/mercadopago";
+export type { MpReportType } from "../../shared/mercadopago";

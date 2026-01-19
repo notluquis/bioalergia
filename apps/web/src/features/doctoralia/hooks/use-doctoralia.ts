@@ -5,9 +5,6 @@
  */
 
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-
-import type { BookSlotPayload, DoctoraliaSlotQuery } from "../types";
-
 import {
   bookDoctoraliaSlot,
   cancelDoctoraliaBooking,
@@ -19,6 +16,7 @@ import {
   fetchDoctoraliaSyncLogs,
   triggerDoctoraliaSync,
 } from "../api";
+import type { BookSlotPayload, DoctoraliaSlotQuery } from "../types";
 
 // Query keys
 export const doctoraliaKeys = {
@@ -100,7 +98,9 @@ export function useDoctoraliaBookings(query: DoctoraliaSlotQuery | null) {
       if (!query) return [];
       return fetchDoctoraliaBookings(query);
     },
-    queryKey: doctoraliaKeys.bookings(query ?? { addressId: "0", doctorId: "0", end: "", facilityId: "0", start: "" }),
+    queryKey: doctoraliaKeys.bookings(
+      query ?? { addressId: "0", doctorId: "0", end: "", facilityId: "0", start: "" },
+    ),
     staleTime: 30 * 1000, // 30 seconds
   });
 }
@@ -138,7 +138,9 @@ export function useDoctoraliaSlots(query: DoctoraliaSlotQuery | null) {
       if (!query) return [];
       return fetchDoctoraliaSlots(query);
     },
-    queryKey: doctoraliaKeys.slots(query ?? { addressId: "0", doctorId: "0", end: "", facilityId: "0", start: "" }),
+    queryKey: doctoraliaKeys.slots(
+      query ?? { addressId: "0", doctorId: "0", end: "", facilityId: "0", start: "" },
+    ),
     staleTime: 60 * 1000, // 1 minute (slots change frequently)
   });
 }

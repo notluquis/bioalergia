@@ -2,9 +2,6 @@ import { useFindManyCounterpart } from "@finanzas/db/hooks";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Suspense, useState } from "react";
-
-import type { Counterpart, CounterpartCategory, CounterpartPersonType } from "@/features/counterparts/types";
-
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Skeleton from "@/components/ui/Skeleton";
@@ -20,7 +17,16 @@ import CounterpartForm from "@/features/counterparts/components/CounterpartForm"
 import CounterpartList from "@/features/counterparts/components/CounterpartList";
 import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
 import { counterpartKeys } from "@/features/counterparts/queries";
-import { ServicesGrid, ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import type {
+  Counterpart,
+  CounterpartCategory,
+  CounterpartPersonType,
+} from "@/features/counterparts/types";
+import {
+  ServicesGrid,
+  ServicesHero,
+  ServicesSurface,
+} from "@/features/services/components/ServicesShell";
 import { getPersonFullName } from "@/lib/person";
 import { normalizeRut } from "@/lib/rut";
 
@@ -77,17 +83,21 @@ export default function CounterpartsPage() {
     ).person;
     return {
       category: row.category as Counterpart["category"],
-      created_at: (row as { createdAt?: Date }).createdAt?.toISOString() ?? new Date().toISOString(),
+      created_at:
+        (row as { createdAt?: Date }).createdAt?.toISOString() ?? new Date().toISOString(),
       email: person?.email ?? null,
       employeeId: null,
       id: row.id,
       name: person
-        ? getPersonFullName(person as { fatherName?: null | string; motherName?: null | string; names: string })
+        ? getPersonFullName(
+            person as { fatherName?: null | string; motherName?: null | string; names: string },
+          )
         : "Sin nombre",
       notes: row.notes ?? null,
       personType: (person?.personType ?? "NATURAL") as Counterpart["personType"],
       rut: person?.rut ?? null,
-      updated_at: (row as { updatedAt?: Date }).updatedAt?.toISOString() ?? new Date().toISOString(),
+      updated_at:
+        (row as { updatedAt?: Date }).updatedAt?.toISOString() ?? new Date().toISOString(),
     };
   });
 
@@ -109,7 +119,9 @@ export default function CounterpartsPage() {
       void queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
       // Detail invalidation handled by key factory invalidation if needed, or exact key match
       if (selectedId) {
-        void queryClient.invalidateQueries({ queryKey: counterpartKeys.detail(selectedId).queryKey });
+        void queryClient.invalidateQueries({
+          queryKey: counterpartKeys.detail(selectedId).queryKey,
+        });
       }
     },
   });
@@ -216,8 +228,12 @@ export default function CounterpartsPage() {
         <div className="space-y-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-base-content/60 text-xs font-semibold tracking-[0.4em] uppercase">Filtros rápidos</p>
-              <p className="text-base-content/70 text-sm">Acota la lista por tipo de persona y clasificación.</p>
+              <p className="text-base-content/60 text-xs font-semibold tracking-[0.4em] uppercase">
+                Filtros rápidos
+              </p>
+              <p className="text-base-content/70 text-sm">
+                Acota la lista por tipo de persona y clasificación.
+              </p>
             </div>
             <Button
               onClick={() => {
@@ -232,7 +248,9 @@ export default function CounterpartsPage() {
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
-              <p className="text-base-content/60 text-xs font-semibold tracking-[0.3em] uppercase">Tipo de persona</p>
+              <p className="text-base-content/60 text-xs font-semibold tracking-[0.3em] uppercase">
+                Tipo de persona
+              </p>
               <div className="flex flex-wrap gap-2">
                 {PERSON_FILTERS.map((filter) => (
                   <Button
@@ -249,7 +267,9 @@ export default function CounterpartsPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <p className="text-base-content/60 text-xs font-semibold tracking-[0.3em] uppercase">Clasificación</p>
+              <p className="text-base-content/60 text-xs font-semibold tracking-[0.3em] uppercase">
+                Clasificación
+              </p>
               <div className="flex flex-wrap gap-2">
                 {CATEGORY_FILTERS.map((filter) => (
                   <Button
@@ -283,7 +303,9 @@ export default function CounterpartsPage() {
           {!selectedId && (
             <ServicesSurface className="h-full">
               <div className="flex flex-col items-center justify-center p-8 text-center">
-                <p className="text-base-content/60 text-sm">Selecciona una contraparte para ver los detalles</p>
+                <p className="text-base-content/60 text-sm">
+                  Selecciona una contraparte para ver los detalles
+                </p>
               </div>
             </ServicesSurface>
           )}

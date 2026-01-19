@@ -26,7 +26,12 @@ export default function DashboardTransactionsSection({ statsParams }: Props) {
       <section className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
         <MetricCard accent="emerald" loading={false} title="Ingresos" value={totals.in} />
         <MetricCard accent="rose" loading={false} title="Egresos" value={totals.out} />
-        <MetricCard accent={totals.net >= 0 ? "emerald" : "rose"} loading={false} title="Neto" value={totals.net} />
+        <MetricCard
+          accent={totals.net >= 0 ? "emerald" : "rose"}
+          loading={false}
+          title="Neto"
+          value={totals.net}
+        />
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">

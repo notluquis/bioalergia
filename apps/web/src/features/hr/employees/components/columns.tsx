@@ -1,8 +1,8 @@
 import { getRetentionRateForYear } from "@shared/retention";
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 
 import Button from "@/components/ui/Button";
-import { Employee } from "@/features/hr/employees/types";
+import type { Employee } from "@/features/hr/employees/types";
 
 export interface EmployeeTableMeta {
   canEdit: boolean;
@@ -24,7 +24,9 @@ function getEmployeeRetentionRate(employee: Employee): number {
 export const columns: ColumnDef<Employee>[] = [
   {
     accessorKey: "full_name",
-    cell: ({ row }) => <span className="text-base-content font-medium">{row.original.full_name}</span>,
+    cell: ({ row }) => (
+      <span className="text-base-content font-medium">{row.original.full_name}</span>
+    ),
     header: "Nombre",
   },
   {
@@ -34,7 +36,9 @@ export const columns: ColumnDef<Employee>[] = [
   },
   {
     accessorKey: "person.email",
-    cell: ({ row }) => <span className="text-base-content/60">{row.original.person?.email ?? "—"}</span>,
+    cell: ({ row }) => (
+      <span className="text-base-content/60">{row.original.person?.email ?? "—"}</span>
+    ),
     header: "Correo",
   },
   {
@@ -66,12 +70,16 @@ export const columns: ColumnDef<Employee>[] = [
         if ((rate * 10) % 1 === 0) return rate.toFixed(1);
         return rate.toFixed(2);
       })();
-      const isAuto = getEmployeeRetentionRate(row.original) === getRetentionRateForYear(new Date().getFullYear());
+      const isAuto =
+        getEmployeeRetentionRate(row.original) ===
+        getRetentionRateForYear(new Date().getFullYear());
 
       return (
         <div className="flex flex-col">
           <span className="text-base-content">{formatted.replace(".", ",")}%</span>
-          <span className="text-base-content/50 text-xs">{isAuto ? "Auto (por año)" : "Personalizada"}</span>
+          <span className="text-base-content/50 text-xs">
+            {isAuto ? "Auto (por año)" : "Personalizada"}
+          </span>
         </div>
       );
     },
@@ -83,7 +91,9 @@ export const columns: ColumnDef<Employee>[] = [
     cell: ({ row }) => (
       <span
         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-          row.original.status === "ACTIVE" ? "bg-success/10 text-success" : "bg-base-content/10 text-base-content/60"
+          row.original.status === "ACTIVE"
+            ? "bg-success/10 text-success"
+            : "bg-base-content/10 text-base-content/60"
         }`}
       >
         {row.original.status === "ACTIVE" ? "Activo" : "Inactivo"}

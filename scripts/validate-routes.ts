@@ -6,9 +6,9 @@
  * Run with: npm run validate-routes
  */
 
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -63,7 +63,7 @@ function extractComponentPaths(routeDataContent: string): Set<string> {
 function pageToComponentPath(pagePath: string): string {
   // Convert "Home.tsx" -> "pages/Home"
   // Convert "settings/RolesSettingsPage.tsx" -> "pages/settings/RolesSettingsPage"
-  return "pages/" + pagePath.replace(/\.tsx$/, "");
+  return `pages/${pagePath.replace(/\.tsx$/, "")}`;
 }
 
 function main() {
@@ -98,7 +98,9 @@ function main() {
       console.error(`   - ${page}`);
       console.error(`     Expected componentPath: "${componentPath}"\n`);
     }
-    console.error("\n💡 To fix: Add these pages to shared/route-data.ts with proper routes and permissions.\n");
+    console.error(
+      "\n💡 To fix: Add these pages to shared/route-data.ts with proper routes and permissions.\n",
+    );
     process.exit(1);
   }
 }

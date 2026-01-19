@@ -97,7 +97,7 @@ function normalizeTimeValue(value: string): string {
     }
     // Fallback: HHM (2 dígitos hora, 1 dígito minutos)
     const h2 = Math.min(23, Number.parseInt(digits.slice(0, 2), 10));
-    const m2 = Math.min(59, Number.parseInt((digits[2] ?? "0") + "0", 10));
+    const m2 = Math.min(59, Number.parseInt(`${digits[2] ?? "0"}0`, 10));
     return `${h2.toString().padStart(2, "0")}:${m2.toString().padStart(2, "0")}`;
   }
 

@@ -80,7 +80,9 @@ function CalendarSchedulePage() {
       const newFrom = weekStart.isBefore(currentFrom)
         ? weekStart.subtract(1, "week").format(DATE_FORMAT)
         : appliedFilters.from;
-      const newTo = weekEnd.isAfter(currentTo) ? weekEnd.add(2, "week").format(DATE_FORMAT) : appliedFilters.to;
+      const newTo = weekEnd.isAfter(currentTo)
+        ? weekEnd.add(2, "week").format(DATE_FORMAT)
+        : appliedFilters.to;
 
       updateFilters("from", newFrom);
       updateFilters("to", newTo);
@@ -121,13 +123,17 @@ function CalendarSchedulePage() {
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-            <span className="text-base-content/70 hidden text-sm font-medium sm:inline">{rangeLabel}</span>
+            <span className="text-base-content/70 hidden text-sm font-medium sm:inline">
+              {rangeLabel}
+            </span>
           </div>
 
           {/* Right: Event count + Filter toggle */}
           <div className="flex items-center gap-2">
             {summary && (
-              <span className="text-base-content/50 text-xs">{numberFormatter.format(allEvents.length)} eventos</span>
+              <span className="text-base-content/50 text-xs">
+                {numberFormatter.format(allEvents.length)} eventos
+              </span>
             )}
             <Button
               className="gap-1.5"

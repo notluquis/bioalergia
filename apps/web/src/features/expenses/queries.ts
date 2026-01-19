@@ -1,8 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
-
+import { fetchMonthlyExpenseDetail, fetchMonthlyExpenseStats, fetchMonthlyExpenses } from "./api";
 import type { ExpenseFilters } from "./hooks/use-monthly-expenses";
-
-import { fetchMonthlyExpenseDetail, fetchMonthlyExpenses, fetchMonthlyExpenseStats } from "./api";
 
 export const expenseKeys = {
   all: ["monthly-expenses"] as const,

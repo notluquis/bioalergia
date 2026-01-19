@@ -99,7 +99,10 @@ export const setSelectedDate = (date: string) => {
   dailyBalanceStore.setState((s) => ({ ...s, selectedDate: date }));
 };
 
-export const updateField = <K extends keyof DailyBalanceFormData>(field: K, value: DailyBalanceFormData[K]) => {
+export const updateField = <K extends keyof DailyBalanceFormData>(
+  field: K,
+  value: DailyBalanceFormData[K],
+) => {
   dailyBalanceStore.setState((s) => ({
     ...s,
     formData: { ...s.formData, [field]: value },
@@ -160,7 +163,7 @@ export function useDailyBalanceStore() {
   const status = useMemo(() => computeStatus(state.formData, summary), [state.formData, summary]);
   const isDirty = useMemo(
     () => JSON.stringify(state.formData) !== JSON.stringify(state.originalData),
-    [state.formData, state.originalData]
+    [state.formData, state.originalData],
   );
 
   return {

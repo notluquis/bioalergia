@@ -65,13 +65,19 @@ export default function CounterpartList({
                   <span className="block font-medium tracking-tight">{item.name}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-semibold tracking-wide uppercase ${
-                      isActive ? "bg-primary/15 text-primary" : "bg-base-300/60 text-base-content/60"
+                      isActive
+                        ? "bg-primary/15 text-primary"
+                        : "bg-base-300/60 text-base-content/60"
                     }`}
                   >
                     {CATEGORY_LABELS[item.category] ?? item.category}
                   </span>
                 </span>
-                {item.rut && <span className="text-base-content/90 mt-1 block text-xs">RUT {formatRut(item.rut)}</span>}
+                {item.rut && (
+                  <span className="text-base-content/90 mt-1 block text-xs">
+                    RUT {formatRut(item.rut)}
+                  </span>
+                )}
               </button>
             </li>
           );

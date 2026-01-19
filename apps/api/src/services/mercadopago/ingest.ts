@@ -1,11 +1,8 @@
-import csv from "csv-parser";
-import { Readable } from "stream";
+import { Readable } from "node:stream";
 import { db } from "@finanzas/db";
+import csv from "csv-parser";
 import { checkMpConfig, MP_ACCESS_TOKEN } from "./client";
-import {
-  mapRowToReleaseTransaction,
-  mapRowToSettlementTransaction,
-} from "./mappers";
+import { mapRowToReleaseTransaction, mapRowToSettlementTransaction } from "./mappers";
 
 // Batch size for insertions
 const BATCH_SIZE = 100;
@@ -26,10 +23,7 @@ export interface ImportStats {
  * Downloads and processes a CSV report from a URL.
  * Returns detailed statistics about the import.
  */
-export async function processReportUrl(
-  url: string,
-  reportType: string
-): Promise<ImportStats> {
+export async function processReportUrl(url: string, reportType: string): Promise<ImportStats> {
   const stats: ImportStats = {
     totalRows: 0,
     validRows: 0,
@@ -47,15 +41,12 @@ export async function processReportUrl(
       headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
     });
 
-    if (!res.ok)
-      throw new Error(`Download failed: ${res.status} - ${res.statusText}`);
+    if (!res.ok) throw new Error(`Download failed: ${res.status} - ${res.statusText}`);
     const body = res.body;
     if (!body) throw new Error("Empty response body");
 
     // Convert Web Stream to Node Stream
-    const nodeStream = Readable.fromWeb(
-      body as import("stream/web").ReadableStream
-    );
+    const nodeStream = Readable.fromWeb(body as import("stream/web").ReadableStream);
 
     const rows: any[] = [];
     let isFirstRow = true;
@@ -85,7 +76,7 @@ export async function processReportUrl(
           try {
             stats.totalRows = rows.length;
             console.log(
-              `[MP Ingest] CSV Downloaded. Rows: ${rows.length}. Starting batch insert...`
+              `[MP Ingest] CSV Downloaded. Rows: ${rows.length}. Starting batch insert...`,
             );
 
             for (let i = 0; i < rows.length; i += BATCH_SIZE) {
@@ -100,10 +91,7 @@ export async function processReportUrl(
               }
             }
 
-            console.log(
-              `[MP Ingest] Finished processing CSV for ${reportType}. Stats:`,
-              stats
-            );
+            console.log(`[MP Ingest] Finished processing CSV for ${reportType}. Stats:`, stats);
             resolve();
           } catch (err) {
             reject(err);
@@ -132,10 +120,7 @@ interface BatchStats {
 }
 
 // Save batch to DB with detailed statistics
-async function saveReportBatch(
-  rows: any[],
-  reportType: string
-): Promise<BatchStats> {
+async function saveReportBatch(rows: any[], reportType: string): Promise<BatchStats> {
   const batchStats: BatchStats = {
     valid: 0,
     skipped: 0,
@@ -172,7 +157,7 @@ async function saveReportBatch(
           }
         } catch (err) {
           batchStats.errors.push(
-            `Settlement ${tx.sourceId}: ${err instanceof Error ? err.message : String(err)}`
+            `Settlement ${tx.sourceId}: ${err instanceof Error ? err.message : String(err)}`,
           );
         }
       }
@@ -201,15 +186,13 @@ async function saveReportBatch(
           }
         } catch (err) {
           batchStats.errors.push(
-            `Release ${tx.sourceId}: ${err instanceof Error ? err.message : String(err)}`
+            `Release ${tx.sourceId}: ${err instanceof Error ? err.message : String(err)}`,
           );
         }
       }
     }
   } catch (err) {
-    batchStats.errors.push(
-      `Batch error: ${err instanceof Error ? err.message : String(err)}`
-    );
+    batchStats.errors.push(`Batch error: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   return batchStats;

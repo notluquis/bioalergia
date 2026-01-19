@@ -2,9 +2,16 @@
  * Inventory Routes
  * Migrated from apps/web/server/routes/inventory.ts
  */
-import { cacheControl } from "../lib/cache-control";
+
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
+import { getSessionUser, hasPermission } from "../auth";
+import { cacheControl } from "../lib/cache-control";
+import {
+  inventoryCategorySchema,
+  inventoryItemSchema,
+  inventoryItemUpdateSchema,
+  inventoryMovementSchema,
+} from "../lib/inventory-schemas";
 import {
   createInventoryCategory,
   createInventoryItem,
@@ -15,13 +22,7 @@ import {
   listInventoryItems,
   updateInventoryItem,
 } from "../services/inventory";
-import {
-  inventoryCategorySchema,
-  inventoryItemSchema,
-  inventoryItemUpdateSchema,
-  inventoryMovementSchema,
-} from "../lib/inventory-schemas";
-import { getSessionUser, hasPermission } from "../auth";
+import { reply } from "../utils/reply";
 
 export const inventoryRoutes = new Hono();
 
@@ -45,11 +46,7 @@ inventoryRoutes.use("*", async (c, next) => {
   } else {
     // GET requests require read permission
     const canRead = await hasPermission(user.id, "read", "InventoryItem");
-    const canReadSettings = await hasPermission(
-      user.id,
-      "update",
-      "InventorySetting"
-    );
+    const canReadSettings = await hasPermission(user.id, "update", "InventorySetting");
     if (!canRead && !canReadSettings) {
       return reply(c, { status: "error", message: "Forbidden" }, 403);
     }
@@ -104,11 +101,7 @@ inventoryRoutes.post("/categories", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canManageSettings = await hasPermission(
-    user.id,
-    "update",
-    "InventorySetting"
-  );
+  const canManageSettings = await hasPermission(user.id, "update", "InventorySetting");
   if (!canManageSettings) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
@@ -116,14 +109,12 @@ inventoryRoutes.post("/categories", async (c) => {
   const body = await c.req.json();
   const parsed = inventoryCategorySchema.safeParse(body);
   if (!parsed.success) {
-    return reply(c, 
-      { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
-    );
+    return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
   }
 
   const category = await createInventoryCategory(parsed.data.name);
-  return reply(c, 
+  return reply(
+    c,
     {
       status: "ok",
       data: {
@@ -132,7 +123,7 @@ inventoryRoutes.post("/categories", async (c) => {
         created_at: category.createdAt.toISOString(),
       },
     },
-    201
+    201,
   );
 });
 
@@ -141,11 +132,7 @@ inventoryRoutes.delete("/categories/:id", async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canManageSettings = await hasPermission(
-    user.id,
-    "update",
-    "InventorySetting"
-  );
+  const canManageSettings = await hasPermission(user.id, "update", "InventorySetting");
   if (!canManageSettings) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
@@ -185,10 +172,7 @@ inventoryRoutes.post("/items", async (c) => {
   const body = await c.req.json();
   const parsed = inventoryItemSchema.safeParse(body);
   if (!parsed.success) {
-    return reply(c, 
-      { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
-    );
+    return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
   }
 
   const data = parsed.data;
@@ -199,7 +183,8 @@ inventoryRoutes.post("/items", async (c) => {
     categoryId: data.category_id ?? null,
   });
 
-  return reply(c, 
+  return reply(
+    c,
     {
       status: "ok",
       data: {
@@ -213,7 +198,7 @@ inventoryRoutes.post("/items", async (c) => {
         category_name: item.category?.name,
       },
     },
-    201
+    201,
   );
 });
 
@@ -223,10 +208,7 @@ inventoryRoutes.put("/items/:id", async (c) => {
   const body = await c.req.json();
   const parsed = inventoryItemUpdateSchema.safeParse(body);
   if (!parsed.success) {
-    return reply(c, 
-      { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
-    );
+    return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
   }
 
   const data = parsed.data;
@@ -264,10 +246,7 @@ inventoryRoutes.post("/movements", async (c) => {
   const body = await c.req.json();
   const parsed = inventoryMovementSchema.safeParse(body);
   if (!parsed.success) {
-    return reply(c, 
-      { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
-    );
+    return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
   }
 
   await createInventoryMovement({

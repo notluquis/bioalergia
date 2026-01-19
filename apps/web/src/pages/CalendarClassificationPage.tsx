@@ -4,9 +4,6 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-
-import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
-
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
@@ -19,7 +16,8 @@ import {
 import { ClassificationRow } from "@/features/calendar/components/ClassificationRow";
 import { ClassificationTotals } from "@/features/calendar/components/ClassificationTotals";
 import { calendarQueries } from "@/features/calendar/queries";
-import { type ClassificationEntry, type FormValues } from "@/features/calendar/schemas";
+import type { ClassificationEntry, FormValues } from "@/features/calendar/schemas";
+import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import {
   buildDefaultEntry,
   buildPayload,
@@ -134,7 +132,11 @@ function CalendarClassificationPage() {
   const [activeJobId, setActiveJobId] = useState<null | string>(null);
   const { isComplete, isFailed, job, progress } = useJobProgress(activeJobId, {
     onComplete: (result) => {
-      const r = result as { fieldCounts?: Record<string, number>; message?: string; reclassified?: number };
+      const r = result as {
+        fieldCounts?: Record<string, number>;
+        message?: string;
+        reclassified?: number;
+      };
       const details = r.fieldCounts
         ? Object.entries(r.fieldCounts)
             .filter(([, v]) => v > 0)
@@ -189,7 +191,11 @@ function CalendarClassificationPage() {
         <div className="space-y-8">
           {/* Stats Cards */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Pendientes" tone="primary" value={loading ? "—" : totalCount.toLocaleString("es-CL")} />
+            <StatCard
+              title="Pendientes"
+              tone="primary"
+              value={loading ? "—" : totalCount.toLocaleString("es-CL")}
+            />
             <StatCard title="Página actual" tone="success" value={loading ? "—" : events.length} />
             <ClassificationTotals events={events} form={form} />
           </div>
@@ -198,14 +204,19 @@ function CalendarClassificationPage() {
           <div className="bg-base-200/50 flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-sm">
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-base-content/50 text-xs font-medium tracking-wide uppercase">Filtrar:</span>
+              <span className="text-base-content/50 text-xs font-medium tracking-wide uppercase">
+                Filtrar:
+              </span>
               <div className="flex flex-wrap gap-2">
                 <button
                   className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                     filters.missingCategory ? ACTIVE_FILTER_CLASS : INACTIVE_FILTER_CLASS
                   }`}
                   onClick={() => {
-                    setFilters((prev) => ({ ...prev, missingCategory: !prev.missingCategory || undefined }));
+                    setFilters((prev) => ({
+                      ...prev,
+                      missingCategory: !prev.missingCategory || undefined,
+                    }));
                     setPage(0);
                   }}
                   type="button"
@@ -217,7 +228,10 @@ function CalendarClassificationPage() {
                     filters.missingAmount ? ACTIVE_FILTER_CLASS : INACTIVE_FILTER_CLASS
                   }`}
                   onClick={() => {
-                    setFilters((prev) => ({ ...prev, missingAmount: !prev.missingAmount || undefined }));
+                    setFilters((prev) => ({
+                      ...prev,
+                      missingAmount: !prev.missingAmount || undefined,
+                    }));
                     setPage(0);
                   }}
                   type="button"
@@ -231,7 +245,10 @@ function CalendarClassificationPage() {
                       : "bg-base-300/50 text-base-content/70 hover:bg-base-300"
                   }`}
                   onClick={() => {
-                    setFilters((prev) => ({ ...prev, missingAttended: !prev.missingAttended || undefined }));
+                    setFilters((prev) => ({
+                      ...prev,
+                      missingAttended: !prev.missingAttended || undefined,
+                    }));
                     setPage(0);
                   }}
                   type="button"
@@ -245,7 +262,10 @@ function CalendarClassificationPage() {
                       : "bg-base-300/50 text-base-content/70 hover:bg-base-300"
                   }`}
                   onClick={() => {
-                    setFilters((prev) => ({ ...prev, missingDosage: !prev.missingDosage || undefined }));
+                    setFilters((prev) => ({
+                      ...prev,
+                      missingDosage: !prev.missingDosage || undefined,
+                    }));
                     setPage(0);
                   }}
                   type="button"
@@ -311,8 +331,18 @@ function CalendarClassificationPage() {
                       }}
                       type="button"
                     >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+                      <svg
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M6 18L18 6M6 6l12 12"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                        />
                       </svg>
                       Limpiar
                     </button>
@@ -367,7 +397,12 @@ function CalendarClassificationPage() {
                 <span className="relative z-10 flex items-center gap-2">
                   {isJobRunning ? (
                     <>
-                      <svg className="h-4 w-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg
+                        className="h-4 w-4 animate-spin"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
                         <path
                           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                           strokeLinecap="round"
@@ -379,7 +414,12 @@ function CalendarClassificationPage() {
                     </>
                   ) : (
                     <>
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
                         <path
                           d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                           strokeLinecap="round"
@@ -411,7 +451,7 @@ function CalendarClassificationPage() {
                     onClick={() => {
                       if (
                         globalThis.confirm(
-                          "¿Reclasificar TODOS los eventos? Esto sobrescribirá las clasificaciones existentes."
+                          "¿Reclasificar TODOS los eventos? Esto sobrescribirá las clasificaciones existentes.",
                         )
                       ) {
                         reclassifyAllMutation.mutate();
@@ -434,7 +474,10 @@ function CalendarClassificationPage() {
                     </svg>
                   </button>
                 </Tooltip.Trigger>
-                <Tooltip.Content className="bg-base-300 rounded-lg px-3 py-2 text-xs shadow-xl" side="bottom">
+                <Tooltip.Content
+                  className="bg-base-300 rounded-lg px-3 py-2 text-xs shadow-xl"
+                  side="bottom"
+                >
                   Reclasificar TODO (sobrescribe existentes)
                   <Tooltip.Arrow className="fill-base-300" />
                 </Tooltip.Content>
@@ -449,12 +492,24 @@ function CalendarClassificationPage() {
           {!loading && events.length === 0 && !error && (
             <div className="bg-success/5 ring-success/20 flex flex-col items-center justify-center rounded-2xl py-16 ring-1">
               <div className="bg-success/10 mb-4 rounded-full p-4">
-                <svg className="text-success h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+                <svg
+                  className="text-success h-8 w-8"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M5 13l4 4L19 7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  />
                 </svg>
               </div>
               <h3 className="text-success text-lg font-semibold">¡Todo clasificado!</h3>
-              <p className="text-base-content/60 mt-1 text-sm">No hay eventos pendientes de clasificar.</p>
+              <p className="text-base-content/60 mt-1 text-sm">
+                No hay eventos pendientes de clasificar.
+              </p>
             </div>
           )}
 
@@ -510,7 +565,12 @@ function CalendarClassificationPage() {
                 type="button"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+                  <path
+                    d="M15 19l-7-7 7-7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  />
                 </svg>
               </button>
               <div className="bg-base-200 flex items-center gap-2 rounded-lg px-4 py-2 text-sm">
@@ -527,7 +587,12 @@ function CalendarClassificationPage() {
                 type="button"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+                  <path
+                    d="M9 5l7 7-7 7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  />
                 </svg>
               </button>
               <button
@@ -539,7 +604,12 @@ function CalendarClassificationPage() {
                 type="button"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M13 5l7 7-7 7M5 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+                  <path
+                    d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  />
                 </svg>
               </button>
             </div>
@@ -552,7 +622,9 @@ function CalendarClassificationPage() {
         open={toastOpen && Boolean(toastMessage)}
       >
         <Toast.Title className="font-semibold">Operación completada</Toast.Title>
-        <Toast.Description className="text-base-content/70 mt-1 text-xs">{toastMessage}</Toast.Description>
+        <Toast.Description className="text-base-content/70 mt-1 text-xs">
+          {toastMessage}
+        </Toast.Description>
       </Toast.Root>
       <Toast.Viewport className="fixed right-4 bottom-4 z-50 flex flex-col gap-2" />
     </Toast.Provider>

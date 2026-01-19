@@ -24,7 +24,9 @@ export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow
 }
 
 export function hasRowData(row: BulkRow): boolean {
-  return Boolean(row.entrada.trim() || row.salida.trim() || row.overtime.trim() || row.comment.trim());
+  return Boolean(
+    row.entrada.trim() || row.salida.trim() || row.overtime.trim() || row.comment.trim(),
+  );
 }
 
 const editableFields: (keyof Pick<BulkRow, "comment" | "entrada" | "overtime" | "salida">)[] = [
@@ -92,7 +94,9 @@ export function formatTotalExtraHours(rows: TimesheetSummaryRow[]): string {
 
     // Si hay overtimeRate definido, calcular horas basado en extraAmount / overtimeRate
     totalMinutes +=
-      row.overtimeRate > 0 ? Math.round((row.extraAmount / row.overtimeRate) * 60) : row.overtimeMinutes || 0;
+      row.overtimeRate > 0
+        ? Math.round((row.extraAmount / row.overtimeRate) * 60)
+        : row.overtimeMinutes || 0;
   }
   return minutesToDuration(totalMinutes);
 }
@@ -104,7 +108,7 @@ export function isRowDirty(row: BulkRow, initial?: BulkRow): boolean {
 
 export function minutesToDuration(totalMinutes: number): string {
   if (totalMinutes < 0) {
-    return "-" + minutesToDuration(-totalMinutes);
+    return `-${minutesToDuration(-totalMinutes)}`;
   }
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;

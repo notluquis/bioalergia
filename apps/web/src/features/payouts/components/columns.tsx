@@ -1,5 +1,5 @@
-import { ReleaseTransaction } from "@finanzas/db/models";
-import { ColumnDef } from "@tanstack/react-table";
+import type { ReleaseTransaction } from "@finanzas/db/models";
+import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 
@@ -18,7 +18,9 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "externalReference",
     cell: ({ row }) => (
-      <span className="text-base-content/70 font-mono text-xs">{row.original.externalReference || "-"}</span>
+      <span className="text-base-content/70 font-mono text-xs">
+        {row.original.externalReference || "-"}
+      </span>
     ),
     header: "Referencia",
   },
@@ -33,7 +35,9 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   },
   {
     accessorKey: "grossAmount",
-    cell: ({ row }) => <div className="text-right font-medium">{fmtCLP(String(row.original.grossAmount))}</div>,
+    cell: ({ row }) => (
+      <div className="text-right font-medium">{fmtCLP(String(row.original.grossAmount))}</div>
+    ),
     header: "Monto Bruto",
   },
   {
@@ -76,7 +80,9 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "payoutBankAccountNumber",
     cell: ({ row }) => (
-      <span className="text-base-content/70 font-mono text-xs">{row.original.payoutBankAccountNumber || "-"}</span>
+      <span className="text-base-content/70 font-mono text-xs">
+        {row.original.payoutBankAccountNumber || "-"}
+      </span>
     ),
     header: "Cuenta Destino",
   },

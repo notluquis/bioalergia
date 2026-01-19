@@ -1,24 +1,27 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
-
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
+import { useAuth } from "@/context/AuthContext";
+import {
+  createLoan,
+  regenerateSchedules,
+  registerLoanPayment,
+  unlinkLoanPayment,
+} from "@/features/finance/loans/api";
+import LoanDetailSection from "@/features/finance/loans/components/LoanDetailSection";
+import LoanForm from "@/features/finance/loans/components/LoanForm";
+import LoanList from "@/features/finance/loans/components/LoanList";
+import { loanKeys } from "@/features/finance/loans/queries";
 import type {
   CreateLoanPayload,
   LoanPaymentPayload,
   LoanSchedule,
   RegenerateSchedulePayload,
 } from "@/features/finance/loans/types";
-
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
-import { useAuth } from "@/context/AuthContext";
-import { createLoan, regenerateSchedules, registerLoanPayment, unlinkLoanPayment } from "@/features/finance/loans/api";
-import LoanDetailSection from "@/features/finance/loans/components/LoanDetailSection";
-import LoanForm from "@/features/finance/loans/components/LoanForm";
-import LoanList from "@/features/finance/loans/components/LoanList";
-import { loanKeys } from "@/features/finance/loans/queries";
 import { today } from "@/lib/dates";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -110,7 +113,10 @@ export default function LoansPage() {
   const openPaymentModal = (schedule: LoanSchedule) => {
     setPaymentSchedule(schedule);
     setPaymentForm({
-      paidAmount: schedule.paid_amount == null ? String(schedule.expected_amount) : String(schedule.paid_amount),
+      paidAmount:
+        schedule.paid_amount == null
+          ? String(schedule.expected_amount)
+          : String(schedule.paid_amount),
       paidDate: schedule.paid_date ?? today(),
       transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
     });
@@ -177,7 +183,9 @@ export default function LoansPage() {
         <div className="border-base-300 bg-base-100 min-h-[70vh] rounded-2xl border p-6 shadow-sm">
           {!selectedId && (
             <div className="flex h-full items-center justify-center text-center">
-              <p className="text-base-content/60 text-sm">Selecciona un préstamo para ver los detalles</p>
+              <p className="text-base-content/60 text-sm">
+                Selecciona un préstamo para ver los detalles
+              </p>
             </div>
           )}
           {selectedId && (
@@ -215,7 +223,11 @@ export default function LoansPage() {
             await handleCreateLoan(payload);
           }}
         />
-        {createError && <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{createError}</p>}
+        {createError && (
+          <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
+            {createError}
+          </p>
+        )}
       </Modal>
 
       <Modal
@@ -223,7 +235,11 @@ export default function LoansPage() {
         onClose={() => {
           setPaymentSchedule(null);
         }}
-        title={paymentSchedule ? `Registrar pago cuota #${paymentSchedule.installment_number}` : "Registrar pago"}
+        title={
+          paymentSchedule
+            ? `Registrar pago cuota #${paymentSchedule.installment_number}`
+            : "Registrar pago"
+        }
       >
         {paymentSchedule && (
           <form className="space-y-4" onSubmit={handlePaymentSubmit}>
@@ -258,7 +274,11 @@ export default function LoansPage() {
               type="date"
               value={paymentForm.paidDate}
             />
-            {paymentError && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>}
+            {paymentError && (
+              <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
+                {paymentError}
+              </p>
+            )}
             <div className="flex justify-end gap-3">
               <Button
                 onClick={() => {

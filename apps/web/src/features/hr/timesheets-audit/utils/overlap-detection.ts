@@ -46,7 +46,7 @@ export function detectAllOverlaps(entries: TimesheetEntryWithEmployee[]): Map<st
  */
 export function detectOverlapsForDate(
   entries: TimesheetEntryWithEmployee[],
-  workDate: string
+  workDate: string,
 ): {
   names: [string, string];
   pair: [number, number];
@@ -93,7 +93,10 @@ export function formatDuration(hours: number): string {
 /**
  * Get employees that have overlaps on a specific date
  */
-export function getOverlappingEmployeesForDate(entries: TimesheetEntryWithEmployee[], workDate: string): number[] {
+export function getOverlappingEmployeesForDate(
+  entries: TimesheetEntryWithEmployee[],
+  workDate: string,
+): number[] {
   const dateEntries = entries.filter((e) => e.work_date === workDate);
   const overlappingIds = new Set<number>();
 
@@ -125,7 +128,12 @@ export function getOverlappingEmployeesForDate(entries: TimesheetEntryWithEmploy
  * @param start2 Start time in HH:MM format
  * @param end2 End time in HH:MM format
  */
-export function isTimeRangeOverlapping(start1: string, end1: string, start2: string, end2: string): boolean {
+export function isTimeRangeOverlapping(
+  start1: string,
+  end1: string,
+  start2: string,
+  end2: string,
+): boolean {
   const s1 = timeToMinutes(start1);
   const e1 = timeToMinutes(end1);
   const s2 = timeToMinutes(start2);
@@ -161,7 +169,10 @@ function normalizeRole(role: null | string | undefined): string {
     : "";
 }
 
-function rolesAreCompatibleForOverlap(roleA: null | string | undefined, roleB: null | string | undefined): boolean {
+function rolesAreCompatibleForOverlap(
+  roleA: null | string | undefined,
+  roleB: null | string | undefined,
+): boolean {
   const nurseA = isNurseRole(roleA);
   const nurseB = isNurseRole(roleB);
   const tensA = isTensRole(roleA);

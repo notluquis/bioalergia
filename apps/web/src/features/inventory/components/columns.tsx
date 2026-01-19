@@ -1,9 +1,9 @@
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Lock } from "lucide-react";
 
 import Button from "@/components/ui/Button";
 
-import { InventoryItem } from "../types";
+import type { InventoryItem } from "../types";
 
 export interface InventoryTableMeta {
   canAdjust: boolean;
@@ -20,12 +20,16 @@ export const columns: ColumnDef<InventoryItem>[] = [
   },
   {
     accessorKey: "category_name",
-    cell: ({ row }) => <span className="text-base-content">{row.original.category_name ?? "Sin categoría"}</span>,
+    cell: ({ row }) => (
+      <span className="text-base-content">{row.original.category_name ?? "Sin categoría"}</span>
+    ),
     header: "Categoría",
   },
   {
     accessorKey: "description",
-    cell: ({ row }) => <span className="text-base-content/60">{row.original.description ?? "—"}</span>,
+    cell: ({ row }) => (
+      <span className="text-base-content/60">{row.original.description ?? "—"}</span>
+    ),
     header: "Descripción",
   },
   {

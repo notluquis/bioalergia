@@ -1,8 +1,7 @@
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
-import { db } from "@finanzas/db";
-import { cacheControl } from "../lib/cache-control";
 import { getSessionUser, hasPermission } from "../auth";
+import { cacheControl } from "../lib/cache-control";
+import { serviceCreateSchema, serviceUpdateSchema } from "../lib/entity-schemas";
 import {
   createService,
   deleteService,
@@ -10,10 +9,7 @@ import {
   listServices,
   updateService,
 } from "../services/services";
-import {
-  serviceCreateSchema,
-  serviceUpdateSchema,
-} from "../lib/entity-schemas";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -24,11 +20,7 @@ app.get("/", cacheControl(300), async (c) => {
   const canRead = await hasPermission(user.id, "read", "Service");
   const canReadList = await hasPermission(user.id, "read", "ServiceList");
   const canReadAgenda = await hasPermission(user.id, "read", "ServiceAgenda");
-  const canReadTemplate = await hasPermission(
-    user.id,
-    "read",
-    "ServiceTemplate"
-  );
+  const canReadTemplate = await hasPermission(user.id, "read", "ServiceTemplate");
 
   if (!canRead && !canReadList && !canReadAgenda && !canReadTemplate) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -45,18 +37,14 @@ app.get("/:id", async (c) => {
   const canRead = await hasPermission(user.id, "read", "Service");
   const canReadList = await hasPermission(user.id, "read", "ServiceList");
   const canReadAgenda = await hasPermission(user.id, "read", "ServiceAgenda");
-  const canReadTemplate = await hasPermission(
-    user.id,
-    "read",
-    "ServiceTemplate"
-  );
+  const canReadTemplate = await hasPermission(user.id, "read", "ServiceTemplate");
 
   if (!canRead && !canReadList && !canReadAgenda && !canReadTemplate) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
   const id = Number(c.req.param("id"));
-  if (isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (Number.isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
 
   const item = await getServiceById(id);
   if (!item) return reply(c, { status: "error", message: "Not found" }, 404);
@@ -79,10 +67,7 @@ app.post("/", async (c) => {
   const parsed = serviceCreateSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
-      { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
-    );
+    return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
   }
 
   const result = await createService(parsed.data);
@@ -101,16 +86,13 @@ app.put("/:id", async (c) => {
   if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
-  if (isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (Number.isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
 
   const body = await c.req.json();
   const parsed = serviceUpdateSchema.safeParse(body);
 
   if (!parsed.success) {
-    return reply(c, 
-      { status: "error", message: "Invalid data", issues: parsed.error.issues },
-      400
-    );
+    return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
   }
 
   const result = await updateService(id, parsed.data);
@@ -129,7 +111,7 @@ app.delete("/:id", async (c) => {
   if (!canDelete) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
-  if (isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (Number.isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
 
   await deleteService(id);
   return reply(c, { status: "ok" });
@@ -146,13 +128,10 @@ app.post("/:id/schedules", async (c) => {
   if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const id = Number(c.req.param("id"));
-  if (isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (Number.isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
 
   // TODO: Implement when ServiceSchedule model is added to schema
-  return reply(c, 
-    { status: "error", message: "ServiceSchedule feature not yet implemented" },
-    501
-  );
+  return reply(c, { status: "error", message: "ServiceSchedule feature not yet implemented" }, 501);
 });
 
 export default app;

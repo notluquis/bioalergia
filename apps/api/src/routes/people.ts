@@ -1,7 +1,7 @@
-import { Hono } from "hono";
-import { reply } from "../utils/reply";
-import { getSessionUser, hasPermission } from "../auth";
 import { db } from "@finanzas/db";
+import { Hono } from "hono";
+import { getSessionUser, hasPermission } from "../auth";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -48,10 +48,7 @@ app.get("/", async (c) => {
     return reply(c, { status: "ok", people: mappedPeople });
   } catch (error) {
     console.error("[people] list error:", error);
-    return reply(c, 
-      { status: "error", message: "Error al listar personas" },
-      500,
-    );
+    return reply(c, { status: "error", message: "Error al listar personas" }, 500);
   }
 });
 
@@ -91,10 +88,7 @@ app.get("/:id", async (c) => {
     });
   } catch (error) {
     console.error("[people] get error:", error);
-    return reply(c, 
-      { status: "error", message: "Error al obtener persona" },
-      500,
-    );
+    return reply(c, { status: "error", message: "Error al obtener persona" }, 500);
   }
 });
 

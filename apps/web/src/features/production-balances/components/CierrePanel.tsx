@@ -47,7 +47,7 @@ export function CierrePanel({
     <aside
       className={cn(
         "bg-base-200/50 border-base-content/10 sticky top-4 rounded-2xl border p-4 backdrop-blur-sm",
-        className
+        className,
       )}
     >
       {/* Header */}
@@ -67,17 +67,29 @@ export function CierrePanel({
         {/* Diferencia - highlighted */}
         <div className="border-base-content/10 mt-2 border-t pt-2">
           <div className="flex items-baseline justify-between">
-            <span className={cn("text-sm font-medium", summary.cuadra ? "text-success" : "text-warning")}>
+            <span
+              className={cn(
+                "text-sm font-medium",
+                summary.cuadra ? "text-success" : "text-warning",
+              )}
+            >
               Diferencia
             </span>
-            <span className={cn("text-xl font-bold tabular-nums", summary.cuadra ? "text-success" : "text-warning")}>
+            <span
+              className={cn(
+                "text-xl font-bold tabular-nums",
+                summary.cuadra ? "text-success" : "text-warning",
+              )}
+            >
               {fmtCLP(summary.diferencia)}
             </span>
           </div>
 
           {!summary.cuadra && summary.totalMetodos > 0 && (
             <p className="text-base-content/50 mt-1 text-xs">
-              {summary.diferencia > 0 ? "Asigna más a servicios" : "Reduce servicios o aumenta métodos"}
+              {summary.diferencia > 0
+                ? "Asigna más a servicios"
+                : "Reduce servicios o aumenta métodos"}
             </p>
           )}
         </div>
@@ -113,11 +125,26 @@ export function CierrePanel({
   );
 }
 
-function SummaryRow({ label, muted = false, value }: { label: string; muted?: boolean; value: number }) {
+function SummaryRow({
+  label,
+  muted = false,
+  value,
+}: {
+  label: string;
+  muted?: boolean;
+  value: number;
+}) {
   return (
     <div className="flex items-center justify-between py-1">
-      <span className={cn("text-sm", muted ? "text-base-content/40" : "text-base-content/60")}>{label}</span>
-      <span className={cn("font-medium tabular-nums", muted ? "text-base-content/40" : "text-base-content")}>
+      <span className={cn("text-sm", muted ? "text-base-content/40" : "text-base-content/60")}>
+        {label}
+      </span>
+      <span
+        className={cn(
+          "font-medium tabular-nums",
+          muted ? "text-base-content/40" : "text-base-content",
+        )}
+      >
         {fmtCLP(value)}
       </span>
     </div>

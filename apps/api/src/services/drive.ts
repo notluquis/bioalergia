@@ -4,11 +4,12 @@
  * Uses OAuth2 via google-core for personal Drive access.
  * All errors are parsed through google-errors for clean messages.
  */
-import { createReadStream, createWriteStream } from "fs";
+
+import { createReadStream, createWriteStream } from "node:fs";
 import dayjs from "dayjs";
 
-import { getDriveClient, getBackupFolderId } from "../lib/google/google-core";
-import { parseGoogleError, GoogleApiError } from "../lib/google/google-errors";
+import { getBackupFolderId, getDriveClient } from "../lib/google/google-core";
+import { GoogleApiError, parseGoogleError } from "../lib/google/google-errors";
 
 export interface BackupFile {
   id: string;
@@ -68,24 +69,15 @@ export async function uploadToDrive(
 /**
  * Downloads a backup file from Google Drive.
  */
-export async function downloadFromDrive(
-  fileId: string,
-  destPath: string,
-): Promise<void> {
+export async function downloadFromDrive(fileId: string, destPath: string): Promise<void> {
   try {
     const drive = await getDriveClient();
     const dest = createWriteStream(destPath);
 
-    const response = await drive.files.get(
-      { fileId, alt: "media" },
-      { responseType: "stream" },
-    );
+    const response = await drive.files.get({ fileId, alt: "media" }, { responseType: "stream" });
 
     await new Promise<void>((resolve, reject) => {
-      (response.data as NodeJS.ReadableStream)
-        .pipe(dest)
-        .on("finish", resolve)
-        .on("error", reject);
+      (response.data as NodeJS.ReadableStream).pipe(dest).on("finish", resolve).on("error", reject);
     });
   } catch (error) {
     throw parseGoogleError(error);
@@ -164,9 +156,7 @@ export async function cleanupOldBackups(
 /**
  * Gets metadata for a specific file.
  */
-export async function getBackupInfo(
-  fileId: string,
-): Promise<BackupFile | null> {
+export async function getBackupInfo(fileId: string): Promise<BackupFile | null> {
   try {
     const drive = await getDriveClient();
 
@@ -225,14 +215,11 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
     }
 
     // 2. Fallback: Parse file header (Slower)
-    const { createGunzip } = await import("zlib");
-    const streamModule = await import("stream");
+    const { createGunzip } = await import("node:zlib");
+    const streamModule = await import("node:stream");
 
     // Get file as stream and read just enough to get the tables list
-    const response = await drive.files.get(
-      { fileId, alt: "media" },
-      { responseType: "stream" },
-    );
+    const response = await drive.files.get({ fileId, alt: "media" }, { responseType: "stream" });
 
     return new Promise((resolve) => {
       const chunks: Buffer[] = [];
@@ -241,9 +228,7 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
       let stopped = false;
 
       // Cast to Node.js Readable stream using the imported module type
-      const dataStream = response.data as InstanceType<
-        typeof streamModule.Readable
-      >;
+      const dataStream = response.data as InstanceType<typeof streamModule.Readable>;
 
       const onData = (chunk: Buffer) => {
         if (stopped) return;
@@ -301,22 +286,20 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
               // Handles optional whitespace
               const match = cleanText.match(/"tables"\s*:\s*(\[[^\]]*\])/);
 
-              if (match && match[1]) {
+              if (match?.[1]) {
                 try {
                   const tables = JSON.parse(match[1]);
                   if (Array.isArray(tables)) {
                     resolve(tables);
                     return;
                   }
-                } catch (e) {
+                } catch (_e) {
                   // Ignore inner parse error
                 }
               }
 
               // Fallback: If we can't find tables, return empty
-              console.warn(
-                "[Drive] Could not extract tables from backup header",
-              );
+              console.warn("[Drive] Could not extract tables from backup header");
               resolve([]);
             } catch {
               resolve([]);

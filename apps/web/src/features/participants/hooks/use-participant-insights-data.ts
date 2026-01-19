@@ -3,10 +3,8 @@ import dayjs from "dayjs";
 import { useState } from "react";
 
 import { formatRut } from "@/lib/rut";
-
-import type { LeaderboardDisplayRow } from "../types";
-
 import { type LeaderboardParams, participantQueries } from "../queries";
+import type { LeaderboardDisplayRow } from "../types";
 
 const MAX_MONTHS = 12;
 
@@ -23,7 +21,9 @@ export function useParticipantInsightsData() {
   const [quickMonth, setQuickMonth] = useState("current");
   const [leaderboardLimit, setLeaderboardLimit] = useState(10);
   const [leaderboardGrouping, setLeaderboardGrouping] = useState<"account" | "rut">("account");
-  const [selectedRange, setSelectedRange] = useState<RangeParams>(() => resolveRange("current", "", ""));
+  const [selectedRange, setSelectedRange] = useState<RangeParams>(() =>
+    resolveRange("current", "", ""),
+  );
 
   // Derived
   const activeParticipantId = (participantId || "").trim();
@@ -36,7 +36,9 @@ export function useParticipantInsightsData() {
   };
 
   // 1. Leaderboard (Suspense-enabled)
-  const { data: leaderboardData } = useSuspenseQuery(participantQueries.leaderboard(leaderboardParams));
+  const { data: leaderboardData } = useSuspenseQuery(
+    participantQueries.leaderboard(leaderboardParams),
+  );
   const leaderboard = leaderboardData.participants || [];
 
   // 2. Details (Click-to-fetch, keeps useQuery)
@@ -48,7 +50,7 @@ export function useParticipantInsightsData() {
     participantQueries.detail({
       participantId: activeParticipantId,
       ...selectedRange,
-    })
+    }),
   );
 
   const monthly = detailData?.monthly || [];
@@ -60,8 +62,10 @@ export function useParticipantInsightsData() {
 
   // Account Grouping
   const accountRows: LeaderboardDisplayRow[] = leaderboard.map((row) => {
-    const selectKey = row.participant || row.bankAccountNumber || row.withdrawId || row.identificationNumber || "";
-    const displayName = row.bankAccountHolder || row.displayName || row.participant || "(sin información)";
+    const selectKey =
+      row.participant || row.bankAccountNumber || row.withdrawId || row.identificationNumber || "";
+    const displayName =
+      row.bankAccountHolder || row.displayName || row.participant || "(sin información)";
     const rutValue =
       row.identificationNumber && typeof row.identificationNumber === "string"
         ? formatRut(String(row.identificationNumber))
@@ -135,7 +139,8 @@ export function useParticipantInsightsData() {
       });
   })();
 
-  const displayedLeaderboard: LeaderboardDisplayRow[] = leaderboardGrouping === "account" ? accountRows : rutRows;
+  const displayedLeaderboard: LeaderboardDisplayRow[] =
+    leaderboardGrouping === "account" ? accountRows : rutRows;
 
   // Options
   const quickMonthOptions = (() => {

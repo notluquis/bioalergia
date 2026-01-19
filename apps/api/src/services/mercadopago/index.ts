@@ -1,11 +1,5 @@
-import {
-  MP_API,
-  mpFetch,
-  safeMpJson,
-  checkMpConfig,
-  MP_ACCESS_TOKEN,
-} from "./client";
-import { processReportUrl, ImportStats } from "./ingest";
+import { checkMpConfig, MP_ACCESS_TOKEN, MP_API, mpFetch, safeMpJson } from "./client";
+import { type ImportStats, processReportUrl } from "./ingest";
 
 // Re-export webhook password for controller
 export { MP_WEBHOOK_PASSWORD } from "./client";
@@ -26,7 +20,7 @@ export const MercadoPagoService = {
    */
   async createReport(
     type: "release" | "settlement",
-    range: { begin_date: string; end_date: string } | any
+    range: { begin_date: string; end_date: string } | any,
   ) {
     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
     const res = await mpFetch("", baseUrl, {
@@ -59,7 +53,7 @@ export const MercadoPagoService = {
    */
   async processReport(
     type: "release" | "settlement",
-    source: { url?: string; fileName?: string }
+    source: { url?: string; fileName?: string },
   ): Promise<ImportStats> {
     let downloadUrl = source.url;
 

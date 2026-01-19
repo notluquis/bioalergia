@@ -81,7 +81,8 @@ export default function ServicesOverviewContent() {
     },
   ];
 
-  const activeFiltersCount = (filters.search.trim() ? 1 : 0) + filters.statuses.size + filters.types.size;
+  const activeFiltersCount =
+    (filters.search.trim() ? 1 : 0) + filters.statuses.size + filters.types.size;
   const showInitialLoading = aggregatedLoading && services.length === 0;
 
   if (showInitialLoading) {
@@ -132,14 +133,19 @@ export default function ServicesOverviewContent() {
               <span className="badge badge-primary badge-sm">{activeFiltersCount} activos</span>
             )}
           </div>
-          <ServicesFilterPanel filters={filters} onChange={handleFilterChange} services={services} />
+          <ServicesFilterPanel
+            filters={filters}
+            onChange={handleFilterChange}
+            services={services}
+          />
         </div>
       </div>
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base-content text-base font-semibold">
-            Servicios {filteredServices.length !== services.length && `(${filteredServices.length})`}
+            Servicios{" "}
+            {filteredServices.length !== services.length && `(${filteredServices.length})`}
           </h2>
         </div>
 
@@ -198,7 +204,11 @@ export default function ServicesOverviewContent() {
           }}
           submitLabel="Crear servicio"
         />
-        {createError && <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{createError}</p>}
+        {createError && (
+          <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
+            {createError}
+          </p>
+        )}
       </Modal>
 
       <Modal
@@ -250,9 +260,18 @@ export default function ServicesOverviewContent() {
               rows={2}
               value={paymentForm.note}
             />
-            {paymentError && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{paymentError}</p>}
+            {paymentError && (
+              <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
+                {paymentError}
+              </p>
+            )}
             <div className="flex justify-end gap-3">
-              <Button disabled={processingPayment} onClick={closePaymentModal} type="button" variant="secondary">
+              <Button
+                disabled={processingPayment}
+                onClick={closePaymentModal}
+                type="button"
+                variant="secondary"
+              >
                 Cancelar
               </Button>
               <Button disabled={processingPayment} type="submit">

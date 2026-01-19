@@ -1,9 +1,5 @@
-import {
-  type AppSettings,
-  dbKeyToSettingsKey,
-  DEFAULT_SETTINGS,
-} from "../lib/settings";
 import { db } from "@finanzas/db";
+import { type AppSettings, DEFAULT_SETTINGS, dbKeyToSettingsKey } from "../lib/settings";
 
 export async function loadSettings(): Promise<AppSettings> {
   const settings = await db.setting.findMany();

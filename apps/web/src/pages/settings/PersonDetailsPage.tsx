@@ -11,7 +11,7 @@ export default function PersonDetailsPage() {
   const navigate = useNavigate();
 
   const { data: person, isLoading } = useQuery(
-    id ? personKeys.detail(id) : { queryFn: skipToken, queryKey: ["person-skip"] }
+    id ? personKeys.detail(id) : { queryFn: skipToken, queryKey: ["person-skip"] },
   );
 
   if (isLoading) {
@@ -25,7 +25,10 @@ export default function PersonDetailsPage() {
   if (!person) {
     return (
       <div className="space-y-6">
-        <button className="btn btn-ghost btn-sm gap-2" onClick={() => navigate({ to: "/settings/people" })}>
+        <button
+          className="btn btn-ghost btn-sm gap-2"
+          onClick={() => navigate({ to: "/settings/people" })}
+        >
           <ArrowLeft size={16} />
           Volver
         </button>
@@ -36,7 +39,10 @@ export default function PersonDetailsPage() {
 
   return (
     <div className="space-y-6">
-      <button className="btn btn-ghost btn-sm gap-2" onClick={() => navigate({ to: "/settings/people" })}>
+      <button
+        className="btn btn-ghost btn-sm gap-2"
+        onClick={() => navigate({ to: "/settings/people" })}
+      >
         <ArrowLeft size={16} />
         Volver
       </button>
@@ -97,7 +103,9 @@ export default function PersonDetailsPage() {
                 <div>
                   <p className="text-base-content/50 text-xs">Fecha de Nacimiento</p>
                   <p className="font-medium">
-                    {person.birthDate ? dayjs(person.birthDate).format("DD MMM YYYY") : "No registrada"}
+                    {person.birthDate
+                      ? dayjs(person.birthDate).format("DD MMM YYYY")
+                      : "No registrada"}
                   </p>
                 </div>
               </div>

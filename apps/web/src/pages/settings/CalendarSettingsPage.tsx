@@ -1,17 +1,22 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, Calendar, CheckCircle2, RefreshCw } from "lucide-react";
-
-import type { CalendarData } from "@/features/calendar/types";
-
 import Button from "@/components/ui/Button";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { calendarQueries } from "@/features/calendar/queries";
+import type { CalendarData } from "@/features/calendar/types";
 import { cn } from "@/lib/utils";
 
 export default function CalendarSettingsPage() {
-  const { hasRunningSyncFromOtherSource, syncDurationMs, syncError, syncing, syncLogs, syncNow, syncProgress } =
-    useCalendarEvents();
+  const {
+    hasRunningSyncFromOtherSource,
+    syncDurationMs,
+    syncError,
+    syncing,
+    syncLogs,
+    syncNow,
+    syncProgress,
+  } = useCalendarEvents();
 
   // Fetch calendars
   const { data: calendars } = useSuspenseQuery(calendarQueries.list());
@@ -36,7 +41,8 @@ export default function CalendarSettingsPage() {
             <div>
               <h2 className="text-lg font-bold">Sincronización automática</h2>
               <p className="text-base-content/60 text-sm">
-                Webhooks activos para sincronización en tiempo real. Sincronización de respaldo cada 15 minutos.
+                Webhooks activos para sincronización en tiempo real. Sincronización de respaldo cada
+                15 minutos.
               </p>
               {lastSync && (
                 <p className="text-base-content/50 mt-1 text-xs">

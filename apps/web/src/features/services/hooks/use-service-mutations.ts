@@ -1,12 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@/context/AuthContext";
-
-import type { CreateServicePayload, RegenerateServicePayload, ServiceListResponse } from "../types";
-
-import { createService, extractErrorMessage, regenerateServiceSchedules, unlinkServicePayment } from "../api";
+import {
+  createService,
+  extractErrorMessage,
+  regenerateServiceSchedules,
+  unlinkServicePayment,
+} from "../api";
 import { serviceKeys } from "../queries";
 import { servicesActions } from "../store";
+import type { CreateServicePayload, RegenerateServicePayload, ServiceListResponse } from "../types";
 
 export function useServiceMutations() {
   const { can } = useAuth();

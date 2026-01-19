@@ -1,24 +1,10 @@
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
 import { streamSSE } from "hono/streaming";
-
 import { getSessionUser, hasPermission } from "../auth";
 import { isOAuthConfigured } from "../lib/google/google-core";
-import {
-  createBackup,
-  getCurrentJobs,
-  getJobHistory,
-  getLogs,
-  startBackup,
-} from "../services/backups";
-import {
-  BackupFile,
-  downloadFromDrive,
-  getBackupInfo,
-  getBackupTables,
-  listBackups,
-  uploadToDrive,
-} from "../services/drive";
+import { getCurrentJobs, getJobHistory, getLogs, startBackup } from "../services/backups";
+import { getBackupTables, listBackups } from "../services/drive";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -46,8 +32,7 @@ app.get("/", async (c) => {
         status: "ok",
         jobs: getCurrentJobs(),
         backups: [],
-        warning:
-          "Google Drive no configurado. Configura las credenciales OAuth para ver backups.",
+        warning: "Google Drive no configurado. Configura las credenciales OAuth para ver backups.",
       });
     }
 
@@ -61,10 +46,7 @@ app.get("/", async (c) => {
       status: "ok",
       jobs: getCurrentJobs(),
       backups: [],
-      error:
-        error instanceof Error
-          ? error.message
-          : "Error al conectar con Google Drive",
+      error: error instanceof Error ? error.message : "Error al conectar con Google Drive",
     });
   }
 });
@@ -94,8 +76,7 @@ app.post("/", async (c) => {
       c,
       {
         status: "error",
-        message:
-          error instanceof Error ? error.message : "Error starting backup",
+        message: error instanceof Error ? error.message : "Error starting backup",
       },
       500,
     );
@@ -123,8 +104,7 @@ app.get("/:fileId/tables", async (c) => {
       c,
       {
         status: "error",
-        message:
-          error instanceof Error ? error.message : "Error al obtener tablas",
+        message: error instanceof Error ? error.message : "Error al obtener tablas",
       },
       500,
     );
@@ -197,8 +177,7 @@ app.post("/:fileId/restore", async (c) => {
       c,
       {
         status: "error",
-        message:
-          error instanceof Error ? error.message : "Error starting restore",
+        message: error instanceof Error ? error.message : "Error starting restore",
       },
       500,
     );

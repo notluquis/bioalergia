@@ -41,9 +41,12 @@ export function accountFilterKey(filter: AccountTransactionFilter) {
   return `${filter.sourceId ?? ""}|${filter.bankAccountNumber ?? ""}`;
 }
 
-export function buildAccountTransactionFilter(account: CounterpartAccount): AccountTransactionFilter {
+export function buildAccountTransactionFilter(
+  account: CounterpartAccount,
+): AccountTransactionFilter {
   const withdrawId = account.metadata?.withdrawId?.trim();
-  const bankAccountNumber = account.metadata?.bankAccountNumber?.trim() ?? account.account_identifier.trim();
+  const bankAccountNumber =
+    account.metadata?.bankAccountNumber?.trim() ?? account.account_identifier.trim();
   const filter: AccountTransactionFilter = {};
   if (withdrawId) {
     filter.sourceId = withdrawId;

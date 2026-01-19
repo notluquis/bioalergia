@@ -9,8 +9,8 @@
  *   pnpm validate:permissions
  */
 
-import * as path from "path";
-import { fileURLToPath } from "url";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,10 +20,7 @@ const __dirname = path.dirname(__filename);
 // ============================================================================
 
 async function loadRouteData() {
-  const routeDataPath = path.resolve(
-    __dirname,
-    "../apps/web/shared/route-data.ts",
-  );
+  const routeDataPath = path.resolve(__dirname, "../apps/web/shared/route-data.ts");
   // Use dynamic import to load the ES module
   const { ROUTE_DATA, API_PERMISSIONS } = await import(routeDataPath);
   return { ROUTE_DATA, API_PERMISSIONS };
@@ -117,9 +114,7 @@ async function validate() {
   const frontendSubjects = extractPermissionsFromRoutes(ROUTE_DATA);
 
   // Add API-only permissions
-  API_PERMISSIONS.forEach((p: RoutePermission) =>
-    frontendSubjects.add(p.subject),
-  );
+  API_PERMISSIONS.forEach((p: RoutePermission) => frontendSubjects.add(p.subject));
 
   // Backend permissions
   const backendSubjects = new Set(BACKEND_SUBJECTS);
@@ -127,14 +122,10 @@ async function validate() {
   // ============================================================================
   // Check 1: Undefined Permissions (CRITICAL)
   // ============================================================================
-  const undefined = Array.from(frontendSubjects).filter(
-    (s) => !backendSubjects.has(s),
-  );
+  const undefined = Array.from(frontendSubjects).filter((s) => !backendSubjects.has(s));
 
   if (undefined.length > 0) {
-    console.error(
-      "❌ CRITICAL: Permissions used in routes but NOT defined in backend:\n",
-    );
+    console.error("❌ CRITICAL: Permissions used in routes but NOT defined in backend:\n");
     undefined.forEach((s) => console.error(`   - ${s}`));
     console.error("\n💡 Fix: Add these to apps/api/src/services/roles.ts\n");
     process.exit(1);
@@ -158,27 +149,19 @@ async function validate() {
   if (duplicates.length > 0) {
     console.warn("\n⚠️  WARNING: Duplicate permissions in backend:\n");
     duplicates.forEach((s) => console.warn(`   - ${s}`));
-    console.warn(
-      "\n💡 Fix: Remove duplicates from apps/api/src/services/roles.ts\n",
-    );
+    console.warn("\n💡 Fix: Remove duplicates from apps/api/src/services/roles.ts\n");
     // Don't exit - this is just a warning
   }
 
   // ============================================================================
   // Check 3: Unused Permissions (INFO)
   // ============================================================================
-  const unused = Array.from(backendSubjects).filter(
-    (s) => !frontendSubjects.has(s),
-  );
+  const unused = Array.from(backendSubjects).filter((s) => !frontendSubjects.has(s));
 
   if (unused.length > 0) {
-    console.log(
-      "\nℹ️  Permissions defined but not used in routes (may be OK):\n",
-    );
+    console.log("\nℹ️  Permissions defined but not used in routes (may be OK):\n");
     unused.forEach((s) => console.log(`   - ${s}`));
-    console.log(
-      "\n💡 Note: These may be used in component-level checks or API endpoints\n",
-    );
+    console.log("\n💡 Note: These may be used in component-level checks or API endpoints\n");
   }
 
   // ============================================================================

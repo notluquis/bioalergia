@@ -2,7 +2,7 @@ import { DataTable } from "@/components/data-table/DataTable";
 
 import type { TimesheetSummaryRow } from "../types";
 
-import { getTimesheetSummaryColumns, SummaryTotals } from "./TimesheetSummaryColumns";
+import { getTimesheetSummaryColumns, type SummaryTotals } from "./TimesheetSummaryColumns";
 
 interface TimesheetSummaryTableProps {
   loading: boolean;

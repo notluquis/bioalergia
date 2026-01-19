@@ -1,9 +1,6 @@
 import cron from "node-cron";
 import { googleCalendarConfig } from "../../config";
-import {
-  createCalendarSyncLogEntry,
-  finalizeCalendarSyncLogEntry,
-} from "../../services/calendar";
+import { createCalendarSyncLogEntry, finalizeCalendarSyncLogEntry } from "../../services/calendar";
 
 import { logEvent, logWarn } from "../logger";
 import { syncGoogleCalendarOnce } from "./google-calendar.js";
@@ -69,8 +66,7 @@ export function startGoogleCalendarScheduler() {
         } catch (error) {
           await finalizeCalendarSyncLogEntry(logId, {
             status: "ERROR",
-            errorMessage:
-              error instanceof Error ? error.message : String(error),
+            errorMessage: error instanceof Error ? error.message : String(error),
           });
           logWarn("googleCalendar.sync.error", {
             label: job.label,

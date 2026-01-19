@@ -13,14 +13,18 @@ export async function fetchStats(from: string, to: string): Promise<StatsRespons
   return apiClient.get<StatsResponse>(`/api/transactions/stats?${params.toString()}`);
 }
 
-export async function fetchTopParticipants(from: string, to: string, limit = 5): Promise<TopParticipantData[]> {
+export async function fetchTopParticipants(
+  from: string,
+  to: string,
+  limit = 5,
+): Promise<TopParticipantData[]> {
   const params = new URLSearchParams();
   if (from) params.set("from", from);
   if (to) params.set("to", to);
   params.set("limit", String(limit));
 
   const response = await apiClient.get<{ data: TopParticipantData[] }>(
-    `/api/transactions/participants?${params.toString()}`
+    `/api/transactions/participants?${params.toString()}`,
   );
 
   return response.data ?? [];

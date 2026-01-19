@@ -22,7 +22,7 @@ export function BottomNav() {
 
   React.useEffect(() => {
     setPendingPath(null);
-  }, [pathname]);
+  }, []);
 
   const isActive = (path: string) => {
     if (path === "/") return pathname === "/";
@@ -47,7 +47,9 @@ export function BottomNav() {
               type="button"
             >
               {/* Active Background Pill */}
-              {active && <div aria-hidden="true" className="bg-primary/10 absolute inset-0 rounded-3xl" />}
+              {active && (
+                <div aria-hidden="true" className="bg-primary/10 absolute inset-0 rounded-3xl" />
+              )}
 
               <span className="relative z-10 flex flex-col items-center gap-1">
                 <Icon

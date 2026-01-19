@@ -15,7 +15,14 @@ interface MoneyInputProps {
 /**
  * Reusable currency input component for financial forms
  */
-export function MoneyInput({ disabled, hint, icon, label, onChange, value }: Readonly<MoneyInputProps>) {
+export function MoneyInput({
+  disabled,
+  hint,
+  icon,
+  label,
+  onChange,
+  value,
+}: Readonly<MoneyInputProps>) {
   return (
     <div className="form-control">
       <label className="label py-1">

@@ -9,7 +9,9 @@ const columnHelper = createColumnHelper<SettlementTransaction>();
 export const getSettlementColumns = (): ColumnDef<SettlementTransaction, any>[] => [
   columnHelper.accessor("transactionDate", {
     cell: ({ getValue }) => (
-      <span className="text-base-content font-medium">{dayjs(getValue() as Date | string).format("DD/MM/YYYY")}</span>
+      <span className="text-base-content font-medium">
+        {dayjs(getValue() as Date | string).format("DD/MM/YYYY")}
+      </span>
     ),
     header: "Fecha",
   }),
@@ -21,7 +23,9 @@ export const getSettlementColumns = (): ColumnDef<SettlementTransaction, any>[] 
     header: "Monto Transacción",
   }),
   columnHelper.accessor("settlementNetAmount", {
-    cell: ({ getValue }) => <span className="font-semibold">{fmtCLP(getValue() as unknown as number)}</span>,
+    cell: ({ getValue }) => (
+      <span className="font-semibold">{fmtCLP(getValue() as unknown as number)}</span>
+    ),
     header: "Monto Neto",
   }),
   columnHelper.accessor("realAmount", {

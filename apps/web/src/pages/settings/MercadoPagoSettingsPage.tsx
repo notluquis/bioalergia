@@ -21,7 +21,7 @@ import { getMpReportColumns } from "@/features/finance/mercadopago/components/Mp
 import { mercadoPagoKeys } from "@/features/finance/mercadopago/queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import { type ImportStats, type MpReportType, MPService } from "@/services/mercadopago";
+import { type ImportStats, MPService, type MpReportType } from "@/services/mercadopago";
 
 const ALL_TABLE_COLUMNS = [
   { key: "id", label: "ID" },
@@ -39,7 +39,7 @@ export default function MercadoPagoSettingsPage() {
   const [activeTab, setActiveTab] = useState<MpReportType>("release");
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
-    new Set(["actions", "begin_date", "date", "end_date", "file", "status"])
+    new Set(["actions", "begin_date", "date", "end_date", "file", "status"]),
   );
   const [lastImportStats, setLastImportStats] = useState<ImportStats | null>(null);
 
@@ -91,7 +91,9 @@ export default function MercadoPagoSettingsPage() {
     },
     onSuccess: (stats) => {
       setLastImportStats(stats);
-      showSuccess(`Reporte procesado: ${stats.insertedRows} insertados, ${stats.duplicateRows} duplicados`);
+      showSuccess(
+        `Reporte procesado: ${stats.insertedRows} insertados, ${stats.duplicateRows} duplicados`,
+      );
       setProcessingFile(null);
     },
   });
@@ -100,7 +102,7 @@ export default function MercadoPagoSettingsPage() {
     e.preventDefault();
     if (
       confirm(
-        `¿Estás seguro de sincronizar el reporte ${fileName}? Esto podría duplicar datos si no se detecta correctamente.`
+        `¿Estás seguro de sincronizar el reporte ${fileName}? Esto podría duplicar datos si no se detecta correctamente.`,
       )
     ) {
       setProcessingFile(fileName);
@@ -114,7 +116,7 @@ export default function MercadoPagoSettingsPage() {
     handleProcess,
     downloadMutation.isPending,
     processMutation.isPending,
-    processingFile
+    processingFile,
   );
 
   return (
@@ -126,7 +128,8 @@ export default function MercadoPagoSettingsPage() {
           <button
             className={cn(
               "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
-              activeTab === "release" && "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all"
+              activeTab === "release" &&
+                "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all",
             )}
             onClick={() => {
               setActiveTab("release");
@@ -139,7 +142,7 @@ export default function MercadoPagoSettingsPage() {
             className={cn(
               "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
               activeTab === "settlement" &&
-                "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all"
+                "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all",
             )}
             onClick={() => {
               setActiveTab("settlement");
@@ -215,7 +218,9 @@ export default function MercadoPagoSettingsPage() {
                   {lastImportStats.errors.slice(0, 5).map((err, i) => (
                     <li key={i}>{err}</li>
                   ))}
-                  {lastImportStats.errors.length > 5 && <li>...y {lastImportStats.errors.length - 5} más</li>}
+                  {lastImportStats.errors.length > 5 && (
+                    <li>...y {lastImportStats.errors.length - 5} más</li>
+                  )}
                 </ul>
               </div>
             )}

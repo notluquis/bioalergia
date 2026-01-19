@@ -22,7 +22,7 @@ export async function hashPassword(password: string): Promise<string> {
  */
 export async function verifyPassword(
   password: string,
-  hash: string
+  hash: string,
 ): Promise<{ valid: boolean; needsRehash: boolean }> {
   // Standard Argon2 Verification
   try {

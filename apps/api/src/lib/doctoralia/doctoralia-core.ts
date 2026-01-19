@@ -19,9 +19,7 @@ let cachedToken: { token: string; expiresAt: number } | null = null;
  * Check if Doctoralia is configured
  */
 export function isDoctoraliaConfigured(): boolean {
-  return !!(
-    process.env.DOCTORALIA_CLIENT_ID && process.env.DOCTORALIA_CLIENT_SECRET
-  );
+  return !!(process.env.DOCTORALIA_CLIENT_ID && process.env.DOCTORALIA_CLIENT_SECRET);
 }
 
 /**
@@ -66,9 +64,7 @@ export async function getAccessToken(): Promise<string> {
       expiresAt: now + response.data.expires_in * 1000,
     };
 
-    console.log(
-      `[Doctoralia] Token obtained, expires in ${response.data.expires_in}s`,
-    );
+    console.log(`[Doctoralia] Token obtained, expires in ${response.data.expires_in}s`);
 
     return cachedToken.token;
   } catch (error) {

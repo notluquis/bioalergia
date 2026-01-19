@@ -5,19 +5,18 @@
  * Follows the pattern in routes/calendar.ts
  */
 
-import { Hono, type Context } from "hono";
+import { type Context, Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth.js";
-import { reply } from "../utils/reply.js";
-import { isDoctoraliaConfigured } from "../lib/doctoralia/doctoralia-core.js";
 import * as doctoraliaClient from "../lib/doctoralia/doctoralia-client.js";
+import { isDoctoraliaConfigured } from "../lib/doctoralia/doctoralia-core.js";
 import {
-  getDoctoraliaFacilitiesWithCounts,
-  getDoctoraliaDoctorsWithAddresses,
-  listDoctoraliaSyncLogs,
   createDoctoraliaSyncLogEntry,
   finalizeDoctoraliaSyncLogEntry,
+  getDoctoraliaDoctorsWithAddresses,
+  getDoctoraliaFacilitiesWithCounts,
+  listDoctoraliaSyncLogs,
 } from "../services/doctoralia.js";
-import * as store from "../lib/doctoralia/doctoralia-store.js";
+import { reply } from "../utils/reply.js";
 
 export const doctoraliaRoutes = new Hono();
 
@@ -54,8 +53,7 @@ doctoraliaRoutes.get("/status", requireAuth, async (c) => {
 
 doctoraliaRoutes.get("/facilities", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user)
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "DoctoraliaFacility");
   if (!canRead) {
@@ -70,28 +68,23 @@ doctoraliaRoutes.get("/facilities", requireAuth, async (c) => {
 // DOCTORS (from DB cache)
 // ============================================================
 
-doctoraliaRoutes.get(
-  "/facilities/:facilityId/doctors",
-  requireAuth,
-  async (c) => {
-    const user = await getSessionUser(c);
-    if (!user)
-      return reply(c, { status: "error", message: "No autorizado" }, 401);
+doctoraliaRoutes.get("/facilities/:facilityId/doctors", requireAuth, async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-    const canRead = await hasPermission(user.id, "read", "DoctoraliaDoctor");
-    if (!canRead) {
-      return reply(c, { status: "error", message: "Sin permisos" }, 403);
-    }
+  const canRead = await hasPermission(user.id, "read", "DoctoraliaDoctor");
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Sin permisos" }, 403);
+  }
 
-    const facilityId = Number(c.req.param("facilityId"));
-    if (Number.isNaN(facilityId)) {
-      return reply(c, { status: "error", message: "facilityId inválido" }, 400);
-    }
+  const facilityId = Number(c.req.param("facilityId"));
+  if (Number.isNaN(facilityId)) {
+    return reply(c, { status: "error", message: "facilityId inválido" }, 400);
+  }
 
-    const doctors = await getDoctoraliaDoctorsWithAddresses(facilityId);
-    return reply(c, { status: "ok", doctors });
-  },
-);
+  const doctors = await getDoctoraliaDoctorsWithAddresses(facilityId);
+  return reply(c, { status: "ok", doctors });
+});
 
 // ============================================================
 // SLOTS (from API)
@@ -105,29 +98,15 @@ doctoraliaRoutes.get(
     const { start, end } = c.req.query();
 
     if (!start || !end) {
-      return reply(
-        c,
-        { status: "error", message: "start y end son requeridos" },
-        400,
-      );
+      return reply(c, { status: "error", message: "start y end son requeridos" }, 400);
     }
 
     try {
-      const data = await doctoraliaClient.getSlots(
-        facilityId,
-        doctorId,
-        addressId,
-        start,
-        end,
-      );
+      const data = await doctoraliaClient.getSlots(facilityId, doctorId, addressId, start, end);
       return reply(c, { status: "ok", slots: data._items });
     } catch (error) {
       console.error("[Doctoralia] getSlots error:", error);
-      return reply(
-        c,
-        { status: "error", message: "Error al obtener slots" },
-        500,
-      );
+      return reply(c, { status: "error", message: "Error al obtener slots" }, 500);
     }
   },
 );
@@ -144,22 +123,13 @@ doctoraliaRoutes.get(
     const { start, end } = c.req.query();
 
     if (!start || !end) {
-      return reply(
-        c,
-        { status: "error", message: "start y end son requeridos" },
-        400,
-      );
+      return reply(c, { status: "error", message: "start y end son requeridos" }, 400);
     }
 
     try {
-      const data = await doctoraliaClient.getBookings(
-        facilityId,
-        doctorId,
-        addressId,
-        start,
-        end,
-        { withPatient: true },
-      );
+      const data = await doctoraliaClient.getBookings(facilityId, doctorId, addressId, start, end, {
+        withPatient: true,
+      });
       return reply(c, {
         status: "ok",
         bookings: data._items,
@@ -172,11 +142,7 @@ doctoraliaRoutes.get(
       });
     } catch (error) {
       console.error("[Doctoralia] getBookings error:", error);
-      return reply(
-        c,
-        { status: "error", message: "Error al obtener reservas" },
-        500,
-      );
+      return reply(c, { status: "error", message: "Error al obtener reservas" }, 500);
     }
   },
 );
@@ -190,14 +156,9 @@ doctoraliaRoutes.post(
   requireAuth,
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user)
-      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-    const canCreate = await hasPermission(
-      user.id,
-      "create",
-      "DoctoraliaBooking",
-    );
+    const canCreate = await hasPermission(user.id, "create", "DoctoraliaBooking");
     if (!canCreate) {
       return reply(c, { status: "error", message: "Sin permisos" }, 403);
     }
@@ -216,11 +177,7 @@ doctoraliaRoutes.post(
       return reply(c, { status: "ok", booking }, 201);
     } catch (error) {
       console.error("[Doctoralia] bookSlot error:", error);
-      return reply(
-        c,
-        { status: "error", message: "Error al crear reserva" },
-        500,
-      );
+      return reply(c, { status: "error", message: "Error al crear reserva" }, 500);
     }
   },
 );
@@ -234,14 +191,9 @@ doctoraliaRoutes.delete(
   requireAuth,
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user)
-      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-    const canDelete = await hasPermission(
-      user.id,
-      "delete",
-      "DoctoraliaBooking",
-    );
+    const canDelete = await hasPermission(user.id, "delete", "DoctoraliaBooking");
     if (!canDelete) {
       return reply(c, { status: "error", message: "Sin permisos" }, 403);
     }
@@ -260,11 +212,7 @@ doctoraliaRoutes.delete(
       return reply(c, { status: "ok" }, 204);
     } catch (error) {
       console.error("[Doctoralia] cancelBooking error:", error);
-      return reply(
-        c,
-        { status: "error", message: "Error al cancelar reserva" },
-        500,
-      );
+      return reply(c, { status: "error", message: "Error al cancelar reserva" }, 500);
     }
   },
 );
@@ -275,8 +223,7 @@ doctoraliaRoutes.delete(
 
 doctoraliaRoutes.get("/sync/logs", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user)
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const logs = await listDoctoraliaSyncLogs(50);
   return reply(c, {
@@ -303,8 +250,7 @@ doctoraliaRoutes.get("/sync/logs", requireAuth, async (c) => {
 
 doctoraliaRoutes.post("/sync", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user)
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canSync = await hasPermission(user.id, "update", "DoctoraliaFacility");
   if (!canSync) {
@@ -339,8 +285,7 @@ doctoraliaRoutes.post("/sync", requireAuth, async (c) => {
       202,
     );
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Error desconocido";
+    const message = error instanceof Error ? error.message : "Error desconocido";
     return reply(c, { status: "error", message }, 500);
   }
 });
@@ -373,19 +318,13 @@ doctoraliaRoutes.post("/webhook", async (c) => {
     }
     case "booking-canceled": {
       // Booking was canceled
-      console.log(
-        "[Doctoralia Webhook] Booking canceled:",
-        body.data?.booking?.id,
-      );
+      console.log("[Doctoralia Webhook] Booking canceled:", body.data?.booking?.id);
       // TODO: Update booking status in DB
       break;
     }
     case "booking-moved": {
       // Booking was rescheduled
-      console.log(
-        "[Doctoralia Webhook] Booking moved:",
-        body.data?.booking?.id,
-      );
+      console.log("[Doctoralia Webhook] Booking moved:", body.data?.booking?.id);
       // TODO: Update booking in DB
       break;
     }

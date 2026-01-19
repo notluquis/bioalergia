@@ -1,4 +1,4 @@
-import { Context } from "hono";
+import type { Context } from "hono";
 import superjson from "superjson";
 
 export const reply = (c: Context, data: any, status = 200) => {

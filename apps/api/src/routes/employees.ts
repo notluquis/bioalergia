@@ -1,13 +1,13 @@
 import { Hono } from "hono";
-import { reply } from "../utils/reply";
 import { getSessionUser, hasPermission } from "../auth";
 import {
-  listEmployees,
   createEmployee,
-  updateEmployee,
   deactivateEmployee,
   getEmployeeById,
+  listEmployees,
+  updateEmployee,
 } from "../services/employees";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -27,10 +27,7 @@ app.get("/", async (c) => {
     return reply(c, { status: "ok", employees });
   } catch (error) {
     console.error("[employees] list error:", error);
-    return reply(c, 
-      { status: "error", message: "Error al listar empleados" },
-      500
-    );
+    return reply(c, { status: "error", message: "Error al listar empleados" }, 500);
   }
 });
 
@@ -50,18 +47,12 @@ app.get("/:id", async (c) => {
   try {
     const employee = await getEmployeeById(id);
     if (!employee) {
-      return reply(c, 
-        { status: "error", message: "Empleado no encontrado" },
-        404
-      );
+      return reply(c, { status: "error", message: "Empleado no encontrado" }, 404);
     }
     return reply(c, { status: "ok", employee });
   } catch (error) {
     console.error("[employees] get error:", error);
-    return reply(c, 
-      { status: "error", message: "Error al obtener empleado" },
-      500
-    );
+    return reply(c, { status: "error", message: "Error al obtener empleado" }, 500);
   }
 });
 
@@ -77,18 +68,14 @@ app.post("/", async (c) => {
     const body = await c.req.json();
 
     if (!body.rut || !body.full_name) {
-      return reply(c, 
-        { status: "error", message: "RUT y nombre completo son requeridos" },
-        400
-      );
+      return reply(c, { status: "error", message: "RUT y nombre completo son requeridos" }, 400);
     }
 
     const employee = await createEmployee(body);
     return reply(c, { status: "ok", employee });
   } catch (error) {
     console.error("[employees] create error:", error);
-    const message =
-      error instanceof Error ? error.message : "Error al crear empleado";
+    const message = error instanceof Error ? error.message : "Error al crear empleado";
     return reply(c, { status: "error", message }, 500);
   }
 });
@@ -112,8 +99,7 @@ app.put("/:id", async (c) => {
     return reply(c, { status: "ok", employee });
   } catch (error) {
     console.error("[employees] update error:", error);
-    const message =
-      error instanceof Error ? error.message : "Error al actualizar empleado";
+    const message = error instanceof Error ? error.message : "Error al actualizar empleado";
     return reply(c, { status: "error", message }, 500);
   }
 });
@@ -136,8 +122,7 @@ app.delete("/:id", async (c) => {
     return reply(c, { status: "ok" });
   } catch (error) {
     console.error("[employees] deactivate error:", error);
-    const message =
-      error instanceof Error ? error.message : "Error al desactivar empleado";
+    const message = error instanceof Error ? error.message : "Error al desactivar empleado";
     return reply(c, { status: "error", message }, 500);
   }
 });

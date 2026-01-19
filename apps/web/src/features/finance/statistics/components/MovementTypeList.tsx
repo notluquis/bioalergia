@@ -15,7 +15,11 @@ interface MovementTypeListProps {
 
 export default function MovementTypeList({ data }: MovementTypeListProps) {
   if (data.length === 0) {
-    return <div className="text-base-content/60 py-6 text-center text-sm">No hay movimientos para mostrar</div>;
+    return (
+      <div className="text-base-content/60 py-6 text-center text-sm">
+        No hay movimientos para mostrar
+      </div>
+    );
   }
 
   // Group by direction
@@ -23,7 +27,12 @@ export default function MovementTypeList({ data }: MovementTypeListProps) {
   const outgoingData = data.filter((item) => item.direction === "OUT");
   const neutralData = data.filter((item) => item.direction === "NEUTRO");
 
-  const renderList = (items: MovementTypeData[], icon: React.ReactNode, title: string, colorClass: string) => {
+  const renderList = (
+    items: MovementTypeData[],
+    icon: React.ReactNode,
+    title: string,
+    colorClass: string,
+  ) => {
     if (items.length === 0) return null;
 
     return (
@@ -39,7 +48,9 @@ export default function MovementTypeList({ data }: MovementTypeListProps) {
               key={index}
             >
               <span className="text-sm">{item.description ?? "Sin categoría"}</span>
-              <span className={`font-mono text-sm font-semibold ${colorClass}`}>{fmtCLP(item.total)}</span>
+              <span className={`font-mono text-sm font-semibold ${colorClass}`}>
+                {fmtCLP(item.total)}
+              </span>
             </div>
           ))}
         </div>
@@ -49,9 +60,24 @@ export default function MovementTypeList({ data }: MovementTypeListProps) {
 
   return (
     <div className="space-y-6">
-      {renderList(incomingData, <ArrowUp className="text-success h-4 w-4" />, "Ingresos", "text-success")}
-      {renderList(outgoingData, <ArrowDown className="text-error h-4 w-4" />, "Egresos", "text-error")}
-      {renderList(neutralData, <Minus className="text-base-content/50 h-4 w-4" />, "Neutros", "text-base-content/70")}
+      {renderList(
+        incomingData,
+        <ArrowUp className="text-success h-4 w-4" />,
+        "Ingresos",
+        "text-success",
+      )}
+      {renderList(
+        outgoingData,
+        <ArrowDown className="text-error h-4 w-4" />,
+        "Egresos",
+        "text-error",
+      )}
+      {renderList(
+        neutralData,
+        <Minus className="text-base-content/50 h-4 w-4" />,
+        "Neutros",
+        "text-base-content/70",
+      )}
     </div>
   );
 }

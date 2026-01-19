@@ -1,16 +1,14 @@
 import { useState } from "react";
-
-import type { Employee } from "@/features/hr/employees/types";
-
 import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
+import type { Employee } from "@/features/hr/employees/types";
 
 import type { BulkRow } from "../types";
 
 import { formatDateLabel } from "../utils";
-import { getTimesheetDetailColumns, TimesheetTableMeta } from "./TimesheetDetailColumns";
+import { getTimesheetDetailColumns, type TimesheetTableMeta } from "./TimesheetDetailColumns";
 
 interface TimesheetDetailTableProps {
   bulkRows: BulkRow[];
@@ -22,7 +20,11 @@ interface TimesheetDetailTableProps {
   onBulkSave: () => void;
   onRemoveEntry: (row: BulkRow) => void;
   onResetRow: (index: number) => void;
-  onRowChange: (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => void;
+  onRowChange: (
+    index: number,
+    field: keyof Omit<BulkRow, "date" | "entryId">,
+    value: string,
+  ) => void;
   onSalidaBlur: (index: number) => void;
   pendingCount: number;
   saving: boolean;
@@ -86,7 +88,9 @@ export default function TimesheetDetailTable({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-base-content/70 text-sm">
           <span className="font-semibold">{monthLabel}</span>
-          {selectedEmployee && <span className="text-base-content/60 ml-2">· {selectedEmployee.full_name}</span>}
+          {selectedEmployee && (
+            <span className="text-base-content/60 ml-2">· {selectedEmployee.full_name}</span>
+          )}
         </div>
         {canEdit && (
           <div className="flex items-center gap-2">

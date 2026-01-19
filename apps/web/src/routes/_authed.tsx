@@ -55,7 +55,9 @@ function AuthedLayout() {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
   // Detect if mobile/tablet (md breakpoint)
-  const [isMobile, setIsMobile] = React.useState(!globalThis.matchMedia("(min-width: 768px)").matches);
+  const [isMobile, setIsMobile] = React.useState(
+    !globalThis.matchMedia("(min-width: 768px)").matches,
+  );
   const [debouncedIsMobile] = useDebouncedValue(isMobile, { wait: 150 });
 
   React.useEffect(() => {
@@ -166,7 +168,9 @@ function AuthedLayout() {
               }`}
             />
           </span>
-          <span className="text-xs font-medium tracking-wide uppercase">{sidebarOpen ? "Cerrar" : "Menú"}</span>
+          <span className="text-xs font-medium tracking-wide uppercase">
+            {sidebarOpen ? "Cerrar" : "Menú"}
+          </span>
         </button>
 
         {/* Overlay for mobile/tablet when sidebar is open */}
@@ -205,7 +209,10 @@ function AuthedLayout() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="text-base-content/70 flex cursor-help items-center gap-2 text-xs">
-                      <span aria-label="Sistema operativo" className="bg-success/70 inline-flex h-2 w-2 rounded-full" />
+                      <span
+                        aria-label="Sistema operativo"
+                        className="bg-success/70 inline-flex h-2 w-2 rounded-full"
+                      />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>

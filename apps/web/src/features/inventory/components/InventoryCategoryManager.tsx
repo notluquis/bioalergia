@@ -39,14 +39,16 @@ export default function InventoryCategoryManager() {
         onSuccess: () => {
           setNewCategoryName("");
         },
-      }
+      },
     );
   }
 
   return (
     <section className="bg-base-100 space-y-5 p-6">
       <div className="space-y-1">
-        <h2 className="text-secondary text-lg font-semibold drop-shadow-sm">Categorías de Inventario</h2>
+        <h2 className="text-secondary text-lg font-semibold drop-shadow-sm">
+          Categorías de Inventario
+        </h2>
         <p className="text-base-content/70 text-sm">
           Administra las categorías para organizar los items del inventario.
         </p>
@@ -54,7 +56,9 @@ export default function InventoryCategoryManager() {
 
       <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={handleAddCategory}>
         <label className="flex-1" htmlFor="new-category-name">
-          <span className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">Nueva Categoría</span>
+          <span className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">
+            Nueva Categoría
+          </span>
           <Input
             className="w-full"
             disabled={createMutation.isPending}

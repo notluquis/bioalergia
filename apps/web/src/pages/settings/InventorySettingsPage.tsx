@@ -1,15 +1,22 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { Box, ChevronDown, ChevronRight, Edit2, Loader2, Package, Plus, Trash2 } from "lucide-react";
+import {
+  Box,
+  ChevronDown,
+  ChevronRight,
+  Edit2,
+  Loader2,
+  Package,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
-
-import type { InventoryItem } from "@/features/inventory/types";
-
 import Button from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { createInventoryCategory, deleteInventoryCategory } from "@/features/inventory/api";
 import { inventoryKeys } from "@/features/inventory/queries";
+import type { InventoryItem } from "@/features/inventory/types";
 
 const getStockStatusColor = (stock: number) => {
   if (stock <= 0) return "text-error";
@@ -142,7 +149,10 @@ export default function InventorySettingsPage() {
                   >
                     Cancelar
                   </Button>
-                  <Button disabled={createMutation.isPending || !newCategoryName.trim()} type="submit">
+                  <Button
+                    disabled={createMutation.isPending || !newCategoryName.trim()}
+                    type="submit"
+                  >
                     {createMutation.isPending ? <Loader2 className="animate-spin" /> : "Guardar"}
                   </Button>
                 </div>
@@ -187,7 +197,11 @@ function InventoryList({
   }
 
   if (categories.length === 0 && uncategorizedItems.length === 0) {
-    return <div className="text-base-content/50 py-12 text-center">No hay categorías ni items registrados.</div>;
+    return (
+      <div className="text-base-content/50 py-12 text-center">
+        No hay categorías ni items registrados.
+      </div>
+    );
   }
 
   return (
@@ -251,9 +265,13 @@ function InventoryList({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{item.name}</p>
-                      {item.description && <p className="text-base-content/50 truncate text-xs">{item.description}</p>}
+                      {item.description && (
+                        <p className="text-base-content/50 truncate text-xs">{item.description}</p>
+                      )}
                     </div>
-                    <span className={`text-xs font-medium ${getStockStatusColor(item.current_stock)}`}>
+                    <span
+                      className={`text-xs font-medium ${getStockStatusColor(item.current_stock)}`}
+                    >
                       Stock: {item.current_stock}
                     </span>
                   </div>
@@ -309,9 +327,13 @@ function InventoryList({
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{item.name}</p>
-                    {item.description && <p className="text-base-content/50 truncate text-xs">{item.description}</p>}
+                    {item.description && (
+                      <p className="text-base-content/50 truncate text-xs">{item.description}</p>
+                    )}
                   </div>
-                  <span className={`text-xs font-medium ${getStockStatusColor(item.current_stock)}`}>
+                  <span
+                    className={`text-xs font-medium ${getStockStatusColor(item.current_stock)}`}
+                  >
                     Stock: {item.current_stock}
                   </span>
                 </div>

@@ -67,8 +67,7 @@ export const EmployeeStatus = {
   TERMINATED: "TERMINATED",
 } as const;
 
-export type EmployeeStatus =
-  (typeof EmployeeStatus)[keyof typeof EmployeeStatus];
+export type EmployeeStatus = (typeof EmployeeStatus)[keyof typeof EmployeeStatus];
 
 export const EmployeeSalaryType = {
   FIXED: "FIXED",
@@ -78,8 +77,7 @@ export const EmployeeSalaryType = {
 // Decimal type handling (ZenStack/Kysely with pg driver typically accepts string/number for input)
 export type Decimal = number | string;
 
-export type EmployeeSalaryType =
-  (typeof EmployeeSalaryType)[keyof typeof EmployeeSalaryType];
+export type EmployeeSalaryType = (typeof EmployeeSalaryType)[keyof typeof EmployeeSalaryType];
 
 // eslint-disable-next-line sonarjs/redundant-type-aliases
 export type InputJsonValue = JsonValue;
@@ -89,12 +87,6 @@ export interface JsonObject {
 }
 
 // Simplified Json types for compatibility
-export type JsonValue =
-  | boolean
-  | JsonArray
-  | JsonObject
-  | null
-  | number
-  | string;
+export type JsonValue = boolean | JsonArray | JsonObject | null | number | string;
 
 export { schema } from "./zenstack/schema.js";

@@ -1,16 +1,16 @@
-import { Hono } from "hono";
-import { reply } from "../utils/reply";
-import { getSessionUser, hasPermission } from "../auth";
 import dayjs from "dayjs";
+import { Hono } from "hono";
+import { getSessionUser, hasPermission } from "../auth";
 import {
   buildMonthlySummary,
-  listTimesheetEntries,
-  upsertTimesheetEntry,
-  updateTimesheetEntry,
   deleteTimesheetEntry,
+  listTimesheetEntries,
   normalizeTimesheetPayload,
   type UpsertTimesheetPayload,
+  updateTimesheetEntry,
+  upsertTimesheetEntry,
 } from "../services/timesheets";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 
@@ -76,10 +76,7 @@ app.get("/", async (c) => {
     return reply(c, { status: "ok", entries });
   } catch (error) {
     console.error("[timesheets] list error:", error);
-    return reply(c, 
-      { status: "error", message: "Error al listar registros" },
-      500
-    );
+    return reply(c, { status: "error", message: "Error al listar registros" }, 500);
   }
 });
 
@@ -108,10 +105,7 @@ app.get("", async (c) => {
     return reply(c, { status: "ok", entries });
   } catch (error) {
     console.error("[timesheets] list error:", error);
-    return reply(c, 
-      { status: "error", message: "Error al listar registros" },
-      500
-    );
+    return reply(c, { status: "error", message: "Error al listar registros" }, 500);
   }
 });
 
@@ -195,10 +189,7 @@ app.get("/multi-month", async (c) => {
     return reply(c, { status: "ok", data });
   } catch (error) {
     console.error("[timesheets] multi-month error:", error);
-    return reply(c, 
-      { status: "error", message: "Error al cargar datos multi-mes" },
-      500
-    );
+    return reply(c, { status: "error", message: "Error al cargar datos multi-mes" }, 500);
   }
 });
 
@@ -241,10 +232,7 @@ app.get("/multi-detail", async (c) => {
     return reply(c, { entries: allEntries });
   } catch (error) {
     console.error("[timesheets] multi-detail error:", error);
-    return reply(c, 
-      { status: "error", message: "Error al cargar detalles" },
-      500
-    );
+    return reply(c, { status: "error", message: "Error al cargar detalles" }, 500);
   }
 });
 
@@ -269,10 +257,8 @@ app.get("/:employeeId/range", async (c) => {
     }
 
     const query = c.req.query();
-    const startDate =
-      query.startDate || dayjs().startOf("month").format("YYYY-MM-DD");
-    const endDate =
-      query.endDate || dayjs().endOf("month").format("YYYY-MM-DD");
+    const startDate = query.startDate || dayjs().startOf("month").format("YYYY-MM-DD");
+    const endDate = query.endDate || dayjs().endOf("month").format("YYYY-MM-DD");
 
     const entries = await listTimesheetEntries({
       employee_id: employeeId,
@@ -347,14 +333,11 @@ app.post("/", async (c) => {
   try {
     const body = await c.req.json();
     const normalized = normalizeTimesheetPayload(body);
-    const entry = await upsertTimesheetEntry(
-      normalized as UpsertTimesheetPayload
-    );
+    const entry = await upsertTimesheetEntry(normalized as UpsertTimesheetPayload);
     return reply(c, { status: "ok", entry });
   } catch (error) {
     console.error("[timesheets] create error:", error);
-    const message =
-      error instanceof Error ? error.message : "Error al guardar registro";
+    const message = error instanceof Error ? error.message : "Error al guardar registro";
     return reply(c, { status: "error", message }, 500);
   }
 });
@@ -393,8 +376,7 @@ app.post("/bulk", async (c) => {
     return reply(c, { status: "ok", inserted, removed });
   } catch (error) {
     console.error("[timesheets] bulk error:", error);
-    const message =
-      error instanceof Error ? error.message : "Error al procesar registros";
+    const message = error instanceof Error ? error.message : "Error al procesar registros";
     return reply(c, { status: "error", message }, 500);
   }
 });
@@ -418,8 +400,7 @@ app.put("/:id", async (c) => {
     return reply(c, { status: "ok", entry });
   } catch (error) {
     console.error("[timesheets] update error:", error);
-    const message =
-      error instanceof Error ? error.message : "Error al actualizar registro";
+    const message = error instanceof Error ? error.message : "Error al actualizar registro";
     return reply(c, { status: "error", message }, 500);
   }
 });
@@ -442,8 +423,7 @@ app.delete("/:id", async (c) => {
     return reply(c, { status: "ok" });
   } catch (error) {
     console.error("[timesheets] delete error:", error);
-    const message =
-      error instanceof Error ? error.message : "Error al eliminar registro";
+    const message = error instanceof Error ? error.message : "Error al eliminar registro";
     return reply(c, { status: "error", message }, 500);
   }
 });
@@ -464,22 +444,13 @@ app.post("/prepare-email", async (c) => {
 
   try {
     const body = await c.req.json();
-    const {
-      employeeId,
-      month,
-      monthLabel,
-      pdfBase64,
-      employeeName,
-      employeeEmail,
-      summary,
-    } = body;
+    const { employeeId, month, monthLabel, pdfBase64, employeeName, employeeEmail, summary } = body;
 
     // Convert PDF to .eml format for download
     const filename = `liquidacion_${month}_${employeeId}.eml`;
 
     // Build HTML email body matching preview
-    const totalMinutes =
-      (summary.workedMinutes || 0) + (summary.overtimeMinutes || 0);
+    const totalMinutes = (summary.workedMinutes || 0) + (summary.overtimeMinutes || 0);
     const totalHrs = Math.floor(totalMinutes / 60);
     const totalMins = totalMinutes % 60;
     const totalHoursFormatted = `${String(totalHrs).padStart(2, "0")}:${String(totalMins).padStart(2, "0")}`;
@@ -495,11 +466,8 @@ app.post("/prepare-email", async (c) => {
     };
 
     // Get retention rate
-    const summaryYear = month
-      ? parseInt(month.split("-")[0]!, 10)
-      : new Date().getFullYear();
-    const employeeRate =
-      summary.retentionRate || summary.retention_rate || null;
+    const summaryYear = month ? parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
+    const employeeRate = summary.retentionRate || summary.retention_rate || null;
     const effectiveRate = employeeRate ?? (summaryYear >= 2024 ? 0.1275 : 0.1);
     const retentionPercent = `${(effectiveRate * 100).toFixed(2)}%`;
 
@@ -588,7 +556,7 @@ app.post("/prepare-email", async (c) => {
 `.trim();
 
     // Create EML with HTML content and attachment
-    const boundary = "----=_Part_" + Date.now();
+    const boundary = `----=_Part_${Date.now()}`;
     const emlContent = [
       `MIME-Version: 1.0`,
       `Content-Type: multipart/mixed; boundary="${boundary}"`,
@@ -619,10 +587,7 @@ app.post("/prepare-email", async (c) => {
     });
   } catch (error) {
     console.error("[timesheets] prepare-email error:", error);
-    return reply(c, 
-      { status: "error", message: "Error al preparar el email" },
-      500
-    );
+    return reply(c, { status: "error", message: "Error al preparar el email" }, 500);
   }
 });
 

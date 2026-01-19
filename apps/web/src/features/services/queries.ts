@@ -1,8 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
-
-import type { ServicesFilterState } from "./types";
-
 import { fetchServiceDetail, fetchServices } from "./api";
+import type { ServicesFilterState } from "./types";
 
 export const serviceKeys = {
   all: ["services"] as const,

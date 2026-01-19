@@ -50,7 +50,9 @@ function ServiceScheduleAccordion({
   const groups = (() => {
     if (schedules.length === 0) return [];
 
-    const sorted = [...schedules].toSorted((a, b) => dayjs(a.due_date).valueOf() - dayjs(b.due_date).valueOf());
+    const sorted = [...schedules].toSorted(
+      (a, b) => dayjs(a.due_date).valueOf() - dayjs(b.due_date).valueOf(),
+    );
 
     const today = dayjs().startOf("day");
     const map = new Map<string, ScheduleGroup>();
@@ -117,7 +119,9 @@ function ServiceScheduleAccordion({
     return (
       <section className="border-base-300 bg-base-200 text-base-content space-y-3 rounded-2xl border p-4 text-sm">
         <header className="flex items-center justify-between">
-          <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">Agenda de vencimientos</h2>
+          <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
+            Agenda de vencimientos
+          </h2>
         </header>
         <p className="text-base-content/60 text-xs">No hay cuotas generadas para este servicio.</p>
       </section>
@@ -127,7 +131,9 @@ function ServiceScheduleAccordion({
   return (
     <section className="border-base-300 bg-base-200 text-base-content space-y-3 rounded-2xl border p-4 text-sm">
       <header className="flex items-center justify-between">
-        <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">Agenda de vencimientos</h2>
+        <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
+          Agenda de vencimientos
+        </h2>
         <span className="text-base-content/50 text-xs">
           {service.pending_count + service.overdue_count} pendientes totales
         </span>
@@ -136,7 +142,10 @@ function ServiceScheduleAccordion({
         {groups.map((group) => {
           const isExpanded = expanded[group.dateKey] ?? false;
           return (
-            <article className="border-base-300 bg-base-200 rounded-xl border shadow-sm" key={group.dateKey}>
+            <article
+              className="border-base-300 bg-base-200 rounded-xl border shadow-sm"
+              key={group.dateKey}
+            >
               <button
                 className="hover:bg-base-200 flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors"
                 onClick={() => {
@@ -145,7 +154,9 @@ function ServiceScheduleAccordion({
                 type="button"
               >
                 <div>
-                  <p className="text-base-content text-sm font-semibold capitalize">{group.label}</p>
+                  <p className="text-base-content text-sm font-semibold capitalize">
+                    {group.label}
+                  </p>
                   <p className="text-base-content/50 text-xs">
                     {group.items.length} {group.items.length === 1 ? "cuota" : "cuotas"}
                   </p>
@@ -158,7 +169,9 @@ function ServiceScheduleAccordion({
                   ⌃
                 </span>
               </button>
-              <div className={isExpanded ? "border-base-300 space-y-2 border-t px-4 py-3" : "hidden"}>
+              <div
+                className={isExpanded ? "border-base-300 space-y-2 border-t px-4 py-3" : "hidden"}
+              >
                 {group.items.map((item) => {
                   const dueDate = dayjs(item.due_date);
                   const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
@@ -189,7 +202,9 @@ function ServiceScheduleAccordion({
                             statusClasses[item.status]
                           }`}
                         >
-                          {item.status === "PENDING" && isOverdue ? "Pendiente · Vencido" : item.status}
+                          {item.status === "PENDING" && isOverdue
+                            ? "Pendiente · Vencido"
+                            : item.status}
                         </span>
                       </div>
                       <div className="text-base-content/60 mt-2 flex flex-wrap items-center gap-4 text-xs">

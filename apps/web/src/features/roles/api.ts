@@ -1,9 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
-
-import type { Permission, Role } from "@/types/roles";
-
 import { fetchEmployees } from "@/features/hr/employees/api";
 import { apiClient } from "@/lib/api-client";
+import type { Permission, Role } from "@/types/roles";
 
 export const roleKeys = {
   all: ["roles"] as const,
@@ -74,7 +72,9 @@ export async function deleteRole(id: number) {
 }
 
 export async function fetchPermissions() {
-  const res = await apiClient.get<{ permissions: Permission[]; status: string }>("/api/roles/permissions");
+  const res = await apiClient.get<{ permissions: Permission[]; status: string }>(
+    "/api/roles/permissions",
+  );
   return res.permissions;
 }
 
@@ -113,6 +113,9 @@ export async function updateRole(id: number, data: RoleFormData) {
   return apiClient.put(`/api/roles/${id}`, data);
 }
 
-export async function updateRolePermissions({ permissionIds, roleId }: UpdateRolePermissionsParams) {
+export async function updateRolePermissions({
+  permissionIds,
+  roleId,
+}: UpdateRolePermissionsParams) {
   return apiClient.post(`/api/roles/${roleId}/permissions`, { permissionIds });
 }

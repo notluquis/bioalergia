@@ -1,7 +1,4 @@
 import { queryOptions } from "@tanstack/react-query";
-
-import type { CalendarFilters } from "./types";
-
 import {
   fetchCalendarDaily,
   fetchCalendarSummary,
@@ -10,6 +7,7 @@ import {
   fetchUnclassifiedCalendarEvents,
   type MissingFieldFilters,
 } from "./api";
+import type { CalendarFilters } from "./types";
 import { normalizeFilters } from "./utils/filters";
 
 export const calendarSyncKeys = {
@@ -21,7 +19,8 @@ export const calendarKeys = {
   all: ["calendar"] as const,
   daily: (filters: CalendarFilters) => ["calendar", "daily", normalizeFilters(filters)] as const,
   options: ["classification-options"] as const,
-  summary: (filters: CalendarFilters) => ["calendar", "summary", normalizeFilters(filters)] as const,
+  summary: (filters: CalendarFilters) =>
+    ["calendar", "summary", normalizeFilters(filters)] as const,
   unclassified: (page: number, pageSize: number, filters: MissingFieldFilters) =>
     ["calendar-unclassified", page, pageSize, filters] as const,
 };

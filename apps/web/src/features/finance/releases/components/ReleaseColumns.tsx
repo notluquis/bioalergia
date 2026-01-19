@@ -1,16 +1,16 @@
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowDownToLine, ArrowUpFromLine, ChevronDown, ChevronRight } from "lucide-react";
 
 import { formatAmount } from "@/features/finance/utils";
 
-import { ReleaseTransaction } from "../types";
+import type { ReleaseTransaction } from "../types";
 
 const moneyColumn = (
   accessorKey: keyof ReleaseTransaction,
   header: string,
   align: "center" | "right" = "right",
-  isNegative = false
+  isNegative = false,
 ): ColumnDef<ReleaseTransaction> => ({
   accessorKey,
   cell: ({ row }) => {
@@ -67,7 +67,9 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "recordType",
     cell: ({ row }) => (
-      <span className="badge badge-outline badge-sm whitespace-nowrap">{row.original.recordType}</span>
+      <span className="badge badge-outline badge-sm whitespace-nowrap">
+        {row.original.recordType}
+      </span>
     ),
     header: "Tipo",
     minSize: 150,
@@ -160,7 +162,9 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "transactionApprovalDate",
     cell: ({ row }) =>
-      row.original.transactionApprovalDate ? dayjs(row.original.transactionApprovalDate).format("DD/MM/YY HH:mm") : "-",
+      row.original.transactionApprovalDate
+        ? dayjs(row.original.transactionApprovalDate).format("DD/MM/YY HH:mm")
+        : "-",
     header: "Fecha Aprob.",
     minSize: 120,
   },

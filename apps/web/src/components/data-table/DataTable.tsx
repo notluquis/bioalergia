@@ -1,27 +1,27 @@
 import {
-  Column,
-  ColumnDef,
-  ColumnFiltersState,
-  ColumnPinningState,
-  ExpandedState,
+  type Column,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type ColumnPinningState,
+  type ExpandedState,
   flexRender,
   getCoreRowModel,
   getExpandedRowModel,
   getFilteredRowModel,
-  OnChangeFn,
-  PaginationState,
-  RowSelectionState,
-  SortingState,
+  type OnChangeFn,
+  type PaginationState,
+  type RowSelectionState,
+  type SortingState,
   useReactTable,
-  VisibilityState,
+  type VisibilityState,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import React, { CSSProperties, useRef, useState } from "react";
+import React, { type CSSProperties, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
 import { DataTablePagination } from "./DataTablePagination";
-import { DataTableFilterOption, DataTableToolbar } from "./DataTableToolbar";
+import { type DataTableFilterOption, DataTableToolbar } from "./DataTableToolbar";
 
 interface DataTableProps<TData, TValue> {
   readonly columns: ColumnDef<TData, TValue>[];
@@ -68,7 +68,9 @@ interface DataTableProps<TData, TValue> {
   /**
    * Optional component to render when row is expanded
    */
-  readonly renderSubComponent?: (props: { row: import("@tanstack/react-table").Row<TData> }) => React.ReactNode;
+  readonly renderSubComponent?: (props: {
+    row: import("@tanstack/react-table").Row<TData>;
+  }) => React.ReactNode;
   readonly rowSelection?: RowSelectionState;
 }
 
@@ -120,7 +122,8 @@ export function DataTable<TData, TValue>({
   const rowSelection = controlledRowSelection ?? internalRowSelection;
   const onRowSelectionChange = controlledOnRowSelectionChange ?? setInternalRowSelection;
   const columnVisibility = controlledColumnVisibility ?? internalColumnVisibility;
-  const onColumnVisibilityChange = controlledOnColumnVisibilityChange ?? setInternalColumnVisibility;
+  const onColumnVisibilityChange =
+    controlledOnColumnVisibilityChange ?? setInternalColumnVisibility;
 
   const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(initialPinning);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -270,7 +273,7 @@ export function DataTable<TData, TValue>({
             <tr
               className={cn(
                 "hover:bg-base-100/50 data-[state=selected]:bg-primary/10 border-base-200/50 border-b transition-colors last:border-0",
-                onRowClick && "cursor-pointer"
+                onRowClick && "cursor-pointer",
               )}
               data-state={row.getIsSelected() && "selected"}
               onClick={() => onRowClick?.(row.original)}
@@ -332,7 +335,9 @@ export function DataTable<TData, TValue>({
                           width: header.getSize(),
                         }}
                       >
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
                         <button
                           aria-label="Resize column"
                           className={`bg-base-300 absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none opacity-0 select-none group-hover:opacity-100 ${
@@ -372,7 +377,9 @@ export function DataTable<TData, TValue>({
                           width: header.getSize(),
                         }}
                       >
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.footer, header.getContext())}
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.footer, header.getContext())}
                       </td>
                     ))}
                   </tr>

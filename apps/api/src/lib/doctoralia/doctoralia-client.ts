@@ -6,20 +6,20 @@
  * Facility → Doctor → Address → [Slots, Bookings, Breaks, Services]
  */
 
-import { request, type GaxiosResponse } from "gaxios";
+import { type GaxiosResponse, request } from "gaxios";
 import { getAccessToken, getDoctoraliaDomain } from "./doctoralia-core.js";
 import type {
-  DoctoraliaFacility,
-  DoctoraliaDoctor,
-  DoctoraliaAddress,
-  DoctoraliaService,
-  DoctoraliaSlot,
-  DoctoraliaBooking,
-  DoctoraliaCalendarBreak,
-  DoctoraliaInsuranceProvider,
-  PaginatedResponse,
   BookSlotPayload,
   CreateBreakPayload,
+  DoctoraliaAddress,
+  DoctoraliaBooking,
+  DoctoraliaCalendarBreak,
+  DoctoraliaDoctor,
+  DoctoraliaFacility,
+  DoctoraliaInsuranceProvider,
+  DoctoraliaService,
+  DoctoraliaSlot,
+  PaginatedResponse,
   ReplaceSlotByDatePayload,
 } from "./doctoralia-types.js";
 
@@ -59,9 +59,7 @@ export async function getFacilities(): Promise<{
   return apiRequest("GET", "/facilities");
 }
 
-export async function getFacility(
-  facilityId: string,
-): Promise<DoctoraliaFacility> {
+export async function getFacility(facilityId: string): Promise<DoctoraliaFacility> {
   return apiRequest("GET", `/facilities/${facilityId}`);
 }
 
@@ -69,16 +67,11 @@ export async function getFacility(
 // DOCTORS
 // ============================================================
 
-export async function getDoctors(
-  facilityId: string,
-): Promise<{ _items: DoctoraliaDoctor[] }> {
+export async function getDoctors(facilityId: string): Promise<{ _items: DoctoraliaDoctor[] }> {
   return apiRequest("GET", `/facilities/${facilityId}/doctors`);
 }
 
-export async function getDoctor(
-  facilityId: string,
-  doctorId: string,
-): Promise<DoctoraliaDoctor> {
+export async function getDoctor(facilityId: string, doctorId: string): Promise<DoctoraliaDoctor> {
   return apiRequest("GET", `/facilities/${facilityId}/doctors/${doctorId}`);
 }
 
@@ -90,10 +83,7 @@ export async function getAddresses(
   facilityId: string,
   doctorId: string,
 ): Promise<{ _items: DoctoraliaAddress[] }> {
-  return apiRequest(
-    "GET",
-    `/facilities/${facilityId}/doctors/${doctorId}/addresses`,
-  );
+  return apiRequest("GET", `/facilities/${facilityId}/doctors/${doctorId}/addresses`);
 }
 
 export async function getAddress(
@@ -101,10 +91,7 @@ export async function getAddress(
   doctorId: string,
   addressId: string,
 ): Promise<DoctoraliaAddress> {
-  return apiRequest(
-    "GET",
-    `/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}`,
-  );
+  return apiRequest("GET", `/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}`);
 }
 
 // ============================================================

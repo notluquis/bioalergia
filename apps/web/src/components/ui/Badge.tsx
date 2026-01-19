@@ -1,5 +1,5 @@
 import { Chip } from "@heroui/react";
-import * as React from "react";
+import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,14 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 type BadgeSize = "default" | "lg" | "sm" | "xs";
 
-type BadgeVariant = "default" | "destructive" | "ghost" | "outline" | "secondary" | "success" | "warning";
+type BadgeVariant =
+  | "default"
+  | "destructive"
+  | "ghost"
+  | "outline"
+  | "secondary"
+  | "success"
+  | "warning";
 
 type ChipColor = "accent" | "danger" | "default" | "success" | "warning";
 // Map legacy variants to HeroUI v3 Chip props (based on actual installed types)
@@ -34,14 +41,24 @@ const sizeMap: Record<BadgeSize, "lg" | "md" | "sm"> = {
   xs: "sm",
 };
 
-function Badge({ children, className, size = "default", variant = "default" }: Readonly<BadgeProps>) {
+function Badge({
+  children,
+  className,
+  size = "default",
+  variant = "default",
+}: Readonly<BadgeProps>) {
   // eslint-disable-next-line security/detect-object-injection
   const chipProps = variantMap[variant];
   // eslint-disable-next-line security/detect-object-injection
   const chipSize = sizeMap[size];
 
   return (
-    <Chip className={cn(className)} color={chipProps.color} size={chipSize} variant={chipProps.variant}>
+    <Chip
+      className={cn(className)}
+      color={chipProps.color}
+      size={chipSize}
+      variant={chipProps.variant}
+    >
       {children}
     </Chip>
   );

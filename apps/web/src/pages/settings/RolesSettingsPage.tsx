@@ -12,7 +12,7 @@ import { RoleFormModal } from "@/features/roles/components/RoleFormModal";
 import { roleKeys } from "@/features/roles/queries";
 import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
 import { cn } from "@/lib/utils";
-import { Permission, Role } from "@/types/roles";
+import type { Permission, Role } from "@/types/roles";
 
 // --- Page Component ---
 
@@ -59,7 +59,9 @@ export default function RolesSettingsPage() {
       await queryClient.cancelQueries({ queryKey: ["roles"] });
       const previousRoles = queryClient.getQueryData<Role[]>(["roles"]);
 
-      queryClient.setQueryData<Role[]>(["roles"], (old) => optimisticUpdateRole(old, roleId, permissionIds));
+      queryClient.setQueryData<Role[]>(["roles"], (old) =>
+        optimisticUpdateRole(old, roleId, permissionIds),
+      );
 
       return { previousRoles };
     },
@@ -127,7 +129,11 @@ export default function RolesSettingsPage() {
   const usedPermissionIds = new Set<number>();
 
   // Pre-process navigation sections with permission data
-  const sectionsWithPermissions = processNavSections(getNavSections(), allPermissions || [], usedPermissionIds);
+  const sectionsWithPermissions = processNavSections(
+    getNavSections(),
+    allPermissions || [],
+    usedPermissionIds,
+  );
 
   return (
     <div className="space-y-6">
@@ -135,7 +141,9 @@ export default function RolesSettingsPage() {
         <CardHeader className="flex flex-row items-center justify-between gap-4 border-b pb-4">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Listado de roles</h2>
-            <p className="text-base-content/70 hidden text-sm md:block">Gestiona los permisos y roles del sistema</p>
+            <p className="text-base-content/70 hidden text-sm md:block">
+              Gestiona los permisos y roles del sistema
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {/* Role Filter Selector */}
@@ -216,7 +224,11 @@ export default function RolesSettingsPage() {
 }
 
 // Helper: Optimistic Update Logic
-function optimisticUpdateRole(oldRoles: Role[] | undefined, roleId: number, permissionIds: number[]): Role[] {
+function optimisticUpdateRole(
+  oldRoles: Role[] | undefined,
+  roleId: number,
+  permissionIds: number[],
+): Role[] {
   if (!oldRoles) return [];
   return oldRoles.map((role) => {
     if (role.id === roleId) {
@@ -235,7 +247,7 @@ function optimisticUpdateRole(oldRoles: Role[] | undefined, roleId: number, perm
 function processNavSections(
   navSections: NavSectionData[],
   allPermissions: Permission[],
-  usedPermissionIds: Set<number>
+  usedPermissionIds: Set<number>,
 ) {
   return navSections
     .map((section: NavSectionData) => {
@@ -245,7 +257,9 @@ function processNavSections(
 
           if (item.requiredPermission) {
             const subject = item.requiredPermission.subject;
-            const related = allPermissions.filter((p) => p.subject.toLowerCase() === subject.toLowerCase());
+            const related = allPermissions.filter(
+              (p) => p.subject.toLowerCase() === subject.toLowerCase(),
+            );
             perms.push(...related);
           }
 

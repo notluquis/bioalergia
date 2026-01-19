@@ -4,9 +4,6 @@ import type { PaginationState } from "@tanstack/react-table";
 import { ChevronUp, Plus } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
-
-import type { Employee } from "@/features/hr/employees/types";
-
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -15,6 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 import { columns } from "@/features/hr/employees/components/columns";
 import EmployeeForm from "@/features/hr/employees/components/EmployeeForm";
 import { employeeKeys } from "@/features/hr/employees/queries";
+import type { Employee } from "@/features/hr/employees/types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 // ... existing imports
 
@@ -42,7 +40,7 @@ export default function EmployeesPage() {
   const pageCount = Math.ceil(employees.length / pagination.pageSize);
   const paginatedEmployees = employees.slice(
     pagination.pageIndex * pagination.pageSize,
-    (pagination.pageIndex + 1) * pagination.pageSize
+    (pagination.pageIndex + 1) * pagination.pageSize,
   );
 
   // ... rest of mutation logic ...
@@ -61,7 +59,7 @@ export default function EmployeesPage() {
         onSuccess: () => {
           void queryClient.invalidateQueries({ queryKey: employeeKeys.all });
         },
-      }
+      },
     );
   }
 
@@ -73,7 +71,7 @@ export default function EmployeesPage() {
         onSuccess: () => {
           void queryClient.invalidateQueries({ queryKey: employeeKeys.all });
         },
-      }
+      },
     );
   }
 
@@ -146,7 +144,11 @@ export default function EmployeesPage() {
               Cerrar
             </Button>
           </div>
-          <EmployeeForm employee={editingEmployee} onCancel={handleCancel} onSave={handleSaveSuccess} />
+          <EmployeeForm
+            employee={editingEmployee}
+            onCancel={handleCancel}
+            onSave={handleSaveSuccess}
+          />
         </div>
       )}
 

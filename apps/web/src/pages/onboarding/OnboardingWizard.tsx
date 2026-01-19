@@ -1,12 +1,27 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Check, CreditCard, Fingerprint, Key, Loader2, Shield, Smartphone, User } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  CreditCard,
+  Fingerprint,
+  Key,
+  Loader2,
+  Shield,
+  Smartphone,
+  User,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
-import { enableMfa, fetchPasskeyRegistrationOptions, setupMfa, verifyPasskeyRegistration } from "@/features/auth/api";
+import {
+  enableMfa,
+  fetchPasskeyRegistrationOptions,
+  setupMfa,
+  verifyPasskeyRegistration,
+} from "@/features/auth/api";
 import { fetchUserProfile, setupUser } from "@/features/users/api";
 import { formatRut, validateRut } from "@/lib/rut";
 import { cn } from "@/lib/utils";
@@ -77,7 +92,8 @@ export default function OnboardingWizard() {
   const mfaSetupMutation = useMutation({
     mutationFn: () =>
       setupMfa().then((res) => {
-        if (res.status !== "ok") throw new Error(res.message ?? "Error al iniciar configuración MFA");
+        if (res.status !== "ok")
+          throw new Error(res.message ?? "Error al iniciar configuración MFA");
         return res;
       }),
     onError: () => {
@@ -111,8 +127,12 @@ export default function OnboardingWizard() {
       const { startRegistration } = await import("@simplewebauthn/browser");
       const attResp = await startRegistration({ optionsJSON: options });
 
-      const verifyData = await verifyPasskeyRegistration({ body: attResp, challenge: options.challenge });
-      if (verifyData.status !== "ok") throw new Error(verifyData.message ?? "Error al verificar passkey");
+      const verifyData = await verifyPasskeyRegistration({
+        body: attResp,
+        challenge: options.challenge,
+      });
+      if (verifyData.status !== "ok")
+        throw new Error(verifyData.message ?? "Error al verificar passkey");
     },
     onError: (err) => {
       console.error(err);
@@ -235,7 +255,7 @@ export default function OnboardingWizard() {
                     "flex h-8 w-8 items-center justify-center rounded-full border-4 text-xs font-bold transition-all duration-300 sm:h-10 sm:w-10 sm:text-sm",
                     idx <= currentStep
                       ? "bg-primary text-primary-content border-primary shadow-primary/30 scale-110 shadow-lg"
-                      : "bg-base-100 text-base-content/50 border-base-200"
+                      : "bg-base-100 text-base-content/50 border-base-200",
                   )}
                 >
                   {idx < currentStep ? <Check size={14} strokeWidth={3} /> : idx + 1}
@@ -249,7 +269,7 @@ export default function OnboardingWizard() {
                     // Always show current step label even on mobile
                     idx === currentStep && "block",
                     // Center the text
-                    "left-1/2 -translate-x-1/2"
+                    "left-1/2 -translate-x-1/2",
                   )}
                 >
                   {step.title}
@@ -272,10 +292,12 @@ export default function OnboardingWizard() {
                 <Shield size={40} />
               </div>
               <div>
-                <h1 className="text-base-content text-2xl font-bold break-all sm:text-3xl">Hola, {user?.email}</h1>
+                <h1 className="text-base-content text-2xl font-bold break-all sm:text-3xl">
+                  Hola, {user?.email}
+                </h1>
                 <p className="text-base-content/60 mx-auto mt-2 max-w-md">
-                  Bienvenido a la intranet de Bioalergia. Antes de comenzar, necesitamos completar tu perfil y asegurar
-                  tu cuenta.
+                  Bienvenido a la intranet de Bioalergia. Antes de comenzar, necesitamos completar
+                  tu perfil y asegurar tu cuenta.
                 </p>
               </div>
               <Button
@@ -392,7 +414,9 @@ export default function OnboardingWizard() {
                   <CreditCard size={24} />
                 </div>
                 <h2 className="text-2xl font-bold">Datos bancarios</h2>
-                <p className="text-base-content/60 text-sm">Para gestionar tus pagos y remuneraciones.</p>
+                <p className="text-base-content/60 text-sm">
+                  Para gestionar tus pagos y remuneraciones.
+                </p>
               </div>
 
               <div className="space-y-4">
@@ -516,8 +540,8 @@ export default function OnboardingWizard() {
                 </div>
                 <h2 className="text-2xl font-bold">Configurar MFA</h2>
                 <p className="text-base-content/60 text-sm">
-                  Escanea el código con tu app de autenticación (Google Authenticator, Microsoft Authenticator, Apple
-                  Passwords, etc).
+                  Escanea el código con tu app de autenticación (Google Authenticator, Microsoft
+                  Authenticator, Apple Passwords, etc).
                 </p>
               </div>
 
@@ -593,7 +617,9 @@ export default function OnboardingWizard() {
                   );
                 }
 
-                return <div className="text-error text-center">No se pudo cargar el código QR.</div>;
+                return (
+                  <div className="text-error text-center">No se pudo cargar el código QR.</div>
+                );
               })()}
             </div>
           )}
@@ -605,7 +631,9 @@ export default function OnboardingWizard() {
               </div>
               <div>
                 <h1 className="text-base-content text-3xl font-bold">¡Todo listo!</h1>
-                <p className="text-base-content/60 mt-2">Tu perfil ha sido completado y tu cuenta está segura.</p>
+                <p className="text-base-content/60 mt-2">
+                  Tu perfil ha sido completado y tu cuenta está segura.
+                </p>
               </div>
               <Button
                 className="shadow-primary/20 w-full max-w-xs shadow-lg"

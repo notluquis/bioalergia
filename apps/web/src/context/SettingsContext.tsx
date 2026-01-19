@@ -113,10 +113,11 @@ export function SettingsProvider({ children }: Readonly<{ children: ReactNode }>
 
   const updateSettings = async (next: AppSettings) => {
     logger.info("[settings] update:start", next);
-    const payload = await apiClient.put<{ message?: string; settings?: AppSettings; status: string }>(
-      "/api/settings/internal",
-      next
-    );
+    const payload = await apiClient.put<{
+      message?: string;
+      settings?: AppSettings;
+      status: string;
+    }>("/api/settings/internal", next);
     if (payload.status !== "ok" || !payload.settings) {
       logger.warn("[settings] update:error", { message: payload.message });
       throw new Error(payload.message ?? "No se pudo actualizar la configuración");
@@ -150,7 +151,12 @@ export function SettingsProvider({ children }: Readonly<{ children: ReactNode }>
 
   const loading = Boolean(user) && settingsQuery.isFetching;
 
-  const value: SettingsContextType = { canEdit: hasRole, loading, settings: currentSettings, updateSettings };
+  const value: SettingsContextType = {
+    canEdit: hasRole,
+    loading,
+    settings: currentSettings,
+    updateSettings,
+  };
 
   return <SettingsContext value={value}>{children}</SettingsContext>;
 }

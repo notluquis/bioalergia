@@ -133,7 +133,9 @@ export function ServiceDetail({
   const lateFeeLabel = (() => {
     if (!service) return "Sin recargo";
     const labels: Record<ServiceLateFeeMode, string> = {
-      FIXED: service.late_fee_value ? `$${service.late_fee_value.toLocaleString("es-CL")}` : "Monto fijo",
+      FIXED: service.late_fee_value
+        ? `$${service.late_fee_value.toLocaleString("es-CL")}`
+        : "Monto fijo",
       NONE: "Sin recargo",
       PERCENTAGE: service.late_fee_value == null ? "% del monto" : `${service.late_fee_value}%`,
     };
@@ -176,7 +178,9 @@ export function ServiceDetail({
     <section className="bg-base-100 relative flex h-full min-w-0 flex-col gap-6 rounded-3xl p-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <h1 className="text-primary text-2xl font-bold break-all drop-shadow-sm">{service.name}</h1>
+          <h1 className="text-primary text-2xl font-bold break-all drop-shadow-sm">
+            {service.name}
+          </h1>
           <p className="text-base-content text-sm">
             {service.detail || "Gasto"} · {serviceTypeLabel} · {ownershipLabel}
           </p>
@@ -219,7 +223,9 @@ export function ServiceDetail({
       <section className="border-base-300 bg-base-200 text-base-content grid gap-4 rounded-2xl border p-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
         <div>
           <p className="text-base-content/50 text-xs tracking-wide uppercase">Monto base</p>
-          <p className="text-base-content text-lg font-semibold">${service.default_amount.toLocaleString("es-CL")}</p>
+          <p className="text-base-content text-lg font-semibold">
+            ${service.default_amount.toLocaleString("es-CL")}
+          </p>
         </div>
         <div>
           <p className="text-base-content/50 text-xs tracking-wide uppercase">Pendientes</p>
@@ -255,7 +261,9 @@ export function ServiceDetail({
           {service.counterpart_account_identifier && (
             <p className="text-base-content/60 text-xs">
               Cuenta {service.counterpart_account_identifier}
-              {service.counterpart_account_bank_name ? ` · ${service.counterpart_account_bank_name}` : ""}
+              {service.counterpart_account_bank_name
+                ? ` · ${service.counterpart_account_bank_name}`
+                : ""}
             </p>
           )}
           {service.account_reference && (
@@ -269,7 +277,11 @@ export function ServiceDetail({
               if (service.emission_mode === "FIXED_DAY" && service.emission_day) {
                 return `Día ${service.emission_day}`;
               }
-              if (service.emission_mode === "DATE_RANGE" && service.emission_start_day && service.emission_end_day) {
+              if (
+                service.emission_mode === "DATE_RANGE" &&
+                service.emission_start_day &&
+                service.emission_end_day
+              ) {
                 return `Entre día ${service.emission_start_day} y ${service.emission_end_day}`;
               }
               if (service.emission_mode === "SPECIFIC_DATE" && service.emission_exact_date) {
@@ -394,7 +406,9 @@ export function ServiceDetail({
             />
           )}
           {regenerateError && (
-            <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{regenerateError}</p>
+            <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
+              {regenerateError}
+            </p>
           )}
           <div className="flex justify-end gap-3">
             <Button

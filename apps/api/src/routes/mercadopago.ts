@@ -7,31 +7,23 @@
  * - Settlement Report (Conciliación)
  */
 
-import { Hono } from "hono";
-import { reply } from "../utils/reply";
-import { stream } from "hono/streaming";
-import { getCookie } from "hono/cookie";
 import bcrypt from "bcryptjs";
-import { verifyToken } from "../lib/paseto";
+import { Hono } from "hono";
+import { stream } from "hono/streaming";
 import { hasPermission } from "../auth";
-import {
-  MercadoPagoService,
-  MP_WEBHOOK_PASSWORD,
-} from "../services/mercadopago";
+import { verifyToken } from "../lib/paseto";
+import { MercadoPagoService, MP_WEBHOOK_PASSWORD } from "../services/mercadopago";
+import { reply } from "../utils/reply";
 
 const COOKIE_NAME = "finanzas_session";
 
 export const mercadopagoRoutes = new Hono();
 
 // Helper to get auth
-async function getAuth(c: {
-  req: { header: (name: string) => string | undefined };
-}) {
+async function getAuth(c: { req: { header: (name: string) => string | undefined } }) {
   const cookieHeader = c.req.header("Cookie");
   if (!cookieHeader) return null;
-  const cookies = Object.fromEntries(
-    cookieHeader.split(";").map((c) => c.trim().split("="))
-  );
+  const cookies = Object.fromEntries(cookieHeader.split(";").map((c) => c.trim().split("=")));
   const token = cookies[COOKIE_NAME];
   if (!token) return null;
   try {
@@ -94,10 +86,7 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
   try {
     const res = await MercadoPagoService.downloadReport("release", fileName);
 
-    c.header(
-      "Content-Type",
-      res.headers.get("Content-Type") || "application/octet-stream"
-    );
+    c.header("Content-Type", res.headers.get("Content-Type") || "application/octet-stream");
     c.header("Content-Disposition", `attachment; filename="${fileName}"`);
 
     return stream(c, async (stream) => {
@@ -166,10 +155,7 @@ mercadopagoRoutes.get("/settlement/reports/download/:fileName", async (c) => {
   try {
     const res = await MercadoPagoService.downloadReport("settlement", fileName);
 
-    c.header(
-      "Content-Type",
-      res.headers.get("Content-Type") || "application/octet-stream"
-    );
+    c.header("Content-Type", res.headers.get("Content-Type") || "application/octet-stream");
     c.header("Content-Disposition", `attachment; filename="${fileName}"`);
 
     return stream(c, async (stream) => {
@@ -203,15 +189,12 @@ mercadopagoRoutes.post("/process-report", async (c) => {
   }>();
 
   if (!fileName || !reportType) {
-    return reply(c, 
-      { status: "error", message: "Missing fileName or reportType" },
-      400
-    );
+    return reply(c, { status: "error", message: "Missing fileName or reportType" }, 400);
   }
 
   try {
     console.log(
-      `[MP Process] Manual processing triggered for ${fileName} (${reportType}) by ${auth.email}`
+      `[MP Process] Manual processing triggered for ${fileName} (${reportType}) by ${auth.email}`,
     );
 
     const stats = await MercadoPagoService.processReport(reportType, {
@@ -267,10 +250,7 @@ mercadopagoRoutes.post("/webhook", async (c) => {
       const isValid = bcrypt.compareSync(expectedInput, payload.signature);
 
       if (!isValid && !payload.is_test) {
-        console.warn(
-          "[MP Webhook] Invalid signature for transaction:",
-          payload.transaction_id
-        );
+        console.warn("[MP Webhook] Invalid signature for transaction:", payload.transaction_id);
         return reply(c, { status: "error", message: "Invalid signature" }, 401);
       }
     }
@@ -281,16 +261,12 @@ mercadopagoRoutes.post("/webhook", async (c) => {
         console.log("[MP Webhook] Processing file:", file.name);
         if (file.type === ".csv" || file.name.endsWith(".csv")) {
           // Determine type from report_type
-          const type = payload.report_type.includes("settlement")
-            ? "settlement"
-            : "release";
+          const type = payload.report_type.includes("settlement") ? "settlement" : "release";
 
           // Process asynchronously
-          MercadoPagoService.processReport(type, { url: file.url }).catch(
-            (err) => {
-              console.error("[MP Webhook] Async processing failed:", err);
-            }
-          );
+          MercadoPagoService.processReport(type, { url: file.url }).catch((err) => {
+            console.error("[MP Webhook] Async processing failed:", err);
+          });
         }
       }
     }

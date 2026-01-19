@@ -11,7 +11,7 @@ import Input from "@/components/ui/Input";
 import { numberFormatter } from "@/lib/format";
 
 import { NULL_CATEGORY_VALUE, NULL_EVENT_TYPE_VALUE } from "../constants";
-import { CalendarFilters } from "../types";
+import type { CalendarFilters } from "../types";
 import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
 
 export interface CalendarFilterPanelProps {
@@ -38,7 +38,10 @@ export interface CalendarFilterPanelProps {
 }
 
 /** Filter state used by the filter panel - subset of CalendarFilters */
-export type FilterPanelState = Pick<CalendarFilters, "categories" | "eventTypes" | "from" | "search" | "to">;
+export type FilterPanelState = Pick<
+  CalendarFilters,
+  "categories" | "eventTypes" | "from" | "search" | "to"
+>;
 
 /**
  * Shared filter panel for calendar pages
@@ -75,7 +78,9 @@ export function CalendarFilterPanel({
     const currentTypes = filters.eventTypes ?? [];
     onFilterChange(
       "eventTypes",
-      currentTypes.includes(value) ? currentTypes.filter((id) => id !== value) : [...currentTypes, value]
+      currentTypes.includes(value)
+        ? currentTypes.filter((id) => id !== value)
+        : [...currentTypes, value],
     );
   };
 
@@ -84,7 +89,7 @@ export function CalendarFilterPanel({
       "categories",
       filters.categories.includes(value)
         ? filters.categories.filter((id) => id !== value)
-        : [...filters.categories, value]
+        : [...filters.categories, value],
     );
   };
 
@@ -165,7 +170,13 @@ export function CalendarFilterPanel({
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <Button disabled={loading || !isDirty} onClick={onReset} size="sm" type="button" variant="ghost">
+          <Button
+            disabled={loading || !isDirty}
+            onClick={onReset}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
             Limpiar
           </Button>
           <Button disabled={loading} size="sm" type="submit">

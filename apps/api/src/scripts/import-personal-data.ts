@@ -1,5 +1,5 @@
+import path from "node:path";
 import { config } from "dotenv";
-import path from "path";
 
 // Load env before anything else
 config({ path: path.resolve(process.cwd(), ".env") });
@@ -82,7 +82,7 @@ Detalle cuotas
 47/48 17/07/2029 $ 320.704 --
 48/48 17/08/2029 $ 320.726 --`;
 
-const RAW_ITAU = `Dividendos de las operaciones
+const _RAW_ITAU = `Dividendos de las operaciones
 Nº dividendo Fecha vencimiento Fecha pago Monto dividendo Monto en UF
 1 12/01/2026 $ 0 UF 16,24
 2 10/02/2026 $ 0 UF 9,68
@@ -177,8 +177,7 @@ async function main() {
     });
 
     // Parse BCI Rows
-    const bciRegex =
-      /(\d+)\/48\s+(\d{2}\/\d{2}\/\d{4})\s+\$\s+([\d.]+)\s+(?:--|\$\s+([\d.]+))/g;
+    const bciRegex = /(\d+)\/48\s+(\d{2}\/\d{2}\/\d{4})\s+\$\s+([\d.]+)\s+(?:--|\$\s+([\d.]+))/g;
     let match;
     while ((match = bciRegex.exec(RAW_BCI)) !== null) {
       const [_, num, dateStr, amountStr, paidAmountStr] = match;
@@ -188,7 +187,7 @@ async function main() {
       await db.personalCreditInstallment.create({
         data: {
           creditId: bciCredit.id,
-          installmentNumber: parseInt(num),
+          installmentNumber: parseInt(num, 10),
           dueDate: parseDate(dateStr),
           amount: amount as any,
           paidAmount: paidAmount as any,
@@ -218,8 +217,7 @@ async function main() {
       },
     });
 
-    const falaRegex =
-      /(\d+)\s+\$([\d.]+)\s+(\d{2}\/\d{2}\/\d{4})\s+(Vigente|Pagada vigente)/g;
+    const falaRegex = /(\d+)\s+\$([\d.]+)\s+(\d{2}\/\d{2}\/\d{4})\s+(Vigente|Pagada vigente)/g;
     let matchF;
     while ((matchF = falaRegex.exec(RAW_FALABELLA)) !== null) {
       const [_, num, amountStr, dateStr, statusStr] = matchF;
@@ -229,7 +227,7 @@ async function main() {
       await db.personalCreditInstallment.create({
         data: {
           creditId: falaCredit.id,
-          installmentNumber: parseInt(num),
+          installmentNumber: parseInt(num, 10),
           dueDate: parseDate(dateStr),
           amount: amount as any,
           status: isPaid ? "PAID" : "PENDING",

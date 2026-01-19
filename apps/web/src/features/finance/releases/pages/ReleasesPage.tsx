@@ -1,8 +1,8 @@
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { PaginationState, Updater } from "@tanstack/react-table";
+import type { PaginationState, Updater } from "@tanstack/react-table";
 import { Search } from "lucide-react";
-import { ChangeEvent, useState } from "react";
+import { type ChangeEvent, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import Input from "@/components/ui/Input";

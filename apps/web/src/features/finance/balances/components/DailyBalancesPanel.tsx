@@ -34,7 +34,9 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
           <h2 className="card-title text-primary text-lg">Registro de saldos</h2>
           {report?.previous && (
             <div className="badge badge-outline badge-lg gap-2">
-              <span className="text-xs">Saldo previo ({dayjs(report.previous.date).format("DD/MM")}):</span>
+              <span className="text-xs">
+                Saldo previo ({dayjs(report.previous.date).format("DD/MM")}):
+              </span>
               <span className="font-semibold">{fmtCLP(report.previous.balance)}</span>
             </div>
           )}
@@ -78,7 +80,11 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
       );
     }
     if (report.days.length === 0) {
-      return <p className="text-base-content px-4 py-3 text-sm">No hay días registrados en el rango actual.</p>;
+      return (
+        <p className="text-base-content px-4 py-3 text-sm">
+          No hay días registrados en el rango actual.
+        </p>
+      );
     }
 
     return (

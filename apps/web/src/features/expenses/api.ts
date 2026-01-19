@@ -13,7 +13,7 @@ export async function createMonthlyExpense(payload: CreateMonthlyExpensePayload)
 }
 
 export async function fetchMonthlyExpenseDetail(
-  publicId: string
+  publicId: string,
 ): Promise<{ expense: MonthlyExpenseDetail; status: "ok" }> {
   return apiClient.get(`/api/expenses/${publicId}`);
 }
@@ -36,16 +36,28 @@ export async function fetchMonthlyExpenseStats(params?: {
   return apiClient.get("/api/expenses/stats", { query: params });
 }
 
-export async function linkMonthlyExpenseTransaction(publicId: string, payload: LinkMonthlyExpenseTransactionPayload) {
-  return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>(`/api/expenses/${publicId}/link`, payload);
+export async function linkMonthlyExpenseTransaction(
+  publicId: string,
+  payload: LinkMonthlyExpenseTransactionPayload,
+) {
+  return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>(
+    `/api/expenses/${publicId}/link`,
+    payload,
+  );
 }
 
 export async function unlinkMonthlyExpenseTransaction(publicId: string, transactionId: number) {
-  return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>(`/api/expenses/${publicId}/unlink`, {
-    transactionId,
-  });
+  return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>(
+    `/api/expenses/${publicId}/unlink`,
+    {
+      transactionId,
+    },
+  );
 }
 
 export async function updateMonthlyExpense(publicId: string, payload: CreateMonthlyExpensePayload) {
-  return apiClient.put<{ expense: MonthlyExpenseDetail; status: "ok" }>(`/api/expenses/${publicId}`, payload);
+  return apiClient.put<{ expense: MonthlyExpenseDetail; status: "ok" }>(
+    `/api/expenses/${publicId}`,
+    payload,
+  );
 }

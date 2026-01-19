@@ -1,6 +1,5 @@
-import type { Movement } from "@/mp/reports";
-
 import { fmtCLP } from "@/lib/format";
+import type { Movement } from "@/mp/reports";
 
 export function formatAmount(direction: Movement["direction"], amount: number) {
   const formatted = fmtCLP(amount);

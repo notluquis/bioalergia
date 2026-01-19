@@ -1,12 +1,12 @@
+import { randomBytes } from "node:crypto";
+import { db } from "@finanzas/db";
 import { Hono } from "hono";
-import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { randomBytes } from "crypto";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import {
+  clearDriveClientCache,
   getOAuthClientBase,
   validateOAuthToken,
-  clearDriveClientCache,
 } from "../lib/google/google-core";
-import { db } from "@finanzas/db";
 import { logEvent, logWarn } from "../lib/logger";
 
 const OAUTH_TOKEN_KEY = "GOOGLE_OAUTH_REFRESH_TOKEN";
@@ -39,7 +39,7 @@ integrationRoutes.get("/google/url", async (c) => {
     });
 
     logEvent("google.oauth.auth_url_generated", {
-      state: state.substring(0, 8) + "...",
+      state: `${state.substring(0, 8)}...`,
     });
 
     return c.json({ url: authUrl });
@@ -69,9 +69,7 @@ integrationRoutes.get("/google/callback", async (c) => {
   // Handle errors from Google
   if (error) {
     logWarn("google.oauth.callback_error", { error, errorDescription });
-    return c.redirect(
-      `${frontendUrl}${settingsPath}?error=${encodeURIComponent(error)}`
-    );
+    return c.redirect(`${frontendUrl}${settingsPath}?error=${encodeURIComponent(error)}`);
   }
 
   // Verify state matches (CSRF protection)
@@ -116,9 +114,7 @@ integrationRoutes.get("/google/callback", async (c) => {
     logWarn("google.oauth.token_exchange_failed", {
       error: err instanceof Error ? err.message : "Unknown error",
     });
-    return c.redirect(
-      `${frontendUrl}${settingsPath}?error=token_exchange_failed`
-    );
+    return c.redirect(`${frontendUrl}${settingsPath}?error=token_exchange_failed`);
   }
 });
 
@@ -139,7 +135,7 @@ integrationRoutes.delete("/google/disconnect", async (c) => {
     logEvent("google.oauth.disconnected", {});
 
     return c.json({ success: true });
-  } catch (error) {
+  } catch (_error) {
     return c.json({ error: "Failed to disconnect" }, 500);
   }
 });

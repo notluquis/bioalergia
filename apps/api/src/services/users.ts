@@ -25,20 +25,14 @@ export async function findUserById(id: number) {
   });
 }
 
-export async function updateUserMfa(
-  userId: number,
-  secret: string | null,
-  enabled: boolean,
-) {
+export async function updateUserMfa(userId: number, secret: string | null, enabled: boolean) {
   return await db.user.update({
     where: { id: userId },
     data: { mfaSecret: secret, mfaEnabled: enabled },
   });
 }
 
-export function resolveUserRole(user: {
-  roles?: Array<{ role?: { name: string } }>;
-}): string[] {
+export function resolveUserRole(user: { roles?: Array<{ role?: { name: string } }> }): string[] {
   if (user.roles && Array.isArray(user.roles)) {
     return user.roles.map((r) => r.role?.name).filter((r): r is string => !!r);
   }

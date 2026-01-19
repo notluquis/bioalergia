@@ -31,7 +31,9 @@ export default function TimesheetsPage() {
   });
 
   const activeEmployees = employees.filter((e) => e.status === "ACTIVE");
-  const selectedEmployee = selectedEmployeeId ? (employees.find((e) => e.id === selectedEmployeeId) ?? null) : null;
+  const selectedEmployee = selectedEmployeeId
+    ? (employees.find((e) => e.id === selectedEmployeeId) ?? null)
+    : null;
 
   // 2. Summary (Depends on Month + potentially SelectedEmployee)
   const { data: summaryData } = useSuspenseQuery({
@@ -100,7 +102,7 @@ export default function TimesheetsPage() {
                 <optgroup key={group.year} label={group.year}>
                   {group.months.map((m) => {
                     const hasData = monthsWithData.has(m);
-                    const label = dayjs(m + "-01").format("MMMM");
+                    const label = dayjs(`${m}-01`).format("MMMM");
                     return (
                       <option key={m} value={m}>
                         {label} {hasData ? "✓" : ""}
@@ -118,7 +120,9 @@ export default function TimesheetsPage() {
         loading={false}
         onSelectEmployee={setSelectedEmployeeId}
         selectedEmployeeId={selectedEmployeeId}
-        summary={summaryData ? { employees: summaryData.employees, totals: summaryData.totals } : null}
+        summary={
+          summaryData ? { employees: summaryData.employees, totals: summaryData.totals } : null
+        }
       />
 
       {selectedEmployee && month && (

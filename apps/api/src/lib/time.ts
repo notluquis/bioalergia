@@ -23,7 +23,7 @@ export function normalizeDate(input: string, boundary: "start" | "end") {
     boundary === "start" ? 0 : 23,
     boundary === "start" ? 0 : 59,
     boundary === "start" ? 0 : 59,
-    boundary === "start" ? 0 : 999
+    boundary === "start" ? 0 : 999,
   );
   return formatDateForDB(date);
 }
@@ -46,7 +46,10 @@ export function normalizeTimestamp(primary: string | Date | null, fallback: stri
   return "";
 }
 
-export function normalizeTimestampForDb(primary: string | null | undefined, fallback: Date | null | undefined) {
+export function normalizeTimestampForDb(
+  primary: string | null | undefined,
+  fallback: Date | null | undefined,
+) {
   const normalized = normalizeTimestampString(primary ?? null);
   if (normalized) {
     return normalized.replace("T", " ");
@@ -74,7 +77,7 @@ export function normalizeTimestampString(value: string | Date | null) {
   }
 
   const isoMatch = trimmed.match(
-    /^([0-9]{4}-[0-9]{2}-[0-9]{2})[T ]([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:?[0-9]{2})?$/
+    /^([0-9]{4}-[0-9]{2}-[0-9]{2})[T ]([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:?[0-9]{2})?$/,
   );
   if (isoMatch) {
     const [, datePart, timePart] = isoMatch;

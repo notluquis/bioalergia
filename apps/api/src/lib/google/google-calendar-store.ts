@@ -1,9 +1,6 @@
 import { db } from "@finanzas/db";
 
-import { logEvent, logWarn } from "../logger";
-import { googleCalendarConfig } from "../../config";
-
-import { CalendarEventRecord } from "./google-calendar";
+import type { CalendarEventRecord } from "./google-calendar";
 
 // Cache para mapeo de googleId -> calendar.id (evita queries repetidas)
 const calendarIdCache = new Map<string, number>();
@@ -34,9 +31,7 @@ async function getCalendarInternalId(googleId: string): Promise<number | null> {
   }
 }
 
-export async function upsertGoogleCalendarEvents(
-  events: CalendarEventRecord[]
-) {
+export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) {
   if (events.length === 0)
     return {
       inserted: 0,
@@ -49,13 +44,10 @@ export async function upsertGoogleCalendarEvents(
   let updated = 0;
   let skipped = 0;
   const insertedSummaries: string[] = [];
-  const updatedSummaries: (string | { summary: string; changes: string[] })[] =
-    [];
+  const updatedSummaries: (string | { summary: string; changes: string[] })[] = [];
 
   // 1. Pre-resolve all calendars
-  const distinctCalendarIds = Array.from(
-    new Set(events.map((e) => e.calendarId))
-  );
+  const distinctCalendarIds = Array.from(new Set(events.map((e) => e.calendarId)));
 
   // Ensure all calendars exist and cache their IDs
   for (const googleId of distinctCalendarIds) {
@@ -76,7 +68,7 @@ export async function upsertGoogleCalendarEvents(
 
         if (!calendarInternalId) {
           console.warn(
-            `Skipping event ${event.eventId}: Could not resolve calendar ${event.calendarId}`
+            `Skipping event ${event.eventId}: Could not resolve calendar ${event.calendarId}`,
           );
           skipped++;
           return;
@@ -90,14 +82,10 @@ export async function upsertGoogleCalendarEvents(
           summary: event.summary,
           description: event.description,
           startDate: event.start?.date ? new Date(event.start.date) : null,
-          startDateTime: event.start?.dateTime
-            ? new Date(event.start.dateTime)
-            : null,
+          startDateTime: event.start?.dateTime ? new Date(event.start.dateTime) : null,
           startTimeZone: event.start?.timeZone,
           endDate: event.end?.date ? new Date(event.end.date) : null,
-          endDateTime: event.end?.dateTime
-            ? new Date(event.end.dateTime)
-            : null,
+          endDateTime: event.end?.dateTime ? new Date(event.end.dateTime) : null,
           endTimeZone: event.end?.timeZone,
           eventCreatedAt: event.created ? new Date(event.created) : null,
           eventUpdatedAt: event.updated ? new Date(event.updated) : null,
@@ -144,7 +132,7 @@ export async function upsertGoogleCalendarEvents(
           if (existing) {
             // Check if there are actual changes before updating
             const changes = computeEventDiff(existing, data);
-            
+
             if (changes.length > 0) {
               // Has changes - perform update
               await db.event.update({
@@ -156,7 +144,7 @@ export async function upsertGoogleCalendarEvents(
                 },
                 data: data,
               });
-              
+
               updated++;
               // Only log detailed changes for the first 20 to save memory/logs
               if (updatedSummaries.length < 20) {
@@ -171,7 +159,7 @@ export async function upsertGoogleCalendarEvents(
             await db.event.create({
               data: data,
             });
-            
+
             inserted++;
             if (insertedSummaries.length < 20) {
               insertedSummaries.push(summaryText);
@@ -180,11 +168,11 @@ export async function upsertGoogleCalendarEvents(
         } catch (error) {
           console.error(
             `Error upserting event ${event.eventId}:`,
-            error instanceof Error ? error.message : String(error)
+            error instanceof Error ? error.message : String(error),
           );
           skipped++;
         }
-      })
+      }),
     );
   }
 
@@ -200,7 +188,7 @@ export async function upsertGoogleCalendarEvents(
 }
 
 export async function removeGoogleCalendarEvents(
-  events: { calendarId: string; eventId: string }[]
+  events: { calendarId: string; eventId: string }[],
 ) {
   if (events.length === 0) return;
 
@@ -208,7 +196,7 @@ export async function removeGoogleCalendarEvents(
     const calendarInternalId = await getCalendarInternalId(event.calendarId);
     if (!calendarInternalId) {
       console.warn(
-        `Cannot delete event ${event.eventId}: Could not resolve calendar ${event.calendarId}`
+        `Cannot delete event ${event.eventId}: Could not resolve calendar ${event.calendarId}`,
       );
       continue;
     }
@@ -238,25 +226,20 @@ interface DiffableEvent {
   endDate?: Date | null;
 }
 
-function computeEventDiff(
-  existing: DiffableEvent,
-  incoming: DiffableEvent
-): string[] {
+function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): string[] {
   const changes: string[] = [];
 
-  const normalize = (val: unknown) =>
-    val === null || val === undefined ? "" : String(val).trim();
+  const normalize = (val: unknown) => (val === null || val === undefined ? "" : String(val).trim());
 
   const diff = (label: string, oldVal: unknown, newVal: unknown) => {
     const o = normalize(oldVal);
     const n = normalize(newVal);
     if (o !== n) {
       // Truncate long values for log readability
-      const shortO = o.length > 30 ? o.slice(0, 30) + "..." : o;
-      const shortN = n.length > 30 ? n.slice(0, 30) + "..." : n;
+      const shortO = o.length > 30 ? `${o.slice(0, 30)}...` : o;
+      const shortN = n.length > 30 ? `${n.slice(0, 30)}...` : n;
       // Only log if there is actual content to show
-      if (shortO || shortN)
-        changes.push(`${label}: "${shortO}" -> "${shortN}"`);
+      if (shortO || shortN) changes.push(`${label}: "${shortO}" -> "${shortN}"`);
     }
   };
 

@@ -49,10 +49,7 @@ export async function deleteRole(id: number) {
   });
 }
 
-export async function assignPermissionsToRole(
-  roleId: number,
-  permissionIds: number[],
-) {
+export async function assignPermissionsToRole(roleId: number, permissionIds: number[]) {
   return await db.$transaction(async (tx) => {
     // Clear existing permissions
     await tx.rolePermission.deleteMany({
@@ -144,10 +141,7 @@ export async function syncPermissions() {
           skipped++;
         }
       } catch (e: any) {
-        console.error(
-          `[syncPermissions] Failed to sync ${action}:${subject}:`,
-          e.message,
-        );
+        console.error(`[syncPermissions] Failed to sync ${action}:${subject}:`, e.message);
         errors.push(`${action}:${subject} (${e.message})`);
       }
     }
