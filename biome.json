@@ -22,7 +22,8 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "recommended": true
+        "recommended": true,
+        "noExcessiveCognitiveComplexity": "warn"
       },
       "performance": {
         "recommended": true
@@ -30,22 +31,38 @@
       "correctness": {
         "recommended": true,
         "noInnerDeclarations": "off",
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "warn",
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error"
       },
       "suspicious": {
         "recommended": true,
         "noAssignInExpressions": "off",
-        "noExplicitAny": "off",
-        "noArrayIndexKey": "off"
+        "noExplicitAny": "warn",
+        "noArrayIndexKey": "warn",
+        "noConsole": "off"
       },
       "style": {
         "recommended": true,
         "useBlockStatements": "off",
         "useSelfClosingElements": "off",
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "warn",
+        "useImportType": "error",
+        "useExportType": "error"
+      },
+      "security": {
+        "recommended": true
       },
       "a11y": {
-        "recommended": true
+        "recommended": true,
+        "noSvgWithoutTitle": "warn",
+        "noLabelWithoutControl": "warn",
+        "useSemanticElements": "warn",
+        "useFocusableInteractive": "warn",
+        "useAriaPropsSupportedByRole": "warn"
+      },
+      "nursery": {
+        "noFloatingPromises": "warn"
       }
     }
   },
