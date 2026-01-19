@@ -1,11 +1,5 @@
-/**
- * Navigation Generator - Generates sidebar navigation from route data
- *
- * This utility extracts navigation items from the route data
- * and groups them by section for the sidebar.
- */
-
 import {
+  BarChart3,
   Box,
   Briefcase,
   Calendar,
@@ -26,20 +20,21 @@ import {
   UserCog,
   Users,
   Users2,
+  Wallet,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
-import { type NavSection, ROUTE_DATA, type RouteData, SECTION_ORDER } from "../../shared/route-data";
+import type { NavConfig, NavSection, RoutePermission } from "@/types/navigation";
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// Generated file
+import { routeTree } from "../routeTree.gen";
 
+// Reuse NavItem interface from original generator to stay compatible with Sidebar
 export interface NavItem {
   exact?: boolean;
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
-  requiredPermission?: { action: string; subject: string };
+  requiredPermission?: RoutePermission;
   to: string;
 }
 
@@ -48,13 +43,10 @@ export interface NavSectionData {
   title: string;
 }
 
-// ============================================================================
-// ICON MAP
-// ============================================================================
-
 const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?: number }>> = {
   Box,
   Briefcase,
+  BarChart3,
   Calendar,
   CalendarDays,
   ClipboardCheck,
@@ -73,11 +65,10 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?:
   UserCog,
   Users,
   Users2,
+  Wallet,
 };
 
-// ============================================================================
-// NAVIGATION EXTRACTION
-// ============================================================================
+const SECTION_ORDER: NavSection[] = ["Calendario", "Finanzas", "Servicios", "Operaciones", "Sistema"];
 
 interface ExtractedNavItem extends Omit<NavItem, "icon"> {
   iconKey: string;
@@ -85,13 +76,8 @@ interface ExtractedNavItem extends Omit<NavItem, "icon"> {
   section: NavSection;
 }
 
-/**
- * Generates navigation sections from the route data
- *
- * @returns NavSectionData[] ready for the Sidebar component
- */
 export function generateNavSections(): NavSectionData[] {
-  const extractedItems = extractNavItems(ROUTE_DATA);
+  const extractedItems = extractNavItems(routeTree);
 
   // Group by section
   const sectionMap = new Map<NavSection, ExtractedNavItem[]>();
@@ -111,7 +97,7 @@ export function generateNavSections(): NavSectionData[] {
 
     // Sort by order and convert to NavItem
     const sortedItems = items
-      .toSorted((a, b) => a.order - b.order)
+      .sort((a, b) => a.order - b.order)
       .map(
         (item): NavItem => ({
           exact: item.exact,
@@ -131,51 +117,47 @@ export function generateNavSections(): NavSectionData[] {
   return sections;
 }
 
-/**
- * Recursively extracts navigation items from route data
- */
-function extractNavItems(routes: RouteData[], parentPath = ""): ExtractedNavItem[] {
+// Any type needed because Route type is complex and generic
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractNavItems(route: any): ExtractedNavItem[] {
   const items: ExtractedNavItem[] = [];
 
-  for (const route of routes) {
-    // Build full path
-    let fullPath = `/${route.path}`;
-    if (route.index) {
-      fullPath = parentPath;
-    } else if (parentPath) {
-      fullPath = `${parentPath}/${route.path}`;
-    }
+  // Check if current route has nav data
+  // TanStack router adds options to the route object
+  if (route.options?.staticData?.nav) {
+    const nav = route.options.staticData.nav as NavConfig;
+    const permission = route.options.staticData.permission as RoutePermission | undefined;
 
-    // If this route has nav config, add it
-    if (route.nav) {
-      items.push({
-        exact: route.exact,
-        iconKey: route.nav.iconKey,
-        label: route.nav.label,
-        order: route.nav.order,
-        requiredPermission: route.permission,
-        section: route.nav.section,
-        to: fullPath,
-      });
-    }
+    // Using route.fullPath or route.to for the link
+    // routeTree nodes usually have fullPath available if flattened or built correctly
+    // If not, we might need to rely on the "path" and build it up, but generated tree usually has fullPath
+    // Let's assume for now route.fullPath exists on the plain object structure from .gen.ts
+    const to = route.fullPath || route.path || "/";
 
-    // Recursively process children
-    if (route.children) {
-      items.push(...extractNavItems(route.children, fullPath));
-    }
+    items.push({
+      exact: route.options.exact, // Assuming exact might be in options
+      iconKey: nav.iconKey,
+      label: nav.label,
+      order: nav.order,
+      requiredPermission: permission,
+      section: nav.section,
+      to: to,
+    });
+  }
+
+  // Process children
+  if (route.children) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    route.children.forEach((child: any) => {
+      items.push(...extractNavItems(child));
+    });
   }
 
   return items;
 }
 
-/**
- * Cached navigation sections (computed once at startup)
- */
 let cachedSections: NavSectionData[] | null = null;
 
-/**
- * Gets navigation sections with caching
- */
 export function getNavSections(): NavSectionData[] {
   if (!cachedSections) {
     cachedSections = generateNavSections();

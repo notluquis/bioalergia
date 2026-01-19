@@ -6,9 +6,15 @@ import PageLoader from "@/components/ui/PageLoader";
 const DailyBalancePage = lazy(() => import("@/features/production-balances/DailyBalancePage"));
 
 export const Route = createFileRoute("/_authed/finanzas/production-balances")({
+  staticData: {
+    nav: { iconKey: "FileSpreadsheet", label: "Balance Diario", order: 7, section: "Finanzas" },
+    permission: { action: "read", subject: "DailyBalance" },
+    title: "Balance diario de producción",
+  },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "DailyBalance")) {
       const routeApi = getRouteApi("/_authed/finanzas/production-balances");
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }
   },

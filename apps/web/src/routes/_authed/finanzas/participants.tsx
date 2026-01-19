@@ -8,9 +8,15 @@ import { participantQueries } from "@/features/participants/queries";
 const ParticipantInsights = lazy(() => import("@/pages/ParticipantInsights"));
 
 export const Route = createFileRoute("/_authed/finanzas/participants")({
+  staticData: {
+    nav: { iconKey: "Users2", label: "Participantes", order: 6, section: "Finanzas" },
+    permission: { action: "read", subject: "Person" },
+    title: "Análisis de participantes",
+  },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "Person")) {
       const routeApi = getRouteApi("/_authed/finanzas/participants");
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }
   },

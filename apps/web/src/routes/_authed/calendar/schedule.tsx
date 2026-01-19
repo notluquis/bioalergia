@@ -10,8 +10,14 @@ const CalendarSchedulePage = lazy(() => import("@/pages/CalendarSchedulePage"));
 const routeApi = getRouteApi("/_authed/calendar/schedule");
 
 export const Route = createFileRoute("/_authed/calendar/schedule")({
+  staticData: {
+    nav: { iconKey: "CalendarDays", label: "Calendario", order: 1, section: "Calendario" },
+    permission: { action: "read", subject: "CalendarSchedule" },
+    title: "Calendario interactivo",
+  },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "CalendarSchedule")) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }
   },

@@ -9,8 +9,14 @@ const CalendarClassificationPage = lazy(() => import("@/pages/CalendarClassifica
 const routeApi = getRouteApi("/_authed/calendar/classify");
 
 export const Route = createFileRoute("/_authed/calendar/classify")({
+  staticData: {
+    nav: { iconKey: "ListChecks", label: "Clasificar", order: 4, section: "Calendario" },
+    permission: { action: "update", subject: "CalendarEvent" },
+    title: "Clasificar eventos",
+  },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("update", "CalendarEvent")) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }
   },

@@ -6,9 +6,15 @@ import PageLoader from "@/components/ui/PageLoader";
 const SuppliesPage = lazy(() => import("@/features/operations/supplies/pages/SuppliesPage"));
 
 export const Route = createFileRoute("/_authed/operations/supplies")({
+  staticData: {
+    nav: { iconKey: "PackagePlus", label: "Insumos", order: 2, section: "Operaciones" },
+    permission: { action: "read", subject: "SupplyRequest" },
+    title: "Solicitudes de insumos",
+  },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "SupplyRequest")) {
       const routeApi = getRouteApi("/_authed/operations/supplies");
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }
   },
