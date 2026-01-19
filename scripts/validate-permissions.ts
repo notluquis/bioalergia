@@ -47,7 +47,9 @@ function extractPermissionsFromRoutes(routes: any[], path = ""): Set<string> {
     // Recursively process children
     if (route.children) {
       const childSubjects = extractPermissionsFromRoutes(route.children, path);
-      childSubjects.forEach((s) => subjects.add(s));
+      childSubjects.forEach((s) => {
+        subjects.add(s);
+      });
     }
   }
 
@@ -114,7 +116,9 @@ async function validate() {
   const frontendSubjects = extractPermissionsFromRoutes(ROUTE_DATA);
 
   // Add API-only permissions
-  API_PERMISSIONS.forEach((p: RoutePermission) => frontendSubjects.add(p.subject));
+  API_PERMISSIONS.forEach((p: RoutePermission) => {
+    frontendSubjects.add(p.subject);
+  });
 
   // Backend permissions
   const backendSubjects = new Set(BACKEND_SUBJECTS);
@@ -122,11 +126,13 @@ async function validate() {
   // ============================================================================
   // Check 1: Undefined Permissions (CRITICAL)
   // ============================================================================
-  const undefined = Array.from(frontendSubjects).filter((s) => !backendSubjects.has(s));
+  const undefinedPermissions = Array.from(frontendSubjects).filter((s) => !backendSubjects.has(s));
 
-  if (undefined.length > 0) {
+  if (undefinedPermissions.length > 0) {
     console.error("❌ CRITICAL: Permissions used in routes but NOT defined in backend:\n");
-    undefined.forEach((s) => console.error(`   - ${s}`));
+    undefinedPermissions.forEach((s) => {
+      console.error(`   - ${s}`);
+    });
     console.error("\n💡 Fix: Add these to apps/api/src/services/roles.ts\n");
     process.exit(1);
   } else {
@@ -148,7 +154,9 @@ async function validate() {
 
   if (duplicates.length > 0) {
     console.warn("\n⚠️  WARNING: Duplicate permissions in backend:\n");
-    duplicates.forEach((s) => console.warn(`   - ${s}`));
+    duplicates.forEach((s) => {
+      console.warn(`   - ${s}`);
+    });
     console.warn("\n💡 Fix: Remove duplicates from apps/api/src/services/roles.ts\n");
     // Don't exit - this is just a warning
   }
@@ -160,7 +168,9 @@ async function validate() {
 
   if (unused.length > 0) {
     console.log("\nℹ️  Permissions defined but not used in routes (may be OK):\n");
-    unused.forEach((s) => console.log(`   - ${s}`));
+    unused.forEach((s) => {
+      console.log(`   - ${s}`);
+    });
     console.log("\n💡 Note: These may be used in component-level checks or API endpoints\n");
   }
 
@@ -171,12 +181,12 @@ async function validate() {
   console.log("📊 Summary:");
   console.log(`   Backend permissions: ${backendSubjects.size}`);
   console.log(`   Frontend used: ${frontendSubjects.size}`);
-  console.log(`   Undefined: ${undefined.length}`);
+  console.log(`   Undefined: ${undefinedPermissions.length}`);
   console.log(`   Duplicates: ${duplicates.length}`);
   console.log(`   Unused: ${unused.length}`);
   console.log("━".repeat(60));
 
-  if (undefined.length === 0) {
+  if (undefinedPermissions.length === 0) {
     console.log("\n✅ Permission validation passed!\n");
     process.exit(0);
   }

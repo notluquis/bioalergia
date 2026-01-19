@@ -51,7 +51,7 @@ function extractComponentPaths(routeDataContent: string): Set<string> {
 
   // Match componentPath values in the route data
   const regex = /componentPath:\s*["']([^"']+)["']/g;
-  let match;
+  let match: RegExpExecArray | null;
 
   while ((match = regex.exec(routeDataContent)) !== null) {
     paths.add(match[1]);

@@ -52,6 +52,7 @@ export function FormattedEventDescription({
         "[&_a]:text-primary text-base-content/60 text-xs leading-relaxed font-normal transition-all [&_a]:underline",
         className,
       )}
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: Sanitized with DOMPurify
       dangerouslySetInnerHTML={{ __html: htmlContent }}
     />
   );
