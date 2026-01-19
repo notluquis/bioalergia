@@ -1,3 +1,3 @@
 export default {
-  "*.{ts,tsx,js,jsx,json,md}": ["biome format --write --no-errors-on-unmatched"],
+  "*.{ts,tsx,js,jsx,json,md}": ["biome check --write --no-errors-on-unmatched"],
 };
