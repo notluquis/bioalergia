@@ -132,12 +132,12 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
       }
     }
 
-    // Overdue: what should have been paid but wasn't (past days only)
-    const overdue = expectedPast - paidPast;
-    // Remaining: what's left to pay from today onwards
-    const remaining = expectedFuture + overdue;
+    // Unclassified: past events that weren't classified (no-shows, cancelled, etc.)
+    const unclassified = expectedPast - paidPast;
+    // Remaining: what's left to pay from today onwards (future only)
+    const remaining = expectedFuture;
 
-    return { events, expected, overdue, paid, remaining };
+    return { events, expected, paid, remaining, unclassified };
   }, [dates]);
 
   return (
@@ -248,15 +248,16 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                   Total pagado del mes completo
                 </TooltipContent>
               </Tooltip>
-              {monthTotals.overdue > 0 && (
+              {monthTotals.unclassified > 0 && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-error cursor-help">
-                      Atrasado: <span className="font-medium">{fmtCLP(monthTotals.overdue)}</span>
+                    <span className="text-warning cursor-help">
+                      No cobrado:{" "}
+                      <span className="font-medium">{fmtCLP(monthTotals.unclassified)}</span>
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="bg-base-300 border-base-content/10 text-base-content max-w-xs rounded-lg border p-2 text-xs">
-                    Lo que debió estar pagado antes de hoy pero no se pagó
+                    Eventos pasados que no fueron cobrados (no asistieron, cancelaron, etc.)
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -267,7 +268,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                   </span>
                 </TooltipTrigger>
                 <TooltipContent className="bg-base-300 border-base-content/10 text-base-content max-w-xs rounded-lg border p-2 text-xs">
-                  Lo que falta pagar desde hoy en adelante (incluye atrasos)
+                  Lo que falta pagar desde hoy en adelante (solo eventos futuros)
                 </TooltipContent>
               </Tooltip>
             </div>
