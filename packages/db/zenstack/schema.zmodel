@@ -167,6 +167,12 @@ model RolePermission {
   role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
+  
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,delete', auth().status == 'ACTIVE')
+
   @@map("role_permissions")
 }
 
@@ -183,7 +189,7 @@ model UserRoleAssignment {
   @@deny('all', auth() == null)
   @@allow('read', true)
   @@allow('create,delete', auth().status == 'ACTIVE')
-  
+
   @@map("user_role_assignments")
 }
 
@@ -192,6 +198,11 @@ model UserPermissionVersion {
   version   Int      @default(1)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('update', auth().status == 'ACTIVE')
 
   @@map("user_permission_versions")
 }
@@ -237,6 +248,11 @@ model Counterpart {
   person    Person               @relation(fields: [personId], references: [id], onDelete: Cascade)
   services  Service[]
 
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
   @@map("counterparts")
 }
 
@@ -247,6 +263,11 @@ model CounterpartAccount {
   accountType   String?     @map("account_type")
   accountNumber String      @map("account_number")
   counterpart   Counterpart @relation(fields: [counterpartId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@map("counterpart_accounts")
   @@index([counterpartId])
@@ -265,6 +286,11 @@ model EmployeeTimesheet {
 
   @@unique([employeeId, workDate])
   @@index([employeeId])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
   @@map("employee_timesheets")
 }
 
@@ -549,6 +575,11 @@ model Service {
   updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at")
   counterpart   Counterpart?     @relation(fields: [counterpartId], references: [id])
 
+  //Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
   @@index([counterpartId])
   @@map("services")
 }
@@ -564,6 +595,11 @@ model Loan {
   updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
   schedules       LoanSchedule[]
 
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
   @@map("loans")
 }
 
@@ -575,6 +611,11 @@ model LoanSchedule {
   expectedAmount    Decimal            @map("expected_amount") @db.Decimal(15, 2)
   status            LoanScheduleStatus @default(PENDING)
   loan              Loan               @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('update', auth().status == 'ACTIVE')
 
   @@index([loanId])
   @@map("loan_schedules")
@@ -603,6 +644,11 @@ model PushSubscription {
   createdAt DateTime @default(now()) @map("created_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('create,delete', auth().id == userId)
+  @@allow('read', true)
+
   @@index([userId])
   @@map("push_subscriptions")
 }
@@ -617,6 +663,11 @@ model Calendar {
   watchChannels CalendarWatchChannel[]
   events        Event[]
 
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
   @@map("calendars")
 }
 
@@ -630,6 +681,11 @@ model CalendarWatchChannel {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
   calendar   Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@index([calendarId])
   @@map("calendar_watch_channels")
@@ -665,6 +721,11 @@ model Event {
   rawEvent        Json?     @map("raw_event")
   lastSyncedAt    DateTime  @map("last_synced_at")
   calendar        Calendar  @relation(fields: [calendarId], references: [id])
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@unique([calendarId, externalEventId])
   @@index([calendarId])
@@ -702,6 +763,11 @@ model BackupLog {
   context   Json?
   jobId     String?  @map("job_id")
 
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create', auth().status == 'ACTIVE')
+
   @@index([timestamp(sort: Desc)])
   @@map("backup_logs")
 }
@@ -712,6 +778,11 @@ model InventoryCategory {
   createdAt DateTime        @default(now()) @map("created_at")
   updatedAt DateTime        @default(now()) @updatedAt @map("updated_at")
   items     InventoryItem[]
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@map("inventory_categories")
 }
@@ -728,6 +799,11 @@ model InventoryItem {
   movements    InventoryMovement[]
 
   @@index([categoryId])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
   @@map("inventory_items")
 }
 
@@ -740,6 +816,11 @@ model InventoryMovement {
   item           InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@index([itemId])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create', auth().status == 'ACTIVE')
+
   @@map("inventory_movements")
 }
 
@@ -766,6 +847,11 @@ model DailyProductionBalance {
   user                  User     @relation(fields: [createdBy], references: [id])
 
   @@index([createdBy])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
   @@map("daily_production_balances")
 }
 
@@ -783,6 +869,11 @@ model SupplyRequest {
   user       User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update', auth().status == 'ACTIVE')
+
   @@map("supply_requests")
 }
 
@@ -794,6 +885,11 @@ model CommonSupply {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([name, brand, model])
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
   @@map("common_supplies")
 }
 
@@ -1129,6 +1225,11 @@ model PersonalCredit {
 
   installments      PersonalCreditInstallment[]
 
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
   @@schema("personal")
   @@map("credits")
 }
@@ -1152,6 +1253,11 @@ model PersonalCreditInstallment {
   paidAmount        Decimal?       @map("paid_amount") @db.Decimal(15, 2)
 
   credit            PersonalCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('update', auth().status == 'ACTIVE')
 
   @@schema("personal")
   @@index([creditId])
