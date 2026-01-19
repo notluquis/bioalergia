@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import type { Counterpart, Person } from "@/types/schema";
 
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api-client";
 
 export interface CounterpartWithExtras extends Counterpart {
   institution?: { name: string };

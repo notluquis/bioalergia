@@ -11,7 +11,7 @@ import ServiceForm from "@/features/services/components/ServiceForm";
 import ServiceList from "@/features/services/components/ServiceList";
 import ServicesFilterPanel from "@/features/services/components/ServicesFilterPanel";
 import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
-import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
+import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { CARD_COMPACT, LOADING_SPINNER_MD, TITLE_MD } from "@/lib/styles";
 

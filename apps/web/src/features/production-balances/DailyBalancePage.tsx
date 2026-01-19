@@ -16,7 +16,7 @@ import { CierrePanel } from "./components/CierrePanel";
 import { EntryForm } from "./components/EntryForm";
 import { TopBar } from "./components/TopBar";
 import { WeekStrip } from "./components/WeekStrip";
-import { useDailyBalanceForm } from "./hooks/useDailyBalanceForm";
+import { useDailyBalanceForm } from "./hooks/use-daily-balance-form";
 
 export default function DailyBalancePage() {
   const { can } = useAuth();

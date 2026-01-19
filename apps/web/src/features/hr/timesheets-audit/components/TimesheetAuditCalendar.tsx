@@ -15,7 +15,7 @@ import { LOADING_SPINNER_MD } from "@/lib/styles";
 
 import type { CalendarEventData, TimesheetEntryWithEmployee } from "../types";
 
-import { calculateDurationHours, formatDuration, getOverlappingEmployeesForDate } from "../utils/overlapDetection";
+import { calculateDurationHours, formatDuration, getOverlappingEmployeesForDate } from "../utils/overlap-detection";
 
 import "./TimesheetAuditCalendar.css";
 

@@ -5,7 +5,7 @@ import { z } from "zod";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
-import { queryKeys } from "@/lib/queryKeys";
+import { queryKeys } from "@/lib/query-keys";
 
 import type { CommonSupply, StructuredSupplies } from "../types";
 

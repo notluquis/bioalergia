@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/DropdownMenu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
-import { useCan } from "@/hooks/useCan";
+import { useCan } from "@/hooks/use-can";
 import { getNavSections, type NavItem } from "@/lib/nav-generator";
 import { cn } from "@/lib/utils";
 

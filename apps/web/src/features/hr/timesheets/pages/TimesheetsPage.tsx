@@ -8,8 +8,8 @@ import { employeeKeys } from "@/features/hr/employees/queries";
 import { fetchTimesheetSummary } from "@/features/hr/timesheets/api";
 import TimesheetEditor from "@/features/hr/timesheets/components/TimesheetEditor";
 import TimesheetSummaryTable from "@/features/hr/timesheets/components/TimesheetSummaryTable";
-import { useMonths } from "@/features/hr/timesheets/hooks/useMonths";
-import { useWakeLock } from "@/hooks/useWakeLock";
+import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
+import { useWakeLock } from "@/hooks/use-wake-lock";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 export default function TimesheetsPage() {

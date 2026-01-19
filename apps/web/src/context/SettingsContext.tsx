@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useContext, useEffect, useRef } from "react";
 
 import { APP_CONFIG } from "@/config/app";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api-client";
 import { logger } from "@/lib/logger";
 
 import { useAuth } from "./AuthContext";

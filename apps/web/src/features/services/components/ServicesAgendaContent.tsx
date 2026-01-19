@@ -5,7 +5,7 @@ import Button from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
-import { useServicesOverview } from "@/features/services/hooks/useServicesOverview";
+import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 import { currencyFormatter } from "@/lib/format";
 import { LOADING_SPINNER_MD } from "@/lib/styles";
 

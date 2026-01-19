@@ -9,7 +9,7 @@ import type { DailyBalanceFormData } from "../types";
 
 import { dailyBalanceApi, type ProductionBalanceApiItem } from "../api";
 import { productionBalanceKeys } from "../queries";
-import { generateWeekData, useDailyBalanceStore } from "./useDailyBalanceStore";
+import { generateWeekData, useDailyBalanceStore } from "./use-daily-balance-store";
 
 const AUTOSAVE_DELAY_MS = 2000;
 

@@ -1,9 +1,9 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { useSorting } from "./useSorting";
+import { useSorting } from "./use-sorting";
 
-describe("useSorting", () => {
+describe("use-sorting", () => {
   it("should initialize with default values", () => {
     const { result } = renderHook(() => useSorting());
     expect(result.current.sortState.column).toBeNull();

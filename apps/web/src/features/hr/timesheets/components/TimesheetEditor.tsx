@@ -15,7 +15,7 @@ import {
 } from "@/features/hr/timesheets/api";
 import EmailPreviewModal from "@/features/hr/timesheets/components/EmailPreviewModal";
 import TimesheetDetailTable from "@/features/hr/timesheets/components/TimesheetDetailTable";
-import { generateTimesheetPdfBase64 } from "@/features/hr/timesheets/pdfUtils";
+import { generateTimesheetPdfBase64 } from "@/features/hr/timesheets/pdf-utils";
 import { buildBulkRows, formatDateLabel, hasRowData, isRowDirty, parseDuration } from "@/features/hr/timesheets/utils";
 
 import type { Employee } from "../../employees/types";

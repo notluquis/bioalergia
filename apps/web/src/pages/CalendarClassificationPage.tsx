@@ -26,7 +26,7 @@ import {
   eventKey,
   type ParsedPayload,
 } from "@/features/calendar/utils/classification";
-import { useJobProgress } from "@/hooks/useJobProgress";
+import { useJobProgress } from "@/hooks/use-job-progress";
 
 import "dayjs/locale/es";
 

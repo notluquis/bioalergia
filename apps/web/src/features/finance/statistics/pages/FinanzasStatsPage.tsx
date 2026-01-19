@@ -18,7 +18,7 @@ import { PAGE_CONTAINER } from "@/lib/styles";
 import MonthlyFlowChart from "../components/MonthlyFlowChart";
 import MovementTypeList from "../components/MovementTypeList";
 import TopParticipantsSection from "../components/TopParticipantsSection";
-import { useStatsData } from "../hooks/useStatsData";
+import { useStatsData } from "../hooks/use-stats-data";
 
 import "dayjs/locale/es";
 

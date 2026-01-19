@@ -1,9 +1,9 @@
 import type { ServiceSchedule } from "../types";
 
-import { useServiceDetails } from "./useServiceDetails";
-import { useServiceMutations } from "./useServiceMutations";
-import { useServicePayment } from "./useServicePayment";
-import { useServicesList } from "./useServicesList";
+import { useServiceDetails } from "./use-service-details";
+import { useServiceMutations } from "./use-service-mutations";
+import { useServicePayment } from "./use-service-payment";
+import { useServicesList } from "./use-services-list";
 
 // Deprecated Provider - kept for compatibility but does nothing now
 // Can be removed once all usages are confirmed gone (it's not used in OverviewPage or Content)

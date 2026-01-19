@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api-client";
 
 import type { ListResponse as ReleaseListResponse } from "./releases/types";
 import type { ListResponse as SettlementListResponse } from "./settlements/types";

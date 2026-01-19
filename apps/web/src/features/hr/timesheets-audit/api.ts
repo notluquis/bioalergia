@@ -2,7 +2,7 @@
  * API client for timesheet audit features
  */
 
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/api-client";
 
 import type { TimesheetEntryWithEmployee } from "./types";
 

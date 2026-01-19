@@ -10,8 +10,8 @@ import DashboardTransactionsSection from "@/features/dashboard/components/Dashbo
 import { daysAgo, today } from "@/lib/dates";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
 
-import { useAppBadge } from "../hooks/useAppBadge";
-import { useWakeLock } from "../hooks/useWakeLock";
+import { useAppBadge } from "../hooks/use-app-badge";
+import { useWakeLock } from "../hooks/use-wake-lock";
 
 const RANGE_DAYS = 30;
 
