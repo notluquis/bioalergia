@@ -129,6 +129,7 @@ function AuthedLayout() {
           <button
             className="btn btn-neutral btn-xs border-none bg-black/20 text-current hover:bg-black/30"
             onClick={stopImpersonating}
+            type="button"
           >
             Salir
           </button>

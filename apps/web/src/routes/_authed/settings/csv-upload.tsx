@@ -6,6 +6,10 @@ import PageLoader from "@/components/ui/PageLoader";
 const CSVUploadPage = lazy(() => import("@/pages/settings/CSVUploadPage"));
 
 export const Route = createFileRoute("/_authed/settings/csv-upload")({
+  staticData: {
+    nav: { iconKey: "Upload", label: "Carga Masiva", order: 4, section: "Sistema" },
+    permission: { action: "create", subject: "BulkData" },
+  },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("create", "BulkData")) {
       const routeApi = getRouteApi("/_authed/settings/csv-upload");

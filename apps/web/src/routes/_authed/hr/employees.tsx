@@ -7,6 +7,10 @@ import { employeeKeys } from "@/features/hr/employees/queries";
 const EmployeesPage = lazy(() => import("@/features/hr/employees/pages/EmployeesPage"));
 
 export const Route = createFileRoute("/_authed/hr/employees")({
+  staticData: {
+    nav: { iconKey: "Users2", label: "Empleados", order: 2, section: "Operaciones" },
+    permission: { action: "read", subject: "Employee" },
+  },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "Employee")) {
       const routeApi = getRouteApi("/_authed/hr/employees");

@@ -8,6 +8,10 @@ const TimesheetAuditPage = lazy(
 );
 
 export const Route = createFileRoute("/_authed/hr/audit")({
+  staticData: {
+    nav: { iconKey: "History", label: "Auditoría HR", order: 5, section: "Operaciones" },
+    permission: { action: "read", subject: "TimesheetAudit" },
+  },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "TimesheetAudit")) {
       const routeApi = getRouteApi("/_authed/hr/audit");
