@@ -468,12 +468,8 @@ export async function getCalendarEventsByDate(
     .select([
       "c.googleId as calendarId",
       "e.externalEventId as eventId",
-      "e.status as status", // Map 'status' model field to 'status' alias (redundant but consistent)
-      // Check Schema: Event has 'status' field?
-      // model Event { ... status String? ... }
-      // The original code was: "e.event_status as status".
-      // Schema likely maps @map("event_status").
-      // So I must use "e.status".
+      "e.eventStatus as status", // Map 'eventStatus' model field to 'status' alias
+
       "e.eventType as eventType",
       "e.category",
       "e.summary",

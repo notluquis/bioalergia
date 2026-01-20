@@ -12,7 +12,7 @@ interface TableBodyProps {
   loadingMessage?: string;
 }
 
-interface TableColumn<T extends string> {
+export interface TableColumn<T extends string> {
   align?: "center" | "left" | "right";
   key: T;
   label: string;
@@ -20,7 +20,7 @@ interface TableColumn<T extends string> {
   width?: string;
 }
 
-interface TableHeaderProps<T extends string> {
+export interface TableHeaderProps<T extends string> {
   columns: TableColumn<T>[];
   onSort?: (column: T) => void;
   sortState?: {
@@ -30,7 +30,7 @@ interface TableHeaderProps<T extends string> {
   visibleColumns?: Set<T>;
 }
 
-interface TableProps<T extends string> {
+export interface TableProps<T extends string> {
   children: React.ReactNode;
   className?: string;
   columns?: TableColumn<T>[];

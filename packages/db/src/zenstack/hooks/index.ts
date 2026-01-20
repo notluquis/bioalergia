@@ -127,6 +127,12 @@ export function useFindManyCounterpart(...args: Parameters<Hooks["counterpart"][
   return counterpart.useFindMany(...args);
 }
 
+// Events
+export function useFindManyEvent(...args: Parameters<Hooks["event"]["useFindMany"]>) {
+  const { event } = useClientQueries(schema);
+  return event.useFindMany(...args);
+}
+
 // HR
 export function useFindManyEmployee(...args: Parameters<Hooks["employee"]["useFindMany"]>) {
   const { employee } = useClientQueries(schema);
