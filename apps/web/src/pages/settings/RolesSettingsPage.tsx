@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { Plus, RotateCw } from "lucide-react";
+import { Plus, RotateCw, Shield } from "lucide-react";
 import { useState } from "react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
@@ -314,7 +314,7 @@ function processNavSections(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const systemItems: any[] = Array.from(groupedBySubject.entries()).map(([subject, perms]) => {
       return {
-        icon: undefined, // No icon for system permissions
+        icon: Shield, // Default icon for system permissions
         label: `${subject} (Sistema)`,
         permissionIds: perms.map((p) => p.id),
         relatedPermissions: perms,

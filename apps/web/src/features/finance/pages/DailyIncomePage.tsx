@@ -55,13 +55,11 @@ export function DailyIncomePage() {
         )}
 
         {sortedDates.map((date) => {
-          const dayEvents = grouped[date];
-          // @ts-expect-error: Event type missing amountExpected in generated types
+          const dayEvents = grouped[date] ?? [];
           const totalExpected = dayEvents.reduce(
             (sum: number, e: any) => sum + (e.amountExpected || 0),
             0,
           );
-          // @ts-expect-error: Event type definition issue
           const totalPaid = dayEvents.reduce((sum: number, e: any) => sum + (e.amountPaid || 0), 0);
 
           return (

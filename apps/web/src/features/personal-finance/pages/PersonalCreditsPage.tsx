@@ -21,7 +21,8 @@ const columns: ColumnDef<PersonalCredit>[] = [
   },
   {
     accessorKey: "totalAmount",
-    cell: ({ row }) => formatCurrency(Number(row.original.totalAmount), row.original.currency),
+    cell: ({ row }) =>
+      formatCurrency(Number(row.original.totalAmount), row.original.currency || "CLP"),
     header: "Monto Total",
   },
   {
