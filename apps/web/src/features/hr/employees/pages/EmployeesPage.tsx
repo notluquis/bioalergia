@@ -152,7 +152,7 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
+      <div className="mt-6">
         <DataTable
           columns={columns}
           data={paginatedEmployees}
