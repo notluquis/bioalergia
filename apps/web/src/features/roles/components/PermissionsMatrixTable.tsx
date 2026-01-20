@@ -12,7 +12,8 @@ import type { Permission, Role } from "@/types/roles";
 import { BulkToggleCell } from "./BulkToggleCell";
 
 export interface MatrixItem {
-  icon: React.ElementType;
+  // biome-ignore lint/suspicious/noExplicitAny: generic icon component
+  icon: React.ComponentType<any>;
   label: string;
   permissionIds: number[];
   relatedPermissions: Permission[];

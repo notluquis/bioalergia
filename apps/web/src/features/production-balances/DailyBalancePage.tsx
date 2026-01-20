@@ -56,8 +56,6 @@ export default function DailyBalancePage() {
         date={selectedDate}
         isSaving={isSaving}
         onFinalize={finalize}
-        onNextWeek={goToNextWeek}
-        onPrevWeek={goToPrevWeek}
         onSave={save}
         status={status}
       />

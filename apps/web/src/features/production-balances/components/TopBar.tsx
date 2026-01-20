@@ -1,4 +1,4 @@
-import { ChevronDown, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -12,8 +12,6 @@ interface TopBarProps {
   date: string;
   isSaving: boolean;
   onFinalize: () => void;
-  onNextWeek: () => void;
-  onPrevWeek: () => void;
   onSave: () => void;
   status: DayStatus;
 }
@@ -21,16 +19,7 @@ interface TopBarProps {
 /**
  * Sticky top bar with date, status, and action buttons
  */
-export function TopBar({
-  canFinalize,
-  date,
-  isSaving,
-  onFinalize,
-  onNextWeek,
-  onPrevWeek,
-  onSave,
-  status,
-}: TopBarProps) {
+export function TopBar({ canFinalize, date, isSaving, onFinalize, onSave, status }: TopBarProps) {
   const [showShortcut, setShowShortcut] = useState(false);
 
   // Keyboard shortcut: ⌘S to save
@@ -113,28 +102,6 @@ export function TopBar({
         </button>
 
         {/* More options dropdown */}
-        <div className="dropdown dropdown-end">
-          <button className="btn btn-ghost btn-sm btn-square rounded-xl" type="button">
-            <ChevronDown className="size-4" />
-          </button>
-          <ul className="dropdown-content bg-base-200 border-base-content/10 menu z-10 w-52 rounded-xl border p-2 shadow-lg">
-            <li>
-              <button className="text-sm" onClick={onPrevWeek} type="button">
-                Ver anterior semana
-              </button>
-            </li>
-            <li>
-              <button className="text-sm" onClick={onNextWeek} type="button">
-                Ver siguiente semana
-              </button>
-            </li>
-            <li>
-              <button className="text-sm" type="button">
-                Exportar día
-              </button>
-            </li>
-          </ul>
-        </div>
       </div>
     </header>
   );
