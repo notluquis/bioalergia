@@ -57,6 +57,11 @@ export const dailyBalanceStore = new Store<DailyBalanceState>({
   weekData: null,
 });
 
+import "dayjs/locale/es";
+
+// Set locale globally to ensure weeks start on Monday
+dayjs.locale("es");
+
 export function generateWeekData(centerDate: string, entries: Record<string, number>): WeekData {
   const center = dayjs(centerDate);
   const startOfWeek = center.startOf("week"); // Sunday
