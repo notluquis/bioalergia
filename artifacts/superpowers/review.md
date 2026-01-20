@@ -1,41 +1,57 @@
-# Superpowers Review
+# Superpowers Review - Codebase Audit
 
-**Date**: 2026-01-19
-**Scope**: ZenStack Policies, Transaction Service Type Fixes, Biome Migration
-**Status**: ✅ PASSED (with minor technical debt)
+**Date**: 2026-01-20
+**Scope**: Whole Codebase (apps/web, apps/api)
+**Methodology**: Random sampling + Keyword search (Audit depth: 10+ categories)
 
-## Blockers
-- None.
+## 🚨 Blockers
+*None currently blocking the build, but strictly blocking "Golden Standard" quality.*
 
-## Majors
-- None.
+## 🔴 Majors
 
-## Minors
-### 1. Type Safety Bypass in Transactions Service (Maintenance)
-- **File**: `apps/api/src/services/transactions.ts`
-- **Issue**: Used `(kysely as any)` to resolve Kysely/ZenStack schema mismatch errors.
-- **Impact**: Loss of type safety for transaction queries. Future schema changes won't be caught by compiler in these specific queries.
-- **Mitigation**: Added `// biome-ignore lint/suspicious/noExplicitAny` comments to explicitly acknowledge the debt.
-- **Recommendation**: In future, investigate why ZenStack generated types (`Transaction`) don't match the string literal `"transactions"` expected by Kysely, or define a compatible Kysely interface manually.
+### 1. Security Risk: Commented-out RBAC
+**Location**: `apps/web/src/routes/_authed/finanzas/personal-credits.tsx`
+**Issue**: The permission check `if (!context.auth.can("read", "PersonalCredit"))` is commented out.
+**Impact**: Unauthorized users might access this route if the backend `PersonalCredit` policy isn't strict enough (or if data is pre-fetched).
+**Action**: Uncomment the check immediately.
 
-### 2. ZenStack Policies Specificity (Security)
-- **File**: `packages/db/zenstack/schema.zmodel`
-- **Issue**: Applied generic `@@allow('create,update,delete', auth().status == 'ACTIVE')` to most models.
-- **Impact**: Any active user can potentially write to system tables like `BackupLog` or `InventoryCategory` if API-level checks fail.
-- **Mitigation**: We are relying on the "2-Tier" strategy where the API layer (RBAC/CASL) enforces granular permissions. The ZenStack layer is a safety net.
-- **Recommendation**: Verify that ALL API endpoints interacting with these models have `hasPermission()` checks.
+### 2. Missing Backend Tests
+**Location**: `apps/api`
+**Issue**: Running `find apps packages -name "*.test.ts"` yielded results only for `apps/web`. The API appears to have **zero** unit or integration tests.
+**Impact**: High risk of regression in business logic (e.g. `doctoralia.ts`, `google-calendar.ts`).
+**Action**: Setup Vitest for `apps/api` and add basic smoke tests for services.
 
-## Nits
-### 1. Biome Migration
-- **Status**: ✅ Correctly removed `.prettierrc`.
-- **Note**: Ensure all developers have Biome extension installed and Prettier disabled to avoid conflict.
+## 🟡 Minors
 
-### 2. CSV Export
-- **Status**: ✅ Fixed encoding issue with explicit BOM.
+### 3. Styling: Hardcoded Hex Colors
+**Location**: `apps/web/src/features/calendar/components/WeekGrid.css`, `finance.css`
+**Issue**: Use of `#ccc` and `#f5f5f5`.
+**Impact**: Violates "Semantic Tokens ONLY" rule. Breaks themes (Dark Mode).
+**Action**: Replace with `border-base-300`, `bg-base-200`, etc.
 
-## Summary
-The system is in a much healthier state. Critical authorized-access 403 errors are resolved, and the build is passing type checks for the critical transactions service. The codebase is now fully aligned with Biome.
+### 4. Performance: Potentially Heavy Includes
+**Location**: `apps/api/src/services/doctoralia.ts`
+**Issue**: `getDoctoraliaDoctorsWithAddresses` includes `addresses` -> `_count` of bookings/services.
+**Impact**: While Postgres handles this well, looking up counts for *every* address of *every* doctor in a list could slow down as data grows.
+**Action**: Monitor query time. Consider denormalizing counts or using separate analytics queries.
 
-**Next Actions**:
-1. Monitor production logs for any unexpected 403s on the newly protected models.
-2. Schedule a tech-debt task to properly fix the ZenStack/Kysely type definitions.
+### 5. Documentation: Missing API Docs
+**Location**: `apps/api`
+**Issue**: No `README.md` explaining how to run the API locally or its env vars (beyond root README).
+**Action**: Add `apps/api/README.md`.
+
+## 🟢 Nits
+
+### 6. Linting: Unused Imports
+**Location**: Various
+**Issue**: Biome is configured (`noUnusedImports: "error"`) but some files might have slipped through or are ignored.
+**Action**: Run `pnpm lint:fix` globally.
+
+## Summary & Next Actions
+
+ The codebase is structurally sound (Monorepo, Hono, ZenStack) but lacks rigorous testing on the backend and has a critical security oversight in the frontend routes.
+
+**Next Steps**:
+1.  **Fix Security**: Uncomment RBAC in `personal-credits.tsx`.
+2.  **Fix Styles**: Grep and replace all `#` hex codes in `apps/web`.
+3.  **Init Tests**: Create `apps/api/vitest.config.ts`.
