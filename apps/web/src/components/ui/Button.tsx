@@ -1,20 +1,18 @@
 /**
- * Button Component - Native HTML with HeroUI-inspired styling
+ * Button Component - Adapter for HeroUI Button
  *
- * Using native HTML button for full API compatibility (title, aria-label, onClick, etc.)
- * Styled to match HeroUI/DaisyUI design system.
+ * Maps legacy variants (DaisyUI naming) to HeroUI variants/colors.
  */
-import type React from "react";
-import { forwardRef } from "react";
+import { Button as HeroButton } from "@heroui/react";
+import { type ComponentProps, forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  as?: React.ElementType;
-  fullWidth?: boolean;
-  href?: string;
-  isLoading?: boolean;
-  size?: "lg" | "md" | "sm" | "xs";
+// HeroUI v3 Beta Button exports might be inferred as ButtonRoot which inherits ButtonVariants.
+// We explicitly define our props to override/extend.
+export interface ButtonProps
+  extends Omit<ComponentProps<typeof HeroButton>, "variant" | "color" | "isLoading" | "isPending"> {
+  // We maintain legacy variants for compatibility
   variant?:
     | "danger"
     | "error"
@@ -25,99 +23,79 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
     | "secondary"
     | "success"
     | "tertiary";
+  isLoading?: boolean;
 }
 
-// Map variants to Tailwind classes
-const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
-  danger: "bg-error text-error-content hover:bg-error/90",
-  error: "bg-error text-error-content hover:bg-error/90",
-  ghost: "hover:bg-base-content/10 bg-transparent",
-  link: "text-primary underline-offset-4 hover:underline bg-transparent",
-  outline: "border border-base-content/20 bg-transparent hover:bg-base-content/5",
-  primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
-  secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-  success: "bg-success text-success-content hover:bg-success/90",
-  tertiary: "text-primary hover:bg-primary/10 bg-transparent",
+const mapVariantToHero = (
+  variant: ButtonProps["variant"] = "primary",
+): {
+  variant?: "primary" | "secondary" | "tertiary" | "ghost" | "danger";
+  className?: string;
+} => {
+  switch (variant) {
+    case "danger":
+    case "error":
+      return { variant: "danger" };
+    case "success":
+      // Success variant missing in this version, override primary with success colors
+      return {
+        variant: "primary",
+        className: "bg-success text-success-content hover:bg-success/90",
+      };
+    case "secondary":
+      return { variant: "secondary" };
+    case "ghost":
+      return { variant: "ghost" };
+    case "link":
+      return { variant: "ghost", className: "underline underline-offset-4 text-primary" };
+    case "outline":
+      // Map outline to tertiary (often bordered/flat) or ghost with border
+      return { variant: "ghost", className: "border border-base-content/20" };
+    case "tertiary":
+      return { variant: "tertiary" };
+    default:
+      return { variant: "primary" };
+  }
 };
 
-const sizeClasses: Record<NonNullable<ButtonProps["size"]>, string> = {
-  lg: "h-12 px-6 text-base rounded-2xl",
-  md: "h-10 px-4 text-sm rounded-xl",
-  sm: "h-8 px-3 text-sm rounded-lg",
-  xs: "h-7 px-2 text-xs rounded-md",
+const mapSizeToHero = (size: any): any => {
+  if (size === "xs") return "sm";
+  return size;
 };
 
-/**
- * Button component - Native HTML button with consistent styling.
- */
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+const FinalButton = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
-      as,
-      children,
       className,
-      disabled,
-      fullWidth,
-      href,
-      isLoading,
-      onClick,
-      size = "md",
-      type = "button",
       variant = "primary",
+      size = "md",
+      fullWidth,
+      isLoading,
+      isDisabled,
+      children,
       ...props
     },
     ref,
   ) => {
-    const baseClasses = cn(
-      "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
-      "disabled:pointer-events-none disabled:opacity-50",
-      "active:scale-[0.98]",
-      // eslint-disable-next-line security/detect-object-injection
-      variantClasses[variant],
-      // eslint-disable-next-line security/detect-object-injection
-      sizeClasses[size],
-      fullWidth && "w-full",
-      className,
-    );
+    const { variant: heroVariant, className: variantClassName } = mapVariantToHero(variant);
 
-    // Handle polymorphic rendering with href
-    if (href) {
-      const Component = as ?? "a";
-      return (
-        <Component
-          // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-          aria-disabled={disabled || isLoading}
-          // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-          className={cn(baseClasses, (disabled || isLoading) && "pointer-events-none opacity-50")}
-          href={href}
-          {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
-        >
-          {isLoading && <span className="loading loading-spinner loading-sm" />}
-          {children}
-        </Component>
-      );
-    }
-
-    // For regular buttons, use native button
-    const Component = as ?? "button";
     return (
-      <Component
-        className={baseClasses}
-        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-        disabled={disabled || isLoading}
-        onClick={onClick}
+      <HeroButton
         ref={ref}
-        type={type}
+        className={cn(variantClassName, className)}
+        variant={heroVariant}
+        size={mapSizeToHero(size)}
+        isDisabled={isDisabled}
+        isPending={isLoading}
+        fullWidth={fullWidth}
         {...props}
       >
-        {isLoading && <span className="loading loading-spinner loading-sm" />}
         {children}
-      </Component>
+      </HeroButton>
     );
   },
 );
 
-Button.displayName = "Button";
+FinalButton.displayName = "Button";
 
-export default Button;
+export default FinalButton;
