@@ -1,37 +1,55 @@
-/**
- * Tooltip Component - Radix UI based
- *
- * Keeping Radix UI for full feature compatibility (delayDuration, asChild, etc.)
- */
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import type * as React from "react";
+import {
+  TooltipContent,
+  type TooltipContentProps,
+  TooltipRoot,
+  type TooltipRootProps,
+  TooltipTrigger,
+} from "@heroui/react";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-const TooltipProvider = TooltipPrimitive.Provider;
+export type TooltipProps = Omit<TooltipContentProps, "className"> &
+  Pick<
+    TooltipRootProps,
+    "delay" | "closeDelay" | "isDisabled" | "trigger" | "isOpen" | "defaultOpen" | "onOpenChange"
+  > & {
+    content: ReactNode;
+    children: ReactNode;
+    classNames?: {
+      content?: string;
+    };
+    className?: string;
+  };
 
-const Tooltip = TooltipPrimitive.Root;
-
-const TooltipTrigger = TooltipPrimitive.Trigger;
-
-const TooltipContent = ({
+export function Tooltip({
+  children,
+  content,
+  delay,
+  closeDelay,
+  isDisabled,
+  trigger,
+  isOpen,
+  defaultOpen,
+  onOpenChange,
+  classNames,
   className,
-  ref,
-  sideOffset = 4,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) => (
-  <TooltipPrimitive.Portal>
-    <TooltipPrimitive.Content
-      className={cn(
-        "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-9999 touch-none overflow-hidden rounded-md border bg-zinc-950 px-3 py-1.5 text-sm text-white shadow-md",
-        className,
-      )}
-      ref={ref}
-      sideOffset={sideOffset}
-      {...props}
-    />
-  </TooltipPrimitive.Portal>
-);
-TooltipContent.displayName = TooltipPrimitive.Content.displayName;
-
-export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };
+}: TooltipProps) {
+  return (
+    <TooltipRoot
+      delay={delay}
+      closeDelay={closeDelay}
+      isDisabled={isDisabled}
+      trigger={trigger}
+      isOpen={isOpen}
+      defaultOpen={defaultOpen}
+      onOpenChange={onOpenChange}
+    >
+      <TooltipTrigger>{children}</TooltipTrigger>
+      <TooltipContent className={cn(className, classNames?.content)} {...props}>
+        {content}
+      </TooltipContent>
+    </TooltipRoot>
+  );
+}

@@ -10,7 +10,6 @@ import {
   Trash2,
   UserCog,
 } from "lucide-react";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
+import { Tooltip } from "@/components/ui/Tooltip";
 import type { User } from "@/features/users/types";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
 import { BADGE_SM } from "@/lib/styles";
@@ -104,13 +104,17 @@ export const getColumns = (actions: {
     cell: ({ row }) => (
       <div className="flex justify-center">
         {row.original.mfaEnabled ? (
-          <div className="tooltip" data-tip="MFA activado">
-            <ShieldCheck className="text-success size-5" />
-          </div>
+          <Tooltip content="MFA activado">
+            <div>
+              <ShieldCheck className="text-success size-5" />
+            </div>
+          </Tooltip>
         ) : (
-          <div className="tooltip" data-tip="MFA inactivo">
-            <ShieldCheck className="text-base-content/20 size-5" />
-          </div>
+          <Tooltip content="MFA inactivo">
+            <div>
+              <ShieldCheck className="text-base-content/20 size-5" />
+            </div>
+          </Tooltip>
         )}
       </div>
     ),
@@ -122,13 +126,17 @@ export const getColumns = (actions: {
     cell: ({ row }) => (
       <div className="flex justify-center">
         {row.original.hasPasskey ? (
-          <div className="tooltip" data-tip="Passkey configurado">
-            <Fingerprint className="text-success size-5" />
-          </div>
+          <Tooltip content="Passkey configurado">
+            <div>
+              <Fingerprint className="text-success size-5" />
+            </div>
+          </Tooltip>
         ) : (
-          <div className="tooltip" data-tip="Sin passkey">
-            <Fingerprint className="text-base-content/20 size-5" />
-          </div>
+          <Tooltip content="Sin passkey">
+            <div>
+              <Fingerprint className="text-base-content/20 size-5" />
+            </div>
+          </Tooltip>
         )}
       </div>
     ),

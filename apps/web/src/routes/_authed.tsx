@@ -7,7 +7,7 @@ import { UpdateNotification } from "@/components/features/UpdateNotification";
 import Header from "@/components/layouts/Header";
 import { BottomNav } from "@/components/layouts/MobileNav";
 import Sidebar from "@/components/layouts/Sidebar";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/Tooltip";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
 import { BUILD_TIMESTAMP } from "@/version";
@@ -206,22 +206,15 @@ function AuthedLayout() {
 
             <div className="flex items-center gap-3">
               <PerformanceIndicator />
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="text-base-content/70 flex cursor-help items-center gap-2 text-xs">
-                      <span
-                        role="img"
-                        aria-label="Sistema operativo"
-                        className="bg-success/70 inline-flex h-2 w-2 rounded-full"
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Sistema operativo</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip content="Sistema operativo">
+                <div className="text-base-content/70 flex cursor-help items-center gap-2 text-xs">
+                  <span
+                    role="img"
+                    aria-label="Sistema operativo"
+                    className="bg-success/70 inline-flex h-2 w-2 rounded-full"
+                  />
+                </div>
+              </Tooltip>
             </div>
           </footer>
         </div>
