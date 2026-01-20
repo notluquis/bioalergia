@@ -6,8 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number, currency = "CLP") {
-  return new Intl.NumberFormat("es-CL", {
-    currency: currency,
-    style: "currency",
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat("es-CL", {
+      currency: currency,
+      style: "currency",
+    }).format(amount);
+  } catch (_error) {
+    // Fallback to CLP if currency code is invalid/malformed
+    return new Intl.NumberFormat("es-CL", {
+      currency: "CLP",
+      style: "currency",
+    }).format(amount);
+  }
 }
