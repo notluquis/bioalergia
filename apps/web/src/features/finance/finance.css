@@ -228,11 +228,11 @@
 @media print {
   .finance-card {
     box-shadow: none;
-    border: 1px solid #ccc;
+    border: 1px solid hsl(var(--bc) / 0.2);
   }
 
   .finance-table__header {
-    background: #f5f5f5;
+    background: hsl(var(--b2) / 0.1);
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
