@@ -113,7 +113,7 @@ export const columns: ColumnDef<Employee>[] = [
       if (!canEdit) return null;
 
       return (
-        <div className="flex justify-end gap-2 px-4 py-3 whitespace-nowrap">
+        <div className="flex justify-end gap-2 whitespace-nowrap">
           <Button
             onClick={() => {
               onEdit(employee);
