@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { FinancialDashboardPage } from "@/features/finance/pages/FinancialDashboardPage";
 
 export const Route = createFileRoute("/_authed/finanzas/dashboard")({
@@ -15,9 +15,7 @@ export const Route = createFileRoute("/_authed/finanzas/dashboard")({
   },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "Event")) {
-      const routeApi = getRouteApi("/_authed/finanzas/dashboard");
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw routeApi.redirect({ to: "/" });
+      throw redirect({ to: "/" });
     }
   },
 });
