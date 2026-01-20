@@ -31,10 +31,12 @@ export function useServicesOverview() {
     await mutations.unlinkPayment(s.id);
   };
 
+  // biome-ignore lint/suspicious/noExplicitAny: passthrough
   const handleCreateService = async (payload: any) => {
     await mutations.createService(payload);
   };
 
+  // biome-ignore lint/suspicious/noExplicitAny: passthrough
   const handleRegenerate = async (overrides: any) => {
     if (!details.selectedService) return;
     await mutations.regenerateService(details.selectedService.public_id, overrides);

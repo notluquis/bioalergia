@@ -112,7 +112,7 @@ export default function TimesheetDetailTable({
 
       <div className="muted-scrollbar border-base-200 transform-gpu overflow-x-auto rounded-lg border">
         <DataTable
-          columns={columns as ColumnDef<BulkRow, any>[]}
+          columns={columns as ColumnDef<BulkRow, unknown>[]}
           data={bulkRows}
           enableToolbar={false}
           enableVirtualization={false}

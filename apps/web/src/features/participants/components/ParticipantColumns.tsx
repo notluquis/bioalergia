@@ -107,6 +107,7 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
     id: "holder",
   },
   {
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy function
     cell: ({ row }) => {
       const {
         bankAccountNumber,

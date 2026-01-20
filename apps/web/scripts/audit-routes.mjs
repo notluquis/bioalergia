@@ -6,7 +6,7 @@
  * Run with: pnpm audit:routes
  */
 
-import { readFileSync, existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, parse, sep } from "node:path";
 
 // Technical patterns to exclude based on common naming conventions
@@ -105,7 +105,7 @@ async function main() {
 
   console.log(`✅ Valid routes: ${validRoutes}`);
   console.log(`🔧 Technical routes (auto-excluded): ${technicalRoutes}`);
-  
+
   if (missingNav.length === 0 && missingPermission.length === 0) {
     console.log("⚠️  Missing nav metadata: 0");
     console.log("⚠️  Missing permission: 0\n");
@@ -130,7 +130,7 @@ async function main() {
       }
       console.log("\n💡 Add staticData.permission to these routes\n");
     }
-    
+
     process.exit(1);
   }
 }

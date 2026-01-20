@@ -20,6 +20,7 @@ interface EmailPreviewModalProps {
   summary: null | TimesheetSummaryRow;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export default function EmailPreviewModal({
   employee,
   isOpen,
@@ -56,7 +57,9 @@ export default function EmailPreviewModal({
   const boletaDescription = `SERVICIOS DE ${summary.role.toUpperCase()} ${totalHoursFormatted} HORAS`;
 
   // Get year from month in YYYY-MM format
-  const summaryYear = month ? Number.parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
+  const summaryYear = month
+    ? Number.parseInt(month.split("-")[0] ?? "", 10)
+    : new Date().getFullYear();
   // Handle both camelCase and snake_case from backend
   const summaryData = summary as unknown as Record<string, unknown>;
   const employeeRate =
@@ -195,37 +198,39 @@ export default function EmailPreviewModal({
               onClick={onPrepare}
               variant="primary"
             >
-              {(() => {
-                if (prepareStatus === "generating-pdf") {
-                  return (
-                    <span className="flex items-center gap-2">
-                      <span className={LOADING_SPINNER_SM}></span>
-                      Generando PDF...
-                    </span>
-                  );
-                }
-                if (prepareStatus === "preparing") {
-                  return (
-                    <span className="flex items-center gap-2">
-                      <span className={LOADING_SPINNER_SM}></span>
-                      Preparando...
-                    </span>
-                  );
-                }
-                if (prepareStatus === "done") {
-                  return (
-                    <span className="flex items-center gap-2">
-                      <span>📧</span>
-                      Descargado
-                    </span>
-                  );
-                }
-                return <>Preparar Email</>;
-              })()}
+              {renderPrepareButtonContent(prepareStatus)}
             </Button>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+function renderPrepareButtonContent(status: string | null) {
+  if (status === "generating-pdf") {
+    return (
+      <span className="flex items-center gap-2">
+        <span className={LOADING_SPINNER_SM}></span>
+        Generando PDF...
+      </span>
+    );
+  }
+  if (status === "preparing") {
+    return (
+      <span className="flex items-center gap-2">
+        <span className={LOADING_SPINNER_SM}></span>
+        Preparando...
+      </span>
+    );
+  }
+  if (status === "done") {
+    return (
+      <span className="flex items-center gap-2">
+        <span>📧</span>
+        Descargado
+      </span>
+    );
+  }
+  return <>Preparar Email</>;
 }

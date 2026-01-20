@@ -76,6 +76,7 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
     selectedService: detail?.service ?? null,
     selectedTemplate,
     setSelectedId: servicesActions.setSelectedId,
+    // biome-ignore lint/suspicious/noExplicitAny: template is generic
     setSelectedTemplate: (t: any) => {
       servicesStore.setState((s) => ({ ...s, selectedTemplate: t }));
     },

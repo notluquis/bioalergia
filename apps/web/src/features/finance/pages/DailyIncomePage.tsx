@@ -57,10 +57,13 @@ export function DailyIncomePage() {
         {sortedDates.map((date) => {
           const dayEvents = grouped[date] ?? [];
           const totalExpected = dayEvents.reduce(
-            (sum: number, e: any) => sum + (e.amountExpected || 0),
+            (sum: number, e: Event) => sum + (e.amountExpected || 0),
             0,
           );
-          const totalPaid = dayEvents.reduce((sum: number, e: any) => sum + (e.amountPaid || 0), 0);
+          const totalPaid = dayEvents.reduce(
+            (sum: number, e: Event) => sum + (e.amountPaid || 0),
+            0,
+          );
 
           return (
             <div key={date} className="card bg-base-100 shadow-sm border border-base-200">
@@ -80,7 +83,7 @@ export function DailyIncomePage() {
                 </div>
                 <div className="divider my-0"></div>
                 <ul className="space-y-2 mt-2">
-                  {dayEvents.map((event: any) => (
+                  {dayEvents.map((event: Event) => (
                     <li key={event.id} className="flex justify-between text-sm">
                       <span>
                         {event.summary || "Evento sin título"}{" "}

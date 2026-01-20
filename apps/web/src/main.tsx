@@ -64,7 +64,7 @@ globalThis.addEventListener("error", (event) => {
       message,
     )
   ) {
-    handleChunkLoadError();
+    void handleChunkLoadError();
   }
 });
 
@@ -76,7 +76,7 @@ globalThis.addEventListener("unhandledrejection", (event) => {
     )
   ) {
     event.preventDefault();
-    handleChunkLoadError();
+    void handleChunkLoadError();
   }
 });
 
@@ -105,6 +105,7 @@ const queryClient = new QueryClient({
 const router = createRouter({
   context: {
     // Auth will be injected at runtime via InnerApp
+    // biome-ignore lint/style/noNonNullAssertion: context injection
     auth: undefined!,
     queryClient,
   },
@@ -150,6 +151,7 @@ const ReactQueryDevtools =
 initPerformanceMonitoring();
 
 // Render the app
+// biome-ignore lint/style/noNonNullAssertion: root element exists
 ReactDOM.createRoot(document.querySelector("#root")!).render(
   <React.StrictMode>
     <GlobalError>

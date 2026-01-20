@@ -298,6 +298,7 @@ function PermissionCell({
         onClick={() => {
           onToggle(role, permissionId);
         }}
+        type="button"
       >
         {hasAccess ? (
           <div className="bg-primary hover:bg-primary-focus flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">

@@ -101,6 +101,7 @@ function CalendarHeatmapPage() {
   }, [summary?.aggregates.byDate]);
 
   // KEEP useMemo: Complex date range calculation with while loop
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: date calculation logic
   const heatmapMonths = useMemo(() => {
     const sourceFrom = summary?.filters.from || filters.from;
     const sourceTo = summary?.filters.to || filters.to;

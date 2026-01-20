@@ -71,6 +71,7 @@ export default function ServicesUnifiedAgenda({
           total: 0,
         });
       }
+      // biome-ignore lint/style/noNonNullAssertion: map key set above
       const group = map.get(key)!;
       group.total += schedule.expected_amount;
       group.entries.push({ schedule, service });

@@ -17,20 +17,20 @@ export function usePushNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const { user } = useAuth();
 
-  const checkSubscription = async () => {
-    if ("serviceWorker" in navigator) {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
-    }
-  };
-
   useEffect(() => {
+    const checkSubscription = async () => {
+      if ("serviceWorker" in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        setIsSubscribed(!!subscription);
+      }
+    };
+
     if ("Notification" in globalThis) {
       setPermission(Notification.permission);
-      checkSubscription();
+      void checkSubscription();
     }
-  }, [checkSubscription]);
+  }, []);
 
   const subscribeMutation = useMutation({
     mutationFn: async (subscription: PushSubscription) => {

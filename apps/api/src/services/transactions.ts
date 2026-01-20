@@ -364,7 +364,10 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
   // By Type
   const byType = await db.$qb
     .selectFrom("Transaction")
-    .select([(eb) => eb.ref("transactionType").as("description"), sql<number>`sum(transaction_amount)`.as("total")])
+    .select([
+      (eb) => eb.ref("transactionType").as("description"),
+      sql<number>`sum(transaction_amount)`.as("total"),
+    ])
     // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
     .where("transactionDate", ">=", from as any)
     // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness

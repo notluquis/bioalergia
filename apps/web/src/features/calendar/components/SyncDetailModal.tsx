@@ -88,6 +88,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
                   <ul className="list-disc space-y-1 pl-4 opacity-80">
                     {log.changeDetails.updated.map((item, i) => {
                       const summary = typeof item === "string" ? item : item.summary;
+                      // biome-ignore lint/suspicious/noArrayIndexKey: no unique id available
                       return <li key={i}>{summary}</li>;
                     })}
                   </ul>
@@ -101,6 +102,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
                   </h4>
                   <ul className="list-disc space-y-1 pl-4 opacity-80">
                     {log.changeDetails.excluded.map((item, i) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: no unique id available
                       <li key={i}>{item}</li>
                     ))}
                   </ul>

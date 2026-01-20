@@ -39,6 +39,7 @@ export default function TopParticipantsPieChart({ data }: TopParticipantsPieChar
           outerRadius={80}
         >
           {chartData.map((_, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: colors depend on index
             <Cell fill={COLORS[index % COLORS.length]} key={`cell-${index}`} />
           ))}
         </Pie>

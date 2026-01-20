@@ -32,6 +32,7 @@ interface ServiceDetailProps {
   service: null | ServiceSummary;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export function ServiceDetail({
   canManage,
   loading,

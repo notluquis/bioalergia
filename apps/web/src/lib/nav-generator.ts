@@ -125,6 +125,7 @@ export function generateNavSections(): NavSectionData[] {
 
 // Any type needed because Route type is complex and generic
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: generic route tree
 function extractNavItems(route: any): ExtractedNavItem[] {
   const items: ExtractedNavItem[] = [];
 
@@ -176,6 +177,7 @@ function extractNavItems(route: any): ExtractedNavItem[] {
   // Process children
   if (route.children) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: generic route children
     route.children.forEach((child: any) => {
       items.push(...extractNavItems(child));
     });

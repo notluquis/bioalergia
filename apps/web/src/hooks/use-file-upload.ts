@@ -67,6 +67,7 @@ export function useFileUpload({
     }
   };
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: validation logic
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = [...(event.target.files ?? [])];
     reset();

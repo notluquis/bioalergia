@@ -209,6 +209,7 @@ const StatusCell = ({
           <span className={`cursor-help font-bold ${bangColor}`}>!</span>
           <div className="bg-neutral text-neutral-content invisible absolute bottom-full left-1/2 z-50 mb-2 max-w-xs -translate-x-1/2 rounded-lg px-3 py-2 text-xs font-normal tracking-normal whitespace-nowrap normal-case shadow-lg group-hover:visible">
             {tooltipParts.map((part, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: parts are static
               <span className="block" key={i}>
                 {part}
               </span>

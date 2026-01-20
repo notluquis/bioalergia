@@ -36,7 +36,6 @@ const formatDuration = (value: number) => {
   return `${Math.round(value)} ms`;
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export function SyncProgressPanel({
   lastSyncInfo,
   onSyncNow,

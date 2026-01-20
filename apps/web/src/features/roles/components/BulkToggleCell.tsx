@@ -55,6 +55,7 @@ export function BulkToggleCell({
           onToggle(role, permissionIds);
         }}
         title={allPresent ? "Desmarcar todos" : "Marcar todos"}
+        type="button"
       >
         {renderIcon()}
       </button>
