@@ -15,10 +15,9 @@ export const Route = createFileRoute("/_authed/finanzas/personal-credits")({
   },
   beforeLoad: () => {
     // Permission check - Assuming 'PersonalCredit' subject.
-    // If not yet seeded, this might deny access if strict.
-    // For now, let's allow if user is authenticated (which _authed guarantees).
-    // if (!context.auth.can("read", "PersonalCredit")) { ... }
-    return;
+    if (!context.auth.can("read", "PersonalCredit")) {
+      throw new Error("Unauthorized");
+    }
   },
   component: () => (
     <Suspense fallback={<PageLoader />}>
