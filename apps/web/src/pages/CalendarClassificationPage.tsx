@@ -331,6 +331,7 @@ function CalendarClassificationPage() {
                     type="button"
                   >
                     <svg
+                      aria-hidden="true"
                       className="h-3.5 w-3.5"
                       fill="none"
                       stroke="currentColor"
@@ -361,6 +362,7 @@ function CalendarClassificationPage() {
               type="button"
             >
               <svg
+                aria-hidden="true"
                 className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
                 fill="none"
                 stroke="currentColor"
@@ -397,6 +399,7 @@ function CalendarClassificationPage() {
                 {isJobRunning ? (
                   <>
                     <svg
+                      aria-hidden="true"
                       className="h-4 w-4 animate-spin"
                       fill="none"
                       stroke="currentColor"
@@ -413,7 +416,13 @@ function CalendarClassificationPage() {
                   </>
                 ) : (
                   <>
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      aria-hidden="true"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                         strokeLinecap="round"
@@ -460,6 +469,7 @@ function CalendarClassificationPage() {
                 type="button"
               >
                 <svg
+                  aria-hidden="true"
                   className={`h-5 w-5 ${isJobRunning ? "animate-spin" : ""}`}
                   fill="none"
                   stroke="currentColor"
@@ -482,9 +492,10 @@ function CalendarClassificationPage() {
 
         {/* Empty State */}
         {!loading && events.length === 0 && !error && (
-          <div className="bg-success/5 ring-success/20 flex flex-col items-center justify-center rounded-2xl py-16 ring-1">
+          <div className="bg-success/5 ring-success-soft-hover flex flex-col items-center justify-center rounded-2xl py-16 ring-1">
             <div className="bg-success/10 mb-4 rounded-full p-4">
               <svg
+                aria-hidden="true"
                 className="text-success h-8 w-8"
                 fill="none"
                 stroke="currentColor"
@@ -539,7 +550,13 @@ function CalendarClassificationPage() {
               }}
               type="button"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                aria-hidden="true"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
                   strokeLinecap="round"
@@ -556,7 +573,13 @@ function CalendarClassificationPage() {
               }}
               type="button"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                aria-hidden="true"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   d="M15 19l-7-7 7-7"
                   strokeLinecap="round"
@@ -578,7 +601,13 @@ function CalendarClassificationPage() {
               }}
               type="button"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                aria-hidden="true"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   d="M9 5l7 7-7 7"
                   strokeLinecap="round"
@@ -595,7 +624,13 @@ function CalendarClassificationPage() {
               }}
               type="button"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                aria-hidden="true"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   d="M13 5l7 7-7 7M5 5l7 7-7 7"
                   strokeLinecap="round"
