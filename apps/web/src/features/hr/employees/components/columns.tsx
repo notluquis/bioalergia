@@ -35,6 +35,33 @@ export const columns: ColumnDef<Employee>[] = [
     header: "Cargo",
   },
   {
+    accessorKey: "salaryType",
+    cell: ({ row }) => {
+      const type = row.original.salaryType;
+      const label = type === "FIXED" ? "Fijo" : type === "HOURLY" ? "Por Hora" : type;
+      return <span className="badge badge-sm badge-ghost">{label}</span>;
+    },
+    header: "Contrato",
+  },
+  {
+    accessorKey: "department",
+    cell: ({ row }) => (
+      <span className="text-base-content/70">{row.original.department ?? "—"}</span>
+    ),
+    header: "Departamento",
+  },
+  {
+    accessorKey: "startDate",
+    cell: ({ row }) => {
+      const date = row.original.startDate;
+      if (!date) return <span className="text-base-content/60">—</span>;
+      return (
+        <span className="text-base-content/70">{new Date(date).toLocaleDateString("es-CL")}</span>
+      );
+    },
+    header: "Inicio",
+  },
+  {
     accessorKey: "person.email",
     cell: ({ row }) => (
       <span className="text-base-content/60">{row.original.person?.email ?? "—"}</span>

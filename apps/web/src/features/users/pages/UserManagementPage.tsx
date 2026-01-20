@@ -29,7 +29,7 @@ dayjs.extend(relativeTime);
 dayjs.locale("es");
 
 export default function UserManagementPage() {
-  useAuth(); // Keep context mounted
+  const { can } = useAuth(); // Keep context mounted
   const { error, success } = useToast();
   const queryClient = useQueryClient();
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
@@ -270,10 +270,12 @@ export default function UserManagementPage() {
             </select>
           </div>
 
-          <Link className="btn btn-primary gap-2" to="/settings/users/add">
-            <UserPlus size={20} />
-            Agregar usuario
-          </Link>
+          {can("create", "User") && (
+            <Link className="btn btn-primary gap-2" to="/settings/users/add">
+              <UserPlus size={20} />
+              Agregar usuario
+            </Link>
+          )}
         </div>
 
         <DataTable

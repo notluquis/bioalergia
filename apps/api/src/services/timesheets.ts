@@ -686,18 +686,19 @@ export async function buildMonthlySummary(from: string, to: string, employeeId?:
     if (employeeId && employee.id !== employeeId) {
       continue;
     }
-    // Only include FIXED salary employees without timesheets
-    if (employee.salaryType === "FIXED") {
-      const summary = buildEmployeeSummary(employee, {
-        workedMinutes: 0,
-        overtimeMinutes: 0,
-        periodStart: from,
-      });
-      results.push(summary);
-      totals.subtotal += summary.subtotal;
-      totals.retention += summary.retention;
-      totals.net += summary.net;
-    }
+    // Include ALL active employees without timesheets (show as 0 hours)
+    // previously only: if (employee.salaryType === "FIXED") {
+    
+    // Use generic summary for 0 hours
+    const summary = buildEmployeeSummary(employee, {
+      workedMinutes: 0,
+      overtimeMinutes: 0,
+      periodStart: from,
+    });
+    results.push(summary);
+    totals.subtotal += summary.subtotal;
+    totals.retention += summary.retention;
+    totals.net += summary.net;
   }
 
   // If filtered by specific employee but no data, include with 0s

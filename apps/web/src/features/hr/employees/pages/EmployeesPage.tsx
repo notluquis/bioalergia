@@ -92,7 +92,6 @@ export default function EmployeesPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      {/* ... keeping the header part ... */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <h1 className={TITLE_LG}>Equipo y tarifas</h1>
         <div className="flex items-center gap-3">
@@ -152,7 +151,7 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      <div className="mt-6">
+      <div className="surface-elevated rounded-2xl p-4">
         <DataTable
           columns={columns}
           data={paginatedEmployees}
