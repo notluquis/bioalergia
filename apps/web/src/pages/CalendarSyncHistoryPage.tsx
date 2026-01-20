@@ -1,5 +1,13 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { ChevronDown, ChevronRight, Loader2, RefreshCw } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  RefreshCw,
+  Settings2,
+} from "lucide-react";
 import { useState } from "react";
 
 import Button from "@/components/ui/Button";
@@ -7,10 +15,13 @@ import { ChangeDetailsViewer } from "@/features/calendar/components/ChangeDetail
 import { StatusBadge } from "@/features/calendar/components/StatusBadge";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
+import { calendarQueries } from "@/features/calendar/queries";
+import type { CalendarData } from "@/features/calendar/types";
 import { cn } from "@/lib/utils";
 
 export default function CalendarSyncHistoryPage() {
   const [expandedId, setExpandedId] = useState<null | number>(null);
+  const [showConfig, setShowConfig] = useState(false);
 
   const {
     hasRunningSyncFromOtherSource,
@@ -24,6 +35,9 @@ export default function CalendarSyncHistoryPage() {
     syncNow,
     syncProgress,
   } = useCalendarEvents();
+
+  // Fetch calendars
+  const { data: calendars } = useSuspenseQuery(calendarQueries.list());
 
   const isLoading = isLoadingSyncLogs;
 
@@ -41,14 +55,18 @@ export default function CalendarSyncHistoryPage() {
 
   return (
     <section className="space-y-6">
-      {/* Sync Actions Card */}
-      <div className="bg-base-100 border-base-200 flex flex-col gap-4 overflow-hidden rounded-xl border p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-base-content/70 text-sm font-medium">
-            {syncLogs.length} sincronizaciones registradas
-          </span>
-        </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold">Historial de Sincronización</h1>
         <div className="flex gap-2">
+          <Button
+            onClick={() => setShowConfig(!showConfig)}
+            size="sm"
+            variant="outline"
+            className="gap-2"
+          >
+            <Settings2 size={16} />
+            {showConfig ? "Ocultar Configuración" : "Ver Calendarios"}
+          </Button>
           <Button
             disabled={isLoading || isSyncing}
             onClick={() => refetch()}
@@ -65,7 +83,17 @@ export default function CalendarSyncHistoryPage() {
         </div>
       </div>
 
-      {/* Sync Progress Live Status */}
+      {showConfig && (
+        <div className="bg-base-100 border-base-200 rounded-xl border p-4 shadow-sm animate-in slide-in-from-top-2 fade-in duration-200">
+          <div className="mb-4 flex items-center gap-2 text-sm font-medium text-base-content/70">
+            <CalendarIcon size={16} />
+            Calendarios Conectados
+          </div>
+          {renderCalendarsList(calendars)}
+        </div>
+      )}
+
+      {/* Sync Status Panel */}
       <SyncProgressPanel
         lastSyncInfo={lastSyncInfo ?? undefined}
         showLastSyncInfo
@@ -258,5 +286,39 @@ export default function CalendarSyncHistoryPage() {
         })()}
       </div>
     </section>
+  );
+}
+
+function renderCalendarsList(calendars: CalendarData[]) {
+  if (calendars.length === 0) {
+    return (
+      <div className="text-base-content/50 p-4 text-center text-sm">
+        No hay calendarios conectados
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {calendars.map((cal: CalendarData) => (
+        <div
+          className="bg-base-200/50 border-base-200 flex items-center gap-3 rounded-lg border p-3"
+          key={cal.id}
+        >
+          <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+          <div className="min-w-0 flex-1">
+            <span className="block truncate font-medium text-sm">{cal.name}</span>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-base-content/50 truncate text-xs">
+                {cal.eventCount.toLocaleString()} eventos
+              </p>
+              <span className="text-base-content/30 shrink-0 truncate font-mono text-[10px]">
+                {cal.googleId.slice(0, 8)}...
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

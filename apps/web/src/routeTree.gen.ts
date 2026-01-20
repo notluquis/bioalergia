@@ -56,7 +56,6 @@ import { Route as AuthedServicesIndexRouteImport } from "./routes/_authed/servic
 import { Route as AuthedServicesTemplatesRouteImport } from "./routes/_authed/services/templates";
 import { Route as AuthedSettingsRouteImport } from "./routes/_authed/settings";
 import { Route as AuthedSettingsBackupsRouteImport } from "./routes/_authed/settings/backups";
-import { Route as AuthedSettingsCalendarRouteImport } from "./routes/_authed/settings/calendar";
 import { Route as AuthedSettingsCsvUploadRouteImport } from "./routes/_authed/settings/csv-upload";
 import { Route as AuthedSettingsIndexRouteImport } from "./routes/_authed/settings/index";
 import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/settings/inventario";
@@ -171,11 +170,6 @@ const AuthedSettingsInventarioRoute = AuthedSettingsInventarioRouteImport.update
 const AuthedSettingsCsvUploadRoute = AuthedSettingsCsvUploadRouteImport.update({
   id: "/csv-upload",
   path: "/csv-upload",
-  getParentRoute: () => AuthedSettingsRoute,
-} as any);
-const AuthedSettingsCalendarRoute = AuthedSettingsCalendarRouteImport.update({
-  id: "/calendar",
-  path: "/calendar",
   getParentRoute: () => AuthedSettingsRoute,
 } as any);
 const AuthedSettingsBackupsRoute = AuthedSettingsBackupsRouteImport.update({
@@ -373,7 +367,6 @@ export interface FileRoutesByFullPath {
   "/services/create": typeof AuthedServicesCreateRoute;
   "/services/templates": typeof AuthedServicesTemplatesRoute;
   "/settings/backups": typeof AuthedSettingsBackupsRoute;
-  "/settings/calendar": typeof AuthedSettingsCalendarRoute;
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute;
   "/settings/inventario": typeof AuthedSettingsInventarioRoute;
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute;
@@ -423,7 +416,6 @@ export interface FileRoutesByTo {
   "/services/create": typeof AuthedServicesCreateRoute;
   "/services/templates": typeof AuthedServicesTemplatesRoute;
   "/settings/backups": typeof AuthedSettingsBackupsRoute;
-  "/settings/calendar": typeof AuthedSettingsCalendarRoute;
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute;
   "/settings/inventario": typeof AuthedSettingsInventarioRoute;
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute;
@@ -479,7 +471,6 @@ export interface FileRoutesById {
   "/_authed/services/create": typeof AuthedServicesCreateRoute;
   "/_authed/services/templates": typeof AuthedServicesTemplatesRoute;
   "/_authed/settings/backups": typeof AuthedSettingsBackupsRoute;
-  "/_authed/settings/calendar": typeof AuthedSettingsCalendarRoute;
   "/_authed/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute;
   "/_authed/settings/inventario": typeof AuthedSettingsInventarioRoute;
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute;
@@ -535,7 +526,6 @@ export interface FileRouteTypes {
     | "/services/create"
     | "/services/templates"
     | "/settings/backups"
-    | "/settings/calendar"
     | "/settings/csv-upload"
     | "/settings/inventario"
     | "/settings/mercadopago"
@@ -585,7 +575,6 @@ export interface FileRouteTypes {
     | "/services/create"
     | "/services/templates"
     | "/settings/backups"
-    | "/settings/calendar"
     | "/settings/csv-upload"
     | "/settings/inventario"
     | "/settings/mercadopago"
@@ -640,7 +629,6 @@ export interface FileRouteTypes {
     | "/_authed/services/create"
     | "/_authed/services/templates"
     | "/_authed/settings/backups"
-    | "/_authed/settings/calendar"
     | "/_authed/settings/csv-upload"
     | "/_authed/settings/inventario"
     | "/_authed/settings/mercadopago"
@@ -810,13 +798,6 @@ declare module "@tanstack/react-router" {
       path: "/csv-upload";
       fullPath: "/settings/csv-upload";
       preLoaderRoute: typeof AuthedSettingsCsvUploadRouteImport;
-      parentRoute: typeof AuthedSettingsRoute;
-    };
-    "/_authed/settings/calendar": {
-      id: "/_authed/settings/calendar";
-      path: "/calendar";
-      fullPath: "/settings/calendar";
-      preLoaderRoute: typeof AuthedSettingsCalendarRouteImport;
       parentRoute: typeof AuthedSettingsRoute;
     };
     "/_authed/settings/backups": {
@@ -1182,7 +1163,6 @@ const AuthedSettingsUsersRouteWithChildren = AuthedSettingsUsersRoute._addFileCh
 
 interface AuthedSettingsRouteChildren {
   AuthedSettingsBackupsRoute: typeof AuthedSettingsBackupsRoute;
-  AuthedSettingsCalendarRoute: typeof AuthedSettingsCalendarRoute;
   AuthedSettingsCsvUploadRoute: typeof AuthedSettingsCsvUploadRoute;
   AuthedSettingsInventarioRoute: typeof AuthedSettingsInventarioRoute;
   AuthedSettingsMercadopagoRoute: typeof AuthedSettingsMercadopagoRoute;
@@ -1194,7 +1174,6 @@ interface AuthedSettingsRouteChildren {
 
 const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsBackupsRoute: AuthedSettingsBackupsRoute,
-  AuthedSettingsCalendarRoute: AuthedSettingsCalendarRoute,
   AuthedSettingsCsvUploadRoute: AuthedSettingsCsvUploadRoute,
   AuthedSettingsInventarioRoute: AuthedSettingsInventarioRoute,
   AuthedSettingsMercadopagoRoute: AuthedSettingsMercadopagoRoute,
