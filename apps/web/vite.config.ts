@@ -205,7 +205,6 @@ export default defineConfig(({ mode }) => ({
           "vendor-ui": [
             "@radix-ui/react-dropdown-menu",
             "@radix-ui/react-toast",
-            "@radix-ui/react-tooltip",
             "lucide-react",
             "clsx",
             "tailwind-merge",
