@@ -7,7 +7,10 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { syncPermissions, updateRolePermissions } from "@/features/roles/api";
 import { DeleteRoleModal } from "@/features/roles/components/DeleteRoleModal";
-import { PermissionsMatrixTable } from "@/features/roles/components/PermissionsMatrixTable";
+import {
+  type MatrixItem,
+  PermissionsMatrixTable,
+} from "@/features/roles/components/PermissionsMatrixTable";
 import { RoleFormModal } from "@/features/roles/components/RoleFormModal";
 import { roleKeys } from "@/features/roles/queries";
 import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
@@ -311,15 +314,16 @@ function processNavSections(
       groupedBySubject.set(p.subject, [...existing, p]);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const systemItems: any[] = Array.from(groupedBySubject.entries()).map(([subject, perms]) => {
-      return {
-        icon: Shield, // Default icon for system permissions
-        label: `${subject} (Sistema)`,
-        permissionIds: perms.map((p) => p.id),
-        relatedPermissions: perms,
-      };
-    });
+    const systemItems: MatrixItem[] = Array.from(groupedBySubject.entries()).map(
+      ([subject, perms]) => {
+        return {
+          icon: Shield, // Default icon for system permissions
+          label: `${subject} (Sistema)`,
+          permissionIds: perms.map((p) => p.id),
+          relatedPermissions: perms,
+        };
+      },
+    );
 
     mappedSections.push({
       title: "Otros Permisos de Sistema",
