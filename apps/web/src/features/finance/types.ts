@@ -46,3 +46,34 @@ export interface Transaction {
   transactionDate: string;
   transactionType: string;
 }
+
+// ==========================================
+// Financial Dashboard Types (Frontend-First)
+// ==========================================
+
+import type { Event } from "@finanzas/db";
+
+export type FinancialPeriod = "day" | "week" | "month";
+
+export interface IncomeItem {
+  id: string; // usually eventId
+  date: Date;
+  summary: string;
+  category: string; // Derived e.g. "Subcutáneo", "Prick Test"
+  amount: number;
+  originalEvent: Event;
+}
+
+export interface IncomeCategoryGroup {
+  category: string; // e.g. "Tratamientos", "Exámenes"
+  total: number;
+  items: IncomeItem[];
+}
+
+export interface FinancialSummary {
+  totalIncome: number;
+  totalExpense: number; // Placeholder, likely 0
+  netIncome: number;
+  incomesByCategory: IncomeCategoryGroup[];
+  uncategorizedIncomes: IncomeItem[]; // For debugging/safety
+}
