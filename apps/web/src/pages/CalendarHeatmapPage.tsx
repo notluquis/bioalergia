@@ -66,7 +66,9 @@ function CalendarHeatmapPage() {
       return fetchCalendarSummary(apiFilters);
     },
     queryKey: ["calendar-heatmap", appliedFilters],
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    staleTime: 5 * 60 * 1000, // 5 minutes (balance between performance and freshness from webhooks)
+    gcTime: 15 * 60 * 1000, // Keep in memory for 15 minutes
+    // refetchOnWindowFocus: true (default) - important since data updates via Google webhooks
   });
 
   // NOTE: We no longer sync server filters back to UI to avoid overwriting user changes.
@@ -138,19 +140,20 @@ function CalendarHeatmapPage() {
     [heatmapMonths],
   );
 
-  // KEEP useMemo: Iterates over all events to find max value
-  const heatmapMaxValue = useMemo(() => {
-    if (!summary) return 0;
-    let max = 0;
-    for (const entry of summary.aggregates.byDate) {
-      // Server now returns "YYYY-MM-DD" strings, extract month portion
-      const monthKey = String(entry.date).slice(0, 7);
-      if (heatmapMonthKeys.has(monthKey)) {
-        max = Math.max(max, entry.total);
+  // Use server-provided maxEventCount (or fallback to client-side calculation)
+  const heatmapMaxValue =
+    summary.totals.maxEventCount ??
+    (() => {
+      if (!summary) return 0;
+      let max = 0;
+      for (const entry of summary.aggregates.byDate) {
+        const monthKey = String(entry.date).slice(0, 7);
+        if (heatmapMonthKeys.has(monthKey)) {
+          max = Math.max(max, entry.total);
+        }
       }
-    }
-    return max;
-  }, [summary, heatmapMonthKeys]);
+      return max;
+    })();
 
   const handleToggle = (key: "categories", value: string) => {
     setFilters((prev) => ({

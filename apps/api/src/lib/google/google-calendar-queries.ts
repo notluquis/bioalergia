@@ -60,6 +60,7 @@ export type CalendarAggregateResult = {
     days: number;
     amountExpected: number;
     amountPaid: number;
+    maxEventCount: number;
   };
   aggregates: CalendarAggregates;
   available: CalendarAvailableFilters;
@@ -335,12 +336,18 @@ export async function getCalendarAggregates(
     amountExpected: number | string;
     amountPaid: number | string;
   };
+  // Compute maxEventCount from byDate results
   type DateRow = {
     date: string | Date;
     total: number | string;
     amountExpected: number | string;
     amountPaid: number | string;
   };
+  const maxEventCount = (byDate as unknown as DateRow[]).reduce(
+    (max, row) => Math.max(max, Number(row.total)),
+    0,
+  );
+
   type WeekdayRow = {
     weekday: number | string;
     total: number | string;
@@ -357,6 +364,7 @@ export async function getCalendarAggregates(
       days: Number((totals as unknown as TotalRow)?.days || 0),
       amountExpected: Number((totals as unknown as TotalRow)?.amountExpected || 0),
       amountPaid: Number((totals as unknown as TotalRow)?.amountPaid || 0),
+      maxEventCount,
     },
     aggregates: {
       // biome-ignore lint/suspicious/noExplicitAny: legacy code

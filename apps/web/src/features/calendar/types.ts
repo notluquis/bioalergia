@@ -151,6 +151,7 @@ export interface CalendarSummary {
     amountPaid: number;
     days: number;
     events: number;
+    maxEventCount?: number;
   };
 }
 
