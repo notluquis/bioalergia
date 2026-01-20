@@ -24,6 +24,7 @@ export class ApiError extends Error {
 }
 
 // Helper for building query strings with custom array handling (preserved for safety)
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: url building logic
 function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
   if (!query) return url;
 

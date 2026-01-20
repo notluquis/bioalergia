@@ -36,6 +36,7 @@ export const personalFinanceApi = {
     installmentNumber: number,
     data: PayInstallmentInput,
   ) => {
+    // biome-ignore lint/suspicious/noExplicitAny: unknown response
     return apiClient.post<any>(
       `/api/personal-finance/credits/${creditId}/installments/${installmentNumber}/pay`,
       {

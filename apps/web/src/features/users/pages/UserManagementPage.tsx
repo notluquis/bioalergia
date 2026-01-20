@@ -135,6 +135,7 @@ export default function UserManagementPage() {
           }
         }
       },
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: interaction logic
       onToggleStatus: async (id: number, currentStatus: string) => {
         const newStatus = currentStatus === "SUSPENDED" ? "ACTIVE" : "SUSPENDED";
         const action = newStatus === "ACTIVE" ? "reactivar" : "suspender";

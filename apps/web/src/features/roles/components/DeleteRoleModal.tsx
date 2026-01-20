@@ -33,7 +33,7 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
               <span>Este es un rol de sistema protegido y no puede ser eliminado.</span>
             </div>
             <div className="modal-action">
-              <button className="btn" onClick={onClose}>
+              <button className="btn" onClick={onClose} type="button">
                 Cerrar
               </button>
             </div>
@@ -52,7 +52,9 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
         )}
       </div>
       <form className="modal-backdrop" method="dialog">
-        <button onClick={onClose}>close</button>
+        <button onClick={onClose} type="button">
+          close
+        </button>
       </form>
     </dialog>
   );
@@ -168,6 +170,7 @@ function DeleteRoleForm({
           onClick={() => {
             deleteMutation.mutate();
           }}
+          type="button"
         >
           {deleteMutation.isPending ? <span className="loading loading-spinner" /> : "Eliminar"}
         </button>

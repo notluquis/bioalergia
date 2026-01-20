@@ -47,6 +47,7 @@ function ServiceScheduleAccordion({
   schedules,
   service,
 }: ServiceScheduleAccordionProps) {
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy function
   const groups = (() => {
     if (schedules.length === 0) return [];
 
@@ -86,6 +87,7 @@ function ServiceScheduleAccordion({
 
         map.set(key, { dateKey: key, items: [], label });
       }
+      // biome-ignore lint/style/noNonNullAssertion: map has key
       map.get(key)!.items.push(schedule);
     }
 

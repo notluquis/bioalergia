@@ -19,6 +19,7 @@ export default function InventoryCategoryManager() {
     orderBy: { name: "asc" },
   });
 
+  // biome-ignore lint/suspicious/noExplicitAny: library hook
   const categories = (categoriesData as any[]) ?? [];
 
   // ZenStack mutation for creating category

@@ -13,6 +13,7 @@ import type { RoutePermission } from "@/types/navigation";
  *
  * Based on TanStack Router file-based routing conventions.
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: route matching logic
 export function isTechnicalRoute(fullPath: string): boolean {
   const segments = fullPath.split("/").filter(Boolean);
 
@@ -101,6 +102,7 @@ export function validateRouteNavigation(route: {
  * Extracts all routes from the route tree and validates navigation metadata.
  * Returns a report of missing/invalid routes.
  */
+// biome-ignore lint/suspicious/noExplicitAny: generic route tree
 export function auditRouteNavigation(routeTree: any): {
   missingNav: string[];
   missingPermission: string[];
@@ -112,6 +114,7 @@ export function auditRouteNavigation(routeTree: any): {
   const technicalRoutes: string[] = [];
   const validRoutes: string[] = [];
 
+  // biome-ignore lint/suspicious/noExplicitAny: generic route node
   function traverse(route: any) {
     const fullPath = route.fullPath || route.path || "/";
     const hasNav = !!route.options?.staticData?.nav;
@@ -154,9 +157,11 @@ export function auditRouteNavigation(routeTree: any): {
  * Generates a list of all permissions from the route tree.
  * Useful for automatically populating /settings/roles.
  */
+// biome-ignore lint/suspicious/noExplicitAny: generic route tree
 export function extractPermissionsFromRoutes(routeTree: any): RoutePermission[] {
   const permissions = new Map<string, RoutePermission>();
 
+  // biome-ignore lint/suspicious/noExplicitAny: generic route node
   function traverse(route: any) {
     if (route.options?.staticData?.permission) {
       const perm = route.options.staticData.permission as RoutePermission;

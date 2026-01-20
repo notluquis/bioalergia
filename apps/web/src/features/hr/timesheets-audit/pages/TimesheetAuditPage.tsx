@@ -63,6 +63,7 @@ const QUICK_RANGES: { id: QuickRange; label: string }[] = [
 
 const MAX_EMPLOYEES = 5;
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export default function TimesheetAuditPage() {
   useAuth();
 

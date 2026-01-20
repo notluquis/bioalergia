@@ -36,7 +36,7 @@ export function useWakeLock() {
       }
     };
 
-    requestWakeLock();
+    void requestWakeLock();
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);

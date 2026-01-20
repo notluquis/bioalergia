@@ -33,6 +33,7 @@ export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOpti
   } = useQuery({
     enabled: shouldFetch,
     queryFn: async () => {
+      // biome-ignore lint/style/noNonNullAssertion: checked by shouldFetch
       const data = await fetchMultiEmployeeTimesheets(employeeIds, firstDay!, lastDay!);
       return filterAuditEntries(data, sortedRanges);
     },

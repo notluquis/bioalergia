@@ -83,6 +83,7 @@ export default function RoleMappingManager() {
 
   const columns = useMemo(
     () => getColumns(availableRoles, handleRoleChange),
+    // biome-ignore lint/correctness/useExhaustiveDependencies: legacy hook
     [availableRoles, handleRoleChange],
   );
 

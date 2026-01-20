@@ -55,6 +55,7 @@ interface RawTimesheetEntry {
 
 type ViewMode = "all" | "month" | "range";
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export default function ReportsPage() {
   const { can } = useAuth();
   const canView = can("read", "Report");
@@ -141,6 +142,7 @@ export default function ReportsPage() {
   } = useQuery<EmployeeWorkData[]>({
     enabled: isQueryEnabled,
     queryFn: async () => {
+      // biome-ignore lint/style/noNonNullAssertion: protected by enabled check
       const entries = await fetchGlobalTimesheetRange(dateParams!.start, dateParams!.end);
       return processRawEntries(
         entries as unknown as RawTimesheetEntry[],
@@ -347,12 +349,13 @@ export default function ReportsPage() {
             {/* Employee Selector */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">
+                <span className="text-sm font-medium">
                   Empleados ({selectedEmployeeIds.length})
-                </label>
+                </span>
                 <button
                   className="link link-primary text-xs no-underline hover:underline"
                   onClick={handleSelectAll}
+                  type="button"
                 >
                   {selectedEmployeeIds.length === filteredEmployees.length ? "Ninguno" : "Todos"}
                 </button>
@@ -374,6 +377,7 @@ export default function ReportsPage() {
                           onClick={() => {
                             handleEmployeeToggle(id);
                           }}
+                          type="button"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -403,17 +407,17 @@ export default function ReportsPage() {
 
                 {showEmployeeDropdown && (
                   <>
-                    <div
+                    <button
                       aria-label="Cerrar búsqueda"
-                      className="fixed inset-0 z-40"
+                      className="fixed inset-0 z-40 w-full h-full cursor-default bg-transparent"
                       onClick={() => {
                         setShowEmployeeDropdown(false);
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Escape") setShowEmployeeDropdown(false);
                       }}
-                      role="button"
                       tabIndex={-1}
+                      type="button"
                     />
                     <div className="bg-base-100 border-base-200 absolute top-full right-0 left-0 z-50 mt-2 flex max-h-80 flex-col overflow-hidden rounded-xl border shadow-xl">
                       <div className="border-base-200 bg-base-50 border-b p-2">
@@ -631,6 +635,7 @@ function processRawEntries(
 
   for (const entry of entries) {
     if (!map.has(entry.employee_id)) continue;
+    // biome-ignore lint/style/noNonNullAssertion: checked by map.has
     const data = map.get(entry.employee_id)!;
 
     data.totalMinutes += entry.worked_minutes;

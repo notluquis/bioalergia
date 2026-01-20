@@ -47,12 +47,12 @@ export default function EmployeeAuditSelector({
 
   return (
     <div className="relative flex flex-col gap-2">
-      <label className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
+      <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
         Empleados a auditar{" "}
         <span className="text-primary">
           ({selectedIds.length}/{MAX_EMPLOYEES})
         </span>
-      </label>
+      </span>
 
       {/* Main button */}
       <button
@@ -65,6 +65,7 @@ export default function EmployeeAuditSelector({
       >
         <span className="truncate font-medium">{displayText}</span>
         <svg
+          aria-hidden="true"
           className={`text-base-content/50 h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"

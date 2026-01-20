@@ -200,20 +200,19 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
   });
 
   return (
-    <div
-      aria-label="Calendario semanal"
-      className={cn("week-grid", loading && "week-grid--loading")}
-      role="grid"
-    >
+    <div className={cn("week-grid", loading && "week-grid--loading")} role="none">
       {/* Header row */}
-      <div className="week-grid__header" role="row">
-        <div aria-label="Hora" className="week-grid__time-header" role="columnheader" />
+      {/* biome-ignore lint/a11y/useSemanticElements: grid layout */}
+      <div className="week-grid__header" role="row" tabIndex={0}>
+        <div className="week-grid__time-header" />
         {days.map((day) => (
+          // biome-ignore lint/a11y/useSemanticElements: grid layout
           <div
             aria-current={day.isToday ? "date" : undefined}
             className={cn("week-grid__day-header", day.isToday && "week-grid__day-header--today")}
             key={day.key}
             role="columnheader"
+            tabIndex={0}
           >
             <abbr className="week-grid__day-name" title={day.fullDayName}>
               {day.dayName}

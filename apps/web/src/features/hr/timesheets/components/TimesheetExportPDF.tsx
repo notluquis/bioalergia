@@ -107,6 +107,7 @@ export default function TimesheetExportPDF({
     pageSize?: JsPdfPageSize;
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy function
   async function handleExport(preview = true) {
     try {
       const libs = await loadPdfLibs();
@@ -257,6 +258,7 @@ export default function TimesheetExportPDF({
           <div className="bg-base-100 absolute right-0 z-20 mt-2 w-56 rounded-xl p-3 shadow-xl ring-1 ring-black/5">
             <p className="text-base-content/80 mb-2 text-xs font-semibold">Columnas del detalle</p>
             {[...defaultCols].map((key) => (
+              // biome-ignore lint/a11y/noLabelWithoutControl: wraps checkbox
               <label className="text-base-content mb-1 flex items-center gap-2 text-sm" key={key}>
                 <Checkbox
                   checked={selectedCols.includes(key)}

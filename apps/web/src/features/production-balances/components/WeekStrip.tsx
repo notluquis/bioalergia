@@ -87,6 +87,7 @@ export function WeekStrip({
         )) ??
           // Skeleton
           Array.from({ length: 7 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
             <div className="bg-base-300/30 h-16 animate-pulse rounded-xl" key={`skeleton-${i}`} />
           ))}
       </div>

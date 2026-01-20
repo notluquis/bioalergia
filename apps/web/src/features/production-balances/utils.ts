@@ -78,5 +78,6 @@ export function getDayAbbrev(dateStr: string): string {
   const date = new Date(`${dateStr}T12:00:00`);
   const day = date.getDay();
   // getDay() always returns 0-6, so this is safe
+  // biome-ignore lint/style/noNonNullAssertion: safe index
   return ["D", "L", "M", "X", "J", "V", "S"][day]!;
 }

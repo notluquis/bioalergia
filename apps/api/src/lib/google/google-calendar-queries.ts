@@ -492,7 +492,7 @@ export async function getCalendarEventsByDate(
       "e.attended",
       "e.dosage",
       "e.treatmentStage as treatmentStage",
-      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("eventDateString"), // helper for grouping: use raw SQL names 
+      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("eventDateString"), // helper for grouping: use raw SQL names
     ])
     .orderBy("e.startDateTime", "desc")
     .execute();

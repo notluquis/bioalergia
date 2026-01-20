@@ -55,7 +55,9 @@ export function RoleFormModal({ isOpen, onClose, role }: RoleFormModalProps) {
 
       {/* Backdrop to close */}
       <form className="modal-backdrop" method="dialog">
-        <button onClick={onClose}>close</button>
+        <button onClick={onClose} type="button">
+          close
+        </button>
       </form>
     </dialog>
   );

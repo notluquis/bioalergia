@@ -211,6 +211,7 @@ function AuthedLayout() {
                   <TooltipTrigger asChild>
                     <div className="text-base-content/70 flex cursor-help items-center gap-2 text-xs">
                       <span
+                        role="img"
                         aria-label="Sistema operativo"
                         className="bg-success/70 inline-flex h-2 w-2 rounded-full"
                       />

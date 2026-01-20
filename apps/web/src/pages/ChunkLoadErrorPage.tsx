@@ -29,11 +29,13 @@ export default function ChunkLoadErrorPage() {
         <div className="flex justify-center">
           <div className="bg-warning/10 flex h-20 w-20 items-center justify-center rounded-full">
             <svg
+              aria-hidden="true"
               className="text-warning h-10 w-10"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
+              <title>Error Icon</title>
               <path
                 d="M12 9v2m0 4v2m0 0v2m-6-4h12M7.5 3h9A2.5 2.5 0 0119 5.5v13A2.5 2.5 0 0116.5 21h-9A2.5 2.5 0 015 18.5v-13A2.5 2.5 0 017.5 3z"
                 strokeLinecap="round"
@@ -65,10 +67,11 @@ export default function ChunkLoadErrorPage() {
 
         {/* Actions */}
         <div className="space-y-2">
-          <button className="btn btn-primary w-full" onClick={handleRetry}>
+          <button className="btn btn-primary w-full" onClick={handleRetry} type="button">
             Recargar Ahora
           </button>
           <button
+            type="button"
             className="btn btn-ghost w-full text-xs"
             onClick={() => (globalThis.location.href = "/login")}
           >

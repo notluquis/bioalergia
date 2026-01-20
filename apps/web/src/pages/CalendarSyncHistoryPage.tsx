@@ -125,6 +125,7 @@ export default function CalendarSyncHistoryPage() {
 
           return (
             <div className="divide-base-200 divide-y">
+              {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: row rendering logic */}
               {syncLogs.map((log) => {
                 const isExpanded = expandedId === log.id;
                 const duration = log.endedAt

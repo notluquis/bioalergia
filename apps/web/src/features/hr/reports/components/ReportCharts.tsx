@@ -76,6 +76,7 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
               {reportData.map((_, idx) => (
                 <Cell
                   fill={chartColors[idx % chartColors.length]}
+                  // biome-ignore lint/suspicious/noArrayIndexKey: colors depend on index
                   key={`cell-${idx}`}
                   stroke="hsl(var(--b1))"
                   strokeWidth={2}
