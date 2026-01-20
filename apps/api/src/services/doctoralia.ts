@@ -102,7 +102,13 @@ export async function getDoctoraliaDoctorsWithAddresses(facilityId: number) {
     where: { facilityId },
     include: {
       addresses: {
-        include: {
+        select: {
+          id: true,
+          externalId: true,
+          name: true,
+          cityName: true,
+          street: true,
+          onlineOnly: true,
           _count: {
             select: {
               bookings: true,
