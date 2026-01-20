@@ -587,7 +587,7 @@
 @media print {
   .week-grid {
     box-shadow: none;
-    border: 1px solid #ccc;
+    border: 1px solid hsl(var(--bc) / 0.2);
   }
 
   .week-grid__now-indicator {
