@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
-import { TooltipProvider } from "@/components/ui/Tooltip";
+
 import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/hooks/use-can";
 import { getNavSections } from "@/lib/nav-generator";
@@ -48,7 +48,7 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
     user?.name ?? (user?.email ? (user.email.split("@")[0] ?? "Usuario") : "Usuario");
 
   return (
-    <TooltipProvider delayDuration={0}>
+    <>
       <Backdrop isVisible={isMobile && isOpen} onClose={onClose} zIndex={40} />
 
       <div
@@ -186,6 +186,6 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
           </div>
         </aside>
       </div>
-    </TooltipProvider>
+    </>
   );
 }
