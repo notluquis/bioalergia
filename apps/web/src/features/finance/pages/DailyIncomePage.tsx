@@ -1,6 +1,6 @@
 import type { Event } from "@finanzas/db";
 import { useFindManyEvent } from "@finanzas/db/hooks";
-import { Chip, Spinner } from "@heroui/react";
+import { Alert, Card, Chip, Input, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
 
@@ -32,27 +32,34 @@ export function DailyIncomePage() {
     <div className="space-y-6 p-6 md:p-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Detalle Diario de Ingresos</h1>
-        <div className="flex gap-2">
-          <input
+        <div className="flex gap-2 items-center">
+          <Input
             type="date"
-            className="input input-sm input-bordered"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
+            className="w-40"
+            aria-label="Fecha inicio"
           />
-          <input
+          <span className="text-base-content/50">-</span>
+          <Input
             type="date"
-            className="input input-sm input-bordered"
             value={to}
             onChange={(e) => setTo(e.target.value)}
+            className="w-40"
+            aria-label="Fecha fin"
           />
         </div>
       </div>
 
       <div className="space-y-4">
-        {isLoading && <Spinner />}
+        {isLoading && (
+          <div className="flex justify-center py-8">
+            <Spinner />
+          </div>
+        )}
 
         {!isLoading && sortedDates.length === 0 && (
-          <div className="alert">No se encontraron eventos para este periodo.</div>
+          <Alert color="warning">No se encontraron eventos para este periodo.</Alert>
         )}
 
         {sortedDates.map((date) => {
@@ -67,9 +74,9 @@ export function DailyIncomePage() {
           );
 
           return (
-            <div key={date} className="card bg-base-100 shadow-sm border border-base-200">
-              <div className="card-body p-4">
-                <div className="flex justify-between items-center mb-2">
+            <Card key={date} className="w-full">
+              <Card.Content className="p-4 gap-4">
+                <div className="flex justify-between items-center">
                   <h3 className="font-semibold text-lg capitalize">
                     {dayjs(date).format("dddd D [de] MMMM")}
                   </h3>
@@ -83,15 +90,15 @@ export function DailyIncomePage() {
                   </div>
                 </div>
                 <div className="divider my-0"></div>
-                <ul className="space-y-2 mt-2">
+                <ul className="space-y-2">
                   {dayEvents.map((event: Event) => (
-                    <li key={event.id} className="flex justify-between text-sm">
-                      <span>
-                        {event.summary || "Evento sin título"}{" "}
-                        <Chip className="text-xs" size="sm" variant="soft">
+                    <li key={event.id} className="flex justify-between text-sm items-center">
+                      <div className="flex items-center gap-2">
+                        <span>{event.summary || "Evento sin título"}</span>
+                        <Chip size="sm" variant="soft" className="h-5 text-[10px]">
                           {event.eventType}
                         </Chip>
-                      </span>
+                      </div>
                       <span
                         className={
                           event.amountPaid ? "text-success font-medium" : "text-base-content/50"
@@ -102,8 +109,8 @@ export function DailyIncomePage() {
                     </li>
                   ))}
                 </ul>
-              </div>
-            </div>
+              </Card.Content>
+            </Card>
           );
         })}
       </div>

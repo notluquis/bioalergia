@@ -698,24 +698,7 @@ input[type="datetime-local"] {
   padding-bottom: 0.375rem;
 }
 
-/* Compact buttons in tables */
-.btn-sm,
-button.btn-sm {
-  min-height: 2rem; /* 32px */
-  height: 2rem;
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
-  font-size: 0.8125rem; /* 13px */
-}
 
-.btn-xs,
-button.btn-xs {
-  min-height: 1.75rem; /* 28px */
-  height: 1.75rem;
-  padding-left: 0.625rem;
-  padding-right: 0.625rem;
-  font-size: 0.75rem; /* 12px */
-}
 
 /* === iOS 26 NATIVE FEEL: View Transitions === */
 @view-transition {

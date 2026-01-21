@@ -1,10 +1,7 @@
+import { Alert, Button, Card, Input, Label, ListBox, Select, TextField } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
 import { DailyBalancesPanel } from "@/features/finance/balances/components/DailyBalancesPanel";
@@ -70,61 +67,60 @@ export default function DailyBalances() {
             </div>
           </div>
 
-          <div className="card card-compact bg-base-100 shadow-sm">
-            <div className="card-body">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <Input
-                  className="input-sm"
-                  label="Desde"
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setFrom(event.target.value);
-                  }}
-                  type="date"
-                  value={from}
-                />
-                <Input
-                  className="input-sm"
-                  label="Hasta"
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setTo(event.target.value);
-                  }}
-                  type="date"
-                  value={to}
-                />
-                <Input
-                  as="select"
-                  className="select-sm"
-                  label="Mes rápido"
-                  onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-                    const value = event.target.value;
+          <Card>
+            <Card.Content>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                <TextField className="w-full">
+                  <Label>Desde</Label>
+                  <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+                </TextField>
+                <TextField className="w-full">
+                  <Label>Hasta</Label>
+                  <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+                </TextField>
+                <Select
+                  className="w-full"
+                  selectedKey={quickRange}
+                  onSelectionChange={(key) => {
+                    const value = key as string;
                     if (value === "custom") return;
                     const match = quickMonths.find((month) => month.value === value);
                     if (!match) return;
                     setFrom(match.from);
                     setTo(match.to);
                   }}
-                  value={quickRange}
                 >
-                  <option value="custom">Personalizado</option>
-                  {quickMonths.map((month) => (
-                    <option key={month.value} value={month.value}>
-                      {month.label}
-                    </option>
-                  ))}
-                </Input>
+                  <Label>Mes rápido</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item id="custom" textValue="Personalizado">
+                        Personalizado
+                      </ListBox.Item>
+                      {quickMonths.map((month) => (
+                        <ListBox.Item key={month.value} id={month.value} textValue={month.label}>
+                          {month.label}
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
                 <div className="flex items-end">
                   <Button
-                    className="w-full"
-                    disabled={isFetching}
-                    onClick={() => refetch()}
+                    className="w-full sm:w-auto"
+                    isDisabled={isFetching}
+                    onPress={() => refetch()}
                     size="sm"
+                    variant="primary"
                   >
                     {isFetching ? "..." : "Actualizar"}
                   </Button>
                 </div>
               </div>
-            </div>
-          </div>
+            </Card.Content>
+          </Card>
 
           <BalanceSummary error={balancesError} loading={isFetching} report={report} />
 
@@ -139,7 +135,7 @@ export default function DailyBalances() {
           />
         </>
       ) : (
-        <Alert variant="error">No tienes permisos para ver los saldos diarios.</Alert>
+        <Alert color="danger">No tienes permisos para ver los saldos diarios.</Alert>
       )}
     </section>
   );

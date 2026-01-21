@@ -1,12 +1,8 @@
 import { useFindManySettlementTransaction } from "@finanzas/db/hooks";
+import { Alert, Button, Card, Input, Label, TextField } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
-
 import { DataTable } from "@/components/data-table/DataTable";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { today } from "@/lib/dates";
 
@@ -51,29 +47,33 @@ export default function SettlementTransactionsPage() {
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase">Desde</span>
-            <Input
-              className="input-sm"
-              onChange={(e) => {
-                handleFilterChange({ from: e.target.value });
-              }}
-              type="date"
-              value={draftFilters.from}
-            />
+            <TextField>
+              <Label className="text-xs font-semibold uppercase">Desde</Label>
+              <Input
+                className="input-sm"
+                onChange={(e) => {
+                  handleFilterChange({ from: e.target.value });
+                }}
+                type="date"
+                value={draftFilters.from}
+              />
+            </TextField>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase">Hasta</span>
-            <Input
-              className="input-sm"
-              onChange={(e) => {
-                handleFilterChange({ to: e.target.value });
-              }}
-              type="date"
-              value={draftFilters.to}
-            />
+            <TextField>
+              <Label className="text-xs font-semibold uppercase">Hasta</Label>
+              <Input
+                className="input-sm"
+                onChange={(e) => {
+                  handleFilterChange({ to: e.target.value });
+                }}
+                type="date"
+                value={draftFilters.to}
+              />
+            </TextField>
           </div>
           <Button
-            onClick={() => {
+            onPress={() => {
               setAppliedFilters(draftFilters);
             }}
             size="sm"
@@ -86,17 +86,17 @@ export default function SettlementTransactionsPage() {
 
       {canView ? (
         <Card>
-          <CardContent className="p-0">
+          <Card.Content className="p-0">
             <DataTable
               columns={columns}
               data={rows ?? []}
               isLoading={isLoading}
               noDataMessage="No se encontraron conciliaciones en el rango seleccionado."
             />
-          </CardContent>
+          </Card.Content>
         </Card>
       ) : (
-        <Alert variant="error">No tienes permisos para ver conciliaciones.</Alert>
+        <Alert color="danger">No tienes permisos para ver conciliaciones.</Alert>
       )}
     </section>
   );

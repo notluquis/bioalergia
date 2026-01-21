@@ -2,11 +2,9 @@
  * Top Participants Section Component
  */
 
-import { Spinner } from "@heroui/react";
+import { Alert, Card, Spinner } from "@heroui/react";
 import { Users2 } from "lucide-react";
 import { lazy, Suspense } from "react";
-
-import Alert from "@/components/ui/Alert";
 
 import type { TopParticipantData } from "../types";
 
@@ -25,7 +23,7 @@ export default function TopParticipantsSection({
   loading,
 }: TopParticipantsSectionProps) {
   return (
-    <div className="bg-base-100 border-base-200 rounded-2xl border p-6 shadow-sm">
+    <Card className="p-6">
       <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
         <Users2 className="text-secondary h-5 w-5" />
         Top Contrapartes (Egresos)
@@ -37,7 +35,7 @@ export default function TopParticipantsSection({
         </div>
       )}
 
-      {error && <Alert variant="error">{error}</Alert>}
+      {error && <Alert color="danger">{error}</Alert>}
 
       {!loading && !error && data.length === 0 && (
         <div className="text-base-content/60 py-8 text-center text-sm">
@@ -87,6 +85,6 @@ export default function TopParticipantsSection({
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

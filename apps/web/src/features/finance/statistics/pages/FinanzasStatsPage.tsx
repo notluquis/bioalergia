@@ -3,14 +3,21 @@
  * Dashboard de estadísticas financieras con KPIs, gráficas y análisis temporal
  */
 
-import { Spinner } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Card,
+  Input,
+  Label,
+  ListBox,
+  Select,
+  Spinner,
+  TextField,
+} from "@heroui/react";
 import dayjs from "dayjs";
 import { ArrowDown, ArrowUp, BarChart3, Calendar, TrendingUp } from "lucide-react";
 import { useState } from "react";
 
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import StatCard from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
@@ -112,7 +119,7 @@ export default function FinanzasStatsPage() {
   if (!canView) {
     return (
       <section className={PAGE_CONTAINER}>
-        <Alert variant="error">No tienes permisos para ver las estadísticas financieras.</Alert>
+        <Alert color="danger">No tienes permisos para ver las estadísticas financieras.</Alert>
       </section>
     );
   }
@@ -125,60 +132,62 @@ export default function FinanzasStatsPage() {
         onSubmit={handleSubmit}
       >
         <div className="form-control">
-          <label className="label text-xs font-medium" htmlFor="from-date">
-            Desde
-          </label>
-          <Input
-            className="input-sm"
-            id="from-date"
-            onChange={(e) => {
-              setFrom(e.target.value);
-              setQuickRange("custom");
-            }}
-            type="date"
-            value={from}
-          />
+          <TextField className="w-full">
+            <Label className="text-xs font-medium">Desde</Label>
+            <Input
+              id="from-date"
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setQuickRange("custom");
+              }}
+              type="date"
+              value={from}
+            />
+          </TextField>
         </div>
 
         <div className="form-control">
-          <label className="label text-xs font-medium" htmlFor="to-date">
-            Hasta
-          </label>
-          <Input
-            className="input-sm"
-            id="to-date"
-            onChange={(e) => {
-              setTo(e.target.value);
-              setQuickRange("custom");
-            }}
-            type="date"
-            value={to}
-          />
+          <TextField className="w-full">
+            <Label className="text-xs font-medium">Hasta</Label>
+            <Input
+              id="to-date"
+              onChange={(e) => {
+                setTo(e.target.value);
+                setQuickRange("custom");
+              }}
+              type="date"
+              value={to}
+            />
+          </TextField>
         </div>
 
         <div className="form-control">
-          <label className="label text-xs font-medium" htmlFor="quick-range">
-            Intervalo rápido
-          </label>
-          <select
-            className="select select-bordered select-sm"
-            id="quick-range"
-            onChange={(e) => {
-              handleQuickRangeChange(e.target.value);
-            }}
-            value={quickRange}
+          <Select
+            className="w-full"
+            selectedKey={quickRange}
+            onSelectionChange={(key) => handleQuickRangeChange(key as string)}
           >
-            <option value="custom">Personalizado</option>
-            {QUICK_MONTHS.map((month) => (
-              <option key={month.value} value={month.value}>
-                {month.label}
-              </option>
-            ))}
-          </select>
+            <Label className="text-xs font-medium">Intervalo rápido</Label>
+            <Select.Trigger>
+              <Select.Value />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBox.Item id="custom" textValue="Personalizado">
+                  Personalizado
+                </ListBox.Item>
+                {QUICK_MONTHS.map((month) => (
+                  <ListBox.Item key={month.value} id={month.value} textValue={month.label}>
+                    {month.label}
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select>
         </div>
 
         <div className="flex items-end gap-2 sm:col-span-2">
-          <Button className="w-full" disabled={loading} size="sm" type="submit" variant="primary">
+          <Button className="w-full" isDisabled={loading} size="sm" type="submit" variant="primary">
             {loading ? (
               <>
                 <Spinner size="sm" />
@@ -195,7 +204,7 @@ export default function FinanzasStatsPage() {
       </form>
 
       {/* Error Alert */}
-      {error && <Alert variant="error">{error}</Alert>}
+      {error && <Alert color="danger">{error}</Alert>}
 
       {/* Main Content */}
       {data && (
@@ -240,16 +249,16 @@ export default function FinanzasStatsPage() {
           {/* Two Column Grid: Movement Types + Top Participants */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Movement Types */}
-            <div className="bg-base-100 border-base-200 rounded-2xl border p-6 shadow-sm">
+            <Card className="p-6">
               <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
                 <Calendar className="text-secondary h-5 w-5" />
                 Por tipo de movimiento
               </h2>
               <MovementTypeList data={data.byType} />
-            </div>
+            </Card>
 
             {/* Top Participants Preview */}
-            <div className="bg-base-100 border-base-200 rounded-2xl border p-6 shadow-sm">
+            <Card className="p-6">
               <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
                 <TrendingUp className="text-accent h-5 w-5" />
                 Resumen rápido
@@ -278,7 +287,7 @@ export default function FinanzasStatsPage() {
                   </span>
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Top Participants Section */}
@@ -292,7 +301,7 @@ export default function FinanzasStatsPage() {
 
       {/* Empty State */}
       {!loading && !error && data?.monthly.length === 0 && (
-        <Alert variant="warning">No se encontraron movimientos en el rango seleccionado.</Alert>
+        <Alert color="warning">No se encontraron movimientos en el rango seleccionado.</Alert>
       )}
     </section>
   );

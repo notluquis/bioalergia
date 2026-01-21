@@ -1,7 +1,6 @@
-import { Chip } from "@heroui/react";
+import { Button, Chip, Input, TextField } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
-import Button from "@/components/ui/Button";
 
 import { ExpensePlaceholder } from "../components/ExpensePlaceholder";
 import { FinancialSummaryCards } from "../components/FinancialSummaryCards";
@@ -33,19 +32,21 @@ export function FinancialDashboardPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <input
-            type="date"
-            className="input input-sm input-bordered"
-            value={dateRange.from}
-            onChange={(e) => handleDateChange("from", e.target.value)}
-          />
+          <TextField aria-label="Desde">
+            <Input
+              type="date"
+              value={dateRange.from}
+              onChange={(e) => handleDateChange("from", e.target.value)}
+            />
+          </TextField>
           <span className="text-base-content/50 text-sm">ha</span>
-          <input
-            type="date"
-            className="input input-sm input-bordered"
-            value={dateRange.to}
-            onChange={(e) => handleDateChange("to", e.target.value)}
-          />
+          <TextField aria-label="Hasta">
+            <Input
+              type="date"
+              value={dateRange.to}
+              onChange={(e) => handleDateChange("to", e.target.value)}
+            />
+          </TextField>
         </div>
       </div>
 
