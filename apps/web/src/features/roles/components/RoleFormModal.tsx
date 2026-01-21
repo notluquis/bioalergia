@@ -1,10 +1,18 @@
-import { Spinner } from "@heroui/react";
+import {
+  Button,
+  FieldError,
+  Input,
+  Label,
+  Modal,
+  Spinner,
+  TextArea,
+  TextField,
+} from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, User as UserIcon } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
-import Button from "@/components/ui/Button";
 
 import { useToast } from "@/context/ToastContext";
 import { createRole, type RoleUser, roleKeys, roleQueries, updateRole } from "@/features/roles/api";
@@ -33,35 +41,32 @@ interface RoleBaseFormProps {
 type RoleFormData = z.infer<typeof formSchema>;
 
 export function RoleFormModal({ isOpen, onClose, role }: RoleFormModalProps) {
-  if (!isOpen) return null;
-
   return (
-    <dialog className="modal modal-bottom sm:modal-middle" open>
-      <div className="modal-box">
-        <h3 className="text-lg font-bold">{role ? "Editar Rol" : "Nuevo Rol"}</h3>
-
-        {role ? (
-          <Suspense
-            fallback={
-              <div className="flex h-64 items-center justify-center">
-                <Spinner className="text-primary" color="current" />
-              </div>
-            }
-          >
-            <RoleEditForm onClose={onClose} roleEntity={role} />
-          </Suspense>
-        ) : (
-          <RoleBaseForm onClose={onClose} roleEntity={null} userData={[]} />
-        )}
-      </div>
-
-      {/* Backdrop to close */}
-      <form className="modal-backdrop" method="dialog">
-        <button onClick={onClose} type="button">
-          close
-        </button>
-      </form>
-    </dialog>
+    <Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Modal.Backdrop />
+      <Modal.Container placement="center">
+        <Modal.Dialog>
+          <Modal.Header>
+            <h3 className="text-lg font-bold">{role ? "Editar Rol" : "Nuevo Rol"}</h3>
+          </Modal.Header>
+          <Modal.Body className="pb-6">
+            {role ? (
+              <Suspense
+                fallback={
+                  <div className="flex h-64 items-center justify-center">
+                    <Spinner className="text-primary" />
+                  </div>
+                }
+              >
+                <RoleEditForm onClose={onClose} roleEntity={role} />
+              </Suspense>
+            ) : (
+              <RoleBaseForm onClose={onClose} roleEntity={null} userData={[]} />
+            )}
+          </Modal.Body>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal>
   );
 }
 
@@ -120,7 +125,7 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
         <div className="max-h-32 space-y-1 overflow-y-auto">
           {userData.map((u) => (
             <div
-              className="hover:bg-base-100 flex items-center justify-between rounded p-1 text-xs"
+              className="hover:bg-default-100 flex items-center justify-between rounded p-1 text-xs"
               key={u.id}
             >
               <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : "Sin nombre"}</span>
@@ -136,7 +141,7 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
 
   return (
     <form
-      className="space-y-4 py-4"
+      className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
         void form.handleSubmit();
@@ -144,43 +149,38 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
     >
       <form.Field name="name">
         {(field) => (
-          <div className="form-control w-full">
-            <label className="label" htmlFor="role-name">
-              <span className="label-text">Nombre del Rol</span>
-            </label>
-            <input
-              className={`input input-bordered w-full ${field.state.meta.errors.length > 0 ? "input-error" : ""}`}
-              id="role-name"
+          <TextField className="w-full" isInvalid={field.state.meta.errors.length > 0}>
+            <Label className="text-sm font-medium">Nombre del Rol</Label>
+            <Input
+              className="border-default-200 mt-1 w-full rounded-md border px-3 py-2 text-sm focus:border-primary focus:outline-none"
               onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value);
-              }}
+              onChange={(e) => field.handleChange(e.target.value)}
               placeholder="Ej. Supervisor de Finanzas"
               type="text"
               value={field.state.value}
             />
             {field.state.meta.errors.length > 0 && (
-              <span className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</span>
+              <FieldError className="text-danger mt-1 text-xs">
+                {field.state.meta.errors.join(", ")}
+              </FieldError>
             )}
-          </div>
+          </TextField>
         )}
       </form.Field>
 
       <form.Field name="description">
         {(field) => (
-          <div className="form-control w-full">
-            <label className="label" htmlFor="role-description">
-              <span className="label-text">Descripción</span>
-            </label>
-            <input
-              className="input input-bordered w-full"
-              id="role-description"
+          <div className="flex w-full flex-col gap-1">
+            <Label className="text-sm font-medium" htmlFor="role-desc">
+              Descripción
+            </Label>
+            <TextArea
+              className="border-default-200 w-full rounded-md border px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              id="role-desc"
               onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value);
-              }}
+              onChange={(e) => field.handleChange(e.target.value)}
               placeholder="Descripción breve de las responsabilidades"
-              type="text"
+              rows={3}
               value={field.state.value ?? ""}
             />
           </div>
@@ -189,7 +189,7 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
 
       {/* Show affected users even if empty list, to confirm zero users */}
       {roleEntity && (
-        <div className="bg-base-200 rounded-lg p-3 text-sm">
+        <div className="bg-default-100 rounded-lg p-3 text-sm">
           <div className="mb-2 flex items-center gap-2 font-medium opacity-70">
             <UserIcon className="h-4 w-4" />
             Usuarios afectados ({userData.length})
@@ -202,12 +202,16 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
         </div>
       )}
 
-      <div className="modal-action">
+      <div className="mt-4 flex justify-end gap-2">
         <Button variant="ghost" onPress={onClose}>
           Cancelar
         </Button>
-        <Button variant="primary" isDisabled={mutation.isPending} type="submit">
-          {mutation.isPending && <Spinner size="sm" />}
+        <Button
+          variant="primary"
+          isDisabled={mutation.isPending}
+          isPending={mutation.isPending}
+          type="submit"
+        >
           {roleEntity ? "Guardar Cambios" : "Crear Rol"}
         </Button>
       </div>
