@@ -183,24 +183,42 @@ export default function CalendarSyncHistoryPage() {
 
                       {/* Metrics */}
                       <div className="flex gap-2 text-xs">
-                        <span
-                          className="bg-success/10 text-success rounded px-1.5 py-0.5"
-                          title="Insertados"
-                        >
-                          +{log.inserted}
-                        </span>
-                        <span
-                          className="bg-info/10 text-info rounded px-1.5 py-0.5"
-                          title="Actualizados"
-                        >
-                          ~{log.updated}
-                        </span>
-                        <span
-                          className="bg-warning/10 text-warning rounded px-1.5 py-0.5"
-                          title="Omitidos"
-                        >
-                          -{log.skipped}
-                        </span>
+                        {log.inserted > 0 && (
+                          <span
+                            className="bg-success/10 text-success rounded px-1.5 py-0.5"
+                            title="Insertados"
+                          >
+                            +{log.inserted}
+                          </span>
+                        )}
+                        {log.updated > 0 && (
+                          <span
+                            className="bg-info/10 text-info rounded px-1.5 py-0.5"
+                            title="Actualizados"
+                          >
+                            ~{log.updated}
+                          </span>
+                        )}
+                        {log.excluded > 0 && (
+                          <span
+                            className="bg-error/10 text-error rounded px-1.5 py-0.5"
+                            title="Eliminados/Excluidos"
+                          >
+                            -{log.excluded}
+                          </span>
+                        )}
+                        {log.skipped > 0 && (
+                          <span
+                            className="bg-warning/10 text-warning rounded px-1.5 py-0.5"
+                            title="Omitidos"
+                          >
+                            !{log.skipped}
+                          </span>
+                        )}
+                        {log.inserted === 0 &&
+                          log.updated === 0 &&
+                          log.excluded === 0 &&
+                          log.skipped === 0 && <span className="text-base-content/30">-</span>}
                       </div>
 
                       {/* Duration */}
@@ -248,17 +266,15 @@ export default function CalendarSyncHistoryPage() {
                                 <span className="text-info text-lg font-bold">{log.updated}</span>
                               </div>
                               <div>
-                                <span className="text-base-content/60 block text-xs">Omitidos</span>
-                                <span className="text-warning text-lg font-bold">
-                                  {log.skipped}
-                                </span>
-                              </div>
-                              <div>
                                 <span className="text-base-content/60 block text-xs">
                                   Excluidos
                                 </span>
-                                <span className="text-base-content/70 text-lg font-bold">
-                                  {log.excluded}
+                                <span className="text-error text-lg font-bold">{log.excluded}</span>
+                              </div>
+                              <div>
+                                <span className="text-base-content/60 block text-xs">Omitidos</span>
+                                <span className="text-warning text-lg font-bold">
+                                  {log.skipped}
                                 </span>
                               </div>
                             </div>
@@ -278,7 +294,7 @@ export default function CalendarSyncHistoryPage() {
 
                           {/* Change Details */}
                           <div>
-                            <h4 className="mb-3 text-sm font-semibold">Detalle de Cambios</h4>
+                            {/* <h4 className="mb-3 text-sm font-semibold">Detalle de Cambios</h4> duplicate header removed */}
                             <ChangeDetailsViewer data={log.changeDetails} />
                           </div>
                         </div>
