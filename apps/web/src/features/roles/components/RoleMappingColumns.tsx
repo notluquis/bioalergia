@@ -1,3 +1,4 @@
+import { ListBox, Select } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import type { Role as AvailableRole } from "@/types/roles";
@@ -23,19 +24,28 @@ export const getColumns = (
     cell: ({ row }) => {
       const mapping = row.original;
       return (
-        <select
-          className="select select-bordered select-sm w-full max-w-xs"
-          onChange={(e) => {
-            onRoleChange(mapping.employee_role, e.target.value);
+        <Select
+          aria-label="Rol en Aplicación"
+          className="w-full max-w-xs"
+          placeholder="Seleccionar rol..."
+          selectedKey={mapping.app_role}
+          onSelectionChange={(key) => {
+            if (key) onRoleChange(mapping.employee_role, key.toString());
           }}
-          value={mapping.app_role}
         >
-          {availableRoles.map((role) => (
-            <option key={role.id} title={role.description || ""} value={role.name}>
-              {role.name}
-            </option>
-          ))}
-        </select>
+          <Select.Trigger>
+            <Select.Value />
+          </Select.Trigger>
+          <Select.Popover>
+            <ListBox>
+              {availableRoles.map((role) => (
+                <ListBox.Item key={role.name} textValue={role.name}>
+                  {role.name}
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
       );
     },
     header: "Rol en Aplicación",

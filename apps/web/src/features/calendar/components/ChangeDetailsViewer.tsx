@@ -1,4 +1,5 @@
-import { ChevronDown, FileCheck, FileDiff, FileMinus, FileQuestion, FileX } from "lucide-react";
+import { Accordion } from "@heroui/react";
+import { FileCheck, FileDiff, FileMinus, FileQuestion, FileX } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -77,74 +78,87 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
   };
 
   return (
-    <details className="group bg-base-100/50 border-base-200 overflow-hidden rounded-xl border transition-all duration-200 open:shadow-sm">
-      <summary className="hover:bg-base-200/50 flex cursor-pointer select-none items-center justify-between px-4 py-3 transition-colors">
-        <span className="font-medium text-sm">Detalle de Cambios</span>
-        <ChevronDown className="text-base-content/40 h-4 w-4 transition-transform duration-200 group-open:rotate-180" />
-      </summary>
+    <Accordion
+      className="bg-base-100/50 border-base-200 overflow-hidden rounded-xl border p-0 shadow-none transition-all duration-200"
+      hideSeparator
+      variant="default"
+    >
+      <Accordion.Item key="change-details" aria-label="Detalle de Cambios" className="px-0">
+        <Accordion.Heading>
+          <Accordion.Trigger className="hover:bg-base-200/50 px-4 py-3 transition-colors data-[hover=true]:bg-base-200/50">
+            <span className="font-medium text-sm">Detalle de Cambios</span>
+            <Accordion.Indicator className="text-base-content/40" />
+          </Accordion.Trigger>
+        </Accordion.Heading>
+        <Accordion.Panel className="pb-0">
+          <Accordion.Body className="p-0">
+            <div className="border-base-200 border-t bg-base-100">
+              <div className="flex flex-col gap-6 p-4">
+                {Object.entries(grouped).map(([action, items]) => {
+                  const cfg = config[action] || config.unknown;
+                  if (!cfg) return null;
+                  const Icon = cfg.icon;
 
-      <div className="border-base-200 border-t bg-base-100">
-        <div className="flex flex-col gap-6 p-4">
-          {Object.entries(grouped).map(([action, items]) => {
-            const cfg = config[action] || config.unknown;
-            if (!cfg) return null;
-            const Icon = cfg.icon;
-
-            return (
-              <div key={action} className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "text-xs font-bold uppercase tracking-wider",
-                      cfg.color === "success" && "text-success",
-                      cfg.color === "primary" && "text-info", // Changed to info for better visibility in light mode? Or keep primary? User screenshot has 'MODIFICADOS' in gray pill?
-                      // Actually screenshot shows 'MODIFICADOS (1)' in a gray/light pill.
-                      // I will stick to my color mapping but maybe softer.
-                      cfg.color === "danger" && "text-error",
-                      cfg.color === "warning" && "text-warning",
-                      cfg.color === "default" && "text-base-content/70",
-                    )}
-                  >
-                    {cfg.label} ({items.length})
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {items.map((item, idx) => (
-                    <div
-                      key={`${action}-${idx}`}
-                      className="bg-base-200/30 border-base-200 flex items-start gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-base-200/50"
-                    >
-                      <div
-                        className={cn(
-                          "mt-0.5 rounded-full p-1",
-                          cfg.color === "success" && "bg-success/10 text-success",
-                          cfg.color === "primary" && "bg-info/10 text-info", // primary usually blue/indigo. info is cyan/sky.
-                          cfg.color === "danger" && "bg-error/10 text-error",
-                          cfg.color === "warning" && "bg-warning/10 text-warning",
-                        )}
-                      >
-                        <Icon className="size-3.5" />
+                  return (
+                    <div key={action} className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "text-xs font-bold uppercase tracking-wider",
+                            cfg.color === "success" && "text-success",
+                            cfg.color === "primary" && "text-info",
+                            cfg.color === "danger" && "text-danger",
+                            cfg.color === "warning" && "text-warning",
+                            cfg.color === "default" && "text-base-content/60",
+                          )}
+                        >
+                          {cfg.label}
+                        </span>
+                        <div className="bg-base-200 h-px flex-1" />
                       </div>
-
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="font-medium text-base-content/90 break-all leading-snug">
-                          {item.summary ?? item.eventId ?? "Sin título"}
-                        </div>
-                        {item.fields && item.fields.length > 0 && (
-                          <div className="text-base-content/60 font-mono text-xs break-all whitespace-pre-wrap">
-                            {item.fields.join("\n")}
+                      <div className="space-y-4">
+                        {items.map((item, i) => (
+                          <div key={i} className="flex gap-3">
+                            <div
+                              className={cn(
+                                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-base-100 shadow-sm",
+                                cfg.color === "success" && "border-success/20 text-success",
+                                cfg.color === "primary" && "border-info/20 text-info",
+                                cfg.color === "danger" && "border-danger/20 text-danger",
+                                cfg.color === "warning" && "border-warning/20 text-warning",
+                                cfg.color === "default" && "border-base-200 text-base-content/50",
+                              )}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1 py-1">
+                              <p className="text-base-content/80 text-sm leading-relaxed">
+                                {item.summary}
+                              </p>
+                              {item.fields && item.fields.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                  {item.fields.map((field) => (
+                                    <span
+                                      key={field}
+                                      className="bg-base-200 text-base-content/70 rounded px-1.5 py-0.5 text-[10px] font-medium"
+                                    >
+                                      {field}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
-      </div>
-    </details>
+            </div>
+          </Accordion.Body>
+        </Accordion.Panel>
+      </Accordion.Item>
+    </Accordion>
   );
 };

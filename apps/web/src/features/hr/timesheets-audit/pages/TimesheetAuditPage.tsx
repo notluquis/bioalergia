@@ -3,7 +3,7 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
-import { Chip, Spinner } from "@heroui/react";
+import { Chip, ListBox, Select, Spinner } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -257,20 +257,34 @@ export default function TimesheetAuditPage() {
             <SmoothCollapse isOpen={customWeeksOpen}>
               <div className="space-y-4 px-4 pt-0 pb-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <select
-                    className="select select-bordered select-sm max-w-xs flex-1"
-                    onChange={(e) => {
-                      setSelectedMonth(e.target.value);
-                      setSelectedWeekKeys([]);
+                  <Select
+                    aria-label="Seleccionar mes"
+                    className="max-w-xs flex-1"
+                    placeholder="Seleccionar mes"
+                    selectedKey={selectedMonth}
+                    onSelectionChange={(key) => {
+                      if (key) {
+                        setSelectedMonth(key.toString());
+                        setSelectedWeekKeys([]);
+                      }
                     }}
-                    value={selectedMonth}
                   >
-                    {months.map((month) => (
-                      <option key={month} value={month}>
-                        {dayjs(`${month}-01`).format("MMMM YYYY")}
-                      </option>
-                    ))}
-                  </select>
+                    <Select.Trigger>
+                      <Select.Value />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {months.map((month) => (
+                          <ListBox.Item
+                            key={month}
+                            textValue={dayjs(`${month}-01`).format("MMMM YYYY")}
+                          >
+                            {dayjs(`${month}-01`).format("MMMM YYYY")}
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                   {weeksForMonth.length > 0 && (
                     <button
                       className="link link-primary text-sm whitespace-nowrap"

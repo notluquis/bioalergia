@@ -6,6 +6,7 @@ import {
   useFindManyUser,
   useUpdateUser,
 } from "@finanzas/db/hooks";
+import { ListBox, Select } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -253,21 +254,30 @@ export default function UserManagementPage() {
             <label className="label py-0 pb-1" htmlFor="role-filter">
               <span className="label-text-alt">Filtrar por rol</span>
             </label>
-            <select
-              className="select select-bordered w-full"
-              id="role-filter"
-              onChange={(e) => {
-                setRoleFilter(e.target.value);
+            <Select
+              aria-label="Filtrar por rol"
+              className="w-full"
+              selectedKey={roleFilter}
+              onSelectionChange={(key) => {
+                if (key) setRoleFilter(key.toString());
               }}
-              value={roleFilter}
             >
-              <option value="ALL">Todos los roles</option>
-              {roles?.map((role: { name: string }) => (
-                <option key={role.name} value={role.name}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
+              <Select.Trigger>
+                <Select.Value />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item key="ALL" textValue="Todos los roles">
+                    Todos los roles
+                  </ListBox.Item>
+                  {roles?.map((role: { name: string }) => (
+                    <ListBox.Item key={role.name} textValue={role.name}>
+                      {role.name}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
           </div>
 
           {can("create", "User") && (
@@ -305,23 +315,28 @@ export default function UserManagementPage() {
             <label className="label" htmlFor="role-select">
               <span className="label-text">Rol asignado</span>
             </label>
-            <select
-              className="select select-bordered w-full"
-              id="role-select"
-              onChange={(e) => {
-                setSelectedRole(e.target.value);
+            <Select
+              aria-label="Rol asignado"
+              className="w-full"
+              placeholder="Seleccionar rol"
+              selectedKey={selectedRole}
+              onSelectionChange={(key) => {
+                if (key) setSelectedRole(key.toString());
               }}
-              value={selectedRole}
             >
-              <option disabled value="">
-                Seleccionar rol
-              </option>
-              {roles?.map((role: { name: string }) => (
-                <option key={role.name} value={role.name}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
+              <Select.Trigger>
+                <Select.Value />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  {roles?.map((role: { name: string }) => (
+                    <ListBox.Item key={role.name} textValue={role.name}>
+                      {role.name}
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </Select.Popover>
+            </Select>
           </div>
 
           <div className="modal-action mt-6">

@@ -1,4 +1,4 @@
-import { Chip, Spinner } from "@heroui/react";
+import { Chip, ListBox, Select, Spinner } from "@heroui/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -268,21 +268,29 @@ export default function ReportsPage() {
                   <label className="label text-sm font-medium" htmlFor="month-select">
                     Seleccionar Mes
                   </label>
-                  <select
-                    className="select select-bordered w-full"
-                    id="month-select"
-                    onChange={(e) => {
-                      setSelectedMonth(e.target.value);
-                    }}
-                    value={selectedMonth}
+                  <Select
+                    aria-label="Seleccionar Mes"
+                    className="w-full"
+                    selectedKey={selectedMonth}
+                    onSelectionChange={(key) => setSelectedMonth(key ? String(key) : "")}
                   >
-                    {months.map((month) => (
-                      <option key={month} value={month}>
-                        {dayjs(`${month}-01`).format("MMMM YYYY")}{" "}
-                        {monthsWithData.has(month) ? "✓" : ""}
-                      </option>
-                    ))}
-                  </select>
+                    <Select.Trigger>
+                      <Select.Value />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {months.map((month) => (
+                          <ListBox.Item
+                            key={month}
+                            textValue={dayjs(`${month}-01`).format("MMMM YYYY")}
+                          >
+                            {dayjs(`${month}-01`).format("MMMM YYYY")}{" "}
+                            {monthsWithData.has(month) ? "✓" : ""}
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 </div>
               )}
 
@@ -330,18 +338,31 @@ export default function ReportsPage() {
                 <label className="label text-sm font-medium" htmlFor="granularity-select">
                   Agrupación temporal
                 </label>
-                <select
-                  className="select select-bordered w-full"
-                  id="granularity-select"
-                  onChange={(e) => {
-                    setGranularity(e.target.value as ReportGranularity);
+                <Select
+                  aria-label="Agrupación temporal"
+                  className="w-full"
+                  selectedKey={granularity}
+                  onSelectionChange={(key) => {
+                    if (key) setGranularity(key.toString() as ReportGranularity);
                   }}
-                  value={granularity}
                 >
-                  <option value="day">Diaria</option>
-                  <option value="week">Semanal</option>
-                  <option value="month">Mensual</option>
-                </select>
+                  <Select.Trigger>
+                    <Select.Value />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      <ListBox.Item key="day" textValue="Diaria">
+                        Diaria
+                      </ListBox.Item>
+                      <ListBox.Item key="week" textValue="Semanal">
+                        Semanal
+                      </ListBox.Item>
+                      <ListBox.Item key="month" textValue="Mensual">
+                        Mensual
+                      </ListBox.Item>
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
               </div>
             </div>
 

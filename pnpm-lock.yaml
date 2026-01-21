@@ -173,6 +173,9 @@ importers:
       '@heroui/styles':
         specifier: 3.0.0-beta.5
         version: 3.0.0-beta.5(tailwind-merge@3.4.0)(tailwindcss@4.1.18)
+      '@internationalized/date':
+        specifier: ^3.10.1
+        version: 3.10.1
       '@simplewebauthn/browser':
         specifier: ^13.2.2
         version: 13.2.2
