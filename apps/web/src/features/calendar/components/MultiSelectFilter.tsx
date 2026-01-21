@@ -60,9 +60,9 @@ export function MultiSelectFilter({
 
   return (
     <div className="form-control w-full">
-      <label className={labelClasses}>
+      <div className={labelClasses}>
         <span className={labelTextClasses}>{label}</span>
-      </label>
+      </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

@@ -688,7 +688,7 @@ export async function buildMonthlySummary(from: string, to: string, employeeId?:
     }
     // Include ALL active employees without timesheets (show as 0 hours)
     // previously only: if (employee.salaryType === "FIXED") {
-    
+
     // Use generic summary for 0 hours
     const summary = buildEmployeeSummary(employee, {
       workedMinutes: 0,

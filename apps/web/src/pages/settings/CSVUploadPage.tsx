@@ -271,7 +271,6 @@ interface ImportPreviewData {
   updated?: number;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Extracted for readability but still complex
 function FileImportCard({
   errorMessage,
   isImportError,

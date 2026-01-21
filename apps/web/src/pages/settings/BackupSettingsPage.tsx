@@ -59,6 +59,7 @@ export default function BackupSettingsPage() {
   useEffect(() => {
     const eventSource = new EventSource("/api/backups/progress");
 
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: optimized for integration
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data) as {
@@ -476,6 +477,7 @@ function BackupTablesList({
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
           {tables.map((table) => (
+            // biome-ignore lint/a11y/noLabelWithoutControl: checkbox is interactive
             <label
               className={cn(
                 "border-base-content/10 hover:bg-base-content/5 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",

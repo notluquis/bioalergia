@@ -166,12 +166,12 @@ export async function registerWatchChannel(
  */
 function is404Error(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
-  
-  const e = error as { 
-    code?: number; 
-    status?: number; 
-    response?: { status?: number }; 
-    message?: string 
+
+  const e = error as {
+    code?: number;
+    status?: number;
+    response?: { status?: number };
+    message?: string;
   };
 
   return (
@@ -226,9 +226,11 @@ export async function stopWatchChannel(channelId: string, resourceId: string): P
       });
 
       // Ensure removal from database so we don't try again
-      await db.calendarWatchChannel.delete({
-        where: { channelId },
-      }).catch(() => {});
+      await db.calendarWatchChannel
+        .delete({
+          where: { channelId },
+        })
+        .catch(() => {});
 
       return true;
     }

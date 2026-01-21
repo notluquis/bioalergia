@@ -221,11 +221,9 @@ function InventoryList({
                   toggleCategory(category.id);
                 }}
                 type="button"
+                aria-label={isExpanded ? "Colapsar" : "Expandir"}
               >
-                <span
-                  aria-label={isExpanded ? "Colapsar" : "Expandir"}
-                  className="text-base-content/50 flex h-6 w-6 items-center justify-center transition-transform"
-                >
+                <span className="text-base-content/50 flex h-6 w-6 items-center justify-center transition-transform">
                   {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                 </span>
                 <div className="bg-primary/10 text-primary flex h-8 w-8 items-center justify-center rounded-lg">
@@ -302,11 +300,9 @@ function InventoryList({
                 toggleCategory(0);
               }}
               type="button"
+              aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
             >
-              <span
-                aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
-                className="text-base-content/50 flex h-6 w-6 items-center justify-center"
-              >
+              <span className="text-base-content/50 flex h-6 w-6 items-center justify-center">
                 {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
               </span>
               <div className="bg-base-300 text-base-content/50 flex h-8 w-8 items-center justify-center rounded-lg">

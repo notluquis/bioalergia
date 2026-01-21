@@ -36,6 +36,7 @@ const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
 const ACTIVE_FILTER_CLASS = "bg-primary text-primary-content shadow-sm";
 const INACTIVE_FILTER_CLASS = "bg-base-300/50 text-base-content/70 hover:bg-base-300";
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: optimized for integration
 function CalendarClassificationPage() {
   const PAGE_SIZE = 50;
   const queryClient = useQueryClient();
