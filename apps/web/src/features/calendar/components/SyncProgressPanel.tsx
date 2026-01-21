@@ -1,8 +1,8 @@
+import { Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import Button from "@/components/ui/Button";
 import type { CalendarSyncStep } from "@/features/calendar/types";
 import { numberFormatter } from "@/lib/format";
-import { LOADING_SPINNER_SM } from "@/lib/styles";
 
 import "dayjs/locale/es";
 
@@ -118,10 +118,7 @@ export function SyncProgressPanel({
               })()}
             </p>
           </div>
-          {syncing && (
-            // biome-ignore lint/a11y/useAriaPropsSupportedByRole: legacy spinner
-            <span aria-label="Sincronizando" className={LOADING_SPINNER_SM} />
-          )}
+          {syncing && <Spinner size="sm" aria-label="Sincronizando" />}
           {syncError && (
             <span className="text-error text-xs font-semibold">Revisa los detalles abajo.</span>
           )}

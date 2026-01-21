@@ -1,3 +1,4 @@
+import { Spinner } from "@heroui/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
@@ -6,7 +7,7 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { formatRut, validateRut } from "@/lib/rut";
-import { GRID_2_COL_MD, LOADING_SPINNER_LG } from "@/lib/styles";
+import { GRID_2_COL_MD } from "@/lib/styles";
 import type { CounterpartCategory, PersonType } from "@/types/schema";
 
 import type { CounterpartUpsertPayload } from "../api";
@@ -106,7 +107,7 @@ export default function CounterpartForm({
     <section aria-busy={busy} className="surface-recessed relative space-y-5 p-6">
       {loading && (
         <div className="bg-base-100/60 absolute inset-0 z-10 flex items-center justify-center rounded-2xl backdrop-blur-sm">
-          <span aria-hidden="true" className={LOADING_SPINNER_LG} />
+          <Spinner size="lg" />
         </div>
       )}
       <div className="flex flex-col gap-1">

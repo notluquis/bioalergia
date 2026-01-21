@@ -1,4 +1,4 @@
-import { Avatar, Chip, Separator } from "@heroui/react";
+import { Avatar, Chip, Separator, Spinner } from "@heroui/react";
 import { skipToken, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -19,7 +19,7 @@ export default function PersonDetailsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <span className="loading loading-spinner loading-lg" />
+        <Spinner size="lg" />
       </div>
     );
   }

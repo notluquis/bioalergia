@@ -1,10 +1,9 @@
+import { Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
-
 import Button from "@/components/ui/Button";
 import { today } from "@/lib/dates";
 import { currencyFormatter } from "@/lib/format";
-import { LOADING_SPINNER_XS } from "@/lib/styles";
 
 import type { ServiceSchedule, ServiceSummary } from "../types";
 
@@ -150,7 +149,7 @@ export default function ServicesUnifiedAgenda({
           </div>
           {loading && (
             <div className="text-base-content/40 flex items-center gap-2 text-xs">
-              <span aria-hidden="true" className={LOADING_SPINNER_XS} />
+              <Spinner size="sm" />
               <span>Actualizando agenda…</span>
             </div>
           )}

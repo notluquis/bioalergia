@@ -3,6 +3,7 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
+import { Spinner } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -533,7 +534,7 @@ export default function TimesheetAuditPage() {
           <Suspense
             fallback={
               <div className="flex h-64 items-center justify-center">
-                <span className="loading loading-spinner loading-lg text-primary" />
+                <Spinner className="text-primary" color="current" size="lg" />
               </div>
             }
           >

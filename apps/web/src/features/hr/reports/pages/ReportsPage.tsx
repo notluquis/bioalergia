@@ -1,3 +1,4 @@
+import { Spinner } from "@heroui/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -23,7 +24,7 @@ import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
 import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
-import { LOADING_SPINNER_SM, PAGE_CONTAINER } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import { fetchGlobalTimesheetRange } from "../api";
 import { getHRReportsColumns, type HRReportsTableMeta } from "../components/HRReportsColumns";
@@ -476,7 +477,7 @@ export default function ReportsPage() {
             >
               {loading ? (
                 <>
-                  <span className={LOADING_SPINNER_SM} />
+                  <Spinner size="sm" />
                   Analizando...
                 </>
               ) : (
@@ -550,7 +551,7 @@ export default function ReportsPage() {
               <Suspense
                 fallback={
                   <div className="bg-base-100 border-base-200 flex h-96 items-center justify-center rounded-3xl border shadow-sm">
-                    <span className="loading loading-spinner loading-lg text-primary" />
+                    <Spinner className="text-primary" color="current" size="lg" />
                   </div>
                 }
               >
@@ -567,7 +568,7 @@ export default function ReportsPage() {
                 <Suspense
                   fallback={
                     <div className="bg-base-100 border-base-200 flex h-80 items-center justify-center rounded-3xl border shadow-sm">
-                      <span className="loading loading-spinner loading-md text-secondary" />
+                      <Spinner className="text-secondary" color="current" size="md" />
                     </div>
                   }
                 >

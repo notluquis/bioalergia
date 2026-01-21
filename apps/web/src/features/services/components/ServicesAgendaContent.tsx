@@ -1,13 +1,12 @@
+import { Spinner } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
-
 import Button from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 import { currencyFormatter } from "@/lib/format";
-import { LOADING_SPINNER_MD } from "@/lib/styles";
 
 export default function ServicesAgendaContent() {
   const {
@@ -46,7 +45,7 @@ export default function ServicesAgendaContent() {
 
         <ServicesSurface className="flex min-h-64 items-center justify-center">
           <div className="text-base-content/70 flex items-center gap-3 text-sm">
-            <span aria-hidden="true" className={LOADING_SPINNER_MD} />
+            <Spinner size="md" />
             <span>Cargando agenda consolidada...</span>
           </div>
         </ServicesSurface>
