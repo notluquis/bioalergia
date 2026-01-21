@@ -345,12 +345,14 @@ function CalendarClassificationPage() {
         {/* Reclassify Actions */}
         <div className="flex items-center gap-3">
           {/* Refresh Button - Moved here */}
-          <button
-            className="btn btn-ghost btn-sm text-base-content/70 gap-2"
-            disabled={loading}
+          <Button
+            className="gap-2 text-base-content/70"
+            isDisabled={loading}
             onClick={() => void refetch()}
+            size="sm"
             title="Actualizar lista"
             type="button"
+            variant="ghost"
           >
             <svg
               aria-hidden="true"
@@ -367,7 +369,7 @@ function CalendarClassificationPage() {
               />
             </svg>
             <span className="hidden sm:inline">{loading ? "Cargando..." : "Actualizar"}</span>
-          </button>
+          </Button>
 
           {/* Action Buttons */}
           <Button
@@ -533,13 +535,16 @@ function CalendarClassificationPage() {
       {/* Pagination */}
       {totalCount > PAGE_SIZE && (
         <div className="flex items-center justify-center gap-2 pt-4">
-          <button
-            className="btn btn-sm btn-ghost disabled:opacity-30"
-            disabled={page === 0 || loading}
+          <Button
+            className="disabled:opacity-30"
+            isDisabled={page === 0 || loading}
+            isIconOnly
             onClick={() => {
               setPage(0);
             }}
+            size="sm"
             type="button"
+            variant="ghost"
           >
             <svg
               aria-hidden="true"
@@ -555,14 +560,17 @@ function CalendarClassificationPage() {
                 strokeWidth={2}
               />
             </svg>
-          </button>
-          <button
-            className="btn btn-sm btn-ghost disabled:opacity-30"
-            disabled={page === 0 || loading}
+          </Button>
+          <Button
+            className="disabled:opacity-30"
+            isDisabled={page === 0 || loading}
+            isIconOnly
             onClick={() => {
               setPage((p) => Math.max(0, p - 1));
             }}
+            size="sm"
             type="button"
+            variant="ghost"
           >
             <svg
               aria-hidden="true"
@@ -578,19 +586,22 @@ function CalendarClassificationPage() {
                 strokeWidth={2}
               />
             </svg>
-          </button>
+          </Button>
           <div className="bg-base-200 flex items-center gap-2 rounded-lg px-4 py-2 text-sm">
             <span className="text-base-content/60">Página</span>
             <span className="text-base-content font-semibold tabular-nums">{page + 1}</span>
             <span className="text-base-content/60">de {totalPages}</span>
           </div>
-          <button
-            className="btn btn-sm btn-ghost disabled:opacity-30"
-            disabled={(page + 1) * PAGE_SIZE >= totalCount || loading}
+          <Button
+            className="disabled:opacity-30"
+            isDisabled={(page + 1) * PAGE_SIZE >= totalCount || loading}
+            isIconOnly
             onClick={() => {
               setPage((p) => p + 1);
             }}
+            size="sm"
             type="button"
+            variant="ghost"
           >
             <svg
               aria-hidden="true"
@@ -601,14 +612,17 @@ function CalendarClassificationPage() {
             >
               <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
             </svg>
-          </button>
-          <button
-            className="btn btn-sm btn-ghost disabled:opacity-30"
-            disabled={(page + 1) * PAGE_SIZE >= totalCount || loading}
+          </Button>
+          <Button
+            className="disabled:opacity-30"
+            isDisabled={(page + 1) * PAGE_SIZE >= totalCount || loading}
+            isIconOnly
             onClick={() => {
               setPage(totalPages - 1);
             }}
+            size="sm"
             type="button"
+            variant="ghost"
           >
             <svg
               aria-hidden="true"
@@ -624,7 +638,7 @@ function CalendarClassificationPage() {
                 strokeWidth={2}
               />
             </svg>
-          </button>
+          </Button>
         </div>
       )}
     </div>
