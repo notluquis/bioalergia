@@ -11,7 +11,10 @@ import { cn } from "@/lib/utils";
 // HeroUI v3 Beta Button exports might be inferred as ButtonRoot which inherits ButtonVariants.
 // We explicitly define our props to override/extend.
 export interface ButtonProps
-  extends Omit<ComponentProps<typeof HeroButton>, "variant" | "color" | "isLoading" | "isPending"> {
+  extends Omit<
+    ComponentProps<typeof HeroButton>,
+    "variant" | "color" | "isLoading" | "isPending" | "size"
+  > {
   // We maintain legacy variants for compatibility
   variant?:
     | "danger"
@@ -24,6 +27,9 @@ export interface ButtonProps
     | "success"
     | "tertiary";
   isLoading?: boolean;
+  disabled?: boolean;
+  title?: string;
+  size?: "xs" | "sm" | "md" | "lg";
 }
 
 const mapVariantToHero = (
@@ -58,9 +64,9 @@ const mapVariantToHero = (
   }
 };
 
-const mapSizeToHero = (size: any): any => {
+const mapSizeToHero = (size: string | undefined): "sm" | "md" | "lg" | undefined => {
   if (size === "xs") return "sm";
-  return size;
+  return size as "sm" | "md" | "lg" | undefined;
 };
 
 const FinalButton = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -85,7 +91,7 @@ const FinalButton = forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(variantClassName, className)}
         variant={heroVariant}
         size={mapSizeToHero(size)}
-        isDisabled={isDisabled}
+        isDisabled={isDisabled ?? props.disabled}
         isPending={isLoading}
         fullWidth={fullWidth}
         {...props}

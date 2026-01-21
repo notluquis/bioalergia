@@ -199,19 +199,8 @@ export default defineConfig(({ mode }) => ({
     // We let Vite/Rollup split based on dynamic imports (React.lazy).
     rollupOptions: {
       output: {
-        manualChunks: {
-          "vendor-react": ["react", "react-dom"],
-          "vendor-router": ["@tanstack/react-router"],
-          "vendor-ui": [
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-toast",
-            "lucide-react",
-            "clsx",
-            "tailwind-merge",
-          ],
-          "vendor-core": ["@tanstack/react-query", "zod", "dayjs", "i18next", "react-i18next"],
-          "vendor-charts": ["recharts"],
-        },
+        // Trust the graph. Vite/Rollup automatic chunking is optimal for HTTP/3.
+        // manualChunks removed to prevent bundle fragmentation and invalidation issues.
       },
     },
   },

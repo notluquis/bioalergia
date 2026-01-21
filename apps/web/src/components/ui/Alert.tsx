@@ -1,13 +1,10 @@
 /**
- * Alert Component - Native HTML with DaisyUI styling
- *
- * Simple alert component with variant support.
+ * Alert Component - Adapter for HeroUI Alert
  */
+import { Button, Alert as HeroAlert } from "@heroui/react";
 import type React from "react";
 
 import { cn } from "@/lib/utils";
-
-import Button from "./Button";
 
 interface AlertProps {
   children: React.ReactNode;
@@ -22,30 +19,28 @@ export default function Alert({
   onClose,
   variant = "error",
 }: Readonly<AlertProps>) {
-  const variantMap = {
-    error: "alert-error text-white",
-    info: "alert-info text-white",
-    success: "alert-success text-white",
-    warning: "alert-warning text-black",
-  };
+  const colorMap = {
+    error: "danger",
+    info: "primary", // HeroUI uses primary/secondary for info-like states usually, or we can use "primary"
+    success: "success",
+    warning: "warning",
+  } as const;
 
   return (
-    // eslint-disable-next-line security/detect-object-injection
-    <div className={cn("alert rounded-2xl shadow-lg", variantMap[variant], className)} role="alert">
-      <div className="flex flex-1 items-center gap-2">{children}</div>
+    <HeroAlert className={cn("items-start relative", className)} color={colorMap[variant]}>
+      <div className="flex-1 mr-6">{children}</div>
       {onClose && (
-        <div className="flex-none">
-          <Button
-            aria-label="Cerrar"
-            className="btn-circle btn-xs border-none bg-white/20 text-current hover:bg-white/30"
-            onClick={onClose}
-            size="sm"
-            variant="ghost"
-          >
-            ✕
-          </Button>
-        </div>
+        <Button
+          isIconOnly
+          size="sm"
+          variant="ghost"
+          onPress={onClose}
+          aria-label="Cerrar"
+          className="absolute right-2 top-2 min-w-6 w-6 h-6 data-[hover=true]:bg-black/10 dark:data-[hover=true]:bg-white/10"
+        >
+          ✕
+        </Button>
       )}
-    </div>
+    </HeroAlert>
   );
 }
