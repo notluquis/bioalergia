@@ -15,6 +15,7 @@ interface ClassificationRowProps {
   event: CalendarUnclassifiedEvent;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: complex form type
   form: any;
   index: number;
   isSaving: boolean;
@@ -40,6 +41,7 @@ export function ClassificationRow({
   /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, security/detect-object-injection */
   const category = useStore(
     form.store,
+    // biome-ignore lint/suspicious/noExplicitAny: complex form state
     (state: any) => (state as { values: FormValues }).values.entries[index]?.category ?? "",
   );
   /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, security/detect-object-injection */

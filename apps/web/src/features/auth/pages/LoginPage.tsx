@@ -13,6 +13,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { fetchPasskeyLoginOptions } from "@/features/auth/api";
 import { logger } from "@/lib/logger";
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: optimized for integration
 export default function LoginPage() {
   const { login, loginWithMfa, loginWithPasskey } = useAuth();
   const { settings } = useSettings();
@@ -272,6 +273,7 @@ export default function LoginPage() {
           <div className="animate-in fade-in zoom-in flex flex-col items-center justify-center gap-4 py-8 duration-500">
             <div className="bg-success-soft-hover text-success flex size-16 scale-110 items-center justify-center rounded-full transition-transform duration-700">
               <svg
+                aria-label="Success"
                 className="size-8"
                 fill="none"
                 stroke="currentColor"

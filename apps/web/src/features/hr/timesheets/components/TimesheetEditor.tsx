@@ -263,10 +263,10 @@ export default function TimesheetEditor({
     deleteMutate(row.entryId);
   };
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: optimized for readability despite complexity
   const processBulkRow = (
     row: BulkRow,
     initial: BulkRow,
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy logic
   ): { entry?: TimesheetUpsertEntry; error?: string; removeId?: number } => {
     if (!isRowDirty(row, initial)) return {};
 
@@ -274,28 +274,25 @@ export default function TimesheetEditor({
     if (validationError) return { error: validationError };
 
     const overtime = parseDuration(row.overtime);
-    // Overtime parsing usually returns null if invalid, but validateBulkRow covers simple format checks?
-    // We already checked format in validateBulkRow but parseDuration does the logic.
-    // Let's rely on parseDuration check here if validateBulkRow didn't catch specific duration logic.
     if (overtime === null) {
       return { error: `Horas extra inválidas en ${formatDateLabel(row.date)}` };
     }
 
-    const comment = row.comment.trim() || null;
-    const hasContent =
-      Boolean(row.entrada) || Boolean(row.salida) || overtime > 0 || Boolean(comment);
+    const { entrada, salida, comment: rawComment, entryId } = row;
+    const comment = rawComment.trim() || null;
+    const hasContent = Boolean(entrada) || Boolean(salida) || overtime > 0 || Boolean(comment);
 
     if (!hasContent) {
-      return row.entryId ? { removeId: row.entryId } : {};
+      return entryId ? { removeId: entryId } : {};
     }
 
     return {
       entry: {
         comment,
-        end_time: row.salida ? dayjs(`${row.date} ${row.salida}`).toISOString() : null,
+        end_time: salida ? dayjs(`${row.date} ${salida}`).toISOString() : null,
         extra_amount: 0,
         overtime_minutes: overtime,
-        start_time: row.entrada ? dayjs(`${row.date} ${row.entrada}`).toISOString() : null,
+        start_time: entrada ? dayjs(`${row.date} ${entrada}`).toISOString() : null,
         work_date: row.date,
       },
     };
