@@ -296,6 +296,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
         emissionExactDate={form.emissionExactDate}
         emissionMode={form.emissionMode}
         emissionStartDay={form.emissionStartDay}
+        errors={{}}
         onChange={handleChange}
       />
 

@@ -3,6 +3,7 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import {
   getCounterpartsColumns,
   getLeaderboardColumns,
@@ -40,6 +41,13 @@ export default function ParticipantInsightsPage() {
 
   const leaderboardColumns = getLeaderboardColumns();
   const monthlyColumns = getMonthlyColumns();
+  // const counterpartsColumns = getCounterpartsColumns(); // Removed as it was unused in logic but used in render?
+  // Wait, counterpartsColumns IS used in render at line 197.
+  // Lint error said "Several of these imports are unused" at line 4 (CardTitle etc).
+  // AND "getCounterpartsColumns" at line 8 was likely unused?
+  // Actually, let's keep it if used.
+  // The lint was about `CardTitle`, `CardDescription`.
+  // I will focus on replacing Imports to clean up unused UI components.
   const counterpartsColumns = getCounterpartsColumns();
 
   return (
@@ -61,20 +69,17 @@ export default function ParticipantInsightsPage() {
               type="text"
               value={participantId}
             />
-            <Input
-              as="select"
+            <Select
               label="Rango rápido"
-              onChange={(e) => {
-                setQuickMonth(e.target.value);
+              onChange={(value) => {
+                setQuickMonth(value as string);
               }}
               value={quickMonth}
             >
               {quickMonthOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
+                <SelectItem key={option.value}>{option.label}</SelectItem>
               ))}
-            </Input>
+            </Select>
             <Input
               disabled={quickMonth !== "custom"}
               label="Desde"
@@ -112,36 +117,32 @@ export default function ParticipantInsightsPage() {
           </div>
           <div className="flex flex-wrap gap-4">
             <div className="w-32">
-              <Input
-                as="select"
+              <Select
                 className="select-sm"
                 label="Mostrar top"
-                onChange={(e) => {
-                  const value = Number(e.target.value);
+                onChange={(val) => {
+                  const value = Number(val);
                   setLeaderboardLimit(Number.isFinite(value) ? value : 10);
                 }}
-                value={leaderboardLimit}
+                value={String(leaderboardLimit)}
               >
                 {[10, 20, 30].map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
+                  <SelectItem key={value}>{value}</SelectItem>
                 ))}
-              </Input>
+              </Select>
             </div>
-            <div className="w-40">
-              <Input
-                as="select"
+            <div className="w-44">
+              <Select
                 className="select-sm"
                 label="Agrupar por"
-                onChange={(e) => {
-                  setLeaderboardGrouping(e.target.value as "account" | "rut");
+                onChange={(val) => {
+                  setLeaderboardGrouping(val as "account" | "rut");
                 }}
                 value={leaderboardGrouping}
               >
-                <option value="account">Cuenta bancaria</option>
-                <option value="rut">RUT</option>
-              </Input>
+                <SelectItem key="account">Cuenta bancaria</SelectItem>
+                <SelectItem key="rut">RUT</SelectItem>
+              </Select>
             </div>
           </div>
         </div>

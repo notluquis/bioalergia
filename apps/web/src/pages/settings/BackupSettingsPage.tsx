@@ -1,3 +1,4 @@
+import { Checkbox } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -292,14 +293,14 @@ export default function BackupSettingsPage() {
                       {formatFileSize(Number(backup.size))}
                     </span>
                     {backup.webViewLink && (
-                      <a
-                        className="btn btn-ghost btn-xs btn-square"
-                        href={backup.webViewLink}
-                        rel="noopener noreferrer"
-                        target="_blank"
+                      <Button
+                        isIconOnly
+                        onPress={() => window.open(backup.webViewLink, "_blank")}
+                        size="xs"
+                        variant="ghost"
                       >
                         <Download className="size-4" />
-                      </a>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -365,17 +366,17 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
         </div>
         <div className="flex items-center gap-2">
           {backup.webViewLink && (
-            <a
-              className="btn btn-ghost btn-sm"
-              href={backup.webViewLink}
-              onClick={(e) => {
-                e.stopPropagation();
+            <Button
+              onPress={() => {
+                // e contains press event, not mouse event, but propagation works differently
+                // For HeroUI Button, onPress is enough.
+                window.open(backup.webViewLink, "_blank");
               }}
-              rel="noopener noreferrer"
-              target="_blank"
+              size="sm"
+              variant="ghost"
             >
               <Download className="size-4" />
-            </a>
+            </Button>
           )}
         </div>
       </button>
@@ -482,13 +483,9 @@ function BackupTablesList({
               )}
               key={table}
             >
-              <input
-                checked={selectedTables.includes(table)}
-                className="checkbox checkbox-primary checkbox-sm"
-                onChange={() => {
-                  toggleTable(table);
-                }}
-                type="checkbox"
+              <Checkbox
+                isSelected={selectedTables.includes(table)}
+                onChange={() => toggleTable(table)}
               />
               <span className="flex-1 truncate">{table}</span>
             </label>

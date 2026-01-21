@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
 
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { Counterpart, CounterpartAccount } from "../../../counterparts/types";
@@ -42,41 +43,35 @@ export function CounterpartSection({
 
   return (
     <section className={GRID_2_COL_MD}>
-      <Input
-        as="select"
-        disabled={counterpartsLoading}
+      <Select
+        isDisabled={counterpartsLoading}
         helper={counterpartsError ?? (counterpartsLoading ? "Cargando contrapartes..." : undefined)}
         label="Empresa / contraparte"
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-          onCounterpartSelect(event.target.value);
-        }}
+        onChange={(val) => onCounterpartSelect(val as string)}
         value={counterpartId ? String(counterpartId) : ""}
       >
-        <option value="">Sin contraparte</option>
+        <SelectItem key="">Sin contraparte</SelectItem>
         {counterparts.map((counterpart) => (
-          <option key={counterpart.id} value={counterpart.id}>
-            {counterpart.name}
-          </option>
+          <SelectItem key={counterpart.id}>{counterpart.name}</SelectItem>
         ))}
-      </Input>
-      <Input
-        as="select"
-        disabled={!counterpartId || accountsLoading}
+      </Select>
+      <Select
+        isDisabled={!counterpartId || accountsLoading}
         helper={accountsHelper}
         label="Cuenta asociada"
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-          onChange("counterpartAccountId", event.target.value ? Number(event.target.value) : null);
+        onChange={(val) => {
+          onChange("counterpartAccountId", val ? Number(val) : null);
         }}
         value={counterpartAccountId ? String(counterpartAccountId) : ""}
       >
-        <option value="">Sin cuenta específica</option>
+        <SelectItem key="">Sin cuenta específica</SelectItem>
         {accounts.map((account) => (
-          <option key={account.id} value={account.id}>
+          <SelectItem key={account.id}>
             {account.account_identifier}
             {account.bank_name ? ` · ${account.bank_name}` : ""}
-          </option>
+          </SelectItem>
         ))}
-      </Input>
+      </Select>
       <Input
         helper="Usa este campo si necesitas un alias o número distinto a las cuentas registradas"
         label="Referencia de cuenta"
