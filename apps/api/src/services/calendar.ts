@@ -17,31 +17,50 @@ export async function cleanupStaleSyncLogs(forceAll = false) {
   const STALE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
   const staleDate = new Date(Date.now() - STALE_TIMEOUT_MS);
 
-  // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
+  // Find logs that need cleanup
   const where: any = {
     status: "RUNNING",
   };
 
-  // If not forcing all (e.g. startup), only cleanup those that have timed out
   if (!forceAll) {
     where.startedAt = { lt: staleDate };
   }
 
-  const result = await db.calendarSyncLog.updateMany({
+  const staleLogs = await db.calendarSyncLog.findMany({
     where,
-    data: {
-      status: "ERROR",
-      errorMessage: forceAll
-        ? "System restarted while sync was in progress"
-        : "Sync timeout - automatically marked as stale",
-      endedAt: new Date(),
-    },
+    select: { id: true, startedAt: true },
   });
 
-  if (result.count > 0) {
-    console.warn(`⚠ Cleaned up ${result.count} stale/interrupted sync logs (forceAll=${forceAll})`);
-  }
-  return result.count;
+  if (staleLogs.length === 0) return 0;
+
+  console.warn(
+    `⚠ Cleaning up ${staleLogs.length} stale/interrupted sync logs (forceAll=${forceAll})`,
+  );
+
+  // Update each log individually to calculate correct endedAt (timeout time)
+  // This prevents logs from showing "Duration: 5 days" if visited days later
+  await Promise.all(
+    staleLogs.map((log) => {
+      // If forceAll (startup), assume they just died now/recently or use startedAt + timeout?
+      // Use startedAt + timeout is mostly correct for "it definitely died by then"
+      const timeoutDate = new Date(log.startedAt.getTime() + STALE_TIMEOUT_MS);
+      // Ensure we don't set a future date if forceAll is used very early (unlikely but safe)
+      const endedAt = timeoutDate > new Date() ? new Date() : timeoutDate;
+
+      return db.calendarSyncLog.update({
+        where: { id: log.id },
+        data: {
+          status: "ERROR",
+          errorMessage: forceAll
+            ? "System restarted while sync was in progress"
+            : "Sync timeout - automatically marked as stale",
+          endedAt: endedAt,
+        },
+      });
+    }),
+  );
+
+  return staleLogs.length;
 }
 
 export async function createCalendarSyncLogEntry(data: {
