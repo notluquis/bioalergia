@@ -162,6 +162,27 @@ export async function registerWatchChannel(
 }
 
 /**
+ * Check if the error is a 404 Not Found from Google API
+ */
+function is404Error(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  
+  const e = error as { 
+    code?: number; 
+    status?: number; 
+    response?: { status?: number }; 
+    message?: string 
+  };
+
+  return (
+    e.code === 404 ||
+    e.status === 404 ||
+    e.response?.status === 404 ||
+    (typeof e.message === "string" && e.message.toLowerCase().includes("not found"))
+  );
+}
+
+/**
  * Stop watching a calendar by stopping the channel
  * @param channelId - Channel ID to stop
  * @param resourceId - Resource ID from Google
@@ -196,7 +217,22 @@ export async function stopWatchChannel(channelId: string, resourceId: string): P
 
     logEvent("stop_watch_channel_success", { channelId, resourceId });
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
+    // Treat 404 as success (channel already gone) to allow cleanup
+    if (is404Error(error)) {
+      logWarn("stop_watch_channel_404", {
+        channelId,
+        message: "Channel not found on Google, removing from DB",
+      });
+
+      // Ensure removal from database so we don't try again
+      await db.calendarWatchChannel.delete({
+        where: { channelId },
+      }).catch(() => {});
+
+      return true;
+    }
+
     console.error("stop_watch_channel_error", error, { channelId, resourceId });
     logWarn("stop_watch_channel_error", { channelId, resourceId });
     return false;
