@@ -1,4 +1,3 @@
-import { Chip, ScrollShadow } from "@heroui/react";
 import { ChevronDown, FileCheck, FileDiff, FileMinus, FileQuestion, FileX } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -77,112 +76,68 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
     unknown: { label: "Otros", color: "default", icon: FileQuestion },
   };
 
-  // Calculate summary counts for the header
-  const counts = {
-    created: grouped.created?.length || 0,
-    updated: grouped.updated?.length || 0,
-    deleted: grouped.deleted?.length || 0,
-  };
-
   return (
     <details className="group bg-base-100/50 border-base-200 overflow-hidden rounded-xl border transition-all duration-200 open:shadow-sm">
       <summary className="hover:bg-base-200/50 flex cursor-pointer select-none items-center justify-between px-4 py-3 transition-colors">
-        <div className="flex items-center gap-3">
-          <span className="font-medium text-sm">Detalle de Cambios</span>
-
-          {/* Concordance Badges (+0 ~1 -0 style) */}
-          <div className="flex gap-1.5 opacity-80 group-open:opacity-100 transition-opacity">
-            {counts.created > 0 && (
-              <Chip
-                size="sm"
-                variant="flat"
-                color="success"
-                className="h-5 min-h-0 gap-1 px-1.5 text-[10px] font-bold"
-              >
-                +{counts.created}
-              </Chip>
-            )}
-            {counts.updated > 0 && (
-              <Chip
-                size="sm"
-                variant="flat"
-                color="primary"
-                className="h-5 min-h-0 gap-1 px-1.5 text-[10px] font-bold"
-              >
-                ~{counts.updated}
-              </Chip>
-            )}
-            {counts.deleted > 0 && (
-              <Chip
-                size="sm"
-                variant="flat"
-                color="danger"
-                className="h-5 min-h-0 gap-1 px-1.5 text-[10px] font-bold"
-              >
-                -{counts.deleted}
-              </Chip>
-            )}
-            {Object.keys(counts).every((k) => counts[k as keyof typeof counts] === 0) && (
-              <span className="text-base-content/40 text-xs">Sin cambios</span>
-            )}
-          </div>
-        </div>
+        <span className="font-medium text-sm">Detalle de Cambios</span>
         <ChevronDown className="text-base-content/40 h-4 w-4 transition-transform duration-200 group-open:rotate-180" />
       </summary>
 
       <div className="border-base-200 border-t bg-base-100">
-        <div className="flex flex-col gap-4 p-4">
+        <div className="flex flex-col gap-6 p-4">
           {Object.entries(grouped).map(([action, items]) => {
             const cfg = config[action] || config.unknown;
             const Icon = cfg.icon;
 
             return (
-              <div key={action} className="space-y-2">
+              <div key={action} className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Chip
-                    size="sm"
-                    variant="dot"
-                    color={cfg.color}
-                    className="border-none pl-0 font-semibold uppercase tracking-wider text-[10px]"
+                  <span
+                    className={cn(
+                      "text-xs font-bold uppercase tracking-wider",
+                      cfg.color === "success" && "text-success",
+                      cfg.color === "primary" && "text-info", // Changed to info for better visibility in light mode? Or keep primary? User screenshot has 'MODIFICADOS' in gray pill?
+                      // Actually screenshot shows 'MODIFICADOS (1)' in a gray/light pill.
+                      // I will stick to my color mapping but maybe softer.
+                      cfg.color === "danger" && "text-error",
+                      cfg.color === "warning" && "text-warning",
+                      cfg.color === "default" && "text-base-content/70",
+                    )}
                   >
                     {cfg.label} ({items.length})
-                  </Chip>
+                  </span>
                 </div>
 
-                <div className="bg-base-200/30 border-base-200/50 overflow-hidden rounded-lg border">
-                  <ScrollShadow className="max-h-60 w-full p-2">
-                    <div className="space-y-1">
-                      {items.map((item, idx) => (
-                        <div
-                          key={`${action}-${idx}`}
-                          className="hover:bg-base-200/50 flex place-items-start gap-3 rounded bg-transparent p-1.5 text-xs transition-colors"
-                        >
-                          <Icon
-                            className={cn(
-                              "size-3.5 shrink-0 mt-0.5 opacity-60",
-                              cfg.color === "success" && "text-success",
-                              cfg.color === "primary" && "text-primary",
-                              cfg.color === "danger" && "text-error",
-                              cfg.color === "warning" && "text-warning",
-                            )}
-                          />
-                          <div className="min-w-0 flex-1 space-y-0.5">
-                            <div
-                              className="text-base-content/80 font-medium truncate"
-                              title={item.summary}
-                            >
-                              {item.summary ?? item.eventId ?? "Sin título"}
-                            </div>
-                            {item.fields && item.fields.length > 0 && (
-                              <div className="text-base-content/60 font-mono text-[10px]">
-                                Modificado: {item.fields.join(", ")}
-                              </div>
-                            )}
-                          </div>
+                <div className="space-y-2">
+                  {items.map((item, idx) => (
+                    <div
+                      key={`${action}-${idx}`}
+                      className="bg-base-200/30 border-base-200 flex items-start gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-base-200/50"
+                    >
+                      <div
+                        className={cn(
+                          "mt-0.5 rounded-full p-1",
+                          cfg.color === "success" && "bg-success/10 text-success",
+                          cfg.color === "primary" && "bg-info/10 text-info", // primary usually blue/indigo. info is cyan/sky.
+                          cfg.color === "danger" && "bg-error/10 text-error",
+                          cfg.color === "warning" && "bg-warning/10 text-warning",
+                        )}
+                      >
+                        <Icon className="size-3.5" />
+                      </div>
+
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="font-medium text-base-content/90 break-words leading-snug">
+                          {item.summary ?? item.eventId ?? "Sin título"}
                         </div>
-                      ))}
+                        {item.fields && item.fields.length > 0 && (
+                          <div className="text-base-content/60 font-mono text-xs break-all whitespace-pre-wrap">
+                            {item.fields.join("\n")}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </ScrollShadow>
+                  ))}
                 </div>
               </div>
             );
