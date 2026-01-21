@@ -47,12 +47,12 @@ COPY --from=pruner /app/out/full/ .
 
 ENV CI=true
 
-# Build DB, Web (Fast), and API using Turbo
-# turbo.json ensures db builds before others.
-# We use build:fast for web to skip redundant type-checking in Docker.
+# Build DB first (dependency of api and web)
 RUN pnpm turbo run build --filter=@finanzas/db
-RUN pnpm turbo run build:fast --filter=@finanzas/web
-RUN pnpm turbo run build --filter=@finanzas/api
+
+# Build Web (Fast) and API in parallel
+# Web takes ~60s, API ~7s. Running them together saves the API build time from the critical path.
+RUN pnpm turbo run build:fast --filter=@finanzas/web & pnpm turbo run build --filter=@finanzas/api & wait
 
 # Deploy API for production (isolates prod dependencies)
 RUN pnpm --filter @finanzas/api --prod deploy /prod/api
