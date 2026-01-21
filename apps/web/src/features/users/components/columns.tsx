@@ -1,3 +1,4 @@
+import { Avatar, Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
@@ -10,6 +11,7 @@ import {
   Trash2,
   UserCog,
 } from "lucide-react";
+import Button from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,23 +22,21 @@ import {
 import { Tooltip } from "@/components/ui/Tooltip";
 import type { User } from "@/features/users/types";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
-import { BADGE_SM } from "@/lib/styles";
-import { cn } from "@/lib/utils";
 
 // Helper for status colors
-const getStatusColor = (s: string) => {
+const getStatusColor = (s: string): "success" | "warning" | "danger" | "default" => {
   switch (s) {
     case "ACTIVE": {
-      return "badge-success";
+      return "success";
     }
     case "PENDING_SETUP": {
-      return "badge-warning";
+      return "warning";
     }
     case "SUSPENDED": {
-      return "badge-error";
+      return "danger";
     }
     default: {
-      return "badge-ghost";
+      return "default";
     }
   }
 };
@@ -55,11 +55,11 @@ export const getColumns = (actions: {
       const user = row.original;
       return (
         <div className="flex items-center gap-3">
-          <div className="avatar placeholder">
-            <div className="bg-neutral text-neutral-content flex h-10 w-10 items-center justify-center rounded-full">
-              <span className="text-xs font-bold">{getPersonInitials(user.person)}</span>
-            </div>
-          </div>
+          <Avatar className="h-10 w-10">
+            <Avatar.Fallback className="text-xs font-bold">
+              {getPersonInitials(user.person)}
+            </Avatar.Fallback>
+          </Avatar>
           <div>
             <div className="font-bold">{getPersonFullName(user.person)}</div>
             <div className="text-xs opacity-50">{user.email}</div>
@@ -80,9 +80,9 @@ export const getColumns = (actions: {
   {
     accessorKey: "role",
     cell: ({ row }) => (
-      <span className="badge badge-ghost badge-sm font-medium whitespace-nowrap">
+      <Chip className="font-medium whitespace-nowrap" size="sm" variant="soft">
         {row.original.role}
-      </span>
+      </Chip>
     ),
     header: "Rol",
   },
@@ -91,10 +91,15 @@ export const getColumns = (actions: {
     cell: ({ row }) => {
       const status = row.original.status;
       return (
-        <div className={cn(BADGE_SM, "w-fit gap-2 whitespace-nowrap", getStatusColor(status))}>
+        <Chip
+          className="w-fit gap-2 whitespace-nowrap"
+          color={getStatusColor(status)}
+          size="sm"
+          variant={status === "ACTIVE" ? "secondary" : "soft"}
+        >
           {status === "ACTIVE" && <div className="size-1.5 rounded-full bg-current" />}
           {status}
-        </div>
+        </Chip>
       );
     },
     header: "Estado",
@@ -158,9 +163,9 @@ export const getColumns = (actions: {
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="btn btn-ghost btn-xs" type="button">
+            <Button isIconOnly size="sm" variant="ghost">
               <MoreVertical size={16} />
-            </button>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem
