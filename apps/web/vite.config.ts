@@ -201,6 +201,10 @@ export default defineConfig(({ mode }) => ({
       output: {
         // Trust the graph. Vite/Rollup automatic chunking is optimal for HTTP/3.
         // manualChunks removed to prevent bundle fragmentation and invalidation issues.
+        // Exception: Recharts has circular dependencies that break tree-shaking warnings.
+        manualChunks: {
+          recharts: ["recharts"],
+        },
       },
     },
   },
