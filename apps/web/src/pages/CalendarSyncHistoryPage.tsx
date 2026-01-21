@@ -226,7 +226,11 @@ export default function CalendarSyncHistoryPage() {
                               <div>
                                 <span className="text-base-content/60 block text-xs">Duración</span>
                                 <span className="text-sm">
-                                  {duration === null ? "En progreso..." : `${duration} segundos`}
+                                  {duration !== null
+                                    ? `${duration} segundos`
+                                    : log.status === "RUNNING"
+                                      ? "En progreso..."
+                                      : "No disponible"}
                                 </span>
                               </div>
                               <div>

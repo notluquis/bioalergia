@@ -1,4 +1,5 @@
-import { ChevronDown } from "lucide-react";
+import { Chip, ScrollShadow } from "@heroui/react";
+import { ChevronDown, FileCheck, FileDiff, FileMinus, FileQuestion, FileX } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -9,12 +10,9 @@ interface ChangeDetail {
   summary?: string;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
   if (!data) return null;
 
-  // Backend sends: { inserted: string[], updated: (string | {summary, changes})[], excluded: string[] }
-  // Component expects: ChangeDetail[] with action field
   const rawDetails = data as {
     excluded?: string[];
     inserted?: string[];
@@ -49,70 +47,147 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
   }
 
   if (details.length === 0) {
-    return <p className="text-base-content/50 text-sm italic">No hay cambios detallados.</p>;
+    return (
+      <div className="bg-base-200/30 flex items-center justify-center rounded-lg border border-dashed p-4 text-xs italic text-base-content/50">
+        No hay detalles de cambios registrados.
+      </div>
+    );
   }
 
-  // Group by action (safe - action is a controlled string from data)
+  // Group by action
   const grouped: Record<string, ChangeDetail[]> = {};
   for (const item of details) {
     const action = item.action ?? "unknown";
-    // eslint-disable-next-line security/detect-object-injection
     grouped[action] ??= [];
-    // eslint-disable-next-line security/detect-object-injection
     grouped[action].push(item);
   }
 
-  const actionLabels: Record<string, { color: string; label: string }> = {
-    created: { color: "text-success", label: "Insertados" },
-    deleted: { color: "text-error", label: "Eliminados" },
-    skipped: { color: "text-warning", label: "Omitidos" },
-    unknown: { color: "text-base-content/70", label: "Otros" },
-    updated: { color: "text-info", label: "Modificados" },
+  const config: Record<
+    string,
+    {
+      label: string;
+      color: "success" | "primary" | "danger" | "warning" | "default";
+      icon: React.ElementType;
+    }
+  > = {
+    created: { label: "Insertados", color: "success", icon: FileCheck },
+    updated: { label: "Modificados", color: "primary", icon: FileDiff },
+    deleted: { label: "Eliminados", color: "danger", icon: FileX },
+    skipped: { label: "Omitidos", color: "warning", icon: FileMinus },
+    unknown: { label: "Otros", color: "default", icon: FileQuestion },
+  };
+
+  // Calculate summary counts for the header
+  const counts = {
+    created: grouped.created?.length || 0,
+    updated: grouped.updated?.length || 0,
+    deleted: grouped.deleted?.length || 0,
   };
 
   return (
-    <details className="group bg-base-100/50 border-base-200 open:bg-base-100 overflow-hidden rounded-lg border">
-      <summary className="hover:bg-base-200 flex cursor-pointer items-center justify-between px-3 py-2 text-xs font-medium transition-colors select-none">
-        <span>Ver Detalle de Cambios ({details.length})</span>
-        <ChevronDown className="h-3 w-3 opacity-50 transition-transform duration-200 group-open:rotate-180" />
+    <details className="group bg-base-100/50 border-base-200 overflow-hidden rounded-xl border transition-all duration-200 open:shadow-sm">
+      <summary className="hover:bg-base-200/50 flex cursor-pointer select-none items-center justify-between px-4 py-3 transition-colors">
+        <div className="flex items-center gap-3">
+          <span className="font-medium text-sm">Detalle de Cambios</span>
+
+          {/* Concordance Badges (+0 ~1 -0 style) */}
+          <div className="flex gap-1.5 opacity-80 group-open:opacity-100 transition-opacity">
+            {counts.created > 0 && (
+              <Chip
+                size="sm"
+                variant="flat"
+                color="success"
+                className="h-5 min-h-0 gap-1 px-1.5 text-[10px] font-bold"
+              >
+                +{counts.created}
+              </Chip>
+            )}
+            {counts.updated > 0 && (
+              <Chip
+                size="sm"
+                variant="flat"
+                color="primary"
+                className="h-5 min-h-0 gap-1 px-1.5 text-[10px] font-bold"
+              >
+                ~{counts.updated}
+              </Chip>
+            )}
+            {counts.deleted > 0 && (
+              <Chip
+                size="sm"
+                variant="flat"
+                color="danger"
+                className="h-5 min-h-0 gap-1 px-1.5 text-[10px] font-bold"
+              >
+                -{counts.deleted}
+              </Chip>
+            )}
+            {Object.keys(counts).every((k) => counts[k as keyof typeof counts] === 0) && (
+              <span className="text-base-content/40 text-xs">Sin cambios</span>
+            )}
+          </div>
+        </div>
+        <ChevronDown className="text-base-content/40 h-4 w-4 transition-transform duration-200 group-open:rotate-180" />
       </summary>
-      <div className="border-base-200 space-y-3 border-t p-3">
-        {Object.entries(grouped).map(([action, items]) => {
-          // eslint-disable-next-line security/detect-object-injection
-          const lookup = actionLabels[action];
-          const label = lookup?.label ?? "Otros";
-          const color = lookup?.color ?? "text-base-content/70";
-          return (
-            <div key={action}>
-              <h5 className={cn("mb-1.5 text-xs font-semibold tracking-wide uppercase", color)}>
-                {label} ({items.length})
-              </h5>
-              <div className="bg-base-200/50 max-h-40 space-y-1 overflow-y-auto rounded-lg p-2">
-                {items.slice(0, 50).map((item, idx) => (
-                  <div
-                    className="border-base-300 flex items-start gap-2 border-b pb-1 text-xs last:border-0"
-                    // biome-ignore lint/suspicious/noArrayIndexKey: simple list
-                    key={idx}
+
+      <div className="border-base-200 border-t bg-base-100">
+        <div className="flex flex-col gap-4 p-4">
+          {Object.entries(grouped).map(([action, items]) => {
+            const cfg = config[action] || config.unknown;
+            const Icon = cfg.icon;
+
+            return (
+              <div key={action} className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Chip
+                    size="sm"
+                    variant="dot"
+                    color={cfg.color}
+                    className="border-none pl-0 font-semibold uppercase tracking-wider text-[10px]"
                   >
-                    <span className="text-base-content/70 flex-1 truncate" title={item.summary}>
-                      {item.summary ?? item.eventId ?? "Sin título"}
-                    </span>
-                    {item.fields && item.fields.length > 0 && (
-                      <span className="text-base-content/50 shrink-0 font-mono">
-                        [{item.fields.join(", ")}]
-                      </span>
-                    )}
-                  </div>
-                ))}
-                {items.length > 50 && (
-                  <p className="text-base-content/50 pt-1 text-center text-xs">
-                    ...y {items.length - 50} más
-                  </p>
-                )}
+                    {cfg.label} ({items.length})
+                  </Chip>
+                </div>
+
+                <div className="bg-base-200/30 border-base-200/50 overflow-hidden rounded-lg border">
+                  <ScrollShadow className="max-h-60 w-full p-2">
+                    <div className="space-y-1">
+                      {items.map((item, idx) => (
+                        <div
+                          key={`${action}-${idx}`}
+                          className="hover:bg-base-200/50 flex place-items-start gap-3 rounded bg-transparent p-1.5 text-xs transition-colors"
+                        >
+                          <Icon
+                            className={cn(
+                              "size-3.5 shrink-0 mt-0.5 opacity-60",
+                              cfg.color === "success" && "text-success",
+                              cfg.color === "primary" && "text-primary",
+                              cfg.color === "danger" && "text-error",
+                              cfg.color === "warning" && "text-warning",
+                            )}
+                          />
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div
+                              className="text-base-content/80 font-medium truncate"
+                              title={item.summary}
+                            >
+                              {item.summary ?? item.eventId ?? "Sin título"}
+                            </div>
+                            {item.fields && item.fields.length > 0 && (
+                              <div className="text-base-content/60 font-mono text-[10px]">
+                                Modificado: {item.fields.join(", ")}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollShadow>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </details>
   );
