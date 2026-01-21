@@ -87,6 +87,7 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
         <div className="flex flex-col gap-6 p-4">
           {Object.entries(grouped).map(([action, items]) => {
             const cfg = config[action] || config.unknown;
+            if (!cfg) return null;
             const Icon = cfg.icon;
 
             return (
@@ -127,7 +128,7 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
                       </div>
 
                       <div className="min-w-0 flex-1 space-y-1">
-                        <div className="font-medium text-base-content/90 break-words leading-snug">
+                        <div className="font-medium text-base-content/90 break-all leading-snug">
                           {item.summary ?? item.eventId ?? "Sin título"}
                         </div>
                         {item.fields && item.fields.length > 0 && (

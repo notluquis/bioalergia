@@ -1,3 +1,4 @@
+import { Button } from "@heroui/react";
 import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -51,7 +52,7 @@ export function TopBar({ canFinalize, date, isSaving, onFinalize, onSave, status
   };
 
   return (
-    <header className="bg-base-100/80 border-base-content/5 sticky top-0 z-10 mb-4 flex items-center justify-between rounded-2xl border px-6 py-4 backdrop-blur-md">
+    <div className="bg-base-100/80 border-base-content/5 sticky top-0 z-10 mb-4 flex items-center justify-between rounded-2xl border px-6 py-4 backdrop-blur-md">
       {/* Left: Title and date */}
       <div>
         <h1 className="text-xl font-bold">Balance diario</h1>
@@ -70,39 +71,42 @@ export function TopBar({ canFinalize, date, isSaving, onFinalize, onSave, status
       {/* Right: Actions */}
       <div className="flex items-center gap-3">
         {/* Save button with shortcut hint */}
-        <button
-          className={cn("btn btn-ghost btn-sm gap-2 rounded-xl", isSaving && "loading")}
-          disabled={isSaving}
-          onClick={onSave}
+        <Button
+          className="gap-2 rounded-xl"
+          isPending={isSaving}
+          onPress={onSave}
           onMouseEnter={() => {
             setShowShortcut(true);
           }}
           onMouseLeave={() => {
             setShowShortcut(false);
           }}
-          type="button"
+          size="sm"
+          variant="ghost"
         >
-          {!isSaving && <Save className="size-4" />}
+          <Save className="size-4" />
           <span className="hidden sm:inline">Guardar</span>
           {showShortcut && (
             <kbd className="bg-base-content/10 ml-1 hidden rounded px-1.5 py-0.5 text-xs sm:inline">
               ⌘S
             </kbd>
           )}
-        </button>
+        </Button>
 
         {/* Finalizar button */}
-        <button
-          className={cn("btn rounded-xl px-6", canFinalize ? "btn-success" : "btn-disabled")}
-          disabled={!canFinalize || isSaving}
-          onClick={onFinalize}
-          type="button"
+        <Button
+          className={cn(
+            "rounded-xl px-6",
+            canFinalize && "bg-success text-success-foreground hover:bg-success/90",
+          )}
+          isDisabled={!canFinalize || isSaving}
+          onPress={onFinalize}
         >
           Finalizar
-        </button>
+        </Button>
 
         {/* More options dropdown */}
       </div>
-    </header>
+    </div>
   );
 }

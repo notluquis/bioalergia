@@ -60,7 +60,10 @@ export function Table<T extends string>({
 }: Readonly<TableProps<T>>) {
   // eslint-disable-next-line security/detect-object-injection
   const containerClasses = cn(TABLE_VARIANTS[variant], className);
-  const tableClass = cn("table w-full text-sm", variant === "glass" && "table-zebra");
+  const tableClass = cn(
+    "w-full text-sm text-left caption-bottom",
+    variant === "glass" && "[&_tbody_tr:nth-child(even)]:bg-default-100/50",
+  );
 
   const tableContent = (
     <table className={tableClass} {...props}>

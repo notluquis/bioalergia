@@ -55,15 +55,6 @@ export const INPUT_SM = "input input-sm input-bordered";
 /** Compact select field */
 export const SELECT_SM = "select select-sm select-bordered";
 
-/** Compact button */
-export const BTN_SM = "btn btn-sm";
-
-/** Primary button (standard size) */
-export const BTN_PRIMARY = "btn btn-primary";
-
-/** Secondary button (standard size) */
-export const BTN_SECONDARY = "btn btn-secondary";
-
 // ===== BADGES =====
 
 /** Small badge */

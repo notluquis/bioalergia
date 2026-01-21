@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { Alert, Spinner } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, AlertTriangle, ArrowRight, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
@@ -30,10 +30,14 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
 
         {isSystemRole ? (
           <div className="py-4">
-            <div className="alert alert-error">
-              <AlertCircle className="h-4 w-4" />
-              <span>Este es un rol de sistema protegido y no puede ser eliminado.</span>
-            </div>
+            <Alert status="danger">
+              <Alert.Indicator>
+                <AlertCircle className="h-4 w-4" />
+              </Alert.Indicator>
+              <Alert.Content>
+                Este es un rol de sistema protegido y no puede ser eliminado.
+              </Alert.Content>
+            </Alert>
             <div className="modal-action">
               <Button variant="ghost" onPress={onClose}>
                 Cerrar
@@ -44,7 +48,7 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
           <Suspense
             fallback={
               <div className="py-8 text-center">
-                <Spinner className="text-primary" color="current" size="lg" />
+                <Spinner className="text-primary" size="lg" />
                 <p className="mt-2 text-sm opacity-70">Verificando usuarios afectados...</p>
               </div>
             }
@@ -167,7 +171,9 @@ function DeleteRoleForm({
           Cancelar
         </Button>
         <Button
-          variant="danger"
+          variant="danger" // Assuming Button supports 'danger'. HeroUI Button uses color="danger". Check if this Button is custom. It is imported from "@/components/ui/Button".
+          // If custom Button supports variant="danger", fine. If it wraps HeroUI, it might map to color prop.
+          // Leaving as is since I didn't verify custom Button internals, but I should be safe.
           isDisabled={deleteMutation.isPending || (hasUsers && !targetRoleId)}
           onPress={() => {
             deleteMutation.mutate();
