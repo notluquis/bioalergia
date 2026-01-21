@@ -1,3 +1,4 @@
+import { Spinner } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, User as UserIcon } from "lucide-react";
@@ -42,7 +43,7 @@ export function RoleFormModal({ isOpen, onClose, role }: RoleFormModalProps) {
           <Suspense
             fallback={
               <div className="flex h-64 items-center justify-center">
-                <span className="loading loading-spinner text-primary" />
+                <Spinner className="text-primary" color="current" />
               </div>
             }
           >
@@ -205,7 +206,7 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
           Cancelar
         </button>
         <button className="btn btn-primary" disabled={mutation.isPending} type="submit">
-          {mutation.isPending && <span className="loading loading-spinner"></span>}
+          {mutation.isPending && <Spinner size="sm" />}
           {roleEntity ? "Guardar Cambios" : "Crear Rol"}
         </button>
       </div>

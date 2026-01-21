@@ -1,7 +1,6 @@
+import { Spinner } from "@heroui/react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import React from "react";
-
-import { LOADING_SPINNER_MD } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 interface TableBodyProps {
@@ -94,7 +93,7 @@ function TableBody({
         <tr>
           <td className="px-4 py-12 text-center" colSpan={columnsCount}>
             <div className="flex flex-col items-center justify-center gap-2">
-              <span className={LOADING_SPINNER_MD}></span>
+              <Spinner size="md" />
               <span className="text-base-content/60 text-sm">{loadingMessage}</span>
             </div>
           </td>

@@ -3,6 +3,7 @@
  * Displays monthly income/expense trends
  */
 
+import { Spinner } from "@heroui/react";
 import { TrendingUp } from "lucide-react";
 import { lazy, Suspense } from "react";
 
@@ -39,7 +40,7 @@ export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
       <Suspense
         fallback={
           <div className="flex h-80 items-center justify-center">
-            <span className="loading loading-spinner loading-lg text-primary" />
+            <Spinner className="text-primary" color="current" size="lg" />
           </div>
         }
       >

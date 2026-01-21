@@ -2,6 +2,7 @@
  * Top Participants Section Component
  */
 
+import { Spinner } from "@heroui/react";
 import { Users2 } from "lucide-react";
 import { lazy, Suspense } from "react";
 
@@ -32,7 +33,7 @@ export default function TopParticipantsSection({
 
       {loading && (
         <div className="flex h-60 items-center justify-center">
-          <span className="loading loading-spinner loading-lg text-primary" />
+          <Spinner className="text-primary" color="current" size="lg" />
         </div>
       )}
 
@@ -50,7 +51,7 @@ export default function TopParticipantsSection({
           <Suspense
             fallback={
               <div className="flex h-60 items-center justify-center">
-                <span className="loading loading-spinner loading-md text-primary" />
+                <Spinner className="text-primary" color="current" size="md" />
               </div>
             }
           >

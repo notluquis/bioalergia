@@ -3,6 +3,7 @@
  * Dashboard de estadísticas financieras con KPIs, gráficas y análisis temporal
  */
 
+import { Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { ArrowDown, ArrowUp, BarChart3, Calendar, TrendingUp } from "lucide-react";
 import { useState } from "react";
@@ -180,7 +181,7 @@ export default function FinanzasStatsPage() {
           <Button className="w-full" disabled={loading} size="sm" type="submit" variant="primary">
             {loading ? (
               <>
-                <span className="loading loading-spinner loading-xs" />
+                <Spinner size="sm" />
                 Calculando...
               </>
             ) : (

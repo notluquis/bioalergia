@@ -63,7 +63,7 @@ export default function AddUserPage() {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["people"] });
       success("Usuario creado exitosamente");
-      navigate({ to: "/settings/users" });
+      void navigate({ to: "/settings/users" });
     },
   });
 

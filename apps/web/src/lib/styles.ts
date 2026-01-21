@@ -98,18 +98,7 @@ export const INPUT_WRAPPER = "input input-bordered flex items-center gap-2";
 export const INPUT_CURRENCY_SM = "input input-bordered input-sm flex items-center gap-2";
 
 // ===== LOADING SPINNERS =====
-
-/** Extra small loading spinner */
-export const LOADING_SPINNER_XS = "loading loading-spinner loading-xs text-primary";
-
-/** Small loading spinner */
-export const LOADING_SPINNER_SM = "loading loading-spinner loading-sm text-primary";
-
-/** Medium loading spinner */
-export const LOADING_SPINNER_MD = "loading loading-spinner loading-md text-primary";
-
-/** Large loading spinner */
-export const LOADING_SPINNER_LG = "loading loading-spinner loading-lg text-primary";
+// @deprecated: Use <Spinner /> from @heroui/react instead
 
 // ===== GRID LAYOUTS =====
 

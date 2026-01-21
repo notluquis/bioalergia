@@ -1,7 +1,7 @@
+import { Spinner } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -13,7 +13,7 @@ import ServicesFilterPanel from "@/features/services/components/ServicesFilterPa
 import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
-import { CARD_COMPACT, LOADING_SPINNER_MD, TITLE_MD } from "@/lib/styles";
+import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
 
 export default function ServicesOverviewContent() {
   const overview = useServicesOverview();
@@ -89,7 +89,7 @@ export default function ServicesOverviewContent() {
     return (
       <div className="flex min-h-60 items-center justify-center">
         <div className="text-base-content/70 flex items-center gap-3 text-sm">
-          <span aria-hidden="true" className={LOADING_SPINNER_MD} />
+          <Spinner size="md" />
           <span>Cargando servicios...</span>
         </div>
       </div>

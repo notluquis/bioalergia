@@ -1,5 +1,6 @@
 import type { Event } from "@finanzas/db";
 import { useFindManyEvent } from "@finanzas/db/hooks";
+import { Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
 
@@ -48,7 +49,7 @@ export function DailyIncomePage() {
       </div>
 
       <div className="space-y-4">
-        {isLoading && <span className="loading loading-spinner"></span>}
+        {isLoading && <Spinner />}
 
         {!isLoading && sortedDates.length === 0 && (
           <div className="alert">No se encontraron eventos para este periodo.</div>

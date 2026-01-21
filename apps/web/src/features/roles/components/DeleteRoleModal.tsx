@@ -1,3 +1,4 @@
+import { Spinner } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, AlertTriangle, ArrowRight, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
@@ -42,7 +43,7 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
           <Suspense
             fallback={
               <div className="py-8 text-center">
-                <span className="loading loading-spinner loading-lg text-primary" />
+                <Spinner className="text-primary" color="current" size="lg" />
                 <p className="mt-2 text-sm opacity-70">Verificando usuarios afectados...</p>
               </div>
             }
@@ -172,7 +173,7 @@ function DeleteRoleForm({
           }}
           type="button"
         >
-          {deleteMutation.isPending ? <span className="loading loading-spinner" /> : "Eliminar"}
+          {deleteMutation.isPending ? <Spinner size="sm" /> : "Eliminar"}
         </button>
       </div>
     </>

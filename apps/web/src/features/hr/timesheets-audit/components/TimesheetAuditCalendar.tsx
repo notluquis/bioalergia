@@ -9,9 +9,8 @@ import esLocale from "@fullcalendar/core/locales/es";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import { Spinner } from "@heroui/react";
 import { useEffect, useRef } from "react";
-
-import { LOADING_SPINNER_MD } from "@/lib/styles";
 
 import type { CalendarEventData, TimesheetEntryWithEmployee } from "../types";
 
@@ -273,7 +272,7 @@ export default function TimesheetAuditCalendar({
       <div className="timesheet-audit-calendar-wrapper">
         {loading && (
           <div className="bg-base-100/80 absolute inset-0 z-50 flex items-center justify-center">
-            <span className={LOADING_SPINNER_MD}></span>
+            <Spinner size="md" />
           </div>
         )}
         <FullCalendar

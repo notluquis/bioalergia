@@ -9,6 +9,8 @@
  * - Autosave
  */
 
+import { Spinner } from "@heroui/react";
+
 import Alert from "@/components/ui/Alert";
 import { useAuth } from "@/context/AuthContext";
 
@@ -76,7 +78,7 @@ export default function DailyBalancePage() {
         <div className="lg:col-span-8">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <span className="loading loading-spinner loading-lg" />
+              <Spinner size="lg" />
             </div>
           ) : (
             <EntryForm disabled={isSaving} onChange={updateField} values={formData} />

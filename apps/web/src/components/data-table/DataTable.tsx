@@ -1,3 +1,4 @@
+import { Spinner } from "@heroui/react";
 import {
   type Column,
   type ColumnDef,
@@ -199,7 +200,7 @@ export function DataTable<TData, TValue>({
         <tr>
           <td className="px-4 py-12 text-center" colSpan={columns.length}>
             <div className="flex flex-col items-center justify-center gap-2">
-              <span className="loading loading-spinner loading-md text-primary"></span>
+              <Spinner className="text-primary" color="current" size="md" />
               <span className="text-base-content/60 text-sm">Cargando...</span>
             </div>
           </td>

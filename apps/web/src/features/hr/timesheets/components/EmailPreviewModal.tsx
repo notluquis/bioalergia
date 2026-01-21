@@ -1,9 +1,9 @@
+import { Spinner } from "@heroui/react";
 import { formatRetentionPercent, getEffectiveRetentionRate } from "@shared/retention";
 import dayjs from "dayjs";
 import Button from "@/components/ui/Button";
 import type { Employee } from "@/features/hr/employees/types";
 import { fmtCLP } from "@/lib/format";
-import { LOADING_SPINNER_SM } from "@/lib/styles";
 
 import type { TimesheetSummaryRow } from "../types";
 
@@ -211,7 +211,7 @@ function renderPrepareButtonContent(status: string | null) {
   if (status === "generating-pdf") {
     return (
       <span className="flex items-center gap-2">
-        <span className={LOADING_SPINNER_SM}></span>
+        <Spinner size="sm" />
         Generando PDF...
       </span>
     );
@@ -219,7 +219,7 @@ function renderPrepareButtonContent(status: string | null) {
   if (status === "preparing") {
     return (
       <span className="flex items-center gap-2">
-        <span className={LOADING_SPINNER_SM}></span>
+        <Spinner size="sm" />
         Preparando...
       </span>
     );
