@@ -1,4 +1,5 @@
 import type { ReleaseTransaction } from "@finanzas/db/models";
+import { Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
@@ -28,7 +29,9 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
     accessorKey: "description",
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
-        <span className="badge badge-sm badge-ghost">{row.original.description}</span>
+        <Chip size="sm" variant="secondary">
+          {row.original.description}
+        </Chip>
       </div>
     ),
     header: "Descripción",

@@ -4,6 +4,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { AlertCircle, User as UserIcon } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
+import Button from "@/components/ui/Button";
 
 import { useToast } from "@/context/ToastContext";
 import { createRole, type RoleUser, roleKeys, roleQueries, updateRole } from "@/features/roles/api";
@@ -202,13 +203,13 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
       )}
 
       <div className="modal-action">
-        <button className="btn" onClick={onClose} type="button">
+        <Button variant="ghost" onPress={onClose}>
           Cancelar
-        </button>
-        <button className="btn btn-primary" disabled={mutation.isPending} type="submit">
+        </Button>
+        <Button variant="primary" isDisabled={mutation.isPending} type="submit">
           {mutation.isPending && <Spinner size="sm" />}
           {roleEntity ? "Guardar Cambios" : "Crear Rol"}
-        </button>
+        </Button>
       </div>
     </form>
   );

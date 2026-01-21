@@ -2,6 +2,7 @@ import { Spinner } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, AlertTriangle, ArrowRight, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
+import Button from "@/components/ui/Button";
 
 import { useToast } from "@/context/ToastContext";
 import { deleteRole, reassignRoleUsers, roleKeys, roleQueries } from "@/features/roles/api";
@@ -34,9 +35,9 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
               <span>Este es un rol de sistema protegido y no puede ser eliminado.</span>
             </div>
             <div className="modal-action">
-              <button className="btn" onClick={onClose} type="button">
+              <Button variant="ghost" onPress={onClose}>
                 Cerrar
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -162,19 +163,18 @@ function DeleteRoleForm({
       </div>
 
       <div className="modal-action">
-        <button className="btn" onClick={onClose} type="button">
+        <Button variant="ghost" onPress={onClose}>
           Cancelar
-        </button>
-        <button
-          className="btn btn-error"
-          disabled={deleteMutation.isPending || (hasUsers && !targetRoleId)}
-          onClick={() => {
+        </Button>
+        <Button
+          variant="danger"
+          isDisabled={deleteMutation.isPending || (hasUsers && !targetRoleId)}
+          onPress={() => {
             deleteMutation.mutate();
           }}
-          type="button"
         >
           {deleteMutation.isPending ? <Spinner size="sm" /> : "Eliminar"}
-        </button>
+        </Button>
       </div>
     </>
   );

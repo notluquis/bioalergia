@@ -1,5 +1,7 @@
+import { Chip } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
+import Button from "@/components/ui/Button";
 
 import { ExpensePlaceholder } from "../components/ExpensePlaceholder";
 import { FinancialSummaryCards } from "../components/FinancialSummaryCards";
@@ -56,7 +58,9 @@ export function FinancialDashboardPage() {
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Desglose de Ingresos</h2>
-            <div className="badge badge-success badge-soft">Desde Calendario</div>
+            <Chip color="success" variant="soft">
+              Desde Calendario
+            </Chip>
           </div>
           <IncomeBreakdown summary={summary} isLoading={isLoading} />
         </div>
@@ -65,9 +69,9 @@ export function FinancialDashboardPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Gastos</h2>
-            <button type="button" className="btn btn-sm btn-ghost">
+            <Button size="sm" variant="ghost">
               + Nuevo Gasto
-            </button>
+            </Button>
           </div>
           <ExpensePlaceholder />
         </div>

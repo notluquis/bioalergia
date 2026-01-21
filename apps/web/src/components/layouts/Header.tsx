@@ -5,6 +5,7 @@ import React from "react";
 import { useAuth } from "@/context/AuthContext";
 
 import Clock from "../features/Clock";
+import Button from "../ui/Button";
 import ThemeToggle from "../ui/ThemeToggle";
 
 export default function Header() {
@@ -102,19 +103,20 @@ export default function Header() {
           <Clock />
         </div>
         <ThemeToggle />
-        <button
+        <Button
+          isIconOnly
           aria-label="Cerrar sesión"
-          className="btn btn-circle border-base-300/70 bg-base-100/80 text-base-content hover:bg-error/10 hover:border-error/40 hover:text-error border shadow-sm transition-all duration-300"
+          className="border-base-300/70 bg-base-100/80 text-base-content hover:bg-error/10 hover:border-error/40 hover:text-error rounded-full border shadow-sm transition-all duration-300"
           onClick={() => {
             void handleLogout();
           }}
           title="Cerrar sesión"
-          type="button"
+          variant="ghost"
         >
           <span className="bg-base-200/50 flex h-6 w-6 items-center justify-center rounded-full shadow-inner transition-all duration-300">
             <LogOut className="h-4 w-4" />
           </span>
-        </button>
+        </Button>
       </div>
     </header>
   );

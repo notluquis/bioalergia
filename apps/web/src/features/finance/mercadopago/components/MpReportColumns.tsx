@@ -1,3 +1,4 @@
+import { Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Download, Loader2, RefreshCw } from "lucide-react";
@@ -64,14 +65,13 @@ export const getMpReportColumns = (
   },
   {
     cell: ({ row }) => (
-      <span
-        className={cn(
-          "badge badge-sm font-medium",
-          row.original.created_from === "schedule" ? "badge-outline opacity-80" : "badge-ghost",
-        )}
+      <Chip
+        className={cn("font-medium", row.original.created_from === "schedule" && "opacity-80")}
+        size="sm"
+        variant={row.original.created_from === "schedule" ? "tertiary" : "secondary"}
       >
         {row.original.created_from === "schedule" ? "Automático" : "Manual"}
-      </span>
+      </Chip>
     ),
     header: "Origen",
     id: "source",
@@ -80,15 +80,15 @@ export const getMpReportColumns = (
     accessorKey: "status",
     cell: ({ row }) =>
       row.original.status === "pending" ? (
-        <span className="text-warning bg-warning/10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium">
+        <Chip className="gap-1.5" color="warning" size="sm" variant="soft">
           <Loader2 className="h-3 w-3 animate-spin" />
           Generando...
-        </span>
+        </Chip>
       ) : (
-        <span className="text-success bg-success/10 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium">
+        <Chip className="gap-1.5" color="success" size="sm" variant="soft">
           <span className="bg-success h-1.5 w-1.5 rounded-full"></span>
           Disponible
-        </span>
+        </Chip>
       ),
     header: "Estado",
   },

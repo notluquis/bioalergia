@@ -21,6 +21,8 @@ const handleRetry = async () => {
   }
 };
 
+import Button from "@/components/ui/Button";
+
 export default function ChunkLoadErrorPage() {
   return (
     <div className="bg-base-200 flex min-h-screen items-center justify-center p-4">
@@ -67,16 +69,17 @@ export default function ChunkLoadErrorPage() {
 
         {/* Actions */}
         <div className="space-y-2">
-          <button className="btn btn-primary w-full" onClick={handleRetry} type="button">
+          <Button fullWidth variant="primary" onPress={handleRetry}>
             Recargar Ahora
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost w-full text-xs"
-            onClick={() => (globalThis.location.href = "/login")}
+          </Button>
+          <Button
+            fullWidth
+            variant="ghost"
+            className="text-xs"
+            onPress={() => (globalThis.location.href = "/login")}
           >
             Ir a Login
-          </button>
+          </Button>
         </div>
 
         {/* Footer */}

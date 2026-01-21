@@ -1,6 +1,6 @@
 import type { Event } from "@finanzas/db";
 import { useFindManyEvent } from "@finanzas/db/hooks";
-import { Spinner } from "@heroui/react";
+import { Chip, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
 
@@ -88,7 +88,9 @@ export function DailyIncomePage() {
                     <li key={event.id} className="flex justify-between text-sm">
                       <span>
                         {event.summary || "Evento sin título"}{" "}
-                        <span className="badge badge-xs text-xs">{event.eventType}</span>
+                        <Chip className="text-xs" size="sm" variant="soft">
+                          {event.eventType}
+                        </Chip>
                       </span>
                       <span
                         className={

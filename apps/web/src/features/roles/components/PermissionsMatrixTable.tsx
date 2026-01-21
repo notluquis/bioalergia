@@ -1,5 +1,6 @@
 import { Check, ChevronDown, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react";
 import { Fragment, useState } from "react";
+import Button from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -98,9 +99,15 @@ export function PermissionsMatrixTable({
 
               <div className="mt-2 flex justify-center">
                 <DropdownMenu>
-                  <DropdownMenuTrigger className="btn btn-ghost btn-xs h-6 w-full gap-1 font-normal opacity-50 hover:opacity-100">
-                    Opciones
-                    <ChevronDown className="h-3 w-3" />
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-full gap-1 font-normal opacity-50 hover:opacity-100"
+                    >
+                      Opciones
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" sideOffset={4}>
                     <DropdownMenuItem

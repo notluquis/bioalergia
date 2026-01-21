@@ -1,3 +1,4 @@
+import { Chip } from "@heroui/react";
 import { getRetentionRateForYear } from "@shared/retention";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -39,7 +40,11 @@ export const columns: ColumnDef<Employee>[] = [
     cell: ({ row }) => {
       const type = row.original.salaryType;
       const label = type === "FIXED" ? "Fijo" : type === "HOURLY" ? "Por Hora" : type;
-      return <span className="badge badge-sm badge-ghost">{label}</span>;
+      return (
+        <Chip size="sm" variant="secondary">
+          {label}
+        </Chip>
+      );
     },
     header: "Contrato",
   },
@@ -116,15 +121,14 @@ export const columns: ColumnDef<Employee>[] = [
   {
     accessorKey: "status",
     cell: ({ row }) => (
-      <span
-        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-          row.original.status === "ACTIVE"
-            ? "bg-success/10 text-success"
-            : "bg-base-content/10 text-base-content/60"
-        }`}
+      <Chip
+        className="font-medium"
+        color={row.original.status === "ACTIVE" ? "success" : "default"}
+        size="sm"
+        variant="soft"
       >
         {row.original.status === "ACTIVE" ? "Activo" : "Inactivo"}
-      </span>
+      </Chip>
     ),
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));

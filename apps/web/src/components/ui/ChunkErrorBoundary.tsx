@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
+import Button from "./Button";
+
 interface Props {
   children: ReactNode;
 }
@@ -93,13 +95,14 @@ export class ChunkErrorBoundary extends Component<Props, State> {
             </div>
 
             <div className="mt-8">
-              <button
-                className="btn btn-primary btn-lg ring-primary/20 w-full rounded-2xl shadow-lg ring"
+              <Button
+                size="lg"
+                variant="primary"
+                className="ring-primary/20 w-full rounded-2xl shadow-lg ring"
                 onClick={this.handleReset}
-                type="button"
               >
                 Actualizar Ahora
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -30,6 +30,7 @@ export interface ButtonProps
   disabled?: boolean;
   title?: string;
   size?: "xs" | "sm" | "md" | "lg";
+  as?: React.ElementType;
 }
 
 const mapVariantToHero = (

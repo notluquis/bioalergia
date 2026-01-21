@@ -1,5 +1,6 @@
 import { Moon, Sun } from "lucide-react";
 import React from "react";
+import Button from "@/components/ui/Button";
 
 const THEME_KEY = "bioalergia:theme";
 type Theme = "dark" | "light" | "system";
@@ -56,15 +57,16 @@ export default function ThemeToggle() {
   const label = getLabel();
 
   return (
-    <button
+    <Button
       aria-label={label}
-      className={`btn btn-circle border-base-300/70 bg-base-100/80 text-base-content border shadow-sm transition-all duration-300 ${
+      isIconOnly
+      variant="ghost"
+      className={`rounded-full border-base-300/70 bg-base-100/80 text-base-content border shadow-sm transition-all duration-300 ${
         isDark
           ? "hover:bg-base-200/40 hover:border-primary/60"
           : "hover:bg-base-200/70 hover:border-primary/60"
       }`}
-      onClick={toggleTheme}
-      type="button"
+      onPress={toggleTheme}
     >
       <span
         className={`flex h-6 w-6 items-center justify-center rounded-full transition-all duration-300 ${
@@ -75,7 +77,7 @@ export default function ThemeToggle() {
       >
         {icon}
       </span>
-    </button>
+    </Button>
   );
 }
 

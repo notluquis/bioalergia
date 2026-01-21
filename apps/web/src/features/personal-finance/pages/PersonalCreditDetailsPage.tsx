@@ -1,11 +1,12 @@
+import { Chip } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowLeftIcon } from "lucide-react";
 import { Suspense } from "react";
-
 import { DataTable } from "@/components/data-table/DataTable";
 import { Badge } from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { formatCurrency } from "@/lib/utils";
 
@@ -68,18 +69,26 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link
-          className="btn btn-ghost btn-sm no-animation ease-apple size-8 p-0 transition-all duration-200 hover:-translate-y-px active:translate-y-0 active:scale-[0.98]"
-          to="/finanzas/personal-credits"
-        >
-          <ArrowLeftIcon className="size-4" />
+        <Link to="/finanzas/personal-credits">
+          <Button
+            as="div"
+            isIconOnly
+            size="sm"
+            variant="ghost"
+            className="no-animation ease-apple size-8 p-0 transition-all duration-200 hover:-translate-y-px active:translate-y-0 active:scale-[0.98]"
+          >
+            <ArrowLeftIcon className="size-4" />
+          </Button>
         </Link>
         <h1 className="text-3xl font-bold tracking-tight">
           {credit.bankName} - {credit.description || credit.creditNumber}
         </h1>
-        <div className={`badge ${credit.status === "ACTIVE" ? "badge-primary" : "badge-ghost"}`}>
+        <Chip
+          color={credit.status === "ACTIVE" ? "accent" : "default"}
+          variant={credit.status === "ACTIVE" ? "primary" : "secondary"}
+        >
           {credit.status}
-        </div>
+        </Chip>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

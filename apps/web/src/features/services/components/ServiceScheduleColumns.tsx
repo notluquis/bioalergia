@@ -1,19 +1,10 @@
+import { Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
 
 import type { ServiceSchedule } from "../types";
-
-// Helper for status badge style
-function getStatusBadgeClass(status: ServiceSchedule["status"], dueDate: string) {
-  const today = dayjs().startOf("day");
-  const due = dayjs(dueDate);
-  if (status === "PAID") return "bg-success/15 text-success";
-  if (status === "PARTIAL") return "bg-warning/15 text-warning";
-  if (status === "SKIPPED") return "bg-base-200 text-base-content";
-  return due.isBefore(today) ? "bg-error/15 text-error" : "bg-base-200 text-base-content";
-}
 
 // Helper for status label
 function getStatusLabel(status: ServiceSchedule["status"]) {
@@ -83,13 +74,25 @@ export const getColumns = (
     accessorKey: "status",
     cell: ({ row }) => {
       const schedule = row.original;
-      const badgeClass = getStatusBadgeClass(schedule.status, schedule.due_date);
+      let color: "success" | "warning" | "default" | "danger" = "default";
+
+      const today = dayjs().startOf("day");
+      const due = dayjs(schedule.due_date);
+
+      if (schedule.status === "PAID") color = "success";
+      else if (schedule.status === "PARTIAL") color = "warning";
+      else if (schedule.status === "SKIPPED") color = "default";
+      else if (due.isBefore(today)) color = "danger";
+
       return (
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${badgeClass}`}
+        <Chip
+          className="font-semibold tracking-wide uppercase"
+          color={color}
+          size="sm"
+          variant="soft"
         >
           {getStatusLabel(schedule.status)}
-        </span>
+        </Chip>
       );
     },
     header: "Estado",

@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { Chip, Spinner } from "@heroui/react";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -369,7 +369,13 @@ export default function ReportsPage() {
                     const emp = activeEmployees.find((e) => e.id === id);
                     if (!emp) return null;
                     return (
-                      <div className="badge badge-primary badge-sm gap-1 py-3 text-xs" key={id}>
+                      <Chip
+                        className="gap-1 py-3 text-xs"
+                        color="accent"
+                        key={id}
+                        size="sm"
+                        variant="primary"
+                      >
                         <span className="max-w-25 truncate">
                           {emp.person?.names.split(" ")[0] ?? emp.full_name}
                         </span>
@@ -382,29 +388,30 @@ export default function ReportsPage() {
                         >
                           <X className="h-3 w-3" />
                         </button>
-                      </div>
+                      </Chip>
                     );
                   })}
                   {selectedEmployeeIds.length > 10 && (
-                    <div className="badge badge-ghost badge-sm py-3 text-xs">
+                    <Chip className="py-3 text-xs" size="sm" variant="secondary">
                       +{selectedEmployeeIds.length - 10} más
-                    </div>
+                    </Chip>
                   )}
                 </div>
               )}
 
               {/* Add Dropdown */}
               <div className="relative">
-                <button
-                  className="btn btn-outline btn-sm w-full justify-between font-normal"
-                  onClick={() => {
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-between font-normal"
+                  onPress={() => {
                     setShowEmployeeDropdown(!showEmployeeDropdown);
                   }}
-                  type="button"
                 >
                   <span>Seleccionar empleados...</span>
                   <Search className="h-3.5 w-3.5 opacity-50" />
-                </button>
+                </Button>
 
                 {showEmployeeDropdown && (
                   <>

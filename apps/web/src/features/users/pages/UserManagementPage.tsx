@@ -271,9 +271,17 @@ export default function UserManagementPage() {
           </div>
 
           {can("create", "User") && (
-            <Link className="btn btn-primary gap-2" to="/settings/users/add">
-              <UserPlus size={20} />
-              Agregar usuario
+            <Link to="/settings/users/add">
+              {/* @ts-expect-error - Button rendered as div or span inside Link to avoid button-in-anchor */}
+              <Button
+                as="div"
+                color="primary"
+                variant="primary"
+                className="gap-2 pointer-events-none"
+              >
+                <UserPlus size={20} />
+                Agregar usuario
+              </Button>
             </Link>
           )}
         </div>

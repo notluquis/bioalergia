@@ -1,3 +1,4 @@
+import { Chip, type ChipProps } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
@@ -74,25 +75,31 @@ export const getColumns = (
       const schedule = row.original;
       const isLate = isScheduleLate(schedule);
 
-      let badgeClass = "badge-ghost";
+      const props: { color: ChipProps["color"]; variant: ChipProps["variant"] } = {
+        color: "default",
+        variant: "secondary",
+      };
       let statusLabel = "Pendiente";
 
       if (schedule.status === "PAID") {
-        badgeClass = "badge-success text-success-content";
+        props.color = "success";
+        props.variant = "primary";
         statusLabel = "Pagado";
       } else if (schedule.status === "PARTIAL") {
-        badgeClass = "badge-warning text-warning-content";
+        props.color = "warning";
+        props.variant = "primary";
         statusLabel = "Parcial";
       } else if (isLate) {
-        badgeClass = "badge-error text-error-content";
+        props.color = "danger";
+        props.variant = "primary";
         statusLabel = "Vencido";
       }
 
       return (
         <div className="flex justify-center">
-          <div className={`badge badge-sm font-semibold capitalize ${badgeClass}`}>
+          <Chip className="font-semibold capitalize" size="sm" {...props}>
             {statusLabel}
-          </div>
+          </Chip>
         </div>
       );
     },

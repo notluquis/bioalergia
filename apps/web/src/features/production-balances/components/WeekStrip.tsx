@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
+import Button from "@/components/ui/Button";
 
 import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -38,12 +39,12 @@ export function WeekStrip({
       <div className="bg-base-200/30 border-base-content/5 mb-4 flex items-center justify-between rounded-2xl border px-4 py-2">
         <span className="text-base-content/60 text-sm">{weekData?.weekLabel ?? "Cargando..."}</span>
         <div className="flex items-center gap-2">
-          <button className="btn btn-ghost btn-xs btn-square" onClick={onPrevWeek} type="button">
+          <Button isIconOnly size="sm" variant="ghost" onClick={onPrevWeek}>
             <ChevronLeft className="size-4" />
-          </button>
-          <button className="btn btn-ghost btn-xs btn-square" onClick={onNextWeek} type="button">
+          </Button>
+          <Button isIconOnly size="sm" variant="ghost" onClick={onNextWeek}>
             <ChevronRight className="size-4" />
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -54,21 +55,21 @@ export function WeekStrip({
       {/* Week header */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <button className="btn btn-ghost btn-xs btn-square" onClick={onPrevWeek} type="button">
+          <Button isIconOnly size="sm" variant="ghost" onClick={onPrevWeek}>
             <ChevronLeft className="size-4" />
-          </button>
+          </Button>
           <span className="text-base-content/80 text-sm font-medium">
             SEM {weekData?.weekLabel ?? "..."}
           </span>
-          <button className="btn btn-ghost btn-xs btn-square" onClick={onNextWeek} type="button">
+          <Button isIconOnly size="sm" variant="ghost" onClick={onNextWeek}>
             <ChevronRight className="size-4" />
-          </button>
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="btn btn-outline btn-xs" onClick={onGoToToday} type="button">
+          <Button variant="outline" size="sm" onClick={onGoToToday}>
             Hoy
-          </button>
+          </Button>
         </div>
       </div>
 

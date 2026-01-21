@@ -1,3 +1,4 @@
+import { Chip } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
@@ -166,9 +167,9 @@ export default function CalendarSyncHistoryPage() {
 
                       {/* Source */}
                       <div className="flex-1">
-                        <span className="badge badge-ghost font-mono text-xs">
+                        <Chip size="sm" variant="secondary" className="font-mono text-xs">
                           {log.triggerSource}
-                        </span>
+                        </Chip>
                         {log.triggerLabel && (
                           <span
                             className="text-base-content/60 ml-2 text-xs"

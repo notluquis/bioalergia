@@ -1,3 +1,4 @@
+import { Chip } from "@heroui/react";
 import dayjs from "dayjs";
 
 import { DataTable } from "@/components/data-table/DataTable";
@@ -33,12 +34,12 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="card-title text-primary text-lg">Registro de saldos</h2>
           {report?.previous && (
-            <div className="badge badge-outline badge-lg gap-2">
+            <Chip className="gap-2" size="lg" variant="tertiary">
               <span className="text-xs">
                 Saldo previo ({dayjs(report.previous.date).format("DD/MM")}):
               </span>
               <span className="font-semibold">{fmtCLP(report.previous.balance)}</span>
-            </div>
+            </Chip>
           )}
         </div>
 

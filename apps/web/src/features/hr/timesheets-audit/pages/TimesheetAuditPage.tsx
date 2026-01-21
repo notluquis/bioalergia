@@ -3,15 +3,15 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
-import { Spinner } from "@heroui/react";
+import { Chip, Spinner } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { Check, ChevronDown, ChevronUp, Search, Users, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-
 import Alert from "@/components/ui/Alert";
 import Backdrop from "@/components/ui/Backdrop";
+import Button from "@/components/ui/Button";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
@@ -210,7 +210,9 @@ export default function TimesheetAuditPage() {
       {/* Step 1: Period Selection */}
       <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
-          <div className="badge badge-lg badge-primary">1</div>
+          <Chip color="accent" size="lg" variant="primary">
+            1
+          </Chip>
           <h2 className="text-base-content text-lg font-semibold">Selecciona el periodo</h2>
           {rangeSummary && (
             <span className="text-base-content/60 ml-auto text-sm">({rangeSummary})</span>
@@ -220,16 +222,16 @@ export default function TimesheetAuditPage() {
         {/* Quick Range Buttons */}
         <div className="flex flex-wrap gap-2">
           {QUICK_RANGES.map((range) => (
-            <button
-              className={`btn btn-sm ${quickRange === range.id ? "btn-primary" : "btn-ghost"}`}
+            <Button
+              size="sm"
+              variant={quickRange === range.id ? "primary" : "ghost"}
               key={range.id}
-              onClick={() => {
+              onPress={() => {
                 handleQuickRangeChange(range.id);
               }}
-              type="button"
             >
               {range.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -317,7 +319,9 @@ export default function TimesheetAuditPage() {
       {/* Step 2: Employee Selection */}
       <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
-          <div className="badge badge-lg badge-primary">2</div>
+          <Chip color="accent" size="lg" variant="primary">
+            2
+          </Chip>
           <h2 className="text-base-content text-lg font-semibold">Selecciona empleados</h2>
           <span className="text-base-content/60 ml-auto text-sm">
             {selectedEmployeeIds.length}/{MAX_EMPLOYEES}
@@ -331,19 +335,21 @@ export default function TimesheetAuditPage() {
               const emp = activeEmployees.find((e) => e.id === id);
               if (!emp) return null;
               return (
-                <div className="badge badge-primary gap-2 px-3 py-2" key={id}>
+                <Chip className="gap-2 px-3 py-2" color="accent" key={id} variant="primary">
                   <span>{emp.full_name}</span>
-                  <button
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="ghost"
                     aria-label={`Quitar ${emp.full_name}`}
-                    className="btn btn-ghost btn-xs h-5 w-5 p-0"
-                    onClick={() => {
+                    className="h-5 w-5 min-w-5 p-0"
+                    onPress={() => {
                       handleRemoveEmployee(id);
                     }}
-                    type="button"
                   >
                     <X className="h-3 w-3" />
-                  </button>
-                </div>
+                  </Button>
+                </Chip>
               );
             })}
             {selectedEmployeeIds.length > 0 && (
@@ -361,12 +367,13 @@ export default function TimesheetAuditPage() {
         {/* Add Employee Dropdown */}
         {!isMaxEmployees && (
           <div className="relative">
-            <button
-              className="btn btn-outline btn-sm w-full justify-start gap-2"
-              onClick={() => {
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start gap-2"
+              onPress={() => {
                 setShowEmployeeDropdown(!showEmployeeDropdown);
               }}
-              type="button"
             >
               <span>+ Agregar empleado</span>
               {showEmployeeDropdown ? (
@@ -374,7 +381,7 @@ export default function TimesheetAuditPage() {
               ) : (
                 <ChevronDown className="h-4 w-4" />
               )}
-            </button>
+            </Button>
 
             {showEmployeeDropdown && (
               <>
@@ -467,7 +474,9 @@ export default function TimesheetAuditPage() {
       {canShowCalendar && (
         <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
           <div className="mb-6 flex items-center gap-3">
-            <div className="badge badge-lg badge-primary">3</div>
+            <Chip color="accent" size="lg" variant="primary">
+              3
+            </Chip>
             <h2 className="text-base-content text-lg font-semibold">Resultados del análisis</h2>
           </div>
 
