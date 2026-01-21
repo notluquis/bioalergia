@@ -567,61 +567,99 @@ const WEBHOOK_DEBOUNCE_MS = 5000;
 let webhookSyncTimer: ReturnType<typeof setTimeout> | null = null;
 let lastWebhookChannelId: string | null = null;
 
-function executeWebhookSync(channelId: string) {
+async function executeWebhookSync(channelId: string) {
   webhookSyncTimer = null;
   console.log(`[webhook] 🚀 Executing debounced sync: ${channelId.slice(0, 8)}...`);
 
-  createCalendarSyncLogEntry({
+  const initialLogId = await createCalendarSyncLogEntry({
     triggerSource: "webhook",
     triggerUserId: null,
     triggerLabel: `channel:${channelId.slice(0, 8)}`,
-  })
-    .then((logId) => {
-      // Webhook usually targets a specific resource but legacy syncGoogleCalendarOnce did ALL?
-      // "executeWebhookSync" takes a channelId.
-      // If we want to be precise, we need to map channelId -> calendarId (via DB?).
-      // Legacy behavior: syncGoogleCalendarOnce() synced everything regardless of channelId.
-      // We will stick to syncAll() for now to be safe, or we could optimize later.
-      calendarSyncService
-        .syncAll()
-        .then(async (result) => {
-          console.log(`[webhook] Sync result:`, {
-            fetched: result.eventsFetched,
-            excluded: result.deleted,
-            inserted: result.inserted,
-            updated: result.updated,
-          });
+  });
 
-          await finalizeCalendarSyncLogEntry(logId, {
-            status: "SUCCESS",
-            fetchedAt: new Date(),
-            inserted: result.inserted,
-            updated: result.updated,
-            skipped: 0,
-            excluded: result.deleted,
-            changeDetails: {
-              inserted: result.details.inserted,
-              updated: result.details.updated,
-              excluded: result.details.deleted,
-            },
-          });
-          console.log(`[webhook] ✅ Sync completed: ${channelId.slice(0, 8)}...`);
-        })
-        .catch(async (err) => {
-          await finalizeCalendarSyncLogEntry(logId, {
-            status: "ERROR",
-            errorMessage: err instanceof Error ? err.message : String(err),
-          });
-          console.error(`[webhook] ❌ Sync failed: ${channelId.slice(0, 8)}...`, err.message);
-        });
-    })
-    .catch((err) => {
-      if (err.message === "Sincronización ya en curso") {
-        console.log(`[webhook] ℹ️ Sync skipped (already in progress): ${channelId.slice(0, 8)}...`);
-      } else {
-        console.error(`[webhook] ❌ Failed to create log entry:`, err.message);
-      }
+  try {
+    // Look up channel to find specific calendar
+    const channel = await db.calendarWatchChannel.findUnique({
+      where: { channelId },
+      include: { calendar: true },
     });
+
+    if (!channel) {
+      console.warn(`[webhook] ⚠️ Unknown channelId: ${channelId}. Falling back to syncAll.`);
+      // Fallback to syncAll if channel is unknown (safety net)
+      // Or we could abort, but syncAll is safer to avoid missing events if DB is out of sync
+      const result = await calendarSyncService.syncAll();
+      await finalizeSyncLog(initialLogId, result);
+      return;
+    }
+
+    console.log(`[webhook] 🎯 Syncing specific calendar: ${channel.calendar.googleId}`);
+    const result = await calendarSyncService.syncCalendar(channel.calendar.googleId);
+
+    // Map single calendar result to sync log format
+    await finalizeSyncLog(initialLogId, {
+      inserted: result.inserted,
+      updated: result.updated,
+      deleted: result.deleted,
+      eventsFetched: result.eventsFetched,
+      details: {
+        inserted: result.details.inserted,
+        updated: result.details.updated,
+        deleted: result.details.deleted,
+      },
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "Sincronización ya en curso") {
+      console.log(`[webhook] ℹ️ Sync skipped (already in progress): ${channelId.slice(0, 8)}...`);
+      // If createCalendarSyncLogEntry threw, we don't have a logId to finalize (or it failed before creation)
+      return;
+    }
+
+    console.error(`[webhook] ❌ Sync failed:`, err);
+    // If we have a logId, mark it as error
+    await finalizeCalendarSyncLogEntry(initialLogId, {
+      status: "ERROR",
+      errorMessage: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+// Helper to deduce finalize logic reduces code duplication
+async function finalizeSyncLog(
+  logId: number,
+  result: {
+    inserted: number;
+    updated: number;
+    deleted: number;
+    eventsFetched: number;
+    details: {
+      inserted: string[];
+      updated: (string | { summary: string; changes: string[] })[];
+      deleted: string[];
+    };
+  },
+) {
+  console.log(`[webhook] Sync result:`, {
+    fetched: result.eventsFetched,
+    excluded: result.deleted,
+    inserted: result.inserted,
+    updated: result.updated,
+  });
+
+  await finalizeCalendarSyncLogEntry(logId, {
+    status: "SUCCESS",
+    fetchedAt: new Date(),
+    inserted: result.inserted,
+    updated: result.updated,
+    skipped: 0,
+    excluded: result.deleted,
+    changeDetails: {
+      inserted: result.details.inserted,
+      updated: result.details.updated,
+      excluded: result.details.deleted,
+    },
+  });
+  console.log(`[webhook] ✅ Sync completed (logId: ${logId})`);
 }
 
 calendarRoutes.post("/webhook", async (c) => {
