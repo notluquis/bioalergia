@@ -1,9 +1,10 @@
+import { Chip } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Suspense } from "react";
-
 import { DataTable } from "@/components/data-table/DataTable";
+import Button from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils";
 import { CreateCreditForm } from "../components/CreateCreditForm";
 import { personalFinanceQueries } from "../queries";
@@ -48,19 +49,31 @@ const columns: ColumnDef<PersonalCredit>[] = [
     accessorKey: "status",
     cell: ({ row }) => {
       const status = row.original.status;
-      const badgeClass = status === "ACTIVE" ? "badge-primary" : "badge-ghost";
-      return <div className={`badge ${badgeClass}`}>{status}</div>;
+      return (
+        <Chip
+          color={status === "ACTIVE" ? "accent" : "default"}
+          variant={status === "ACTIVE" ? "primary" : "secondary"}
+        >
+          {status}
+        </Chip>
+      );
     },
     header: "Estado",
   },
   {
     cell: ({ row }) => (
       <Link
-        className="btn btn-ghost btn-sm no-animation ease-apple transition-all duration-200 hover:-translate-y-px active:translate-y-0 active:scale-[0.98]"
         params={{ creditId: row.original.id.toString() }}
         to="/finanzas/personal-credits/$creditId"
       >
-        Ver Detalle
+        <Button
+          as="div"
+          size="sm"
+          variant="ghost"
+          className="no-animation ease-apple transition-all duration-200 hover:-translate-y-px active:translate-y-0 active:scale-[0.98] pointer-events-none"
+        >
+          Ver Detalle
+        </Button>
       </Link>
     ),
     id: "actions",

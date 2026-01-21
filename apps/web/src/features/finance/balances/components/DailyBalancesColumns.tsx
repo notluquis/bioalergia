@@ -1,3 +1,4 @@
+import { Chip } from "@heroui/react";
 import type { ColumnDef, Row } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
@@ -96,7 +97,11 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
     cell: ({ row }) => (
       <div className="flex flex-col gap-0.5">
         <span>{dayjs(row.original.date).format("DD/MM/YY")}</span>
-        {row.original.hasCashback && <span className="badge badge-warning badge-xs">CB</span>}
+        {row.original.hasCashback && (
+          <Chip color="warning" size="sm" variant="primary">
+            CB
+          </Chip>
+        )}
       </div>
     ),
     header: "Fecha",

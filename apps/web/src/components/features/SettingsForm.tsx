@@ -1,3 +1,4 @@
+import { ButtonGroup } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type React from "react";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -277,7 +278,7 @@ export default function SettingsForm() {
             <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
               Logo institucional
             </span>
-            <div className="btn-group">
+            <ButtonGroup>
               <Button
                 onClick={() => {
                   handleLogoModeChange("url");
@@ -298,7 +299,7 @@ export default function SettingsForm() {
               >
                 Subir archivo
               </Button>
-            </div>
+            </ButtonGroup>
           </div>
           {logoMode === "url" ? (
             <div className="flex flex-col gap-2">
@@ -356,7 +357,10 @@ export default function SettingsForm() {
             <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
               Favicon del sitio
             </span>
-            <div className="btn-group">
+            <span className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
+              Favicon del sitio
+            </span>
+            <ButtonGroup>
               <Button
                 onClick={() => {
                   handleFaviconModeChange("url");
@@ -377,7 +381,7 @@ export default function SettingsForm() {
               >
                 Subir archivo
               </Button>
-            </div>
+            </ButtonGroup>
           </div>
           {faviconMode === "url" ? (
             <div className="flex flex-col gap-2">

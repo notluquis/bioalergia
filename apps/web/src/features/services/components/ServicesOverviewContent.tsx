@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { Chip, Spinner } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
@@ -130,7 +130,9 @@ export default function ServicesOverviewContent() {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-base-content text-sm font-semibold">Filtros</p>
             {activeFiltersCount > 0 && (
-              <span className="badge badge-primary badge-sm">{activeFiltersCount} activos</span>
+              <Chip color="accent" size="sm" variant="primary">
+                {activeFiltersCount} activos
+              </Chip>
             )}
           </div>
           <ServicesFilterPanel

@@ -3,6 +3,7 @@
  * Limits selection to 5 employees with visual feedback
  */
 
+import { Chip } from "@heroui/react";
 import { useState } from "react";
 import Checkbox from "@/components/ui/Checkbox";
 import type { Employee } from "@/features/hr/employees/types";
@@ -127,7 +128,7 @@ export default function EmployeeAuditSelector({
             if (!emp) return null;
 
             return (
-              <div className="badge badge-primary gap-2 text-xs" key={id}>
+              <Chip className="gap-2 text-xs" color="accent" key={id} size="sm" variant="primary">
                 {emp.full_name}
                 <button
                   aria-label={`Remove ${emp.full_name}`}
@@ -139,7 +140,7 @@ export default function EmployeeAuditSelector({
                 >
                   ✕
                 </button>
-              </div>
+              </Chip>
             );
           })}
         </div>

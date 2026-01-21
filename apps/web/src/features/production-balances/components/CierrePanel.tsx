@@ -1,3 +1,4 @@
+import Button from "@/components/ui/Button";
 import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -104,22 +105,23 @@ export function CierrePanel({
 
       {/* Action buttons */}
       <div className="mt-4 flex gap-2">
-        <button
-          className={cn("btn btn-outline flex-1 rounded-xl", isSaving && "loading")}
-          disabled={isSaving}
-          onClick={onSaveDraft}
-          type="button"
+        <Button
+          variant="outline"
+          className="flex-1 rounded-xl"
+          isLoading={isSaving}
+          isDisabled={isSaving}
+          onPress={onSaveDraft}
         >
           Guardar
-        </button>
-        <button
-          className={cn("btn flex-1 rounded-xl", canFinalize ? "btn-success" : "btn-disabled")}
-          disabled={!canFinalize || isSaving}
-          onClick={onFinalize}
-          type="button"
+        </Button>
+        <Button
+          variant="success"
+          className="flex-1 rounded-xl"
+          isDisabled={!canFinalize || isSaving}
+          onPress={onFinalize}
         >
           Finalizar
-        </button>
+        </Button>
       </div>
     </aside>
   );

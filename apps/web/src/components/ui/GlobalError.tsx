@@ -84,7 +84,8 @@ export class GlobalError extends Component<Props, State> {
 
               <div className="mt-8">
                 <Button
-                  className="btn-lg ring-primary/20 w-full rounded-2xl shadow-lg ring"
+                  size="lg"
+                  className="ring-primary/20 w-full rounded-2xl shadow-lg ring"
                   onClick={this.handleAutoReload}
                 >
                   {this.state.isReloading ? (

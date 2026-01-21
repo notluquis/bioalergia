@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, ArrowLeft, Home } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 export default function NotFoundPage() {
   const location = useLocation();
@@ -17,20 +18,19 @@ export default function NotFoundPage() {
         no existe o no está disponible.
       </p>
       <div className="flex gap-4">
-        <button
-          type="button"
-          className="btn btn-outline"
+        <Button
+          variant="outline"
           onClick={() => {
             globalThis.history.back();
           }}
         >
           <ArrowLeft size={18} />
           Volver
-        </button>
-        <button type="button" className="btn btn-primary" onClick={() => navigate({ to: "/" })}>
+        </Button>
+        <Button variant="primary" onClick={() => navigate({ to: "/" })}>
           <Home size={18} />
           Ir al Inicio
-        </button>
+        </Button>
       </div>
     </div>
   );

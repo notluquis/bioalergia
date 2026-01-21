@@ -2,6 +2,7 @@
  * Lazy-loaded Chart Components for Reports
  * These are separated to enable code-splitting of Recharts (~400KB)
  */
+import { Chip } from "@heroui/react";
 import { BarChart2, PieChart as PieChartIcon } from "lucide-react";
 import {
   Bar,
@@ -105,7 +106,7 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
           <BarChart2 className="text-primary h-5 w-5" />
           Comparativa Temporal
         </h3>
-        <div className="badge badge-outline text-xs">
+        <Chip size="sm" variant="tertiary">
           {(() => {
             const labels: Record<string, string> = {
               day: "Diario",
@@ -114,7 +115,7 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
             };
             return labels[granularity] || granularity;
           })()}
-        </div>
+        </Chip>
       </div>
 
       <div className="w-full" style={{ height: 350, minHeight: 350 }}>

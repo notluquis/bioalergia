@@ -1,3 +1,4 @@
+import { Chip } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Briefcase, Building, Plus, Search, User } from "lucide-react";
@@ -7,7 +8,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { peopleQueries } from "@/features/people/api";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
-import { BADGE_SM, PAGE_CONTAINER } from "@/lib/styles";
+import { PAGE_CONTAINER } from "@/lib/styles";
 
 export default function PersonManagementPage() {
   const navigate = useNavigate();
@@ -72,22 +73,24 @@ export default function PersonManagementPage() {
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {person.user && (
-                    <span className={`${BADGE_SM} badge-primary gap-1 text-white`}>
+                    <Chip className="gap-1 text-white" color="accent" size="sm" variant="primary">
                       <User size={10} /> Usuario
-                    </span>
+                    </Chip>
                   )}
                   {person.employee && (
-                    <span className={`${BADGE_SM} badge-secondary gap-1 text-white`}>
+                    <Chip className="gap-1 text-white" color="danger" size="sm" variant="primary">
                       <Briefcase size={10} /> Empleado
-                    </span>
+                    </Chip>
                   )}
                   {person.counterpart && (
-                    <span className={`${BADGE_SM} badge-accent gap-1 text-white`}>
+                    <Chip className="gap-1 text-white" color="success" size="sm" variant="primary">
                       <Building size={10} /> Contraparte
-                    </span>
+                    </Chip>
                   )}
                   {!person.user && !person.employee && !person.counterpart && (
-                    <span className={`${BADGE_SM} badge-ghost`}>Sin roles</span>
+                    <Chip size="sm" variant="secondary">
+                      Sin roles
+                    </Chip>
                   )}
                 </div>
 

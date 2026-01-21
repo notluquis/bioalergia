@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Plus, RotateCw, Shield } from "lucide-react";
 import { useState } from "react";
-
+import Button from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -167,26 +167,23 @@ export default function RolesSettingsPage() {
             </div>
 
             <div className="ml-2 flex items-center gap-2 border-l pl-2">
-              <button
-                className="btn btn-ghost btn-sm btn-square"
-                disabled={isSyncing}
-                onClick={() => {
+              <Button
+                isIconOnly
+                size="sm"
+                variant="ghost"
+                isDisabled={isSyncing}
+                onPress={() => {
                   syncMutation.mutate();
                 }}
                 title="Sincronizar permisos"
-                type="button"
               >
                 <RotateCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-              </button>
+              </Button>
 
-              <button
-                className="btn btn-primary btn-sm gap-2"
-                onClick={handleCreateRole}
-                type="button"
-              >
+              <Button size="sm" variant="primary" className="gap-2" onPress={handleCreateRole}>
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Nuevo rol</span>
-              </button>
+              </Button>
             </div>
           </div>
         </CardHeader>

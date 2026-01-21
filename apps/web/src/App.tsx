@@ -7,6 +7,7 @@ import { UpdateNotification } from "./components/features/UpdateNotification";
 import Header from "./components/layouts/Header";
 import { BottomNav } from "./components/layouts/MobileNav";
 import Sidebar from "./components/layouts/Sidebar";
+import Button from "./components/ui/Button";
 import { Tooltip } from "./components/ui/Tooltip";
 import { useAuth } from "./context/AuthContext";
 import { useSettings } from "./context/SettingsContext";
@@ -109,13 +110,14 @@ export default function App() {
       {impersonatedRole && (
         <div className="bg-warning text-warning-content sticky top-0 z-100 flex h-10 w-full items-center justify-center gap-4 px-4 text-xs font-bold shadow-md">
           <span>VISTA PREVIA: {impersonatedRole.name}</span>
-          <button
-            type="button"
-            className="btn btn-neutral btn-xs border-none bg-black/20 text-current hover:bg-black/30"
+          <Button
+            size="sm"
+            className="border-none bg-black/20 text-current hover:bg-black/30"
             onClick={stopImpersonating}
+            variant="ghost"
           >
             Salir
-          </button>
+          </Button>
         </div>
       )}
       {isNavigating && (

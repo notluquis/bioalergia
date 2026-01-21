@@ -1,3 +1,4 @@
+import { Chip } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { AlertCircle, CheckCircle, FileUp, Loader2, Lock } from "lucide-react";
@@ -240,16 +241,16 @@ function TableSelectionCard({
               </h3>
               <div className="flex flex-wrap gap-2">
                 {currentTable.fields.map((field) => (
-                  <span
-                    className={cn(
-                      "badge badge-sm",
-                      field.required ? "badge-primary" : "badge-ghost opacity-60",
-                    )}
+                  <Chip
+                    className={cn("opacity-100", !field.required && "opacity-60")}
+                    color={field.required ? "accent" : "default"}
                     key={field.name}
+                    size="sm"
+                    variant={field.required ? "primary" : "secondary"}
                   >
                     {field.name}
                     {field.required && "*"}
-                  </span>
+                  </Chip>
                 ))}
               </div>
             </div>
@@ -601,7 +602,9 @@ export default function CSVUploadPage() {
     {
       accessorKey: "type",
       cell: ({ row }) => (
-        <span className="badge badge-xs badge-ghost font-mono">{row.original.type}</span>
+        <Chip size="sm" variant="secondary" className="font-mono">
+          {row.original.type}
+        </Chip>
       ),
       header: "Tipo",
     },

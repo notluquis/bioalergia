@@ -1,6 +1,8 @@
+import { Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowDownToLine, ArrowUpFromLine, ChevronDown, ChevronRight } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 import { formatAmount } from "@/features/finance/utils";
 
@@ -29,15 +31,18 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     cell: ({ row }) => {
       return row.getCanExpand() ? (
-        <button
+        <Button
           {...{
-            onClick: row.getToggleExpandedHandler(),
+            onPress: row.getToggleExpandedHandler(),
             style: { cursor: "pointer" },
           }}
-          className="btn btn-ghost btn-xs hover:bg-base-200 h-6 w-6 rounded-md p-0"
+          isIconOnly
+          size="sm"
+          variant="ghost"
+          className="hover:bg-base-200 h-6 w-6 rounded-md p-0"
         >
           {row.getIsExpanded() ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        </button>
+        </Button>
       ) : null;
     },
     enablePinning: true,
@@ -67,9 +72,9 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "recordType",
     cell: ({ row }) => (
-      <span className="badge badge-outline badge-sm whitespace-nowrap">
+      <Chip className="whitespace-nowrap" size="sm" variant="tertiary">
         {row.original.recordType}
-      </span>
+      </Chip>
     ),
     header: "Tipo",
     minSize: 150,

@@ -1,6 +1,8 @@
+import { Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 import { formatAmount } from "@/features/finance/utils";
 
@@ -48,15 +50,18 @@ export const columns: ColumnDef<SettlementTransaction, any>[] = [
   {
     cell: ({ row }) => {
       return row.getCanExpand() ? (
-        <button
+        <Button
           {...{
-            onClick: row.getToggleExpandedHandler(),
+            onPress: row.getToggleExpandedHandler(),
             style: { cursor: "pointer" },
           }}
-          className="btn btn-ghost btn-xs hover:bg-base-200 h-6 w-6 rounded-md p-0"
+          isIconOnly
+          size="sm"
+          variant="ghost"
+          className="hover:bg-base-200 h-6 w-6 rounded-md p-0"
         >
           {row.getIsExpanded() ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        </button>
+        </Button>
       ) : null;
     },
     enablePinning: true,
@@ -83,9 +88,9 @@ export const columns: ColumnDef<SettlementTransaction, any>[] = [
   {
     accessorKey: "transactionType",
     cell: ({ row }) => (
-      <span className="badge badge-outline badge-sm whitespace-nowrap">
+      <Chip className="whitespace-nowrap" size="sm" variant="tertiary">
         {row.original.transactionType}
-      </span>
+      </Chip>
     ),
     header: "Tipo",
     minSize: 150,
@@ -138,9 +143,13 @@ export const columns: ColumnDef<SettlementTransaction, any>[] = [
     cell: ({ row }) => (
       <div className="text-center">
         {row.original.isReleased ? (
-          <span className="text-success text-xs font-bold">SÍ</span>
+          <Chip className="font-bold" color="success" size="sm" variant="soft">
+            SÍ
+          </Chip>
         ) : (
-          <span className="text-warning text-xs">NO</span>
+          <Chip color="warning" size="sm" variant="soft">
+            NO
+          </Chip>
         )}
       </div>
     ),

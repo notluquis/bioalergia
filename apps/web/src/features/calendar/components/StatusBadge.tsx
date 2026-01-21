@@ -1,24 +1,25 @@
+import { Chip } from "@heroui/react";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
 
 export const StatusBadge = ({ status }: { status: string }) => {
   const s = status.toUpperCase();
   if (s === "SUCCESS") {
     return (
-      <span className="badge badge-success gap-1 text-xs font-semibold">
+      <Chip className="gap-1 text-xs font-semibold" color="success" size="sm" variant="soft">
         <CheckCircle className="h-3 w-3" /> Exitoso
-      </span>
+      </Chip>
     );
   }
   if (s === "ERROR" || s === "FAILED") {
     return (
-      <span className="badge badge-error gap-1 text-xs font-semibold">
+      <Chip className="gap-1 text-xs font-semibold" color="danger" size="sm" variant="soft">
         <XCircle className="h-3 w-3" /> Error
-      </span>
+      </Chip>
     );
   }
   return (
-    <span className="badge badge-warning gap-1 text-xs font-semibold">
+    <Chip className="gap-1 text-xs font-semibold" color="warning" size="sm" variant="soft">
       <Loader2 className="h-3 w-3 animate-spin" /> {status}
-    </span>
+    </Chip>
   );
 };
