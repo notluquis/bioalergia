@@ -1,67 +1,65 @@
 /**
- * Card Component - Native HTML with consistent styling
- *
- * Composition-based Card component.
+ * Card Component - Adapter for HeroUI Card
  */
-import type React from "react";
-import { forwardRef } from "react";
+import { Card as HeroCard } from "@heroui/react";
+import { forwardRef, type HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
 // Card Shell
-const Card = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div
-      className={cn(
-        "bg-base-100 border-base-200 text-base-content rounded-2xl border shadow-sm",
-        className,
-      )}
+    <HeroCard className={cn("border-base-200 border shadow-sm", className)} ref={ref} {...props} />
+  ),
+);
+Card.displayName = "Card";
+
+// Card Header
+const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <HeroCard.Header
+      className={cn("flex flex-col space-y-1.5 p-6", className)}
       ref={ref}
       {...props}
     />
   ),
 );
-Card.displayName = "Card";
-
-// Card Header: Handles title and description spacing
-const CardHeader = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div className={cn("flex flex-col space-y-1.5 p-6", className)} ref={ref} {...props} />
-  ),
-);
 CardHeader.displayName = "CardHeader";
 
-// Card Title
-const CardTitle = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  ({ children, className, ...props }, ref) => (
-    <h3 className={cn("leading-none font-semibold tracking-tight", className)} ref={ref} {...props}>
-      {children}
-    </h3>
+// Card Title (Keeping as h3, HeroUI allows composition)
+const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
+  ({ className, ...props }, ref) => (
+    <h3
+      className={cn("text-lg leading-none font-semibold tracking-tight", className)}
+      ref={ref}
+      {...props}
+    />
   ),
 );
 CardTitle.displayName = "CardTitle";
 
 // Card Description
-const CardDescription = forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p className={cn("text-base-content/60 text-sm", className)} ref={ref} {...props} />
-));
+const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
+  ({ className, ...props }, ref) => (
+    <p className={cn("text-base-content/60 text-sm", className)} ref={ref} {...props} />
+  ),
+);
 CardDescription.displayName = "CardDescription";
 
-// Card Content: The main body
-const CardContent = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+// Card Content -> Maps to HeroCard.Content (based on examples) or Card.Body.
+// Examples show Card.Content, but generic HeroUI pattern is CardBody.
+// We'll trust the checked examples: Card.Content.
+const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div className={cn("p-6 pt-0", className)} ref={ref} {...props} />
+    <HeroCard.Content className={cn("p-6 pt-0", className)} ref={ref} {...props} />
   ),
 );
 CardContent.displayName = "CardContent";
 
 // Card Footer
-const CardFooter = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div className={cn("flex items-center p-6 pt-0", className)} ref={ref} {...props} />
+    <HeroCard.Footer className={cn("flex items-center p-6 pt-0", className)} ref={ref} {...props} />
   ),
 );
 CardFooter.displayName = "CardFooter";
