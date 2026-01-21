@@ -3,6 +3,9 @@ import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
 
+import { employeeKeys } from "@/features/hr/employees/queries";
+import { timesheetQueries } from "@/features/hr/timesheets/queries";
+
 const ReportsPage = lazy(() => import("@/features/hr/reports/pages/ReportsPage"));
 
 export const Route = createFileRoute("/_authed/hr/reports")({
@@ -22,9 +25,6 @@ export const Route = createFileRoute("/_authed/hr/reports")({
     </Suspense>
   ),
   loader: async ({ context: { queryClient } }) => {
-    const { employeeKeys } = await import("@/features/hr/employees/queries");
-    const { timesheetQueries } = await import("@/features/hr/timesheets/queries");
-
     await Promise.all([
       queryClient.ensureQueryData(employeeKeys.list({ includeInactive: false })),
       queryClient.ensureQueryData(timesheetQueries.months()),

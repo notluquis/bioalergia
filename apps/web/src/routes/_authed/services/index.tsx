@@ -5,6 +5,8 @@ import PageLoader from "@/components/ui/PageLoader";
 
 const OverviewPage = lazy(() => import("@/features/services/pages/OverviewPage"));
 
+import { serviceQueries } from "@/features/services/queries";
+
 // Services index - shows the overview page
 export const Route = createFileRoute("/_authed/services/")({
   beforeLoad: ({ context }) => {
@@ -19,7 +21,6 @@ export const Route = createFileRoute("/_authed/services/")({
     </Suspense>
   ),
   loader: async ({ context: { queryClient } }) => {
-    const { serviceQueries } = await import("@/features/services/queries");
     await queryClient.ensureQueryData(serviceQueries.list(true));
   },
 });

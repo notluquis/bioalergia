@@ -1,8 +1,8 @@
-import { queryOptions } from "@tanstack/react-query";
 import {
   fetchCalendarDaily,
   fetchCalendarSummary,
   fetchCalendarSyncLogs,
+  fetchCalendars,
   fetchClassificationOptions,
   fetchUnclassifiedCalendarEvents,
   type MissingFieldFilters,
@@ -23,6 +23,7 @@ export const calendarKeys = {
     ["calendar", "summary", normalizeFilters(filters)] as const,
   unclassified: (page: number, pageSize: number, filters: MissingFieldFilters) =>
     ["calendar-unclassified", page, pageSize, filters] as const,
+  list: ["calendars"] as const,
 };
 
 export const calendarSyncQueries = {
@@ -42,8 +43,8 @@ export const calendarQueries = {
     }),
   list: () =>
     queryOptions({
-      queryFn: () => import("./api").then((m) => m.fetchCalendars()),
-      queryKey: ["calendars"], // Using legacy key to match existing or I should align keys
+      queryFn: fetchCalendars,
+      queryKey: calendarKeys.list,
     }),
   options: () =>
     queryOptions({
