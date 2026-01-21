@@ -1,3 +1,4 @@
+import { ListBox, Select } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Plus, RotateCw, Shield } from "lucide-react";
 import { useState } from "react";
@@ -150,20 +151,28 @@ export default function RolesSettingsPage() {
           <div className="flex items-center gap-2">
             {/* Role Filter Selector */}
             <div className="hidden sm:block">
-              <select
-                className="select select-bordered select-sm w-full max-w-50"
-                onChange={(e) => {
-                  setViewModeRole(e.target.value);
-                }}
-                value={viewModeRole}
+              <Select
+                aria-label="Filtrar roles"
+                className="w-full max-w-50"
+                selectedKey={viewModeRole}
+                onSelectionChange={(key) => setViewModeRole(key ? key.toString() : "")}
               >
-                <option value="all">Ver todos los roles</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    <ListBox.Item key="all" textValue="Ver todos los roles">
+                      Ver todos los roles
+                    </ListBox.Item>
+                    {roles.map((r) => (
+                      <ListBox.Item key={r.id} textValue={r.name}>
+                        {r.name}
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
             </div>
 
             <div className="ml-2 flex items-center gap-2 border-l pl-2">

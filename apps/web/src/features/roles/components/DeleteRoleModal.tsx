@@ -1,4 +1,4 @@
-import { Alert, Button, Modal, Spinner } from "@heroui/react";
+import { Alert, Button, ListBox, Modal, Select, Spinner } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, AlertTriangle, ArrowRight, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
@@ -140,21 +140,26 @@ function DeleteRoleForm({
                   Mover usuarios a:
                 </span>
               </label>
-              <select
-                className="select select-bordered w-full"
-                id="target-role-select"
-                onChange={(e) => {
-                  setTargetRoleId(e.target.value);
-                }}
-                value={targetRoleId}
+              <Select
+                aria-label="Seleccionar rol de destino"
+                className="w-full"
+                placeholder="Seleccionar rol..."
+                selectedKey={targetRoleId}
+                onSelectionChange={(key) => setTargetRoleId(key ? String(key) : "")}
               >
-                <option value="">Selecciona un rol...</option>
-                {availableRoles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
+                <Select.Trigger>
+                  <Select.Value />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {availableRoles.map((r) => (
+                      <ListBox.Item key={r.id} textValue={r.name}>
+                        {r.name}
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
             </div>
           </div>
         ) : (
