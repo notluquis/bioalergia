@@ -1,8 +1,7 @@
-import { Alert, Spinner } from "@heroui/react";
+import { Alert, Button, Modal, Spinner } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, AlertTriangle, ArrowRight, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
-import Button from "@/components/ui/Button";
 
 import { useToast } from "@/context/ToastContext";
 import { deleteRole, reassignRoleUsers, roleKeys, roleQueries } from "@/features/roles/api";
@@ -16,53 +15,52 @@ interface DeleteRoleModalProps {
 }
 
 export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleModalProps) {
-  if (!isOpen) return null;
-
   const isSystemRole = role.isSystem;
 
   return (
-    <dialog className="modal modal-bottom sm:modal-middle" open>
-      <div className="modal-box">
-        <h3 className="text-error flex items-center gap-2 text-lg font-bold">
-          <Trash2 className="h-5 w-5" />
-          Eliminar Rol: {role.name}
-        </h3>
-
-        {isSystemRole ? (
-          <div className="py-4">
-            <Alert status="danger">
-              <Alert.Indicator>
-                <AlertCircle className="h-4 w-4" />
-              </Alert.Indicator>
-              <Alert.Content>
-                Este es un rol de sistema protegido y no puede ser eliminado.
-              </Alert.Content>
-            </Alert>
-            <div className="modal-action">
-              <Button variant="ghost" onPress={onClose}>
-                Cerrar
-              </Button>
+    <Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Modal.Backdrop />
+      <Modal.Container placement="center">
+        <Modal.Dialog>
+          <Modal.Header className="flex flex-col gap-1 text-danger">
+            <div className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              <span className="text-lg font-bold">Eliminar Rol: {role.name}</span>
             </div>
-          </div>
-        ) : (
-          <Suspense
-            fallback={
-              <div className="py-8 text-center">
-                <Spinner className="text-primary" size="lg" />
-                <p className="mt-2 text-sm opacity-70">Verificando usuarios afectados...</p>
+          </Modal.Header>
+          <Modal.Body className="pb-6">
+            {isSystemRole ? (
+              <div className="py-2">
+                <Alert status="danger">
+                  <Alert.Indicator>
+                    <AlertCircle className="h-4 w-4" />
+                  </Alert.Indicator>
+                  <Alert.Content>
+                    Este es un rol de sistema protegido y no puede ser eliminado.
+                  </Alert.Content>
+                </Alert>
+                <div className="mt-6 flex justify-end">
+                  <Button variant="ghost" onPress={onClose}>
+                    Cerrar
+                  </Button>
+                </div>
               </div>
-            }
-          >
-            <DeleteRoleForm allRoles={allRoles} onClose={onClose} role={role} />
-          </Suspense>
-        )}
-      </div>
-      <form className="modal-backdrop" method="dialog">
-        <button onClick={onClose} type="button">
-          close
-        </button>
-      </form>
-    </dialog>
+            ) : (
+              <Suspense
+                fallback={
+                  <div className="py-8 text-center">
+                    <Spinner className="text-primary" size="lg" />
+                    <p className="mt-2 text-sm opacity-70">Verificando usuarios afectados...</p>
+                  </div>
+                }
+              >
+                <DeleteRoleForm allRoles={allRoles} onClose={onClose} role={role} />
+              </Suspense>
+            )}
+          </Modal.Body>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal>
   );
 }
 
@@ -112,7 +110,7 @@ function DeleteRoleForm({
 
   return (
     <>
-      <div className="space-y-4 py-4">
+      <div className="space-y-4 py-2">
         <p>¿Estás seguro que deseas eliminar este rol? Esta acción no se puede deshacer.</p>
 
         {hasUsers ? (
@@ -166,14 +164,12 @@ function DeleteRoleForm({
         )}
       </div>
 
-      <div className="modal-action">
+      <div className="mt-6 flex justify-end gap-2">
         <Button variant="ghost" onPress={onClose}>
           Cancelar
         </Button>
         <Button
-          variant="danger" // Assuming Button supports 'danger'. HeroUI Button uses color="danger". Check if this Button is custom. It is imported from "@/components/ui/Button".
-          // If custom Button supports variant="danger", fine. If it wraps HeroUI, it might map to color prop.
-          // Leaving as is since I didn't verify custom Button internals, but I should be safe.
+          variant="danger"
           isDisabled={deleteMutation.isPending || (hasUsers && !targetRoleId)}
           onPress={() => {
             deleteMutation.mutate();

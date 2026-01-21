@@ -316,13 +316,13 @@ export function DataTable<TData, TValue>({
           }}
         >
           <table
-            className="table w-full text-sm"
+            className="w-full border-collapse text-left text-sm"
             style={{
               minWidth: table.getTotalSize(),
               width: "100%",
             }}
           >
-            <thead className="bg-base-200/50 sticky top-0 z-10">
+            <thead className="bg-default-100 sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr className="border-base-300/50 border-b" key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {

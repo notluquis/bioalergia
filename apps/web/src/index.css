@@ -304,7 +304,6 @@ main,
 /* CSS Containment - Isolate component rendering
    Browser doesn't recalculate entire page when these change */
 .card,
-.modal-box,
 aside {
   contain: content;
 }
