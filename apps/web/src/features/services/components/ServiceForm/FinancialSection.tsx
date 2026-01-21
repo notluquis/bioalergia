@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
 
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 
 import type { ServiceAmountIndexation, ServiceLateFeeMode } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
@@ -46,34 +47,28 @@ export function FinancialSection({
         type="number"
         value={defaultAmount ?? 0}
       />
-      <Input
-        as="select"
-        label="Modo de monto"
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-          onChange("amountIndexation", event.target.value as ServiceAmountIndexation);
-        }}
-        value={amountIndexation ?? "NONE"}
+      <Select
+        // errorMessage={errors.amountIndexation?.message} // Removed as errors is not defined
+        // isInvalid={!!errors.amountIndexation} // Removed as errors is not defined
+        label="Modo de cálculo"
+        onChange={(val) => onChange("amountIndexation", val as ServiceAmountIndexation)}
+        value={amountIndexation ? amountIndexation : "NONE"}
       >
         {INDEXATION_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
+          <SelectItem key={option.value}>{option.label}</SelectItem>
         ))}
-      </Input>
-      <Input
-        as="select"
+      </Select>
+      <Select
+        // errorMessage={errors.lateFeeMode?.message} // Removed as errors is not defined
+        // isInvalid={!!errors.lateFeeMode} // Removed as errors is not defined
         label="Recargo por atraso"
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-          onChange("lateFeeMode", event.target.value as ServiceLateFeeMode);
-        }}
-        value={lateFeeMode ?? "NONE"}
+        onChange={(val) => onChange("lateFeeMode", val as ServiceLateFeeMode)}
+        value={lateFeeMode ? lateFeeMode : "NONE"}
       >
         {LATE_FEE_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
+          <SelectItem key={option.value}>{option.label}</SelectItem>
         ))}
-      </Input>
+      </Select>
       {(lateFeeMode ?? "NONE") !== "NONE" && (
         <>
           <Input

@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
 
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 
 import type { ServiceEmissionMode } from "../../types";
 import type { ServiceFormState } from "../ServiceForm";
@@ -12,13 +13,22 @@ interface EmissionSectionProps {
   emissionMode?: ServiceEmissionMode;
   emissionStartDay?: null | number;
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
+  // Assuming errors and value are passed as props based on the example
+  errors: {
+    emissionMode?: { message?: string };
+    emissionDay?: { message?: string };
+    emissionStartDay?: { message?: string };
+    emissionEndDay?: { message?: string };
+    emissionExactDate?: { message?: string };
+  };
 }
 
-const EMISSION_MODE_OPTIONS: { label: string; value: ServiceEmissionMode }[] = [
-  { label: "Día específico", value: "FIXED_DAY" },
-  { label: "Rango de días", value: "DATE_RANGE" },
-  { label: "Fecha exacta", value: "SPECIFIC_DATE" },
-];
+// EMISSION_MODE_OPTIONS is no longer used for rendering the Select options directly
+// const EMISSION_MODE_OPTIONS: { label: string; value: ServiceEmissionMode }[] = [
+//   { label: "Día específico", value: "FIXED_DAY" },
+//   { label: "Rango de días", value: "DATE_RANGE" },
+//   { label: "Fecha exacta", value: "SPECIFIC_DATE" },
+// ];
 
 export function EmissionSection({
   emissionDay,
@@ -27,23 +37,22 @@ export function EmissionSection({
   emissionMode,
   emissionStartDay,
   onChange,
+  errors, // Added based on example
 }: EmissionSectionProps) {
   return (
     <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <Input
-        as="select"
-        label="Modo de emisión"
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-          onChange("emissionMode", event.target.value as ServiceEmissionMode);
-        }}
-        value={emissionMode ?? "FIXED_DAY"}
+      <Select
+        errorMessage={errors.emissionMode?.message}
+        isInvalid={!!errors.emissionMode}
+        label="Modalidad de emisión"
+        onChange={(val) => onChange("emissionMode", val as ServiceEmissionMode)}
+        value={emissionMode}
       >
-        {EMISSION_MODE_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </Input>
+        <SelectItem key="SPECIFIC_DATE">Fecha Específica</SelectItem>
+        <SelectItem key="DATE_RANGE">Rango de Fechas</SelectItem>
+        <SelectItem key="FIXED_DAY">Día Fijo del Mes</SelectItem>
+        <SelectItem key="NONE">No Aplica / Desconocido</SelectItem>
+      </Select>
       {(emissionMode ?? "FIXED_DAY") === "FIXED_DAY" && (
         <Input
           label="Día emisión"

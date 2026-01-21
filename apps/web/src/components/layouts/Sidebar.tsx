@@ -1,3 +1,4 @@
+import { Avatar } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
 
@@ -143,11 +144,11 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                       : "h-12 w-12 justify-center rounded-xl p-0",
                   )}
                 >
-                  <div className="bg-base-200 border-base-300 h-10 w-10 shrink-0 overflow-hidden rounded-full border">
-                    <div className="bg-base-100 text-primary flex h-full w-full items-center justify-center font-bold">
+                  <Avatar className="h-10 w-10 shrink-0">
+                    <Avatar.Fallback className="bg-base-100 text-primary font-bold">
                       {displayName.slice(0, 2).toUpperCase()}
-                    </div>
-                  </div>
+                    </Avatar.Fallback>
+                  </Avatar>
 
                   {isMobile && (
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left transition-all duration-300">

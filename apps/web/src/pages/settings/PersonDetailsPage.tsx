@@ -1,8 +1,10 @@
+import { Avatar, Chip, Separator } from "@heroui/react";
 import { skipToken, useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ArrowLeft, Briefcase, Building, Calendar, Mail, MapPin, Phone, User } from "lucide-react";
-
+import Alert from "@/components/ui/Alert";
+import Button from "@/components/ui/Button";
 import { personKeys } from "@/features/people/queries";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
 
@@ -25,50 +27,50 @@ export default function PersonDetailsPage() {
   if (!person) {
     return (
       <div className="space-y-6">
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm gap-2"
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-2"
           onClick={() => navigate({ to: "/settings/people" })}
         >
           <ArrowLeft size={16} />
           Volver
-        </button>
-        <div className="alert alert-warning">No se encontró la persona.</div>
+        </Button>
+        <Alert variant="warning">No se encontró la persona.</Alert>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <button
-        type="button"
-        className="btn btn-ghost btn-sm gap-2"
+      <Button
+        variant="ghost"
+        size="sm"
+        className="gap-2"
         onClick={() => navigate({ to: "/settings/people" })}
       >
         <ArrowLeft size={16} />
         Volver
-      </button>
+      </Button>
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Main Info Card */}
         <div className="card bg-base-100 shadow-sm md:col-span-2">
           <div className="card-body">
             <div className="flex items-start gap-6">
-              <div className="avatar placeholder">
-                <div className="bg-primary text-primary-content flex w-24 items-center justify-center rounded-full text-3xl">
-                  <span>{getPersonInitials(person)}</span>
-                </div>
-              </div>
+              <Avatar className="w-24 h-24 text-3xl">
+                <Avatar.Fallback className="text-3xl">{getPersonInitials(person)}</Avatar.Fallback>
+              </Avatar>
               <div className="space-y-1">
                 <h2 className="text-2xl font-bold">{getPersonFullName(person)}</h2>
                 <div className="text-base-content/70 flex items-center gap-2">
-                  <span className="badge badge-ghost">{person.rut}</span>
-                  {person.gender && <span className="badge badge-ghost">{person.gender}</span>}
+                  <Chip variant="soft">{person.rut}</Chip>
+                  {person.gender && <Chip variant="soft">{person.gender}</Chip>}
                 </div>
               </div>
             </div>
 
-            <div className="divider" />
+            <Separator className="my-6" />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex items-center gap-3">

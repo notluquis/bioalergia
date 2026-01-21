@@ -1,17 +1,17 @@
+import { useFindManyRole } from "@finanzas/db/hooks";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Shield, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople } from "@/features/people/api";
-import { fetchRoles } from "@/features/roles/api";
 import { inviteUser } from "@/features/users/api";
 import { getPersonFullName } from "@/lib/person";
-// type AvailableRole removed
-import type { Role } from "@/types/roles";
 
 export default function AddUserPage() {
   const navigate = useNavigate();
@@ -27,15 +27,28 @@ export default function AddUserPage() {
     passkeyOnly: false,
     personId: undefined as number | undefined,
     position: "",
-    role: "VIEWER",
+    // role: "VIEWER", // This will now be managed by react-hook-form
     rut: "",
   });
 
   // Fetch available roles
-  const { data: availableRoles } = useSuspenseQuery({
-    queryFn: fetchRoles,
-    queryKey: ["available-roles"],
+  const { data: rolesData } = useFindManyRole({
+    orderBy: { name: "asc" },
   });
+  const roles = rolesData || [];
+
+  const {
+    handleSubmit: rhfHandleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm({
+    defaultValues: {
+      role: "VIEWER", // Set initial role for RHF
+    },
+  });
+
+  const role = watch("role"); // Watch the role field from RHF
 
   // Fetch people without users
   const { data: peopleData } = useSuspenseQuery({
@@ -67,14 +80,13 @@ export default function AddUserPage() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = rhfHandleSubmit((data) => {
     const payload: Record<string, unknown> = {
       email: form.email,
       mfaEnforced: form.mfaEnforced,
       passkeyOnly: form.passkeyOnly,
       position: form.position,
-      role: form.role,
+      role: data.role, // Use role from RHF data
     };
 
     if (form.linkToPerson && form.personId) {
@@ -87,7 +99,7 @@ export default function AddUserPage() {
     }
 
     createUserMutation.mutate(payload);
-  };
+  });
 
   const loading = createUserMutation.isPending;
 
@@ -103,7 +115,9 @@ export default function AddUserPage() {
 
       <form
         className="surface-elevated space-y-6 rounded-3xl p-6 shadow-lg"
-        onSubmit={handleSubmit}
+        onSubmit={(e) => {
+          void handleSubmit(e);
+        }}
       >
         {/* Opción de vincular a persona existente */}
         {availablePeople.length > 0 && (
@@ -119,12 +133,10 @@ export default function AddUserPage() {
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Input
-                    as="select"
-                    id="personId"
+                  <Select
                     label="Vincular con persona (opcional)"
-                    onChange={(e) => {
-                      const pid = e.target.value ? Number(e.target.value) : undefined;
+                    onChange={(val) => {
+                      const pid = val ? Number(val) : undefined;
                       const person = availablePeople.find((p) => p.id === pid);
                       setForm({
                         ...form,
@@ -138,15 +150,15 @@ export default function AddUserPage() {
                         rut: pid ? "" : form.rut,
                       });
                     }}
-                    value={form.personId ?? ""}
+                    value={form.personId ? String(form.personId) : ""}
                   >
-                    <option value="">No vincular (Crear usuario nuevo)</option>
+                    <SelectItem key="">No vincular (Crear usuario nuevo)</SelectItem>
                     {availablePeople.map((person) => (
-                      <option key={person.id} value={person.id}>
+                      <SelectItem key={String(person.id)}>
                         {getPersonFullName(person)} - {person.rut}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </Input>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -228,25 +240,19 @@ export default function AddUserPage() {
           />
 
           <div className={form.personId ? "md:col-span-2" : ""}>
-            <label className="label" htmlFor="role">
-              <span className="label-text">Rol</span>
-            </label>
-            <select
-              className="select select-bordered w-full"
-              id="role"
-              onChange={(e) => {
-                setForm({ ...form, role: e.target.value });
-              }}
-              required
-              value={form.role}
+            <Select
+              errorMessage={errors.role?.message}
+              isInvalid={!!errors.role}
+              label="Rol del sistema"
+              onChange={(val) => setValue("role", val as string)}
+              value={role}
             >
-              {availableRoles.length === 0 && <option value="VIEWER">VIEWER (Fallback)</option>}
-              {availableRoles.map((role: Role) => (
-                <option key={role.name} value={role.name}>
-                  {role.name} {role.description ? `- ${role.description}` : ""}
-                </option>
+              {roles.map((r) => (
+                <SelectItem key={r.name}>
+                  {r.name} ({r.description || "Sin descripción"})
+                </SelectItem>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
 

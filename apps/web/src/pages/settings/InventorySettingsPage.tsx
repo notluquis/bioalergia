@@ -1,3 +1,4 @@
+import { Chip } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
   Box,
@@ -233,14 +234,17 @@ function InventoryList({
                 <div className="min-w-0 flex-1">
                   <span className="font-medium">{category.name}</span>
                 </div>
-                <span className="badge badge-ghost badge-sm">{catItems.length} items</span>
+                <Chip size="sm" variant="soft">
+                  {catItems.length} items
+                </Chip>
               </button>
               <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                <Button className="btn-square btn-xs" size="sm" variant="ghost">
+                <Button isIconOnly size="sm" variant="ghost">
                   <Edit2 size={14} />
                 </Button>
                 <Button
-                  className="btn-square btn-xs text-error hover:bg-error/10"
+                  isIconOnly
+                  className="text-error hover:bg-error/10"
                   onClick={() => {
                     onDeleteCategory(category.id);
                   }}
@@ -311,7 +315,9 @@ function InventoryList({
               <div className="min-w-0 flex-1">
                 <span className="text-base-content/70 font-medium">Sin categoría</span>
               </div>
-              <span className="badge badge-ghost badge-sm">{uncategorizedItems.length} items</span>
+              <Chip size="sm" variant="soft">
+                {uncategorizedItems.length} items
+              </Chip>
             </button>
           </div>
 

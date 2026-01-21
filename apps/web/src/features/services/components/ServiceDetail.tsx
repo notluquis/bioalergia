@@ -6,6 +6,7 @@ import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { Select, SelectItem } from "@/components/ui/Select";
 
 import type {
   RegenerateServicePayload,
@@ -370,26 +371,26 @@ export function ServiceDetail({
             type="number"
             value={regenerateForm.dueDay ?? service.due_day ?? ""}
           />
-          <Input
-            as="select"
+          <Select
             label="Frecuencia"
-            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+            onChange={(val) => {
+              const newVal = val as string; // val is Key (string | number).
               setRegenerateForm((prev) => ({
                 ...prev,
-                frequency: event.target.value as RegenerateServicePayload["frequency"],
+                frequency: newVal as RegenerateServicePayload["frequency"],
               }));
             }}
             value={regenerateForm.frequency ?? service.frequency}
           >
-            <option value="WEEKLY">Semanal</option>
-            <option value="BIWEEKLY">Quincenal</option>
-            <option value="MONTHLY">Mensual</option>
-            <option value="BIMONTHLY">Bimensual</option>
-            <option value="QUARTERLY">Trimestral</option>
-            <option value="SEMIANNUAL">Semestral</option>
-            <option value="ANNUAL">Anual</option>
-            <option value="ONCE">Única vez</option>
-          </Input>
+            <SelectItem key="WEEKLY">Semanal</SelectItem>
+            <SelectItem key="BIWEEKLY">Quincenal</SelectItem>
+            <SelectItem key="MONTHLY">Mensual</SelectItem>
+            <SelectItem key="BIMONTHLY">Bimensual</SelectItem>
+            <SelectItem key="QUARTERLY">Trimestral</SelectItem>
+            <SelectItem key="SEMIANNUAL">Semestral</SelectItem>
+            <SelectItem key="ANNUAL">Anual</SelectItem>
+            <SelectItem key="ONCE">Única vez</SelectItem>
+          </Select>
           {service.emission_mode === "FIXED_DAY" && (
             <Input
               helper="Aplica a servicios con día fijo de emisión"

@@ -12,9 +12,10 @@ import {
   User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-
+import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+
 import { useAuth } from "@/context/AuthContext";
 import {
   enableMfa,
@@ -298,9 +299,9 @@ export default function OnboardingWizard() {
 
         <div className="flex-1 overflow-y-auto p-6 sm:p-8">
           {error && (
-            <div className="alert alert-error mb-6 py-2 text-sm">
+            <Alert variant="error" className="mb-6">
               <span>{error}</span>
-            </div>
+            </Alert>
           )}
 
           {currentStep === 0 && (
