@@ -181,7 +181,7 @@ export async function listUnclassifiedCalendarEvents(
       { category: null },
       { category: "" },
       { amountExpected: null },
-      { attended: null },
+      { attended: null, startDateTime: { lte: new Date() } },
     );
   } else {
     if (filters.category) {
@@ -194,7 +194,7 @@ export async function listUnclassifiedCalendarEvents(
       conditions.push({ amountPaid: null });
     }
     if (filters.attended) {
-      conditions.push({ attended: null });
+      conditions.push({ attended: null, startDateTime: { lte: new Date() } });
     }
     // For dosage: events that are "Tratamiento subcutáneo" but missing dosage
     if (filters.dosage) {
