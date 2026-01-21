@@ -1,55 +1,53 @@
 import {
+  Tooltip as HeroTooltip,
+  type TooltipProps as HeroTooltipProps,
   TooltipContent,
   type TooltipContentProps,
-  TooltipRoot,
-  type TooltipRootProps,
   TooltipTrigger,
 } from "@heroui/react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-export type TooltipProps = Omit<TooltipContentProps, "className"> &
-  Pick<
-    TooltipRootProps,
-    "delay" | "closeDelay" | "isDisabled" | "trigger" | "isOpen" | "defaultOpen" | "onOpenChange"
-  > & {
-    content: ReactNode;
-    children: ReactNode;
-    classNames?: {
-      content?: string;
-    };
-    className?: string;
+// We omit 'children' from HeroTooltipProps because in our adapter
+// 'children' is the trigger content, and we assume 'content' is the tooltip content.
+export interface TooltipProps extends Omit<HeroTooltipProps, "children"> {
+  children: ReactNode;
+  content: ReactNode;
+
+  // Content Props
+  showArrow?: boolean;
+  placement?: TooltipContentProps["placement"];
+  offset?: number;
+  // We keep classNames in our interface for backward compatibility with consumers
+  // but we map it manually since TooltipContent doesn't accept it directly in this version
+  classNames?: {
+    content?: string;
   };
+  className?: string;
+}
 
 export function Tooltip({
   children,
   content,
-  delay,
-  closeDelay,
-  isDisabled,
-  trigger,
-  isOpen,
-  defaultOpen,
-  onOpenChange,
+  showArrow,
+  placement,
+  offset,
   classNames,
   className,
-  ...props
+  ...rootProps
 }: TooltipProps) {
   return (
-    <TooltipRoot
-      delay={delay}
-      closeDelay={closeDelay}
-      isDisabled={isDisabled}
-      trigger={trigger}
-      isOpen={isOpen}
-      defaultOpen={defaultOpen}
-      onOpenChange={onOpenChange}
-    >
+    <HeroTooltip {...rootProps}>
       <TooltipTrigger>{children}</TooltipTrigger>
-      <TooltipContent className={cn(className, classNames?.content)} {...props}>
+      <TooltipContent
+        className={cn(className, classNames?.content)}
+        offset={offset}
+        placement={placement}
+        showArrow={showArrow}
+      >
         {content}
       </TooltipContent>
-    </TooltipRoot>
+    </HeroTooltip>
   );
 }
