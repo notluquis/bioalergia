@@ -3,6 +3,8 @@
  * Extracts duplicated filter logic from CalendarDailyPage, CalendarSchedulePage, etc.
  */
 
+import { DatePicker } from "@heroui/date-picker";
+import { type DateValue, parseDate } from "@internationalized/date";
 import type { ChangeEvent, FormEvent } from "react";
 
 import Button from "@/components/ui/Button";
@@ -60,7 +62,6 @@ export function CalendarFilterPanel({
   showDateRange = false,
   showSearch = false,
 }: Readonly<CalendarFilterPanelProps>) {
-  // ... (keep logic)
   // Build event type options for MultiSelect
   const eventTypeOptions: MultiSelectOption[] = availableEventTypes.map((entry) => {
     const value = entry.eventType ?? NULL_EVENT_TYPE_VALUE;
@@ -88,24 +89,28 @@ export function CalendarFilterPanel({
         {/* Date Range Inputs */}
         {showDateRange && (
           <>
-            <div className="min-w-28 flex-1">
-              <Input
+            <div className="min-w-32 flex-1">
+              <DatePicker
                 label="Desde"
-                onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                  onFilterChange("from", e.target.value);
-                }}
-                type="date"
-                value={filters.from}
+                className="max-w-xs"
+                value={filters.from ? parseDate(filters.from) : undefined}
+                onChange={(date: DateValue | null) =>
+                  onFilterChange("from", date ? date.toString() : "")
+                }
+                labelPlacement="inside"
+                variant="bordered"
               />
             </div>
-            <div className="min-w-28 flex-1">
-              <Input
+            <div className="min-w-32 flex-1">
+              <DatePicker
                 label="Hasta"
-                onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                  onFilterChange("to", e.target.value);
-                }}
-                type="date"
-                value={filters.to}
+                className="max-w-xs"
+                value={filters.to ? parseDate(filters.to) : undefined}
+                onChange={(date: DateValue | null) =>
+                  onFilterChange("to", date ? date.toString() : "")
+                }
+                labelPlacement="inside"
+                variant="bordered"
               />
             </div>
           </>
