@@ -326,7 +326,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                 return (
                   <button
                     className={cn(
-                      "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden break-words rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-transform hover:z-100 hover:-translate-y-px hover:scale-[1.02] hover:overflow-visible hover:py-1.5 hover:shadow-lg",
+                      "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden wrap-break-word rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-transform hover:z-100 hover:-translate-y-px hover:scale-[1.02] hover:overflow-visible hover:py-1.5 hover:shadow-lg",
                       getCategoryClass(event.category),
                       // Display modes
                       displayMode === "minimal" &&
