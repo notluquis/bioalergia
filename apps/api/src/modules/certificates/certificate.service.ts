@@ -168,38 +168,68 @@ export async function generateMedicalCertificatePdf(
 }
 
 /**
- * Sign PDF with .pfx certificate
+ * Sign PDF with .pfx certificate using @signpdf (actively maintained)
+ * Supports multiple loading methods for Railway deployment:
+ * 1. File path (Railway Volumes): PFX_PATH env var
+ * 2. Base64 string (Railway Env Var): PFX_BASE64 env var
+ * 
+ * @see https://github.com/vbuch/node-signpdf
  */
 export async function signPdf(
   pdfBytes: Uint8Array,
   pfxPath?: string,
   pfxPassword?: string
 ): Promise<Uint8Array> {
-  // Check if signing is configured
-  const actualPfxPath = pfxPath || path.join(SIGNATURES_DIR, "doctor.pfx");
   const actualPassword = pfxPassword || process.env.PFX_PASSWORD || "";
 
-  if (!fs.existsSync(actualPfxPath)) {
-    console.warn("PFX file not found, returning unsigned PDF");
+  let p12Buffer: Buffer | null = null;
+
+  // Method 1: Load from Railway Volume or local file path
+  if (process.env.PFX_PATH || pfxPath) {
+    const actualPfxPath = pfxPath || process.env.PFX_PATH || path.join(SIGNATURES_DIR, "doctor.pfx");
+    
+    if (fs.existsSync(actualPfxPath)) {
+      console.log(`Loading PFX from file: ${actualPfxPath}`);
+      p12Buffer = fs.readFileSync(actualPfxPath);
+    } else {
+      console.warn(`PFX file not found at: ${actualPfxPath}`);
+    }
+  }
+
+  // Method 2: Load from Base64 environment variable (Railway Env Var)
+  if (!p12Buffer && process.env.PFX_BASE64) {
+    console.log("Loading PFX from PFX_BASE64 env var");
+    try {
+      p12Buffer = Buffer.from(process.env.PFX_BASE64, "base64");
+    } catch (error) {
+      console.error("Failed to decode PFX_BASE64:", error);
+    }
+  }
+
+  // No PFX available - return unsigned PDF
+  if (!p12Buffer) {
+    console.warn("No PFX certificate configured, returning unsigned PDF");
+    console.warn("Set either PFX_PATH or PFX_BASE64 environment variable");
     return pdfBytes;
   }
 
   try {
-    // Dynamic import for node-signpdf
-    const signpdfModule = await import("node-signpdf");
-    const signpdf = signpdfModule.default || signpdfModule;
+    // Import @signpdf packages (actively maintained replacement for node-signpdf)
+    const signpdfModule = await import("@signpdf/signpdf");
+    const { P12Signer } = await import("@signpdf/signer-p12");
+    
+    const signpdf = signpdfModule.default;
 
-    // Create signer from P12/PFX
-    const p12Buffer = fs.readFileSync(actualPfxPath);
+    // Create P12 signer with certificate
+    const signer = new P12Signer(p12Buffer, { passphrase: actualPassword });
+
+    // Sign the PDF
+    const signedPdf = await signpdf.sign(Buffer.from(pdfBytes), signer);
     
-    // node-signpdf v3 API
-    const signedPdf = await signpdf.sign(Buffer.from(pdfBytes), p12Buffer, {
-      passphrase: actualPassword,
-    });
-    
+    console.log("PDF signed successfully with @signpdf");
     return new Uint8Array(signedPdf);
   } catch (error) {
-    console.error("Error signing PDF:", error);
+    console.error("Error signing PDF with @signpdf:", error);
     // Return unsigned PDF if signing fails
     return pdfBytes;
   }
