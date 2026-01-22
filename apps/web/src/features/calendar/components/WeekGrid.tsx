@@ -7,8 +7,6 @@ import { cn } from "@/lib/utils";
 
 import type { CalendarEventDetail } from "../types";
 
-import "./WeekGrid.css";
-
 dayjs.extend(isoWeek);
 
 // Event with layout info for overlapping display
@@ -200,24 +198,47 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
   });
 
   return (
-    <div className={cn("week-grid", loading && "week-grid--loading")} role="none">
+    <div
+      className={cn(
+        "bg-content1 border-default-200 flex h-[min(100dvh-220px,800px)] flex-col overflow-hidden rounded-2xl border shadow-sm",
+        loading && "pointer-events-none opacity-50 grayscale-[0.3]",
+      )}
+      role="none"
+    >
       {/* Header row */}
       {/* biome-ignore lint/a11y/useSemanticElements: grid layout */}
-      <div className="week-grid__header" role="row" tabIndex={0}>
-        <div className="week-grid__time-header" />
+      <div
+        className="border-default-200 bg-content2/60 grid grid-cols-[52px_repeat(6,1fr)] border-b backdrop-blur-md"
+        role="row"
+        tabIndex={0}
+      >
+        <div className="border-default-200 border-r" />
         {days.map((day) => (
           // biome-ignore lint/a11y/useSemanticElements: grid layout
           <div
             aria-current={day.isToday ? "date" : undefined}
-            className={cn("week-grid__day-header", day.isToday && "week-grid__day-header--today")}
+            className={cn(
+              "border-default-200 flex flex-col items-center justify-center gap-1 border-r px-1 py-3 text-center last:border-r-0",
+              day.isToday && "bg-primary/20 border-t-4 border-primary relative",
+            )}
             key={day.key}
             role="columnheader"
             tabIndex={0}
           >
-            <abbr className="week-grid__day-name" title={day.fullDayName}>
+            <abbr
+              className="text-foreground-400 text-[0.65rem] font-bold uppercase tracking-wider"
+              title={day.fullDayName}
+            >
               {day.dayName}
             </abbr>
-            <time className="week-grid__day-number" dateTime={day.isoDate}>
+            <time
+              className={cn(
+                "text-foreground text-2xl font-extrabold leading-none",
+                day.isToday &&
+                  "bg-primary text-primary-content grid size-10 place-items-center rounded-full text-xl font-black shadow-lg shadow-primary/40",
+              )}
+              dateTime={day.isoDate}
+            >
               {day.dayNumber}
             </time>
           </div>
@@ -225,12 +246,17 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
       </div>
 
       {/* Time grid body */}
-      <div className="week-grid__body">
+      <div className="grid min-h-[400px] grid-cols-[52px_repeat(6,1fr)] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-default-200 hover:scrollbar-thumb-default-300">
         {/* Time axis */}
-        <div className="week-grid__time-axis">
+        <div className="border-default-200 bg-content2/40 border-r">
           {hours.map((hour) => (
-            <div className="week-grid__time-slot" key={hour}>
-              <span className="week-grid__time-label">{String(hour).padStart(2, "0")}:00</span>
+            <div
+              className="border-default-100 flex h-[52px] items-start justify-end border-b pr-2"
+              key={hour}
+            >
+              <span className="text-foreground-500 -translate-y-1/2 text-[0.7rem] font-medium tabular-nums">
+                {String(hour).padStart(2, "0")}:00
+              </span>
             </div>
           ))}
         </div>
@@ -238,16 +264,19 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
         {/* Day columns */}
         {days.map((day) => (
           <div
-            className={cn("week-grid__day-column", day.isToday && "week-grid__day-column--today")}
+            className={cn(
+              "border-default-100 relative min-h-full overflow-visible border-r last:border-r-0",
+              day.isToday && "bg-primary/5",
+            )}
             key={day.key}
           >
             {/* Hour grid lines */}
             {hours.map((hour) => (
-              <div className="week-grid__hour-cell" key={hour} />
+              <div className="border-default-200/50 h-[52px] border-b" key={hour} />
             ))}
 
             {/* Events */}
-            <div className="week-grid__events">
+            <div className="absolute inset-0 z-[5] isolate overflow-visible px-[3px]">
               {}
               {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy rendering */}
               {calculateEventLayout(eventsByDay[day.key] ?? []).map((event) => {
@@ -260,10 +289,6 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                 const durationMinutes = start && end ? end.diff(start, "minute") : 30;
 
                 // Display mode based on duration (prioritize showing TITLE, time is secondary)
-                // Minimal: just title (time shown via position/tooltip)
-                // Compact: time + title on one line
-                // Normal: time + title (multi-line)
-                // Detailed: time + title + amount
                 type DisplayMode = "compact" | "detailed" | "minimal" | "normal";
                 let displayMode: DisplayMode;
                 if (durationMinutes < 20) {
@@ -300,8 +325,16 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
 
                 return (
                   <button
-                    className={cn("week-grid__event", getCategoryClass(event.category))}
-                    data-mode={displayMode}
+                    className={cn(
+                      "absolute z-[1] flex min-h-[20px] flex-col justify-start gap-[1px] overflow-hidden break-words rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-transform hover:z-[100] hover:-translate-y-[1px] hover:scale-[1.02] hover:overflow-visible hover:py-1.5 hover:shadow-lg",
+                      getCategoryClass(event.category),
+                      // Display modes
+                      displayMode === "minimal" &&
+                        "items-center justify-center px-[0.3rem] py-[0.1rem]",
+                      displayMode === "compact" && "px-[0.35rem] py-[0.15rem]",
+                      displayMode === "normal" && "px-[0.4rem] py-[0.2rem]",
+                      displayMode === "detailed" && "px-[0.45rem] py-[0.25rem]",
+                    )}
                     key={event.eventId}
                     onClick={() => onEventClick?.(event)}
                     style={{
@@ -319,21 +352,44 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                         case "minimal":
                         case "normal": {
                           return (
-                            <span className="week-grid__event-row">
-                              <span className="week-grid__event-time">{timeStr}</span>
-                              <span className="week-grid__event-title">{title}</span>
+                            <span className="flex min-w-0 items-center gap-[0.3rem] overflow-hidden">
+                              <span
+                                className={cn(
+                                  "shrink-0 font-bold tabular-nums opacity-75",
+                                  displayMode === "minimal" && "hidden",
+                                  displayMode === "compact" && "text-[0.55rem]",
+                                  displayMode === "normal" && "text-[0.6rem]",
+                                )}
+                              >
+                                {timeStr}
+                              </span>
+                              <span
+                                className={cn(
+                                  "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-[1.25]",
+                                  displayMode === "minimal" &&
+                                    "line-clamp-1 whitespace-nowrap text-[0.55rem]",
+                                  displayMode === "compact" && "text-[0.55rem]",
+                                  displayMode === "normal" && "line-clamp-2 text-[0.6rem]",
+                                )}
+                              >
+                                {title}
+                              </span>
                             </span>
                           );
                         }
                         default: {
                           return (
                             <>
-                              <span className="week-grid__event-row">
-                                <span className="week-grid__event-time">{timeStr}</span>
-                                <span className="week-grid__event-title">{title}</span>
+                              <span className="flex min-w-0 items-center gap-[0.3rem] overflow-hidden">
+                                <span className="shrink-0 text-[0.65rem] font-bold tabular-nums opacity-75">
+                                  {timeStr}
+                                </span>
+                                <span className="line-clamp-2 text-[0.65rem] font-semibold leading-[1.25]">
+                                  {title}
+                                </span>
                               </span>
                               {event.amountExpected != null && (
-                                <span className="week-grid__event-amount">
+                                <span className="text-success-600 mt-auto overflow-hidden text-ellipsis whitespace-nowrap text-[0.6rem] font-bold">
                                   {currencyFormatter.format(event.amountExpected)}
                                 </span>
                               )}
@@ -463,14 +519,40 @@ function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] 
 
 // Get category color class
 function getCategoryClass(category: null | string | undefined): string {
-  if (!category) return "event--default";
+  const baseClasses = "border-l-3";
+  if (!category) return cn(baseClasses, "bg-content2 border-divider text-foreground");
+
   const cat = category.toLowerCase();
-  if (cat.includes("subcutáneo") || cat.includes("subcutaneo")) return "event--subcutaneous";
-  if (cat.includes("test") || cat.includes("examen") || cat.includes("exámenes"))
-    return "event--test";
-  if (cat.includes("inyección") || cat.includes("inyeccion")) return "event--injection";
-  if (cat.includes("mantención") || cat.includes("mantencion")) return "event--subcutaneous";
-  return "event--default";
+
+  if (cat.includes("subcutáneo") || cat.includes("subcutaneo")) {
+    return cn(
+      baseClasses,
+      "bg-sky-100 text-sky-900 border-sky-500 dark:bg-sky-900/30 dark:text-sky-100",
+    );
+  }
+
+  if (cat.includes("test") || cat.includes("examen") || cat.includes("exámenes")) {
+    return cn(
+      baseClasses,
+      "bg-emerald-100 text-emerald-900 border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-100",
+    );
+  }
+
+  if (cat.includes("inyección") || cat.includes("inyeccion")) {
+    return cn(
+      baseClasses,
+      "bg-amber-100 text-amber-900 border-amber-500 dark:bg-amber-900/30 dark:text-amber-100",
+    );
+  }
+
+  if (cat.includes("mantención") || cat.includes("mantencion")) {
+    return cn(
+      baseClasses,
+      "bg-sky-100 text-sky-900 border-sky-500 dark:bg-sky-900/30 dark:text-sky-100",
+    );
+  }
+
+  return cn(baseClasses, "bg-content2 border-divider text-foreground");
 }
 
 // Current time indicator - Live Updating
@@ -500,12 +582,12 @@ function NowIndicator({ endHour, startHour }: Readonly<{ endHour: number; startH
 
   return (
     <div
-      className="week-grid__now-indicator"
+      className="absolute inset-x-0 z-20 flex items-center pointer-events-none"
       style={{ top: `${position}%` }}
       title={`Hora actual: ${now.format("HH:mm")}`}
     >
-      <div className="week-grid__now-dot" />
-      <div className="week-grid__now-line" />
+      <div className="bg-danger shadow-danger/50 -ml-[5px] size-2.5 animate-pulse rounded-full shadow-[0_0_8px]" />
+      <div className="bg-danger h-0.5 flex-1" />
     </div>
   );
 }
