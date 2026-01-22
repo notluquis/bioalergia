@@ -58,7 +58,7 @@ export function MultiSelectFilter({
   return (
     <div className={className}>
       {label && (
-        <span className="mb-1.5 block text-xs font-semibold tracking-wider text-base-content/70 uppercase">
+        <span className="mb-1.5 block text-xs font-semibold tracking-wider text-foreground-600 uppercase">
           {label}
         </span>
       )}
@@ -69,7 +69,7 @@ export function MultiSelectFilter({
             variant="ghost"
           >
             <span className="truncate font-medium">{displayText}</span>
-            <ChevronDown className="h-4 w-4 shrink-0 text-base-content/50" />
+            <ChevronDown className="h-4 w-4 shrink-0 text-foreground-500" />
           </Button>
         </DropdownTrigger>
         <DropdownPopover>

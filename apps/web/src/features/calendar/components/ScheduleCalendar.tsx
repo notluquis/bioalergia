@@ -47,7 +47,7 @@ export function ScheduleCalendar({
         weekStart={effectiveWeekStart}
       />
 
-      {loading && <p className="text-base-content/50 text-center text-xs">Actualizando eventos…</p>}
+      {loading && <p className="text-foreground-500 text-center text-xs">Actualizando eventos…</p>}
 
       {/* Event Detail Panel - Uses same card as Daily view */}
       {selectedEvent && (

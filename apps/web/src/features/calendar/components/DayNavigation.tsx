@@ -102,7 +102,7 @@ export function DayNavigation({
                 <span
                   className={cn(
                     "text-[10px] tracking-wider uppercase",
-                    isSelected ? "text-primary-content/80" : "text-base-content/50",
+                    isSelected ? "text-primary-foreground/90" : "text-foreground-500",
                   )}
                 >
                   {date.format("ddd")}
