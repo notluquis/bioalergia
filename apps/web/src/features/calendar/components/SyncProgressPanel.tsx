@@ -1,6 +1,5 @@
-import { Spinner } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
-import Button from "@/components/ui/Button";
 import type { CalendarSyncStep } from "@/features/calendar/types";
 import { numberFormatter } from "@/lib/format";
 
@@ -58,18 +57,26 @@ export function SyncProgressPanel({
     pending: "Pendiente",
   };
 
-  const badgeClass: Record<SyncProgressStatus, string> = {
-    completed: "bg-secondary/20 text-secondary",
-    error: "bg-error/20 text-error",
-    in_progress: "bg-primary/15 text-primary",
-    pending: "bg-base-200 text-base-content/70",
+  const getStatusColor = (
+    status: SyncProgressStatus,
+  ): "accent" | "danger" | "warning" | "default" => {
+    switch (status) {
+      case "completed":
+        return "accent";
+      case "error":
+        return "danger";
+      case "in_progress":
+        return "warning";
+      default:
+        return "default";
+    }
   };
 
   const dotClass: Record<SyncProgressStatus, string> = {
     completed: "bg-secondary",
-    error: "bg-error",
+    error: "bg-danger",
     in_progress: "bg-primary animate-pulse",
-    pending: "bg-base-300",
+    pending: "bg-default-300",
   };
 
   const detailLabels: Record<string, string> = {
@@ -99,7 +106,7 @@ export function SyncProgressPanel({
   };
 
   return (
-    <section className="surface-elevated rounded-2xl p-5 shadow-md">
+    <Card className="rounded-2xl shadow-md p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="bg-base-200/60 rounded-xl px-3 py-2">
@@ -123,24 +130,23 @@ export function SyncProgressPanel({
             <span className="text-error text-xs font-semibold">Revisa los detalles abajo.</span>
           )}
           {!syncing && syncDurationMs != null && !syncError && (
-            <span className="bg-base-200 text-base-content/70 rounded-full px-3 py-1 text-xs">
+            <Chip size="sm" variant="soft" className="text-xs">
               Duración total: {formatDuration(syncDurationMs)}
-            </span>
+            </Chip>
           )}
         </div>
         <div className="flex gap-2">
-          <span className="bg-base-200/80 text-base-content/70 rounded-full px-3 py-1 text-xs">
+          <Chip size="sm" variant="soft" className="text-xs text-base-content/70">
             {lastSyncInfo && !syncing && !syncError
               ? dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY · HH:mm")
               : dayjs().format("DD MMM YYYY · HH:mm")}
-          </span>
+          </Chip>
           {showSyncButton && onSyncNow && (
             <Button
-              disabled={syncing}
-              onClick={onSyncNow}
+              isDisabled={syncing}
+              onPress={onSyncNow}
               size="sm"
-              type="button"
-              variant="secondary"
+              className="bg-secondary text-white font-medium"
             >
               {syncing ? "Sincronizando..." : "Sincronizar ahora"}
             </Button>
@@ -164,7 +170,7 @@ export function SyncProgressPanel({
         </div>
       )}
 
-      {syncError && <p className="text-error mt-3 text-xs">{syncError}</p>}
+      {syncError && <p className="text-danger mt-3 text-xs">{syncError}</p>}
 
       {syncProgress.length > 0 && (
         <ul className="mt-4 space-y-3">
@@ -182,11 +188,14 @@ export function SyncProgressPanel({
                     <span className={`h-2.5 w-2.5 rounded-full ${dotClass[step.status]}`} />
                     <p className="text-base-content text-sm font-semibold">{step.label}</p>
                   </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeClass[step.status]}`}
+                  <Chip
+                    size="sm"
+                    variant="soft"
+                    color={getStatusColor(step.status)}
+                    className="text-xs font-semibold"
                   >
                     {status}
-                  </span>
+                  </Chip>
                 </div>
                 {(details || duration) && (
                   <p className="text-base-content/60 mt-2 text-xs">
@@ -200,6 +209,6 @@ export function SyncProgressPanel({
           })}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }
