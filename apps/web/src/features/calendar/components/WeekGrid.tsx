@@ -246,12 +246,12 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
       </div>
 
       {/* Time grid body */}
-      <div className="grid min-h-[400px] grid-cols-[52px_repeat(6,1fr)] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-default-200 hover:scrollbar-thumb-default-300">
+      <div className="grid min-h-100 grid-cols-[52px_repeat(6,1fr)] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-default-200 hover:scrollbar-thumb-default-300">
         {/* Time axis */}
         <div className="border-default-200 bg-content2/40 border-r">
           {hours.map((hour) => (
             <div
-              className="border-default-100 flex h-[52px] items-start justify-end border-b pr-2"
+              className="border-default-100 flex h-13 items-start justify-end border-b pr-2"
               key={hour}
             >
               <span className="text-foreground-500 -translate-y-1/2 text-[0.7rem] font-medium tabular-nums">
@@ -272,11 +272,11 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
           >
             {/* Hour grid lines */}
             {hours.map((hour) => (
-              <div className="border-default-200/50 h-[52px] border-b" key={hour} />
+              <div className="border-default-200/50 h-13 border-b" key={hour} />
             ))}
 
             {/* Events */}
-            <div className="absolute inset-0 z-[5] isolate overflow-visible px-[3px]">
+            <div className="absolute inset-0 z-5 isolate overflow-visible px-0.5">
               {}
               {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy rendering */}
               {calculateEventLayout(eventsByDay[day.key] ?? []).map((event) => {
@@ -326,14 +326,14 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                 return (
                   <button
                     className={cn(
-                      "absolute z-[1] flex min-h-[20px] flex-col justify-start gap-[1px] overflow-hidden break-words rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-transform hover:z-[100] hover:-translate-y-[1px] hover:scale-[1.02] hover:overflow-visible hover:py-1.5 hover:shadow-lg",
+                      "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden break-words rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-transform hover:z-100 hover:-translate-y-px hover:scale-[1.02] hover:overflow-visible hover:py-1.5 hover:shadow-lg",
                       getCategoryClass(event.category),
                       // Display modes
                       displayMode === "minimal" &&
                         "items-center justify-center px-[0.3rem] py-[0.1rem]",
                       displayMode === "compact" && "px-[0.35rem] py-[0.15rem]",
                       displayMode === "normal" && "px-[0.4rem] py-[0.2rem]",
-                      displayMode === "detailed" && "px-[0.45rem] py-[0.25rem]",
+                      displayMode === "detailed" && "px-[0.45rem] py-1",
                     )}
                     key={event.eventId}
                     onClick={() => onEventClick?.(event)}
@@ -365,7 +365,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                               </span>
                               <span
                                 className={cn(
-                                  "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-[1.25]",
+                                  "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight",
                                   displayMode === "minimal" &&
                                     "line-clamp-1 whitespace-nowrap text-[0.55rem]",
                                   displayMode === "compact" && "text-[0.55rem]",
@@ -384,7 +384,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                                 <span className="shrink-0 text-[0.65rem] font-bold tabular-nums opacity-75">
                                   {timeStr}
                                 </span>
-                                <span className="line-clamp-2 text-[0.65rem] font-semibold leading-[1.25]">
+                                <span className="line-clamp-2 text-[0.65rem] font-semibold leading-tight">
                                   {title}
                                 </span>
                               </span>
@@ -586,7 +586,7 @@ function NowIndicator({ endHour, startHour }: Readonly<{ endHour: number; startH
       style={{ top: `${position}%` }}
       title={`Hora actual: ${now.format("HH:mm")}`}
     >
-      <div className="bg-danger shadow-danger/50 -ml-[5px] size-2.5 animate-pulse rounded-full shadow-[0_0_8px]" />
+      <div className="bg-danger shadow-danger/50 -ml-1.25 size-2.5 animate-pulse rounded-full shadow-[0_0_8px]" />
       <div className="bg-danger h-0.5 flex-1" />
     </div>
   );

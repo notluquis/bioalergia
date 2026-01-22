@@ -10,6 +10,81 @@ interface ChangeDetail {
   summary?: string;
 }
 
+const ACTION_CONFIG: Record<
+  string,
+  {
+    label: string;
+    color: "success" | "primary" | "danger" | "warning" | "default";
+    icon: React.ElementType;
+  }
+> = {
+  created: { label: "Insertados", color: "success", icon: FileCheck },
+  updated: { label: "Modificados", color: "primary", icon: FileDiff },
+  deleted: { label: "Eliminados", color: "danger", icon: FileX },
+  skipped: { label: "Omitidos", color: "warning", icon: FileMinus },
+  unknown: { label: "Otros", color: "default", icon: FileQuestion },
+};
+
+function ChangeGroup({ action, items }: Readonly<{ action: string; items: ChangeDetail[] }>) {
+  const cfg = ACTION_CONFIG[action] || ACTION_CONFIG.unknown;
+  if (!cfg) return null;
+  const Icon = cfg.icon;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            "text-xs font-bold uppercase tracking-wider",
+            cfg.color === "success" && "text-success",
+            cfg.color === "primary" && "text-info",
+            cfg.color === "danger" && "text-danger",
+            cfg.color === "warning" && "text-warning",
+            cfg.color === "default" && "text-foreground-500",
+          )}
+        >
+          {cfg.label}
+        </span>
+        <div className="bg-default-100 h-px flex-1" />
+      </div>
+      <div className="space-y-4">
+        {items.map((item, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: display list only
+          <div key={i} className="flex gap-3">
+            <div
+              className={cn(
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-content1 shadow-sm",
+                cfg.color === "success" && "border-success-200 text-success",
+                cfg.color === "primary" && "border-primary-200 text-info",
+                cfg.color === "danger" && "border-danger-200 text-danger",
+                cfg.color === "warning" && "border-warning-200 text-warning",
+                cfg.color === "default" && "border-default-200 text-foreground-500",
+              )}
+            >
+              <Icon className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1 space-y-1 py-1">
+              <p className="text-foreground-600 text-sm leading-relaxed">{item.summary}</p>
+              {item.fields && item.fields.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {item.fields.map((field) => (
+                    <span
+                      key={field}
+                      className="bg-default-100 text-foreground-500 rounded px-1.5 py-0.5 text-[10px] font-medium"
+                    >
+                      {field}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
   if (!data) return null;
 
@@ -62,21 +137,6 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
     grouped[action].push(item);
   }
 
-  const config: Record<
-    string,
-    {
-      label: string;
-      color: "success" | "primary" | "danger" | "warning" | "default";
-      icon: React.ElementType;
-    }
-  > = {
-    created: { label: "Insertados", color: "success", icon: FileCheck },
-    updated: { label: "Modificados", color: "primary", icon: FileDiff },
-    deleted: { label: "Eliminados", color: "danger", icon: FileX },
-    skipped: { label: "Omitidos", color: "warning", icon: FileMinus },
-    unknown: { label: "Otros", color: "default", icon: FileQuestion },
-  };
-
   return (
     <Accordion
       className="bg-content1/50 border-default-200 overflow-hidden rounded-xl border p-0 shadow-none transition-all duration-200"
@@ -87,73 +147,16 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
         <Accordion.Heading>
           <Accordion.Trigger className="hover:bg-default-100/50 px-4 py-3 transition-colors data-[hover=true]:bg-default-100/50">
             <span className="font-medium text-sm">Detalle de Cambios</span>
-            <Accordion.Indicator className="text-base-content/40" />
+            <Accordion.Indicator className="text-foreground-400" />
           </Accordion.Trigger>
         </Accordion.Heading>
         <Accordion.Panel className="pb-0">
           <Accordion.Body className="p-0">
             <div className="border-default-200 border-t bg-content1">
               <div className="flex flex-col gap-6 p-4">
-                {Object.entries(grouped).map(([action, items]) => {
-                  const cfg = config[action] || config.unknown;
-                  if (!cfg) return null;
-                  const Icon = cfg.icon;
-
-                  return (
-                    <div key={action} className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "text-xs font-bold uppercase tracking-wider",
-                            cfg.color === "success" && "text-success",
-                            cfg.color === "primary" && "text-info",
-                            cfg.color === "danger" && "text-danger",
-                            cfg.color === "warning" && "text-warning",
-                            cfg.color === "default" && "text-base-content/60",
-                          )}
-                        >
-                          {cfg.label}
-                        </span>
-                        <div className="bg-default-100 h-px flex-1" />
-                      </div>
-                      <div className="space-y-4">
-                        {items.map((item, i) => (
-                          <div key={i} className="flex gap-3">
-                            <div
-                              className={cn(
-                                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-content1 shadow-sm",
-                                cfg.color === "success" && "border-success/20 text-success",
-                                cfg.color === "primary" && "border-info/20 text-info",
-                                cfg.color === "danger" && "border-danger/20 text-danger",
-                                cfg.color === "warning" && "border-warning/20 text-warning",
-                                cfg.color === "default" && "border-base-200 text-base-content/50",
-                              )}
-                            >
-                              <Icon className="h-4 w-4" />
-                            </div>
-                            <div className="min-w-0 flex-1 space-y-1 py-1">
-                              <p className="text-base-content/80 text-sm leading-relaxed">
-                                {item.summary}
-                              </p>
-                              {item.fields && item.fields.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 pt-1">
-                                  {item.fields.map((field) => (
-                                    <span
-                                      key={field}
-                                      className="bg-default-100 text-foreground-500 rounded px-1.5 py-0.5 text-[10px] font-medium"
-                                    >
-                                      {field}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+                {Object.entries(grouped).map(([action, items]) => (
+                  <ChangeGroup key={action} action={action} items={items} />
+                ))}
               </div>
             </div>
           </Accordion.Body>
