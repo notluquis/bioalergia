@@ -1,4 +1,5 @@
-import { Chip, ListBox, Select, Spinner } from "@heroui/react";
+import { Chip, DateField, DateInputGroup, Label, ListBox, Select, Spinner } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -18,7 +19,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+
 import StatCard from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { fetchEmployees } from "@/features/hr/employees/api";
@@ -297,32 +298,32 @@ export default function ReportsPage() {
               {viewMode === "range" && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="form-control">
-                    <label className="label text-sm font-medium" htmlFor="start-date">
-                      Desde
-                    </label>
-                    <Input
+                    <DateField
                       className="w-full"
-                      id="start-date"
-                      onChange={(e) => {
-                        setStartDate(e.target.value);
-                      }}
-                      type="date"
-                      value={startDate}
-                    />
+                      onChange={(val) => setStartDate(val ? val.toString() : "")}
+                      value={startDate ? parseDate(startDate) : null}
+                    >
+                      <Label>Desde</Label>
+                      <DateInputGroup>
+                        <DateInputGroup.Input>
+                          {(segment) => <DateInputGroup.Segment segment={segment} />}
+                        </DateInputGroup.Input>
+                      </DateInputGroup>
+                    </DateField>
                   </div>
                   <div className="form-control">
-                    <label className="label text-sm font-medium" htmlFor="end-date">
-                      Hasta
-                    </label>
-                    <Input
+                    <DateField
                       className="w-full"
-                      id="end-date"
-                      onChange={(e) => {
-                        setEndDate(e.target.value);
-                      }}
-                      type="date"
-                      value={endDate}
-                    />
+                      onChange={(val) => setEndDate(val ? val.toString() : "")}
+                      value={endDate ? parseDate(endDate) : null}
+                    >
+                      <Label>Hasta</Label>
+                      <DateInputGroup>
+                        <DateInputGroup.Input>
+                          {(segment) => <DateInputGroup.Segment segment={segment} />}
+                        </DateInputGroup.Input>
+                      </DateInputGroup>
+                    </DateField>
                   </div>
                 </div>
               )}

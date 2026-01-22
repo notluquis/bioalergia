@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import TimeInput from "@/components/ui/TimeInput";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 import type { BulkRow } from "../types";
 
@@ -121,19 +122,20 @@ const OvertimeCell = ({
   if (!row.overtime?.trim() && !isOvertimeOpen) {
     if (canEditRow) {
       return (
-        <Button
-          aria-label="Agregar horas extra"
-          className="border-base-300 bg-base-200 text-primary hover:bg-base-200 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
-          onClick={() => {
-            meta.onOpenOvertime(row.date);
-          }}
-          size="sm"
-          title="Agregar horas extra"
-          type="button"
-          variant="secondary"
-        >
-          +
-        </Button>
+        <Tooltip content="Agregar horas extra">
+          <Button
+            aria-label="Agregar horas extra"
+            className="border-base-300 bg-base-200 text-primary hover:bg-base-200 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
+            onClick={() => {
+              meta.onOpenOvertime(row.date);
+            }}
+            size="sm"
+            type="button"
+            variant="secondary"
+          >
+            +
+          </Button>
+        </Tooltip>
       );
     }
     return <span className="text-base-content/50">—</span>;

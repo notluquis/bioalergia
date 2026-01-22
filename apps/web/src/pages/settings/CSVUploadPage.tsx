@@ -11,6 +11,7 @@ import Button from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import FileInput from "@/components/ui/FileInput";
 import { Select, SelectItem } from "@/components/ui/Select";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { type CsvImportPayload, importCsvData, previewCsvImport } from "@/features/data-import/api";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -590,9 +591,9 @@ export default function CSVUploadPage() {
         <div className="flex items-center gap-1.5 font-medium">
           {row.original.name}
           {row.original.required && (
-            <span className="text-error text-xs" title="Requerido">
-              *
-            </span>
+            <Tooltip content="Requerido">
+              <span className="text-error text-xs">*</span>
+            </Tooltip>
           )}
         </div>
       ),
