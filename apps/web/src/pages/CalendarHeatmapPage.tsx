@@ -155,15 +155,6 @@ function CalendarHeatmapPage() {
       return max;
     })();
 
-  const handleToggle = (key: "categories", value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: prev[key].includes(value)
-        ? prev[key].filter((item) => item !== value)
-        : [...prev[key], value],
-    }));
-  };
-
   const handleApply = () => {
     setAppliedFilters(filters);
   };
@@ -249,8 +240,8 @@ function CalendarHeatmapPage() {
                 />
                 <MultiSelectFilter
                   label={tc("filters.categories")}
-                  onToggle={(value) => {
-                    handleToggle("categories", value);
+                  onChange={(values) => {
+                    setFilters((prev) => ({ ...prev, categories: values }));
                   }}
                   options={availableCategories}
                   placeholder={tc("filters.allCategories")}

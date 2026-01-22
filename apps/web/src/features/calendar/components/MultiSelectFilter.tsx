@@ -1,34 +1,34 @@
+import { Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/react";
 import { ChevronDown } from "lucide-react";
-
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu";
 
 export interface MultiSelectOption {
   label: string;
   value: string;
 }
 
-export function MultiSelectFilter({
-  label,
-  onToggle,
-  options,
-  placeholder,
-  selected,
-}: Readonly<{
+interface MultiSelectFilterProps {
+  className?: string;
   label: string;
-  onToggle: (value: string) => void;
+  onChange: (values: string[]) => void;
   options: MultiSelectOption[];
-  placeholder: string;
+  placeholder?: string;
   selected: string[];
-}>) {
-  // React Compiler auto-memoizes derived values
+}
+
+export function MultiSelectFilter({
+  className,
+  label,
+  onChange,
+  options,
+  placeholder = "Seleccionar",
+  selected,
+}: Readonly<MultiSelectFilterProps>) {
+  const selectedKeys = new Set(selected);
+
+  // Derived display text logic
   const getDisplayText = () => {
     if (selected.length === 0) {
-      return { displayText: placeholder, fullText: placeholder };
+      return placeholder;
     }
 
     const matches = options
@@ -36,88 +36,55 @@ export function MultiSelectFilter({
       .map((option) => option.label.split(" · ")[0]);
 
     if (matches.length === 0) {
-      return { displayText: placeholder, fullText: placeholder };
+      return placeholder;
     }
 
-    const preview = matches
-      .slice(0, 2)
-      .map((value) => truncateLabel(value ?? ""))
-      .join(", ");
-    const full = matches.join(", ");
-
+    const preview = matches.slice(0, 2).join(", ");
     if (matches.length > 2) {
-      return { displayText: `${preview} +${matches.length - 2}`, fullText: full };
+      return `${preview} +${matches.length - 2}`;
     }
-
-    return { displayText: preview || placeholder, fullText: full || placeholder };
+    return preview;
   };
 
-  const { displayText, fullText } = getDisplayText();
-
-  const labelClasses = "label pt-0 pb-2";
-  const labelTextClasses =
-    "label-text text-xs font-semibold uppercase tracking-wider text-base-content/70 ml-1";
+  const displayText = getDisplayText();
 
   return (
-    <div className="form-control w-full">
-      <div className={labelClasses}>
-        <span className={labelTextClasses}>{label}</span>
-      </div>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            className="input input-bordered bg-base-100/50 text-base-content hover:bg-base-100 focus:bg-base-100 focus:ring-primary/20 focus:border-primary ease-apple flex h-10 w-full cursor-pointer items-center justify-between gap-3 text-sm transition-all duration-200 select-none focus:ring-2 focus:outline-none"
-            title={fullText}
-            type="button"
+    <div className={className}>
+      {label && (
+        <span className="mb-1.5 block text-xs font-semibold tracking-wider text-base-content/70 uppercase">
+          {label}
+        </span>
+      )}
+      <Dropdown>
+        <DropdownTrigger>
+          <Button
+            className="flex h-10 w-full min-w-0 items-center justify-between rounded-md border border-base-content/20 bg-base-100/50 px-3 py-2 text-sm text-base-content/90 hover:bg-base-100 focus:bg-base-100"
+            variant="ghost"
           >
-            <span className="text-base-content/90 truncate font-medium">{displayText}</span>
-            <ChevronDown className="text-base-content/50 h-4 w-4 shrink-0 transition-opacity" />
-          </button>
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent
-          align="start"
-          className="w-[--radix-dropdown-menu-trigger-width] min-w-50"
+            <span className="truncate font-medium">{displayText}</span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-base-content/50" />
+          </Button>
+        </DropdownTrigger>
+        <DropdownMenu
+          aria-label={label}
+          selectedKeys={selectedKeys}
+          selectionMode="multiple"
+          onSelectionChange={(keys) => {
+            if (keys === "all") {
+              onChange(options.map((o) => o.value));
+            } else {
+              onChange(Array.from(keys) as string[]);
+            }
+          }}
+          className="max-h-60 overflow-y-auto"
         >
-          <div className="max-h-60 overflow-y-auto p-1">
-            {options.length === 0 ? (
-              <div className="text-base-content/50 px-2 py-2 text-xs">Sin datos disponibles</div>
-            ) : (
-              options.map((option) => {
-                const [namePart = "", metaPart] = option.label.split(" · ");
-                const truncatedName = truncateLabel(namePart);
-                return (
-                  <DropdownMenuCheckboxItem
-                    checked={selected.includes(option.value)}
-                    key={option.value}
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      onToggle(option.value);
-                    }}
-                  >
-                    <span className="flex flex-col text-left">
-                      <span className="text-base-content truncate font-medium" title={namePart}>
-                        {truncatedName || placeholder}
-                      </span>
-                      {metaPart && (
-                        <span className="text-base-content/50 text-xs" title={metaPart}>
-                          · {metaPart}
-                        </span>
-                      )}
-                    </span>
-                  </DropdownMenuCheckboxItem>
-                );
-              })
-            )}
-          </div>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          {options.map((option) => (
+            <DropdownItem key={option.value} textValue={option.label.split(" · ")[0]}>
+              {option.label}
+            </DropdownItem>
+          ))}
+        </DropdownMenu>
+      </Dropdown>
     </div>
   );
-}
-
-function truncateLabel(text: string, max = 32) {
-  if (!text) return "";
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
