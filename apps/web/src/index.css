@@ -605,13 +605,13 @@ html[data-theme="bioalergia-dark"] .layout-shell {
 }
 
 .badge-soft-success {
-  @apply bg-success/15 text-success border-transparent;
+  @apply bg-success-soft text-success border-transparent;
 }
 .badge-soft-warning {
-  @apply bg-warning/15 text-warning-foreground border-transparent;
+  @apply bg-warning-soft text-warning-foreground border-transparent;
 }
 .badge-soft-error {
-  @apply bg-danger/15 text-danger border-transparent;
+  @apply bg-danger-soft text-danger border-transparent;
 }
 .badge-soft-info {
   @apply bg-info/15 text-info border-transparent;
