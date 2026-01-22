@@ -61,7 +61,7 @@ export function ClassificationRow({
         </div>
         <div className="text-base-content/60 flex flex-col items-end gap-2 text-xs">
           {event.eventType && (
-            <span className="bg-base-200 text-base-content rounded-full px-2 py-1 font-semibold">
+            <span className="bg-default-100 text-foreground rounded-full px-2 py-1 font-semibold">
               {event.eventType}
             </span>
           )}
@@ -74,7 +74,7 @@ export function ClassificationRow({
       </CardHeader>
       <CardContent className="space-y-4 p-5 pt-0">
         {description && (
-          <div className="bg-base-200 text-base-content rounded-xl p-3 shadow-inner">
+          <div className="bg-default-100 text-foreground rounded-xl p-3 shadow-inner">
             <span className="text-base-content mb-1 block text-xs font-semibold">Descripción:</span>
             <FormattedEventDescription text={description} />
           </div>

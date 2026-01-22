@@ -44,11 +44,11 @@ export function DayNavigation({
         {/* Right side: optional slot + navigation buttons */}
         <div className="flex items-center gap-2">
           {rightSlot}
-          <div className="bg-base-200 flex gap-0.5 rounded-lg p-1">
+          <div className="bg-default-100 flex gap-0.5 rounded-lg p-1">
             <button
               type="button"
               aria-label="Día anterior"
-              className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+              className="hover:bg-default-200 text-foreground-500 hover:text-primary rounded-md p-1.5 transition-colors"
               onClick={handlePrev}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -56,7 +56,7 @@ export function DayNavigation({
 
             <button
               type="button"
-              className="hover:bg-base-100 rounded-md px-2 py-1 text-xs font-semibold uppercase transition-colors"
+              className="hover:bg-default-200 rounded-md px-2 py-1 text-xs font-semibold uppercase transition-colors"
               onClick={handleToday}
             >
               Hoy
@@ -65,7 +65,7 @@ export function DayNavigation({
             <button
               type="button"
               aria-label="Día siguiente"
-              className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+              className="hover:bg-default-200 text-foreground-500 hover:text-primary rounded-md p-1.5 transition-colors"
               onClick={handleNext}
             >
               <ChevronRight className="h-4 w-4" />
@@ -76,7 +76,7 @@ export function DayNavigation({
 
       <div className="relative">
         {/* Day Strip */}
-        <div className="bg-base-100 border-base-200 no-scrollbar flex items-center justify-between overflow-x-auto rounded-xl border p-1 shadow-sm">
+        <div className="bg-content1 border-default-200 no-scrollbar flex items-center justify-between overflow-x-auto rounded-xl border p-1 shadow-sm">
           {days.map((date) => {
             const isSelected = date.isSame(current, "day");
             const isToday = date.isSame(today, "day");
@@ -88,8 +88,8 @@ export function DayNavigation({
                   "relative mx-0.5 flex min-w-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 transition-all duration-200",
                   isSelected
                     ? "bg-primary text-primary-content z-10 scale-105 font-semibold shadow-md"
-                    : "hover:bg-base-200/50 text-base-content/60",
-                  isToday && !isSelected && "bg-base-200 text-base-content font-medium",
+                    : "hover:bg-default-100 text-foreground-500",
+                  isToday && !isSelected && "bg-default-100 text-foreground font-medium",
                 )}
                 key={date.toString()}
                 onClick={() => {

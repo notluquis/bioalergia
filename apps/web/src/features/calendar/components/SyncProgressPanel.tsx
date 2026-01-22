@@ -109,7 +109,7 @@ export function SyncProgressPanel({
     <Card className="rounded-2xl shadow-md p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="bg-base-200/60 rounded-xl px-3 py-2">
+          <div className="bg-default-100/60 rounded-xl px-3 py-2">
             <p className="text-base-content text-sm font-semibold">
               {(() => {
                 if (syncError) return "Error al sincronizar";
@@ -180,7 +180,7 @@ export function SyncProgressPanel({
             const duration = formatDuration(step.durationMs);
             return (
               <li
-                className="border-base-300/60 bg-base-100/70 rounded-2xl border px-4 py-3"
+                className="border-default-200/60 bg-content1/70 rounded-2xl border px-4 py-3"
                 key={step.id}
               >
                 <div className="flex items-center justify-between gap-3">

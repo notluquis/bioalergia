@@ -65,7 +65,7 @@ export function MultiSelectFilter({
       <Dropdown>
         <DropdownTrigger>
           <Button
-            className="flex h-10 w-full min-w-0 items-center justify-between rounded-md border border-base-content/20 bg-base-100/50 px-3 py-2 text-sm text-base-content/90 hover:bg-base-100 focus:bg-base-100"
+            className="flex h-10 w-full min-w-0 items-center justify-between rounded-md border border-default-200 bg-content1/50 px-3 py-2 text-sm text-foreground hover:bg-content1 focus:bg-content1"
             variant="ghost"
           >
             <span className="truncate font-medium">{displayText}</span>
@@ -84,7 +84,7 @@ export function MultiSelectFilter({
                 onChange(Array.from(keys) as string[]);
               }
             }}
-            className="max-h-60 overflow-y-auto w-[var(--radix-dropdown-menu-trigger-width)]"
+            className="max-h-60 overflow-y-auto w-(--radix-dropdown-menu-trigger-width)"
           >
             {options.map((option) => (
               <DropdownItem key={option.value} textValue={option.label.split(" · ")[0]}>
