@@ -38,6 +38,7 @@ import { suppliesRoutes } from "./routes/supplies";
 import timesheetRoutes from "./routes/timesheets";
 import transactionRoutes from "./routes/transactions";
 import { userRoutes } from "./routes/users";
+import certificatesRoutes from "./modules/certificates/index.js";
 
 const app = new Hono();
 
@@ -151,6 +152,9 @@ app.route("/api/personal-finance", personalFinanceRoutes);
 
 // Doctoralia integration routes
 app.route("/api/doctoralia", doctoraliaRoutes);
+
+// Medical certificates (PDF generation with digital signature)
+app.route("/api/certificates", certificatesRoutes);
 
 // ZenStack Query-as-a-Service (auto CRUD for all models)
 // Frontend uses /api/model/* (via QuerySettingsProvider in main.tsx)
