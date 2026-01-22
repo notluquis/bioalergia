@@ -24,6 +24,7 @@ import { Route as AuthedServicesRouteImport } from "./routes/_authed/services"
 import { Route as AuthedOperationsRouteImport } from "./routes/_authed/operations"
 import { Route as AuthedHrRouteImport } from "./routes/_authed/hr"
 import { Route as AuthedFinanzasRouteImport } from "./routes/_authed/finanzas"
+import { Route as AuthedCertificatesRouteImport } from "./routes/_authed/certificates"
 import { Route as AuthedCalendarRouteImport } from "./routes/_authed/calendar"
 import { Route as AuthedAccountRouteImport } from "./routes/_authed/account"
 import { Route as AuthedSettingsIndexRouteImport } from "./routes/_authed/settings/index"
@@ -58,6 +59,7 @@ import { Route as AuthedFinanzasDailyRouteImport } from "./routes/_authed/finanz
 import { Route as AuthedFinanzasCounterpartsRouteImport } from "./routes/_authed/finanzas/counterparts"
 import { Route as AuthedFinanzasConciliacionesRouteImport } from "./routes/_authed/finanzas/conciliaciones"
 import { Route as AuthedDevRoutesAuditRouteImport } from "./routes/_authed/dev/routes-audit"
+import { Route as AuthedCertificatesMedicalRouteImport } from "./routes/_authed/certificates/medical"
 import { Route as AuthedCalendarSyncHistoryRouteImport } from "./routes/_authed/calendar/sync-history"
 import { Route as AuthedCalendarScheduleRouteImport } from "./routes/_authed/calendar/schedule"
 import { Route as AuthedCalendarHeatmapRouteImport } from "./routes/_authed/calendar/heatmap"
@@ -110,6 +112,11 @@ const AuthedHrRoute = AuthedHrRouteImport.update({
 const AuthedFinanzasRoute = AuthedFinanzasRouteImport.update({
   id: "/finanzas",
   path: "/finanzas",
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCertificatesRoute = AuthedCertificatesRouteImport.update({
+  id: "/certificates",
+  path: "/certificates",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedCalendarRoute = AuthedCalendarRouteImport.update({
@@ -293,6 +300,12 @@ const AuthedDevRoutesAuditRoute = AuthedDevRoutesAuditRouteImport.update({
   path: "/dev/routes-audit",
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedCertificatesMedicalRoute =
+  AuthedCertificatesMedicalRouteImport.update({
+    id: "/medical",
+    path: "/medical",
+    getParentRoute: () => AuthedCertificatesRoute,
+  } as any)
 const AuthedCalendarSyncHistoryRoute =
   AuthedCalendarSyncHistoryRouteImport.update({
     id: "/sync-history",
@@ -346,6 +359,7 @@ export interface FileRoutesByFullPath {
   "/onboarding": typeof OnboardingRoute
   "/account": typeof AuthedAccountRoute
   "/calendar": typeof AuthedCalendarRouteWithChildren
+  "/certificates": typeof AuthedCertificatesRouteWithChildren
   "/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/hr": typeof AuthedHrRouteWithChildren
   "/operations": typeof AuthedOperationsRouteWithChildren
@@ -357,6 +371,7 @@ export interface FileRoutesByFullPath {
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute
   "/calendar/schedule": typeof AuthedCalendarScheduleRoute
   "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
+  "/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
@@ -399,6 +414,7 @@ export interface FileRoutesByTo {
   "/onboarding": typeof OnboardingRoute
   "/account": typeof AuthedAccountRoute
   "/calendar": typeof AuthedCalendarRouteWithChildren
+  "/certificates": typeof AuthedCertificatesRouteWithChildren
   "/operations": typeof AuthedOperationsRouteWithChildren
   "/": typeof AuthedIndexRoute
   "/calendar/classify": typeof AuthedCalendarClassifyRoute
@@ -406,6 +422,7 @@ export interface FileRoutesByTo {
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute
   "/calendar/schedule": typeof AuthedCalendarScheduleRoute
   "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
+  "/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
@@ -450,6 +467,7 @@ export interface FileRoutesById {
   "/onboarding": typeof OnboardingRoute
   "/_authed/account": typeof AuthedAccountRoute
   "/_authed/calendar": typeof AuthedCalendarRouteWithChildren
+  "/_authed/certificates": typeof AuthedCertificatesRouteWithChildren
   "/_authed/finanzas": typeof AuthedFinanzasRouteWithChildren
   "/_authed/hr": typeof AuthedHrRouteWithChildren
   "/_authed/operations": typeof AuthedOperationsRouteWithChildren
@@ -461,6 +479,7 @@ export interface FileRoutesById {
   "/_authed/calendar/heatmap": typeof AuthedCalendarHeatmapRoute
   "/_authed/calendar/schedule": typeof AuthedCalendarScheduleRoute
   "/_authed/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
+  "/_authed/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/_authed/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/_authed/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
   "/_authed/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
@@ -505,6 +524,7 @@ export interface FileRouteTypes {
     | "/onboarding"
     | "/account"
     | "/calendar"
+    | "/certificates"
     | "/finanzas"
     | "/hr"
     | "/operations"
@@ -516,6 +536,7 @@ export interface FileRouteTypes {
     | "/calendar/heatmap"
     | "/calendar/schedule"
     | "/calendar/sync-history"
+    | "/certificates/medical"
     | "/dev/routes-audit"
     | "/finanzas/conciliaciones"
     | "/finanzas/counterparts"
@@ -558,6 +579,7 @@ export interface FileRouteTypes {
     | "/onboarding"
     | "/account"
     | "/calendar"
+    | "/certificates"
     | "/operations"
     | "/"
     | "/calendar/classify"
@@ -565,6 +587,7 @@ export interface FileRouteTypes {
     | "/calendar/heatmap"
     | "/calendar/schedule"
     | "/calendar/sync-history"
+    | "/certificates/medical"
     | "/dev/routes-audit"
     | "/finanzas/conciliaciones"
     | "/finanzas/counterparts"
@@ -608,6 +631,7 @@ export interface FileRouteTypes {
     | "/onboarding"
     | "/_authed/account"
     | "/_authed/calendar"
+    | "/_authed/certificates"
     | "/_authed/finanzas"
     | "/_authed/hr"
     | "/_authed/operations"
@@ -619,6 +643,7 @@ export interface FileRouteTypes {
     | "/_authed/calendar/heatmap"
     | "/_authed/calendar/schedule"
     | "/_authed/calendar/sync-history"
+    | "/_authed/certificates/medical"
     | "/_authed/dev/routes-audit"
     | "/_authed/finanzas/conciliaciones"
     | "/_authed/finanzas/counterparts"
@@ -726,6 +751,13 @@ declare module "@tanstack/react-router" {
       path: "/finanzas"
       fullPath: "/finanzas"
       preLoaderRoute: typeof AuthedFinanzasRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/certificates": {
+      id: "/_authed/certificates"
+      path: "/certificates"
+      fullPath: "/certificates"
+      preLoaderRoute: typeof AuthedCertificatesRouteImport
       parentRoute: typeof AuthedRoute
     }
     "/_authed/calendar": {
@@ -966,6 +998,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedDevRoutesAuditRouteImport
       parentRoute: typeof AuthedRoute
     }
+    "/_authed/certificates/medical": {
+      id: "/_authed/certificates/medical"
+      path: "/medical"
+      fullPath: "/certificates/medical"
+      preLoaderRoute: typeof AuthedCertificatesMedicalRouteImport
+      parentRoute: typeof AuthedCertificatesRoute
+    }
     "/_authed/calendar/sync-history": {
       id: "/_authed/calendar/sync-history"
       path: "/sync-history"
@@ -1051,6 +1090,17 @@ const AuthedCalendarRouteChildren: AuthedCalendarRouteChildren = {
 const AuthedCalendarRouteWithChildren = AuthedCalendarRoute._addFileChildren(
   AuthedCalendarRouteChildren,
 )
+
+interface AuthedCertificatesRouteChildren {
+  AuthedCertificatesMedicalRoute: typeof AuthedCertificatesMedicalRoute
+}
+
+const AuthedCertificatesRouteChildren: AuthedCertificatesRouteChildren = {
+  AuthedCertificatesMedicalRoute: AuthedCertificatesMedicalRoute,
+}
+
+const AuthedCertificatesRouteWithChildren =
+  AuthedCertificatesRoute._addFileChildren(AuthedCertificatesRouteChildren)
 
 interface AuthedFinanzasPersonalCreditsRouteChildren {
   AuthedFinanzasPersonalCreditsCreditIdRoute: typeof AuthedFinanzasPersonalCreditsCreditIdRoute
@@ -1206,6 +1256,7 @@ const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(
 interface AuthedRouteChildren {
   AuthedAccountRoute: typeof AuthedAccountRoute
   AuthedCalendarRoute: typeof AuthedCalendarRouteWithChildren
+  AuthedCertificatesRoute: typeof AuthedCertificatesRouteWithChildren
   AuthedFinanzasRoute: typeof AuthedFinanzasRouteWithChildren
   AuthedHrRoute: typeof AuthedHrRouteWithChildren
   AuthedOperationsRoute: typeof AuthedOperationsRouteWithChildren
@@ -1218,6 +1269,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAccountRoute: AuthedAccountRoute,
   AuthedCalendarRoute: AuthedCalendarRouteWithChildren,
+  AuthedCertificatesRoute: AuthedCertificatesRouteWithChildren,
   AuthedFinanzasRoute: AuthedFinanzasRouteWithChildren,
   AuthedHrRoute: AuthedHrRouteWithChildren,
   AuthedOperationsRoute: AuthedOperationsRouteWithChildren,
