@@ -54,12 +54,12 @@ export function ClassificationRow({
           <span className="text-secondary/70 text-xs font-semibold tracking-wide uppercase">
             {event.calendarId}
           </span>
-          <h2 className="text-base-content text-lg font-semibold">
+          <h2 className="text-foreground text-lg font-semibold">
             {event.summary ?? "(Sin título)"}
           </h2>
-          <span className="text-base-content/60 text-xs">{formatEventDate(event)}</span>
+          <span className="text-foreground-500 text-xs">{formatEventDate(event)}</span>
         </div>
-        <div className="text-base-content/60 flex flex-col items-end gap-2 text-xs">
+        <div className="text-foreground-500 flex flex-col items-end gap-2 text-xs">
           {event.eventType && (
             <span className="bg-default-100 text-foreground rounded-full px-2 py-1 font-semibold">
               {event.eventType}
@@ -75,12 +75,12 @@ export function ClassificationRow({
       <CardContent className="space-y-4 p-5 pt-0">
         {description && (
           <div className="bg-default-100 text-foreground rounded-xl p-3 shadow-inner">
-            <span className="text-base-content mb-1 block text-xs font-semibold">Descripción:</span>
+            <span className="text-foreground mb-1 block text-xs font-semibold">Descripción:</span>
             <FormattedEventDescription text={description} />
           </div>
         )}
 
-        <div className="text-base-content grid gap-4 text-xs md:grid-cols-6">
+        <div className="text-foreground grid gap-4 text-xs md:grid-cols-6">
           <form.Field name={`entries[${index}].category`}>
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
               <Input

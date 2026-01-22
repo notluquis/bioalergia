@@ -57,14 +57,14 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatBox color="text-success" label="Insertadas" value={log.inserted} />
           <StatBox color="text-info" label="Actualizadas" value={log.updated} />
-          <StatBox color="text-base-content/60" label="Omitidas" value={log.skipped} />
+          <StatBox color="text-foreground-500" label="Omitidas" value={log.skipped} />
           <StatBox color="text-warning" label="Excluidas" value={log.excluded} />
         </div>
 
         {/* Change Details */}
         {hasChanges && log.changeDetails && (
           <div className="space-y-4">
-            <h3 className="text-base-content text-sm font-semibold">Detalle de cambios</h3>
+            <h3 className="text-foreground text-sm font-semibold">Detalle de cambios</h3>
             <div className="bg-default-100/50 max-h-60 space-y-4 overflow-y-auto rounded-xl p-4 text-xs">
               {log.changeDetails.inserted && log.changeDetails.inserted.length > 0 && (
                 <div>
@@ -113,7 +113,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
         )}
 
         {!hasChanges && log.status === "SUCCESS" && (
-          <div className="text-base-content/50 py-4 text-center text-sm italic">
+          <div className="text-foreground-500 py-4 text-center text-sm italic">
             No hubo cambios registrados en esta sincronización.
           </div>
         )}
@@ -129,7 +129,7 @@ function StatBox({
 }: Readonly<{ color?: string; label: string; value: number }>) {
   return (
     <div className="bg-content1 border-default-200 flex flex-col items-center justify-center rounded-xl border p-3 text-center shadow-sm">
-      <span className="text-base-content/60 mb-1 text-xs font-medium tracking-wider uppercase">
+      <span className="text-foreground-500 mb-1 text-xs font-medium tracking-wider uppercase">
         {label}
       </span>
       <span className={cn("text-2xl font-bold", color)}>{numberFormatter.format(value)}</span>

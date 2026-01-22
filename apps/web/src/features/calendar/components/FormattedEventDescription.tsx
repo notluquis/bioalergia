@@ -28,12 +28,12 @@ export function FormattedEventDescription({
 
     // eslint-disable-next-line security/detect-non-literal-regexp
     const pattern = new RegExp(`(${keysToBold.join("|")}):`, "gi");
-    html = html.replaceAll(pattern, '<span class="font-bold text-base-content/80">$1:</span>');
+    html = html.replaceAll(pattern, '<span class="font-bold text-foreground-600">$1:</span>');
 
     // 2. Highlight and separate DATOS BOLETA specifically
     html = html.replaceAll(
       "DATOS BOLETA",
-      '<div class="mt-3 mb-1 font-bold text-base-content uppercase tracking-wide border-t border-base-200 pt-2">Datos Boleta</div>',
+      '<div class="mt-3 mb-1 font-bold text-foreground uppercase tracking-wide border-t border-default-200 pt-2">Datos Boleta</div>',
     );
 
     // 3. Remove empty spans (cleanup)
@@ -49,7 +49,7 @@ export function FormattedEventDescription({
   return (
     <div
       className={cn(
-        "[&_a]:text-primary text-base-content/60 text-xs leading-relaxed font-normal transition-all [&_a]:underline",
+        "[&_a]:text-primary text-foreground-500 text-xs leading-relaxed font-normal transition-all [&_a]:underline",
         className,
       )}
       // biome-ignore lint/security/noDangerouslySetInnerHtml: Sanitized with DOMPurify
