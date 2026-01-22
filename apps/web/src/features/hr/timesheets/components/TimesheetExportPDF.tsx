@@ -4,6 +4,7 @@ import type { CellHookData } from "jspdf-autotable";
 import React from "react";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
 import { apiClient } from "@/lib/api-client";
@@ -242,18 +243,19 @@ export default function TimesheetExportPDF({
         >
           Exportar PDF
         </Button>
-        <Button
-          className="border-base-300 bg-base-100 text-primary hover:bg-base-100/90 ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border shadow"
-          onClick={() => {
-            setShowOptions((v) => !v);
-          }}
-          size="sm"
-          title="Opciones"
-          type="button"
-          variant="secondary"
-        >
-          ⋯
-        </Button>
+        <Tooltip content="Opciones">
+          <Button
+            className="border-base-300 bg-base-100 text-primary hover:bg-base-100/90 ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border shadow"
+            onClick={() => {
+              setShowOptions((v) => !v);
+            }}
+            size="sm"
+            type="button"
+            variant="secondary"
+          >
+            ⋯
+          </Button>
+        </Tooltip>
         {showOptions && (
           <div className="bg-base-100 absolute right-0 z-20 mt-2 w-56 rounded-xl p-3 shadow-xl ring-1 ring-black/5">
             <p className="text-base-content/80 mb-2 text-xs font-semibold">Columnas del detalle</p>
