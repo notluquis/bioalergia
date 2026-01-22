@@ -1,4 +1,11 @@
-import { Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/react";
+import {
+  Button,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownPopover,
+  DropdownTrigger,
+} from "@heroui/react";
 import { ChevronDown } from "lucide-react";
 
 export interface MultiSelectOption {
@@ -65,25 +72,27 @@ export function MultiSelectFilter({
             <ChevronDown className="h-4 w-4 shrink-0 text-base-content/50" />
           </Button>
         </DropdownTrigger>
-        <DropdownMenu
-          aria-label={label}
-          selectedKeys={selectedKeys}
-          selectionMode="multiple"
-          onSelectionChange={(keys) => {
-            if (keys === "all") {
-              onChange(options.map((o) => o.value));
-            } else {
-              onChange(Array.from(keys) as string[]);
-            }
-          }}
-          className="max-h-60 overflow-y-auto"
-        >
-          {options.map((option) => (
-            <DropdownItem key={option.value} textValue={option.label.split(" · ")[0]}>
-              {option.label}
-            </DropdownItem>
-          ))}
-        </DropdownMenu>
+        <DropdownPopover>
+          <DropdownMenu
+            aria-label={label}
+            selectedKeys={selectedKeys}
+            selectionMode="multiple"
+            onSelectionChange={(keys) => {
+              if (keys === "all") {
+                onChange(options.map((o) => o.value));
+              } else {
+                onChange(Array.from(keys) as string[]);
+              }
+            }}
+            className="max-h-60 overflow-y-auto w-[var(--radix-dropdown-menu-trigger-width)]"
+          >
+            {options.map((option) => (
+              <DropdownItem key={option.value} textValue={option.label.split(" · ")[0]}>
+                {option.label}
+              </DropdownItem>
+            ))}
+          </DropdownMenu>
+        </DropdownPopover>
       </Dropdown>
     </div>
   );
