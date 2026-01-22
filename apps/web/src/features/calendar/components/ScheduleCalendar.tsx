@@ -57,7 +57,7 @@ export function ScheduleCalendar({
         >
           <button
             aria-label="Cerrar"
-            className="bg-base-100 border-base-300 text-base-content/60 hover:text-base-content hover:bg-base-200 absolute -top-2 -right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-colors"
+            className="bg-content1 border-default-200 text-foreground-500 hover:text-foreground hover:bg-default-100 absolute -top-2 -right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-colors"
             onClick={() => {
               setSelectedEvent(null);
             }}

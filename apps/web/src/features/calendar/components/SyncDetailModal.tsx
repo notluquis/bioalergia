@@ -65,7 +65,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
         {hasChanges && log.changeDetails && (
           <div className="space-y-4">
             <h3 className="text-base-content text-sm font-semibold">Detalle de cambios</h3>
-            <div className="bg-base-200/50 max-h-60 space-y-4 overflow-y-auto rounded-xl p-4 text-xs">
+            <div className="bg-default-100/50 max-h-60 space-y-4 overflow-y-auto rounded-xl p-4 text-xs">
               {log.changeDetails.inserted && log.changeDetails.inserted.length > 0 && (
                 <div>
                   <h4 className="text-success mb-2 font-medium">
@@ -128,7 +128,7 @@ function StatBox({
   value,
 }: Readonly<{ color?: string; label: string; value: number }>) {
   return (
-    <div className="bg-base-100 border-base-200 flex flex-col items-center justify-center rounded-xl border p-3 text-center shadow-sm">
+    <div className="bg-content1 border-default-200 flex flex-col items-center justify-center rounded-xl border p-3 text-center shadow-sm">
       <span className="text-base-content/60 mb-1 text-xs font-medium tracking-wider uppercase">
         {label}
       </span>
