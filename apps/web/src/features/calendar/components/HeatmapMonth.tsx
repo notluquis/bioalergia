@@ -1,8 +1,8 @@
+import { Card, Tooltip } from "@heroui/react";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
 import { useMemo } from "react";
 
-import { Tooltip } from "@/components/ui/Tooltip";
 import { fmtCLP } from "@/lib/format";
 
 export interface HeatmapMonthProps {
@@ -14,10 +14,10 @@ export interface HeatmapMonthProps {
 // Colors based on intensity (0 to 4)
 // Colors based on intensity (0 to 4)
 const INTENSITY_COLORS = {
-  0: "bg-base-200/50 text-base-content/70", // Empty
-  1: "bg-primary/20 text-primary font-medium hover:bg-primary/30", // Low intensity: Darker text on light bg
-  2: "bg-primary/40 text-primary font-semibold hover:bg-primary/50", // Med intensity: Darker text on med bg
-  3: "bg-primary/70 text-primary-content hover:bg-primary/80", // High intensity: White text ok
+  0: "bg-default-100/50 text-foreground-500", // Empty
+  1: "bg-primary/20 text-primary font-medium hover:bg-primary/30", // Low intensity
+  2: "bg-primary/40 text-primary font-semibold hover:bg-primary/50", // Med intensity
+  3: "bg-primary/70 text-primary-content hover:bg-primary/80", // High intensity
   4: "bg-primary text-primary-content shadow-md shadow-primary/20", // Max intensity
 };
 
@@ -141,18 +141,17 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
   }, [dates]);
 
   return (
-    // TooltipProvider is not needed for HeroUI
-    <article className="bg-base-100 border-base-200 flex flex-col overflow-hidden rounded-2xl border shadow-sm">
-      <header className="border-base-200/50 bg-base-100/50 flex items-center justify-between border-b px-4 py-3 backdrop-blur-sm">
-        <h3 className="text-base-content text-sm font-bold capitalize">{month.format("MMMM")}</h3>
-        <span className="text-base-content/50 text-xs font-medium">{month.format("YYYY")}</span>
-      </header>
+    <Card className="border-default-200 flex flex-col overflow-hidden rounded-2xl border shadow-sm">
+      <div className="border-default-200/50 bg-content1/50 flex items-center justify-between border-b px-4 py-3 backdrop-blur-sm">
+        <h3 className="text-foreground text-sm font-bold capitalize">{month.format("MMMM")}</h3>
+        <span className="text-foreground-500 text-xs font-medium">{month.format("YYYY")}</span>
+      </div>
 
       <div className="grid grid-cols-6 gap-1 p-4">
         {/* Weekday headers */}
         {WEEKDAYS.map((d) => (
           <div
-            className="text-base-content/40 py-2 text-center text-[10px] font-bold tracking-widest uppercase select-none"
+            className="text-foreground-400 py-2 text-center text-[10px] font-bold tracking-widest uppercase select-none"
             key={d}
           >
             {d}
@@ -166,15 +165,47 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
           }
 
           return (
-            <Tooltip
-              key={cell.key}
-              classNames={{
-                content:
-                  "bg-base-300 text-base-content border-base-content/10 border shadow-xl p-0",
-              }}
-              content={
-                cell.total > 0 ? (
-                  <div className="p-3 text-xs">
+            <Tooltip key={cell.key}>
+              <Tooltip.Trigger>
+                <div
+                  className={clsx(
+                    "relative flex aspect-square w-full cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
+                    // Default empty state
+                    "bg-default-100/50 text-foreground-500",
+                    // Intensity colors
+                    INTENSITY_COLORS[cell.intensity],
+                    // Conditional classes
+                    {
+                      "cursor-pointer font-semibold": cell.total > 0,
+                      // TODAY indicator
+                      "ring-warning ring-offset-content1 shadow-warning/40 z-10 shadow-lg ring-2 ring-offset-2":
+                        cell.isToday,
+                    },
+                    !cell.isToday &&
+                      "hover:ring-primary hover:ring-offset-content1 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2",
+                  )}
+                >
+                  {/* Day Number */}
+                  <span
+                    className={clsx(
+                      "absolute top-0.5 left-1 text-[10px] leading-none opacity-60",
+                      cell.total > 0 && "text-[9px] font-normal opacity-80",
+                    )}
+                  >
+                    {cell.dayNumber}
+                  </span>
+
+                  {/* Event Count */}
+                  {cell.total > 0 && (
+                    <span className="mt-1 text-sm font-bold tracking-tight shadow-sm drop-shadow-sm">
+                      {cell.total}
+                    </span>
+                  )}
+                </div>
+              </Tooltip.Trigger>
+              <Tooltip.Content className="p-0">
+                {cell.total > 0 ? (
+                  <div className="bg-content1 text-foreground border-default-200 rounded-lg border p-3 text-xs shadow-xl">
                     <p className="mb-1 font-bold">{cell.date.format("dddd DD MMMM")}</p>
                     <div className="space-y-0.5">
                       <p>
@@ -184,107 +215,72 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                       <p className="opacity-80">Pagado: {fmtCLP(cell.amountPaid)}</p>
                     </div>
                   </div>
-                ) : null
-              }
-              delay={0}
-              isDisabled={cell.total === 0}
-              placement="top"
-            >
-              <div
-                className={clsx(
-                  "relative flex aspect-square w-full cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
-                  // Default empty state - Use higher opacity text for visibility
-                  "bg-base-200/30 text-base-content/70",
-                  // Intensity colors overlap default
-                  INTENSITY_COLORS[cell.intensity],
-                  {
-                    "cursor-pointer font-semibold": cell.total > 0,
-                    // TODAY indicator - prominent ring with glow effect
-                    "ring-warning ring-offset-base-100 shadow-warning/40 z-10 shadow-lg ring-2 ring-offset-2":
-                      cell.isToday,
-                  },
-                  !cell.isToday &&
-                    "hover:ring-primary hover:ring-offset-base-100 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2",
-                )}
-              >
-                {/* Day Number - Top Left, smaller */}
-                <span
-                  className={clsx(
-                    "absolute top-0.5 left-1 text-[10px] leading-none opacity-60",
-                    cell.total > 0 && "text-[9px] font-normal opacity-80", // Adjust if has data
-                  )}
-                >
-                  {cell.dayNumber}
-                </span>
-
-                {/* Event Count - Center, Bold */}
-                {cell.total > 0 && (
-                  <span className="mt-1 text-sm font-bold tracking-tight shadow-sm drop-shadow-sm">
-                    {cell.total}
-                  </span>
-                )}
-              </div>
+                ) : null}
+              </Tooltip.Content>
             </Tooltip>
           );
         })}
       </div>
 
       {/* Footer Summary */}
-      <div className="bg-base-100/30 border-base-200/50 border-t px-4 py-2 text-[10px]">
-        <div className="text-base-content/60 flex flex-wrap items-center justify-between gap-2">
+      <div className="bg-content1/30 border-default-200/50 border-t px-4 py-2 text-[10px]">
+        <div className="text-foreground-500 flex flex-wrap items-center justify-between gap-2">
           <span className="font-semibold">Σ {monthTotals.events} eventos</span>
           <div className="flex flex-wrap gap-x-3 gap-y-1">
-            <Tooltip
-              classNames={{
-                content:
-                  "bg-base-300 border-base-content/10 text-base-content max-w-xs rounded-lg border p-2 text-xs",
-              }}
-              content="Total esperado del mes completo"
-            >
-              <span className="cursor-help">
-                Esperado: <span className="font-medium">{fmtCLP(monthTotals.expected)}</span>
-              </span>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <span className="cursor-help">
+                  Esperado:{" "}
+                  <span className="text-foreground font-medium">
+                    {fmtCLP(monthTotals.expected)}
+                  </span>
+                </span>
+              </Tooltip.Trigger>
+              <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
+                Total esperado del mes completo
+              </Tooltip.Content>
             </Tooltip>
-            <Tooltip
-              classNames={{
-                content:
-                  "bg-base-300 border-base-content/10 text-base-content max-w-xs rounded-lg border p-2 text-xs",
-              }}
-              content="Total pagado del mes completo"
-            >
-              <span className="cursor-help">
-                Pagado: <span className="font-medium">{fmtCLP(monthTotals.paid)}</span>
-              </span>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <span className="cursor-help">
+                  Pagado:{" "}
+                  <span className="text-foreground font-medium">{fmtCLP(monthTotals.paid)}</span>
+                </span>
+              </Tooltip.Trigger>
+              <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
+                Total pagado del mes completo
+              </Tooltip.Content>
             </Tooltip>
             {monthTotals.unclassified > 0 && (
-              <Tooltip
-                classNames={{
-                  content:
-                    "bg-base-300 border-base-content/10 text-base-content max-w-xs rounded-lg border p-2 text-xs",
-                }}
-                content="Eventos pasados que no fueron cobrados (no asistieron, cancelaron, etc.)"
-              >
-                <span className="text-warning cursor-help">
-                  No cobrado:{" "}
-                  <span className="font-medium">{fmtCLP(monthTotals.unclassified)}</span>
-                </span>
+              <Tooltip>
+                <Tooltip.Trigger>
+                  <span className="text-warning cursor-help">
+                    No cobrado:{" "}
+                    <span className="font-medium">{fmtCLP(monthTotals.unclassified)}</span>
+                  </span>
+                </Tooltip.Trigger>
+                <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
+                  Eventos pasados que no fueron cobrados (no asistieron, cancelaron, etc.)
+                </Tooltip.Content>
               </Tooltip>
             )}
-            <Tooltip
-              classNames={{
-                content:
-                  "bg-base-300 border-base-content/10 text-base-content max-w-xs rounded-lg border p-2 text-xs",
-              }}
-              content="Lo que falta pagar desde hoy en adelante (solo eventos futuros)"
-            >
-              <span className="cursor-help">
-                Restante: <span className="font-medium">{fmtCLP(monthTotals.remaining)}</span>
-              </span>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <span className="cursor-help">
+                  Restante:{" "}
+                  <span className="text-foreground font-medium">
+                    {fmtCLP(monthTotals.remaining)}
+                  </span>
+                </span>
+              </Tooltip.Trigger>
+              <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
+                Lo que falta pagar desde hoy en adelante (solo eventos futuros)
+              </Tooltip.Content>
             </Tooltip>
           </div>
         </div>
       </div>
-    </article>
+    </Card>
   );
 }
 
