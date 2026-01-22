@@ -48,7 +48,7 @@
     "@zenstackhq/orm": "3.2.1",
     "@zenstackhq/plugin-policy": "^3.2.1",
     "@zenstackhq/server": "^3.2.1",
-    "hono": "^4.11.4",
+    "hono": "^4.11.5",
     "kysely": "^0.28.10",
     "pg": "^8.17.2",
     "pg-types": "^4.1.0",
@@ -56,7 +56,7 @@
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.90.19",
-    "@types/node": "^25.0.9",
+    "@types/node": "^25.0.10",
     "@types/pg": "^8.16.0",
     "@types/react": "^19.2.9",
     "@zenstackhq/cli": "3.2.1",

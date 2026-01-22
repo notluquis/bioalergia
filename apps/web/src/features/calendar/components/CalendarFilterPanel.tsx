@@ -75,25 +75,6 @@ export function CalendarFilterPanel({
     return { label: `${label} · ${numberFormatter.format(entry.total)}`, value };
   });
 
-  const toggleEventType = (value: string) => {
-    const currentTypes = filters.eventTypes ?? [];
-    onFilterChange(
-      "eventTypes",
-      currentTypes.includes(value)
-        ? currentTypes.filter((id) => id !== value)
-        : [...currentTypes, value],
-    );
-  };
-
-  const toggleCategory = (value: string) => {
-    onFilterChange(
-      "categories",
-      filters.categories.includes(value)
-        ? filters.categories.filter((id) => id !== value)
-        : [...filters.categories, value],
-    );
-  };
-
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     onApply();
@@ -132,28 +113,26 @@ export function CalendarFilterPanel({
 
         {/* Event Types Filter */}
         {availableEventTypes.length > 0 && (
-          <div className="min-w-35 flex-1">
-            <MultiSelectFilter
-              label="Tipos de evento"
-              onToggle={toggleEventType}
-              options={eventTypeOptions}
-              placeholder="Todos"
-              selected={filters.eventTypes ?? []}
-            />
-          </div>
+          <MultiSelectFilter
+            className="flex-1 min-w-50"
+            label="Tipos de evento"
+            onChange={(values) => onFilterChange("eventTypes", values)}
+            options={eventTypeOptions}
+            placeholder="Todos"
+            selected={filters.eventTypes ?? []}
+          />
         )}
 
         {/* Categories Filter */}
         {availableCategories.length > 0 && (
-          <div className="min-w-35 flex-1">
-            <MultiSelectFilter
-              label="Clasificación"
-              onToggle={toggleCategory}
-              options={categoryOptions}
-              placeholder="Todas"
-              selected={filters.categories}
-            />
-          </div>
+          <MultiSelectFilter
+            className="flex-1 min-w-50"
+            label="Clasificación"
+            onChange={(values) => onFilterChange("categories", values)}
+            options={categoryOptions}
+            placeholder="Todas"
+            selected={filters.categories}
+          />
         )}
 
         {/* Search Input */}
