@@ -604,7 +604,6 @@ html[data-theme="bioalergia-dark"] .layout-shell {
   line-height: 1.4;
 }
 
-/* === PREMIUM BADGES (Harmony Rule) === */
 .badge-soft-success {
   @apply bg-success/15 text-success border-transparent;
 }
