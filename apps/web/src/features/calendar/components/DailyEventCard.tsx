@@ -24,7 +24,7 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
   const indicatorColor = getCategoryIndicatorColor(event.category);
 
   return (
-    <Card className="group border-base-200 border transition-all hover:shadow-md h-full shadow-sm">
+    <Card className="group border-default-200 border transition-all hover:shadow-md h-full shadow-sm">
       <div className="grid grid-cols-[auto_1fr_auto] gap-3 p-3 overflow-visible sm:gap-4 sm:p-4">
         {/* Time Column - Start, Color Bar, Duration, End */}
         <div className="flex flex-col items-center gap-0.5 text-center">
@@ -38,13 +38,13 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
 
           {/* Duration */}
           {durationMinutes != null && durationMinutes > 0 && (
-            <span className="text-base-content/50 text-[10px] font-medium whitespace-nowrap">
+            <span className="text-foreground-500 text-[10px] font-medium whitespace-nowrap">
               {formatDuration(durationMinutes)}
             </span>
           )}
 
           {/* End Time */}
-          <span className="text-base-content/60 text-xs font-medium tabular-nums">
+          <span className="text-foreground-500 text-xs font-medium tabular-nums">
             {end ? end.format("HH:mm") : "--:--"}
           </span>
         </div>
@@ -57,11 +57,11 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
           </h3>
 
           {/* Details Row: Amounts + Attendance */}
-          <div className="text-base-content/70 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+          <div className="text-foreground-600 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
             {event.amountExpected != null && (
               <div className="flex items-center gap-1">
                 <span className="text-[10px] uppercase opacity-60">Esperado</span>
-                <span className="text-base-content font-medium">
+                <span className="text-foreground font-medium">
                   {currencyFormatter.format(event.amountExpected)}
                 </span>
               </div>
@@ -156,7 +156,7 @@ function getCategoryIndicatorColor(category: null | string | undefined): string 
       return "bg-blue-400";
     }
     default: {
-      return "bg-gray-300";
+      return "bg-default-300";
     }
   }
 }
