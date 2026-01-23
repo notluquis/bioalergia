@@ -132,8 +132,8 @@ function toFullCalendarEvents(calendarEvents: CalendarEventData[]): {
 
       return {
         allDay: false,
-        backgroundColor: event.has_overlap ? "var(--color-error)" : "var(--color-accent)",
-        borderColor: event.has_overlap ? "var(--color-error)" : "var(--color-accent)",
+        backgroundColor: event.has_overlap ? "var(--color-danger)" : "var(--color-success)",
+        borderColor: event.has_overlap ? "var(--color-danger)" : "var(--color-success)",
         classNames: ["timesheet-audit-event", event.has_overlap ? "has-overlap" : ""].filter(
           Boolean,
         ),
@@ -324,7 +324,7 @@ export default function TimesheetAuditCalendar({
       {/* Legend */}
       <div className="text-default-600 mt-6 flex flex-col gap-3 text-sm">
         <div className="flex items-center gap-3">
-          <div className="bg-accent h-4 w-4 rounded"></div>
+          <div className="bg-success h-4 w-4 rounded"></div>
           <span>Sin solapamiento</span>
         </div>
         <div className="flex items-center gap-3">
