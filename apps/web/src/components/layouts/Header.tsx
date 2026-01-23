@@ -57,7 +57,7 @@ export default function Header() {
         }
       }
     } else if (crumbsList.length > 0) {
-      titleText = crumbsList[crumbsList.length - 1].label;
+      titleText = crumbsList[crumbsList.length - 1]?.label ?? "";
     }
 
     return { crumbs: crumbsList, pageTitle: titleText };
@@ -71,19 +71,26 @@ export default function Header() {
   return (
     <header className="scroll-header-animation sticky top-0 z-30 flex items-center justify-between rounded-3xl px-6 py-1 transition-all duration-300">
       <div className="flex flex-col gap-0.5">
-        {breadcrumbs.length > 0 && (
-          <div className="text-default-500 flex items-center gap-1 text-xs">
-            {breadcrumbs.map((crumb, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: simple breadcrumb list
-              <React.Fragment key={i}>
-                <span>{crumb}</span>
-                <ChevronRight className="h-3 w-3" />
-              </React.Fragment>
-            ))}
-          </div>
+        {crumbs.length > 0 && (
+          <Breadcrumbs className="text-default-500/60">
+            {crumbs.map((crumb, i) => {
+              const isCurrent = i === crumbs.length - 1;
+              return (
+                <BreadcrumbsItem key={crumb.to || i}>
+                  {isCurrent || !crumb.to ? (
+                    crumb.label
+                  ) : (
+                    <Link to={crumb.to} className="hover:text-foreground transition-colors">
+                      {crumb.label}
+                    </Link>
+                  )}
+                </BreadcrumbsItem>
+              );
+            })}
+          </Breadcrumbs>
         )}
         <div className="flex items-center gap-3">
-          <h1 className="text-foreground text-2xl font-bold tracking-tight">{title}</h1>
+          <h1 className="text-foreground text-2xl font-bold tracking-tight">{pageTitle}</h1>
           {isNavigating && (
             <span className="text-primary flex items-center gap-1 text-xs font-semibold">
               <Loader2 className="h-3 w-3 animate-spin" />

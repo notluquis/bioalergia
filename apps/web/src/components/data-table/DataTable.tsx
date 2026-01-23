@@ -85,7 +85,7 @@ const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties =>
   if (isPinned === "right") boxShadow = "4px 0 4px -4px gray inset";
 
   return {
-    backgroundColor: isPinned ? "var(--color-base-100)" : undefined,
+    backgroundColor: isPinned ? "hsl(var(--heroui-background))" : undefined,
     boxShadow,
     left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
     opacity: isPinned ? 0.95 : 1,
