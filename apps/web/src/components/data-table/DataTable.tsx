@@ -9,6 +9,7 @@ import {
   getCoreRowModel,
   getExpandedRowModel,
   getFilteredRowModel,
+  getSortedRowModel,
   type OnChangeFn,
   type PaginationState,
   type RowSelectionState,
@@ -17,6 +18,7 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
 import React, { type CSSProperties, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -146,6 +148,7 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     getRowId: (originalRow: TData) => {
       const row = originalRow as Record<string, unknown>;
       type RowIdValue = number | string | undefined;
@@ -328,17 +331,37 @@ export function DataTable<TData, TValue>({
                   {headerGroup.headers.map((header) => {
                     return (
                       <th
-                        className="text-base-content/70 group relative px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase"
+                        aria-sort={
+                          header.column.getIsSorted()
+                            ? header.column.getIsSorted() === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : "none"
+                        }
+                        className={cn(
+                          "text-base-content/70 group relative px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase",
+                          header.column.getCanSort() && "cursor-pointer select-none",
+                        )}
                         colSpan={header.colSpan}
                         key={header.id}
+                        onClick={header.column.getToggleSortingHandler()}
                         style={{
                           ...getCommonPinningStyles(header.column),
                           width: header.getSize(),
                         }}
                       >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                        <div className="flex items-center gap-2">
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                          {{
+                            asc: <ChevronUp className="h-3.5 w-3.5" />,
+                            desc: <ChevronDown className="h-3.5 w-3.5" />,
+                          }[header.column.getIsSorted() as string] ??
+                            (header.column.getCanSort() ? (
+                              <ArrowUpDown className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-50" />
+                            ) : null)}
+                        </div>
                         <button
                           type="button"
                           aria-label="Resize column"
@@ -347,6 +370,7 @@ export function DataTable<TData, TValue>({
                           }`}
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
+                          onClick={(e) => e.stopPropagation()}
                         />
                       </th>
                     );
