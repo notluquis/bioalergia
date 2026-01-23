@@ -11,6 +11,7 @@ export const Route = createFileRoute("/_authed/services/agenda")({
     nav: { iconKey: "Calendar", label: "Agenda", order: 1, section: "Servicios" },
     permission: { action: "read", subject: "ServiceAgenda" },
     title: "Agenda de servicios",
+    breadcrumb: "Agenda",
   },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "ServiceAgenda")) {

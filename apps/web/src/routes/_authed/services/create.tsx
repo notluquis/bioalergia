@@ -12,6 +12,9 @@ export const Route = createFileRoute("/_authed/services/create")({
       throw routeApi.redirect({ to: "/" });
     }
   },
+  staticData: {
+    breadcrumb: "Crear",
+  },
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <CreateServicePage />

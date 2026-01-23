@@ -141,7 +141,6 @@ export default function ServiceEditPage() {
             Volver
           </Button>
         }
-        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Editar" }]}
         description={
           service ? service.name : "Ajusta los datos y cronogramas del servicio seleccionado."
         }
