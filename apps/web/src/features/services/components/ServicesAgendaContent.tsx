@@ -38,7 +38,6 @@ export default function ServicesAgendaContent() {
               <Button variant="ghost">Volver al panel</Button>
             </Link>
           }
-          breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Agenda" }]}
           description="Visualiza los pagos programados, sus estados y registra conciliaciones rápidamente."
           title="Agenda de servicios"
         />
@@ -61,7 +60,6 @@ export default function ServicesAgendaContent() {
             <Button variant="ghost">Volver al panel</Button>
           </Link>
         }
-        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Agenda" }]}
         description="Visualiza los pagos programados, sus estados y registra conciliaciones rápidamente."
         title="Agenda de servicios"
       />

@@ -1,5 +1,6 @@
-import { useLocation, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ChevronRight, Loader2, LogOut } from "lucide-react";
+import { Breadcrumbs, BreadcrumbsItem } from "@heroui/react";
+import { Link, useMatches, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Loader2, LogOut } from "lucide-react";
 import React from "react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -9,65 +10,58 @@ import Button from "../ui/Button";
 import ThemeToggle from "../ui/ThemeToggle";
 
 export default function Header() {
-  const location = useLocation();
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const matches = useMatches();
 
   const isNavigating = routerStatus === "pending";
 
-  const { breadcrumbs, title } = React.useMemo(() => {
-    const path = location.pathname;
+  const { crumbs, pageTitle } = React.useMemo(() => {
+    const activeMatches = matches.filter(
+      (match) => match.staticData?.breadcrumb || match.staticData?.title,
+    );
 
-    // Extract title from path
-    const parts = path.split("/").filter(Boolean);
+    const crumbsList = activeMatches
+      .map((match) => {
+        const { breadcrumb, title } = match.staticData;
+        let label = "";
+
+        if (typeof breadcrumb === "function") {
+          label = breadcrumb(match.loaderData);
+        } else if (typeof breadcrumb === "string") {
+          label = breadcrumb;
+        } else {
+          label = title || "";
+        }
+
+        return {
+          label,
+          to: match.pathname,
+        };
+      })
+      .filter((item) => item.label);
+
+    const lastMatch = activeMatches[activeMatches.length - 1];
     let titleText = "Inicio";
-    const crumbs: string[] = [];
 
-    switch (parts[0]) {
-      case "calendar": {
-        crumbs.push("Calendario");
-        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Calendario";
-
-        break;
+    if (lastMatch) {
+      if (lastMatch.staticData?.title) {
+        titleText = lastMatch.staticData.title;
+      } else {
+        const { breadcrumb } = lastMatch.staticData || {};
+        if (typeof breadcrumb === "function") {
+          titleText = breadcrumb(lastMatch.loaderData);
+        } else if (typeof breadcrumb === "string") {
+          titleText = breadcrumb;
+        }
       }
-      case "finanzas": {
-        crumbs.push("Finanzas");
-        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Finanzas";
-
-        break;
-      }
-      case "hr": {
-        crumbs.push("RRHH");
-        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "RRHH";
-
-        break;
-      }
-      case "operations": {
-        crumbs.push("Operaciones");
-        titleText = "Operaciones";
-
-        break;
-      }
-      case "services": {
-        crumbs.push("Servicios");
-        titleText = "Servicios";
-
-        break;
-      }
-      case "settings": {
-        crumbs.push("Configuración");
-        titleText = parts[1]
-          ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1)
-          : "Configuración";
-
-        break;
-      }
-      // No default
+    } else if (crumbsList.length > 0) {
+      titleText = crumbsList[crumbsList.length - 1].label;
     }
 
-    return { breadcrumbs: crumbs, title: titleText };
-  }, [location.pathname]);
+    return { crumbs: crumbsList, pageTitle: titleText };
+  }, [matches]);
 
   const handleLogout = async () => {
     await logout();
