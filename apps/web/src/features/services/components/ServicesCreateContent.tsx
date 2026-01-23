@@ -23,7 +23,6 @@ export default function ServicesCreateContent() {
             <Button variant="ghost">Volver al panel</Button>
           </Link>
         }
-        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Crear" }]}
         description="Usa una plantilla o completa el formulario manualmente para incorporar nuevos servicios recurrentes."
         title="Crear servicio"
       />
