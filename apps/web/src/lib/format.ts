@@ -2,6 +2,13 @@ import { Decimal } from "decimal.js";
 
 // === CURRENCY FORMATTING ===
 
+/** Shared currency formatter instance (CLP, no decimals) */
+export const currencyFormatter = new Intl.NumberFormat("es-CL", {
+  currency: "CLP",
+  maximumFractionDigits: 0,
+  style: "currency",
+});
+
 export const fmtCLP = (n?: Decimal | null | number | string) => {
   // Handle null/undefined
   if (n == null) return "$0";
@@ -20,11 +27,7 @@ export const fmtCLP = (n?: Decimal | null | number | string) => {
   if (!Number.isFinite(num)) return "$0";
 
   try {
-    return new Intl.NumberFormat("es-CL", {
-      currency: "CLP",
-      maximumFractionDigits: 0,
-      style: "currency",
-    }).format(num);
+    return currencyFormatter.format(num);
   } catch (error) {
     // Fallback if formatting fails
     console.error("Error formatting currency:", error, "value:", n);
@@ -93,13 +96,6 @@ export { formatFileSize } from "../../shared/format";
 
 /** Shared number formatter instance (es-CL locale) */
 export const numberFormatter = new Intl.NumberFormat("es-CL");
-
-/** Shared currency formatter instance (CLP, no decimals) */
-export const currencyFormatter = new Intl.NumberFormat("es-CL", {
-  currency: "CLP",
-  maximumFractionDigits: 0,
-  style: "currency",
-});
 
 /** Safe wrapper for currency formatting that handles null/undefined/invalid values */
 export function formatCurrency(value?: Decimal | null | number | string): string {
