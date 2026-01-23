@@ -1,8 +1,13 @@
 import { Hono } from "hono";
+import crypto from "node:crypto";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "@finanzas/db";
-import { createPatientSchema, updatePatientSchema, createConsultationSchema, createBudgetSchema, createPaymentSchema, createAttachmentSchema } from "./patients.schema.js";
+import { createPatientSchema, updatePatientSchema, createConsultationSchema, createBudgetSchema, createPaymentSchema } from "./patients.schema.js";
 import { getSessionUser } from "../../auth.js";
+import { uploadPatientAttachmentToDrive } from "../../services/patient-attachments-drive.js";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
 
 type Variables = {
   // biome-ignore lint/suspicious/noExplicitAny: legacy typing
@@ -349,32 +354,65 @@ patientsRoutes.get("/:id/payments", async (c) => {
   }
 });
 
-// POST /:id/attachments - Add attachment
-patientsRoutes.post("/:id/attachments", zValidator("json", createAttachmentSchema), async (c) => {
-  const patientId = Number(c.req.param("id"));
-  const input = c.req.valid("json");
+/**
+ * POST /:id/attachments
+ * Upload a document for a patient
+ */
+patientsRoutes.post("/:id/attachments", async (c) => {
+  const { id } = c.req.param();
   const user = await getSessionUser(c);
 
-  if (!user?.id) {
+  if (!user) {
     return c.json({ error: "No autorizado" }, 401);
   }
 
   try {
-    const attachment = await db.patientAttachment.create({
-      data: {
-        patientId,
-        name: input.name,
-        type: input.type,
-        driveFileId: input.driveFileId,
-        mimeType: input.mimeType,
-        uploadedBy: user.id,
-      },
-    });
+    const body = await c.req.parseBody();
+    const file = body.file as File;
+    const type = (body.type as string) || "OTHER";
+    const name = (body.name as string) || file.name || "Sin nombre";
 
-    return c.json(attachment, 201);
-  } catch {
-    console.error("Error creating attachment:");
-    return c.json({ error: "Error al guardar adjunto" }, 500);
+    if (!file) {
+      return c.json({ error: "No se proporcionó ningún archivo" }, 400);
+    }
+
+    // Save temp file
+    const tempPath = path.join(os.tmpdir(), `${crypto.randomUUID()}_${file.name}`);
+    const arrayBuffer = await file.arrayBuffer();
+    fs.writeFileSync(tempPath, Buffer.from(arrayBuffer));
+
+    try {
+      // Upload to Drive
+      const { fileId, webViewLink } = await uploadPatientAttachmentToDrive(
+        tempPath,
+        name,
+        file.type,
+        id
+      );
+
+      // Save to DB
+      // biome-ignore lint/suspicious/noExplicitAny: ZenStack client types might be stale after schema changes
+      const attachment = await (db as any).patientAttachment.create({
+        data: {
+          patientId: Number(id),
+          name: name,
+          type: type as any, // biome-ignore lint/suspicious/noExplicitAny: Type conversion for enum
+          driveFileId: fileId,
+          mimeType: file.type,
+          uploadedBy: user.id,
+        },
+      });
+
+      return c.json({ ...attachment, webViewLink });
+    } finally {
+      // Clean up
+      if (fs.existsSync(tempPath)) {
+        fs.unlinkSync(tempPath);
+      }
+    }
+  } catch (error) {
+    console.error("Error uploading attachment:", error);
+    return c.json({ error: "Error al subir el documento" }, 500);
   }
 });
 
