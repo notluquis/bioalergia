@@ -5,7 +5,7 @@
 
 /* eslint-disable */
 
-import { schema as $schema, type SchemaType as $Schema } from "./schema.js";
+import { schema as $schema, type SchemaType as $Schema } from "./schema";
 import { type ModelResult as $ModelResult } from "@zenstackhq/orm";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
@@ -54,6 +54,10 @@ export type PersonalCreditInstallment = $ModelResult<$Schema, "PersonalCreditIns
 export type MedicalCertificate = $ModelResult<$Schema, "MedicalCertificate">;
 export type Patient = $ModelResult<$Schema, "Patient">;
 export type Consultation = $ModelResult<$Schema, "Consultation">;
+export type Budget = $ModelResult<$Schema, "Budget">;
+export type BudgetItem = $ModelResult<$Schema, "BudgetItem">;
+export type PatientPayment = $ModelResult<$Schema, "PatientPayment">;
+export type PatientAttachment = $ModelResult<$Schema, "PatientAttachment">;
 export const PersonType = $schema.enums.PersonType.values;
 export type PersonType = (typeof PersonType)[keyof typeof PersonType];
 export const CounterpartCategory = $schema.enums.CounterpartCategory.values;
@@ -76,3 +80,7 @@ export const LoanScheduleStatus = $schema.enums.LoanScheduleStatus.values;
 export type LoanScheduleStatus = (typeof LoanScheduleStatus)[keyof typeof LoanScheduleStatus];
 export const UserStatus = $schema.enums.UserStatus.values;
 export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
+export const BudgetStatus = $schema.enums.BudgetStatus.values;
+export type BudgetStatus = (typeof BudgetStatus)[keyof typeof BudgetStatus];
+export const AttachmentType = $schema.enums.AttachmentType.values;
+export type AttachmentType = (typeof AttachmentType)[keyof typeof AttachmentType];

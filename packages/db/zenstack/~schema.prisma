@@ -105,6 +105,23 @@ enum UserStatus {
     @@schema("public")
 }
 
+enum BudgetStatus {
+    DRAFT
+    SENT
+    ACCEPTED
+    REJECTED
+    EXPIRED
+    @@schema("public")
+}
+
+enum AttachmentType {
+    CONSENT
+    EXAM
+    RECIPE
+    OTHER
+    @@schema("public")
+}
+
 model Person {
     id Int @id() @default(autoincrement())
     rut String @unique() @db.VarChar(20)
@@ -121,6 +138,7 @@ model Person {
     employee Employee?
     transactions Transaction[]
     user User?
+    patient Patient?
 
     @@map("people")
     @@schema("public")
@@ -144,6 +162,7 @@ model User {
     permissionVersion UserPermissionVersion?
     roles UserRoleAssignment[]
     medicalCertificates MedicalCertificate[]
+    patientAttachments PatientAttachment[]
     person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
 
     @@map("users")
@@ -649,6 +668,7 @@ model Event {
     rawEvent Json? @map("raw_event")
     lastSyncedAt DateTime @map("last_synced_at")
     calendar Calendar @relation(fields: [calendarId], references: [id])
+    consultations Consultation[]
 
     @@unique([calendarId, externalEventId])
     @@index([calendarId])
@@ -1029,13 +1049,125 @@ model MedicalCertificate {
     purposeDetail String? @map("purpose_detail")
     issuedBy Int @map("issued_by")
     issuedAt DateTime @default(now()) @map("issued_at")
+    patientId Int? @map("patient_id")
     driveFileId String @map("drive_file_id")
     pdfHash String @map("pdf_hash")
     metadata Json?
     issuer User @relation(fields: [issuedBy], references: [id])
+    patient Patient? @relation(fields: [patientId], references: [id])
 
     @@index([patientRut])
     @@index([issuedAt])
     @@map("medical_certificates")
+    @@schema("public")
+}
+
+model Patient {
+    id Int @id() @default(autoincrement())
+    personId Int @unique() @map("person_id")
+    birthDate DateTime @map("birth_date") @db.Date()
+    bloodType String? @map("blood_type")
+    notes String?
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @default(now()) @updatedAt() @map("updated_at")
+    person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+    consultations Consultation[]
+    medicalCertificates MedicalCertificate[]
+    budgets Budget[]
+    payments PatientPayment[]
+    attachments PatientAttachment[]
+
+    @@map("patients")
+    @@schema("public")
+}
+
+model Consultation {
+    id Int @id() @default(autoincrement())
+    patientId Int @map("patient_id")
+    eventId Int? @map("event_id")
+    date DateTime @db.Date()
+    reason String
+    diagnosis String?
+    treatment String?
+    notes String?
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @default(now()) @updatedAt() @map("updated_at")
+    patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+    event Event? @relation(fields: [eventId], references: [id])
+
+    @@index([patientId])
+    @@index([eventId])
+    @@index([date])
+    @@map("consultations")
+    @@schema("public")
+}
+
+model Budget {
+    id Int @id() @default(autoincrement())
+    patientId Int @map("patient_id")
+    title String
+    totalAmount Decimal @map("total_amount") @db.Decimal(15, 2)
+    discount Decimal @default(0) @db.Decimal(15, 2)
+    finalAmount Decimal @map("final_amount") @db.Decimal(15, 2)
+    status BudgetStatus @default(DRAFT)
+    notes String?
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @default(now()) @updatedAt() @map("updated_at")
+    patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+    items BudgetItem[]
+    payments PatientPayment[]
+
+    @@index([patientId])
+    @@map("budgets")
+    @@schema("public")
+}
+
+model BudgetItem {
+    id Int @id() @default(autoincrement())
+    budgetId Int @map("budget_id")
+    description String
+    quantity Int @default(1)
+    unitPrice Decimal @map("unit_price") @db.Decimal(15, 2)
+    totalPrice Decimal @map("total_price") @db.Decimal(15, 2)
+    budget Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+    @@index([budgetId])
+    @@map("budget_items")
+    @@schema("public")
+}
+
+model PatientPayment {
+    id Int @id() @default(autoincrement())
+    patientId Int @map("patient_id")
+    budgetId Int? @map("budget_id")
+    amount Decimal @db.Decimal(15, 2)
+    paymentDate DateTime @default(now()) @map("payment_date")
+    paymentMethod String @map("payment_method")
+    reference String?
+    notes String?
+    createdAt DateTime @default(now()) @map("created_at")
+    patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+    budget Budget? @relation(fields: [budgetId], references: [id])
+
+    @@index([patientId])
+    @@index([budgetId])
+    @@map("patient_payments")
+    @@schema("public")
+}
+
+model PatientAttachment {
+    id String @id() @default(cuid())
+    patientId Int @map("patient_id")
+    name String
+    type AttachmentType @default(OTHER)
+    driveFileId String @map("drive_file_id")
+    mimeType String? @map("mime_type")
+    uploadedBy Int @map("uploaded_by")
+    uploadedAt DateTime @default(now()) @map("uploaded_at")
+    patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+    uploader User @relation(fields: [uploadedBy], references: [id])
+
+    @@index([patientId])
+    @@map("patient_attachments")
     @@schema("public")
 }

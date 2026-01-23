@@ -7,12 +7,15 @@ import {
   Calendar,
   ChevronLeft,
   Clock,
+  DollarSign,
+  Download,
   ExternalLink,
   FileText,
   Mail,
   MapPin,
   Phone,
   PlusCircle,
+  Trash2,
   User,
 } from "lucide-react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -52,6 +55,43 @@ interface MedicalCertificate {
   diagnosis: string;
 }
 
+interface BudgetItem {
+  id: number;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+interface Budget {
+  id: number;
+  title: string;
+  totalAmount: number;
+  discount: number;
+  finalAmount: number;
+  status: string;
+  notes?: string;
+  updatedAt: string;
+  items: BudgetItem[];
+}
+
+interface PatientPayment {
+  id: number;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: string;
+  reference?: string;
+  notes?: string;
+}
+
+interface PatientAttachment {
+  id: number;
+  name: string;
+  type: string;
+  uploadedAt: string;
+  driveFileId: string;
+}
+
 interface Patient {
   id: number;
   personId: number;
@@ -62,6 +102,9 @@ interface Patient {
   person: Person;
   consultations: Consultation[];
   medicalCertificates: MedicalCertificate[];
+  budgets: Budget[];
+  payments: PatientPayment[];
+  attachments: PatientAttachment[];
 }
 
 function PatientDetailsPage() {
@@ -229,6 +272,24 @@ function PatientDetailsPage() {
                   <Tabs.Indicator />
                 </Tabs.Tab>
 
+                <Tabs.Tab id="budgets" className="gap-2 font-semibold">
+                  <DollarSign size={18} />
+                  <span>Presupuestos</span>
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+
+                <Tabs.Tab id="payments" className="gap-2 font-semibold">
+                  <PlusCircle size={18} />
+                  <span>Pagos</span>
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+
+                <Tabs.Tab id="docs" className="gap-2 font-semibold">
+                  <FileText size={18} />
+                  <span>Documentos</span>
+                  <Tabs.Indicator />
+                </Tabs.Tab>
+
                 <Tabs.Tab id="info" className="gap-2 font-semibold">
                   <User size={18} />
                   <span>Info Detallada</span>
@@ -250,6 +311,30 @@ function PatientDetailsPage() {
                 columns={certificateColumns}
                 data={patient.medicalCertificates || []}
                 noDataMessage="No se han emitido certificados a este paciente."
+              />
+            </Tabs.Panel>
+
+            <Tabs.Panel id="budgets" className="py-4">
+              <DataTable
+                columns={budgetColumns}
+                data={patient.budgets || []}
+                noDataMessage="No hay presupuestos registrados."
+              />
+            </Tabs.Panel>
+
+            <Tabs.Panel id="payments" className="py-4">
+              <DataTable
+                columns={paymentColumns}
+                data={patient.payments || []}
+                noDataMessage="No hay pagos registrados."
+              />
+            </Tabs.Panel>
+
+            <Tabs.Panel id="docs" className="py-4">
+              <DataTable
+                columns={attachmentColumns}
+                data={patient.attachments || []}
+                noDataMessage="No hay documentos adjuntos."
               />
             </Tabs.Panel>
 
@@ -363,3 +448,92 @@ const ArrowRight = ({ size, className }: { size?: number; className?: string }) 
     <path d="M5 12h14M12 5l7 7-7 7" />
   </svg>
 );
+
+const budgetColumns: ColumnDef<Budget>[] = [
+  {
+    accessorKey: "title",
+    header: "TÍTULO",
+  },
+  {
+    accessorKey: "finalAmount",
+    header: "MONTO TOTAL",
+    cell: ({ row }) =>
+      new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(
+        row.original.finalAmount,
+      ),
+  },
+  {
+    accessorKey: "status",
+    header: "ESTADO",
+    cell: ({ row }) => (
+      <div
+        className={`px-2 py-0.5 rounded-full text-xs font-medium w-fit ${
+          row.original.status === "ACCEPTED"
+            ? "bg-success/10 text-success"
+            : "bg-base-200 text-base-content/60"
+        }`}
+      >
+        {row.original.status || "BORRADOR"}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "updatedAt",
+    header: "ÚLT. ACTUALIZACIÓN",
+    cell: ({ row }) => dayjs(row.original.updatedAt).format("DD/MM/YYYY"),
+  },
+];
+
+const paymentColumns: ColumnDef<PatientPayment>[] = [
+  {
+    accessorKey: "paymentDate",
+    header: "FECHA",
+    cell: ({ row }) => dayjs(row.original.paymentDate).format("DD/MM/YYYY"),
+  },
+  {
+    accessorKey: "amount",
+    header: "MONTO",
+    cell: ({ row }) =>
+      new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(
+        row.original.amount,
+      ),
+  },
+  {
+    accessorKey: "paymentMethod",
+    header: "MÉTODO",
+  },
+  {
+    accessorKey: "reference",
+    header: "REF/TRANS",
+  },
+];
+
+const attachmentColumns: ColumnDef<PatientAttachment>[] = [
+  {
+    accessorKey: "name",
+    header: "NOMBRE",
+  },
+  {
+    accessorKey: "type",
+    header: "TIPO",
+  },
+  {
+    accessorKey: "uploadedAt",
+    header: "FECHA",
+    cell: ({ row }) => dayjs(row.original.uploadedAt).format("DD/MM/YYYY"),
+  },
+  {
+    id: "actions",
+    header: "",
+    cell: () => (
+      <div className="flex gap-2">
+        <Button size="sm" variant="ghost" isIconOnly>
+          <Download size={16} />
+        </Button>
+        <Button size="sm" variant="ghost" isIconOnly className="text-error">
+          <Trash2 size={16} />
+        </Button>
+      </div>
+    ),
+  },
+];
