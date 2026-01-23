@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@heroui/react";
-import type React from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
 
@@ -26,11 +27,11 @@ export interface SelectProps<T extends object = object>
    */
   helper?: string;
   errorMessage?: string;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }
 
-export function Select<T extends object>({
+function SelectBase<T extends object>({
   label,
   placeholder,
   description,
@@ -57,11 +58,35 @@ export function Select<T extends object>({
       </SelectTrigger>
       {(description || helper) && <Description>{description || helper}</Description>}
       {errorMessage && <FieldError>{errorMessage}</FieldError>}
-      <SelectPopover>
+      <SelectPopoverFixed>
         <ListBox>{children}</ListBox>
-      </SelectPopover>
+      </SelectPopoverFixed>
     </HeroSelect>
   );
+}
+
+function SelectPopoverFixed({ children, ...props }: any) {
+  return (
+    <SelectPopover {...props} {...({ isNonModal: true } as any)}>
+      <SelectPortal>{children}</SelectPortal>
+    </SelectPopover>
+  );
+}
+
+export const Select = Object.assign(SelectBase, {
+  Indicator: SelectIndicator,
+  Item: ListBoxItem,
+  Popover: SelectPopoverFixed,
+  Trigger: SelectTrigger,
+  Value: SelectValue,
+});
+
+function SelectPortal({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted || typeof document === "undefined") return <>{children}</>;
+  return createPortal(children, document.body);
 }
 
 export interface SelectItemProps extends ListBoxItemProps {}

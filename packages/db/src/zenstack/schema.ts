@@ -340,7 +340,7 @@ export class SchemaType implements SchemaDef {
             },
             attributes: [
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,read,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["id"]), "==", ExpressionUtils.field("userId")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN")), "||", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("GOD")))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("userId")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("passkeys") }] }
             ],
@@ -750,7 +750,7 @@ export class SchemaType implements SchemaDef {
             attributes: [
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("employees") }] }
             ],
             idFields: ["id"],
@@ -1339,7 +1339,7 @@ export class SchemaType implements SchemaDef {
             attributes: [
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("sourceId"), ExpressionUtils.field("transactionType")]) }, { name: "map", value: ExpressionUtils.literal("unique_mp_tx") }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("person_id")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("transactionDate")]) }] },
@@ -1719,7 +1719,7 @@ export class SchemaType implements SchemaDef {
             attributes: [
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("transactionDate")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("transactionType")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("externalReference")]) }] },
@@ -2119,7 +2119,7 @@ export class SchemaType implements SchemaDef {
             attributes: [
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("daily_balances") }] }
             ],
             idFields: ["id"],
@@ -2357,7 +2357,7 @@ export class SchemaType implements SchemaDef {
             attributes: [
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("settings") }] }
             ],
             idFields: ["key"],
@@ -3485,7 +3485,7 @@ export class SchemaType implements SchemaDef {
             attributes: [
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_facilities") }] }
             ],
             idFields: ["id"],
@@ -3562,7 +3562,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("facilityId")]) }] },
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_doctors") }] }
             ],
             idFields: ["id"],
@@ -3683,7 +3683,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("doctorId")]) }] },
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_addresses") }] }
             ],
             idFields: ["id"],
@@ -3784,7 +3784,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("addressId")]) }] },
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_services") }] }
             ],
             idFields: ["id"],
@@ -3838,7 +3838,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("addressId")]) }] },
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_insurance_providers") }] }
             ],
             idFields: ["id"],
@@ -3893,7 +3893,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("startAt")]) }] },
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_slots") }] }
             ],
             idFields: ["id"],
@@ -4023,7 +4023,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("startAt")]) }] },
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_bookings") }] }
             ],
             idFields: ["id"],
@@ -4086,7 +4086,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("addressId")]) }] },
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_calendar_breaks") }] }
             ],
             idFields: ["id"],
@@ -4482,7 +4482,7 @@ export class SchemaType implements SchemaDef {
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["id"]), "==", ExpressionUtils.field("issuedBy")) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN")), "||", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("GOD")))) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("patientRut")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("issuedAt")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("medical_certificates") }] }
