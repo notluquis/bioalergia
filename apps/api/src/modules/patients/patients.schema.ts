@@ -21,5 +21,15 @@ export const createPatientSchema = z.object({
 
 export const updatePatientSchema = createPatientSchema.partial();
 
+export const createConsultationSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)"),
+  reason: z.string().min(1, "Motivo de consulta es requerido"),
+  diagnosis: z.string().optional(),
+  treatment: z.string().optional(),
+  notes: z.string().optional(),
+  eventId: z.number().int().optional(),
+});
+
 export type CreatePatientInput = z.infer<typeof createPatientSchema>;
 export type UpdatePatientInput = z.infer<typeof updatePatientSchema>;
+export type CreateConsultationInput = z.infer<typeof createConsultationSchema>;

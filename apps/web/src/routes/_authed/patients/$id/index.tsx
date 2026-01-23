@@ -1,6 +1,6 @@
 import { Card, Separator, Spinner, Tabs } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
@@ -20,7 +20,7 @@ import Button from "@/components/ui/Button";
 import { CardContent } from "@/components/ui/Card";
 import { apiClient } from "@/lib/api-client";
 
-export const Route = createFileRoute("/_authed/patients/$id")({
+export const Route = createFileRoute("/_authed/patients/$id/")({
   staticData: {
     permission: { action: "read", subject: "Patient" },
   },
@@ -65,7 +65,7 @@ interface Patient {
 }
 
 function PatientDetailsPage() {
-  const { id } = Route.useParams() as { id: string };
+  const { id } = Route.useParams();
   const navigate = useNavigate();
 
   const { data: patient, isLoading } = useQuery({
@@ -95,6 +95,7 @@ function PatientDetailsPage() {
   }
 
   const age = dayjs().diff(dayjs(patient.birthDate), "year");
+  const person = patient.person;
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -102,20 +103,18 @@ function PatientDetailsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
-            as={Link}
-            // @ts-expect-error - Link to prop mismatch
-            to="/patients"
             variant="ghost"
+            onClick={() => navigate({ to: "/patients" })}
             className="rounded-full h-10 w-10 min-w-0 p-0"
           >
             <ChevronLeft size={24} />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-base-content">
-              {patient.person.names} {patient.person.fatherName}
+              {person.names} {person.fatherName}
             </h1>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm font-mono text-base-content/60">{patient.person.rut}</span>
+              <span className="text-sm font-mono text-base-content/60">{person.rut}</span>
               <div className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-medium">
                 {age} años
               </div>
@@ -123,18 +122,34 @@ function PatientDetailsPage() {
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            className="gap-2"
+            onClick={() =>
+              navigate({
+                // @ts-expect-error - Route tree may not be updated yet
+                to: "/patients/$id/new-consultation",
+                params: { id: String(id) },
+              })
+            }
+          >
             <PlusCircle size={18} />
             Nueva Consulta
           </Button>
           <Button
-            as={Link}
-            // @ts-expect-error - Link to prop mismatch
-            to="/certificates/medical"
-            // @ts-expect-error - Search prop mismatch
-            search={{ patientId: patient.id }}
+            variant="outline"
             className="gap-2"
+            onClick={() =>
+              navigate({
+                to: "/certificates/medical",
+                search: {
+                  patientName: person.names,
+                  rut: person.rut,
+                  address: person.address || "",
+                  birthDate: dayjs(patient.birthDate).format("YYYY-MM-DD"),
+                },
+              })
+            }
           >
             <FileText size={18} />
             Emitir Certificado
@@ -161,20 +176,18 @@ function PatientDetailsPage() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm">
                     <Mail size={16} className="text-base-content/40" />
-                    <span className="text-base-content/80">
-                      {patient.person.email || "Sin correo"}
-                    </span>
+                    <span className="text-base-content/80">{person.email || "Sin correo"}</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <Phone size={16} className="text-base-content/40" />
                     <span className="text-base-content/80 text-sm font-mono">
-                      {patient.person.phone || "Sin teléfono"}
+                      {person.phone || "Sin teléfono"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <MapPin size={16} className="text-base-content/40" />
                     <span className="text-base-content/80">
-                      {patient.person.address || "Sin dirección"}
+                      {person.address || "Sin dirección"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-sm border-t border-base-200 pt-3">
@@ -244,20 +257,20 @@ function PatientDetailsPage() {
               <Card className="border-none bg-base-100 shadow-sm">
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <DetailRow label="Nombres" value={patient.person.names} />
+                    <DetailRow label="Nombres" value={person.names} />
                     <DetailRow
                       label="Apellidos"
-                      value={`${patient.person.fatherName} ${patient.person.motherName}`}
+                      value={`${person.fatherName} ${person.motherName}`}
                     />
-                    <DetailRow label="RUT" value={patient.person.rut} />
+                    <DetailRow label="RUT" value={person.rut} />
                     <DetailRow
                       label="Fecha Nacimiento"
                       value={dayjs(patient.birthDate).format("DD [de] MMMM [de] YYYY")}
                     />
-                    <DetailRow label="Email" value={patient.person.email} />
-                    <DetailRow label="Teléfono" value={patient.person.phone} />
+                    <DetailRow label="Email" value={person.email} />
+                    <DetailRow label="Teléfono" value={person.phone} />
                     <div className="md:col-span-2">
-                      <DetailRow label="Dirección" value={patient.person.address} />
+                      <DetailRow label="Dirección" value={person.address} />
                     </div>
                   </div>
                 </CardContent>
@@ -321,19 +334,15 @@ const certificateColumns: ColumnDef<MedicalCertificate>[] = [
     id: "actions",
     header: "",
     cell: ({ row }) => (
-      <Button
-        as="a"
-        // @ts-expect-error - anchor props
+      <a
         target="_blank"
-        // @ts-expect-error - anchor props
         href={`${globalThis.location.origin}/verify/${row.original.id}`}
-        size="sm"
-        variant="ghost"
-        className="gap-2 h-8"
+        className="inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm font-medium hover:bg-base-200 transition-colors"
+        rel="noreferrer"
       >
         <ExternalLink size={14} />
         Verificar
-      </Button>
+      </a>
     ),
   },
 ];

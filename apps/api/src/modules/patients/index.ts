@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "@finanzas/db";
-import { createPatientSchema, updatePatientSchema } from "./patients.schema.js";
+import { createPatientSchema, updatePatientSchema, createConsultationSchema } from "./patients.schema.js";
 
 type Variables = {
   // biome-ignore lint/suspicious/noExplicitAny: legacy typing
@@ -84,8 +84,7 @@ patientsRoutes.get("/:id", async (c) => {
 // POST / - Create patient
 patientsRoutes.post("/", zValidator("json", createPatientSchema), async (c) => {
   const input = c.req.valid("json");
-  const user = c.get("user"); // TODO: Validate auth
-
+  // const user = c.get("user"); // TODO: Validate auth
   try {
     // 1. Check if person exists by RUT
     let person = await db.person.findUnique({
@@ -209,6 +208,43 @@ patientsRoutes.put("/:id", zValidator("json", updatePatientSchema), async (c) =>
   } catch (error) {
     console.error("Error updating patient:", error);
     return c.json({ error: "Error al actualizar paciente" }, 500);
+  }
+});
+
+// POST /:id/consultations - Create consultation for patient
+patientsRoutes.post("/:id/consultations", zValidator("json", createConsultationSchema), async (c) => {
+  const patientId = Number(c.req.param("id"));
+  const input = c.req.valid("json");
+
+  if (Number.isNaN(patientId)) {
+    return c.json({ error: "ID de paciente inválido" }, 400);
+  }
+
+  try {
+    const patient = await db.patient.findUnique({
+      where: { id: patientId },
+    });
+
+    if (!patient) {
+      return c.json({ error: "Paciente no encontrado" }, 404);
+    }
+
+    const consultation = await db.consultation.create({
+      data: {
+        patientId,
+        date: new Date(input.date),
+        reason: input.reason,
+        diagnosis: input.diagnosis,
+        treatment: input.treatment,
+        notes: input.notes,
+        eventId: input.eventId,
+      },
+    });
+
+    return c.json(consultation, 201);
+  } catch (error) {
+    console.error("Error creating consultation:", error);
+    return c.json({ error: "Error al registrar la consulta", details: String(error) }, 500);
   }
 });
 
