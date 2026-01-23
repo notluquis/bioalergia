@@ -82,7 +82,7 @@ export default function Input(props: Props) {
         <HeroTextArea
           classNames={{
             base: className,
-            input: cn("text-base-content", size === "xs" && "text-xs"),
+            input: cn("text-foreground", size === "xs" && "text-xs"),
           }}
           description={helper}
           errorMessage={error}
@@ -103,19 +103,19 @@ export default function Input(props: Props) {
       <div className={cn("form-control w-full", containerClassName)}>
         {label && (
           <label className="label pt-0 pb-1.5 pl-1">
-            <span className="label-text text-base-content/70 text-xs font-semibold uppercase tracking-wider">
+            <span className="label-text text-default-600 text-xs font-semibold uppercase tracking-wider">
               {label}
             </span>
           </label>
         )}
         <select
           className={cn(
-            "select select-bordered bg-base-100/50 hover:bg-base-100 focus:bg-base-100 w-full transition-all",
+            "select select-bordered bg-background/50 hover:bg-background focus:bg-background w-full transition-all",
             size === "xs" && "select-xs text-xs",
             size === "sm" && "select-sm text-sm",
             size === "md" && "min-h-10 text-sm",
             size === "lg" && "select-lg text-base",
-            error && "select-error focus:ring-error/20 focus:border-error focus:ring-2",
+            error && "select-error focus:ring-error/20 focus:border-danger focus:ring-2",
             className,
           )}
           {...(rest as React.SelectHTMLAttributes<HTMLSelectElement>)}
@@ -127,7 +127,7 @@ export default function Input(props: Props) {
             <span
               className={cn(
                 "label-text-alt text-xs",
-                error ? "text-error" : "text-base-content/60",
+                error ? "text-danger" : "text-default-500",
               )}
             >
               {error || helper}
@@ -147,8 +147,8 @@ export default function Input(props: Props) {
       <HeroInput
         classNames={{
           base: className,
-          input: cn("text-base-content", size === "xs" && "text-xs"),
-          label: "text-base-content/70 font-semibold uppercase tracking-wider",
+          input: cn("text-foreground", size === "xs" && "text-xs"),
+          label: "text-default-600 font-semibold uppercase tracking-wider",
         }}
         description={helper}
         endContent={endContent}

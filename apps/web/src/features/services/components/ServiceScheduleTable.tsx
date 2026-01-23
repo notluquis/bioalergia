@@ -30,7 +30,7 @@ export function ServiceScheduleTable({
   const columns = useMemo(() => getColumns(actions, canManage), [actions, canManage]);
 
   return (
-    <div className="bg-base-100 overflow-hidden">
+    <div className="bg-background overflow-hidden">
       <DataTable
         columns={columns}
         data={schedules}

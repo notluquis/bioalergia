@@ -27,10 +27,10 @@ export default function TopParticipantsWidget({
           Ver todos
         </Link>
       </div>
-      {error && <p className="text-error text-xs">{error}</p>}
-      {loading && <p className="text-base-content text-xs">Cargando...</p>}
+      {error && <p className="text-danger text-xs">{error}</p>}
+      {loading && <p className="text-foreground text-xs">Cargando...</p>}
       {!loading && data.length > 0 && (
-        <ul className="text-base-content space-y-3 text-sm">
+        <ul className="text-foreground space-y-3 text-sm">
           {data.map((item) => {
             const displayName =
               item.bankAccountHolder || item.displayName || item.participant || "Sin información";
@@ -42,19 +42,19 @@ export default function TopParticipantsWidget({
             const account = item.bankAccountNumber || item.withdrawId || "-";
             return (
               <li
-                className="border-base-300 bg-base-200 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-sm"
+                className="border-default-200 bg-default-50 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-sm"
                 key={`${item.participant}-${item.withdrawId ?? ""}`}
               >
                 <div>
-                  <p className="text-base-content font-medium">{displayName}</p>
-                  <p className="text-base-content/90 text-xs">
+                  <p className="text-foreground font-medium">{displayName}</p>
+                  <p className="text-foreground/90 text-xs">
                     RUT {rut} · Cuenta {account}
                   </p>
-                  <p className="text-base-content/80 text-xs tracking-wide uppercase">
+                  <p className="text-default-700 text-xs tracking-wide uppercase">
                     {item.outgoingCount} retiros
                   </p>
                 </div>
-                <span className="text-base-content/70 text-xs font-semibold">
+                <span className="text-default-600 text-xs font-semibold">
                   {fmtCLP(item.outgoingAmount)}
                 </span>
               </li>
@@ -63,7 +63,7 @@ export default function TopParticipantsWidget({
         </ul>
       )}
       {!loading && data.length === 0 && (
-        <p className="text-base-content text-xs">Aún no hay retiros registrados.</p>
+        <p className="text-foreground text-xs">Aún no hay retiros registrados.</p>
       )}
     </article>
   );

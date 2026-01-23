@@ -18,11 +18,30 @@ export function ServicesHero({ actions, description, title }: ServicesHeroProps)
   return (
     <header className="surface-elevated flex flex-col gap-4 rounded-[28px] p-6 shadow-xl lg:flex-row lg:items-center lg:justify-between">
       <div className="space-y-3">
+        {breadcrumbs && breadcrumbs.length > 0 && (
+          <nav
+            aria-label="Ruta de navegación"
+            className="text-default-500 flex flex-wrap items-center gap-1 text-xs"
+          >
+            {breadcrumbs.map((crumb, index) => (
+              <span className="flex items-center gap-1" key={crumb.label}>
+                {crumb.to ? (
+                  <Link className="text-primary font-semibold" to={crumb.to}>
+                    {crumb.label}
+                  </Link>
+                ) : (
+                  <span className="text-default-700 font-semibold">{crumb.label}</span>
+                )}
+                {index < breadcrumbs.length - 1 && <span className="text-default-300">/</span>}
+              </span>
+            ))}
+          </nav>
+        )}
         <div className="space-y-1.5">
-          <h1 className="text-base-content text-2xl font-semibold drop-shadow-sm lg:text-3xl">
+          <h1 className="text-foreground text-2xl font-semibold drop-shadow-sm lg:text-3xl">
             {title}
           </h1>
-          <p className="text-base-content/70 text-sm">{description}</p>
+          <p className="text-default-600 text-sm">{description}</p>
         </div>
       </div>
       {actions && <div className="flex flex-wrap justify-end gap-2">{actions}</div>}

@@ -204,7 +204,7 @@ export function DataTable<TData, TValue>({
           <td className="px-4 py-12 text-center" colSpan={columns.length}>
             <div className="flex flex-col items-center justify-center gap-2">
               <Spinner className="text-primary" color="current" size="md" />
-              <span className="text-base-content/60 text-sm">Cargando...</span>
+              <span className="text-default-500 text-sm">Cargando...</span>
             </div>
           </td>
         </tr>
@@ -214,7 +214,7 @@ export function DataTable<TData, TValue>({
     if (rows.length === 0) {
       return (
         <tr>
-          <td className="text-base-content/60 h-24 text-center italic" colSpan={columns.length}>
+          <td className="text-default-500 h-24 text-center italic" colSpan={columns.length}>
             {noDataMessage}
           </td>
         </tr>
@@ -235,7 +235,7 @@ export function DataTable<TData, TValue>({
             return (
               <React.Fragment key={row.id}>
                 <tr
-                  className="hover:bg-base-100/50 border-base-200/50 border-b transition-colors last:border-0"
+                  className="hover:bg-background/50 border-default-100/50 border-b transition-colors last:border-0"
                   data-index={virtualRow.index}
                   data-state={row.getIsSelected() && "selected"}
                   ref={virtualizer.measureElement}
@@ -246,7 +246,7 @@ export function DataTable<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
-                      className="text-base-content/90 truncate px-4 py-3 align-middle"
+                      className="text-foreground/90 truncate px-4 py-3 align-middle"
                       key={cell.id}
                       style={{
                         ...getCommonPinningStyles(cell.column),
@@ -276,7 +276,7 @@ export function DataTable<TData, TValue>({
           <React.Fragment key={row.id}>
             <tr
               className={cn(
-                "hover:bg-base-100/50 data-[state=selected]:bg-primary/10 border-base-200/50 border-b transition-colors last:border-0",
+                "hover:bg-background/50 data-[state=selected]:bg-primary/10 border-default-100/50 border-b transition-colors last:border-0",
                 onRowClick && "cursor-pointer",
               )}
               data-state={row.getIsSelected() && "selected"}
@@ -284,7 +284,7 @@ export function DataTable<TData, TValue>({
             >
               {row.getVisibleCells().map((cell) => (
                 <td
-                  className="text-base-content/90 truncate px-4 py-3 align-middle"
+                  className="text-foreground/90 truncate px-4 py-3 align-middle"
                   key={cell.id}
                   style={{
                     ...getCommonPinningStyles(cell.column),
@@ -309,7 +309,7 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-4">
       {enableToolbar && <DataTableToolbar filters={filters} table={table} />}
-      <div className="border-base-300/50 bg-base-100 relative overflow-hidden rounded-2xl border shadow-sm">
+      <div className="border-default-200/50 bg-background relative overflow-hidden rounded-2xl border shadow-sm">
         <div
           className="muted-scrollbar overflow-x-auto"
           ref={tableContainerRef}
@@ -327,21 +327,11 @@ export function DataTable<TData, TValue>({
           >
             <thead className="bg-default-100 sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
-                <tr className="border-base-300/50 border-b" key={headerGroup.id}>
+                <tr className="border-default-200/50 border-b" key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
                       <th
-                        aria-sort={
-                          header.column.getIsSorted()
-                            ? header.column.getIsSorted() === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : "none"
-                        }
-                        className={cn(
-                          "text-base-content/70 group relative px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase",
-                          header.column.getCanSort() && "cursor-pointer select-none",
-                        )}
+                        className="text-default-600 group relative px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase"
                         colSpan={header.colSpan}
                         key={header.id}
                         onClick={header.column.getToggleSortingHandler()}
@@ -365,7 +355,7 @@ export function DataTable<TData, TValue>({
                         <button
                           type="button"
                           aria-label="Resize column"
-                          className={`bg-base-300 absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none opacity-0 select-none group-hover:opacity-100 ${
+                          className={`bg-default-100 absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none opacity-0 select-none group-hover:opacity-100 ${
                             header.column.getIsResizing() ? "bg-primary w-1.5 opacity-100" : ""
                           }`}
                           onMouseDown={header.getResizeHandler()}
@@ -391,12 +381,12 @@ export function DataTable<TData, TValue>({
               {renderRows()}
             </tbody>
             {table.getFooterGroups().length > 0 && (
-              <tfoot className="bg-base-200/50 font-medium">
+              <tfoot className="bg-default-50/50 font-medium">
                 {table.getFooterGroups().map((footerGroup) => (
                   <tr key={footerGroup.id}>
                     {footerGroup.headers.map((header) => (
                       <td
-                        className="text-base-content px-4 py-3 align-middle"
+                        className="text-foreground px-4 py-3 align-middle"
                         key={header.id}
                         style={{
                           ...getCommonPinningStyles(header.column),

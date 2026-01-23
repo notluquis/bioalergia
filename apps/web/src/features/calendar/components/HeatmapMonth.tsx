@@ -17,8 +17,8 @@ const INTENSITY_COLORS = {
   0: "bg-default-100/50 text-foreground-500", // Empty
   1: "bg-primary/20 text-primary font-medium hover:bg-primary/30", // Low intensity
   2: "bg-primary/40 text-primary font-semibold hover:bg-primary/50", // Med intensity
-  3: "bg-primary/70 text-primary-content hover:bg-primary/80", // High intensity
-  4: "bg-primary text-primary-content shadow-md shadow-primary/20", // Max intensity
+  3: "bg-primary/70 text-primary-foreground hover:bg-primary/80", // High intensity
+  4: "bg-primary text-primary-foreground shadow-md shadow-primary/20", // Max intensity
 };
 
 function getIntensity(count: number, max: number): 0 | 1 | 2 | 3 | 4 {

@@ -67,11 +67,11 @@ export default function ServicesFilterPanel({
   };
 
   return (
-    <section className="border-base-300 text-base-content bg-base-100 flex flex-col gap-4 border p-4 text-sm">
+    <section className="border-default-200 text-foreground bg-background flex flex-col gap-4 border p-4 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-base-content text-sm font-semibold">Filtros rápidos</p>
-          <p className="text-base-content/50 text-xs">
+          <p className="text-foreground text-sm font-semibold">Filtros rápidos</p>
+          <p className="text-default-400 text-xs">
             Filtra por estado, tipo o busca por nombre/detalle.
           </p>
         </div>
@@ -99,7 +99,7 @@ export default function ServicesFilterPanel({
         </div>
 
         <div>
-          <p className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">
+          <p className="text-default-500 text-xs font-semibold tracking-wide uppercase">
             Estado
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -108,7 +108,7 @@ export default function ServicesFilterPanel({
                 className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
                   filters.statuses.size === 0 || filters.statuses.has(status)
                     ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-base-300 bg-base-200 text-base-content/60 hover:border-primary/35 hover:text-primary"
+                    : "border-default-200 bg-default-50 text-default-500 hover:border-primary/35 hover:text-primary"
                 }`}
                 key={status}
                 onClick={() => {
@@ -125,7 +125,7 @@ export default function ServicesFilterPanel({
         </div>
 
         <div>
-          <p className="text-base-content/60 text-xs font-semibold tracking-wide uppercase">
+          <p className="text-default-500 text-xs font-semibold tracking-wide uppercase">
             Tipo de servicio
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -136,7 +136,7 @@ export default function ServicesFilterPanel({
                   className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
                     isActive
                       ? "border-secondary/40 bg-secondary/10 text-secondary"
-                      : "border-base-300 bg-base-200 text-base-content/60 hover:border-secondary/35 hover:text-secondary"
+                      : "border-default-200 bg-default-50 text-default-500 hover:border-secondary/35 hover:text-secondary"
                   }`}
                   key={type}
                   onClick={() => {

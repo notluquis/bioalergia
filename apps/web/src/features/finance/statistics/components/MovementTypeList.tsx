@@ -16,7 +16,7 @@ interface MovementTypeListProps {
 export default function MovementTypeList({ data }: MovementTypeListProps) {
   if (data.length === 0) {
     return (
-      <div className="text-base-content/60 py-6 text-center text-sm">
+      <div className="text-default-500 py-6 text-center text-sm">
         No hay movimientos para mostrar
       </div>
     );
@@ -44,7 +44,7 @@ export default function MovementTypeList({ data }: MovementTypeListProps) {
         <div className="space-y-1">
           {items.map((item, index) => (
             <div
-              className="hover:bg-base-200/50 flex items-center justify-between rounded-lg border border-transparent p-2 transition-colors"
+              className="hover:bg-default-50/50 flex items-center justify-between rounded-lg border border-transparent p-2 transition-colors"
               // biome-ignore lint/suspicious/noArrayIndexKey: simple list
               key={index}
             >
@@ -69,15 +69,15 @@ export default function MovementTypeList({ data }: MovementTypeListProps) {
       )}
       {renderList(
         outgoingData,
-        <ArrowDown className="text-error h-4 w-4" />,
+        <ArrowDown className="text-danger h-4 w-4" />,
         "Egresos",
-        "text-error",
+        "text-danger",
       )}
       {renderList(
         neutralData,
-        <Minus className="text-base-content/50 h-4 w-4" />,
+        <Minus className="text-default-400 h-4 w-4" />,
         "Neutros",
-        "text-base-content/70",
+        "text-default-600",
       )}
     </div>
   );

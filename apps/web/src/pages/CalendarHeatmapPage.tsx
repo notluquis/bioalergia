@@ -177,7 +177,7 @@ function CalendarHeatmapPage() {
       {/* Collapsible Filter Toolbar */}
       <Card className="overflow-hidden transition-all duration-300">
         <button
-          className="hover:bg-base-200/50 flex w-full items-center justify-between px-6 py-4 text-left transition-colors"
+          className="hover:bg-default-50/50 flex w-full items-center justify-between px-6 py-4 text-left transition-colors"
           onClick={() => {
             setShowAdvanced((prev) => !prev);
           }}
@@ -189,8 +189,8 @@ function CalendarHeatmapPage() {
             </div>
 
             <div>
-              <h3 className="text-base-content text-sm font-medium">Filtros y Visualización</h3>
-              <div className="text-base-content/60 mt-0.5 flex flex-wrap gap-2 text-xs">
+              <h3 className="text-foreground text-sm font-medium">Filtros y Visualización</h3>
+              <div className="text-default-500 mt-0.5 flex flex-wrap gap-2 text-xs">
                 <span className="font-medium">
                   {rangeStartLabel} - {rangeEndLabel}
                 </span>
@@ -200,7 +200,7 @@ function CalendarHeatmapPage() {
 
           <ChevronDown
             className={clsx(
-              "text-base-content/40 h-5 w-5 transition-transform duration-300",
+              "text-default-300 h-5 w-5 transition-transform duration-300",
               showAdvanced && "rotate-180",
             )}
           />
@@ -214,7 +214,7 @@ function CalendarHeatmapPage() {
         >
           <div className="overflow-hidden">
             <form
-              className="border-base-200/50 space-y-6 border-t p-6 pt-2"
+              className="border-default-100/50 space-y-6 border-t p-6 pt-2"
               onSubmit={(event) => {
                 event.preventDefault();
                 handleApply();
@@ -271,10 +271,10 @@ function CalendarHeatmapPage() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
+          <h2 className="text-default-500 text-sm font-semibold tracking-wide uppercase">
             {tc("heatmapSection")}
           </h2>
-          <span className="text-base-content/60 text-xs">
+          <span className="text-default-500 text-xs">
             {tc("heatmapRange", {
               end: rangeEndLabel,
               start: rangeStartLabel,
@@ -292,7 +292,7 @@ function CalendarHeatmapPage() {
             />
           ))}
         </div>
-        <p className="text-base-content/60 text-xs">
+        <p className="text-default-500 text-xs">
           {tc("heatmapTotals", {
             events: numberFormatter.format(summary.totals.events),
             expected: currencyFormatter.format(summary.totals.amountExpected),

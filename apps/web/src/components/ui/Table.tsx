@@ -39,13 +39,13 @@ export interface TableProps<T extends string> {
     column: null | T;
     direction: "asc" | "desc";
   };
-  variant?: "default" | "glass" | "minimal";
+  variant?: "default" | "backdrop-blur-md bg-white/30" | "minimal";
 }
 
 const TABLE_VARIANTS = {
-  default: "overflow-hidden rounded-2xl border border-base-300/50 bg-base-100 shadow-sm",
-  glass: "overflow-hidden bg-base-100/50 backdrop-blur-sm",
-  minimal: "overflow-hidden rounded-lg border border-base-300/50 bg-base-100",
+  default: "overflow-hidden rounded-2xl border border-default-200/50 bg-background shadow-sm",
+  "backdrop-blur-md bg-white/30": "overflow-hidden bg-background/50 backdrop-blur-sm",
+  minimal: "overflow-hidden rounded-lg border border-default-200/50 bg-background",
 };
 
 export function Table<T extends string>({
@@ -62,7 +62,7 @@ export function Table<T extends string>({
   const containerClasses = cn(TABLE_VARIANTS[variant], className);
   const tableClass = cn(
     "w-full text-sm text-left caption-bottom",
-    variant === "glass" && "[&_tbody_tr:nth-child(even)]:bg-default-100/50",
+    variant === "backdrop-blur-md bg-white/30" && "[&_tbody_tr:nth-child(even)]:bg-default-100/50",
   );
 
   const tableContent = (
@@ -97,7 +97,7 @@ function TableBody({
           <td className="px-4 py-12 text-center" colSpan={columnsCount}>
             <div className="flex flex-col items-center justify-center gap-2">
               <Spinner size="md" />
-              <span className="text-base-content/60 text-sm">{loadingMessage}</span>
+              <span className="text-default-500 text-sm">{loadingMessage}</span>
             </div>
           </td>
         </tr>
@@ -106,7 +106,7 @@ function TableBody({
     if (React.Children.count(children) === 0) {
       return (
         <tr>
-          <td className="text-base-content/60 px-4 py-12 text-center italic" colSpan={columnsCount}>
+          <td className="text-default-500 px-4 py-12 text-center italic" colSpan={columnsCount}>
             {emptyMessage}
           </td>
         </tr>
@@ -134,17 +134,17 @@ function TableHeader<T extends string>({
   };
 
   return (
-    <thead className="bg-base-200/50">
+    <thead className="bg-default-50/50">
       <tr>
         {columns
           .filter((col) => !visibleColumns || visibleColumns.has(col.key))
           .map((column) => (
             <th
               className={cn(
-                "text-base-content/70 px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase",
+                "text-default-600 px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase",
                 column.sortable &&
                   onSort &&
-                  "hover:bg-base-200 hover:text-primary cursor-pointer transition-colors",
+                  "hover:bg-default-50 hover:text-primary cursor-pointer transition-colors",
                 column.align === "center" && "text-center",
                 column.align === "right" && "text-right",
               )}

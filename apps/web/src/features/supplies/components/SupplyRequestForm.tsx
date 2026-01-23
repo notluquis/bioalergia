@@ -98,7 +98,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
       : [];
 
   return (
-    <div className="card bg-base-100 mb-8 p-6 shadow-lg">
+    <div className="card bg-background mb-8 p-6 shadow-lg">
       <h2 className="mb-4 text-xl font-semibold">Solicitar nuevo insumo</h2>
       <form
         className="grid grid-cols-1 gap-4 md:grid-cols-2"
@@ -131,7 +131,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
                 ))}
               </Input>
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -153,7 +153,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
                 value={field.state.value}
               />
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -181,7 +181,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
                 ))}
               </Input>
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -208,7 +208,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
                 ))}
               </Input>
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -229,7 +229,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
                 value={field.state.value ?? ""}
               />
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}

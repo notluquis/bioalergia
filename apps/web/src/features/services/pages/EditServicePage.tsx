@@ -152,39 +152,39 @@ export default function ServiceEditPage() {
 
       <ServicesSurface className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)] lg:items-start">
-          <aside className="border-base-300/60 bg-base-100/80 text-base-content space-y-4 rounded-2xl border p-4 text-sm shadow-inner">
-            <h2 className="text-base-content/80 text-sm font-semibold tracking-wide uppercase">
+          <aside className="border-default-200/60 bg-background/80 text-foreground space-y-4 rounded-2xl border p-4 text-sm shadow-inner">
+            <h2 className="text-default-700 text-sm font-semibold tracking-wide uppercase">
               Resumen
             </h2>
             <div className="space-y-3">
               {summaryCards.map((card) => (
                 <div
-                  className="border-base-300 bg-base-200 rounded-2xl border p-3"
+                  className="border-default-200 bg-default-50 rounded-2xl border p-3"
                   key={card.label}
                 >
-                  <p className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
+                  <p className="text-default-700 text-xs font-semibold tracking-wide uppercase">
                     {card.label}
                   </p>
-                  <p className="text-base-content mt-1 text-lg font-semibold">{card.value}</p>
-                  {card.helper && <p className="text-base-content/50 text-xs">{card.helper}</p>}
+                  <p className="text-foreground mt-1 text-lg font-semibold">{card.value}</p>
+                  {card.helper && <p className="text-default-400 text-xs">{card.helper}</p>}
                 </div>
               ))}
             </div>
             <div className="space-y-2">
-              <h3 className="text-base-content/80 text-xs font-semibold tracking-wide uppercase">
+              <h3 className="text-default-700 text-xs font-semibold tracking-wide uppercase">
                 Historial
               </h3>
-              <ol className="text-base-content/60 space-y-2 text-xs">
+              <ol className="text-default-500 space-y-2 text-xs">
                 {historyItems.map((item) => (
                   <li
-                    className="border-base-300 bg-base-200 rounded-xl border p-3"
+                    className="border-default-200 bg-default-50 rounded-xl border p-3"
                     key={item.title}
                   >
-                    <p className="text-base-content font-semibold">{item.title}</p>
+                    <p className="text-foreground font-semibold">{item.title}</p>
                     {item.description && (
-                      <p className="text-base-content/50 text-xs">{item.description}</p>
+                      <p className="text-default-400 text-xs">{item.description}</p>
                     )}
-                    <p className="text-base-content/40 text-xs tracking-wide uppercase">
+                    <p className="text-default-300 text-xs tracking-wide uppercase">
                       {item.date}
                     </p>
                   </li>
@@ -194,8 +194,8 @@ export default function ServiceEditPage() {
           </aside>
 
           <div className="space-y-6">
-            <section className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
-              <h2 className="text-base-content/80 text-sm font-semibold tracking-wide uppercase">
+            <section className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
+              <h2 className="text-default-700 text-sm font-semibold tracking-wide uppercase">
                 Datos generales
               </h2>
               {initialValues && (

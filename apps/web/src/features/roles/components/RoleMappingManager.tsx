@@ -101,13 +101,13 @@ export default function RoleMappingManager() {
   const isSaving = saveMutation.isPending;
 
   return (
-    <div className="bg-base-100 space-y-4 rounded-xl p-6 shadow-sm">
+    <div className="bg-background space-y-4 rounded-xl p-6 shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-base-content text-lg font-bold">Mapeo de Roles (Cargo → Rol App)</h3>
-        {saveErrorMessage && <span className="text-error text-sm">{saveErrorMessage}</span>}
+        <h3 className="text-foreground text-lg font-bold">Mapeo de Roles (Cargo → Rol App)</h3>
+        {saveErrorMessage && <span className="text-danger text-sm">{saveErrorMessage}</span>}
       </div>
 
-      <p className="text-base-content/70 text-sm">
+      <p className="text-default-600 text-sm">
         Asigna qué rol de aplicación tendrán los empleados automáticamente según su cargo en la
         ficha.
       </p>

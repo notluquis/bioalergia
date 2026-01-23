@@ -168,7 +168,7 @@ export default function LoansPage() {
   return (
     <section className={PAGE_CONTAINER}>
       <div className="grid gap-4 lg:grid-cols-[300px,1fr]">
-        <div className="border-base-300 bg-base-100 min-h-[70vh] rounded-2xl border p-6 shadow-sm">
+        <div className="border-default-200 bg-background min-h-[70vh] rounded-2xl border p-6 shadow-sm">
           <LoanList
             canManage={canManage}
             loans={loans}
@@ -180,10 +180,10 @@ export default function LoansPage() {
             selectedId={selectedId}
           />
         </div>
-        <div className="border-base-300 bg-base-100 min-h-[70vh] rounded-2xl border p-6 shadow-sm">
+        <div className="border-default-200 bg-background min-h-[70vh] rounded-2xl border p-6 shadow-sm">
           {!selectedId && (
             <div className="flex h-full items-center justify-center text-center">
-              <p className="text-base-content/60 text-sm">
+              <p className="text-default-500 text-sm">
                 Selecciona un préstamo para ver los detalles
               </p>
             </div>
@@ -192,7 +192,7 @@ export default function LoansPage() {
             <Suspense
               fallback={
                 <div className="flex h-full items-center justify-center">
-                  <div className="bg-base-200 h-10 w-10 animate-spin rounded-full border-4 border-t-transparent opacity-50" />
+                  <div className="bg-default-50 h-10 w-10 animate-spin rounded-full border-4 border-t-transparent opacity-50" />
                 </div>
               }
             >

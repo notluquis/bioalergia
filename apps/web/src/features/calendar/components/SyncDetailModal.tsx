@@ -27,7 +27,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
             "flex items-center gap-3 rounded-lg p-3 text-sm font-medium",
             (() => {
               if (log.status === "SUCCESS") return "bg-success/10 text-success";
-              if (log.status === "ERROR") return "bg-error/10 text-error";
+              if (log.status === "ERROR") return "bg-danger/10 text-danger";
               return "bg-warning/10 text-warning";
             })(),
           )}
@@ -47,7 +47,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
         </div>
 
         {log.errorMessage && (
-          <div className="bg-error/5 text-error border-error/20 rounded-lg border p-3 text-sm">
+          <div className="bg-danger/5 text-danger border-danger/20 rounded-lg border p-3 text-sm">
             <p className="font-semibold">Error reportado:</p>
             <p className="mt-1 font-mono text-xs opacity-90">{log.errorMessage}</p>
           </div>

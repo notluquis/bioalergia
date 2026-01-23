@@ -124,13 +124,13 @@ export default function MercadoPagoSettingsPage() {
       {/* Header: Tabs + Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Tabs */}
-        <div className="tabs tabs-boxed bg-base-200/50 w-full p-1 sm:w-auto" role="tablist">
+        <div className="tabs tabs-boxed bg-default-50/50 w-full p-1 sm:w-auto" role="tablist">
           <button
             type="button"
             className={cn(
               "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
               activeTab === "release" &&
-                "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all",
+                "tab-active bg-background text-foreground font-medium shadow-sm transition-all",
             )}
             onClick={() => {
               setActiveTab("release");
@@ -144,7 +144,7 @@ export default function MercadoPagoSettingsPage() {
             className={cn(
               "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
               activeTab === "settlement" &&
-                "tab-active bg-base-100 text-base-content font-medium shadow-sm transition-all",
+                "tab-active bg-background text-foreground font-medium shadow-sm transition-all",
             )}
             onClick={() => {
               setActiveTab("settlement");
@@ -184,14 +184,14 @@ export default function MercadoPagoSettingsPage() {
               <span className="font-medium">Procesamiento completado</span>
             </div>
 
-            <div className="bg-base-200/50 grid grid-cols-2 gap-3 rounded-lg p-4 sm:grid-cols-3">
+            <div className="bg-default-50/50 grid grid-cols-2 gap-3 rounded-lg p-4 sm:grid-cols-3">
               <div className="text-center">
                 <p className="text-2xl font-bold">{lastImportStats.totalRows}</p>
-                <p className="text-base-content/60 text-xs">Total filas</p>
+                <p className="text-default-500 text-xs">Total filas</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold">{lastImportStats.validRows}</p>
-                <p className="text-base-content/60 text-xs">Válidas</p>
+                <p className="text-default-500 text-xs">Válidas</p>
               </div>
               <div className="text-center">
                 <p className="text-success text-2xl font-bold">{lastImportStats.insertedRows}</p>
@@ -203,20 +203,20 @@ export default function MercadoPagoSettingsPage() {
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold">{lastImportStats.skippedRows}</p>
-                <p className="text-base-content/60 text-xs">Omitidas</p>
+                <p className="text-default-500 text-xs">Omitidas</p>
               </div>
               {lastImportStats.errors.length > 0 && (
                 <div className="text-center">
-                  <p className="text-error text-2xl font-bold">{lastImportStats.errors.length}</p>
-                  <p className="text-error/70 text-xs">Errores</p>
+                  <p className="text-danger text-2xl font-bold">{lastImportStats.errors.length}</p>
+                  <p className="text-danger/70 text-xs">Errores</p>
                 </div>
               )}
             </div>
 
             {lastImportStats.errors.length > 0 && (
-              <div className="bg-error/10 rounded-lg p-3 text-sm">
-                <p className="text-error mb-2 font-medium">Errores encontrados:</p>
-                <ul className="text-error/80 list-inside list-disc space-y-1 text-xs">
+              <div className="bg-danger/10 rounded-lg p-3 text-sm">
+                <p className="text-danger mb-2 font-medium">Errores encontrados:</p>
+                <ul className="text-danger/80 list-inside list-disc space-y-1 text-xs">
                   {lastImportStats.errors.slice(0, 5).map((err, i) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: static list
                     <li key={i}>{err}</li>
@@ -244,10 +244,10 @@ export default function MercadoPagoSettingsPage() {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Last Report Card */}
-        <article className="bg-base-100 border-base-300 rounded-2xl border p-6 shadow-sm">
+        <article className="bg-background border-default-200 rounded-2xl border p-6 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-base-content/60 flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase">
+              <p className="text-default-500 flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase">
                 Último Reporte
               </p>
               <h3 className="mt-2 line-clamp-1 text-lg font-semibold">
@@ -263,7 +263,7 @@ export default function MercadoPagoSettingsPage() {
               <Clock className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-base-content/50 border-base-300/50 mt-4 truncate border-t pt-4 text-xs">
+          <p className="text-default-400 border-default-200/50 mt-4 truncate border-t pt-4 text-xs">
             {reports[0]?.file_name ?? "Sin reportes recientes"}
           </p>
         </article>

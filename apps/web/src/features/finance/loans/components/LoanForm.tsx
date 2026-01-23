@@ -83,7 +83,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 value={field.state.value}
               />
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -102,7 +102,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 value={field.state.value}
               />
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -124,7 +124,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 <option value="COMPANY">Empresa</option>
               </Input>
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -146,7 +146,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 value={field.state.value}
               />
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -168,7 +168,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 value={field.state.value}
               />
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -190,7 +190,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 <option value="COMPOUND">Compuesto</option>
               </Input>
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -213,7 +213,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 <option value="MONTHLY">Mensual</option>
               </Input>
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -235,7 +235,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 value={field.state.value}
               />
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -255,7 +255,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 value={field.state.value}
               />
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -272,7 +272,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 }}
               />
               {field.state.meta.errors.length > 0 && (
-                <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
             </div>
           )}
@@ -293,7 +293,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
               value={field.state.value ?? ""}
             />
             {field.state.meta.errors.length > 0 && (
-              <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+              <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
             )}
           </div>
         )}

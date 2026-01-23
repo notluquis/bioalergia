@@ -7,7 +7,7 @@ export function PerformanceIndicator() {
 
   return (
     <div
-      className="border-base-300/60 bg-base-200/50 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs"
+      className="border-default-200/60 bg-default-50/50 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs"
       title={`Modo: ${mode === "high" ? "Alto rendimiento" : "Rendimiento optimizado"} - ${reason}`}
     >
       {mode === "high" ? (

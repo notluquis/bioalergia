@@ -71,7 +71,7 @@ export default function TimesheetsPage() {
           <div className="min-w-52">
             <Input
               as="select"
-              className="bg-base-100"
+              className="bg-background"
               disabled={activeEmployees.length === 0}
               label="Trabajador"
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
@@ -91,7 +91,7 @@ export default function TimesheetsPage() {
           <div className="min-w-44">
             <Input
               as="select"
-              className="bg-base-100"
+              className="bg-background"
               label="Periodo"
               onChange={(event: ChangeEvent<HTMLSelectElement>) => {
                 setMonth(event.target.value);

@@ -9,7 +9,7 @@ interface IncomeBreakdownProps {
 
 export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdownProps>) {
   if (isLoading || !summary) {
-    return <div className="bg-base-100 h-64 w-full animate-pulse rounded-2xl" />;
+    return <div className="bg-background h-64 w-full animate-pulse rounded-2xl" />;
   }
 
   const columns: TableColumn<keyof IncomeItem>[] = [
@@ -42,7 +42,7 @@ export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdown
             <Table.Header<keyof IncomeItem | "dateDisplay"> columns={columns} />
             <Table.Body columnsCount={columns.length}>
               {group.items.map((item) => (
-                <tr key={item.id} className="hover:bg-base-200/50">
+                <tr key={item.id} className="hover:bg-default-50/50">
                   <td className="px-4 py-3 text-xs">{dayjs(item.date).format("DD/MM/YYYY")}</td>
                   <td className="px-4 py-3 text-xs font-medium">{item.category}</td>
                   <td className="truncate px-4 py-3 text-xs max-w-50" title={item.summary}>

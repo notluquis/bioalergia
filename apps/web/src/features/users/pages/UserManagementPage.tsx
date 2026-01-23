@@ -202,7 +202,7 @@ export default function UserManagementPage() {
       {/* Security Overview Cards */}
       {users && users.length > 0 && (
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="card bg-base-100 shadow-sm">
+          <div className="card bg-background shadow-sm">
             <div className="card-body">
               <div className="flex items-center gap-3">
                 <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full">
@@ -210,13 +210,13 @@ export default function UserManagementPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{users.length}</p>
-                  <p className="text-base-content/60 text-sm">Usuarios totales</p>
+                  <p className="text-default-500 text-sm">Usuarios totales</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="card bg-base-100 shadow-sm">
+          <div className="card bg-background shadow-sm">
             <div className="card-body">
               <div className="flex items-center gap-3">
                 <div className="bg-success/10 text-success flex h-12 w-12 items-center justify-center rounded-full">
@@ -224,13 +224,13 @@ export default function UserManagementPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{users.filter((u) => u.mfaEnabled).length}</p>
-                  <p className="text-base-content/60 text-sm">Con MFA activo</p>
+                  <p className="text-default-500 text-sm">Con MFA activo</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="card bg-base-100 shadow-sm">
+          <div className="card bg-background shadow-sm">
             <div className="card-body">
               <div className="flex items-center gap-3">
                 <div className="bg-info/10 text-info flex h-12 w-12 items-center justify-center rounded-full">
@@ -238,7 +238,7 @@ export default function UserManagementPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{users.filter((u) => u.hasPasskey).length}</p>
-                  <p className="text-base-content/60 text-sm">Con passkey</p>
+                  <p className="text-default-500 text-sm">Con passkey</p>
                 </div>
               </div>
             </div>
@@ -307,7 +307,7 @@ export default function UserManagementPage() {
         title={`Editar Rol: ${editingUser ? getPersonFullName(editingUser.person) : ""}`}
       >
         <div className="mt-4 flex flex-col gap-4">
-          <p className="text-base-content/70 text-sm">
+          <p className="text-default-600 text-sm">
             Selecciona el nuevo rol para el usuario. Esto actualizará sus permisos inmediatamente.
           </p>
 

@@ -15,7 +15,7 @@ export function FinancialSummaryCards({
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-base-100 h-32 animate-pulse rounded-2xl" />
+          <div key={i} className="bg-background h-32 animate-pulse rounded-2xl" />
         ))}
       </div>
     );

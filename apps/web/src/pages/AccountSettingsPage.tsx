@@ -151,34 +151,34 @@ export default function AccountSettingsPage() {
         <h2 className="text-primary text-lg font-semibold drop-shadow-sm">
           Seguridad de la cuenta
         </h2>
-        <p className="text-base-content/70 text-sm">
+        <p className="text-default-600 text-sm">
           Gestiona tus métodos de autenticación para proteger tu cuenta.
         </p>
       </div>
 
       {/* MFA Section */}
-      <section className="bg-base-100 p-6">
+      <section className="bg-background p-6">
         <div className="flex items-start gap-4">
           <div className="bg-primary/10 text-primary rounded-full p-3">
             <Smartphone className="size-6" />
           </div>
           <div className="flex-1 space-y-4">
             <div>
-              <h3 className="text-base-content font-semibold">
+              <h3 className="text-foreground font-semibold">
                 Autenticación de dos factores (MFA)
               </h3>
-              <p className="text-base-content/70 text-sm">
+              <p className="text-default-600 text-sm">
                 Añade una capa extra de seguridad usando una app como Google Authenticator o Authy.
               </p>
             </div>
 
             {isMfaEnabled ? (
-              <div className="bg-success/10 text-success-content flex items-center gap-2 rounded-lg px-4 py-3 text-sm">
+              <div className="bg-success/10 text-success-foreground flex items-center gap-2 rounded-lg px-4 py-3 text-sm">
                 <Check className="size-4" />
                 <span className="font-medium">MFA está activado en tu cuenta.</span>
                 <div className="ml-auto">
                   <Button
-                    className="text-error hover:bg-error/10"
+                    className="text-danger hover:bg-danger/10"
                     disabled={disableMfaMutation.isPending}
                     onClick={handleDisableMfa}
                     size="sm"
@@ -191,7 +191,7 @@ export default function AccountSettingsPage() {
             ) : (
               <div className="space-y-4">
                 {qrCodeUrl ? (
-                  <div className="border-base-300 bg-base-200/50 rounded-xl border p-4">
+                  <div className="border-default-200 bg-default-50/50 rounded-xl border p-4">
                     <div className="mb-4 text-center">
                       <p className="mb-2 text-sm font-medium">
                         1. Escanea este código QR con tu app de autenticación:
@@ -203,7 +203,7 @@ export default function AccountSettingsPage() {
                         loading="lazy"
                         src={qrCodeUrl}
                       />
-                      <p className="text-base-content/50 mt-2 text-xs">Secreto: {mfaSecret}</p>
+                      <p className="text-default-400 mt-2 text-xs">Secreto: {mfaSecret}</p>
                     </div>
 
                     <div className="mx-auto max-w-xs space-y-3">
@@ -233,7 +233,7 @@ export default function AccountSettingsPage() {
                         </Button>
                       </div>
                       <Button
-                        className="text-base-content/50 w-full"
+                        className="text-default-400 w-full"
                         onClick={() => {
                           setQrCodeUrl(null);
                           setMfaSecret(null);
@@ -265,27 +265,27 @@ export default function AccountSettingsPage() {
       </section>
 
       {/* Passkey Section */}
-      <section className="bg-base-100 p-6">
+      <section className="bg-background p-6">
         <div className="flex items-start gap-4">
           <div className="bg-secondary/10 text-secondary rounded-full p-3">
             <Fingerprint className="size-6" />
           </div>
           <div className="flex-1 space-y-4">
             <div>
-              <h3 className="text-base-content font-semibold">Passkeys / biometría</h3>
-              <p className="text-base-content/70 text-sm">
+              <h3 className="text-foreground font-semibold">Passkeys / biometría</h3>
+              <p className="text-default-600 text-sm">
                 Inicia sesión sin contraseña usando tu huella dactilar, reconocimiento facial o PIN
                 del dispositivo.
               </p>
             </div>
 
             {(user as unknown as { hasPasskey: boolean })?.hasPasskey ? (
-              <div className="bg-success/10 text-success-content flex items-center gap-2 rounded-lg px-4 py-3 text-sm">
+              <div className="bg-success/10 text-success-foreground flex items-center gap-2 rounded-lg px-4 py-3 text-sm">
                 <Check className="size-4" />
                 <span className="font-medium">Passkey configurado.</span>
                 <div className="ml-auto flex gap-2">
                   <Button
-                    className="text-error hover:bg-error/10"
+                    className="text-danger hover:bg-danger/10"
                     disabled={deletePasskeyMutation.isPending}
                     onClick={handleDeletePasskey}
                     size="sm"
@@ -324,7 +324,7 @@ export default function AccountSettingsPage() {
               </div>
             )}
 
-            <p className="text-base-content/50 text-xs">
+            <p className="text-default-400 text-xs">
               Nota: Solo puedes tener un passkey activo por usuario. Registrar uno nuevo reemplazará
               el anterior.
             </p>

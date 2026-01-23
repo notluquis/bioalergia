@@ -26,7 +26,7 @@ export function FinancialDashboardPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Tablero Financiero</h1>
-          <p className="text-base-content/60 text-sm">
+          <p className="text-default-500 text-sm">
             Resumen de ingresos por tratamientos y gastos operativos.
           </p>
         </div>
@@ -39,7 +39,7 @@ export function FinancialDashboardPage() {
               onChange={(e) => handleDateChange("from", e.target.value)}
             />
           </TextField>
-          <span className="text-base-content/50 text-sm">ha</span>
+          <span className="text-default-400 text-sm">ha</span>
           <TextField aria-label="Hasta">
             <Input
               type="date"

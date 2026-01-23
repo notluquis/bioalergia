@@ -79,8 +79,8 @@ function NewConsultationPage() {
           Volver
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-base-content">Nueva Consulta Médica</h1>
-          <p className="text-base-content/60 text-sm">Registro de atención clínica</p>
+          <h1 className="text-2xl font-bold text-foreground">Nueva Consulta Médica</h1>
+          <p className="text-default-500 text-sm">Registro de atención clínica</p>
         </div>
       </header>
 
@@ -114,13 +114,13 @@ function NewConsultationPage() {
                 <div>
                   <label
                     htmlFor="reason"
-                    className="block text-sm font-medium text-base-content mb-2"
+                    className="block text-sm font-medium text-foreground mb-2"
                   >
-                    Motivo de Consulta <span className="text-error">*</span>
+                    Motivo de Consulta <span className="text-danger">*</span>
                   </label>
                   <textarea
                     id="reason"
-                    className="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-base-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     rows={3}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -128,7 +128,7 @@ function NewConsultationPage() {
                     placeholder="Escriba el motivo principal de la atención..."
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-error text-sm mt-1">{field.state.meta.errors.join(", ")}</p>
+                    <p className="text-danger text-sm mt-1">{field.state.meta.errors.join(", ")}</p>
                   )}
                 </div>
               )}
@@ -139,13 +139,13 @@ function NewConsultationPage() {
                 <div>
                   <label
                     htmlFor="diagnosis"
-                    className="block text-sm font-medium text-base-content mb-2"
+                    className="block text-sm font-medium text-foreground mb-2"
                   >
                     Diagnóstico
                   </label>
                   <textarea
                     id="diagnosis"
-                    className="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-base-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     rows={2}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -161,13 +161,13 @@ function NewConsultationPage() {
                 <div>
                   <label
                     htmlFor="treatment"
-                    className="block text-sm font-medium text-base-content mb-2"
+                    className="block text-sm font-medium text-foreground mb-2"
                   >
                     Tratamiento Indicado
                   </label>
                   <textarea
                     id="treatment"
-                    className="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-base-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     rows={3}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -183,13 +183,13 @@ function NewConsultationPage() {
                 <div>
                   <label
                     htmlFor="notes"
-                    className="block text-sm font-medium text-base-content mb-2"
+                    className="block text-sm font-medium text-foreground mb-2"
                   >
                     Notas Privadas
                   </label>
                   <textarea
                     id="notes"
-                    className="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-base-content focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     rows={2}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -200,7 +200,7 @@ function NewConsultationPage() {
               )}
             </form.Field>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-base-200">
+            <div className="flex justify-end gap-3 pt-4 border-t border-default-100">
               <Button
                 type="button"
                 variant="ghost"

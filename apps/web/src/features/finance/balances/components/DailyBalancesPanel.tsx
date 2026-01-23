@@ -29,7 +29,7 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
   saving,
 }: Props) {
   return (
-    <section className="card bg-base-100 shadow-sm">
+    <section className="card bg-background shadow-sm">
       <div className="card-body">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="card-title text-primary text-lg">Registro de saldos</h2>
@@ -60,7 +60,7 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, idx) => (
             <div
-              className="border-base-300 bg-base-200/60 flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3"
+              className="border-default-200 bg-default-50/60 flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3"
               // biome-ignore lint/suspicious/noArrayIndexKey: skeleton items
               key={`skeleton-balance-${idx}`}
             >
@@ -76,14 +76,14 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
     }
     if (!report) {
       return (
-        <p className="text-base-content px-4 py-3 text-sm">
+        <p className="text-foreground px-4 py-3 text-sm">
           Selecciona un rango con movimientos para conciliar los saldos diarios.
         </p>
       );
     }
     if (report.days.length === 0) {
       return (
-        <p className="text-base-content px-4 py-3 text-sm">
+        <p className="text-foreground px-4 py-3 text-sm">
           No hay días registrados en el rango actual.
         </p>
       );

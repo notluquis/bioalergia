@@ -85,12 +85,12 @@ export default function TimesheetDetailTable({
   };
 
   return (
-    <div className="bg-base-100 space-y-4 p-6">
+    <div className="bg-background space-y-4 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-base-content/70 text-sm">
+        <div className="text-default-600 text-sm">
           <span className="font-semibold">{monthLabel}</span>
           {selectedEmployee && (
-            <span className="text-base-content/60 ml-2">· {selectedEmployee.full_name}</span>
+            <span className="text-default-500 ml-2">· {selectedEmployee.full_name}</span>
           )}
         </div>
         {canEdit && (
@@ -102,7 +102,7 @@ export default function TimesheetDetailTable({
             >
               Guardar cambios
             </Button>
-            <div className="text-base-content/60 text-xs">
+            <div className="text-default-500 text-xs">
               {pendingCount > 0 && <span className="mr-2">Pendientes: {pendingCount}</span>}
               {modifiedCount > 0 && <span>Modificados: {modifiedCount}</span>}
             </div>
@@ -110,7 +110,7 @@ export default function TimesheetDetailTable({
         )}
       </div>
 
-      <div className="muted-scrollbar border-base-200 transform-gpu overflow-x-auto rounded-lg border">
+      <div className="muted-scrollbar border-default-100 transform-gpu overflow-x-auto rounded-lg border">
         <DataTable
           columns={columns as ColumnDef<BulkRow, unknown>[]}
           data={bulkRows}
@@ -134,7 +134,7 @@ export default function TimesheetDetailTable({
         }}
         title={`Comentario · ${commentPreview ? formatDateLabel(commentPreview.date) : ""}`}
       >
-        <p className="text-base-content whitespace-pre-wrap">{commentPreview?.text}</p>
+        <p className="text-foreground whitespace-pre-wrap">{commentPreview?.text}</p>
       </Modal>
     </div>
   );

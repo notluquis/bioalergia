@@ -38,8 +38,8 @@ export function CierrePanel({
   const statusColors: Record<DayStatus, string> = {
     balanced: "bg-success/20 text-success",
     draft: "bg-warning/20 text-warning",
-    empty: "bg-base-content/10 text-base-content/60",
-    unbalanced: "bg-error/20 text-error",
+    empty: "bg-default-100 text-default-500",
+    unbalanced: "bg-danger/20 text-danger",
   };
 
   const canFinalize = summary.cuadra && summary.totalMetodos > 0;
@@ -47,7 +47,7 @@ export function CierrePanel({
   return (
     <aside
       className={cn(
-        "bg-base-200/50 border-base-content/10 sticky top-4 rounded-2xl border p-4 backdrop-blur-sm",
+        "bg-default-50/50 border-default-200 sticky top-4 rounded-2xl border p-4 backdrop-blur-sm",
         className,
       )}
     >
@@ -60,13 +60,13 @@ export function CierrePanel({
       </div>
 
       {/* Summary rows */}
-      <div className="bg-base-300/30 border-base-content/5 space-y-1 rounded-xl border p-3">
+      <div className="bg-default-100/30 border-default-100 space-y-1 rounded-xl border p-3">
         <SummaryRow label="Métodos" value={summary.totalMetodos} />
         <SummaryRow label="Servicios" value={summary.totalServicios} />
         <SummaryRow label="Gastos" muted value={summary.gastos} />
 
         {/* Diferencia - highlighted */}
-        <div className="border-base-content/10 mt-2 border-t pt-2">
+        <div className="border-default-200 mt-2 border-t pt-2">
           <div className="flex items-baseline justify-between">
             <span
               className={cn(
@@ -87,7 +87,7 @@ export function CierrePanel({
           </div>
 
           {!summary.cuadra && summary.totalMetodos > 0 && (
-            <p className="text-base-content/50 mt-1 text-xs">
+            <p className="text-default-400 mt-1 text-xs">
               {summary.diferencia > 0
                 ? "Asigna más a servicios"
                 : "Reduce servicios o aumenta métodos"}
@@ -98,7 +98,7 @@ export function CierrePanel({
 
       {/* Last saved indicator */}
       {lastSaved && (
-        <div className="text-base-content/40 mt-3 text-center text-xs">
+        <div className="text-default-300 mt-3 text-center text-xs">
           {isSaving ? "Guardando..." : `Guardado hace ${formatSaveTime(lastSaved)}`}
         </div>
       )}
@@ -138,13 +138,13 @@ function SummaryRow({
 }) {
   return (
     <div className="flex items-center justify-between py-1">
-      <span className={cn("text-sm", muted ? "text-base-content/40" : "text-base-content/60")}>
+      <span className={cn("text-sm", muted ? "text-default-300" : "text-default-500")}>
         {label}
       </span>
       <span
         className={cn(
           "font-medium tabular-nums",
-          muted ? "text-base-content/40" : "text-base-content",
+          muted ? "text-default-300" : "text-foreground",
         )}
       >
         {fmtCLP(value)}

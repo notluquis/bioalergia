@@ -76,21 +76,21 @@ export function LoanDetail({
 
   if (!loan) {
     return (
-      <section className="text-base-content/60 bg-base-100 flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm">
+      <section className="text-default-500 bg-background flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm">
         <p>Selecciona un préstamo para ver el detalle.</p>
       </section>
     );
   }
 
   return (
-    <section className="bg-base-100 relative flex h-full flex-col gap-6 rounded-3xl p-6">
+    <section className="bg-background relative flex h-full flex-col gap-6 rounded-3xl p-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
           <h1 className="text-primary text-2xl font-bold drop-shadow-sm">{loan.title}</h1>
-          <p className="text-base-content/90 text-sm">
+          <p className="text-foreground/90 text-sm">
             {loan.borrower_name} · {loan.borrower_type === "PERSON" ? "Persona natural" : "Empresa"}
           </p>
-          <div className="text-base-content/60 flex flex-wrap items-center gap-3 text-xs">
+          <div className="text-default-500 flex flex-wrap items-center gap-3 text-xs">
             <span>Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}</span>
             <span>
               {loan.total_installments} cuotas ·{" "}
@@ -125,28 +125,28 @@ export function LoanDetail({
         </div>
       </header>
 
-      <section className="border-base-300 bg-base-200 text-base-content grid gap-4 rounded-2xl border p-4 text-sm sm:grid-cols-4">
+      <section className="border-default-200 bg-default-50 text-foreground grid gap-4 rounded-2xl border p-4 text-sm sm:grid-cols-4">
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Capital</p>
-          <p className="text-base-content text-lg font-semibold">
+          <p className="text-default-400 text-xs tracking-wide uppercase">Capital</p>
+          <p className="text-foreground text-lg font-semibold">
             ${loan.principal_amount.toLocaleString("es-CL")}
           </p>
         </div>
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Total esperado</p>
-          <p className="text-base-content text-lg font-semibold">
+          <p className="text-default-400 text-xs tracking-wide uppercase">Total esperado</p>
+          <p className="text-foreground text-lg font-semibold">
             ${(summary?.total_expected ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Pagado</p>
+          <p className="text-default-400 text-xs tracking-wide uppercase">Pagado</p>
           <p className="text-success text-lg font-semibold">
             ${(summary?.total_paid ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Saldo</p>
-          <p className="text-error text-lg font-semibold">
+          <p className="text-default-400 text-xs tracking-wide uppercase">Saldo</p>
+          <p className="text-danger text-lg font-semibold">
             ${(summary?.remaining_amount ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
@@ -160,8 +160,8 @@ export function LoanDetail({
       />
 
       {loan.notes && (
-        <div className="border-base-300 bg-base-200 text-base-content rounded-2xl border p-4 text-sm">
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Notas</p>
+        <div className="border-default-200 bg-default-50 text-foreground rounded-2xl border p-4 text-sm">
+          <p className="text-default-400 text-xs tracking-wide uppercase">Notas</p>
           <p>{loan.notes}</p>
         </div>
       )}
@@ -244,8 +244,8 @@ export function LoanDetail({
       </Modal>
 
       {loading && (
-        <div className="bg-base-100/40 absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm">
-          <p className="bg-base-100 text-primary rounded-full px-4 py-2 text-sm font-semibold shadow">
+        <div className="bg-background/40 absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm">
+          <p className="bg-background text-primary rounded-full px-4 py-2 text-sm font-semibold shadow">
             Cargando préstamo...
           </p>
         </div>
