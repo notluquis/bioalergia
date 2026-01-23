@@ -9,10 +9,7 @@ import { type ComponentProps, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 export interface ButtonProps
-  extends Omit<
-    ComponentProps<typeof HeroButton>,
-    "variant" | "color" | "isLoading" | "isPending" | "size"
-  > {
+  extends Omit<ComponentProps<typeof HeroButton>, "variant" | "isLoading" | "size"> {
   // We maintain legacy variants for compatibility
   variant?:
     | "danger"
@@ -34,28 +31,30 @@ export interface ButtonProps
 const mapVariantToHero = (
   variant: ButtonProps["variant"] = "primary",
 ): {
-  variant?: ComponentProps<typeof HeroButton>["variant"];
-  color?: ComponentProps<typeof HeroButton>["color"];
+  variant: ComponentProps<typeof HeroButton>["variant"];
   className?: string;
 } => {
   switch (variant) {
     case "danger":
     case "error":
-      return { color: "danger", variant: "solid" };
+      return { variant: "danger" };
     case "success":
-      return { color: "success", variant: "solid" };
+      // HeroUI v3 beta doesn't have a direct 'success' variant for buttons in this way,
+      // but we can use primary or a custom class if needed.
+      // For now, mapping to primary as a fallback or adding a semantic class.
+      return { variant: "primary", className: "bg-success text-success-foreground" };
     case "secondary":
-      return { color: "secondary", variant: "solid" };
+      return { variant: "secondary" };
     case "ghost":
-      return { variant: "light" };
+      return { variant: "ghost" };
     case "link":
-      return { variant: "light", color: "primary", className: "underline underline-offset-4" };
+      return { variant: "ghost", className: "underline underline-offset-4 text-primary" };
     case "outline":
-      return { variant: "bordered", color: "default" }; // Default border color
+      return { variant: "outline" };
     case "tertiary":
-      return { variant: "flat" };
+      return { variant: "tertiary" };
     default:
-      return { color: "primary", variant: "solid" };
+      return { variant: "primary" };
   }
 };
 
@@ -78,18 +77,13 @@ const FinalButton = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) => {
-    const {
-      variant: heroVariant,
-      color: heroColor,
-      className: variantClassName,
-    } = mapVariantToHero(variant);
+    const { variant: heroVariant, className: variantClassName } = mapVariantToHero(variant);
 
     return (
       <HeroButton
         ref={ref}
         className={cn(variantClassName, className)}
         variant={heroVariant}
-        color={heroColor}
         size={mapSizeToHero(size)}
         isDisabled={isDisabled ?? props.disabled}
         isPending={isLoading}

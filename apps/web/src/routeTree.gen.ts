@@ -44,7 +44,6 @@ import { Route as AuthedServicesTemplatesRouteImport } from "./routes/_authed/se
 import { Route as AuthedServicesCreateRouteImport } from "./routes/_authed/services/create"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
 import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
-import { Route as AuthedPatientsIdRouteImport } from "./routes/_authed/patients/$id"
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory"
 import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/timesheets"
@@ -69,9 +68,13 @@ import { Route as AuthedCalendarScheduleRouteImport } from "./routes/_authed/cal
 import { Route as AuthedCalendarHeatmapRouteImport } from "./routes/_authed/calendar/heatmap"
 import { Route as AuthedCalendarDailyRouteImport } from "./routes/_authed/calendar/daily"
 import { Route as AuthedCalendarClassifyRouteImport } from "./routes/_authed/calendar/classify"
+import { Route as AuthedPatientsIdIndexRouteImport } from "./routes/_authed/patients/$id/index"
 import { Route as AuthedSettingsUsersAddRouteImport } from "./routes/_authed/settings/users.add"
 import { Route as AuthedSettingsPeopleIdRouteImport } from "./routes/_authed/settings/people.$id"
 import { Route as AuthedServicesIdEditRouteImport } from "./routes/_authed/services/$id.edit"
+import { Route as AuthedPatientsIdNewPaymentRouteImport } from "./routes/_authed/patients/$id/new-payment"
+import { Route as AuthedPatientsIdNewConsultationRouteImport } from "./routes/_authed/patients/$id/new-consultation"
+import { Route as AuthedPatientsIdNewBudgetRouteImport } from "./routes/_authed/patients/$id/new-budget"
 import { Route as AuthedFinanzasPersonalCreditsCreditIdRouteImport } from "./routes/_authed/finanzas/personal-credits.$creditId"
 
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -220,11 +223,6 @@ const AuthedPatientsNewRoute = AuthedPatientsNewRouteImport.update({
   path: "/patients/new",
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedPatientsIdRoute = AuthedPatientsIdRouteImport.update({
-  id: "/patients/$id",
-  path: "/patients/$id",
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedOperationsSuppliesRoute =
   AuthedOperationsSuppliesRouteImport.update({
     id: "/supplies",
@@ -356,6 +354,11 @@ const AuthedCalendarClassifyRoute = AuthedCalendarClassifyRouteImport.update({
   path: "/classify",
   getParentRoute: () => AuthedCalendarRoute,
 } as any)
+const AuthedPatientsIdIndexRoute = AuthedPatientsIdIndexRouteImport.update({
+  id: "/patients/$id/",
+  path: "/patients/$id/",
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedSettingsUsersAddRoute = AuthedSettingsUsersAddRouteImport.update({
   id: "/add",
   path: "/add",
@@ -371,6 +374,24 @@ const AuthedServicesIdEditRoute = AuthedServicesIdEditRouteImport.update({
   path: "/$id/edit",
   getParentRoute: () => AuthedServicesRoute,
 } as any)
+const AuthedPatientsIdNewPaymentRoute =
+  AuthedPatientsIdNewPaymentRouteImport.update({
+    id: "/patients/$id/new-payment",
+    path: "/patients/$id/new-payment",
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedPatientsIdNewConsultationRoute =
+  AuthedPatientsIdNewConsultationRouteImport.update({
+    id: "/patients/$id/new-consultation",
+    path: "/patients/$id/new-consultation",
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedPatientsIdNewBudgetRoute =
+  AuthedPatientsIdNewBudgetRouteImport.update({
+    id: "/patients/$id/new-budget",
+    path: "/patients/$id/new-budget",
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedFinanzasPersonalCreditsCreditIdRoute =
   AuthedFinanzasPersonalCreditsCreditIdRouteImport.update({
     id: "/$creditId",
@@ -379,7 +400,6 @@ const AuthedFinanzasPersonalCreditsCreditIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof AuthedIndexRoute
   "/login": typeof LoginRoute
   "/onboarding": typeof OnboardingRoute
   "/account": typeof AuthedAccountRoute
@@ -391,6 +411,7 @@ export interface FileRoutesByFullPath {
   "/services": typeof AuthedServicesRouteWithChildren
   "/settings": typeof AuthedSettingsRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
+  "/": typeof AuthedIndexRoute
   "/calendar/classify": typeof AuthedCalendarClassifyRoute
   "/calendar/daily": typeof AuthedCalendarDailyRoute
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute
@@ -415,7 +436,6 @@ export interface FileRoutesByFullPath {
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
-  "/patients/$id": typeof AuthedPatientsIdRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/services/create": typeof AuthedServicesCreateRoute
@@ -429,13 +449,17 @@ export interface FileRoutesByFullPath {
   "/settings/users": typeof AuthedSettingsUsersRouteWithChildren
   "/finanzas/": typeof AuthedFinanzasIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
-  "/patients/": typeof AuthedPatientsIndexRoute
+  "/patients": typeof AuthedPatientsIndexRoute
   "/services/": typeof AuthedServicesIndexRoute
   "/settings/": typeof AuthedSettingsIndexRoute
   "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
+  "/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
+  "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
+  "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/settings/people/$id": typeof AuthedSettingsPeopleIdRoute
   "/settings/users/add": typeof AuthedSettingsUsersAddRoute
+  "/patients/$id": typeof AuthedPatientsIdIndexRoute
 }
 export interface FileRoutesByTo {
   "/login": typeof LoginRoute
@@ -470,7 +494,6 @@ export interface FileRoutesByTo {
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
-  "/patients/$id": typeof AuthedPatientsIdRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/services/create": typeof AuthedServicesCreateRoute
@@ -488,9 +511,13 @@ export interface FileRoutesByTo {
   "/services": typeof AuthedServicesIndexRoute
   "/settings": typeof AuthedSettingsIndexRoute
   "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
+  "/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
+  "/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
+  "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/settings/people/$id": typeof AuthedSettingsPeopleIdRoute
   "/settings/users/add": typeof AuthedSettingsUsersAddRoute
+  "/patients/$id": typeof AuthedPatientsIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -531,7 +558,6 @@ export interface FileRoutesById {
   "/_authed/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
-  "/_authed/patients/$id": typeof AuthedPatientsIdRoute
   "/_authed/patients/new": typeof AuthedPatientsNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
   "/_authed/services/create": typeof AuthedServicesCreateRoute
@@ -549,14 +575,17 @@ export interface FileRoutesById {
   "/_authed/services/": typeof AuthedServicesIndexRoute
   "/_authed/settings/": typeof AuthedSettingsIndexRoute
   "/_authed/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
+  "/_authed/patients/$id/new-budget": typeof AuthedPatientsIdNewBudgetRoute
+  "/_authed/patients/$id/new-consultation": typeof AuthedPatientsIdNewConsultationRoute
+  "/_authed/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
   "/_authed/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/_authed/settings/people/$id": typeof AuthedSettingsPeopleIdRoute
   "/_authed/settings/users/add": typeof AuthedSettingsUsersAddRoute
+  "/_authed/patients/$id/": typeof AuthedPatientsIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
     | "/login"
     | "/onboarding"
     | "/account"
@@ -568,6 +597,7 @@ export interface FileRouteTypes {
     | "/services"
     | "/settings"
     | "/verify/$id"
+    | "/"
     | "/calendar/classify"
     | "/calendar/daily"
     | "/calendar/heatmap"
@@ -592,7 +622,6 @@ export interface FileRouteTypes {
     | "/hr/timesheets"
     | "/operations/inventory"
     | "/operations/supplies"
-    | "/patients/$id"
     | "/patients/new"
     | "/services/agenda"
     | "/services/create"
@@ -606,13 +635,17 @@ export interface FileRouteTypes {
     | "/settings/users"
     | "/finanzas/"
     | "/hr/"
-    | "/patients/"
+    | "/patients"
     | "/services/"
     | "/settings/"
     | "/finanzas/personal-credits/$creditId"
+    | "/patients/$id/new-budget"
+    | "/patients/$id/new-consultation"
+    | "/patients/$id/new-payment"
     | "/services/$id/edit"
     | "/settings/people/$id"
     | "/settings/users/add"
+    | "/patients/$id"
   fileRoutesByTo: FileRoutesByTo
   to:
     | "/login"
@@ -647,7 +680,6 @@ export interface FileRouteTypes {
     | "/hr/timesheets"
     | "/operations/inventory"
     | "/operations/supplies"
-    | "/patients/$id"
     | "/patients/new"
     | "/services/agenda"
     | "/services/create"
@@ -665,9 +697,13 @@ export interface FileRouteTypes {
     | "/services"
     | "/settings"
     | "/finanzas/personal-credits/$creditId"
+    | "/patients/$id/new-budget"
+    | "/patients/$id/new-consultation"
+    | "/patients/$id/new-payment"
     | "/services/$id/edit"
     | "/settings/people/$id"
     | "/settings/users/add"
+    | "/patients/$id"
   id:
     | "__root__"
     | "/_authed"
@@ -707,7 +743,6 @@ export interface FileRouteTypes {
     | "/_authed/hr/timesheets"
     | "/_authed/operations/inventory"
     | "/_authed/operations/supplies"
-    | "/_authed/patients/$id"
     | "/_authed/patients/new"
     | "/_authed/services/agenda"
     | "/_authed/services/create"
@@ -725,9 +760,13 @@ export interface FileRouteTypes {
     | "/_authed/services/"
     | "/_authed/settings/"
     | "/_authed/finanzas/personal-credits/$creditId"
+    | "/_authed/patients/$id/new-budget"
+    | "/_authed/patients/$id/new-consultation"
+    | "/_authed/patients/$id/new-payment"
     | "/_authed/services/$id/edit"
     | "/_authed/settings/people/$id"
     | "/_authed/settings/users/add"
+    | "/_authed/patients/$id/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -756,7 +795,7 @@ declare module "@tanstack/react-router" {
     "/_authed": {
       id: "/_authed"
       path: ""
-      fullPath: "/"
+      fullPath: ""
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -847,7 +886,7 @@ declare module "@tanstack/react-router" {
     "/_authed/patients/": {
       id: "/_authed/patients/"
       path: "/patients"
-      fullPath: "/patients/"
+      fullPath: "/patients"
       preLoaderRoute: typeof AuthedPatientsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
@@ -940,13 +979,6 @@ declare module "@tanstack/react-router" {
       path: "/patients/new"
       fullPath: "/patients/new"
       preLoaderRoute: typeof AuthedPatientsNewRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    "/_authed/patients/$id": {
-      id: "/_authed/patients/$id"
-      path: "/patients/$id"
-      fullPath: "/patients/$id"
-      preLoaderRoute: typeof AuthedPatientsIdRouteImport
       parentRoute: typeof AuthedRoute
     }
     "/_authed/operations/supplies": {
@@ -1117,6 +1149,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedCalendarClassifyRouteImport
       parentRoute: typeof AuthedCalendarRoute
     }
+    "/_authed/patients/$id/": {
+      id: "/_authed/patients/$id/"
+      path: "/patients/$id"
+      fullPath: "/patients/$id"
+      preLoaderRoute: typeof AuthedPatientsIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     "/_authed/settings/users/add": {
       id: "/_authed/settings/users/add"
       path: "/add"
@@ -1137,6 +1176,27 @@ declare module "@tanstack/react-router" {
       fullPath: "/services/$id/edit"
       preLoaderRoute: typeof AuthedServicesIdEditRouteImport
       parentRoute: typeof AuthedServicesRoute
+    }
+    "/_authed/patients/$id/new-payment": {
+      id: "/_authed/patients/$id/new-payment"
+      path: "/patients/$id/new-payment"
+      fullPath: "/patients/$id/new-payment"
+      preLoaderRoute: typeof AuthedPatientsIdNewPaymentRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/patients/$id/new-consultation": {
+      id: "/_authed/patients/$id/new-consultation"
+      path: "/patients/$id/new-consultation"
+      fullPath: "/patients/$id/new-consultation"
+      preLoaderRoute: typeof AuthedPatientsIdNewConsultationRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/patients/$id/new-budget": {
+      id: "/_authed/patients/$id/new-budget"
+      path: "/patients/$id/new-budget"
+      fullPath: "/patients/$id/new-budget"
+      preLoaderRoute: typeof AuthedPatientsIdNewBudgetRouteImport
+      parentRoute: typeof AuthedRoute
     }
     "/_authed/finanzas/personal-credits/$creditId": {
       id: "/_authed/finanzas/personal-credits/$creditId"
@@ -1341,9 +1401,12 @@ interface AuthedRouteChildren {
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedDevRoutesAuditRoute: typeof AuthedDevRoutesAuditRoute
-  AuthedPatientsIdRoute: typeof AuthedPatientsIdRoute
   AuthedPatientsNewRoute: typeof AuthedPatientsNewRoute
   AuthedPatientsIndexRoute: typeof AuthedPatientsIndexRoute
+  AuthedPatientsIdNewBudgetRoute: typeof AuthedPatientsIdNewBudgetRoute
+  AuthedPatientsIdNewConsultationRoute: typeof AuthedPatientsIdNewConsultationRoute
+  AuthedPatientsIdNewPaymentRoute: typeof AuthedPatientsIdNewPaymentRoute
+  AuthedPatientsIdIndexRoute: typeof AuthedPatientsIdIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -1357,9 +1420,12 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedDevRoutesAuditRoute: AuthedDevRoutesAuditRoute,
-  AuthedPatientsIdRoute: AuthedPatientsIdRoute,
   AuthedPatientsNewRoute: AuthedPatientsNewRoute,
   AuthedPatientsIndexRoute: AuthedPatientsIndexRoute,
+  AuthedPatientsIdNewBudgetRoute: AuthedPatientsIdNewBudgetRoute,
+  AuthedPatientsIdNewConsultationRoute: AuthedPatientsIdNewConsultationRoute,
+  AuthedPatientsIdNewPaymentRoute: AuthedPatientsIdNewPaymentRoute,
+  AuthedPatientsIdIndexRoute: AuthedPatientsIdIndexRoute,
 }
 
 const AuthedRouteWithChildren =

@@ -43,7 +43,6 @@ function NewConsultationPage() {
     onSuccess: () => {
       toast.success("Consulta registrada exitosamente");
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
-      // @ts-expect-error - Route tree may not be updated yet
       navigate({ to: "/patients/$id", params: { id: String(id) } });
     },
     onError: (error) => {
@@ -71,7 +70,6 @@ function NewConsultationPage() {
       <header className="mb-6 flex items-center gap-4">
         <Button
           variant="ghost"
-          // @ts-expect-error
           onClick={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
           className="gap-2"
         >
@@ -181,10 +179,7 @@ function NewConsultationPage() {
             <form.Field name="notes">
               {(field) => (
                 <div>
-                  <label
-                    htmlFor="notes"
-                    className="block text-sm font-medium text-foreground mb-2"
-                  >
+                  <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-2">
                     Notas Privadas
                   </label>
                   <textarea
@@ -204,7 +199,6 @@ function NewConsultationPage() {
               <Button
                 type="button"
                 variant="ghost"
-                // @ts-expect-error
                 onClick={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
                 isDisabled={mutation.isPending}
               >
