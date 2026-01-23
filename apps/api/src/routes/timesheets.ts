@@ -9,8 +9,10 @@ import {
   type UpsertTimesheetPayload,
   updateTimesheetEntry,
   upsertTimesheetEntry,
+  type TimesheetEntry,
 } from "../services/timesheets";
 import { reply } from "../utils/reply";
+import { getEmployeeById } from "../services/employees";
 
 const app = new Hono();
 
@@ -217,16 +219,29 @@ app.get("/multi-detail", async (c) => {
     const allEntries: Array<
       Awaited<ReturnType<typeof listTimesheetEntries>>[number] & {
         full_name?: string;
+        employee_name?: string;
+        employee_role?: string | null;
       }
     > = [];
 
     for (const employeeId of employeeIds) {
-      const entries = await listTimesheetEntries({
-        employee_id: employeeId,
-        from,
-        to,
-      });
-      allEntries.push(...entries);
+      const [employee, entries] = await Promise.all([
+        getEmployeeById(employeeId),
+        listTimesheetEntries({
+          employee_id: employeeId,
+          from,
+          to,
+        }),
+      ]);
+
+      const entriesWithName = entries.map((entry: TimesheetEntry) => ({
+        ...entry,
+        employee_name: employee?.person?.names || "Desconocido",
+        employee_role: employee?.position || null,
+        full_name: employee?.person?.names,
+      }));
+
+      allEntries.push(...entriesWithName);
     }
 
     return reply(c, { entries: allEntries });
