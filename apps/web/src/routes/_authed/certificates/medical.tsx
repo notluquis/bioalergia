@@ -1,16 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-export const Route = createFileRoute("/_authed/certificates/medical")({
-  staticData: {
-    nav: { iconKey: "FileText", label: "Certificados Médicos", order: 1, section: "Operaciones" },
-    permission: { action: "create", subject: "MedicalCertificate" },
-    title: "Generar Certificado Médico",
-  },
-  component: MedicalCertificatePage,
-});
-
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -20,6 +10,23 @@ import { Card } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER } from "@/lib/styles";
+
+const medicalCertificateSearchSchema = z.object({
+  patientName: z.string().optional(),
+  rut: z.string().optional(),
+  address: z.string().optional(),
+  birthDate: z.string().optional(),
+});
+
+export const Route = createFileRoute("/_authed/certificates/medical")({
+  validateSearch: (search) => medicalCertificateSearchSchema.parse(search),
+  staticData: {
+    nav: { iconKey: "FileText", label: "Certificados Médicos", order: 1, section: "Operaciones" },
+    permission: { action: "create", subject: "MedicalCertificate" },
+    title: "Generar Certificado Médico",
+  },
+  component: MedicalCertificatePage,
+});
 
 // Schema matching backend
 const medicalCertificateSchema = z.object({
@@ -40,6 +47,8 @@ const medicalCertificateSchema = z.object({
 type FormData = z.infer<typeof medicalCertificateSchema>;
 
 function MedicalCertificatePage() {
+  const search = Route.useSearch();
+
   const generateMutation = useMutation({
     mutationFn: async (data: FormData) => {
       return await apiClient.post<Blob>("certificates/medical", data, {
@@ -66,10 +75,10 @@ function MedicalCertificatePage() {
 
   const form = useForm({
     defaultValues: {
-      patientName: "",
-      rut: "",
-      birthDate: dayjs().subtract(25, "years").format("YYYY-MM-DD"),
-      address: "",
+      patientName: search.patientName || "",
+      rut: search.rut || "",
+      birthDate: search.birthDate || dayjs().subtract(25, "years").format("YYYY-MM-DD"),
+      address: search.address || "",
       date: dayjs().format("YYYY-MM-DD"),
       diagnosis: "",
       symptoms: "",
@@ -110,6 +119,7 @@ function MedicalCertificatePage() {
                   {(field) => (
                     <Input
                       label="Nombre Completo"
+                      id="patientName"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -122,6 +132,7 @@ function MedicalCertificatePage() {
                   {(field) => (
                     <Input
                       label="RUT"
+                      id="rut"
                       placeholder="12.345.678-9"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -136,6 +147,7 @@ function MedicalCertificatePage() {
                     <Input
                       type="date"
                       label="Fecha de Nacimiento"
+                      id="birthDate"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -148,6 +160,7 @@ function MedicalCertificatePage() {
                   {(field) => (
                     <Input
                       label="Domicilio"
+                      id="address"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -167,6 +180,7 @@ function MedicalCertificatePage() {
                     <Input
                       type="date"
                       label="Fecha del Certificado"
+                      id="date"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -179,10 +193,14 @@ function MedicalCertificatePage() {
                 <form.Field name="diagnosis">
                   {(field) => (
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label
+                        htmlFor="diagnosis"
+                        className="block text-sm font-medium text-foreground mb-2"
+                      >
                         Diagnóstico <span className="text-danger">*</span>
                       </label>
                       <textarea
+                        id="diagnosis"
                         className="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         rows={3}
                         value={field.state.value}
@@ -202,10 +220,14 @@ function MedicalCertificatePage() {
                 <form.Field name="symptoms">
                   {(field) => (
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label
+                        htmlFor="symptoms"
+                        className="block text-sm font-medium text-foreground mb-2"
+                      >
                         Síntomas (opcional)
                       </label>
                       <textarea
+                        id="symptoms"
                         className="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         rows={2}
                         value={field.state.value}
@@ -230,6 +252,7 @@ function MedicalCertificatePage() {
                     <Input
                       type="number"
                       label="Días de Reposo"
+                      id="restDays"
                       value={field.state.value?.toString() || "0"}
                       onChange={(e) => field.handleChange(Number(e.target.value))}
                       onBlur={field.handleBlur}
@@ -243,6 +266,7 @@ function MedicalCertificatePage() {
                     <Input
                       type="date"
                       label="Desde"
+                      id="restStartDate"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -255,6 +279,7 @@ function MedicalCertificatePage() {
                     <Input
                       type="date"
                       label="Hasta"
+                      id="restEndDate"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
@@ -271,10 +296,14 @@ function MedicalCertificatePage() {
                 <form.Field name="purpose">
                   {(field) => (
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
+                      <label
+                        htmlFor="purpose"
+                        className="block text-sm font-medium text-foreground mb-2"
+                      >
                         Para ser presentado en
                       </label>
                       <select
+                        id="purpose"
                         className="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         value={field.state.value}
                         onChange={(e) =>
@@ -297,6 +326,7 @@ function MedicalCertificatePage() {
                         {(field) => (
                           <Input
                             label="Especificar"
+                            id="purposeDetail"
                             value={field.state.value}
                             onChange={(e) => field.handleChange(e.target.value)}
                             onBlur={field.handleBlur}
