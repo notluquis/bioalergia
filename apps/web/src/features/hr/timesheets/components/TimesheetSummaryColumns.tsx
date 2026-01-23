@@ -30,7 +30,7 @@ export const getTimesheetSummaryColumns = (): ColumnDef<TimesheetSummaryRow>[] =
   },
   {
     accessorKey: "role",
-    cell: ({ getValue }) => <span className="text-base-content/60">{getValue() as string}</span>,
+    cell: ({ getValue }) => <span className="text-default-500">{getValue() as string}</span>,
     header: "Función",
   },
   {

@@ -85,8 +85,8 @@ export default function CalendarSyncHistoryPage() {
       </div>
 
       {showConfig && (
-        <div className="bg-base-100 border-base-200 rounded-xl border p-4 shadow-sm animate-in slide-in-from-top-2 fade-in duration-200">
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium text-base-content/70">
+        <div className="bg-background border-default-100 rounded-xl border p-4 shadow-sm animate-in slide-in-from-top-2 fade-in duration-200">
+          <div className="mb-4 flex items-center gap-2 text-sm font-medium text-default-600">
             <CalendarIcon size={16} />
             Calendarios Conectados
           </div>
@@ -105,7 +105,7 @@ export default function CalendarSyncHistoryPage() {
       />
 
       {/* Sync History Card */}
-      <div className="bg-base-100 border-base-200 min-h-100 overflow-hidden rounded-xl border shadow-sm">
+      <div className="bg-background border-default-100 min-h-100 overflow-hidden rounded-xl border shadow-sm">
         {/* Content */}
         {(() => {
           if (isLoading) {
@@ -118,7 +118,7 @@ export default function CalendarSyncHistoryPage() {
 
           if (syncLogs.length === 0) {
             return (
-              <div className="text-base-content/50 flex h-64 items-center justify-center text-sm">
+              <div className="text-default-400 flex h-64 items-center justify-center text-sm">
                 No hay registros de sincronización de calendario.
               </div>
             );
@@ -134,17 +134,17 @@ export default function CalendarSyncHistoryPage() {
                   : null;
 
                 return (
-                  <div className="bg-base-100" key={log.id.toString()}>
+                  <div className="bg-background" key={log.id.toString()}>
                     {/* Row Header */}
                     <button
-                      className="hover:bg-base-200/50 flex w-full items-center gap-4 px-4 py-3 text-left transition-colors"
+                      className="hover:bg-default-50/50 flex w-full items-center gap-4 px-4 py-3 text-left transition-colors"
                       onClick={() => {
                         toggleExpanded(log.id);
                       }}
                       type="button"
                     >
                       {/* Expand Icon */}
-                      <span className="text-base-content/40">
+                      <span className="text-default-300">
                         {isExpanded ? (
                           <ChevronDown className="h-4 w-4" />
                         ) : (
@@ -160,7 +160,7 @@ export default function CalendarSyncHistoryPage() {
                         <div className="text-sm font-medium">
                           {dayjs(log.startedAt).format("DD/MM/YYYY")}
                         </div>
-                        <div className="text-base-content/50 text-xs">
+                        <div className="text-default-400 text-xs">
                           {dayjs(log.startedAt).format("HH:mm:ss")}
                         </div>
                       </div>
@@ -172,7 +172,7 @@ export default function CalendarSyncHistoryPage() {
                         </Chip>
                         {log.triggerLabel && (
                           <span
-                            className="text-base-content/60 ml-2 text-xs"
+                            className="text-default-500 ml-2 text-xs"
                             title={log.triggerLabel}
                           >
                             {log.triggerLabel.slice(0, 30)}
@@ -201,7 +201,7 @@ export default function CalendarSyncHistoryPage() {
                         )}
                         {log.excluded > 0 && (
                           <span
-                            className="bg-error/10 text-error rounded px-1.5 py-0.5"
+                            className="bg-danger/10 text-danger rounded px-1.5 py-0.5"
                             title="Eliminados/Excluidos"
                           >
                             -{log.excluded}
@@ -218,31 +218,31 @@ export default function CalendarSyncHistoryPage() {
                         {log.inserted === 0 &&
                           log.updated === 0 &&
                           log.excluded === 0 &&
-                          log.skipped === 0 && <span className="text-base-content/30">-</span>}
+                          log.skipped === 0 && <span className="text-default-200">-</span>}
                       </div>
 
                       {/* Duration */}
-                      <div className="text-base-content/70 min-w-12 text-right text-sm">
+                      <div className="text-default-600 min-w-12 text-right text-sm">
                         {duration === null ? "-" : `${duration}s`}
                       </div>
                     </button>
 
                     {/* Expanded Content */}
                     {isExpanded && (
-                      <div className="bg-base-200/30 border-base-200 border-t px-6 py-4">
+                      <div className="bg-default-50/30 border-default-100 border-t px-6 py-4">
                         <div className="grid gap-6 md:grid-cols-2">
                           {/* Stats Summary */}
                           <div>
                             <h4 className="mb-3 text-sm font-semibold">
                               Resumen de la Sincronización
                             </h4>
-                            <div className="bg-base-100 grid grid-cols-2 gap-3 rounded-lg p-3">
+                            <div className="bg-background grid grid-cols-2 gap-3 rounded-lg p-3">
                               <div>
-                                <span className="text-base-content/60 block text-xs">ID</span>
+                                <span className="text-default-500 block text-xs">ID</span>
                                 <span className="font-mono text-sm">{log.id.toString()}</span>
                               </div>
                               <div>
-                                <span className="text-base-content/60 block text-xs">Duración</span>
+                                <span className="text-default-500 block text-xs">Duración</span>
                                 <span className="text-sm">
                                   {duration !== null
                                     ? `${duration} segundos`
@@ -252,7 +252,7 @@ export default function CalendarSyncHistoryPage() {
                                 </span>
                               </div>
                               <div>
-                                <span className="text-base-content/60 block text-xs">
+                                <span className="text-default-500 block text-xs">
                                   Insertados
                                 </span>
                                 <span className="text-success text-lg font-bold">
@@ -260,19 +260,19 @@ export default function CalendarSyncHistoryPage() {
                                 </span>
                               </div>
                               <div>
-                                <span className="text-base-content/60 block text-xs">
+                                <span className="text-default-500 block text-xs">
                                   Actualizados
                                 </span>
                                 <span className="text-info text-lg font-bold">{log.updated}</span>
                               </div>
                               <div>
-                                <span className="text-base-content/60 block text-xs">
+                                <span className="text-default-500 block text-xs">
                                   Excluidos
                                 </span>
-                                <span className="text-error text-lg font-bold">{log.excluded}</span>
+                                <span className="text-danger text-lg font-bold">{log.excluded}</span>
                               </div>
                               <div>
-                                <span className="text-base-content/60 block text-xs">Omitidos</span>
+                                <span className="text-default-500 block text-xs">Omitidos</span>
                                 <span className="text-warning text-lg font-bold">
                                   {log.skipped}
                                 </span>
@@ -282,10 +282,10 @@ export default function CalendarSyncHistoryPage() {
                             {/* Error Message */}
                             {log.errorMessage && (
                               <div className="mt-4">
-                                <span className="text-error mb-1 block text-xs font-bold">
+                                <span className="text-danger mb-1 block text-xs font-bold">
                                   Mensaje de Error
                                 </span>
-                                <div className="bg-error/10 text-error max-h-32 overflow-auto rounded-lg p-2 font-mono text-xs">
+                                <div className="bg-danger/10 text-danger max-h-32 overflow-auto rounded-lg p-2 font-mono text-xs">
                                   {log.errorMessage}
                                 </div>
                               </div>
@@ -314,7 +314,7 @@ export default function CalendarSyncHistoryPage() {
 function renderCalendarsList(calendars: CalendarData[]) {
   if (calendars.length === 0) {
     return (
-      <div className="text-base-content/50 p-4 text-center text-sm">
+      <div className="text-default-400 p-4 text-center text-sm">
         No hay calendarios conectados
       </div>
     );
@@ -324,17 +324,17 @@ function renderCalendarsList(calendars: CalendarData[]) {
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {calendars.map((cal: CalendarData) => (
         <div
-          className="bg-base-200/50 border-base-200 flex items-center gap-3 rounded-lg border p-3"
+          className="bg-default-50/50 border-default-100 flex items-center gap-3 rounded-lg border p-3"
           key={cal.id}
         >
           <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
           <div className="min-w-0 flex-1">
             <span className="block truncate font-medium text-sm">{cal.name}</span>
             <div className="flex items-center justify-between gap-2">
-              <p className="text-base-content/50 truncate text-xs">
+              <p className="text-default-400 truncate text-xs">
                 {cal.eventCount.toLocaleString()} eventos
               </p>
-              <span className="text-base-content/30 shrink-0 truncate font-mono text-[10px]">
+              <span className="text-default-200 shrink-0 truncate font-mono text-[10px]">
                 {cal.googleId.slice(0, 8)}...
               </span>
             </div>

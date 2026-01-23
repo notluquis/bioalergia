@@ -67,7 +67,7 @@ export function UpdateNotification() {
 
   return (
     <div className="animate-in slide-in-from-bottom-5 fade-in fixed right-4 bottom-4 z-50 max-w-sm">
-      <div className="border-primary/20 bg-base-100 rounded-2xl border p-4 shadow-2xl">
+      <div className="border-primary/20 bg-background rounded-2xl border p-4 shadow-2xl">
         <div className="flex items-start gap-3">
           <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
             <svg
@@ -86,8 +86,8 @@ export function UpdateNotification() {
             </svg>
           </div>
           <div className="flex-1">
-            <h3 className="text-base-content text-sm font-semibold">Nueva versión disponible</h3>
-            <p className="text-base-content/70 mt-1 text-xs">
+            <h3 className="text-foreground text-sm font-semibold">Nueva versión disponible</h3>
+            <p className="text-default-600 mt-1 text-xs">
               Actualiza cuando estés listo. No perderás tu progreso.
             </p>
             <div className="mt-3 flex gap-2">

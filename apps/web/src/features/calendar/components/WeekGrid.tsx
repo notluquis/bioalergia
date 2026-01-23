@@ -235,7 +235,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
               className={cn(
                 "text-foreground text-2xl font-extrabold leading-none",
                 day.isToday &&
-                  "bg-primary text-primary-content grid size-10 place-items-center rounded-full text-xl font-black shadow-lg shadow-primary/40",
+                  "bg-primary text-primary-foreground grid size-10 place-items-center rounded-full text-xl font-black shadow-lg shadow-primary/40",
               )}
               dateTime={day.isoDate}
             >

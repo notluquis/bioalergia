@@ -80,7 +80,7 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
           void form.handleSubmit();
         }}
       >
-        <p className="text-base-content/70 text-sm">
+        <p className="text-default-600 text-sm">
           Selecciona el rango de fechas para generar el reporte de{" "}
           {reportType === "release" ? "liberación de fondos" : "conciliación"}. Si el rango es mayor
           a 60 días, se crearán múltiples reportes automáticamente.

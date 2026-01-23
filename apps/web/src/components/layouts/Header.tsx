@@ -71,32 +71,19 @@ export default function Header() {
   return (
     <header className="scroll-header-animation sticky top-0 z-30 flex items-center justify-between rounded-3xl px-6 py-1 transition-all duration-300">
       <div className="flex flex-col gap-0.5">
-        {crumbs.length > 0 && (
-          <Breadcrumbs
-            className="text-base-content/60"
-            itemClasses={{
-              item: "text-base-content/60 data-[current=true]:text-base-content font-normal",
-              separator: "text-base-content/40",
-            }}
-          >
-            {crumbs.map((crumb, i) => {
-              const isCurrent = i === crumbs.length - 1;
-              return (
-                <BreadcrumbsItem key={crumb.to} isCurrent={isCurrent}>
-                  {isCurrent ? (
-                    crumb.label
-                  ) : (
-                    <Link to={crumb.to} className="hover:text-base-content transition-colors">
-                      {crumb.label}
-                    </Link>
-                  )}
-                </BreadcrumbsItem>
-              );
-            })}
-          </Breadcrumbs>
+        {breadcrumbs.length > 0 && (
+          <div className="text-default-500 flex items-center gap-1 text-xs">
+            {breadcrumbs.map((crumb, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: simple breadcrumb list
+              <React.Fragment key={i}>
+                <span>{crumb}</span>
+                <ChevronRight className="h-3 w-3" />
+              </React.Fragment>
+            ))}
+          </div>
         )}
         <div className="flex items-center gap-3">
-          <h1 className="text-base-content text-2xl font-bold tracking-tight">{pageTitle}</h1>
+          <h1 className="text-foreground text-2xl font-bold tracking-tight">{title}</h1>
           {isNavigating && (
             <span className="text-primary flex items-center gap-1 text-xs font-semibold">
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -113,14 +100,14 @@ export default function Header() {
         <Button
           isIconOnly
           aria-label="Cerrar sesión"
-          className="border-base-300/70 bg-base-100/80 text-base-content hover:bg-error/10 hover:border-error/40 hover:text-error rounded-full border shadow-sm transition-all duration-300"
+          className="border-default-200/70 bg-background/80 text-foreground hover:bg-danger/10 hover:border-danger/40 hover:text-danger rounded-full border shadow-sm transition-all duration-300"
           onClick={() => {
             void handleLogout();
           }}
           title="Cerrar sesión"
           variant="ghost"
         >
-          <span className="bg-base-200/50 flex h-6 w-6 items-center justify-center rounded-full shadow-inner transition-all duration-300">
+          <span className="bg-default-50/50 flex h-6 w-6 items-center justify-center rounded-full shadow-inner transition-all duration-300">
             <LogOut className="h-4 w-4" />
           </span>
         </Button>

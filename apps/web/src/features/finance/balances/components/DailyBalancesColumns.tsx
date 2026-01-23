@@ -118,7 +118,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
   {
     accessorKey: "totalOut",
     cell: ({ row }) => (
-      <div className="text-error text-right text-xs">
+      <div className="text-danger text-right text-xs">
         -{fmtCLP(Math.abs(row.original.totalOut))}
       </div>
     ),
@@ -130,7 +130,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
       const val = row.original.netChange;
       return (
         <div
-          className={`text-right text-xs font-semibold ${val >= 0 ? "text-success" : "text-error"}`}
+          className={`text-right text-xs font-semibold ${val >= 0 ? "text-success" : "text-danger"}`}
         >
           {val >= 0 ? fmtCLP(val) : `-${fmtCLP(Math.abs(val))}`}
         </div>
@@ -157,7 +157,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
     cell: ({ row }) => {
       const mismatch = row.original.difference != null && Math.abs(row.original.difference) > 1;
       return (
-        <div className={`text-right text-xs font-semibold ${mismatch ? "text-error" : ""}`}>
+        <div className={`text-right text-xs font-semibold ${mismatch ? "text-danger" : ""}`}>
           {formatDifference(row.original.difference)}
         </div>
       );

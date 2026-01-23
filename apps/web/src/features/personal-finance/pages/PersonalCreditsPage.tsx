@@ -35,7 +35,7 @@ const columns: ColumnDef<PersonalCredit>[] = [
       const percent = Math.min(100, Math.round((paid / total) * 100));
 
       return (
-        <div className="bg-base-200 dark:bg-base-700 h-2.5 w-full rounded-full">
+        <div className="bg-default-50 dark:bg-base-700 h-2.5 w-full rounded-full">
           <div
             className="bg-primary h-2.5 rounded-full transition-all"
             style={{ width: `${percent}%` }}

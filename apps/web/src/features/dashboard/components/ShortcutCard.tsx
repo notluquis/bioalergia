@@ -19,7 +19,7 @@ export default function ShortcutCard({
     <article className="surface-recessed flex flex-col justify-between p-6">
       <div>
         <h2 className={`text-lg font-semibold ${accentClass}`}>{title}</h2>
-        <p className="text-base-content/90 mt-2 text-sm">{description}</p>
+        <p className="text-foreground/90 mt-2 text-sm">{description}</p>
       </div>
       <ShortcutButton to={to} />
     </article>

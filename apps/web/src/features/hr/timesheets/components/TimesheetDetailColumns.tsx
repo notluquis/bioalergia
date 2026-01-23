@@ -48,10 +48,10 @@ const DateCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => 
 
   return (
     <div className={`flex items-center gap-2 ${isMarkedNotWorked ? "opacity-60" : ""}`}>
-      <span className="text-base-content/70 whitespace-nowrap">{formatDateLabel(row.date)}</span>
+      <span className="text-default-600 whitespace-nowrap">{formatDateLabel(row.date)}</span>
       <span
         className={`rounded px-1.5 py-0.5 text-xs font-semibold uppercase ${
-          isSun ? "bg-base-300 text-base-content/50" : "bg-base-200 text-base-content/60"
+          isSun ? "bg-default-100 text-default-400" : "bg-default-50 text-default-500"
         }`}
       >
         {labels[dayIdx]}
@@ -97,7 +97,7 @@ const WorkedCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) =
   const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
 
   return (
-    <div className={`text-base-content tabular-nums ${isMarkedNotWorked ? "opacity-60" : ""}`}>
+    <div className={`text-foreground tabular-nums ${isMarkedNotWorked ? "opacity-60" : ""}`}>
       {duration}
     </div>
   );
@@ -125,7 +125,7 @@ const OvertimeCell = ({
         <Tooltip content="Agregar horas extra">
           <Button
             aria-label="Agregar horas extra"
-            className="border-base-300 bg-base-200 text-primary hover:bg-base-200 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
+            className="border-default-200 bg-default-50 text-primary hover:bg-default-50 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
             onClick={() => {
               meta.onOpenOvertime(row.date);
             }}
@@ -138,7 +138,7 @@ const OvertimeCell = ({
         </Tooltip>
       );
     }
-    return <span className="text-base-content/50">—</span>;
+    return <span className="text-default-400">—</span>;
   }
 
   return (
@@ -189,7 +189,7 @@ const StatusCell = ({
 
   const showBang = showWarning || hasComment;
   const bangColor = showWarning
-    ? "text-error hover:text-error/80"
+    ? "text-danger hover:text-danger/80"
     : "text-primary hover:text-primary/80";
   const tooltipParts: string[] = [];
   if (showWarning && warningText) tooltipParts.push(warningText);
@@ -198,7 +198,7 @@ const StatusCell = ({
   const statusColor = (() => {
     if (status === "Registrado") return "text-success";
     if (status === "Sin guardar") return "text-warning";
-    return "text-base-content/50";
+    return "text-default-400";
   })();
 
   return (
@@ -239,7 +239,7 @@ const ActionsCell = ({
   const dirty = isRowDirty(row, initial);
   const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
 
-  if (!canEditRow) return <span className="text-base-content/50 text-xs">—</span>;
+  if (!canEditRow) return <span className="text-default-400 text-xs">—</span>;
 
   return (
     <DropdownMenu>
@@ -282,7 +282,7 @@ const ActionsCell = ({
 
         {row.entryId && (
           <DropdownMenuItem
-            className="text-error focus:text-error"
+            className="text-danger focus:text-danger"
             onClick={() => {
               meta.onRemoveEntry(row);
             }}

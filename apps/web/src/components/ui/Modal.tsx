@@ -26,12 +26,12 @@ export default function Modal({ boxClassName, children, isOpen, onClose, title }
       <ModalContainer>
         <ModalDialog
           className={cn(
-            "rounded-[28px] bg-base-100 shadow-2xl p-6 relative w-full max-w-2xl mx-auto my-auto",
+            "rounded-[28px] bg-background shadow-2xl p-6 relative w-full max-w-2xl mx-auto my-auto",
             boxClassName,
           )}
         >
           <ModalHeader className="text-primary text-xl font-bold mb-4">{title}</ModalHeader>
-          <ModalBody className="mt-2 text-base-content">{children}</ModalBody>
+          <ModalBody className="mt-2 text-foreground">{children}</ModalBody>
         </ModalDialog>
       </ModalContainer>
     </ModalRoot>

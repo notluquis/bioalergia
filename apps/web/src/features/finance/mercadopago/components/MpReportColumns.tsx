@@ -16,7 +16,7 @@ export const getMpReportColumns = (
   {
     accessorKey: "id",
     cell: ({ row }) => (
-      <span className="text-base-content/60 font-mono text-xs">#{row.original.id}</span>
+      <span className="text-default-500 font-mono text-xs">#{row.original.id}</span>
     ),
     header: "ID",
   },
@@ -36,7 +36,7 @@ export const getMpReportColumns = (
   {
     accessorKey: "begin_date",
     cell: ({ row }) => (
-      <span className="text-base-content/70 text-sm whitespace-nowrap">
+      <span className="text-default-600 text-sm whitespace-nowrap">
         {row.original.begin_date ? dayjs(row.original.begin_date).format("DD/MM/YYYY") : "-"}
       </span>
     ),
@@ -45,7 +45,7 @@ export const getMpReportColumns = (
   {
     accessorKey: "end_date",
     cell: ({ row }) => (
-      <span className="text-base-content/70 text-sm whitespace-nowrap">
+      <span className="text-default-600 text-sm whitespace-nowrap">
         {row.original.end_date ? dayjs(row.original.end_date).format("DD/MM/YYYY") : "-"}
       </span>
     ),
@@ -55,7 +55,7 @@ export const getMpReportColumns = (
     accessorKey: "file_name",
     cell: ({ row }) => (
       <div
-        className="text-base-content/70 max-w-40 truncate font-mono text-xs"
+        className="text-default-600 max-w-40 truncate font-mono text-xs"
         title={row.original.file_name}
       >
         {row.original.file_name ?? <span className="opacity-50">-</span>}

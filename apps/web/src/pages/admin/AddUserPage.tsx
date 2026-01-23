@@ -129,7 +129,7 @@ export default function AddUserPage() {
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="space-y-2">
         <h1 className="text-primary text-3xl font-bold">Agregar usuario</h1>
-        <p className="text-base-content/70">
+        <p className="text-default-600">
           Crea un nuevo usuario en el sistema. Se generará una contraseña temporal y el usuario
           deberá completar su configuración de seguridad al iniciar sesión.
         </p>
@@ -151,7 +151,7 @@ export default function AddUserPage() {
               <div className="flex-1 space-y-3">
                 <div>
                   <p className="text-info font-medium">Vincular a persona existente</p>
-                  <p className="text-base-content/70 text-xs">
+                  <p className="text-default-600 text-xs">
                     Si esta persona ya existe en el sistema, puedes vincular el usuario
                     directamente.
                   </p>
@@ -189,7 +189,7 @@ export default function AddUserPage() {
               return (
                 <>
                   <div className="md:col-span-2">
-                    <h3 className="text-base-content mb-4 font-semibold">Datos personales</h3>
+                    <h3 className="text-foreground mb-4 font-semibold">Datos personales</h3>
                   </div>
                   <form.Field name="names">
                     {(field) => (
@@ -242,7 +242,7 @@ export default function AddUserPage() {
           </form.Subscribe>
 
           <div className="md:col-span-2">
-            <h3 className="text-base-content mt-2 mb-4 font-semibold">Datos de cuenta</h3>
+            <h3 className="text-foreground mt-2 mb-4 font-semibold">Datos de cuenta</h3>
           </div>
 
           <div className="md:col-span-2">
@@ -307,7 +307,7 @@ export default function AddUserPage() {
             <Shield className="text-primary mt-0.5 h-5 w-5" />
             <div className="space-y-1">
               <p className="text-primary font-medium">Seguridad reforzada</p>
-              <p className="text-base-content/70 text-xs">
+              <p className="text-default-600 text-xs">
                 Si activas esta opción, el usuario estará <strong>obligado</strong> a configurar
                 Passkey o MFA (Google Authenticator) antes de poder usar el sistema.
               </p>

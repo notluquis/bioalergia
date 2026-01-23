@@ -60,7 +60,7 @@ export default function DailyBalances() {
             <div>
               <h1 className="text-primary text-xl font-semibold">Saldos diarios</h1>
               {derivedInitial != null && (
-                <p className="text-base-content/60 text-sm">
+                <p className="text-default-500 text-sm">
                   Saldo anterior: <strong>{formatBalanceInput(derivedInitial)}</strong>
                 </p>
               )}

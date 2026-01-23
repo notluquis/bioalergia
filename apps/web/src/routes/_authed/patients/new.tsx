@@ -80,8 +80,8 @@ function AddPatientPage() {
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-base-content">Registrar Nuevo Paciente</h1>
-          <p className="text-base-content/60 text-sm">
+          <h1 className="text-2xl font-bold text-foreground">Registrar Nuevo Paciente</h1>
+          <p className="text-default-500 text-sm">
             Crea un perfil clínico para un nuevo paciente
           </p>
         </div>
@@ -103,11 +103,11 @@ function AddPatientPage() {
         }}
         className="space-y-6"
       >
-        <Card className="border-none bg-base-100 shadow-sm overflow-visible">
+        <Card className="border-none bg-background shadow-sm overflow-visible">
           <CardContent className="p-6 space-y-8">
             {/* Sección: Datos Personales */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold border-b border-base-200 pb-2">
+              <div className="flex items-center gap-2 text-primary font-semibold border-b border-default-100 pb-2">
                 <UserPlus size={18} />
                 <h3>Información Personal</h3>
               </div>
@@ -199,7 +199,7 @@ function AddPatientPage() {
 
             {/* Sección: Contacto y Ubicación */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold border-b border-base-200 pb-2">
+              <div className="flex items-center gap-2 text-primary font-semibold border-b border-default-100 pb-2">
                 <User size={18} />
                 <h3>Contacto y Ubicación</h3>
               </div>
@@ -245,7 +245,7 @@ function AddPatientPage() {
 
             {/* Sección: Notas Clínicas */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold border-b border-base-200 pb-2">
+              <div className="flex items-center gap-2 text-primary font-semibold border-b border-default-100 pb-2">
                 <Save size={18} />
                 <h3>Información Adicional</h3>
               </div>

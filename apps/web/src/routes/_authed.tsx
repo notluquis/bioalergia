@@ -125,7 +125,7 @@ function AuthedLayout() {
   return (
     <>
       {impersonatedRole && (
-        <div className="bg-warning text-warning-content sticky top-0 z-100 flex h-10 w-full items-center justify-center gap-4 px-4 text-xs font-bold shadow-md">
+        <div className="bg-warning text-warning-foreground sticky top-0 z-100 flex h-10 w-full items-center justify-center gap-4 px-4 text-xs font-bold shadow-md">
           <span>VISTA PREVIA: {impersonatedRole.name}</span>
           <Button
             size="sm"
@@ -138,26 +138,26 @@ function AuthedLayout() {
         </div>
       )}
       {isNavigating && (
-        <div className="bg-base-200 fixed top-0 right-0 left-0 z-50 h-1 overflow-hidden shadow-lg">
+        <div className="bg-default-50 fixed top-0 right-0 left-0 z-50 h-1 overflow-hidden shadow-lg">
           <div className="nav-progress__indicator" />
         </div>
       )}
       {/* Layout Shell: Main Flex Container - Height constrained to dynamic viewport */}
-      <div className="layout-shell text-base-content relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 transition-all duration-300 md:gap-4 md:p-4">
+      <div className="layout-shell text-foreground relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 transition-all duration-300 md:gap-4 md:p-4">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           aria-controls="app-sidebar"
           aria-expanded={sidebarOpen}
           aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
           aria-pressed={sidebarOpen}
-          className="border-base-300/70 bg-base-100/85 text-base-content focus-visible:ring-primary/60 fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none md:hidden"
+          className="border-default-200/70 bg-background/85 text-foreground focus-visible:ring-primary/60 fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none md:hidden"
           onClick={toggleSidebar}
           type="button"
         >
           <span
             aria-hidden="true"
             className={`relative flex h-5 w-5 flex-col items-center justify-center gap-1.25 rounded-full transition-colors ${
-              sidebarOpen ? "text-primary" : "text-base-content"
+              sidebarOpen ? "text-primary" : "text-foreground"
             }`}
           >
             <span
@@ -180,7 +180,7 @@ function AuthedLayout() {
         {isMobile && sidebarOpen && (
           <div
             aria-hidden="true"
-            className="bg-base-content/30 fixed inset-0 z-30 backdrop-blur-[1px] transition-opacity duration-300"
+            className="bg-default-300 fixed inset-0 z-30 backdrop-blur-[1px] transition-opacity duration-300"
             onClick={closeSidebar}
             role="presentation"
           />
@@ -194,22 +194,22 @@ function AuthedLayout() {
           <Header />
 
           <main className="flex-1 overflow-hidden rounded-3xl transition-all duration-300">
-            <div className="surface-recessed border-base-200/50 bg-base-100/50 h-full w-full overflow-hidden rounded-3xl border shadow-inner">
+            <div className="surface-recessed border-default-100/50 bg-background/50 h-full w-full overflow-hidden rounded-3xl border shadow-inner">
               <div className="h-full w-full overflow-x-hidden overflow-y-auto p-3 md:p-5">
                 <Outlet />
               </div>
             </div>
           </main>
 
-          <footer className="surface-elevated text-base-content hidden items-center justify-between px-6 py-3 text-sm md:flex">
+          <footer className="surface-elevated text-foreground hidden items-center justify-between px-6 py-3 text-sm md:flex">
             <div className="flex items-center gap-3 text-xs">
-              <span className="text-base-content/60">Build: {buildLabel}</span>
+              <span className="text-default-500">Build: {buildLabel}</span>
             </div>
 
             <div className="flex items-center gap-3">
               <PerformanceIndicator />
               <Tooltip content="Sistema operativo">
-                <div className="text-base-content/70 flex cursor-help items-center gap-2 text-xs">
+                <div className="text-default-600 flex cursor-help items-center gap-2 text-xs">
                   <span
                     role="img"
                     aria-label="Sistema operativo"

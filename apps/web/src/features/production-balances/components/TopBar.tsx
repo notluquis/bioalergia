@@ -47,17 +47,17 @@ export function TopBar({ canFinalize, date, isSaving, onFinalize, onSave, status
   const statusColors: Record<DayStatus, string> = {
     balanced: "bg-success/20 text-success",
     draft: "bg-warning/20 text-warning",
-    empty: "bg-base-content/10 text-base-content/60",
+    empty: "bg-default-100 text-default-500",
     unbalanced: "bg-amber-500/20 text-amber-400",
   };
 
   return (
-    <div className="bg-base-100/80 border-base-content/5 sticky top-0 z-10 mb-4 flex items-center justify-between rounded-2xl border px-6 py-4 backdrop-blur-md">
+    <div className="bg-background/80 border-default-100 sticky top-0 z-10 mb-4 flex items-center justify-between rounded-2xl border px-6 py-4 backdrop-blur-md">
       {/* Left: Title and date */}
       <div>
         <h1 className="text-xl font-bold">Balance diario</h1>
         <div className="mt-1 flex items-center gap-2">
-          <span className="text-base-content/80 text-lg font-medium capitalize">
+          <span className="text-default-700 text-lg font-medium capitalize">
             {formatDateFull(date)}
           </span>
           <span
@@ -87,7 +87,7 @@ export function TopBar({ canFinalize, date, isSaving, onFinalize, onSave, status
           <Save className="size-4" />
           <span className="hidden sm:inline">Guardar</span>
           {showShortcut && (
-            <kbd className="bg-base-content/10 ml-1 hidden rounded px-1.5 py-0.5 text-xs sm:inline">
+            <kbd className="bg-default-100 ml-1 hidden rounded px-1.5 py-0.5 text-xs sm:inline">
               ⌘S
             </kbd>
           )}

@@ -25,7 +25,7 @@ import Button from "@/components/ui/Button";
 
 export default function ChunkLoadErrorPage() {
   return (
-    <div className="bg-base-200 flex min-h-screen items-center justify-center p-4">
+    <div className="bg-default-50 flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6 text-center">
         {/* Icon */}
         <div className="flex justify-center">
@@ -50,17 +50,17 @@ export default function ChunkLoadErrorPage() {
 
         {/* Title */}
         <div>
-          <h1 className="text-base-content text-3xl font-bold">Actualización Necesaria</h1>
-          <p className="text-base-content/70 mt-2 text-sm">
+          <h1 className="text-foreground text-3xl font-bold">Actualización Necesaria</h1>
+          <p className="text-default-600 mt-2 text-sm">
             Se ha detectado una nueva versión de la aplicación. Por favor, recarga la página para
             continuar.
           </p>
         </div>
 
         {/* Details */}
-        <div className="bg-base-100/50 rounded-lg p-4 text-left">
-          <p className="text-base-content/60 mb-2 font-mono text-xs">Detalles técnicos:</p>
-          <ul className="text-base-content/50 space-y-1 text-xs">
+        <div className="bg-background/50 rounded-lg p-4 text-left">
+          <p className="text-default-500 mb-2 font-mono text-xs">Detalles técnicos:</p>
+          <ul className="text-default-400 space-y-1 text-xs">
             <li>• Falló al cargar un módulo dinámico</li>
             <li>• La versión anterior ya no está disponible</li>
             <li>• Usa el botón de abajo para actualizar</li>
@@ -83,7 +83,7 @@ export default function ChunkLoadErrorPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-base-content/40 text-xs">
+        <p className="text-default-300 text-xs">
           Si el problema persiste, contacta al administrador.
         </p>
       </div>

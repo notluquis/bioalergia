@@ -31,7 +31,7 @@ export const getAccountGroupColumns = (
             </span>
           )}
           {group.accounts.length > 1 && (
-            <div className="text-base-content/90 text-xs">
+            <div className="text-foreground/90 text-xs">
               {group.accounts.length} identificadores vinculados
             </div>
           )}
@@ -54,7 +54,7 @@ export const getAccountGroupColumns = (
       const summaryInfo = summaryByGroup.get(group.key);
 
       if (!summaryInfo || summaryInfo.count === 0) {
-        return <span className="text-base-content/60 text-xs italic">Sin movimientos</span>;
+        return <span className="text-default-500 text-xs italic">Sin movimientos</span>;
       }
 
       return (
@@ -87,7 +87,7 @@ export const getAccountGroupColumns = (
           >
             Ver movimientos
           </Button>
-          <div className="text-base-content/60 text-xs">
+          <div className="text-default-500 text-xs">
             {summaryInfo
               ? `${summaryInfo.count} mov. · ${fmtCLP(summaryInfo.total)}`
               : "Sin movimientos en el rango"}

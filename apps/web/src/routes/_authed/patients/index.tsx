@@ -59,10 +59,10 @@ function PatientsListPage() {
                 <User size={16} />
               </div>
               <div className="flex flex-col">
-                <span className="font-medium text-base-content">
+                <span className="font-medium text-foreground">
                   {patient.person.names} {patient.person.fatherName} {patient.person.motherName}
                 </span>
-                <span className="text-xs text-base-content/60">
+                <span className="text-xs text-default-500">
                   {patient.person.email || "Sin email"}
                 </span>
               </div>
@@ -74,7 +74,7 @@ function PatientsListPage() {
         accessorKey: "person.rut",
         header: "RUT",
         cell: ({ row }) => (
-          <span className="text-base-content/80 font-mono">{row.original.person.rut}</span>
+          <span className="text-default-700 font-mono">{row.original.person.rut}</span>
         ),
       },
       {
@@ -85,8 +85,8 @@ function PatientsListPage() {
           const age = dayjs().diff(dayjs(patient.birthDate), "year");
           return (
             <div className="flex flex-col">
-              <span className="text-base-content/80 text-sm">{age} años</span>
-              <span className="text-[10px] text-base-content/50">
+              <span className="text-default-700 text-sm">{age} años</span>
+              <span className="text-[10px] text-default-400">
                 {dayjs(patient.birthDate).format("DD/MM/YYYY")}
               </span>
             </div>
@@ -97,7 +97,7 @@ function PatientsListPage() {
         id: "last_consultation",
         header: "ÚLT. CONSULTA",
         cell: () => (
-          <div className="flex items-center gap-2 text-base-content/60">
+          <div className="flex items-center gap-2 text-default-500">
             <Calendar size={14} />
             <span className="text-sm italic">Sin registros</span>
           </div>
@@ -127,8 +127,8 @@ function PatientsListPage() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-base-content">Pacientes</h1>
-          <p className="text-base-content/60 text-sm">Gestión de ficha clínica y certificados</p>
+          <h1 className="text-2xl font-bold text-foreground">Pacientes</h1>
+          <p className="text-default-500 text-sm">Gestión de ficha clínica y certificados</p>
         </div>
         <Link to="/patients/new">
           <Button variant="primary" className="shadow-md">
@@ -138,11 +138,11 @@ function PatientsListPage() {
         </Link>
       </div>
 
-      <Card className="border-none bg-base-100 shadow-sm">
+      <Card className="border-none bg-background shadow-sm">
         <CardContent className="p-4">
           <Input
             placeholder="Buscar por nombre o RUT..."
-            rightElement={<Search size={18} className="text-base-content/40" />}
+            rightElement={<Search size={18} className="text-default-300" />}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-md"

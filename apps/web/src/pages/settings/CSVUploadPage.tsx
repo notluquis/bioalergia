@@ -236,7 +236,7 @@ function TableSelectionCard({
           </div>
 
           {currentTable && (
-            <div className="bg-base-200/50 flex-1 rounded-lg p-4">
+            <div className="bg-default-50/50 flex-1 rounded-lg p-4">
               <h3 className="mb-2 text-xs font-bold tracking-wide uppercase opacity-70">
                 Campos requeridos
               </h3>
@@ -380,15 +380,15 @@ function ImportSummaryCard({ previewData }: { previewData: ImportPreviewData }) 
       <CardContent className="p-6">
         <h3 className="mb-4 text-lg font-semibold">Resumen de Importación</h3>
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
+          <div className="bg-background border-default-100 rounded-lg border p-3 shadow-sm">
             <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Insertar</div>
             <div className="text-success text-2xl font-bold">{previewData.toInsert ?? 0}</div>
           </div>
-          <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
+          <div className="bg-background border-default-100 rounded-lg border p-3 shadow-sm">
             <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Actualizar</div>
             <div className="text-info text-2xl font-bold">{previewData.toUpdate ?? 0}</div>
           </div>
-          <div className="bg-base-100 border-base-200 rounded-lg border p-3 shadow-sm">
+          <div className="bg-background border-default-100 rounded-lg border p-3 shadow-sm">
             <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Omitir</div>
             <div className="text-warning text-2xl font-bold">{previewData.toSkip ?? 0}</div>
           </div>
@@ -401,7 +401,7 @@ function ImportSummaryCard({ previewData }: { previewData: ImportPreviewData }) 
                 <AlertCircle className="h-4 w-4" />
                 Errores de validación ({previewData.errors.length})
               </div>
-              <ul className="bg-base-100/50 max-h-32 list-inside list-disc overflow-y-auto rounded p-2 text-xs opacity-90">
+              <ul className="bg-background/50 max-h-32 list-inside list-disc overflow-y-auto rounded p-2 text-xs opacity-90">
                 {previewData.errors.map((err: string, i: number) => (
                   <li key={`${i}-${err.substring(0, 20)}`}>{err}</li>
                 ))}
@@ -592,7 +592,7 @@ export default function CSVUploadPage() {
           {row.original.name}
           {row.original.required && (
             <Tooltip content="Requerido">
-              <span className="text-error text-xs">*</span>
+              <span className="text-danger text-xs">*</span>
             </Tooltip>
           )}
         </div>
@@ -634,7 +634,7 @@ export default function CSVUploadPage() {
       cell: ({ row }) => {
         const mappedColumn = columnMapping[row.original.name];
         return (
-          <span className="text-base-content/60 max-w-37.5 truncate font-mono text-xs">
+          <span className="text-default-500 max-w-37.5 truncate font-mono text-xs">
             {(mappedColumn && csvData[0]?.[mappedColumn]) ?? "-"}
           </span>
         );
@@ -692,7 +692,7 @@ export default function CSVUploadPage() {
           <ImportSummaryCard previewData={previewData} />
 
           {/* Action Buttons */}
-          <div className="bg-base-100/80 border-base-200 sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-t p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
+          <div className="bg-background/80 border-default-100 sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-t p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
             <Button
               disabled={
                 !isValidMapping || isPreviewPending || isImportPending || selectedData.length === 0

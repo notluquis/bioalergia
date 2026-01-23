@@ -33,8 +33,8 @@ dayjs.locale("es");
 
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
 
-const ACTIVE_FILTER_CLASS = "bg-primary text-primary-content shadow-sm";
-const INACTIVE_FILTER_CLASS = "bg-base-300/50 text-base-content/70 hover:bg-base-300";
+const ACTIVE_FILTER_CLASS = "bg-primary text-primary-foreground shadow-sm";
+const INACTIVE_FILTER_CLASS = "bg-default-100/50 text-default-600 hover:bg-default-100";
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: optimized for integration
 function CalendarClassificationPage() {
@@ -192,10 +192,10 @@ function CalendarClassificationPage() {
       </div>
 
       {/* Actions Bar */}
-      <div className="bg-base-200/50 flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-sm">
+      <div className="bg-default-50/50 flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-sm">
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-base-content/50 text-xs font-medium tracking-wide uppercase">
+          <span className="text-default-400 text-xs font-medium tracking-wide uppercase">
             Filtrar:
           </span>
           <div className="flex flex-wrap gap-2">
@@ -232,8 +232,8 @@ function CalendarClassificationPage() {
             <button
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                 filters.missingAttended
-                  ? "bg-primary text-primary-content shadow-sm"
-                  : "bg-base-300/50 text-base-content/70 hover:bg-base-300"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-default-100/50 text-default-600 hover:bg-default-100"
               }`}
               onClick={() => {
                 setFilters((prev) => ({
@@ -249,8 +249,8 @@ function CalendarClassificationPage() {
             <button
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                 filters.missingDosage
-                  ? "bg-primary text-primary-content shadow-sm"
-                  : "bg-base-300/50 text-base-content/70 hover:bg-base-300"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-default-100/50 text-default-600 hover:bg-default-100"
               }`}
               onClick={() => {
                 setFilters((prev) => ({
@@ -266,8 +266,8 @@ function CalendarClassificationPage() {
             <button
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
                 filters.missingTreatmentStage
-                  ? "bg-primary text-primary-content shadow-sm"
-                  : "bg-base-300/50 text-base-content/70 hover:bg-base-300"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-default-100/50 text-default-600 hover:bg-default-100"
               }`}
               onClick={() => {
                 setFilters((prev) => ({
@@ -283,13 +283,13 @@ function CalendarClassificationPage() {
             {hasActiveFilters && (
               <>
                 {/* Filter Mode Toggle */}
-                <div className="border-base-300/50 flex items-center gap-1 border-l pl-3">
-                  <span className="text-base-content/40 mr-1 text-xs">Coincide:</span>
+                <div className="border-default-200/50 flex items-center gap-1 border-l pl-3">
+                  <span className="text-default-300 mr-1 text-xs">Coincide:</span>
                   <button
                     className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
                       !filters.filterMode || filters.filterMode === "OR"
-                        ? "bg-secondary text-secondary-content shadow-sm"
-                        : "text-base-content/60 hover:text-base-content bg-transparent"
+                        ? "bg-secondary text-secondary-foreground shadow-sm"
+                        : "text-default-500 hover:text-foreground bg-transparent"
                     }`}
                     onClick={() => {
                       setFilters((prev) => ({ ...prev, filterMode: undefined }));
@@ -302,8 +302,8 @@ function CalendarClassificationPage() {
                   <button
                     className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
                       filters.filterMode === "AND"
-                        ? "bg-secondary text-secondary-content shadow-sm"
-                        : "text-base-content/60 hover:text-base-content bg-transparent"
+                        ? "bg-secondary text-secondary-foreground shadow-sm"
+                        : "text-default-500 hover:text-foreground bg-transparent"
                     }`}
                     onClick={() => {
                       setFilters((prev) => ({ ...prev, filterMode: "AND" }));
@@ -315,7 +315,7 @@ function CalendarClassificationPage() {
                   </button>
                 </div>
                 <button
-                  className="text-error/80 hover:text-error flex items-center gap-1 px-2 py-1.5 text-xs font-medium transition-colors"
+                  className="text-danger/80 hover:text-danger flex items-center gap-1 px-2 py-1.5 text-xs font-medium transition-colors"
                   onClick={() => {
                     setFilters({});
                     setPage(0);
@@ -347,7 +347,7 @@ function CalendarClassificationPage() {
         <div className="flex items-center gap-3">
           {/* Refresh Button - Moved here */}
           <Button
-            className="gap-2 text-base-content/70"
+            className="gap-2 text-default-600"
             isDisabled={loading}
             onClick={() => void refetch()}
             size="sm"
@@ -442,7 +442,7 @@ function CalendarClassificationPage() {
 
           <Tooltip
             classNames={{
-              content: "bg-base-300 rounded-lg px-3 py-2 text-xs shadow-xl",
+              content: "bg-default-100 rounded-lg px-3 py-2 text-xs shadow-xl",
             }}
             content="Reclasificar TODO (sobrescribe existentes)"
             placement="bottom"
@@ -504,7 +504,7 @@ function CalendarClassificationPage() {
             </svg>
           </div>
           <h3 className="text-success text-lg font-semibold">¡Todo clasificado!</h3>
-          <p className="text-base-content/60 mt-1 text-sm">
+          <p className="text-default-500 mt-1 text-sm">
             No hay eventos pendientes de clasificar.
           </p>
         </div>
@@ -588,10 +588,10 @@ function CalendarClassificationPage() {
               />
             </svg>
           </Button>
-          <div className="bg-base-200 flex items-center gap-2 rounded-lg px-4 py-2 text-sm">
-            <span className="text-base-content/60">Página</span>
-            <span className="text-base-content font-semibold tabular-nums">{page + 1}</span>
-            <span className="text-base-content/60">de {totalPages}</span>
+          <div className="bg-default-50 flex items-center gap-2 rounded-lg px-4 py-2 text-sm">
+            <span className="text-default-500">Página</span>
+            <span className="text-foreground font-semibold tabular-nums">{page + 1}</span>
+            <span className="text-default-500">de {totalPages}</span>
           </div>
           <Button
             className="disabled:opacity-30"

@@ -393,7 +393,7 @@ export default function AssociatedAccounts({
 
   const renderQuickViewContent = () => {
     return (
-      <div className="border-base-200 overflow-hidden rounded-lg border">
+      <div className="border-default-100 overflow-hidden rounded-lg border">
         <DataTable
           // biome-ignore lint/suspicious/noExplicitAny: tanstack table generic
           columns={quickViewColumns as ColumnDef<Transaction, any>[]}
@@ -410,29 +410,29 @@ export default function AssociatedAccounts({
   const renderSuggestions = () => {
     if (accountSuggestions.length === 0) {
       return (
-        <span className="text-base-content/60 text-xs">
+        <span className="text-default-500 text-xs">
           No hay sugerencias para este identificador.
         </span>
       );
     }
     return (
-      <div className="border-base-300 bg-base-100 max-h-48 overflow-y-auto rounded-xl border">
+      <div className="border-default-200 bg-background max-h-48 overflow-y-auto rounded-xl border">
         {accountSuggestions.map((suggestion) => (
           <div
-            className="border-base-300 flex flex-col gap-1 border-b px-3 py-2 text-xs last:border-b-0"
+            className="border-default-200 flex flex-col gap-1 border-b px-3 py-2 text-xs last:border-b-0"
             key={suggestion.accountIdentifier}
           >
-            <span className="text-base-content font-semibold">{suggestion.accountIdentifier}</span>
-            <span className="text-base-content/90">{suggestion.holder ?? "(sin titular)"}</span>
+            <span className="text-foreground font-semibold">{suggestion.accountIdentifier}</span>
+            <span className="text-foreground/90">{suggestion.holder ?? "(sin titular)"}</span>
             {suggestion.bankAccountNumber && (
-              <span className="text-base-content/90 text-xs">
+              <span className="text-foreground/90 text-xs">
                 Cuenta {suggestion.bankAccountNumber}
               </span>
             )}
             {suggestion.rut && (
-              <span className="text-base-content/90 text-xs">RUT {formatRut(suggestion.rut)}</span>
+              <span className="text-foreground/90 text-xs">RUT {formatRut(suggestion.rut)}</span>
             )}
-            <span className="text-base-content/90 text-xs">
+            <span className="text-foreground/90 text-xs">
               {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
             </span>
             <div className="flex flex-wrap gap-2 pt-1">
@@ -480,7 +480,7 @@ export default function AssociatedAccounts({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Cuentas asociadas</h2>
-          <p className="text-base-content/90 text-xs">
+          <p className="text-foreground/90 text-xs">
             Identificadores detectados en los movimientos y asignados a esta contraparte.
           </p>
         </div>
@@ -496,7 +496,7 @@ export default function AssociatedAccounts({
       </header>
       {error && <Alert variant="error">{error}</Alert>}
 
-      <div className="border-base-200 bg-base-100 overflow-hidden rounded-lg border">
+      <div className="border-default-100 bg-background overflow-hidden rounded-lg border">
         <DataTable
           // biome-ignore lint/suspicious/noExplicitAny: tanstack table generic
           columns={accountGroupColumns as ColumnDef<AccountGroup, any>[]}
@@ -513,25 +513,25 @@ export default function AssociatedAccounts({
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-base-content/60 text-xs tracking-[0.3em] uppercase">
+                <p className="text-default-500 text-xs tracking-[0.3em] uppercase">
                   Resumen mensual
                 </p>
-                <h3 className="text-base-content text-lg font-semibold">Transferencias</h3>
-                <p className="text-base-content/60 text-xs">{quickViewGroup.label}</p>
-                <p className="text-base-content/50 text-xs">
+                <h3 className="text-foreground text-lg font-semibold">Transferencias</h3>
+                <p className="text-default-500 text-xs">{quickViewGroup.label}</p>
+                <p className="text-default-400 text-xs">
                   {activeRange.from} – {activeRange.to}
                 </p>
               </div>
               <div className="flex gap-4">
-                <div className="border-base-300/60 bg-base-100/60 text-base-content/70 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
+                <div className="border-default-200/60 bg-background/60 text-default-600 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
                   Movimientos {quickStats.count}
                 </div>
-                <div className="border-base-300/60 bg-base-100/60 text-base-content/70 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
+                <div className="border-default-200/60 bg-background/60 text-default-600 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
                   Total {fmtCLP(quickStats.total)}
                 </div>
               </div>
             </div>
-            <div className="text-base-content/70 flex flex-wrap items-end gap-3 text-xs">
+            <div className="text-default-600 flex flex-wrap items-end gap-3 text-xs">
               <Input
                 className="w-36"
                 label="Desde"
@@ -563,12 +563,12 @@ export default function AssociatedAccounts({
                 Año en curso
               </Button>
             </div>
-            <div className="surface-recessed border-base-300/70 border p-4">
+            <div className="surface-recessed border-default-200/70 border p-4">
               {renderQuickViewContent()}
             </div>
           </div>
         ) : (
-          <div className="border-base-300/70 bg-base-100/40 text-base-content/60 rounded-[28px] border border-dashed p-8 text-center text-sm">
+          <div className="border-default-200/70 bg-background/40 text-default-500 rounded-[28px] border border-dashed p-8 text-center text-sm">
             Selecciona una cuenta en la tabla superior para ver su resumen y movimientos históricos.
           </div>
         )}

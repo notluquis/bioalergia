@@ -44,7 +44,7 @@ export function DataTableFacetedFilter<TData, TValue>({
           {title}
           {selectedValues.size > 0 && (
             <>
-              <div className="bg-base-300 mx-2 h-4 w-px" />
+              <div className="bg-default-100 mx-2 h-4 w-px" />
               <div className="badge badge-sm badge-secondary hidden lg:flex">
                 {selectedValues.size}
               </div>
@@ -72,7 +72,7 @@ export function DataTableFacetedFilter<TData, TValue>({
         <DropdownMenuSeparator />
         <div className="max-h-75 overflow-auto p-1">
           {filteredOptions.length === 0 && (
-            <div className="text-base-content/50 py-6 text-center text-sm">No results found.</div>
+            <div className="text-default-400 py-6 text-center text-sm">No results found.</div>
           )}
           {filteredOptions.map((option) => {
             const isSelected = selectedValues.has(option.value);

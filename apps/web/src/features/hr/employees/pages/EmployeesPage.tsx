@@ -133,7 +133,7 @@ export default function EmployeesPage() {
       {error && <Alert variant="error">{error}</Alert>}
 
       {canEdit && showForm && (
-        <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
+        <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-primary text-lg font-semibold">
               {editingEmployee ? "Editar empleado" : "Agregar nuevo empleado"}

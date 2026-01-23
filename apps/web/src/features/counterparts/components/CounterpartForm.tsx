@@ -106,15 +106,15 @@ export default function CounterpartForm({
   return (
     <section aria-busy={busy} className="surface-recessed relative space-y-5 p-6">
       {loading && (
-        <div className="bg-base-100/60 absolute inset-0 z-10 flex items-center justify-center rounded-2xl backdrop-blur-sm">
+        <div className="bg-background/60 absolute inset-0 z-10 flex items-center justify-center rounded-2xl backdrop-blur-sm">
           <Spinner size="lg" />
         </div>
       )}
       <div className="flex flex-col gap-1">
-        <h1 className="typ-title text-base-content">
+        <h1 className="typ-title text-foreground">
           {counterpart ? "Editar contraparte" : "Nueva contraparte"}
         </h1>
-        <p className="text-base-content/70 text-sm">
+        <p className="text-default-600 text-sm">
           Completa los datos principales para sincronizar la información de pagos y retiros.
         </p>
       </div>
@@ -141,7 +141,7 @@ export default function CounterpartForm({
                   value={field.state.value}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">
+                  <p className="text-danger mt-1 text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
@@ -164,7 +164,7 @@ export default function CounterpartForm({
                   value={field.state.value}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">
+                  <p className="text-danger mt-1 text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
@@ -188,7 +188,7 @@ export default function CounterpartForm({
                   <option value="JURIDICAL">Empresa</option>
                 </Input>
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">
+                  <p className="text-danger mt-1 text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
@@ -215,7 +215,7 @@ export default function CounterpartForm({
                   ))}
                 </Input>
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">
+                  <p className="text-danger mt-1 text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
@@ -224,7 +224,7 @@ export default function CounterpartForm({
           </form.Field>
 
           {categoryValue === "EMPLOYEE" && (
-            <p className="text-base-content/80 text-xs md:col-span-2">
+            <p className="text-default-700 text-xs md:col-span-2">
               Se vinculará como empleado utilizando el correo electrónico ingresado.
             </p>
           )}
@@ -243,7 +243,7 @@ export default function CounterpartForm({
                   value={field.state.value ?? ""}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">
+                  <p className="text-danger mt-1 text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
@@ -267,7 +267,7 @@ export default function CounterpartForm({
                     value={field.state.value}
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-error mt-1 text-xs">
+                    <p className="text-danger mt-1 text-xs">
                       {field.state.meta.errors.map((err) => String(err)).join(", ")}
                     </p>
                   )}
@@ -277,7 +277,7 @@ export default function CounterpartForm({
           )}
 
           {counterpart?.employeeId && (
-            <p className="text-base-content/80 text-xs md:col-span-2">
+            <p className="text-default-700 text-xs md:col-span-2">
               Empleado vinculado (ID #{counterpart.employeeId}).{" "}
               <Link className="text-primary font-semibold" to="/hr/employees">
                 Ver empleados

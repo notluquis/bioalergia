@@ -8,7 +8,7 @@ export const getReleaseColumns = (): ColumnDef<ReleaseTransaction>[] => [
   {
     accessorKey: "date",
     cell: ({ row }) => (
-      <span className="text-base-content font-medium">
+      <span className="text-foreground font-medium">
         {dayjs(row.getValue("date")).format("DD/MM/YYYY")}
       </span>
     ),
@@ -31,7 +31,7 @@ export const getReleaseColumns = (): ColumnDef<ReleaseTransaction>[] => [
   },
   {
     accessorKey: "netDebitAmount",
-    cell: ({ row }) => <span className="text-error">{fmtCLP(row.getValue("netDebitAmount"))}</span>,
+    cell: ({ row }) => <span className="text-danger">{fmtCLP(row.getValue("netDebitAmount"))}</span>,
     header: "Débito Neto",
   },
   {

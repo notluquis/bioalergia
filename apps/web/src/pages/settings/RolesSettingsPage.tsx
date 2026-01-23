@@ -144,7 +144,7 @@ export default function RolesSettingsPage() {
         <CardHeader className="flex flex-row items-center justify-between gap-4 border-b pb-4">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Listado de roles</h2>
-            <p className="text-base-content/70 hidden text-sm md:block">
+            <p className="text-default-600 hidden text-sm md:block">
               Gestiona los permisos y roles del sistema
             </p>
           </div>

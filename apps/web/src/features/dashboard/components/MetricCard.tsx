@@ -35,13 +35,13 @@ const ACCENT_THEME: Record<
     value: "text-primary",
   },
   rose: {
-    badge: "bg-error/10 text-error",
+    badge: "bg-danger/10 text-danger",
     badgeLabel: "Egresos",
     gradient: "from-error/20 via-error/5 to-transparent",
     icon: TrendingDown,
-    iconColor: "text-error",
+    iconColor: "text-danger",
     ring: "ring-error/20",
-    value: "text-error",
+    value: "text-danger",
   },
 };
 
@@ -71,11 +71,11 @@ export default function MetricCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <div
-              className={`bg-base-100/50 flex h-8 w-8 items-center justify-center rounded-full ring-1 backdrop-blur-sm ring-inset ${theme.ring}`}
+              className={`bg-background/50 flex h-8 w-8 items-center justify-center rounded-full ring-1 backdrop-blur-sm ring-inset ${theme.ring}`}
             >
               <Icon className={`h-4 w-4 ${theme.iconColor}`} />
             </div>
-            <h2 className="typ-caption text-base-content/70">{title}</h2>
+            <h2 className="typ-caption text-default-600">{title}</h2>
           </div>
           <span
             className={`hidden rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide uppercase lg:inline-flex ${theme.badge}`}

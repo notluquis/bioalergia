@@ -38,7 +38,7 @@ export default function TopParticipantsSection({
       {error && <Alert color="danger">{error}</Alert>}
 
       {!loading && !error && data.length === 0 && (
-        <div className="text-base-content/60 py-8 text-center text-sm">
+        <div className="text-default-500 py-8 text-center text-sm">
           No hay datos de contrapartes para mostrar
         </div>
       )}
@@ -60,7 +60,7 @@ export default function TopParticipantsSection({
           <div className="space-y-2">
             {data.slice(0, 10).map((participant, index) => (
               <div
-                className="hover:bg-base-200/50 flex items-center justify-between rounded-lg p-3 transition-colors"
+                className="hover:bg-default-50/50 flex items-center justify-between rounded-lg p-3 transition-colors"
                 key={participant.personId}
               >
                 <div className="flex items-center gap-3">
@@ -69,7 +69,7 @@ export default function TopParticipantsSection({
                   </div>
                   <div>
                     <div className="font-medium">{participant.personName}</div>
-                    <div className="text-base-content/60 text-xs">
+                    <div className="text-default-500 text-xs">
                       {participant.count}{" "}
                       {participant.count === 1 ? "transacción" : "transacciones"}
                     </div>

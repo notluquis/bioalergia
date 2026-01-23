@@ -15,7 +15,7 @@ export default function Checkbox({ className, label, ...props }: Readonly<Checkb
   return (
     <label
       className={cn(
-        "text-base-content/70 flex cursor-pointer items-center gap-3 text-xs font-medium",
+        "text-default-600 flex cursor-pointer items-center gap-3 text-xs font-medium",
         className,
       )}
     >

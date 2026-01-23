@@ -24,7 +24,7 @@ export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
           <TrendingUp className="text-primary h-5 w-5" />
           Flujo mensual
         </h2>
-        <div className="text-base-content/60 py-8 text-center text-sm">
+        <div className="text-default-500 py-8 text-center text-sm">
           No hay datos para mostrar en el rango seleccionado
         </div>
       </Card>

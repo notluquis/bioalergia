@@ -21,9 +21,9 @@ export default function CollapsibleNavSection({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <div className="border-base-300 bg-base-100 rounded-xl border shadow-inner">
+      <div className="border-default-200 bg-background rounded-xl border shadow-inner">
         <Button
-          className="text-base-content/70 flex w-full items-center justify-between gap-2 px-3 py-2 text-xs font-semibold tracking-wide uppercase"
+          className="text-default-600 flex w-full items-center justify-between gap-2 px-3 py-2 text-xs font-semibold tracking-wide uppercase"
           onClick={() => {
             setIsOpen(!isOpen);
           }}

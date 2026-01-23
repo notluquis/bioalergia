@@ -26,7 +26,7 @@ export default function SupplyRequestsTable({
   };
 
   return (
-    <div className="bg-base-100 rounded-lg p-6 shadow-md">
+    <div className="bg-background rounded-lg p-6 shadow-md">
       <h2 className="mb-4 text-xl font-semibold">
         {isAdmin ? "Todas las solicitudes" : "Solicitudes activas"}
       </h2>
