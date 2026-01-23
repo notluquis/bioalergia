@@ -230,6 +230,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "issuer" }
                 },
+                patientAttachments: {
+                    name: "patientAttachments",
+                    type: "PatientAttachment",
+                    array: true,
+                    relation: { opposite: "uploader" }
+                },
                 person: {
                     name: "person",
                     type: "Person",
@@ -4551,6 +4557,24 @@ export class SchemaType implements SchemaDef {
                     type: "MedicalCertificate",
                     array: true,
                     relation: { opposite: "patient" }
+                },
+                budgets: {
+                    name: "budgets",
+                    type: "Budget",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                payments: {
+                    name: "payments",
+                    type: "PatientPayment",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                attachments: {
+                    name: "attachments",
+                    type: "PatientAttachment",
+                    array: true,
+                    relation: { opposite: "patient" }
                 }
             },
             attributes: [
@@ -4656,6 +4680,308 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" }
             }
+        },
+        Budget: {
+            name: "Budget",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }],
+                    foreignKeyFor: [
+                        "patient"
+                    ]
+                },
+                title: {
+                    name: "title",
+                    type: "String"
+                },
+                totalAmount: {
+                    name: "totalAmount",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
+                },
+                discount: {
+                    name: "discount",
+                    type: "Decimal",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
+                    default: 0
+                },
+                finalAmount: {
+                    name: "finalAmount",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("final_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
+                },
+                status: {
+                    name: "status",
+                    type: "BudgetStatus",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("DRAFT") }] }],
+                    default: "DRAFT"
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
+                    relation: { opposite: "budgets", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                items: {
+                    name: "items",
+                    type: "BudgetItem",
+                    array: true,
+                    relation: { opposite: "budget" }
+                },
+                payments: {
+                    name: "payments",
+                    type: "PatientPayment",
+                    array: true,
+                    relation: { opposite: "budget" }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("patientId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("budgets") }] }
+            ],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        BudgetItem: {
+            name: "BudgetItem",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                budgetId: {
+                    name: "budgetId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("budget_id") }] }],
+                    foreignKeyFor: [
+                        "budget"
+                    ]
+                },
+                description: {
+                    name: "description",
+                    type: "String"
+                },
+                quantity: {
+                    name: "quantity",
+                    type: "Int",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(1) }] }],
+                    default: 1
+                },
+                unitPrice: {
+                    name: "unitPrice",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("unit_price") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
+                },
+                totalPrice: {
+                    name: "totalPrice",
+                    type: "Decimal",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_price") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
+                },
+                budget: {
+                    name: "budget",
+                    type: "Budget",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("budgetId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
+                    relation: { opposite: "items", fields: ["budgetId"], references: ["id"], onDelete: "Cascade" }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("budgetId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("budget_items") }] }
+            ],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        PatientPayment: {
+            name: "PatientPayment",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }],
+                    foreignKeyFor: [
+                        "patient"
+                    ]
+                },
+                budgetId: {
+                    name: "budgetId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("budget_id") }] }],
+                    foreignKeyFor: [
+                        "budget"
+                    ]
+                },
+                amount: {
+                    name: "amount",
+                    type: "Decimal",
+                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
+                },
+                paymentDate: {
+                    name: "paymentDate",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_date") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                paymentMethod: {
+                    name: "paymentMethod",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_method") }] }]
+                },
+                reference: {
+                    name: "reference",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
+                    relation: { opposite: "payments", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                budget: {
+                    name: "budget",
+                    type: "Budget",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("budgetId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }] }],
+                    relation: { opposite: "payments", fields: ["budgetId"], references: ["id"] }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("patientId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("budgetId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_payments") }] }
+            ],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
+            }
+        },
+        PatientAttachment: {
+            name: "PatientAttachment",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }],
+                    default: ExpressionUtils.call("cuid")
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }],
+                    foreignKeyFor: [
+                        "patient"
+                    ]
+                },
+                name: {
+                    name: "name",
+                    type: "String"
+                },
+                type: {
+                    name: "type",
+                    type: "AttachmentType",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("OTHER") }] }],
+                    default: "OTHER"
+                },
+                driveFileId: {
+                    name: "driveFileId",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("drive_file_id") }] }]
+                },
+                mimeType: {
+                    name: "mimeType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mime_type") }] }]
+                },
+                uploadedBy: {
+                    name: "uploadedBy",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("uploaded_by") }] }],
+                    foreignKeyFor: [
+                        "uploader"
+                    ]
+                },
+                uploadedAt: {
+                    name: "uploadedAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("uploaded_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
+                    relation: { opposite: "attachments", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                uploader: {
+                    name: "uploader",
+                    type: "User",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("uploadedBy")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }] }],
+                    relation: { opposite: "patientAttachments", fields: ["uploadedBy"], references: ["id"] }
+                }
+            },
+            attributes: [
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("patientId")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_attachments") }] }
+            ],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
+            }
         }
     } as const;
     enums = {
@@ -4749,6 +5075,23 @@ export class SchemaType implements SchemaDef {
                 PENDING_SETUP: "PENDING_SETUP",
                 ACTIVE: "ACTIVE",
                 SUSPENDED: "SUSPENDED"
+            }
+        },
+        BudgetStatus: {
+            values: {
+                DRAFT: "DRAFT",
+                SENT: "SENT",
+                ACCEPTED: "ACCEPTED",
+                REJECTED: "REJECTED",
+                EXPIRED: "EXPIRED"
+            }
+        },
+        AttachmentType: {
+            values: {
+                CONSENT: "CONSENT",
+                EXAM: "EXAM",
+                RECIPE: "RECIPE",
+                OTHER: "OTHER"
             }
         }
     } as const;

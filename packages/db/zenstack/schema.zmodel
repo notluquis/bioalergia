@@ -86,6 +86,7 @@ model User {
   permissionVersion       UserPermissionVersion?
   roles                   UserRoleAssignment[]
   medicalCertificates     MedicalCertificate[]
+  patientAttachments      PatientAttachment[]
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   // This model represents the authenticated user
@@ -1319,6 +1320,9 @@ model Patient {
   person              Person               @relation(fields: [personId], references: [id], onDelete: Cascade)
   consultations       Consultation[]
   medicalCertificates MedicalCertificate[]
+  budgets             Budget[]
+  payments            PatientPayment[]
+  attachments         PatientAttachment[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
@@ -1351,4 +1355,105 @@ model Consultation {
   @@index([eventId])
   @@index([date])
   @@map("consultations")
+}
+
+model Budget {
+  id          Int              @id @default(autoincrement())
+  patientId   Int              @map("patient_id")
+  title       String
+  totalAmount Decimal          @map("total_amount") @db.Decimal(15, 2)
+  discount    Decimal          @default(0) @db.Decimal(15, 2)
+  finalAmount Decimal          @map("final_amount") @db.Decimal(15, 2)
+  status      BudgetStatus     @default(DRAFT)
+  notes       String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  items       BudgetItem[]
+  payments    PatientPayment[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@map("budgets")
+}
+
+model BudgetItem {
+  id          Int     @id @default(autoincrement())
+  budgetId    Int     @map("budget_id")
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Decimal @map("unit_price") @db.Decimal(15, 2)
+  totalPrice  Decimal @map("total_price") @db.Decimal(15, 2)
+
+  budget      Budget  @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([budgetId])
+  @@map("budget_items")
+}
+
+model PatientPayment {
+  id            Int      @id @default(autoincrement())
+  patientId     Int      @map("patient_id")
+  budgetId      Int?     @map("budget_id")
+  amount        Decimal  @db.Decimal(15, 2)
+  paymentDate   DateTime @default(now()) @map("payment_date")
+  paymentMethod String   @map("payment_method") // Transfer, Cash, Card
+  reference     String?       // Transaction ID or Receipt number
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  budget        Budget?  @relation(fields: [budgetId], references: [id])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@index([budgetId])
+  @@map("patient_payments")
+}
+
+model PatientAttachment {
+  id          String         @id @default(cuid())
+  patientId   Int            @map("patient_id")
+  name        String
+  type        AttachmentType @default(OTHER)
+  driveFileId String         @map("drive_file_id")
+  mimeType    String?        @map("mime_type")
+  uploadedBy  Int            @map("uploaded_by")
+  uploadedAt  DateTime       @default(now()) @map("uploaded_at")
+
+  patient     Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  uploader    User           @relation(fields: [uploadedBy], references: [id])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@map("patient_attachments")
+}
+
+enum BudgetStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum AttachmentType {
+  CONSENT
+  EXAM
+  RECIPE
+  OTHER
 }

@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "@finanzas/db";
-import { createPatientSchema, updatePatientSchema, createConsultationSchema } from "./patients.schema.js";
+import { createPatientSchema, updatePatientSchema, createConsultationSchema, createBudgetSchema, createPaymentSchema, createAttachmentSchema } from "./patients.schema.js";
+import { getSessionUser } from "../../auth.js";
 
 type Variables = {
   // biome-ignore lint/suspicious/noExplicitAny: legacy typing
@@ -66,6 +67,16 @@ patientsRoutes.get("/:id", async (c) => {
         medicalCertificates: {
           orderBy: { issuedAt: "desc" },
           take: 10,
+        },
+        budgets: {
+          orderBy: { updatedAt: "desc" },
+          include: { items: true },
+        },
+        payments: {
+          orderBy: { paymentDate: "desc" },
+        },
+        attachments: {
+          orderBy: { uploadedAt: "desc" },
         },
       },
     });
@@ -245,6 +256,139 @@ patientsRoutes.post("/:id/consultations", zValidator("json", createConsultationS
   } catch (error) {
     console.error("Error creating consultation:", error);
     return c.json({ error: "Error al registrar la consulta", details: String(error) }, 500);
+  }
+});
+
+// POST /:id/budgets - Create budget for patient
+patientsRoutes.post("/:id/budgets", zValidator("json", createBudgetSchema), async (c) => {
+  const patientId = Number(c.req.param("id"));
+  const input = c.req.valid("json");
+
+  try {
+    const totalAmount = input.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+    const finalAmount = totalAmount - input.discount;
+
+    const budget = await db.budget.create({
+      data: {
+        patientId,
+        title: input.title,
+        totalAmount,
+        discount: input.discount,
+        finalAmount,
+        notes: input.notes,
+        items: {
+          create: input.items.map(item => ({
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.unitPrice * item.quantity,
+          })),
+        },
+      },
+      include: { items: true },
+    });
+
+    return c.json(budget, 201);
+  } catch {
+    console.error("Error creating budget:");
+    return c.json({ error: "Error al crear el presupuesto" }, 500);
+  }
+});
+
+// GET /:id/budgets - List patient budgets
+patientsRoutes.get("/:id/budgets", async (c) => {
+  const patientId = Number(c.req.param("id"));
+  try {
+    const budgets = await db.budget.findMany({
+      where: { patientId },
+      include: { items: true, payments: true },
+      orderBy: { updatedAt: "desc" },
+    });
+    return c.json(budgets);
+  } catch {
+    return c.json({ error: "Error al obtener presupuestos" }, 500);
+  }
+});
+
+// POST /:id/payments - Register payment for patient
+patientsRoutes.post("/:id/payments", zValidator("json", createPaymentSchema), async (c) => {
+  const patientId = Number(c.req.param("id"));
+  const input = c.req.valid("json");
+
+  try {
+    const payment = await db.patientPayment.create({
+      data: {
+        patientId,
+        budgetId: input.budgetId,
+        amount: input.amount,
+        paymentDate: new Date(input.paymentDate),
+        paymentMethod: input.paymentMethod,
+        reference: input.reference,
+        notes: input.notes,
+      },
+    });
+
+    return c.json(payment, 201);
+  } catch {
+    console.error("Error registering payment:");
+    return c.json({ error: "Error al registrar pago" }, 500);
+  }
+});
+
+// GET /:id/payments - List patient payments
+patientsRoutes.get("/:id/payments", async (c) => {
+  const patientId = Number(c.req.param("id"));
+  try {
+    const payments = await db.patientPayment.findMany({
+      where: { patientId },
+      orderBy: { paymentDate: "desc" },
+    });
+    return c.json(payments);
+  } catch {
+    return c.json({ error: "Error al obtener pagos" }, 500);
+  }
+});
+
+// POST /:id/attachments - Add attachment
+patientsRoutes.post("/:id/attachments", zValidator("json", createAttachmentSchema), async (c) => {
+  const patientId = Number(c.req.param("id"));
+  const input = c.req.valid("json");
+  const user = await getSessionUser(c);
+
+  if (!user?.id) {
+    return c.json({ error: "No autorizado" }, 401);
+  }
+
+  try {
+    const attachment = await db.patientAttachment.create({
+      data: {
+        patientId,
+        name: input.name,
+        type: input.type,
+        driveFileId: input.driveFileId,
+        mimeType: input.mimeType,
+        uploadedBy: user.id,
+      },
+    });
+
+    return c.json(attachment, 201);
+  } catch {
+    console.error("Error creating attachment:");
+    return c.json({ error: "Error al guardar adjunto" }, 500);
+  }
+});
+
+// GET /:id/attachments - List attachments
+patientsRoutes.get("/:id/attachments", async (c) => {
+  const patientId = Number(c.req.param("id"));
+  try {
+    const attachments = await db.patientAttachment.findMany({
+      where: { patientId },
+      orderBy: { uploadedAt: "desc" },
+    });
+    return c.json(attachments);
+  } catch {
+    return c.json({ error: "Error al obtener adjuntos" }, 500);
   }
 });
 
