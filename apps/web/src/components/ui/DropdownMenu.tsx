@@ -7,10 +7,9 @@ import {
   DropdownMenu as HeroDropdownMenu,
 } from "@heroui/react";
 import type { ComponentProps, ReactNode } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
-
-// Adapter: Radix Root -> HeroUI Root
-const DropdownMenu = DropdownRoot;
 
 // Adapter: Radix Trigger -> HeroUI Trigger
 // Radix's asChild behavior (merging props) is default in HeroUI Trigger, so we just strip the asChild prop.
@@ -30,7 +29,7 @@ type DropdownMenuContentProps = ComponentProps<typeof HeroDropdownMenu> & {
   side?: "top" | "bottom" | "left" | "right";
 };
 
-const DropdownMenuContent = ({
+const DropdownMenuContentFixed = ({
   children,
   className,
   sideOffset = 4,
@@ -40,8 +39,6 @@ const DropdownMenuContent = ({
   ...props
 }: DropdownMenuContentProps) => {
   // Map side/align to placement
-  // Radix: side (top/bottom/left/right) + align (start/center/end)
-  // HeroUI (React Aria): top start, top, top end, etc. (Space separated)
   let resolvedPlacement = placement;
   if (!resolvedPlacement) {
     if (side) {
@@ -55,18 +52,32 @@ const DropdownMenuContent = ({
   }
 
   return (
-    <DropdownPopover offset={sideOffset} placement={resolvedPlacement as any}>
-      <HeroDropdownMenu aria-label="Dropdown menu" className={className} {...props}>
-        {children}
-      </HeroDropdownMenu>
-    </DropdownPopover>
+    <DropdownMenuPortal>
+      <DropdownPopover
+        offset={sideOffset}
+        placement={resolvedPlacement as any}
+        // isNonModal prevents the popover from triggering global modal/backdrop behaviors
+        // which was causing the "behind the blur" issue.
+        {...({ isNonModal: true } as any)}
+      >
+        <HeroDropdownMenu aria-label="Menu" className={className} {...props}>
+          {children}
+        </HeroDropdownMenu>
+      </DropdownPopover>
+    </DropdownMenuPortal>
   );
 };
 
 // Adapter: Radix Group -> DropdownSection
 const DropdownMenuGroup = DropdownSection;
 
-const DropdownMenuPortal = ({ children }: { children: ReactNode }) => <>{children}</>;
+const DropdownMenuPortal = ({ children }: { children: ReactNode }) => {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+  return createPortal(children, document.body);
+};
 
 // Adapter: Radix Item -> HeroUI Item
 const DropdownMenuItem = ({
@@ -78,7 +89,7 @@ const DropdownMenuItem = ({
   return (
     <DropdownItem
       className={className}
-      onPress={(e) => {
+      onPress={(e: any) => {
         onSelect?.(e);
         props.onPress?.(e);
       }}
@@ -103,7 +114,7 @@ const DropdownMenuCheckboxItem = ({
   return (
     <DropdownItem
       textValue={typeof children === "string" ? children : undefined}
-      onPress={(e) => {
+      onPress={(e: any) => {
         onSelect?.(e);
         onCheckedChange?.(!checked);
         props.onPress?.(e);
@@ -138,14 +149,33 @@ const DropdownMenuSeparator = () => (
   <DropdownSection className="h-px bg-default-200 my-1"></DropdownSection>
 );
 
+const DropdownMenuRoot = Object.assign(DropdownRoot, {
+  CheckboxItem: DropdownMenuCheckboxItem,
+  Content: DropdownMenuContentFixed,
+  Group: DropdownMenuGroup,
+  Item: DropdownMenuItem,
+  Label: DropdownMenuLabel,
+  Portal: DropdownMenuPortal,
+  Separator: DropdownMenuSeparator,
+  Trigger: DropdownMenuTrigger,
+});
+
 export {
-  DropdownMenu,
+  DropdownMenuRoot as DropdownMenu,
+  /** @deprecated Use DropdownMenu namespace */
   DropdownMenuCheckboxItem,
-  DropdownMenuContent,
+  /** @deprecated Use DropdownMenu namespace */
+  DropdownMenuContentFixed as DropdownMenuContent,
+  /** @deprecated Use DropdownMenu namespace */
   DropdownMenuGroup,
+  /** @deprecated Use DropdownMenu namespace */
   DropdownMenuItem,
+  /** @deprecated Use DropdownMenu namespace */
   DropdownMenuLabel,
+  /** @deprecated Use DropdownMenu namespace */
   DropdownMenuPortal,
+  /** @deprecated Use DropdownMenu namespace */
   DropdownMenuSeparator,
+  /** @deprecated Use DropdownMenu namespace */
   DropdownMenuTrigger,
 };

@@ -6,7 +6,6 @@ import {
   useFindManyUser,
   useUpdateUser,
 } from "@finanzas/db/hooks";
-import { ListBox, Select } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -16,6 +15,7 @@ import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteUserPasskey, resetUserPassword, toggleUserMfa } from "@/features/users/api";
@@ -262,21 +262,14 @@ export default function UserManagementPage() {
                 if (key) setRoleFilter(key.toString());
               }}
             >
-              <Select.Trigger>
-                <Select.Value />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  <ListBox.Item key="ALL" textValue="Todos los roles">
-                    Todos los roles
-                  </ListBox.Item>
-                  {roles?.map((role: { name: string }) => (
-                    <ListBox.Item key={role.name} textValue={role.name}>
-                      {role.name}
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
+              <SelectItem key="ALL" textValue="Todos los roles">
+                Todos los roles
+              </SelectItem>
+              {roles?.map((role: { name: string }) => (
+                <SelectItem key={role.name} textValue={role.name}>
+                  {role.name}
+                </SelectItem>
+              ))}
             </Select>
           </div>
 
@@ -324,18 +317,11 @@ export default function UserManagementPage() {
                 if (key) setSelectedRole(key.toString());
               }}
             >
-              <Select.Trigger>
-                <Select.Value />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  {roles?.map((role: { name: string }) => (
-                    <ListBox.Item key={role.name} textValue={role.name}>
-                      {role.name}
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
+              {roles?.map((role: { name: string }) => (
+                <SelectItem key={role.name} textValue={role.name}>
+                  {role.name}
+                </SelectItem>
+              ))}
             </Select>
           </div>
 

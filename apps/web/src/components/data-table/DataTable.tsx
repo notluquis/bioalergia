@@ -309,7 +309,7 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-4">
       {enableToolbar && <DataTableToolbar filters={filters} table={table} />}
-      <div className="border-default-200/50 bg-background relative overflow-hidden rounded-2xl border shadow-sm">
+      <div className="border-default-200/50 bg-background relative overflow-visible rounded-2xl border shadow-sm">
         <div
           className="muted-scrollbar overflow-x-auto"
           ref={tableContainerRef}
