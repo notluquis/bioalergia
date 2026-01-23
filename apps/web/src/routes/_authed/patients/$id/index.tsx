@@ -1,6 +1,6 @@
-import { Card, Separator, Spinner, Tabs } from "@heroui/react";
+import { Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
@@ -18,9 +18,14 @@ import {
   Trash2,
   User,
 } from "lucide-react";
-import { DataTable } from "@/components/data-table/DataTable";
+import { useState } from "react";
+
 import Button from "@/components/ui/Button";
-import { CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
+import DataTable from "@/components/ui/DataTable";
+import Separator from "@/components/ui/Separator";
+import Tabs from "@/components/ui/Tabs";
+import NewAttachmentModal from "@/features/patients/components/NewAttachmentModal";
 import { apiClient } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authed/patients/$id/")({
@@ -108,8 +113,9 @@ interface Patient {
 }
 
 function PatientDetailsPage() {
-  const { id } = Route.useParams();
+  const { id } = useParams({ from: "/_authed/patients/$id/" });
   const navigate = useNavigate();
+  const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
 
   const { data: patient, isLoading } = useQuery({
     queryKey: ["patient", id],
@@ -314,7 +320,23 @@ function PatientDetailsPage() {
               />
             </Tabs.Panel>
 
-            <Tabs.Panel id="budgets" className="py-4">
+            <Tabs.Panel id="budgets" className="py-4 space-y-4">
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  onClick={() =>
+                    navigate({
+                      // @ts-expect-error
+                      to: "/patients/$id/new-budget",
+                      params: { id: String(id) },
+                    })
+                  }
+                >
+                  <PlusCircle size={16} />
+                  Nuevo Presupuesto
+                </Button>
+              </div>
               <DataTable
                 columns={budgetColumns}
                 data={patient.budgets || []}
@@ -322,7 +344,23 @@ function PatientDetailsPage() {
               />
             </Tabs.Panel>
 
-            <Tabs.Panel id="payments" className="py-4">
+            <Tabs.Panel id="payments" className="py-4 space-y-4">
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  onClick={() =>
+                    navigate({
+                      // @ts-expect-error
+                      to: "/patients/$id/new-payment",
+                      params: { id: String(id) },
+                    })
+                  }
+                >
+                  <PlusCircle size={16} />
+                  Registrar Pago
+                </Button>
+              </div>
               <DataTable
                 columns={paymentColumns}
                 data={patient.payments || []}
@@ -330,7 +368,18 @@ function PatientDetailsPage() {
               />
             </Tabs.Panel>
 
-            <Tabs.Panel id="docs" className="py-4">
+            <Tabs.Panel id="docs" className="py-4 space-y-4">
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  variant="outline"
+                  onClick={() => setIsAttachmentModalOpen(true)}
+                >
+                  <PlusCircle size={16} />
+                  Cargar Documento
+                </Button>
+              </div>
               <DataTable
                 columns={attachmentColumns}
                 data={patient.attachments || []}
@@ -364,6 +413,12 @@ function PatientDetailsPage() {
           </Tabs>
         </div>
       </div>
+
+      <NewAttachmentModal
+        isOpen={isAttachmentModalOpen}
+        onClose={() => setIsAttachmentModalOpen(false)}
+        patientId={String(id)}
+      />
     </div>
   );
 }

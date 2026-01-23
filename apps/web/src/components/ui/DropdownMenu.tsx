@@ -135,9 +135,7 @@ const DropdownMenuLabel = ({
 );
 
 const DropdownMenuSeparator = () => (
-  <DropdownSection className="h-px bg-default-200 my-1">
-    <></>
-  </DropdownSection>
+  <DropdownSection className="h-px bg-default-200 my-1"></DropdownSection>
 );
 
 export {
