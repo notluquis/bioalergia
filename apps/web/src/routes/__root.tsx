@@ -23,6 +23,8 @@ declare module "@tanstack/react-router" {
     permission?: RoutePermission;
     title?: string;
     hideFromNav?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    breadcrumb?: string | ((data: any) => string);
   }
 }
 

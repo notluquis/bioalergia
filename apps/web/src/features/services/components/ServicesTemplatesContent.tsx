@@ -23,7 +23,6 @@ export default function ServicesTemplatesContent() {
             <Button variant="ghost">Ir a crear</Button>
           </Link>
         }
-        breadcrumbs={[{ label: "Servicios", to: "/services" }, { label: "Plantillas" }]}
         description="Reutiliza configuraciones predefinidas para acelerar la creación de servicios recurrentes."
         title="Plantillas de servicios"
       />
