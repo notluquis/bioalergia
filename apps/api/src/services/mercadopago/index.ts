@@ -23,12 +23,15 @@ export const MercadoPagoService = {
     // biome-ignore lint/suspicious/noExplicitAny: overload
     range: { begin_date: string; end_date: string } | any,
   ) {
+    console.log(`[MP Service] Creating ${type} report with range:`, range);
     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
     const res = await mpFetch("", baseUrl, {
       method: "POST",
       body: JSON.stringify(range),
     });
-    return safeMpJson(res);
+    const data = await safeMpJson(res);
+    console.log(`[MP Service] ${type} report creation response:`, data);
+    return data;
   },
 
   /**

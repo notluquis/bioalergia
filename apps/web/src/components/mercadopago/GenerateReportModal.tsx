@@ -60,10 +60,18 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
       end_date: "",
     } as FormData,
     onSubmit: async ({ value }) => {
+      console.log("[MP Generate] Form onSubmit triggered:", value);
+
+      // Manual validation
+      const result = schema.safeParse(value);
+      if (!result.success) {
+        console.warn("[MP Generate] Validation failed:", result.error.issues);
+        const firstError = result.error.issues[0]?.message || "Datos inválidos";
+        showError(firstError);
+        return;
+      }
+
       await mutation.mutateAsync(value);
-    },
-    validators: {
-      onChange: schema,
     },
   });
 
@@ -77,6 +85,7 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
+          console.log("[MP Generate] Form native onSubmit triggered");
           void form.handleSubmit();
         }}
       >
@@ -89,7 +98,7 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
         <form.Field name="begin_date">
           {(field) => (
             <Input
-              error={field.state.meta.errors[0]?.message}
+              error={(field.state.meta.errors[0] as any)?.message || field.state.meta.errors[0]}
               label="Fecha Inicio"
               onBlur={field.handleBlur}
               onChange={(e) => {
@@ -104,7 +113,7 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
         <form.Field name="end_date">
           {(field) => (
             <Input
-              error={field.state.meta.errors[0]?.message}
+              error={(field.state.meta.errors[0] as any)?.message || field.state.meta.errors[0]}
               label="Fecha Fin"
               onBlur={field.handleBlur}
               onChange={(e) => {

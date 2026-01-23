@@ -92,6 +92,8 @@ export const MPService = {
 
     const reports: MPReport[] = [];
 
+    console.log(`[MP Service] createReportBulk: Generating ${chunks.length} chunks`);
+
     let index = 0;
     for (const chunk of chunks) {
       index++;
@@ -108,10 +110,15 @@ export const MPService = {
       const beginStr = `${beginDate.toISOString().split(".")[0] ?? ""}Z`;
       const endStr = `${endDate.toISOString().split(".")[0] ?? ""}Z`;
 
+      console.log(
+        `[MP Service] Creating chunk ${index}/${chunks.length}: ${beginStr} to ${endStr}`,
+      );
+
       const report = await MPService.createReport(beginStr, endStr, type);
       reports.push(report);
     }
 
+    console.log(`[MP Service] createReportBulk: Successfully created ${reports.length} reports`);
     return reports;
   },
 
