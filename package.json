@@ -31,7 +31,7 @@
     "devtools": "turbo devtools"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.11",
+    "@biomejs/biome": "^2.3.12",
     "@zenstackhq/tanstack-query": "^3.2.1",
     "turbo": "^2.7.5"
   },
