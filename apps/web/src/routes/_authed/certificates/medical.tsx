@@ -42,8 +42,9 @@ type FormData = z.infer<typeof medicalCertificateSchema>;
 function MedicalCertificatePage() {
   const generateMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await apiClient.post("certificates/medical", { json: data });
-      return (await response.blob()) as Blob;
+      return await apiClient.post<Blob>("certificates/medical", data, {
+        responseType: "blob",
+      });
     },
     onSuccess: (pdfBlob, variables) => {
       // Download PDF
