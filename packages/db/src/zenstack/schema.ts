@@ -218,6 +218,12 @@ export class SchemaType implements SchemaDef {
                     array: true,
                     relation: { opposite: "user" }
                 },
+                medicalCertificates: {
+                    name: "medicalCertificates",
+                    type: "MedicalCertificate",
+                    array: true,
+                    relation: { opposite: "issuer" }
+                },
                 person: {
                     name: "person",
                     type: "Person",
@@ -4334,6 +4340,122 @@ export class SchemaType implements SchemaDef {
             uniqueFields: {
                 id: { type: "Int" },
                 creditId_installmentNumber: { creditId: { type: "Int" }, installmentNumber: { type: "Int" } }
+            }
+        },
+        MedicalCertificate: {
+            name: "MedicalCertificate",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }],
+                    default: ExpressionUtils.call("cuid")
+                },
+                patientName: {
+                    name: "patientName",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }] }]
+                },
+                patientRut: {
+                    name: "patientRut",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_rut") }] }]
+                },
+                birthDate: {
+                    name: "birthDate",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("birth_date") }] }, { name: "@db.Date" }]
+                },
+                address: {
+                    name: "address",
+                    type: "String"
+                },
+                diagnosis: {
+                    name: "diagnosis",
+                    type: "String"
+                },
+                symptoms: {
+                    name: "symptoms",
+                    type: "String",
+                    optional: true
+                },
+                restDays: {
+                    name: "restDays",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rest_days") }] }]
+                },
+                restStartDate: {
+                    name: "restStartDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rest_start_date") }] }, { name: "@db.Date" }]
+                },
+                restEndDate: {
+                    name: "restEndDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rest_end_date") }] }, { name: "@db.Date" }]
+                },
+                purpose: {
+                    name: "purpose",
+                    type: "String"
+                },
+                purposeDetail: {
+                    name: "purposeDetail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("purpose_detail") }] }]
+                },
+                issuedBy: {
+                    name: "issuedBy",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issued_by") }] }],
+                    foreignKeyFor: [
+                        "issuer"
+                    ]
+                },
+                issuedAt: {
+                    name: "issuedAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issued_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                driveFileId: {
+                    name: "driveFileId",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("drive_file_id") }] }]
+                },
+                pdfHash: {
+                    name: "pdfHash",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pdf_hash") }] }]
+                },
+                metadata: {
+                    name: "metadata",
+                    type: "Json",
+                    optional: true
+                },
+                issuer: {
+                    name: "issuer",
+                    type: "User",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("issuedBy")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }] }],
+                    relation: { opposite: "medicalCertificates", fields: ["issuedBy"], references: ["id"] }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["id"]), "==", ExpressionUtils.field("issuedBy")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN")), "||", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("GOD")))) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("patientRut")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("issuedAt")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("medical_certificates") }] }
+            ],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "String" }
             }
         }
     } as const;

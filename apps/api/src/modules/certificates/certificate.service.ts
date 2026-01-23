@@ -3,6 +3,7 @@ import path from "node:path";
 import { PDFDocument, rgb, StandardFonts, type PDFFont } from "pdf-lib";
 import dayjs from "dayjs";
 import "dayjs/locale/es.js";
+import QRCode from "qrcode";
 
 import type { MedicalCertificateInput } from "./certificate.schema.js";
 import { defaultDoctorInfo } from "./certificate.schema.js";
@@ -15,10 +16,24 @@ const LOGOS_DIR = path.join(ASSETS_DIR, "logos");
 const SIGNATURES_DIR = path.join(ASSETS_DIR, "signatures");
 
 /**
+ * Generate QR code for certificate verification
+ */
+export async function generateQRCode(certificateId: string): Promise<Buffer> {
+  const verifyUrl = `${process.env.APP_URL || "http://localhost:5173"}/verify/${certificateId}`;
+  return await QRCode.toBuffer(verifyUrl, {
+    errorCorrectionLevel: "M",
+    type: "png",
+    width: 200,
+    margin: 1,
+  });
+}
+
+/**
  * Generate a medical certificate PDF
  */
 export async function generateMedicalCertificatePdf(
-  input: MedicalCertificateInput
+  input: MedicalCertificateInput,
+  qrCodeBuffer?: Buffer
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4
@@ -154,6 +169,23 @@ export async function generateMedicalCertificatePdf(
     size: 10,
     font: helveticaBold,
   });
+
+  // --- QR CODE ---
+  if (qrCodeBuffer) {
+    try {
+      const qrImage = await pdfDoc.embedPng(qrCodeBuffer);
+      const qrDims = qrImage.scale(0.3); // 60x60px aprox
+      
+      page.drawImage(qrImage, {
+        x: width - qrDims.width - 30,
+        y: 30,
+        width: qrDims.width,
+        height: qrDims.height,
+      });
+    } catch (e) {
+      console.warn("Could not embed QR code:", e);
+    }
+  }
 
   // --- FOOTER TEXT ---
   page.drawText("Válida solo con firma y timbre", {

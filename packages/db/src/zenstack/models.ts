@@ -51,6 +51,7 @@ export type DoctoraliaCalendarBreak = $ModelResult<$Schema, "DoctoraliaCalendarB
 export type DoctoraliaSyncLog = $ModelResult<$Schema, "DoctoraliaSyncLog">;
 export type PersonalCredit = $ModelResult<$Schema, "PersonalCredit">;
 export type PersonalCreditInstallment = $ModelResult<$Schema, "PersonalCreditInstallment">;
+export type MedicalCertificate = $ModelResult<$Schema, "MedicalCertificate">;
 export const PersonType = $schema.enums.PersonType.values;
 export type PersonType = (typeof PersonType)[keyof typeof PersonType];
 export const CounterpartCategory = $schema.enums.CounterpartCategory.values;

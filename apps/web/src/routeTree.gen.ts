@@ -19,6 +19,7 @@ import { Route as OnboardingRouteImport } from "./routes/onboarding"
 import { Route as LoginRouteImport } from "./routes/login"
 import { Route as AuthedRouteImport } from "./routes/_authed"
 import { Route as AuthedIndexRouteImport } from "./routes/_authed/index"
+import { Route as VerifyIdRouteImport } from "./routes/verify.$id"
 import { Route as AuthedSettingsRouteImport } from "./routes/_authed/settings"
 import { Route as AuthedServicesRouteImport } from "./routes/_authed/services"
 import { Route as AuthedOperationsRouteImport } from "./routes/_authed/operations"
@@ -88,6 +89,11 @@ const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => AuthedRoute,
+} as any)
+const VerifyIdRoute = VerifyIdRouteImport.update({
+  id: "/verify/$id",
+  path: "/verify/$id",
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
   id: "/settings",
@@ -365,6 +371,7 @@ export interface FileRoutesByFullPath {
   "/operations": typeof AuthedOperationsRouteWithChildren
   "/services": typeof AuthedServicesRouteWithChildren
   "/settings": typeof AuthedSettingsRouteWithChildren
+  "/verify/$id": typeof VerifyIdRoute
   "/": typeof AuthedIndexRoute
   "/calendar/classify": typeof AuthedCalendarClassifyRoute
   "/calendar/daily": typeof AuthedCalendarDailyRoute
@@ -416,6 +423,7 @@ export interface FileRoutesByTo {
   "/calendar": typeof AuthedCalendarRouteWithChildren
   "/certificates": typeof AuthedCertificatesRouteWithChildren
   "/operations": typeof AuthedOperationsRouteWithChildren
+  "/verify/$id": typeof VerifyIdRoute
   "/": typeof AuthedIndexRoute
   "/calendar/classify": typeof AuthedCalendarClassifyRoute
   "/calendar/daily": typeof AuthedCalendarDailyRoute
@@ -473,6 +481,7 @@ export interface FileRoutesById {
   "/_authed/operations": typeof AuthedOperationsRouteWithChildren
   "/_authed/services": typeof AuthedServicesRouteWithChildren
   "/_authed/settings": typeof AuthedSettingsRouteWithChildren
+  "/verify/$id": typeof VerifyIdRoute
   "/_authed/": typeof AuthedIndexRoute
   "/_authed/calendar/classify": typeof AuthedCalendarClassifyRoute
   "/_authed/calendar/daily": typeof AuthedCalendarDailyRoute
@@ -530,6 +539,7 @@ export interface FileRouteTypes {
     | "/operations"
     | "/services"
     | "/settings"
+    | "/verify/$id"
     | "/"
     | "/calendar/classify"
     | "/calendar/daily"
@@ -581,6 +591,7 @@ export interface FileRouteTypes {
     | "/calendar"
     | "/certificates"
     | "/operations"
+    | "/verify/$id"
     | "/"
     | "/calendar/classify"
     | "/calendar/daily"
@@ -637,6 +648,7 @@ export interface FileRouteTypes {
     | "/_authed/operations"
     | "/_authed/services"
     | "/_authed/settings"
+    | "/verify/$id"
     | "/_authed/"
     | "/_authed/calendar/classify"
     | "/_authed/calendar/daily"
@@ -686,6 +698,7 @@ export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  VerifyIdRoute: typeof VerifyIdRoute
 }
 
 declare module "@tanstack/react-router" {
@@ -717,6 +730,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/"
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    "/verify/$id": {
+      id: "/verify/$id"
+      path: "/verify/$id"
+      fullPath: "/verify/$id"
+      preLoaderRoute: typeof VerifyIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     "/_authed/settings": {
       id: "/_authed/settings"
@@ -1286,6 +1306,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  VerifyIdRoute: VerifyIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
