@@ -3,7 +3,7 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
-import { Chip, ListBox, Select, Spinner } from "@heroui/react";
+import { ButtonGroup, Chip, ListBox, Select, Spinner } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -220,19 +220,21 @@ export default function TimesheetAuditPage() {
         </div>
 
         {/* Quick Range Buttons */}
-        <div className="flex flex-wrap gap-2">
-          {QUICK_RANGES.map((range) => (
-            <Button
-              size="sm"
-              variant={quickRange === range.id ? "primary" : "ghost"}
-              key={range.id}
-              onPress={() => {
-                handleQuickRangeChange(range.id);
-              }}
-            >
-              {range.label}
-            </Button>
-          ))}
+        <div className="overflow-x-auto pb-2">
+          <ButtonGroup className="min-w-max">
+            {QUICK_RANGES.map((range) => (
+              <Button
+                size="sm"
+                variant={quickRange === range.id ? "primary" : "ghost"}
+                key={range.id}
+                onPress={() => {
+                  handleQuickRangeChange(range.id);
+                }}
+              >
+                {range.label}
+              </Button>
+            ))}
+          </ButtonGroup>
         </div>
 
         {/* Custom Week Picker (collapsible) */}
@@ -595,7 +597,7 @@ export default function TimesheetAuditPage() {
             <div className="px-4 pt-0 pb-4">
               <div className="grid gap-6 pt-4 sm:grid-cols-2">
                 <div className="flex items-start gap-3">
-                  <div className="bg-accent mt-1 h-4 w-4 shrink-0 rounded" />
+                  <div className="bg-success mt-1 h-4 w-4 shrink-0 rounded" />
                   <div>
                     <p className="text-foreground font-semibold">Sin conflicto</p>
                     <p className="text-default-600 text-sm">Turnos sin solapamiento</p>
