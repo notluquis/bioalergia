@@ -19,10 +19,9 @@ import {
   User,
 } from "lucide-react";
 import { useState } from "react";
-
+import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import { DataTable } from "@/components/data-table/DataTable";
 import Separator from "@/components/ui/Separator";
 import Tabs from "@/components/ui/Tabs";
 import NewAttachmentModal from "@/features/patients/components/NewAttachmentModal";
@@ -123,7 +122,7 @@ export const Route = createFileRoute("/_authed/patients/$id/")({
 });
 
 function PatientDetailsPage() {
-  const { id } = useParams({ from: "/_authed/patients/$id/" });
+  const { id } = useParams({ from: "/_authed/patients/$id" });
   const navigate = useNavigate();
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
 
@@ -244,9 +243,7 @@ function PatientDetailsPage() {
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <MapPin size={16} className="text-default-300" />
-                    <span className="text-default-700">
-                      {person.address || "Sin dirección"}
-                    </span>
+                    <span className="text-default-700">{person.address || "Sin dirección"}</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm border-t border-default-100 pt-3">
                     <Clock size={16} className="text-default-300" />
