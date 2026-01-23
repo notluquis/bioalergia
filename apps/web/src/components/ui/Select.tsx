@@ -41,8 +41,13 @@ function SelectBase<T extends object>({
   className,
   isInvalid,
   ...props
-}: SelectProps<T>) {
+}: SelectProps<T> & { value?: string | number; onChange?: (val: any) => void }) {
   const hasError = isInvalid || !!errorMessage;
+
+  // Map legacy value/onChange to HeroUI selectedKey/onSelectionChange if provided
+  const selectedKey = props.selectedKey ?? props.value;
+  const onSelectionChange =
+    props.onSelectionChange ?? (props.onChange ? (key: any) => props.onChange?.(key) : undefined);
 
   return (
     <HeroSelect
@@ -50,8 +55,12 @@ function SelectBase<T extends object>({
       isInvalid={hasError}
       placeholder={placeholder}
       {...props}
+      onSelectionChange={onSelectionChange}
+      selectedKey={selectedKey}
     >
-      {label && <Label>{label}</Label>}
+      {label && (
+        <Label className="text-default-600 font-semibold uppercase tracking-wider">{label}</Label>
+      )}
       <SelectTrigger>
         <SelectValue />
         <SelectIndicator />
@@ -89,15 +98,18 @@ function SelectPortal({ children }: { children: ReactNode }) {
   return createPortal(children, document.body);
 }
 
-export interface SelectItemProps extends ListBoxItemProps {}
+export interface SelectItemProps extends ListBoxItemProps {
+  /**
+   * Alias for id - used for backward compatibility with older Select components
+   */
+  key?: string | number;
+}
 
 export function SelectItem({ children, ...props }: SelectItemProps) {
+  const { id, key, ...rest } = props as any;
+
   return (
-    <ListBoxItem
-      {...props}
-      // Automate textValue if simpler children?
-      // Consumers should pass textValue if children is not string.
-    >
+    <ListBoxItem id={id ?? key} {...rest}>
       {children}
     </ListBoxItem>
   );

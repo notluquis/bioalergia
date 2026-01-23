@@ -161,15 +161,21 @@ export default function AddUserPage() {
                     {(field) => (
                       <Select
                         label="Vincular con persona (opcional)"
-                        onChange={(val) => {
+                        onSelectionChange={(val) => {
                           const pid = val ? Number(val) : undefined;
                           handleLinkPerson(pid);
                         }}
-                        value={field.state.value ? String(field.state.value) : ""}
+                        selectedKey={field.state.value ? String(field.state.value) : ""}
                       >
-                        <SelectItem key="">No vincular (Crear usuario nuevo)</SelectItem>
+                        <SelectItem id="" textValue="No vincular (Crear usuario nuevo)">
+                          No vincular (Crear usuario nuevo)
+                        </SelectItem>
                         {availablePeople.map((person) => (
-                          <SelectItem key={String(person.id)}>
+                          <SelectItem
+                            id={String(person.id)}
+                            key={person.id}
+                            textValue={getPersonFullName(person)}
+                          >
                             {getPersonFullName(person)} - {person.rut}
                           </SelectItem>
                         ))}
@@ -286,11 +292,11 @@ export default function AddUserPage() {
                       errorMessage={field.state.meta.errors.join(", ")}
                       isInvalid={field.state.meta.errors.length > 0}
                       label="Rol del sistema"
-                      onChange={(val) => field.handleChange(val as string)}
-                      value={field.state.value}
+                      onSelectionChange={(val) => field.handleChange(val as string)}
+                      selectedKey={field.state.value}
                     >
                       {roles.map((r) => (
-                        <SelectItem key={r.name}>
+                        <SelectItem id={r.name} key={r.id} textValue={r.name}>
                           {r.name} ({r.description || "Sin descripción"})
                         </SelectItem>
                       ))}
