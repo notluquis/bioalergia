@@ -28,6 +28,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@casl/ability':
+        specifier: ^6.8.0
+        version: 6.8.0
       '@finanzas/db':
         specifier: workspace:*
         version: link:../../packages/db

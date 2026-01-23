@@ -15,6 +15,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@casl/ability": "^6.8.0",
     "@finanzas/db": "workspace:*",
     "@googleapis/calendar": "^14.2.0",
     "@googleapis/drive": "^20.0.0",
