@@ -14,8 +14,8 @@ function VerifyCertificatePage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["verify-certificate", id],
     queryFn: async () => {
-      const response = await apiClient.get(`certificates/verify/${id}`);
-      return (await response.json()) as any;
+      const data = await apiClient.get<any>(`certificates/verify/${id}`);
+      return data;
     },
   });
 

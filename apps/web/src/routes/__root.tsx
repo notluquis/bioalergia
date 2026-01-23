@@ -22,6 +22,7 @@ declare module "@tanstack/react-router" {
     nav?: NavConfig;
     permission?: RoutePermission;
     title?: string;
+    hideFromNav?: boolean;
   }
 }
 
