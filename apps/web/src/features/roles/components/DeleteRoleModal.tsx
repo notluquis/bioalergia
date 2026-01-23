@@ -1,8 +1,11 @@
-import { Alert, Button, ListBox, Modal, Select, Spinner } from "@heroui/react";
+import { Alert, Spinner } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { AlertCircle, AlertTriangle, ArrowRight, Trash2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowRight } from "lucide-react";
 import { Suspense, useState } from "react";
 
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { deleteRole, reassignRoleUsers, roleKeys, roleQueries } from "@/features/roles/api";
 import type { Role } from "@/types/roles";
@@ -18,48 +21,37 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
   const isSystemRole = role.isSystem;
 
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <Modal.Backdrop />
-      <Modal.Container placement="center">
-        <Modal.Dialog>
-          <Modal.Header className="flex flex-col gap-1 text-danger">
-            <div className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5" />
-              <span className="text-lg font-bold">Eliminar Rol: {role.name}</span>
+    <Modal isOpen={isOpen} onClose={onClose} title={`Eliminar Rol: ${role.name}`}>
+      <div className="pb-6">
+        {isSystemRole ? (
+          <div className="py-2">
+            <Alert status="danger">
+              <Alert.Indicator>
+                <AlertCircle className="h-4 w-4" />
+              </Alert.Indicator>
+              <Alert.Content>
+                Este es un rol de sistema protegido y no puede ser eliminado.
+              </Alert.Content>
+            </Alert>
+            <div className="mt-6 flex justify-end">
+              <Button variant="ghost" onPress={onClose}>
+                Cerrar
+              </Button>
             </div>
-          </Modal.Header>
-          <Modal.Body className="pb-6">
-            {isSystemRole ? (
-              <div className="py-2">
-                <Alert status="danger">
-                  <Alert.Indicator>
-                    <AlertCircle className="h-4 w-4" />
-                  </Alert.Indicator>
-                  <Alert.Content>
-                    Este es un rol de sistema protegido y no puede ser eliminado.
-                  </Alert.Content>
-                </Alert>
-                <div className="mt-6 flex justify-end">
-                  <Button variant="ghost" onPress={onClose}>
-                    Cerrar
-                  </Button>
-                </div>
+          </div>
+        ) : (
+          <Suspense
+            fallback={
+              <div className="py-8 text-center">
+                <Spinner className="text-primary" size="lg" />
+                <p className="mt-2 text-sm opacity-70">Verificando usuarios afectados...</p>
               </div>
-            ) : (
-              <Suspense
-                fallback={
-                  <div className="py-8 text-center">
-                    <Spinner className="text-primary" size="lg" />
-                    <p className="mt-2 text-sm opacity-70">Verificando usuarios afectados...</p>
-                  </div>
-                }
-              >
-                <DeleteRoleForm allRoles={allRoles} onClose={onClose} role={role} />
-              </Suspense>
-            )}
-          </Modal.Body>
-        </Modal.Dialog>
-      </Modal.Container>
+            }
+          >
+            <DeleteRoleForm allRoles={allRoles} onClose={onClose} role={role} />
+          </Suspense>
+        )}
+      </div>
     </Modal>
   );
 }
@@ -147,18 +139,11 @@ function DeleteRoleForm({
                 selectedKey={targetRoleId}
                 onSelectionChange={(key) => setTargetRoleId(key ? String(key) : "")}
               >
-                <Select.Trigger>
-                  <Select.Value />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {availableRoles.map((r) => (
-                      <ListBox.Item key={r.id} textValue={r.name}>
-                        {r.name}
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
+                {availableRoles.map((r) => (
+                  <SelectItem id={r.id.toString()} key={r.id} textValue={r.name}>
+                    {r.name}
+                  </SelectItem>
+                ))}
               </Select>
             </div>
           </div>
