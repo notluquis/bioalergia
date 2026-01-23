@@ -5,6 +5,7 @@
  * Follows the pattern in routes/calendar.ts
  */
 
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { type Context, Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth.js";
 import * as doctoraliaClient from "../lib/doctoralia/doctoralia-client.js";
@@ -20,6 +21,14 @@ import { reply } from "../utils/reply.js";
 
 export const doctoraliaRoutes = new Hono();
 
+type DoctoraliaWebhookPayload = {
+  name?: string;
+  data?: {
+    booking?: { id?: unknown };
+    break?: { id?: unknown };
+  };
+};
+
 // ============================================================
 // MIDDLEWARE
 // ============================================================
@@ -31,6 +40,17 @@ async function requireAuth(c: Context, next: () => Promise<void>) {
   }
   c.set("user", user);
   return next();
+}
+
+function timingSafeCompare(a: string, b: string): boolean {
+  const aBuffer = Buffer.from(a);
+  const bBuffer = Buffer.from(b);
+
+  if (aBuffer.length !== bBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(aBuffer, bBuffer);
 }
 
 // ============================================================
@@ -295,7 +315,13 @@ doctoraliaRoutes.post("/sync", requireAuth, async (c) => {
 // ============================================================
 
 doctoraliaRoutes.post("/webhook", async (c) => {
-  const body = await c.req.json();
+  const rawBody = await c.req.text();
+  let body: DoctoraliaWebhookPayload;
+  try {
+    body = rawBody ? (JSON.parse(rawBody) as DoctoraliaWebhookPayload) : {};
+  } catch {
+    return c.json({ status: "error", message: "Payload inválido" }, 400);
+  }
 
   // Log the notification
   console.log("[Doctoralia Webhook]", body.name, JSON.stringify(body.data));
@@ -303,8 +329,25 @@ doctoraliaRoutes.post("/webhook", async (c) => {
   // TODO: Verify webhook signature if DOCTORALIA_WEBHOOK_SECRET is set
   const secret = process.env.DOCTORALIA_WEBHOOK_SECRET;
   if (secret) {
-    // Signature verification would go here
-    // const signature = c.req.header("x-doctoralia-signature");
+    const signatureHeader = c.req.header("x-doctoralia-signature");
+    if (!signatureHeader) {
+      return c.json({ status: "error", message: "Firma requerida" }, 401);
+    }
+
+    const signature = signatureHeader.includes("=")
+      ? signatureHeader.slice(signatureHeader.indexOf("=") + 1)
+      : signatureHeader;
+
+    const hmacHex = createHmac("sha256", secret).update(rawBody).digest("hex");
+    const hmacBase64 = createHmac("sha256", secret).update(rawBody).digest("base64");
+
+    const signatureMatches = [hmacHex, hmacBase64].some((candidate) =>
+      timingSafeCompare(signature, candidate),
+    );
+
+    if (!signatureMatches) {
+      return c.json({ status: "error", message: "Firma inválida" }, 401);
+    }
   }
 
   // Handle different notification types
