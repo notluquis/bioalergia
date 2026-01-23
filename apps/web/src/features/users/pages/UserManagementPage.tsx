@@ -262,11 +262,11 @@ export default function UserManagementPage() {
                 if (key) setRoleFilter(key.toString());
               }}
             >
-              <SelectItem key="ALL" textValue="Todos los roles">
+              <SelectItem id="ALL" textValue="Todos los roles">
                 Todos los roles
               </SelectItem>
-              {roles?.map((role: { name: string }) => (
-                <SelectItem key={role.name} textValue={role.name}>
+              {roles?.map((role: { id: number; name: string }) => (
+                <SelectItem id={role.name} key={role.id} textValue={role.name}>
                   {role.name}
                 </SelectItem>
               ))}
@@ -317,8 +317,8 @@ export default function UserManagementPage() {
                 if (key) setSelectedRole(key.toString());
               }}
             >
-              {roles?.map((role: { name: string }) => (
-                <SelectItem key={role.name} textValue={role.name}>
+              {roles?.map((role: { id: number; name: string }) => (
+                <SelectItem id={role.name} key={role.id} textValue={role.name}>
                   {role.name}
                 </SelectItem>
               ))}
