@@ -53,6 +53,7 @@ model Person {
   employee     Employee?
   transactions Transaction[]
   user         User?
+  patient      Patient?
 
   // Access policies
   @@deny('all', auth() == null)
@@ -693,35 +694,36 @@ model CalendarWatchChannel {
 }
 
 model Event {
-  id              Int       @id @default(autoincrement())
-  calendarId      Int       @map("calendar_id")
-  externalEventId String    @map("external_event_id")
-  eventStatus     String?   @map("event_status")
-  eventType       String?   @map("event_type")
+  id              Int            @id @default(autoincrement())
+  calendarId      Int            @map("calendar_id")
+  externalEventId String         @map("external_event_id")
+  eventStatus     String?        @map("event_status")
+  eventType       String?        @map("event_type")
   summary         String?
   description     String?
-  startDate       DateTime? @map("start_date") @db.Date
-  startDateTime   DateTime? @map("start_date_time")
-  startTimeZone   String?   @map("start_time_zone")
-  endDate         DateTime? @map("end_date") @db.Date
-  endDateTime     DateTime? @map("end_date_time")
-  endTimeZone     String?   @map("end_time_zone")
-  eventCreatedAt  DateTime? @map("event_created_at")
-  eventUpdatedAt  DateTime? @map("event_updated_at")
-  colorId         String?   @map("color_id")
+  startDate       DateTime?      @map("start_date") @db.Date
+  startDateTime   DateTime?      @map("start_date_time")
+  startTimeZone   String?        @map("start_time_zone")
+  endDate         DateTime?      @map("end_date") @db.Date
+  endDateTime     DateTime?      @map("end_date_time")
+  endTimeZone     String?        @map("end_time_zone")
+  eventCreatedAt  DateTime?      @map("event_created_at")
+  eventUpdatedAt  DateTime?      @map("event_updated_at")
+  colorId         String?        @map("color_id")
   location        String?
   transparency    String?
   visibility      String?
-  hangoutLink     String?   @map("hangout_link")
+  hangoutLink     String?        @map("hangout_link")
   category        String?
-  amountExpected  Int?      @map("amount_expected")
-  amountPaid      Int?      @map("amount_paid")
+  amountExpected  Int?           @map("amount_expected")
+  amountPaid      Int?           @map("amount_paid")
   attended        Boolean?
   dosage          String?
-  treatmentStage  String?   @map("treatment_stage")
-  rawEvent        Json?     @map("raw_event")
-  lastSyncedAt    DateTime  @map("last_synced_at")
-  calendar        Calendar  @relation(fields: [calendarId], references: [id])
+  treatmentStage  String?        @map("treatment_stage")
+  rawEvent        Json?          @map("raw_event")
+  lastSyncedAt    DateTime       @map("last_synced_at")
+  calendar        Calendar       @relation(fields: [calendarId], references: [id])
+  consultations   Consultation[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -1268,36 +1270,85 @@ model PersonalCreditInstallment {
 
 
 model MedicalCertificate {
-  id            String   @id @default(cuid())
-  patientName   String   @map("patient_name")
-  patientRut    String   @map("patient_rut")
-  birthDate     DateTime @map("birth_date") @db.Date
+  id            String    @id @default(cuid())
+  patientName   String    @map("patient_name")
+  patientRut    String    @map("patient_rut")
+  birthDate     DateTime  @map("birth_date") @db.Date
   address       String
-  
+
   diagnosis     String
   symptoms      String?
-  restDays      Int?     @map("rest_days")
+  restDays      Int?      @map("rest_days")
   restStartDate DateTime? @map("rest_start_date") @db.Date
   restEndDate   DateTime? @map("rest_end_date") @db.Date
   purpose       String
-  purposeDetail String?  @map("purpose_detail")
-  
-  issuedBy      Int      @map("issued_by")
-  issuedAt      DateTime @default(now()) @map("issued_at")
-  
-  driveFileId   String   @map("drive_file_id") // Google Drive file ID
-  pdfHash       String   @map("pdf_hash") // SHA-256
-  
+  purposeDetail String?   @map("purpose_detail")
+
+  issuedBy      Int       @map("issued_by")
+  issuedAt      DateTime  @default(now()) @map("issued_at")
+
+  patientId     Int?      @map("patient_id") // Optional link to Patient
+
+  driveFileId   String    @map("drive_file_id") // Google Drive file ID
+  pdfHash       String    @map("pdf_hash") // SHA-256
+
   metadata      Json?    // Full certificate data as backup
-  
-  issuer        User     @relation(fields: [issuedBy], references: [id])
-  
+
+  issuer        User      @relation(fields: [issuedBy], references: [id])
+  patient       Patient?  @relation(fields: [patientId], references: [id])
+
   @@deny('all', auth() == null)
   @@allow('read', auth().id == issuedBy)
   @@allow('create', auth().status == 'ACTIVE')
   @@allow('read', auth().roles?[role.name == 'ADMIN' || role.name == 'GOD'])
-  
+
   @@index([patientRut])
   @@index([issuedAt])
   @@map("medical_certificates")
+}
+model Patient {
+  id                  Int                  @id @default(autoincrement())
+  personId            Int                  @unique @map("person_id")
+  birthDate           DateTime             @map("birth_date") @db.Date
+  bloodType           String?              @map("blood_type")
+  notes               String?  // Notas generales del paciente
+
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @default(now()) @updatedAt @map("updated_at")
+
+  person              Person               @relation(fields: [personId], references: [id], onDelete: Cascade)
+  consultations       Consultation[]
+  medicalCertificates MedicalCertificate[]
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update', auth().status == 'ACTIVE')
+
+  @@map("patients")
+}
+
+model Consultation {
+  id        Int      @id @default(autoincrement())
+  patientId Int      @map("patient_id")
+  eventId   Int?     @map("event_id") // Link to Calendar Event
+  date      DateTime @db.Date
+  reason    String   // Motivo de consulta
+  diagnosis String?  // Diagnóstico
+  treatment String?  // Tratamiento indicado
+  notes     String?  // Notas adicionales
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  event     Event?   @relation(fields: [eventId], references: [id])
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@index([eventId])
+  @@index([date])
+  @@map("consultations")
 }

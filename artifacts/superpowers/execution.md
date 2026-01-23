@@ -222,3 +222,96 @@ cd apps/web && pnpm exec tsc --noEmit  # ✅ No errors
 
 **All 8 steps completed successfully! ✅**
 
+# Execution Log - Patient Management MVP
+
+## Step 1: Add Patient and Consultation models ✅
+**Files changed:**
+- `packages/db/zenstack/schema.zmodel`
+
+**Changes:**
+- Added `Patient` model (1:1 with Person): id, personId, birthDate, bloodType, notes
+- Added `Consultation` model: id, patientId, eventId, date, reason, diagnosis, treatment, notes
+- Added `patient` relation to Person
+- Added `consultations` relation to Event
+- Added `patientId` and `patient` relation to MedicalCertificate (optional)
+
+**Verification:**
+```bash
+cd packages/db && pnpm generate  # ✅ Success
+npx prisma db push --schema zenstack/~schema.prisma  # ✅ DB in sync
+pnpm build  # ✅ Types generated
+```
+
+**Result:** ✅ PASS - Models added, DB updated, types generated
+
+---
+
+## Step 2: Create backend patient module ✅
+**Files changed:**
+- `apps/api/src/modules/patients/patients.schema.ts` (new)
+- `apps/api/src/modules/patients/index.ts` (new)
+
+**Changes:**
+- Created Zod schemas for patient creation/update (validates RUT, names, birthDate, etc.)
+- Implemented CRUD routes:
+  - `GET /`: Search patients by name/RUT
+  - `GET /:id`: Detail with relations (consultations, certificates)
+  - `POST /`: Create person + patient (or link existing person)
+  - `PUT /:id`: Update person and patient details
+
+**Verification:**
+```bash
+cd apps/api && pnpm exec tsc --noEmit  # ✅ No errors in module
+```
+
+## Step 3: Register module in API ✅
+**Files changed:**
+- `apps/api/src/app.ts`
+
+**Changes:**
+- Imported `patientsRoutes`
+- Mounted at `/api/patients`
+
+**Verification:**
+```bash
+# Backend compiles and routes are registered
+```
+
+**Result:** ✅ PASS - Backend logic and routes implemented
+
+---
+
+## Step 4: Create patient list page ✅
+**Files changed:**
+- `apps/web/src/routes/_authed/patients/index.tsx` (new)
+
+**Changes:**
+- Created list page with HeroUI + DataTable
+- Integrated search by name/RUT via TanStack Query
+- Added "Registrar Paciente" button
+- Displayed patient info, RUT, and calculated age
+
+**Verification:**
+```bash
+cd apps/web && pnpm exec tsc --noEmit  # ✅ No errors (after fix)
+```
+
+## Step 5: Create registration form ✅
+**Files changed:**
+- `apps/web/src/routes/_authed/patients/new.tsx` (new)
+
+**Changes:**
+- Built registration form with TanStack Form
+- Fields: RUT, Names, Last Names, Birth Date, Contact Info, Blood Type, Notes
+- Integrated local RUT helpers for formatting and validation
+- Added success/error toasts and redirect to list
+
+**Verification:**
+```bash
+cd apps/web && pnpm exec tsc --noEmit  # ✅ No errors
+```
+
+**Result:** ✅ PASS - Frontend list and registration implemented
+
+---
+
