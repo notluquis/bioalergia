@@ -8,7 +8,7 @@ import { z } from "zod";
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
-import MoneyInput from "@/components/ui/MoneyInput";
+import { MoneyInput } from "@/components/ui/MoneyInput";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -48,7 +48,6 @@ function NewBudgetPage() {
     onSuccess: () => {
       toast.success("Presupuesto creado exitosamente");
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
-      // @ts-expect-error - Route tree may not be updated yet
       navigate({ to: "/patients/$id", params: { id: String(id) } });
     },
     onError: (error) => {
@@ -75,7 +74,6 @@ function NewBudgetPage() {
       <header className="mb-6 flex items-center gap-4">
         <Button
           variant="ghost"
-          // @ts-expect-error
           onClick={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
           className="gap-2"
         >
@@ -116,7 +114,7 @@ function NewBudgetPage() {
                 <MoneyInput
                   label="Descuento Global"
                   value={field.state.value}
-                  onValueChange={(v) => field.handleChange(v || 0)}
+                  onValueChange={(v: number | null) => field.handleChange(v || 0)}
                   error={field.state.meta.errors.join(", ")}
                 />
               )}
@@ -126,9 +124,7 @@ function NewBudgetPage() {
           <form.Field name="notes">
             {(field) => (
               <label className="space-y-1 block">
-                <span className="text-sm font-medium text-default-600">
-                  Notas / Observaciones
-                </span>
+                <span className="text-sm font-medium text-default-600">Notas / Observaciones</span>
                 <textarea
                   className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                   rows={2}
@@ -197,7 +193,7 @@ function NewBudgetPage() {
                             <MoneyInput
                               label="Precio Unit."
                               value={subField.state.value}
-                              onValueChange={(v) => subField.handleChange(v || 0)}
+                              onValueChange={(v: number | null) => subField.handleChange(v || 0)}
                             />
                           )}
                         </form.Field>
@@ -226,7 +222,6 @@ function NewBudgetPage() {
           <Button
             type="button"
             variant="ghost"
-            // @ts-expect-error
             onClick={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
           >
             Cancelar

@@ -1,9 +1,17 @@
+import { Breadcrumbs } from "@heroui/react";
+import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+
+interface Breadcrumb {
+  label: string;
+  to?: string;
+}
 
 interface ServicesHeroProps {
   actions?: ReactNode;
   description: string;
   title: string;
+  breadcrumbs?: Breadcrumb[];
 }
 
 export function ServicesGrid({ children }: { children: ReactNode }) {
@@ -14,28 +22,24 @@ export function ServicesGrid({ children }: { children: ReactNode }) {
   );
 }
 
-export function ServicesHero({ actions, description, title }: ServicesHeroProps) {
+export function ServicesHero({ actions, description, title, breadcrumbs }: ServicesHeroProps) {
   return (
-    <header className="surface-elevated flex flex-col gap-4 rounded-[28px] p-6 shadow-xl lg:flex-row lg:items-center lg:justify-between">
+    <header className="flex flex-col gap-4 rounded-[28px] bg-background p-6 shadow-xl lg:flex-row lg:items-center lg:justify-between border border-default-100">
       <div className="space-y-3">
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav
-            aria-label="Ruta de navegación"
-            className="text-default-500 flex flex-wrap items-center gap-1 text-xs"
-          >
-            {breadcrumbs.map((crumb, index) => (
-              <span className="flex items-center gap-1" key={crumb.label}>
+          <Breadcrumbs>
+            {breadcrumbs.map((crumb) => (
+              <Breadcrumbs.Item key={crumb.label}>
                 {crumb.to ? (
-                  <Link className="text-primary font-semibold" to={crumb.to}>
+                  <Link className="text-primary font-medium" to={crumb.to as any}>
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span className="text-default-700 font-semibold">{crumb.label}</span>
+                  crumb.label
                 )}
-                {index < breadcrumbs.length - 1 && <span className="text-default-300">/</span>}
-              </span>
+              </Breadcrumbs.Item>
             ))}
-          </nav>
+          </Breadcrumbs>
         )}
         <div className="space-y-1.5">
           <h1 className="text-foreground text-2xl font-semibold drop-shadow-sm lg:text-3xl">

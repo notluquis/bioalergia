@@ -9,7 +9,7 @@ import { z } from "zod";
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
-import MoneyInput from "@/components/ui/MoneyInput";
+import { MoneyInput } from "@/components/ui/MoneyInput";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -62,7 +62,6 @@ function NewPaymentPage() {
     onSuccess: () => {
       toast.success("Pago registrado exitosamente");
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
-      // @ts-expect-error
       navigate({ to: "/patients/$id", params: { id: String(id) } });
     },
     onError: (error) => {
@@ -91,7 +90,6 @@ function NewPaymentPage() {
       <header className="mb-6 flex items-center gap-4">
         <Button
           variant="ghost"
-          // @ts-expect-error
           onClick={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
           className="gap-2"
         >
@@ -100,9 +98,7 @@ function NewPaymentPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Registrar Pago de Paciente</h1>
-          <p className="text-default-500 text-sm">
-            Registro de ingresos financieros por servicios
-          </p>
+          <p className="text-default-500 text-sm">Registro de ingresos financieros por servicios</p>
         </div>
       </header>
 
@@ -134,7 +130,7 @@ function NewPaymentPage() {
                 <MoneyInput
                   label="Monto Pagado"
                   value={field.state.value}
-                  onValueChange={(v) => field.handleChange(v || 0)}
+                  onValueChange={(v: number | null) => field.handleChange(v || 0)}
                   error={field.state.meta.errors.join(", ")}
                 />
               )}
@@ -225,7 +221,6 @@ function NewPaymentPage() {
             <Button
               type="button"
               variant="ghost"
-              // @ts-expect-error
               onClick={() => navigate({ to: "/patients/$id", params: { id: String(id) } })}
               isDisabled={mutation.isPending}
             >

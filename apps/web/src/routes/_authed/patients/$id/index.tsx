@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { Card, Chip, Separator, Spinner, Tabs } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -21,9 +21,6 @@ import {
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
-import Separator from "@/components/ui/Separator";
-import Tabs from "@/components/ui/Tabs";
 import NewAttachmentModal from "@/features/patients/components/NewAttachmentModal";
 import { apiClient } from "@/lib/api-client";
 
@@ -122,7 +119,7 @@ export const Route = createFileRoute("/_authed/patients/$id/")({
 });
 
 function PatientDetailsPage() {
-  const { id } = useParams({ from: "/_authed/patients/$id" });
+  const { id } = useParams({ from: "/_authed/patients/$id/" });
   const navigate = useNavigate();
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
 
@@ -184,7 +181,6 @@ function PatientDetailsPage() {
             className="gap-2"
             onClick={() =>
               navigate({
-                // @ts-expect-error - Route tree may not be updated yet
                 to: "/patients/$id/new-consultation",
                 params: { id: String(id) },
               })
@@ -218,7 +214,7 @@ function PatientDetailsPage() {
         {/* Sidebar: Info rápida */}
         <div className="lg:col-span-1 space-y-6">
           <Card className="border-none bg-background shadow-sm overflow-hidden">
-            <CardContent className="p-0">
+            <Card.Content className="p-0">
               <div className="bg-primary/5 p-6 flex flex-col items-center">
                 <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
                   <User size={40} />
@@ -263,52 +259,44 @@ function PatientDetailsPage() {
                   </p>
                 </div>
               </div>
-            </CardContent>
+            </Card.Content>
           </Card>
         </div>
 
         {/* Main: Tabs Content */}
         <div className="lg:col-span-2">
           <Tabs aria-label="Patient details tabs">
-            <Tabs.ListContainer>
-              <Tabs.List className="gap-6 w-full relative h-12 border-b border-divider">
-                <Tabs.Tab id="history" className="gap-2 font-semibold">
-                  <Calendar size={18} />
-                  <span>Consultas</span>
-                  <Tabs.Indicator />
-                </Tabs.Tab>
+            <Tabs.List className="gap-6 w-full relative h-12 border-b border-divider">
+              <Tabs.Tab id="history" className="gap-2 font-semibold">
+                <Calendar size={18} />
+                <span>Consultas</span>
+              </Tabs.Tab>
 
-                <Tabs.Tab id="certificates" className="gap-2 font-semibold">
-                  <FileText size={18} />
-                  <span>Certificados</span>
-                  <Tabs.Indicator />
-                </Tabs.Tab>
+              <Tabs.Tab id="certificates" className="gap-2 font-semibold">
+                <FileText size={18} />
+                <span>Certificados</span>
+              </Tabs.Tab>
 
-                <Tabs.Tab id="budgets" className="gap-2 font-semibold">
-                  <DollarSign size={18} />
-                  <span>Presupuestos</span>
-                  <Tabs.Indicator />
-                </Tabs.Tab>
+              <Tabs.Tab id="budgets" className="gap-2 font-semibold">
+                <DollarSign size={18} />
+                <span>Presupuestos</span>
+              </Tabs.Tab>
 
-                <Tabs.Tab id="payments" className="gap-2 font-semibold">
-                  <PlusCircle size={18} />
-                  <span>Pagos</span>
-                  <Tabs.Indicator />
-                </Tabs.Tab>
+              <Tabs.Tab id="payments" className="gap-2 font-semibold">
+                <PlusCircle size={18} />
+                <span>Pagos</span>
+              </Tabs.Tab>
 
-                <Tabs.Tab id="docs" className="gap-2 font-semibold">
-                  <FileText size={18} />
-                  <span>Documentos</span>
-                  <Tabs.Indicator />
-                </Tabs.Tab>
+              <Tabs.Tab id="docs" className="gap-2 font-semibold">
+                <FileText size={18} />
+                <span>Documentos</span>
+              </Tabs.Tab>
 
-                <Tabs.Tab id="info" className="gap-2 font-semibold">
-                  <User size={18} />
-                  <span>Info Detallada</span>
-                  <Tabs.Indicator />
-                </Tabs.Tab>
-              </Tabs.List>
-            </Tabs.ListContainer>
+              <Tabs.Tab id="info" className="gap-2 font-semibold">
+                <User size={18} />
+                <span>Info Detallada</span>
+              </Tabs.Tab>
+            </Tabs.List>
 
             <Tabs.Panel id="history" className="py-4">
               <DataTable
@@ -333,7 +321,6 @@ function PatientDetailsPage() {
                   className="gap-2"
                   onClick={() =>
                     navigate({
-                      // @ts-expect-error
                       to: "/patients/$id/new-budget",
                       params: { id: String(id) },
                     })
@@ -357,7 +344,6 @@ function PatientDetailsPage() {
                   className="gap-2"
                   onClick={() =>
                     navigate({
-                      // @ts-expect-error
                       to: "/patients/$id/new-payment",
                       params: { id: String(id) },
                     })
@@ -395,7 +381,7 @@ function PatientDetailsPage() {
 
             <Tabs.Panel id="info" className="py-4">
               <Card className="border-none bg-background shadow-sm">
-                <CardContent className="p-6">
+                <Card.Content className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <DetailRow label="Nombres" value={person.names} />
                     <DetailRow
@@ -405,15 +391,17 @@ function PatientDetailsPage() {
                     <DetailRow label="RUT" value={person.rut} />
                     <DetailRow
                       label="Fecha Nacimiento"
-                      value={dayjs(patient.birthDate).format("DD [de] MMMM [de] YYYY")}
+                      value={dayjs(patient.birthDate).format("DD/MM/YYYY")}
                     />
-                    <DetailRow label="Email" value={person.email} />
-                    <DetailRow label="Teléfono" value={person.phone} />
-                    <div className="md:col-span-2">
-                      <DetailRow label="Dirección" value={person.address} />
-                    </div>
+                    <DetailRow label="Email" value={person.email || "N/A"} />
+                    <DetailRow label="Teléfono" value={person.phone || "N/A"} />
+                    <DetailRow
+                      label="Dirección"
+                      value={person.address || "N/A"}
+                      className="md:col-span-2"
+                    />
                   </div>
-                </CardContent>
+                </Card.Content>
               </Card>
             </Tabs.Panel>
           </Tabs>
@@ -423,171 +411,131 @@ function PatientDetailsPage() {
       <NewAttachmentModal
         isOpen={isAttachmentModalOpen}
         onClose={() => setIsAttachmentModalOpen(false)}
-        patientId={String(id)}
+        patientId={String(patient.id)}
       />
     </div>
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
+function DetailRow({
+  label,
+  value,
+  className = "",
+}: {
+  label: string;
+  value: string | number;
+  className?: string;
+}) {
   return (
-    <div className="space-y-1">
-      <span className="text-xs font-semibold text-default-300 uppercase tracking-wider">
-        {label}
-      </span>
-      <p className="text-foreground/90 font-medium">{value || "---"}</p>
+    <div className={`space-y-1 ${className}`}>
+      <span className="text-xs font-medium text-default-400 uppercase tracking-wider">{label}</span>
+      <p className="text-foreground font-medium">{value}</p>
     </div>
   );
 }
 
 const consultationColumns: ColumnDef<Consultation>[] = [
   {
+    header: "Fecha",
     accessorKey: "date",
-    header: "FECHA",
     cell: ({ row }) => dayjs(row.original.date).format("DD/MM/YYYY"),
   },
   {
+    header: "Motivo",
     accessorKey: "reason",
-    header: "MOTIVO",
-    cell: ({ row }) => <span className="max-w-50 truncate block">{row.original.reason}</span>,
   },
   {
+    header: "Diagnóstico",
     accessorKey: "diagnosis",
-    header: "DIAGNÓSTICO",
   },
   {
     id: "actions",
-    header: "",
     cell: () => (
-      <Button size="sm" variant="ghost" isIconOnly className="h-8 w-8 min-w-0">
-        <ArrowRight size={16} />
-      </Button>
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="ghost" isIconOnly>
+          <ExternalLink size={16} />
+        </Button>
+      </div>
     ),
   },
 ];
-
-const certificateColumns: ColumnDef<MedicalCertificate>[] = [
-  {
-    accessorKey: "issuedAt",
-    header: "EMISIÓN",
-    cell: ({ row }) => dayjs(row.original.issuedAt).format("DD/MM/YYYY HH:mm"),
-  },
-  {
-    accessorKey: "diagnosis",
-    header: "DIAGNÓSTICO",
-  },
-  {
-    id: "actions",
-    header: "",
-    cell: ({ row }) => (
-      <a
-        target="_blank"
-        href={`${globalThis.location.origin}/verify/${row.original.id}`}
-        className="inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm font-medium hover:bg-default-50 transition-colors"
-        rel="noreferrer"
-      >
-        <ExternalLink size={14} />
-        Verificar
-      </a>
-    ),
-  },
-];
-
-const ArrowRight = ({ size, className }: { size?: number; className?: string }) => (
-  <svg
-    width={size || 24}
-    height={size || 24}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-    aria-hidden="true"
-  >
-    <path d="M5 12h14M12 5l7 7-7 7" />
-  </svg>
-);
 
 const budgetColumns: ColumnDef<Budget>[] = [
   {
+    header: "Título",
     accessorKey: "title",
-    header: "TÍTULO",
   },
   {
+    header: "Monto Final",
     accessorKey: "finalAmount",
-    header: "MONTO TOTAL",
     cell: ({ row }) =>
       new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(
         row.original.finalAmount,
       ),
   },
   {
+    header: "Estado",
     accessorKey: "status",
-    header: "ESTADO",
     cell: ({ row }) => (
-      <div
-        className={`px-2 py-0.5 rounded-full text-xs font-medium w-fit ${
-          row.original.status === "ACCEPTED"
-            ? "bg-success/10 text-success"
-            : "bg-default-50 text-default-500"
-        }`}
+      <Chip
+        size="sm"
+        variant="soft"
+        color={row.original.status === "Aceptado" ? "success" : "warning"}
       >
-        {row.original.status || "BORRADOR"}
-      </div>
+        {row.original.status}
+      </Chip>
     ),
   },
   {
+    header: "Fecha",
     accessorKey: "updatedAt",
-    header: "ÚLT. ACTUALIZACIÓN",
     cell: ({ row }) => dayjs(row.original.updatedAt).format("DD/MM/YYYY"),
   },
 ];
 
 const paymentColumns: ColumnDef<PatientPayment>[] = [
   {
+    header: "Fecha",
     accessorKey: "paymentDate",
-    header: "FECHA",
     cell: ({ row }) => dayjs(row.original.paymentDate).format("DD/MM/YYYY"),
   },
   {
+    header: "Monto",
     accessorKey: "amount",
-    header: "MONTO",
     cell: ({ row }) =>
       new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(
         row.original.amount,
       ),
   },
   {
+    header: "Método",
     accessorKey: "paymentMethod",
-    header: "MÉTODO",
   },
   {
+    header: "Referencia",
     accessorKey: "reference",
-    header: "REF/TRANS",
   },
 ];
 
 const attachmentColumns: ColumnDef<PatientAttachment>[] = [
   {
+    header: "Nombre",
     accessorKey: "name",
-    header: "NOMBRE",
   },
   {
+    header: "Tipo",
     accessorKey: "type",
-    header: "TIPO",
+    cell: ({ row }) => <Chip size="sm">{row.original.type}</Chip>,
   },
   {
+    header: "Fecha",
     accessorKey: "uploadedAt",
-    header: "FECHA",
     cell: ({ row }) => dayjs(row.original.uploadedAt).format("DD/MM/YYYY"),
   },
   {
     id: "actions",
-    header: "",
     cell: () => (
-      <div className="flex gap-2">
+      <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" isIconOnly>
           <Download size={16} />
         </Button>
@@ -596,5 +544,17 @@ const attachmentColumns: ColumnDef<PatientAttachment>[] = [
         </Button>
       </div>
     ),
+  },
+];
+
+const certificateColumns: ColumnDef<MedicalCertificate>[] = [
+  {
+    header: "Fecha",
+    accessorKey: "issuedAt",
+    cell: ({ row }) => dayjs(row.original.issuedAt).format("DD/MM/YYYY"),
+  },
+  {
+    header: "Diagnóstico",
+    accessorKey: "diagnosis",
   },
 ];

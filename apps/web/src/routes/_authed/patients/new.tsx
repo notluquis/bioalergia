@@ -17,8 +17,7 @@ export const Route = createFileRoute("/_authed/patients/new")({
     hideFromNav: true,
   },
   component: AddPatientPage,
-  // biome-ignore lint/suspicious/noExplicitAny: circular type dependency in route tree
-}) as any;
+});
 
 const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
 
@@ -81,9 +80,7 @@ function AddPatientPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Registrar Nuevo Paciente</h1>
-          <p className="text-default-500 text-sm">
-            Crea un perfil clínico para un nuevo paciente
-          </p>
+          <p className="text-default-500 text-sm">Crea un perfil clínico para un nuevo paciente</p>
         </div>
         <Button
           variant="ghost"

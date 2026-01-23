@@ -1,4 +1,4 @@
-import { Description, Label, NumberField } from "@heroui/react";
+import { Description, FieldError, Label, NumberField } from "@heroui/react";
 import type { ReactNode } from "react";
 
 interface MoneyInputProps {
@@ -6,8 +6,10 @@ interface MoneyInputProps {
   hint?: string;
   icon?: ReactNode;
   label: string;
-  onChange: (next: string) => void;
-  value: string;
+  onValueChange: (next: number | null) => void;
+  value: number | string;
+  error?: string;
+  className?: string;
 }
 
 /**
@@ -19,12 +21,17 @@ export function MoneyInput({
   hint,
   icon,
   label,
-  onChange,
+  onValueChange,
   value,
+  error,
+  className,
 }: Readonly<MoneyInputProps>) {
+  // Handle string value from legacy usage if necessary
+  const numericValue = typeof value === "string" ? Number.parseFloat(value) : value;
+
   return (
     <NumberField
-      className="w-full"
+      className={className || "w-full"}
       formatOptions={{
         style: "currency",
         currency: "CLP",
@@ -33,14 +40,11 @@ export function MoneyInput({
         maximumFractionDigits: 0,
       }}
       isDisabled={disabled}
+      isInvalid={!!error}
       onChange={(val) => {
-        if (val === undefined || Number.isNaN(val)) {
-          onChange("");
-        } else {
-          onChange(val.toString());
-        }
+        onValueChange(val ?? null);
       }}
-      value={value && !Number.isNaN(Number(value)) ? Number(value) : undefined}
+      value={numericValue ?? undefined}
     >
       <Label className="flex items-center gap-1.5 text-xs font-medium sm:text-sm">
         {icon}
@@ -49,7 +53,11 @@ export function MoneyInput({
       <NumberField.Group>
         <NumberField.Input />
       </NumberField.Group>
-      {hint && <Description className="text-xs">{hint}</Description>}
+      {(error || hint) && (
+        <Description className="text-xs">
+          {error ? <FieldError className="text-danger">{error}</FieldError> : hint}
+        </Description>
+      )}
     </NumberField>
   );
 }

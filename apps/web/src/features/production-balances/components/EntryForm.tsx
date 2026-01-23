@@ -17,10 +17,6 @@ interface EntryFormProps {
  * Main entry form with Ingresos por método and Gastos sections
  * Uses existing MoneyInput component
  */
-// Helper to convert number to string for MoneyInput
-const toStr = (n: number) => (n === 0 ? "" : String(n));
-const toNum = (s: string) => (s === "" ? 0 : Number(s));
-
 export function EntryForm({ disabled = false, onChange, values }: EntryFormProps) {
   return (
     <div className="space-y-4">
@@ -35,28 +31,28 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             disabled={disabled}
             icon={<span className="text-xs">💳</span>}
             label="Tarjetas"
-            onChange={(v) => {
-              onChange("tarjeta", toNum(v));
+            onValueChange={(v) => {
+              onChange("tarjeta", v || 0);
             }}
-            value={toStr(values.tarjeta)}
+            value={values.tarjeta}
           />
           <MoneyInput
             disabled={disabled}
             icon={<span className="text-xs">📲</span>}
             label="Transferencia"
-            onChange={(v) => {
-              onChange("transferencia", toNum(v));
+            onValueChange={(v) => {
+              onChange("transferencia", v || 0);
             }}
-            value={toStr(values.transferencia)}
+            value={values.transferencia}
           />
           <MoneyInput
             disabled={disabled}
             icon={<span className="text-xs">💵</span>}
             label="Efectivo"
-            onChange={(v) => {
-              onChange("efectivo", toNum(v));
+            onValueChange={(v) => {
+              onChange("efectivo", v || 0);
             }}
-            value={toStr(values.efectivo)}
+            value={values.efectivo}
           />
         </div>
       </section>
@@ -71,10 +67,10 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
           <MoneyInput
             disabled={disabled}
             label="Gastos del día"
-            onChange={(v) => {
-              onChange("gastos", toNum(v));
+            onValueChange={(v) => {
+              onChange("gastos", v || 0);
             }}
-            value={toStr(values.gastos)}
+            value={values.gastos}
           />
           <div className="form-control">
             <label className="label py-1" htmlFor="input-nota">
@@ -102,58 +98,58 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
           <MoneyInput
             disabled={disabled}
             label="Consultas"
-            onChange={(v) => {
-              onChange("consultas", toNum(v));
+            onValueChange={(v) => {
+              onChange("consultas", v || 0);
             }}
-            value={toStr(values.consultas)}
+            value={values.consultas}
           />
           <MoneyInput
             disabled={disabled}
             label="Controles"
-            onChange={(v) => {
-              onChange("controles", toNum(v));
+            onValueChange={(v) => {
+              onChange("controles", v || 0);
             }}
-            value={toStr(values.controles)}
+            value={values.controles}
           />
           <MoneyInput
             disabled={disabled}
             label="Tests"
-            onChange={(v) => {
-              onChange("tests", toNum(v));
+            onValueChange={(v) => {
+              onChange("tests", v || 0);
             }}
-            value={toStr(values.tests)}
+            value={values.tests}
           />
           <MoneyInput
             disabled={disabled}
             label="Vacunas"
-            onChange={(v) => {
-              onChange("vacunas", toNum(v));
+            onValueChange={(v) => {
+              onChange("vacunas", v || 0);
             }}
-            value={toStr(values.vacunas)}
+            value={values.vacunas}
           />
           <MoneyInput
             disabled={disabled}
             label="Licencias"
-            onChange={(v) => {
-              onChange("licencias", toNum(v));
+            onValueChange={(v) => {
+              onChange("licencias", v || 0);
             }}
-            value={toStr(values.licencias)}
+            value={values.licencias}
           />
           <MoneyInput
             disabled={disabled}
             label="Roxair"
-            onChange={(v) => {
-              onChange("roxair", toNum(v));
+            onValueChange={(v) => {
+              onChange("roxair", v || 0);
             }}
-            value={toStr(values.roxair)}
+            value={values.roxair}
           />
           <MoneyInput
             disabled={disabled}
             label="Otros"
-            onChange={(v) => {
-              onChange("otros", toNum(v));
+            onValueChange={(v) => {
+              onChange("otros", v || 0);
             }}
-            value={toStr(values.otros)}
+            value={values.otros}
           />
         </div>
       </section>

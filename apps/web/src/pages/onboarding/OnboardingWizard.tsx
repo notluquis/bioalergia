@@ -1,4 +1,4 @@
-import { Divider } from "@heroui/react";
+import { Separator } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -612,9 +612,9 @@ export default function OnboardingWizard() {
                       </Button>
 
                       <div className="flex w-full items-center gap-2 max-w-xs">
-                        <Divider className="flex-1" />
+                        <Separator className="flex-1" />
                         <span className="text-default-300 text-xs">O usa biometría</span>
-                        <Divider className="flex-1" />
+                        <Separator className="flex-1" />
                       </div>
 
                       <Button
