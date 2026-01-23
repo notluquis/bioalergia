@@ -277,16 +277,16 @@ patientsRoutes.post("/:id/budgets", zValidator("json", createBudgetSchema), asyn
       data: {
         patientId,
         title: input.title,
-        totalAmount,
-        discount: input.discount,
-        finalAmount,
+        totalAmount: totalAmount as any,
+        discount: input.discount as any,
+        finalAmount: finalAmount as any,
         notes: input.notes,
         items: {
           create: input.items.map(item => ({
             description: item.description,
             quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.unitPrice * item.quantity,
+            unitPrice: item.unitPrice as any,
+            totalPrice: (item.unitPrice * item.quantity) as any,
           })),
         },
       },
@@ -325,7 +325,7 @@ patientsRoutes.post("/:id/payments", zValidator("json", createPaymentSchema), as
       data: {
         patientId,
         budgetId: input.budgetId,
-        amount: input.amount,
+        amount: input.amount as any,
         paymentDate: new Date(input.paymentDate),
         paymentMethod: input.paymentMethod,
         reference: input.reference,
