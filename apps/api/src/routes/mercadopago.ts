@@ -8,30 +8,19 @@
  */
 
 import bcrypt from "bcryptjs";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { stream } from "hono/streaming";
-import { hasPermission } from "../auth";
-import { verifyToken } from "../lib/paseto";
+import { getSessionUser, hasPermission } from "../auth";
 import { MercadoPagoService, MP_WEBHOOK_PASSWORD } from "../services/mercadopago";
 import { reply } from "../utils/reply";
-
-const COOKIE_NAME = "finanzas_session";
 
 export const mercadopagoRoutes = new Hono();
 
 // Helper to get auth
-async function getAuth(c: { req: { header: (name: string) => string | undefined } }) {
-  const cookieHeader = c.req.header("Cookie");
-  if (!cookieHeader) return null;
-  const cookies = Object.fromEntries(cookieHeader.split(";").map((c) => c.trim().split("=")));
-  const token = cookies[COOKIE_NAME];
-  if (!token) return null;
-  try {
-    const decoded = await verifyToken(token);
-    return { userId: Number(decoded.sub), email: String(decoded.email) };
-  } catch {
-    return null;
-  }
+async function getAuth(c: Context) {
+  const user = await getSessionUser(c);
+  if (!user) return null;
+  return { userId: user.id, email: user.email };
 }
 
 // ============================================================
