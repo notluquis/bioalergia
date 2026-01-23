@@ -18,6 +18,8 @@ export async function mpFetch(endpoint: string, baseUrl: string, options: Reques
   checkMpConfig();
   const url = endpoint ? `${baseUrl}${endpoint}` : baseUrl;
 
+  console.log(`[MP API] Request: ${options.method || "GET"} ${url}`);
+
   const res = await fetch(url, {
     ...options,
     headers: {
@@ -26,10 +28,14 @@ export async function mpFetch(endpoint: string, baseUrl: string, options: Reques
       ...options.headers,
     },
   });
+
   if (!res.ok) {
     const text = await res.text();
+    console.error(`[MP API] Error Response: ${res.status} - ${text}`);
     throw new Error(`MP API error: ${res.status} - ${text}`);
   }
+
+  console.log(`[MP API] Success Response: ${res.status}`);
   return res;
 }
 
