@@ -24,7 +24,7 @@ export const getColumns = (
   {
     accessorKey: "period_start",
     cell: ({ row }) => (
-      <span className="text-base-content font-semibold">
+      <span className="text-foreground font-semibold">
         {dayjs(row.original.period_start).format("MMM YYYY")}
       </span>
     ),
@@ -33,7 +33,7 @@ export const getColumns = (
   {
     accessorKey: "due_date",
     cell: ({ row }) => (
-      <span className="text-base-content">
+      <span className="text-foreground">
         {dayjs(row.original.due_date).format("DD MMM YYYY")}
       </span>
     ),
@@ -45,23 +45,23 @@ export const getColumns = (
       const schedule = row.original;
       return (
         <div className="space-y-0.5">
-          <div className="text-base-content font-semibold">
+          <div className="text-foreground font-semibold">
             ${schedule.effective_amount.toLocaleString("es-CL")}
           </div>
           {schedule.late_fee_amount > 0 && (
-            <div className="text-error text-xs">
+            <div className="text-danger text-xs">
               Incluye recargo ${schedule.late_fee_amount.toLocaleString("es-CL")}
             </div>
           )}
           {schedule.late_fee_amount === 0 &&
             schedule.expected_amount !== schedule.effective_amount && (
-              <div className="text-base-content/50 text-xs">Monto ajustado</div>
+              <div className="text-default-400 text-xs">Monto ajustado</div>
             )}
           {schedule.overdue_days > 0 && schedule.status === "PENDING" && (
-            <div className="text-error text-xs">{schedule.overdue_days} días de atraso</div>
+            <div className="text-danger text-xs">{schedule.overdue_days} días de atraso</div>
           )}
           {schedule.late_fee_amount > 0 && (
-            <div className="text-base-content/50 text-xs">
+            <div className="text-default-400 text-xs">
               Base ${schedule.expected_amount.toLocaleString("es-CL")}
             </div>
           )}
@@ -107,7 +107,7 @@ export const getColumns = (
               ? "—"
               : `$${schedule.paid_amount.toLocaleString("es-CL")}`}
           </div>
-          <div className="text-base-content/50 text-xs">
+          <div className="text-default-400 text-xs">
             {schedule.paid_date ? dayjs(schedule.paid_date).format("DD MMM YYYY") : "—"}
           </div>
         </div>
@@ -120,12 +120,12 @@ export const getColumns = (
     cell: ({ row }) => {
       const schedule = row.original;
       if (!schedule.transaction) {
-        return <span className="text-base-content/50">Sin vincular</span>;
+        return <span className="text-default-400">Sin vincular</span>;
       }
       return (
         <div className="space-y-1">
           <div className="font-medium">ID #{schedule.transaction.id}</div>
-          <div className="text-base-content/50 text-xs">
+          <div className="text-default-400 text-xs">
             {schedule.transaction.description ?? "(sin descripción)"}
           </div>
         </div>

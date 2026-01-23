@@ -25,8 +25,8 @@ type StatCardSize = "lg" | "md" | "sm";
 type StatCardTone = "default" | "error" | "primary" | "success" | "warning";
 
 const toneClasses: Record<StatCardTone, string> = {
-  default: "text-base-content",
-  error: "text-error",
+  default: "text-foreground",
+  error: "text-danger",
   primary: "text-primary",
   success: "text-success",
   warning: "text-warning",
@@ -70,14 +70,14 @@ export function StatCard({
   return (
     <article
       className={cn(
-        "border-base-300 bg-base-100 rounded-2xl border shadow-sm",
+        "border-default-200 bg-background rounded-2xl border shadow-sm",
         sizes.container,
         className,
       )}
     >
       <p
         className={cn(
-          "text-base-content/60 flex items-center gap-1.5 font-semibold tracking-wide uppercase",
+          "text-default-500 flex items-center gap-1.5 font-semibold tracking-wide uppercase",
           sizes.title,
         )}
       >
@@ -87,9 +87,9 @@ export function StatCard({
       {/* eslint-disable-next-line security/detect-object-injection */}
       <p className={cn("mt-2", toneClasses[tone], sizes.value)}>
         {value}
-        {suffix && <span className="text-base-content/50 ml-1 text-sm font-normal">{suffix}</span>}
+        {suffix && <span className="text-default-400 ml-1 text-sm font-normal">{suffix}</span>}
       </p>
-      {subtitle && <p className="text-base-content/50 mt-1 text-xs">{subtitle}</p>}
+      {subtitle && <p className="text-default-400 mt-1 text-xs">{subtitle}</p>}
     </article>
   );
 }

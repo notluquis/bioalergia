@@ -120,7 +120,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-base-100 flex min-h-screen items-center justify-center px-4 py-10">
+    <div className="bg-background flex min-h-screen items-center justify-center px-4 py-10">
       {/* Floating theme toggle - top right */}
       <div className="fixed top-4 right-4 z-10">
         <ThemeToggle />
@@ -140,10 +140,10 @@ export default function LoginPage() {
             src={logoSrc}
           />
           <div>
-            <h1 className="text-base-content text-2xl font-semibold text-balance">
+            <h1 className="text-foreground text-2xl font-semibold text-balance">
               {step === "mfa" ? "Verifica tu identidad" : "Inicia sesión"}
             </h1>
-            <p className="text-base-content/60 mt-1 text-sm">
+            <p className="text-default-500 mt-1 text-sm">
               {step === "passkey" && "Usa tu biometría para acceder"}
               {step === "credentials" && "Ingresa tus credenciales"}
               {step === "mfa" && "Código de 6 dígitos"}
@@ -167,7 +167,7 @@ export default function LoginPage() {
                 </Button>
 
                 <button
-                  className="border-base-300 hover:bg-base-200 flex h-12 w-full items-center justify-center gap-2 rounded-lg border transition-colors disabled:opacity-50"
+                  className="border-default-200 hover:bg-default-50 flex h-12 w-full items-center justify-center gap-2 rounded-lg border transition-colors disabled:opacity-50"
                   disabled={passkeyLoginMutation.isPending}
                   onClick={() => {
                     setStep("credentials");
@@ -284,22 +284,22 @@ export default function LoginPage() {
               </svg>
             </div>
             <div className="text-center">
-              <h2 className="text-base-content font-semibold">¡Bienvenido de nuevo!</h2>
-              <p className="text-base-content/60 text-sm">Preparando tu sesión...</p>
+              <h2 className="text-foreground font-semibold">¡Bienvenido de nuevo!</h2>
+              <p className="text-default-500 text-sm">Preparando tu sesión...</p>
             </div>
           </div>
         )}
 
         {/* Error */}
         {formError && (
-          <div className="bg-error/10 border-error/20 text-error mt-4 rounded-lg border p-3 text-center text-sm">
+          <div className="bg-danger/10 border-danger/20 text-danger mt-4 rounded-lg border p-3 text-center text-sm">
             {formError}
           </div>
         )}
 
         {/* Footer */}
         {step === "credentials" && (
-          <div className="text-base-content/60 mt-6 text-center text-xs">
+          <div className="text-default-500 mt-6 text-center text-xs">
             ¿Problemas?{" "}
             <a
               className="text-primary font-semibold hover:underline"

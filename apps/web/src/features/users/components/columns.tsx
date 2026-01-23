@@ -117,7 +117,7 @@ export const getColumns = (actions: {
         ) : (
           <Tooltip content="MFA inactivo">
             <div>
-              <ShieldCheck className="text-base-content/20 size-5" />
+              <ShieldCheck className="text-default-100 size-5" />
             </div>
           </Tooltip>
         )}
@@ -139,7 +139,7 @@ export const getColumns = (actions: {
         ) : (
           <Tooltip content="Sin passkey">
             <div>
-              <Fingerprint className="text-base-content/20 size-5" />
+              <Fingerprint className="text-default-100 size-5" />
             </div>
           </Tooltip>
         )}
@@ -151,7 +151,7 @@ export const getColumns = (actions: {
   {
     accessorKey: "createdAt",
     cell: ({ row }) => (
-      <span className="text-base-content/70 text-sm">
+      <span className="text-default-600 text-sm">
         {dayjs(row.original.createdAt).format("DD MMM YYYY")}
       </span>
     ),
@@ -226,7 +226,7 @@ export const getColumns = (actions: {
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="text-error focus:text-error"
+              className="text-danger focus:text-danger"
               onClick={() => {
                 actions.onDeleteUser(user.id);
               }}

@@ -23,24 +23,24 @@ export function BulkToggleCell({
 
   const renderIcon = () => {
     if (isUpdating) {
-      return <Loader2 className="text-base-content/40 h-4 w-4 animate-spin" />;
+      return <Loader2 className="text-default-300 h-4 w-4 animate-spin" />;
     }
     if (allPresent) {
       return (
         <div className="bg-primary hover:bg-primary-focus flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
-          <CheckCheck className="text-primary-content" size={12} />
+          <CheckCheck className="text-primary-foreground" size={12} />
         </div>
       );
     }
     if (somePresent) {
       return (
         <div className="bg-primary/70 hover:bg-primary flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
-          <Minus className="text-primary-content" size={12} />
+          <Minus className="text-primary-foreground" size={12} />
         </div>
       );
     }
     return (
-      <div className="border-base-300 hover:border-primary/50 hover:bg-primary/5 h-5 w-5 rounded-md border-2 transition-colors" />
+      <div className="border-default-200 hover:border-primary/50 hover:bg-primary/5 h-5 w-5 rounded-md border-2 transition-colors" />
     );
   };
 

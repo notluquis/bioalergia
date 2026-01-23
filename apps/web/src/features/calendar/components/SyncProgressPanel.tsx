@@ -127,7 +127,7 @@ export function SyncProgressPanel({
           </div>
           {syncing && <Spinner size="sm" aria-label="Sincronizando" />}
           {syncError && (
-            <span className="text-error text-xs font-semibold">Revisa los detalles abajo.</span>
+            <span className="text-danger text-xs font-semibold">Revisa los detalles abajo.</span>
           )}
           {!syncing && syncDurationMs != null && !syncError && (
             <Chip size="sm" variant="soft" className="text-xs">

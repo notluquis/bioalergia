@@ -159,11 +159,11 @@ function PatientDetailsPage() {
             <ChevronLeft size={24} />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-base-content">
+            <h1 className="text-2xl font-bold text-foreground">
               {person.names} {person.fatherName}
             </h1>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm font-mono text-base-content/60">{person.rut}</span>
+              <span className="text-sm font-mono text-default-500">{person.rut}</span>
               <div className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-medium">
                 {age} años
               </div>
@@ -209,14 +209,14 @@ function PatientDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Sidebar: Info rápida */}
         <div className="lg:col-span-1 space-y-6">
-          <Card className="border-none bg-base-100 shadow-sm overflow-hidden">
+          <Card className="border-none bg-background shadow-sm overflow-hidden">
             <CardContent className="p-0">
               <div className="bg-primary/5 p-6 flex flex-col items-center">
                 <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
                   <User size={40} />
                 </div>
                 <h3 className="font-bold text-center">Ficha Clínica #{patient.id}</h3>
-                <span className="text-xs text-base-content/50">
+                <span className="text-xs text-default-400">
                   Registrado el {dayjs(patient.createdAt).format("DD/MM/YYYY")}
                 </span>
               </div>
@@ -224,24 +224,24 @@ function PatientDetailsPage() {
               <div className="p-6 space-y-4">
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm">
-                    <Mail size={16} className="text-base-content/40" />
-                    <span className="text-base-content/80">{person.email || "Sin correo"}</span>
+                    <Mail size={16} className="text-default-300" />
+                    <span className="text-default-700">{person.email || "Sin correo"}</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
-                    <Phone size={16} className="text-base-content/40" />
-                    <span className="text-base-content/80 text-sm font-mono">
+                    <Phone size={16} className="text-default-300" />
+                    <span className="text-default-700 text-sm font-mono">
                       {person.phone || "Sin teléfono"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
-                    <MapPin size={16} className="text-base-content/40" />
-                    <span className="text-base-content/80">
+                    <MapPin size={16} className="text-default-300" />
+                    <span className="text-default-700">
                       {person.address || "Sin dirección"}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm border-t border-base-200 pt-3">
-                    <Clock size={16} className="text-base-content/40" />
-                    <span className="text-base-content/70">Grupo Sanguíneo: </span>
+                  <div className="flex items-center gap-3 text-sm border-t border-default-100 pt-3">
+                    <Clock size={16} className="text-default-300" />
+                    <span className="text-default-600">Grupo Sanguíneo: </span>
                     <span className="font-bold text-primary">{patient.bloodType || "DA"}</span>
                   </div>
                 </div>
@@ -249,10 +249,10 @@ function PatientDetailsPage() {
                 <Separator className="my-2" />
 
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-base-content/40">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-default-300">
                     Notas
                   </h4>
-                  <p className="text-sm text-base-content/70 italic bg-base-200/30 p-3 rounded-lg">
+                  <p className="text-sm text-default-600 italic bg-default-50/30 p-3 rounded-lg">
                     {patient.notes || "No hay notas clínicas registradas."}
                   </p>
                 </div>
@@ -388,7 +388,7 @@ function PatientDetailsPage() {
             </Tabs.Panel>
 
             <Tabs.Panel id="info" className="py-4">
-              <Card className="border-none bg-base-100 shadow-sm">
+              <Card className="border-none bg-background shadow-sm">
                 <CardContent className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <DetailRow label="Nombres" value={person.names} />
@@ -426,10 +426,10 @@ function PatientDetailsPage() {
 function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div className="space-y-1">
-      <span className="text-xs font-semibold text-base-content/40 uppercase tracking-wider">
+      <span className="text-xs font-semibold text-default-300 uppercase tracking-wider">
         {label}
       </span>
-      <p className="text-base-content/90 font-medium">{value || "---"}</p>
+      <p className="text-foreground/90 font-medium">{value || "---"}</p>
     </div>
   );
 }
@@ -477,7 +477,7 @@ const certificateColumns: ColumnDef<MedicalCertificate>[] = [
       <a
         target="_blank"
         href={`${globalThis.location.origin}/verify/${row.original.id}`}
-        className="inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm font-medium hover:bg-base-200 transition-colors"
+        className="inline-flex items-center gap-2 h-8 px-3 rounded-md text-sm font-medium hover:bg-default-50 transition-colors"
         rel="noreferrer"
       >
         <ExternalLink size={14} />
@@ -525,7 +525,7 @@ const budgetColumns: ColumnDef<Budget>[] = [
         className={`px-2 py-0.5 rounded-full text-xs font-medium w-fit ${
           row.original.status === "ACCEPTED"
             ? "bg-success/10 text-success"
-            : "bg-base-200 text-base-content/60"
+            : "bg-default-50 text-default-500"
         }`}
       >
         {row.original.status || "BORRADOR"}
@@ -585,7 +585,7 @@ const attachmentColumns: ColumnDef<PatientAttachment>[] = [
         <Button size="sm" variant="ghost" isIconOnly>
           <Download size={16} />
         </Button>
-        <Button size="sm" variant="ghost" isIconOnly className="text-error">
+        <Button size="sm" variant="ghost" isIconOnly className="text-danger">
           <Trash2 size={16} />
         </Button>
       </div>

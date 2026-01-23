@@ -119,24 +119,24 @@ function ServiceScheduleAccordion({
 
   if (groups.length === 0) {
     return (
-      <section className="border-base-300 bg-base-200 text-base-content space-y-3 rounded-2xl border p-4 text-sm">
+      <section className="border-default-200 bg-default-50 text-foreground space-y-3 rounded-2xl border p-4 text-sm">
         <header className="flex items-center justify-between">
-          <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
+          <h2 className="text-default-500 text-sm font-semibold tracking-wide uppercase">
             Agenda de vencimientos
           </h2>
         </header>
-        <p className="text-base-content/60 text-xs">No hay cuotas generadas para este servicio.</p>
+        <p className="text-default-500 text-xs">No hay cuotas generadas para este servicio.</p>
       </section>
     );
   }
 
   return (
-    <section className="border-base-300 bg-base-200 text-base-content space-y-3 rounded-2xl border p-4 text-sm">
+    <section className="border-default-200 bg-default-50 text-foreground space-y-3 rounded-2xl border p-4 text-sm">
       <header className="flex items-center justify-between">
-        <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
+        <h2 className="text-default-500 text-sm font-semibold tracking-wide uppercase">
           Agenda de vencimientos
         </h2>
-        <span className="text-base-content/50 text-xs">
+        <span className="text-default-400 text-xs">
           {service.pending_count + service.overdue_count} pendientes totales
         </span>
       </header>
@@ -145,26 +145,26 @@ function ServiceScheduleAccordion({
           const isExpanded = expanded[group.dateKey] ?? false;
           return (
             <article
-              className="border-base-300 bg-base-200 rounded-xl border shadow-sm"
+              className="border-default-200 bg-default-50 rounded-xl border shadow-sm"
               key={group.dateKey}
             >
               <button
-                className="hover:bg-base-200 flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors"
+                className="hover:bg-default-50 flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors"
                 onClick={() => {
                   toggleGroup(group.dateKey);
                 }}
                 type="button"
               >
                 <div>
-                  <p className="text-base-content text-sm font-semibold capitalize">
+                  <p className="text-foreground text-sm font-semibold capitalize">
                     {group.label}
                   </p>
-                  <p className="text-base-content/50 text-xs">
+                  <p className="text-default-400 text-xs">
                     {group.items.length} {group.items.length === 1 ? "cuota" : "cuotas"}
                   </p>
                 </div>
                 <span
-                  className={`border-base-300 bg-base-200 text-base-content/60 inline-flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-transform ${
+                  className={`border-default-200 bg-default-50 text-default-500 inline-flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-transform ${
                     isExpanded ? "rotate-180" : ""
                   }`}
                 >
@@ -172,7 +172,7 @@ function ServiceScheduleAccordion({
                 </span>
               </button>
               <div
-                className={isExpanded ? "border-base-300 space-y-2 border-t px-4 py-3" : "hidden"}
+                className={isExpanded ? "border-default-200 space-y-2 border-t px-4 py-3" : "hidden"}
               >
                 {group.items.map((item) => {
                   const dueDate = dayjs(item.due_date);
@@ -182,20 +182,20 @@ function ServiceScheduleAccordion({
                     PAID: "bg-success/20 text-success",
                     PARTIAL: "bg-warning/20 text-warning",
                     PENDING: "bg-warning/20 text-warning",
-                    SKIPPED: "bg-base-200 text-base-content/60",
+                    SKIPPED: "bg-default-50 text-default-500",
                   } as const;
 
                   return (
                     <div
-                      className="border-base-300 bg-base-200 hover:border-primary/40 rounded-xl border p-3 shadow-inner transition"
+                      className="border-default-200 bg-default-50 hover:border-primary/40 rounded-xl border p-3 shadow-inner transition"
                       key={item.id}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="text-base-content text-sm font-semibold">
+                          <p className="text-foreground text-sm font-semibold">
                             {currencyFormatter.format(item.expected_amount)}
                           </p>
-                          <p className="text-base-content/50 text-xs">
+                          <p className="text-default-400 text-xs">
                             Vence el {dateFormatter.format(dueDate.toDate())}
                           </p>
                         </div>
@@ -209,7 +209,7 @@ function ServiceScheduleAccordion({
                             : item.status}
                         </span>
                       </div>
-                      <div className="text-base-content/60 mt-2 flex flex-wrap items-center gap-4 text-xs">
+                      <div className="text-default-500 mt-2 flex flex-wrap items-center gap-4 text-xs">
                         <span>
                           Periodo {dayjs(item.period_start).format("DD MMM")} –{" "}
                           {dayjs(item.period_end).format("DD MMM YYYY")}

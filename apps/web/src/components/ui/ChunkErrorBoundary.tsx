@@ -64,8 +64,8 @@ export class ChunkErrorBoundary extends Component<Props, State> {
   render(): React.JSX.Element {
     if (this.state.hasError) {
       return (
-        <div className="bg-base-100/50 fixed inset-0 z-9999 flex items-center justify-center p-6 backdrop-blur-md">
-          <div className="bg-base-100 border-base-200 w-full max-w-sm overflow-hidden rounded-[2.5rem] border p-8 text-center shadow-2xl">
+        <div className="bg-background/50 fixed inset-0 z-9999 flex items-center justify-center p-6 backdrop-blur-md">
+          <div className="bg-background border-default-100 w-full max-w-sm overflow-hidden rounded-[2.5rem] border p-8 text-center shadow-2xl">
             <div className="bg-primary/10 text-primary ring-primary/5 mx-auto mb-6 flex h-24 w-24 animate-pulse items-center justify-center rounded-full ring-8">
               <svg
                 className="h-12 w-12"
@@ -85,10 +85,10 @@ export class ChunkErrorBoundary extends Component<Props, State> {
             </div>
 
             <div className="space-y-3">
-              <h1 className="text-base-content text-2xl font-bold tracking-tight">
+              <h1 className="text-foreground text-2xl font-bold tracking-tight">
                 Acción Requerida
               </h1>
-              <p className="text-base-content/60 px-4 text-sm leading-relaxed">
+              <p className="text-default-500 px-4 text-sm leading-relaxed">
                 Se detectó una nueva versión de Bioalergia. Necesitamos recargar la aplicación para
                 activarla.
               </p>

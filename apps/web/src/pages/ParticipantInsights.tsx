@@ -111,7 +111,7 @@ export default function ParticipantInsightsPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">Ranking de retiros</h2>
-            <p className="text-base-content/70 text-sm">
+            <p className="text-default-600 text-sm">
               Contrapartes con mayores egresos en el rango seleccionado.
             </p>
           </div>
@@ -205,7 +205,7 @@ export default function ParticipantInsightsPage() {
           </section>
         </div>
       ) : (
-        <div className="text-base-content/50 py-12 text-center">
+        <div className="text-default-400 py-12 text-center">
           {detailLoading
             ? "Buscando información del participante..."
             : "Ingresa un identificador y selecciona el rango para ver su actividad."}

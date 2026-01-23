@@ -42,8 +42,8 @@ export default function ReleaseTransactionsPage() {
     <section className="mx-auto w-full max-w-none space-y-4 p-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <h1 className="typ-title text-base-content">Liberaciones de Dinero</h1>
-          <p className="typ-body text-base-content/70 max-w-2xl">
+          <h1 className="typ-title text-foreground">Liberaciones de Dinero</h1>
+          <p className="typ-body text-default-600 max-w-2xl">
             Reporte de liberaciones de fondos desde Mercado Pago según fecha.
           </p>
         </div>

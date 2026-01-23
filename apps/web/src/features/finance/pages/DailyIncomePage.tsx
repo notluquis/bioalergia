@@ -40,7 +40,7 @@ export function DailyIncomePage() {
             className="w-40"
             aria-label="Fecha inicio"
           />
-          <span className="text-base-content/50">-</span>
+          <span className="text-default-400">-</span>
           <Input
             type="date"
             value={to}
@@ -81,7 +81,7 @@ export function DailyIncomePage() {
                     {dayjs(date).format("dddd D [de] MMMM")}
                   </h3>
                   <div className="text-right text-sm">
-                    <div className="text-base-content/70">
+                    <div className="text-default-600">
                       Esperado: ${totalExpected.toLocaleString()}
                     </div>
                     <div className="font-bold text-success">
@@ -101,7 +101,7 @@ export function DailyIncomePage() {
                       </div>
                       <span
                         className={
-                          event.amountPaid ? "text-success font-medium" : "text-base-content/50"
+                          event.amountPaid ? "text-success font-medium" : "text-default-400"
                         }
                       >
                         ${(event.amountPaid || 0).toLocaleString()}

@@ -53,7 +53,7 @@ export function ServiceDetail({
     if (!service) return { className: "", label: "" };
     switch (service.status) {
       case "ARCHIVED": {
-        return { className: "bg-base-200 text-base-content", label: "Archivado" };
+        return { className: "bg-default-50 text-foreground", label: "Archivado" };
       }
       case "INACTIVE": {
         return { className: "bg-emerald-100 text-emerald-700", label: "Sin pendientes" };
@@ -170,23 +170,23 @@ export function ServiceDetail({
 
   if (!service) {
     return (
-      <section className="text-base-content/60 bg-base-100 flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm">
+      <section className="text-default-500 bg-background flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm">
         <p>Selecciona un servicio para ver el detalle.</p>
       </section>
     );
   }
 
   return (
-    <section className="bg-base-100 relative flex h-full min-w-0 flex-col gap-6 rounded-3xl p-6">
+    <section className="bg-background relative flex h-full min-w-0 flex-col gap-6 rounded-3xl p-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
           <h1 className="text-primary text-2xl font-bold break-all drop-shadow-sm">
             {service.name}
           </h1>
-          <p className="text-base-content text-sm">
+          <p className="text-foreground text-sm">
             {service.detail || "Gasto"} · {serviceTypeLabel} · {ownershipLabel}
           </p>
-          <div className="text-base-content/60 flex flex-wrap items-center gap-3 text-xs">
+          <div className="text-default-500 flex flex-wrap items-center gap-3 text-xs">
             <span>Inicio {dayjs(service.start_date).format("DD MMM YYYY")}</span>
             <span>Frecuencia {frequencyLabel.toLowerCase()}</span>
             {service.due_day && <span>Vence día {service.due_day}</span>}
@@ -222,46 +222,46 @@ export function ServiceDetail({
         </div>
       </header>
 
-      <section className="border-base-300 bg-base-200 text-base-content grid gap-4 rounded-2xl border p-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
+      <section className="border-default-200 bg-default-50 text-foreground grid gap-4 rounded-2xl border p-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Monto base</p>
-          <p className="text-base-content text-lg font-semibold">
+          <p className="text-default-400 text-xs tracking-wide uppercase">Monto base</p>
+          <p className="text-foreground text-lg font-semibold">
             ${service.default_amount.toLocaleString("es-CL")}
           </p>
         </div>
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Pendientes</p>
-          <p className="text-base-content text-lg font-semibold">{service.pending_count}</p>
+          <p className="text-default-400 text-xs tracking-wide uppercase">Pendientes</p>
+          <p className="text-foreground text-lg font-semibold">{service.pending_count}</p>
         </div>
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Vencidos</p>
+          <p className="text-default-400 text-xs tracking-wide uppercase">Vencidos</p>
           <p className="text-lg font-semibold text-rose-600">{service.overdue_count}</p>
         </div>
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Total pagado</p>
+          <p className="text-default-400 text-xs tracking-wide uppercase">Total pagado</p>
           <p className="text-lg font-semibold text-emerald-600">
             ${Number(service.total_paid ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Modo de cálculo</p>
-          <p className="text-base-content text-sm font-semibold">{amountModeLabel}</p>
+          <p className="text-default-400 text-xs tracking-wide uppercase">Modo de cálculo</p>
+          <p className="text-foreground text-sm font-semibold">{amountModeLabel}</p>
         </div>
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Recargo</p>
-          <p className="text-base-content text-sm font-semibold">{lateFeeLabel}</p>
+          <p className="text-default-400 text-xs tracking-wide uppercase">Recargo</p>
+          <p className="text-foreground text-sm font-semibold">{lateFeeLabel}</p>
           {service.late_fee_grace_days != null && service.late_fee_mode !== "NONE" && (
-            <p className="text-base-content/50 text-xs">Tras {service.late_fee_grace_days} días</p>
+            <p className="text-default-400 text-xs">Tras {service.late_fee_grace_days} días</p>
           )}
         </div>
       </section>
 
-      <section className="border-base-300 bg-base-200 text-base-content grid gap-4 rounded-2xl border p-4 text-sm md:grid-cols-3">
+      <section className="border-default-200 bg-default-50 text-foreground grid gap-4 rounded-2xl border p-4 text-sm md:grid-cols-3">
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Contraparte</p>
-          <p className="text-base-content font-semibold">{counterpartSummary}</p>
+          <p className="text-default-400 text-xs tracking-wide uppercase">Contraparte</p>
+          <p className="text-foreground font-semibold">{counterpartSummary}</p>
           {service.counterpart_account_identifier && (
-            <p className="text-base-content/60 text-xs">
+            <p className="text-default-500 text-xs">
               Cuenta {service.counterpart_account_identifier}
               {service.counterpart_account_bank_name
                 ? ` · ${service.counterpart_account_bank_name}`
@@ -269,12 +269,12 @@ export function ServiceDetail({
             </p>
           )}
           {service.account_reference && (
-            <p className="text-base-content/60 text-xs">Referencia: {service.account_reference}</p>
+            <p className="text-default-500 text-xs">Referencia: {service.account_reference}</p>
           )}
         </div>
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Emisión</p>
-          <p className="text-base-content font-semibold">
+          <p className="text-default-400 text-xs tracking-wide uppercase">Emisión</p>
+          <p className="text-foreground font-semibold">
             {(() => {
               if (service.emission_mode === "FIXED_DAY" && service.emission_day) {
                 return `Día ${service.emission_day}`;
@@ -294,9 +294,9 @@ export function ServiceDetail({
           </p>
         </div>
         <div>
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Clasificación</p>
-          <p className="text-base-content font-semibold">{obligationLabel}</p>
-          <p className="text-base-content/60 text-xs">{recurrenceLabel}</p>
+          <p className="text-default-400 text-xs tracking-wide uppercase">Clasificación</p>
+          <p className="text-foreground font-semibold">{obligationLabel}</p>
+          <p className="text-default-500 text-xs">{recurrenceLabel}</p>
         </div>
       </section>
 
@@ -316,8 +316,8 @@ export function ServiceDetail({
       />
 
       {service.notes && (
-        <div className="border-base-300 bg-base-200 text-base-content rounded-2xl border p-4 text-sm">
-          <p className="text-base-content/50 text-xs tracking-wide uppercase">Notas</p>
+        <div className="border-default-200 bg-default-50 text-foreground rounded-2xl border p-4 text-sm">
+          <p className="text-default-400 text-xs tracking-wide uppercase">Notas</p>
           <p>{service.notes}</p>
         </div>
       )}
@@ -431,8 +431,8 @@ export function ServiceDetail({
       </Modal>
 
       {loading && (
-        <div className="bg-base-100/40 absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm">
-          <p className="bg-base-100 text-primary rounded-full px-4 py-2 text-sm font-semibold shadow">
+        <div className="bg-background/40 absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm">
+          <p className="bg-background text-primary rounded-full px-4 py-2 text-sm font-semibold shadow">
             Cargando servicio...
           </p>
         </div>

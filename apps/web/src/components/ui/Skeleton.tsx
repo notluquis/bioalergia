@@ -11,5 +11,5 @@ export default function Skeleton({
   className,
   ...props
 }: Readonly<HTMLAttributes<HTMLDivElement>>) {
-  return <div className={cn("bg-base-200/50 animate-pulse rounded-md", className)} {...props} />;
+  return <div className={cn("bg-default-50/50 animate-pulse rounded-md", className)} {...props} />;
 }

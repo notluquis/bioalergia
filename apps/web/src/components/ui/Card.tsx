@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 // Card Shell
 const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <HeroCard className={cn("border-base-200 border shadow-sm", className)} ref={ref} {...props} />
+    <HeroCard className={cn("border-default-100 border shadow-sm", className)} ref={ref} {...props} />
   ),
 );
 Card.displayName = "Card";
@@ -41,7 +41,7 @@ CardTitle.displayName = "CardTitle";
 // Card Description
 const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p className={cn("text-base-content/60 text-sm", className)} ref={ref} {...props} />
+    <p className={cn("text-default-500 text-sm", className)} ref={ref} {...props} />
   ),
 );
 CardDescription.displayName = "CardDescription";

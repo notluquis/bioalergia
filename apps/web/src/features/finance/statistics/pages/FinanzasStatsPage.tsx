@@ -128,7 +128,7 @@ export default function FinanzasStatsPage() {
     <section className={PAGE_CONTAINER}>
       {/* Date Range Filters */}
       <form
-        className="bg-base-100 border-base-200 grid gap-4 rounded-2xl border p-6 shadow-sm sm:grid-cols-5"
+        className="bg-background border-default-100 grid gap-4 rounded-2xl border p-6 shadow-sm sm:grid-cols-5"
         onSubmit={handleSubmit}
       >
         <div className="form-control">
@@ -219,14 +219,14 @@ export default function FinanzasStatsPage() {
               value={totals.in}
             />
             <StatCard
-              className="text-error"
+              className="text-danger"
               icon={ArrowDown}
               subtitle="Total periodo"
               title="EGRESOS"
               value={totals.out}
             />
             <StatCard
-              className={totals.net >= 0 ? "text-success" : "text-error"}
+              className={totals.net >= 0 ? "text-success" : "text-danger"}
               icon={BarChart3}
               subtitle="Ingresos - Egresos"
               title="RESULTADO"
@@ -265,20 +265,20 @@ export default function FinanzasStatsPage() {
               </h2>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-base-content/70">Meses analizados:</span>
+                  <span className="text-default-600">Meses analizados:</span>
                   <span className="font-mono font-semibold">{data.monthly.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-base-content/70">Tipos de movimiento:</span>
+                  <span className="text-default-600">Tipos de movimiento:</span>
                   <span className="font-mono font-semibold">{data.byType.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-base-content/70">Top contrapartes:</span>
+                  <span className="text-default-600">Top contrapartes:</span>
                   <span className="font-mono font-semibold">{topParticipants.length}</span>
                 </div>
                 <div className="divider my-2" />
                 <div className="flex items-center justify-between">
-                  <span className="text-base-content/70">Promedio mensual:</span>
+                  <span className="text-default-600">Promedio mensual:</span>
                   <span className="text-primary font-mono font-semibold">
                     $
                     {data.monthly.length > 0

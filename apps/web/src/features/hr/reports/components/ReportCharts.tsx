@@ -57,7 +57,7 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
   }));
 
   return (
-    <div className="bg-base-100 border-base-200 rounded-3xl border p-6 shadow-sm">
+    <div className="bg-background border-default-100 rounded-3xl border p-6 shadow-sm">
       <h3 className="mb-2 flex items-center gap-2 text-lg font-bold">
         <PieChartIcon className="text-secondary h-5 w-5" />
         Distribución Total
@@ -100,7 +100,7 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
   const chartColors = getChartColors();
 
   return (
-    <div className="bg-base-100 border-base-200 rounded-3xl border p-6 shadow-sm">
+    <div className="bg-background border-default-100 rounded-3xl border p-6 shadow-sm">
       <div className="mb-6 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-lg font-bold">
           <BarChart2 className="text-primary h-5 w-5" />

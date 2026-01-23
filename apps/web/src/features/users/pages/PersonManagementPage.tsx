@@ -25,9 +25,9 @@ export default function PersonManagementPage() {
   return (
     <div className={PAGE_CONTAINER}>
       {/* Filters */}
-      <div className="bg-base-100 flex items-center gap-4 rounded-2xl p-4 shadow-sm">
+      <div className="bg-background flex items-center gap-4 rounded-2xl p-4 shadow-sm">
         <div className="relative flex-1">
-          <Search className="text-base-content/40 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Search className="text-default-300 absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             className="w-full pl-9"
             onChange={(e) => {
@@ -47,26 +47,26 @@ export default function PersonManagementPage() {
       {/* People List */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredPeople.length === 0 ? (
-          <p className="text-base-content/40 col-span-full text-center">
+          <p className="text-default-300 col-span-full text-center">
             No se encontraron personas
           </p>
         ) : (
           filteredPeople.map((person) => (
             <div
-              className="card bg-base-100 border-base-200 border shadow-sm transition-shadow hover:shadow-md"
+              className="card bg-background border-default-100 border shadow-sm transition-shadow hover:shadow-md"
               key={person.id}
             >
               <div className="card-body p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="avatar placeholder">
-                      <div className="bg-base-200 text-base-content/60 flex w-10 items-center justify-center rounded-full">
+                      <div className="bg-default-50 text-default-500 flex w-10 items-center justify-center rounded-full">
                         <span className="text-xs font-bold">{getPersonInitials(person)}</span>
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-base-content font-bold">{getPersonFullName(person)}</h3>
-                      <p className="text-base-content/50 text-xs">{person.rut}</p>
+                      <h3 className="text-foreground font-bold">{getPersonFullName(person)}</h3>
+                      <p className="text-default-400 text-xs">{person.rut}</p>
                     </div>
                   </div>
                 </div>
@@ -94,7 +94,7 @@ export default function PersonManagementPage() {
                   )}
                 </div>
 
-                <div className="border-base-200 mt-4 flex justify-end border-t pt-4">
+                <div className="border-default-100 mt-4 flex justify-end border-t pt-4">
                   <Button
                     onClick={() => navigate({ to: `/settings/people/${person.id}` })}
                     size="xs"

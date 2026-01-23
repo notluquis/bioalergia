@@ -1,7 +1,7 @@
 /* 
  * Finance Module Design System (2025)
  * Centralized styles for balances, loans, and transactions
- * Using: CSS Custom Properties, Modern Selectors
+ * ADAPTED for HeroUI v3
  */
 
 /* === ROOT DESIGN TOKENS === */
@@ -31,25 +31,25 @@
   --fin-radius-lg: 1rem;
 
   /* Semantic Colors */
-  --fin-positive: hsl(145 65% 42%);
-  --fin-positive-bg: hsl(145 50% 95%);
-  --fin-negative: hsl(0 72% 51%);
-  --fin-negative-bg: hsl(0 50% 95%);
-  --fin-neutral: hsl(var(--bc) / 0.6);
-  --fin-warning: hsl(38 92% 50%);
-  --fin-warning-bg: hsl(38 90% 95%);
+  --fin-positive: var(--success);
+  --fin-positive-bg: color-mix(in srgb, var(--success), transparent 90%);
+  --fin-negative: var(--danger);
+  --fin-negative-bg: color-mix(in srgb, var(--danger), transparent 90%);
+  --fin-neutral: var(--default-500);
+  --fin-warning: var(--warning);
+  --fin-warning-bg: color-mix(in srgb, var(--warning), transparent 90%);
 
   /* Shadows */
-  --fin-shadow-sm: 0 1px 2px hsl(var(--bc) / 0.05);
-  --fin-shadow: 0 1px 3px hsl(var(--bc) / 0.08), 0 4px 12px hsl(var(--bc) / 0.04);
+  --fin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --fin-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
 
   /* Borders */
-  --fin-border: hsl(var(--bc) / 0.1);
+  --fin-border: var(--default-200);
 }
 
 /* === CARD PATTERN === */
 .finance-card {
-  background: hsl(var(--b1));
+  background: var(--background);
   border: 1px solid var(--fin-border);
   border-radius: var(--fin-radius-lg);
   box-shadow: var(--fin-shadow-sm);
@@ -59,13 +59,13 @@
 .finance-card__header {
   padding: var(--fin-gap);
   border-bottom: 1px solid var(--fin-border);
-  background: hsl(var(--b2) / 0.5);
+  background: var(--default-50);
 }
 
 .finance-card__title {
   font-size: var(--fin-text-lg);
   font-weight: var(--fin-font-semibold);
-  color: hsl(var(--p));
+  color: var(--primary);
   margin: 0;
 }
 
@@ -78,11 +78,11 @@
   width: 100%;
   border-collapse: collapse;
   font-size: var(--fin-text-sm);
-  color: hsl(var(--bc));
+  color: var(--foreground);
 }
 
 .finance-table__header {
-  background: hsl(var(--b2) / 0.6);
+  background: var(--default-100);
   backdrop-filter: blur(8px);
   position: sticky;
   top: 0;
@@ -93,7 +93,7 @@
   padding: var(--fin-gap-sm) var(--fin-gap);
   text-align: left;
   font-weight: var(--fin-font-semibold);
-  color: hsl(var(--p));
+  color: var(--primary);
   font-size: var(--fin-text-xs);
   text-transform: uppercase;
   letter-spacing: 0.025em;
@@ -106,7 +106,7 @@
 }
 
 .finance-table__row:hover {
-  background: hsl(var(--b2) / 0.3);
+  background: var(--default-50);
 }
 
 .finance-table__cell {
@@ -159,8 +159,8 @@
 }
 
 .finance-badge--neutral {
-  background: hsl(var(--b2));
-  color: hsl(var(--bc) / 0.7);
+  background: var(--default-100);
+  color: var(--default-500);
 }
 
 /* === STAT CARDS === */
@@ -169,13 +169,13 @@
   flex-direction: column;
   gap: var(--fin-gap-xs);
   padding: var(--fin-gap);
-  background: hsl(var(--b2) / 0.5);
+  background: var(--default-50);
   border-radius: var(--fin-radius);
 }
 
 .finance-stat__label {
   font-size: var(--fin-text-xs);
-  color: hsl(var(--bc) / 0.6);
+  color: var(--default-500);
   text-transform: uppercase;
   letter-spacing: 0.025em;
 }
@@ -195,27 +195,12 @@
   gap: var(--fin-gap);
   padding: var(--fin-gap-sm) var(--fin-gap);
   border-top: 1px solid var(--fin-border);
-  background: hsl(var(--b2) / 0.3);
+  background: var(--default-50);
   font-size: var(--fin-text-xs);
 }
 
 /* === DARK MODE ADJUSTMENTS === */
-:root:is([data-theme="dark"], [data-theme="business"], [data-theme="night"]) {
-  .finance-badge--success {
-    background: hsl(145 50% 20% / 0.6);
-    color: hsl(145 70% 70%);
-  }
-
-  .finance-badge--danger {
-    background: hsl(0 50% 20% / 0.6);
-    color: hsl(0 70% 70%);
-  }
-
-  .finance-badge--warning {
-    background: hsl(38 50% 20% / 0.6);
-    color: hsl(38 80% 70%);
-  }
-}
+/* HeroUI handles variable changes in dark mode, but we can override if needed */
 
 /* === ACCESSIBILITY: Reduced Motion === */
 @media (prefers-reduced-motion: reduce) {
@@ -228,11 +213,11 @@
 @media print {
   .finance-card {
     box-shadow: none;
-    border: 1px solid hsl(var(--bc) / 0.2);
+    border: 1px solid var(--default-300);
   }
 
   .finance-table__header {
-    background: hsl(var(--b2) / 0.1);
+    background: var(--default-50);
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }

@@ -52,8 +52,8 @@ export class GlobalError extends Component<Props, State> {
       // Si es error de deploy, mostrar UI mínima mientras recarga
       if (isDeployIssue || this.state.isReloading) {
         return (
-          <div className="bg-base-100/50 fixed inset-0 z-9999 flex items-center justify-center p-6 backdrop-blur-md">
-            <div className="bg-base-100 border-base-200 w-full max-w-sm overflow-hidden rounded-[2.5rem] border p-8 text-center shadow-2xl">
+          <div className="bg-background/50 fixed inset-0 z-9999 flex items-center justify-center p-6 backdrop-blur-md">
+            <div className="bg-background border-default-100 w-full max-w-sm overflow-hidden rounded-[2.5rem] border p-8 text-center shadow-2xl">
               <div className="bg-primary/10 text-primary ring-primary/5 mx-auto mb-6 flex h-24 w-24 animate-pulse items-center justify-center rounded-full ring-8">
                 <svg
                   className="h-12 w-12"
@@ -73,10 +73,10 @@ export class GlobalError extends Component<Props, State> {
               </div>
 
               <div className="space-y-3">
-                <h1 className="text-base-content text-2xl font-bold tracking-tight">
+                <h1 className="text-foreground text-2xl font-bold tracking-tight">
                   Actualización Lista
                 </h1>
-                <p className="text-base-content/60 px-4 text-sm leading-relaxed">
+                <p className="text-default-500 px-4 text-sm leading-relaxed">
                   Hemos mejorado el sistema. Para disfrutar de las últimas mejoras, necesitamos
                   reiniciar la aplicación.
                 </p>
@@ -120,9 +120,9 @@ export class GlobalError extends Component<Props, State> {
 
       // Error genérico - mostrar UI completa
       return (
-        <div className="bg-base-100 flex min-h-screen flex-col items-center justify-center p-4 text-center">
+        <div className="bg-background flex min-h-screen flex-col items-center justify-center p-4 text-center">
           <div className="max-w-md space-y-6">
-            <div className="bg-error/10 text-error mx-auto flex h-20 w-20 items-center justify-center rounded-full">
+            <div className="bg-danger/10 text-danger mx-auto flex h-20 w-20 items-center justify-center rounded-full">
               <svg
                 className="h-10 w-10"
                 fill="none"
@@ -141,16 +141,16 @@ export class GlobalError extends Component<Props, State> {
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-base-content text-3xl font-bold">Algo salió mal</h1>
-              <p className="text-base-content/60">
+              <h1 className="text-foreground text-3xl font-bold">Algo salió mal</h1>
+              <p className="text-default-500">
                 Ha ocurrido un error inesperado. Hemos registrado el problema y nuestro equipo lo
                 revisará.
               </p>
             </div>
 
             {this.state.error && (
-              <div className="bg-base-200 rounded-xl p-4 text-left">
-                <p className="text-error font-mono text-xs break-all">
+              <div className="bg-default-50 rounded-xl p-4 text-left">
+                <p className="text-danger font-mono text-xs break-all">
                   {this.state.error.toString()}
                 </p>
               </div>

@@ -26,13 +26,13 @@ export const columns: ColumnDef<Employee>[] = [
   {
     accessorKey: "full_name",
     cell: ({ row }) => (
-      <span className="text-base-content font-medium">{row.original.full_name}</span>
+      <span className="text-foreground font-medium">{row.original.full_name}</span>
     ),
     header: "Nombre",
   },
   {
     accessorKey: "position",
-    cell: ({ row }) => <span className="text-base-content">{row.original.position}</span>,
+    cell: ({ row }) => <span className="text-foreground">{row.original.position}</span>,
     header: "Cargo",
   },
   {
@@ -51,7 +51,7 @@ export const columns: ColumnDef<Employee>[] = [
   {
     accessorKey: "department",
     cell: ({ row }) => (
-      <span className="text-base-content/70">{row.original.department ?? "—"}</span>
+      <span className="text-default-600">{row.original.department ?? "—"}</span>
     ),
     header: "Departamento",
   },
@@ -59,9 +59,9 @@ export const columns: ColumnDef<Employee>[] = [
     accessorKey: "startDate",
     cell: ({ row }) => {
       const date = row.original.startDate;
-      if (!date) return <span className="text-base-content/60">—</span>;
+      if (!date) return <span className="text-default-500">—</span>;
       return (
-        <span className="text-base-content/70">{new Date(date).toLocaleDateString("es-CL")}</span>
+        <span className="text-default-600">{new Date(date).toLocaleDateString("es-CL")}</span>
       );
     },
     header: "Inicio",
@@ -69,21 +69,21 @@ export const columns: ColumnDef<Employee>[] = [
   {
     accessorKey: "person.email",
     cell: ({ row }) => (
-      <span className="text-base-content/60">{row.original.person?.email ?? "—"}</span>
+      <span className="text-default-500">{row.original.person?.email ?? "—"}</span>
     ),
     header: "Correo",
   },
   {
     accessorKey: "person.rut",
-    cell: ({ row }) => <span className="text-base-content">{row.original.person?.rut ?? "—"}</span>,
+    cell: ({ row }) => <span className="text-foreground">{row.original.person?.rut ?? "—"}</span>,
     header: "RUT",
   },
   {
     cell: ({ row }) => {
       const e = row.original;
-      if (!e.bankName) return <span className="text-base-content/60">—</span>;
+      if (!e.bankName) return <span className="text-default-500">—</span>;
       return (
-        <span className="text-base-content whitespace-nowrap">
+        <span className="text-foreground whitespace-nowrap">
           {e.bankName}
           {e.bankAccountType ? ` · ${e.bankAccountType}` : ""}
           {e.bankAccountNumber ? ` · ${e.bankAccountNumber}` : ""}
@@ -108,8 +108,8 @@ export const columns: ColumnDef<Employee>[] = [
 
       return (
         <div className="flex flex-col">
-          <span className="text-base-content">{formatted.replace(".", ",")}%</span>
-          <span className="text-base-content/50 text-xs">
+          <span className="text-foreground">{formatted.replace(".", ",")}%</span>
+          <span className="text-default-400 text-xs">
             {isAuto ? "Auto (por año)" : "Personalizada"}
           </span>
         </div>

@@ -236,7 +236,7 @@ export default function TimesheetExportPDF({
     <div className="flex items-center gap-2">
       <div className="relative inline-block">
         <Button
-          className="text-primary-content bg-primary hover:bg-primary/85 focus-visible:outline-primary/35 rounded-xl px-4 py-2 text-sm font-semibold shadow-md focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="text-primary-foreground bg-primary hover:bg-primary/85 focus-visible:outline-primary/35 rounded-xl px-4 py-2 text-sm font-semibold shadow-md focus-visible:outline-2 focus-visible:outline-offset-2"
           onClick={() => handleExport(true)}
           type="button"
           variant="primary"
@@ -245,7 +245,7 @@ export default function TimesheetExportPDF({
         </Button>
         <Tooltip content="Opciones">
           <Button
-            className="border-base-300 bg-base-100 text-primary hover:bg-base-100/90 ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border shadow"
+            className="border-default-200 bg-background text-primary hover:bg-background/90 ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border shadow"
             onClick={() => {
               setShowOptions((v) => !v);
             }}
@@ -257,11 +257,11 @@ export default function TimesheetExportPDF({
           </Button>
         </Tooltip>
         {showOptions && (
-          <div className="bg-base-100 absolute right-0 z-20 mt-2 w-56 rounded-xl p-3 shadow-xl ring-1 ring-black/5">
-            <p className="text-base-content/80 mb-2 text-xs font-semibold">Columnas del detalle</p>
+          <div className="bg-background absolute right-0 z-20 mt-2 w-56 rounded-xl p-3 shadow-xl ring-1 ring-black/5">
+            <p className="text-default-700 mb-2 text-xs font-semibold">Columnas del detalle</p>
             {[...defaultCols].map((key) => (
               // biome-ignore lint/a11y/noLabelWithoutControl: wraps checkbox
-              <label className="text-base-content mb-1 flex items-center gap-2 text-sm" key={key}>
+              <label className="text-foreground mb-1 flex items-center gap-2 text-sm" key={key}>
                 <Checkbox
                   checked={selectedCols.includes(key)}
                   onChange={(e) => {
@@ -278,7 +278,7 @@ export default function TimesheetExportPDF({
             ))}
             <div className="mt-3 flex justify-end gap-2">
               <Button
-                className="text-base-content/60 hover:text-base-content text-xs"
+                className="text-default-500 hover:text-foreground text-xs"
                 onClick={() => {
                   setShowOptions(false);
                 }}

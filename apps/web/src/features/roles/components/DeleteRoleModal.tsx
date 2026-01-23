@@ -124,7 +124,7 @@ function DeleteRoleForm({
               otro rol antes de eliminarlo.
             </p>
 
-            <ul className="bg-base-100 max-h-32 space-y-1 overflow-y-auto rounded p-2 text-xs">
+            <ul className="bg-background max-h-32 space-y-1 overflow-y-auto rounded p-2 text-xs">
               {users.map((u) => (
                 <li className="flex justify-between" key={u.id}>
                   <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : u.email}</span>

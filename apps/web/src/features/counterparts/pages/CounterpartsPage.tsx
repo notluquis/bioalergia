@@ -228,10 +228,10 @@ export default function CounterpartsPage() {
         <div className="space-y-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-base-content/60 text-xs font-semibold tracking-[0.4em] uppercase">
+              <p className="text-default-500 text-xs font-semibold tracking-[0.4em] uppercase">
                 Filtros rápidos
               </p>
-              <p className="text-base-content/70 text-sm">
+              <p className="text-default-600 text-sm">
                 Acota la lista por tipo de persona y clasificación.
               </p>
             </div>
@@ -248,7 +248,7 @@ export default function CounterpartsPage() {
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
-              <p className="text-base-content/60 text-xs font-semibold tracking-[0.3em] uppercase">
+              <p className="text-default-500 text-xs font-semibold tracking-[0.3em] uppercase">
                 Tipo de persona
               </p>
               <div className="flex flex-wrap gap-2">
@@ -267,7 +267,7 @@ export default function CounterpartsPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <p className="text-base-content/60 text-xs font-semibold tracking-[0.3em] uppercase">
+              <p className="text-default-500 text-xs font-semibold tracking-[0.3em] uppercase">
                 Clasificación
               </p>
               <div className="flex flex-wrap gap-2">
@@ -303,7 +303,7 @@ export default function CounterpartsPage() {
           {!selectedId && (
             <ServicesSurface className="h-full">
               <div className="flex flex-col items-center justify-center p-8 text-center">
-                <p className="text-base-content/60 text-sm">
+                <p className="text-default-500 text-sm">
                   Selecciona una contraparte para ver los detalles
                 </p>
               </div>

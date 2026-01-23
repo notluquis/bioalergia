@@ -44,7 +44,7 @@ export default function ServicesAgendaContent() {
         />
 
         <ServicesSurface className="flex min-h-64 items-center justify-center">
-          <div className="text-base-content/70 flex items-center gap-3 text-sm">
+          <div className="text-default-600 flex items-center gap-3 text-sm">
             <Spinner size="md" />
             <span>Cargando agenda consolidada...</span>
           </div>

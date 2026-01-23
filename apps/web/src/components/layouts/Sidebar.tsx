@@ -57,7 +57,7 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
           "z-50 h-full transition-[width] duration-300 ease-in-out",
           isMobile
             ? "safe-area-left fixed inset-y-0 left-0 w-64 rounded-r-3xl border-r shadow-2xl"
-            : "bg-base-100 border-base-200 relative w-20 rounded-2xl border shadow-xl",
+            : "bg-background border-default-100 relative w-20 rounded-2xl border shadow-xl",
           isMobile && (isOpen ? "translate-x-0" : "-translate-x-full"),
         )}
       >
@@ -96,14 +96,14 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                 {index > 0 && !isMobile && (
                   <div
                     aria-hidden="true"
-                    className="border-base-content/10 mx-auto w-10 border-t pb-2"
+                    className="border-default-200 mx-auto w-10 border-t pb-2"
                   />
                 )}
 
                 {/* Section Title (Only visible on mobile) */}
                 {isMobile && (
                   <div className="flex items-center px-4 pb-1">
-                    <h3 className="text-base-content/50 text-[10px] font-bold tracking-[0.2em] uppercase">
+                    <h3 className="text-default-400 text-[10px] font-bold tracking-[0.2em] uppercase">
                       {section.title}
                     </h3>
                   </div>
@@ -129,7 +129,7 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
           {/* User Footer */}
           <div
             className={cn(
-              "border-base-200/50 bg-base-100/30 mt-auto shrink-0 border-t pt-4 pb-8 transition-all duration-300",
+              "border-default-100/50 bg-background/30 mt-auto shrink-0 border-t pt-4 pb-8 transition-all duration-300",
               isMobile ? "px-3" : "flex flex-col items-center justify-center px-0",
             )}
           >
@@ -138,24 +138,24 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                 <button
                   type="button"
                   className={cn(
-                    "hover:bg-base-200/50 group flex cursor-pointer items-center transition-all outline-none",
+                    "hover:bg-default-50/50 group flex cursor-pointer items-center transition-all outline-none",
                     isMobile
                       ? "w-full gap-3 rounded-2xl px-3 py-2"
                       : "h-12 w-12 justify-center rounded-xl p-0",
                   )}
                 >
                   <Avatar className="h-10 w-10 shrink-0">
-                    <Avatar.Fallback className="bg-base-100 text-primary font-bold">
+                    <Avatar.Fallback className="bg-background text-primary font-bold">
                       {displayName.slice(0, 2).toUpperCase()}
                     </Avatar.Fallback>
                   </Avatar>
 
                   {isMobile && (
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left transition-all duration-300">
-                      <span className="text-base-content group-hover:text-primary truncate font-semibold transition-colors">
+                      <span className="text-foreground group-hover:text-primary truncate font-semibold transition-colors">
                         {displayName}
                       </span>
-                      <span className="text-base-content/50 truncate text-xs">{user?.email}</span>
+                      <span className="text-default-400 truncate text-xs">{user?.email}</span>
                     </div>
                   )}
                 </button>
@@ -164,7 +164,7 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm leading-none font-medium">{displayName}</p>
-                    <p className="text-base-content/60 text-xs leading-none">{user?.email}</p>
+                    <p className="text-default-500 text-xs leading-none">{user?.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -176,7 +176,7 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  className="text-error focus:bg-error/10 focus:text-error cursor-pointer"
+                  className="text-danger focus:bg-danger/10 focus:text-danger cursor-pointer"
                   onClick={() => logout()}
                 >
                   <LogOut className="mr-2 size-4" />

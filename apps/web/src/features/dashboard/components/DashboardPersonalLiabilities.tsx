@@ -28,40 +28,40 @@ export function DashboardPersonalLiabilities() {
   if (activeCredits.length === 0) return null;
 
   return (
-    <div className="card card-compact bg-base-100 shadow-sm">
+    <div className="card card-compact bg-background shadow-sm">
       <div className="card-body">
         <div className="flex items-center justify-between">
-          <h3 className="text-base-content text-sm font-semibold">Pasivos Personales</h3>
+          <h3 className="text-foreground text-sm font-semibold">Pasivos Personales</h3>
           <Link className="text-primary text-xs hover:underline" to="/finanzas/loans">
             Ver todos
           </Link>
         </div>
 
         <div className="mt-2 grid grid-cols-2 gap-4">
-          <div className="bg-error/10 rounded-lg p-3">
+          <div className="bg-danger/10 rounded-lg p-3">
             <div className="mb-1 flex items-center gap-2">
-              <div className="bg-error/20 text-error rounded-md p-1.5">
+              <div className="bg-danger/20 text-danger rounded-md p-1.5">
                 <CreditCard className="h-4 w-4" />
               </div>
-              <span className="text-base-content/70 text-xs font-medium">Deuda Total</span>
+              <span className="text-default-600 text-xs font-medium">Deuda Total</span>
             </div>
-            <p className="text-error text-lg font-bold">{formatCurrency(totalDebt)}</p>
-            <p className="text-base-content/60 text-xs">{activeCredits.length} créditos activos</p>
+            <p className="text-danger text-lg font-bold">{formatCurrency(totalDebt)}</p>
+            <p className="text-default-500 text-xs">{activeCredits.length} créditos activos</p>
           </div>
 
           {nextPayment ? (
-            <div className="bg-base-200/50 rounded-lg p-3">
+            <div className="bg-default-50/50 rounded-lg p-3">
               <div className="mb-1 flex items-center gap-2">
-                <div className="bg-base-300 text-base-content/70 rounded-md p-1.5">
+                <div className="bg-default-100 text-default-600 rounded-md p-1.5">
                   <TrendingDown className="h-4 w-4" />
                 </div>
-                <span className="text-base-content/70 text-xs font-medium">Próximo Pago</span>
+                <span className="text-default-600 text-xs font-medium">Próximo Pago</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold">
                   {formatCurrency(nextPayment.nextPaymentAmount ?? 0)}
                 </span>
-                <span className="text-base-content/60 truncate text-xs">
+                <span className="text-default-500 truncate text-xs">
                   {nextPayment.institution}
                 </span>
               </div>
@@ -69,7 +69,7 @@ export function DashboardPersonalLiabilities() {
           ) : (
             <div className="bg-success/10 flex flex-col justify-center rounded-lg p-3">
               <span className="text-success text-sm font-medium">Al día 🎉</span>
-              <span className="text-base-content/60 text-xs">Sin pagos pendientes</span>
+              <span className="text-default-500 text-xs">Sin pagos pendientes</span>
             </div>
           )}
         </div>

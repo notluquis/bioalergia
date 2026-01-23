@@ -213,18 +213,18 @@ export default function ReportsPage() {
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Left Column: Filters */}
         <div className="space-y-6 lg:col-span-4">
-          <div className="bg-base-100 border-base-200 space-y-6 rounded-2xl border p-5 shadow-sm">
-            <div className="border-base-200 flex items-center gap-2 border-b pb-2">
+          <div className="bg-background border-default-100 space-y-6 rounded-2xl border p-5 shadow-sm">
+            <div className="border-default-100 flex items-center gap-2 border-b pb-2">
               <Filter className="text-primary h-5 w-5" />
               <h2 className="text-lg font-semibold">Configuración</h2>
             </div>
 
             {/* View Mode Tabs */}
-            <div className="tabs tabs-boxed bg-base-200/50 p-1" role="tablist">
+            <div className="tabs tabs-boxed bg-default-50/50 p-1" role="tablist">
               <button
                 className={cn(
                   "tab transition-all duration-200",
-                  viewMode === "month" && "tab-active bg-base-100 shadow-sm",
+                  viewMode === "month" && "tab-active bg-background shadow-sm",
                 )}
                 onClick={() => {
                   setViewMode("month");
@@ -237,7 +237,7 @@ export default function ReportsPage() {
               <button
                 className={cn(
                   "tab transition-all duration-200",
-                  viewMode === "range" && "tab-active bg-base-100 shadow-sm",
+                  viewMode === "range" && "tab-active bg-background shadow-sm",
                 )}
                 onClick={() => {
                   setViewMode("range");
@@ -250,7 +250,7 @@ export default function ReportsPage() {
               <button
                 className={cn(
                   "tab transition-all duration-200",
-                  viewMode === "all" && "tab-active bg-base-100 shadow-sm",
+                  viewMode === "all" && "tab-active bg-background shadow-sm",
                 )}
                 onClick={() => {
                   setViewMode("all");
@@ -329,7 +329,7 @@ export default function ReportsPage() {
               )}
 
               {viewMode === "all" && (
-                <div className="alert bg-base-200/50 text-sm">
+                <div className="alert bg-default-50/50 text-sm">
                   <Calendar className="text-primary h-4 w-4" />
                   <span>Se analizará todo el historial disponible en la base de datos.</span>
                 </div>
@@ -449,8 +449,8 @@ export default function ReportsPage() {
                       tabIndex={-1}
                       type="button"
                     />
-                    <div className="bg-base-100 border-base-200 absolute top-full right-0 left-0 z-50 mt-2 flex max-h-80 flex-col overflow-hidden rounded-xl border shadow-xl">
-                      <div className="border-base-200 bg-base-50 border-b p-2">
+                    <div className="bg-background border-default-100 absolute top-full right-0 left-0 z-50 mt-2 flex max-h-80 flex-col overflow-hidden rounded-xl border shadow-xl">
+                      <div className="border-default-100 bg-base-50 border-b p-2">
                         <label className="input input-sm input-bordered flex items-center gap-2 bg-white">
                           <Search className="h-4 w-4 opacity-50" />
                           <input
@@ -473,7 +473,7 @@ export default function ReportsPage() {
                                 "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors",
                                 isSelected
                                   ? "bg-primary/10 text-primary font-medium"
-                                  : "hover:bg-base-200 text-base-content",
+                                  : "hover:bg-default-50 text-foreground",
                               )}
                               key={emp.id}
                               onClick={() => {
@@ -487,7 +487,7 @@ export default function ReportsPage() {
                           );
                         })}
                         {filteredEmployees.length === 0 && (
-                          <div className="text-base-content/50 p-4 text-center text-sm">
+                          <div className="text-default-400 p-4 text-center text-sm">
                             No hay resultados
                           </div>
                         )}
@@ -525,12 +525,12 @@ export default function ReportsPage() {
         {/* Right Column: Results */}
         <div className="space-y-6 lg:col-span-8">
           {reportData.length === 0 && !loading ? (
-            <div className="border-base-300 bg-base-50/50 flex h-full min-h-100 flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center">
-              <div className="bg-base-200 mb-6 flex h-20 w-20 items-center justify-center rounded-full">
-                <BarChart2 className="text-base-content/30 h-10 w-10" />
+            <div className="border-default-200 bg-base-50/50 flex h-full min-h-100 flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center">
+              <div className="bg-default-50 mb-6 flex h-20 w-20 items-center justify-center rounded-full">
+                <BarChart2 className="text-default-200 h-10 w-10" />
               </div>
-              <h3 className="text-base-content text-xl font-bold">Sin datos para mostrar</h3>
-              <p className="text-base-content/60 mt-2 max-w-sm">
+              <h3 className="text-foreground text-xl font-bold">Sin datos para mostrar</h3>
+              <p className="text-default-500 mt-2 max-w-sm">
                 Selecciona el periodo y los empleados que deseas analizar para generar gráficas y
                 estadísticas detalladas.
               </p>
@@ -579,7 +579,7 @@ export default function ReportsPage() {
               {/* Charts Section - Lazy Loaded */}
               <Suspense
                 fallback={
-                  <div className="bg-base-100 border-base-200 flex h-96 items-center justify-center rounded-3xl border shadow-sm">
+                  <div className="bg-background border-default-100 flex h-96 items-center justify-center rounded-3xl border shadow-sm">
                     <Spinner className="text-primary" color="current" size="lg" />
                   </div>
                 }
@@ -596,7 +596,7 @@ export default function ReportsPage() {
                 {/* Pie Chart - Lazy Loaded */}
                 <Suspense
                   fallback={
-                    <div className="bg-base-100 border-base-200 flex h-80 items-center justify-center rounded-3xl border shadow-sm">
+                    <div className="bg-background border-default-100 flex h-80 items-center justify-center rounded-3xl border shadow-sm">
                       <Spinner className="text-secondary" color="current" size="md" />
                     </div>
                   }
@@ -607,7 +607,7 @@ export default function ReportsPage() {
                 {/* Detailed Table */}
                 <div
                   className={cn(
-                    "bg-base-100 border-base-200 flex flex-col rounded-3xl border p-6 shadow-sm",
+                    "bg-background border-default-100 flex flex-col rounded-3xl border p-6 shadow-sm",
                     reportData.length <= 1 && "lg:col-span-2",
                   )}
                 >
