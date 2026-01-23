@@ -100,6 +100,12 @@ export class SchemaType implements SchemaDef {
                     type: "User",
                     optional: true,
                     relation: { opposite: "person" }
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    optional: true,
+                    relation: { opposite: "person" }
                 }
             },
             attributes: [
@@ -2712,6 +2718,12 @@ export class SchemaType implements SchemaDef {
                     type: "Calendar",
                     attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("calendarId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }] }],
                     relation: { opposite: "events", fields: ["calendarId"], references: ["id"] }
+                },
+                consultations: {
+                    name: "consultations",
+                    type: "Consultation",
+                    array: true,
+                    relation: { opposite: "event" }
                 }
             },
             attributes: [
@@ -4422,6 +4434,15 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issued_at") }] }],
                     default: ExpressionUtils.call("now")
                 },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }],
+                    foreignKeyFor: [
+                        "patient"
+                    ]
+                },
                 driveFileId: {
                     name: "driveFileId",
                     type: "String",
@@ -4442,6 +4463,13 @@ export class SchemaType implements SchemaDef {
                     type: "User",
                     attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("issuedBy")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }] }],
                     relation: { opposite: "medicalCertificates", fields: ["issuedBy"], references: ["id"] }
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }] }],
+                    relation: { opposite: "medicalCertificates", fields: ["patientId"], references: ["id"] }
                 }
             },
             attributes: [
@@ -4456,6 +4484,177 @@ export class SchemaType implements SchemaDef {
             idFields: ["id"],
             uniqueFields: {
                 id: { type: "String" }
+            }
+        },
+        Patient: {
+            name: "Patient",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                personId: {
+                    name: "personId",
+                    type: "Int",
+                    unique: true,
+                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] }],
+                    foreignKeyFor: [
+                        "person"
+                    ]
+                },
+                birthDate: {
+                    name: "birthDate",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("birth_date") }] }, { name: "@db.Date" }]
+                },
+                bloodType: {
+                    name: "bloodType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("blood_type") }] }]
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                person: {
+                    name: "person",
+                    type: "Person",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("personId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
+                    relation: { opposite: "patient", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
+                },
+                consultations: {
+                    name: "consultations",
+                    type: "Consultation",
+                    array: true,
+                    relation: { opposite: "patient" }
+                },
+                medicalCertificates: {
+                    name: "medicalCertificates",
+                    type: "MedicalCertificate",
+                    array: true,
+                    relation: { opposite: "patient" }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("patients") }] }
+            ],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" },
+                personId: { type: "Int" }
+            }
+        },
+        Consultation: {
+            name: "Consultation",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "Int",
+                    id: true,
+                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
+                    default: ExpressionUtils.call("autoincrement")
+                },
+                patientId: {
+                    name: "patientId",
+                    type: "Int",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }],
+                    foreignKeyFor: [
+                        "patient"
+                    ]
+                },
+                eventId: {
+                    name: "eventId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_id") }] }],
+                    foreignKeyFor: [
+                        "event"
+                    ]
+                },
+                date: {
+                    name: "date",
+                    type: "DateTime",
+                    attributes: [{ name: "@db.Date" }]
+                },
+                reason: {
+                    name: "reason",
+                    type: "String"
+                },
+                diagnosis: {
+                    name: "diagnosis",
+                    type: "String",
+                    optional: true
+                },
+                treatment: {
+                    name: "treatment",
+                    type: "String",
+                    optional: true
+                },
+                notes: {
+                    name: "notes",
+                    type: "String",
+                    optional: true
+                },
+                createdAt: {
+                    name: "createdAt",
+                    type: "DateTime",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                updatedAt: {
+                    name: "updatedAt",
+                    type: "DateTime",
+                    updatedAt: true,
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
+                    default: ExpressionUtils.call("now")
+                },
+                patient: {
+                    name: "patient",
+                    type: "Patient",
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
+                    relation: { opposite: "consultations", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
+                },
+                event: {
+                    name: "event",
+                    type: "Event",
+                    optional: true,
+                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("eventId")]) }, { name: "references", value: ExpressionUtils.array([ExpressionUtils.field("id")]) }] }],
+                    relation: { opposite: "consultations", fields: ["eventId"], references: ["id"] }
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("patientId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("eventId")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("date")]) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("consultations") }] }
+            ],
+            idFields: ["id"],
+            uniqueFields: {
+                id: { type: "Int" }
             }
         }
     } as const;

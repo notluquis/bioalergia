@@ -1,169 +1,110 @@
-# Plan: Auditoría y Verificación de Certificados Médicos
+# Plan: Patient Management System - Fase 1 (MVP)
 
 ## Goal
-Implementar sistema de auditoría y verificación para certificados médicos con:
-- Persistencia en DB (modelo MedicalCertificate)
-- Storage en Google Drive
-- QR code con UUID + hash SHA-256
-- Página pública de verificación (Nivel 3: nombre completo, diagnóstico, reposo)
+Implementar sistema básico de registro y gestión de pacientes:
+- Modelo `Patient` (1:1 con Person)
+- Modelo `Consultation` para consultas médicas
+- Link opcional `MedicalCertificate.patientId`
+- UI para registrar y listar pacientes
 
 ## Assumptions
-- Google Drive ya configurado y funcionando (OAuth2)
-- Schema.zmodel usa ZenStack v3 con Kysely
-- `qrcode` npm package para generar QR
-- Certificados se guardan en carpeta "Medical Certificates" en Drive
-- Usuario aprobó mostrar datos completos en verificación (Nivel 3)
+- Person puede ser empleado Y paciente simultáneamente
+- Patient es 1:1 con Person (un Person puede tener un Patient profile)
+- Lazy loading: módulos clínicos vienen en Fase 2
+- UI simple: formulario de registro + lista con búsqueda
 
 ## Plan
 
-### Step 1: Agregar modelo MedicalCertificate a schema
+### Step 1: Agregar modelos Patient y Consultation a schema
 **Files:**
 - `packages/db/zenstack/schema.zmodel`
 
 **Change:**
 Agregar al final del archivo:
 ```zmodel
-model MedicalCertificate {
-  id            String   @id @default(cuid())
-  patientName   String   @map("patient_name")
-  patientRut    String   @map("patient_rut")
+model Patient {
+  id            Int      @id @default(autoincrement())
+  personId      Int      @unique @map("person_id")
   birthDate     DateTime @map("birth_date") @db.Date
-  address       String
+  bloodType     String?  @map("blood_type")
+  notes         String?  // Notas generales del paciente
   
-  diagnosis     String
-  symptoms      String?
-  restDays      Int?     @map("rest_days")
-  restStartDate DateTime? @map("rest_start_date") @db.Date
-  restEndDate   DateTime? @map("rest_end_date") @db.Date
-  purpose       String
-  purposeDetail String?  @map("purpose_detail")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
   
-  issuedBy      Int      @map("issued_by")
-  issuedAt      DateTime @default(now()) @map("issued_at")
-  
-  driveFileId   String   @map("drive_file_id") // Google Drive file ID
-  pdfHash       String   @map("pdf_hash") // SHA-256
-  
-  metadata      Json?    // Full certificate data as backup
-  
-  issuer        User     @relation(fields: [issuedBy], references: [id])
+  person              Person               @relation(fields: [personId], references: [id], onDelete: Cascade)
+  consultations       Consultation[]
+  medicalCertificates MedicalCertificate[]
   
   @@deny('all', auth() == null)
-  @@allow('read', auth().id == issuedBy)
-  @@allow('create', auth().status == 'ACTIVE')
-  @@allow('read', auth().roles?[role.name == 'ADMIN' || role.name == 'GOD'])
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update', auth().status == 'ACTIVE')
   
-  @@index([patientRut])
-  @@index([issuedAt])
-  @@map("medical_certificates")
+  @@map("patients")
+}
+
+model Consultation {
+  id          Int      @id @default(autoincrement())
+  patientId   Int      @map("patient_id")
+  eventId     Int?     @map("event_id") // Link to Calendar Event
+  date        DateTime @db.Date
+  reason      String   // Motivo de consulta
+  diagnosis   String?  // Diagnóstico
+  treatment   String?  // Tratamiento indicado
+  notes       String?  // Notas adicionales
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  event       Event?   @relation(fields: [eventId], references: [id])
+  
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+  
+  @@index([patientId])
+  @@index([eventId])
+  @@index([date])
+  @@map("consultations")
 }
 ```
 
-Agregar en modelo User (dentro de relationships):
+Agregar en modelo Person:
 ```zmodel
-medicalCertificates MedicalCertificate[]
+patient Patient?
+```
+
+Agregar en modelo Event:
+```zmodel
+consultations Consultation[]
+```
+
+Agregar en modelo MedicalCertificate:
+```zmodel
+patientId Int? @map("patient_id")
+patient   Patient? @relation(fields: [patientId], references: [id])
 ```
 
 **Verify:**
 ```bash
 cd packages/db && pnpm generate
-zen migrate dev --name add_medical_certificates
+npx prisma db push --schema zenstack/~schema.prisma
 ```
 
 ---
 
-### Step 2: Instalar dependencias para QR
+### Step 2: Crear módulo backend de pacientes
 **Files:**
-- `apps/api/package.json`
+- `apps/api/src/modules/patients/index.ts` (nuevo)
+- `apps/api/src/modules/patients/patients.schema.ts` (nuevo)
 
 **Change:**
-```bash
-cd apps/api && pnpm add qrcode @types/qrcode
-```
-
-**Verify:**
-```bash
-grep qrcode apps/api/package.json
-```
-
----
-
-### Step 3: Crear servicio de Google Drive para certificados
-**Files:**
-- `apps/api/src/services/certificates-drive.ts` (nuevo)
-
-**Change:**
-```typescript
-import { createReadStream } from "node:fs";
-import { getDriveClient } from "../lib/google/google-core";
-import { parseGoogleError } from "../lib/google/google-errors";
-
-const CERTIFICATES_FOLDER_NAME = "Medical Certificates";
-
-export async function getCertificatesFolderId(): Promise<string> {
-  try {
-    const drive = await getDriveClient();
-    
-    const response = await drive.files.list({
-      q: `name='${CERTIFICATES_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-      fields: "files(id)",
-      spaces: "drive",
-    });
-
-    if (response.data.files?.length) {
-      return response.data.files[0].id!;
-    }
-
-    const folder = await drive.files.create({
-      requestBody: {
-        name: CERTIFICATES_FOLDER_NAME,
-        mimeType: "application/vnd.google-apps.folder",
-      },
-      fields: "id",
-    });
-
-    return folder.data.id!;
-  } catch (error) {
-    throw parseGoogleError(error);
-  }
-}
-
-export async function uploadCertificateToDrive(
-  filepath: string,
-  filename: string,
-  metadata: Record<string, any>,
-  pdfHash: string
-): Promise<{ fileId: string; webViewLink: string | null }> {
-  try {
-    const drive = await getDriveClient();
-    const folderId = await getCertificatesFolderId();
-
-    const response = await drive.files.create({
-      requestBody: {
-        name: filename,
-        parents: [folderId],
-        description: JSON.stringify(metadata),
-        appProperties: {
-          pdfHash,
-          certificateType: "medical",
-        },
-      },
-      media: {
-        mimeType: "application/pdf",
-        body: createReadStream(filepath),
-      },
-      fields: "id,webViewLink",
-    });
-
-    return {
-      fileId: response.data.id!,
-      webViewLink: response.data.webViewLink || null,
-    };
-  } catch (error) {
-    throw parseGoogleError(error);
-  }
-}
-```
+Crear estructura de módulo:
+- POST `/api/patients` - Crear paciente
+- GET `/api/patients` - Listar con búsqueda
+- GET `/api/patients/:id` - Detalle
+- PUT `/api/patients/:id` - Actualizar
 
 **Verify:**
 ```bash
@@ -172,388 +113,81 @@ cd apps/api && pnpm exec tsc --noEmit
 
 ---
 
-### Step 4: Actualizar certificate.service.ts para generar QR
+### Step 3: Registrar módulo en API
 **Files:**
-- `apps/api/src/modules/certificates/certificate.service.ts`
+- `apps/api/src/index.ts`
 
 **Change:**
-1. Agregar import:
 ```typescript
-import QRCode from "qrcode";
-```
-
-2. Agregar función antes de `generateMedicalCertificatePDF`:
-```typescript
-async function generateQRCode(certificateId: string): Promise<Buffer> {
-  const verifyUrl = `${process.env.APP_URL || "http://localhost:5173"}/verify/${certificateId}`;
-  return await QRCode.toBuffer(verifyUrl, {
-    errorCorrectionLevel: "M",
-    type: "png",
-    width: 200,
-    margin: 1,
-  });
-}
-```
-
-3. Modificar firma de `generateMedicalCertificatePDF`:
-```typescript
-export async function generateMedicalCertificatePDF(
-  input: MedicalCertificateInput,
-  qrCodeBuffer?: Buffer
-): Promise<Uint8Array>
-```
-
-4. Dentro de la función, antes de `pdfDoc.save()`, agregar QR en esquina inferior derecha:
-```typescript
-if (qrCodeBuffer) {
-  const qrImage = await pdfDoc.embedPng(qrCodeBuffer);
-  const qrDims = qrImage.scale(0.3); // 60x60px aprox
-  
-  firstPage.drawImage(qrImage, {
-    x: firstPage.getWidth() - qrDims.width - 30,
-    y: 30,
-    width: qrDims.width,
-    height: qrDims.height,
-  });
-}
+import patientsRoutes from "./modules/patients/index.js";
+app.route("/api/patients", patientsRoutes);
 ```
 
 **Verify:**
 ```bash
-cd apps/api && pnpm exec tsc --noEmit
+curl http://localhost:3000/api/patients
 ```
 
 ---
 
-### Step 5: Actualizar endpoint POST para guardar en DB + Drive
+### Step 4: Crear página de lista de pacientes
 **Files:**
-- `apps/api/src/modules/certificates/index.ts`
+- `apps/web/src/routes/_authed/patients/index.tsx` (nuevo)
 
 **Change:**
-1. Agregar imports:
-```typescript
-import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
-import os from "node:os";
-import { db } from "@finanzas/db";
-import { uploadCertificateToDrive } from "../../services/certificates-drive";
-import { generateQRCode } from "./certificate.service"; // mover función a export
-```
-
-2. Reemplazar el handler POST completo:
-```typescript
-certificatesApp.post("/medical", async (c) => {
-  const input = await c.req.json();
-  const parsed = medicalCertificateSchema.parse(input);
-  
-  // Generate unique ID
-  const certificateId = crypto.randomUUID();
-  
-  // Generate QR code
-  const qrCode = await generateQRCode(certificateId);
-  
-  // Generate PDF with QR
-  const pdfBytes = await generateMedicalCertificatePDF(parsed, qrCode);
-  
-  // Calculate hash
-  const pdfHash = crypto.createHash("sha256").update(pdfBytes).digest("hex");
-  
-  // Save to temp file
-  const tempPath = path.join(os.tmpdir(), `${certificateId}.pdf`);
-  fs.writeFileSync(tempPath, pdfBytes);
-  
-  try {
-    // Upload to Google Drive
-    const { fileId, webViewLink } = await uploadCertificateToDrive(
-      tempPath,
-      `certificado_${parsed.patientRut.replace(/\./g, "")}_${Date.now()}.pdf`,
-      parsed,
-      pdfHash
-    );
-    
-    // Save to database
-    await db.medicalCertificate.create({
-      data: {
-        id: certificateId,
-        patientName: parsed.patientName,
-        patientRut: parsed.patientRut,
-        birthDate: new Date(parsed.birthDate),
-        address: parsed.address,
-        diagnosis: parsed.diagnosis,
-        symptoms: parsed.symptoms,
-        restDays: parsed.restDays,
-        restStartDate: parsed.restStartDate ? new Date(parsed.restStartDate) : null,
-        restEndDate: parsed.restEndDate ? new Date(parsed.restEndDate) : null,
-        purpose: parsed.purpose,
-        purposeDetail: parsed.purposeDetail,
-        issuedBy: c.req.user.id,
-        driveFileId: fileId,
-        pdfHash,
-        metadata: parsed,
-      },
-    });
-    
-    console.log(`Certificate ${certificateId} saved to DB and Drive (${fileId})`);
-  } finally {
-    // Clean up temp file
-    fs.unlinkSync(tempPath);
-  }
-  
-  // Return PDF
-  return c.body(pdfBytes, 200, {
-    "Content-Type": "application/pdf",
-    "Content-Disposition": `attachment; filename="certificado_${parsed.patientRut.replace(/\./g, "")}.pdf"`,
-  });
-});
-```
+- Lista de pacientes con TanStack Table
+- Búsqueda por RUT/nombre
+- Botón "Nuevo Paciente"
+- Columnas: RUT, Nombre, Edad, Última consulta
 
 **Verify:**
-```bash
-curl -X POST http://localhost:3000/api/certificates/medical \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ..." \
-  -d '{"patientName":"Test","rut":"12.345.678-9",...}' \
-  --output test.pdf
-```
+Abrir `http://localhost:5173/patients`
 
 ---
 
-### Step 6: Crear endpoint público GET /verify/:id
+### Step 5: Crear formulario de registro
 **Files:**
-- `apps/api/src/modules/certificates/index.ts`
+- `apps/web/src/routes/_authed/patients/new.tsx` (nuevo)
 
 **Change:**
-Agregar al final del archivo, antes de `export default certificatesApp`:
-```typescript
-// Public endpoint - no auth required
-certificatesApp.get("/verify/:id", async (c) => {
-  const { id } = c.req.param();
-  
-  try {
-    const certificate = await db.medicalCertificate.findUnique({
-      where: { id },
-      include: {
-        issuer: {
-          include: {
-            person: true,
-          },
-        },
-      },
-    });
-
-    if (!certificate) {
-      return c.json({ valid: false, error: "Certificado no encontrado" }, 404);
-    }
-
-    // Return Level 3 verification (full details)
-    return c.json({
-      valid: true,
-      issuedAt: certificate.issuedAt,
-      doctor: {
-        name: certificate.issuer.person.names,
-        specialty: "Especialista en Alergología e Inmunología Clínica",
-      },
-      patient: {
-        name: certificate.patientName,
-      },
-      diagnosis: certificate.diagnosis,
-      restDays: certificate.restDays,
-      restStartDate: certificate.restStartDate,
-      restEndDate: certificate.restEndDate,
-      purpose: certificate.purpose,
-    });
-  } catch (error) {
-    console.error("Error verifying certificate:", error);
-    return c.json({ valid: false, error: "Error al verificar certificado" }, 500);
-  }
-});
-```
+- Formulario con TanStack Form
+- Campos: RUT, Nombres, Apellido Paterno, Apellido Materno, Fecha Nacimiento, Email, Teléfono, Dirección
+- Validación con Zod
+- Auto-crear Person si no existe
 
 **Verify:**
-```bash
-curl http://localhost:3000/api/certificates/verify/{uuid}
-```
+Crear un paciente y verificar en DB
 
 ---
 
-### Step 7: Crear página frontend /verify/:id
+### Step 6: Crear página de perfil del paciente
 **Files:**
-- `apps/web/src/routes/verify.$id.tsx` (nuevo)
+- `apps/web/src/routes/_authed/patients/$id.tsx` (nuevo)
 
 **Change:**
-```typescript
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
-
-import { apiClient } from "@/lib/api-client";
-
-export const Route = createFileRoute("/verify/$id")({
-  component: VerifyCertificatePage,
-});
-
-function VerifyCertificatePage() {
-  const { id } = Route.useParams();
-  
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["verify-certificate", id],
-    queryFn: async () => {
-      const response = await apiClient.get(`certificates/verify/${id}`);
-      return await response.json();
-    },
-  });
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="loading loading-spinner loading-lg"></div>
-          <p className="mt-4 text-foreground/70">Verificando certificado...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !data?.valid) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-error/10">
-        <div className="bg-base-100 p-8 rounded-2xl shadow-xl max-w-md text-center">
-          <div className="text-6xl mb-4">❌</div>
-          <h1 className="text-3xl font-bold text-error mb-2">Certificado Inválido</h1>
-          <p className="text-foreground/70">
-            {data?.error || "Este certificado no existe o ha sido revocado"}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-success/10 p-4">
-      <div className="bg-base-100 p-8 rounded-2xl shadow-xl max-w-2xl w-full">
-        <div className="text-center mb-6">
-          <div className="text-6xl mb-2">✅</div>
-          <h1 className="text-3xl font-bold text-success">Certificado Válido</h1>
-        </div>
-        
-        <div className="space-y-6">
-          <div className="border-b border-base-300 pb-4">
-            <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide mb-1">
-              Paciente
-            </h3>
-            <p className="text-xl font-medium">{data.patient.name}</p>
-          </div>
-          
-          <div className="border-b border-base-300 pb-4">
-            <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide mb-1">
-              Diagnóstico
-            </h3>
-            <p className="text-lg">{data.diagnosis}</p>
-          </div>
-          
-          {data.restDays && (
-            <div className="border-b border-base-300 pb-4">
-              <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide mb-1">
-                Reposo Médico
-              </h3>
-              <p className="text-lg font-medium">{data.restDays} días</p>
-              {data.restStartDate && data.restEndDate && (
-                <p className="text-sm text-foreground/60 mt-1">
-                  Desde {dayjs(data.restStartDate).format("DD/MM/YYYY")} hasta{" "}
-                  {dayjs(data.restEndDate).format("DD/MM/YYYY")}
-                </p>
-              )}
-            </div>
-          )}
-          
-          <div className="border-b border-base-300 pb-4">
-            <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide mb-1">
-              Propósito
-            </h3>
-            <p className="text-lg capitalize">{data.purpose}</p>
-          </div>
-          
-          <div className="border-b border-base-300 pb-4">
-            <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide mb-1">
-              Emitido por
-            </h3>
-            <p className="text-lg font-medium">{data.doctor.name}</p>
-            <p className="text-sm text-foreground/60">{data.doctor.specialty}</p>
-          </div>
-          
-          <div>
-            <h3 className="text-sm font-semibold text-foreground/70 uppercase tracking-wide mb-1">
-              Fecha de emisión
-            </h3>
-            <p className="text-lg">{dayjs(data.issuedAt).format("DD [de] MMMM [de] YYYY")}</p>
-          </div>
-        </div>
-        
-        <div className="mt-8 p-4 bg-info/10 rounded-lg">
-          <p className="text-sm text-info text-center">
-            Este certificado ha sido verificado digitalmente y es auténtico
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-```
+- Tabs: Info, Consultas, Certificados
+- Tab Info: datos del paciente (editable)
+- Tab Consultas: lista de consultas
+- Tab Certificados: lista de certificados emitidos
 
 **Verify:**
-Abrir `http://localhost:5173/verify/{uuid}` en navegador
-
----
-
-### Step 8: Exportar generateQRCode desde service
-**Files:**
-- `apps/api/src/modules/certificates/certificate.service.ts`
-
-**Change:**
-Cambiar `async function generateQRCode` a `export async function generateQRCode`
-
-**Verify:**
-```bash
-cd apps/api && pnpm exec tsc --noEmit
-```
+Abrir perfil de paciente creado
 
 ---
 
 ## Risks & mitigations
 
-1. **Risk**: Google Drive quota exceeded
-   **Mitigation**: Monitorear uso, implementar cleanup de certificados antiguos (>1 año)
+1. **Risk**: Person duplicado (mismo RUT)
+   **Mitigation**: Buscar Person por RUT antes de crear
 
-2. **Risk**: QR code aumenta tamaño del PDF
-   **Mitigation**: QR pequeño (200x200px → 60x60 scaled), compresión PNG
+2. **Risk**: Validación de RUT chileno
+   **Mitigation**: Usar librería de validación de RUT
 
-3. **Risk**: UUID público puede ser adivinado
-   **Mitigation**: Usar cuid() (26 chars, collision-resistant, ~2^130 combinations)
-
-4. **Risk**: Página pública expone datos sensibles
-   **Mitigation**: Usuario aprobó Nivel 3, pero NO exponemos: RUT, dirección, fecha nacimiento
-
-5. **Risk**: Temp file no se limpia si hay error
-   **Mitigation**: Usar try/finally para garantizar cleanup
+3. **Risk**: Edad calculada incorrectamente
+   **Mitigation**: Usar dayjs para cálculo preciso
 
 ## Rollback plan
 
-1. **Si falla migración DB**: 
-   ```bash
-   zen migrate reset
-   git checkout HEAD~1 packages/db/zenstack/schema.zmodel
-   pnpm generate
-   ```
-
-2. **Si falla Google Drive**: 
-   - Certificados siguen funcionando sin persistencia
-   - Comentar código de upload, solo retornar PDF
-
-3. **Si falla QR generation**: 
-   - PDF se genera sin QR (parámetro opcional)
-   - Verificación sigue funcionando con URL manual
-
-4. **Si falla página de verificación**: 
-   - Endpoint API sigue funcionando
-   - Mostrar JSON raw como fallback
+1. Si falla migración: `npx prisma db push --force-reset`
+2. Si falla backend: Comentar registro de rutas
+3. Si falla frontend: Eliminar rutas de pacientes

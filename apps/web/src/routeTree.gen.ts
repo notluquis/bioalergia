@@ -30,6 +30,7 @@ import { Route as AuthedCalendarRouteImport } from "./routes/_authed/calendar"
 import { Route as AuthedAccountRouteImport } from "./routes/_authed/account"
 import { Route as AuthedSettingsIndexRouteImport } from "./routes/_authed/settings/index"
 import { Route as AuthedServicesIndexRouteImport } from "./routes/_authed/services/index"
+import { Route as AuthedPatientsIndexRouteImport } from "./routes/_authed/patients/index"
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedFinanzasIndexRouteImport } from "./routes/_authed/finanzas/index"
 import { Route as AuthedSettingsUsersRouteImport } from "./routes/_authed/settings/users"
@@ -42,6 +43,8 @@ import { Route as AuthedSettingsBackupsRouteImport } from "./routes/_authed/sett
 import { Route as AuthedServicesTemplatesRouteImport } from "./routes/_authed/services/templates"
 import { Route as AuthedServicesCreateRouteImport } from "./routes/_authed/services/create"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
+import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
+import { Route as AuthedPatientsIdRouteImport } from "./routes/_authed/patients/$id"
 import { Route as AuthedOperationsSuppliesRouteImport } from "./routes/_authed/operations/supplies"
 import { Route as AuthedOperationsInventoryRouteImport } from "./routes/_authed/operations/inventory"
 import { Route as AuthedHrTimesheetsRouteImport } from "./routes/_authed/hr/timesheets"
@@ -145,6 +148,11 @@ const AuthedServicesIndexRoute = AuthedServicesIndexRouteImport.update({
   path: "/",
   getParentRoute: () => AuthedServicesRoute,
 } as any)
+const AuthedPatientsIndexRoute = AuthedPatientsIndexRouteImport.update({
+  id: "/patients/",
+  path: "/patients/",
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedHrIndexRoute = AuthedHrIndexRouteImport.update({
   id: "/",
   path: "/",
@@ -206,6 +214,16 @@ const AuthedServicesAgendaRoute = AuthedServicesAgendaRouteImport.update({
   id: "/agenda",
   path: "/agenda",
   getParentRoute: () => AuthedServicesRoute,
+} as any)
+const AuthedPatientsNewRoute = AuthedPatientsNewRouteImport.update({
+  id: "/patients/new",
+  path: "/patients/new",
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedPatientsIdRoute = AuthedPatientsIdRouteImport.update({
+  id: "/patients/$id",
+  path: "/patients/$id",
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedOperationsSuppliesRoute =
   AuthedOperationsSuppliesRouteImport.update({
@@ -361,6 +379,7 @@ const AuthedFinanzasPersonalCreditsCreditIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  "/": typeof AuthedIndexRoute
   "/login": typeof LoginRoute
   "/onboarding": typeof OnboardingRoute
   "/account": typeof AuthedAccountRoute
@@ -372,7 +391,6 @@ export interface FileRoutesByFullPath {
   "/services": typeof AuthedServicesRouteWithChildren
   "/settings": typeof AuthedSettingsRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
-  "/": typeof AuthedIndexRoute
   "/calendar/classify": typeof AuthedCalendarClassifyRoute
   "/calendar/daily": typeof AuthedCalendarDailyRoute
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute
@@ -397,6 +415,8 @@ export interface FileRoutesByFullPath {
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
+  "/patients/$id": typeof AuthedPatientsIdRoute
+  "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/services/create": typeof AuthedServicesCreateRoute
   "/services/templates": typeof AuthedServicesTemplatesRoute
@@ -409,6 +429,7 @@ export interface FileRoutesByFullPath {
   "/settings/users": typeof AuthedSettingsUsersRouteWithChildren
   "/finanzas/": typeof AuthedFinanzasIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
+  "/patients/": typeof AuthedPatientsIndexRoute
   "/services/": typeof AuthedServicesIndexRoute
   "/settings/": typeof AuthedSettingsIndexRoute
   "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
@@ -449,6 +470,8 @@ export interface FileRoutesByTo {
   "/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/operations/supplies": typeof AuthedOperationsSuppliesRoute
+  "/patients/$id": typeof AuthedPatientsIdRoute
+  "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/services/create": typeof AuthedServicesCreateRoute
   "/services/templates": typeof AuthedServicesTemplatesRoute
@@ -461,6 +484,7 @@ export interface FileRoutesByTo {
   "/settings/users": typeof AuthedSettingsUsersRouteWithChildren
   "/finanzas": typeof AuthedFinanzasIndexRoute
   "/hr": typeof AuthedHrIndexRoute
+  "/patients": typeof AuthedPatientsIndexRoute
   "/services": typeof AuthedServicesIndexRoute
   "/settings": typeof AuthedSettingsIndexRoute
   "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
@@ -507,6 +531,8 @@ export interface FileRoutesById {
   "/_authed/hr/timesheets": typeof AuthedHrTimesheetsRoute
   "/_authed/operations/inventory": typeof AuthedOperationsInventoryRoute
   "/_authed/operations/supplies": typeof AuthedOperationsSuppliesRoute
+  "/_authed/patients/$id": typeof AuthedPatientsIdRoute
+  "/_authed/patients/new": typeof AuthedPatientsNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
   "/_authed/services/create": typeof AuthedServicesCreateRoute
   "/_authed/services/templates": typeof AuthedServicesTemplatesRoute
@@ -519,6 +545,7 @@ export interface FileRoutesById {
   "/_authed/settings/users": typeof AuthedSettingsUsersRouteWithChildren
   "/_authed/finanzas/": typeof AuthedFinanzasIndexRoute
   "/_authed/hr/": typeof AuthedHrIndexRoute
+  "/_authed/patients/": typeof AuthedPatientsIndexRoute
   "/_authed/services/": typeof AuthedServicesIndexRoute
   "/_authed/settings/": typeof AuthedSettingsIndexRoute
   "/_authed/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
@@ -529,6 +556,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | "/"
     | "/login"
     | "/onboarding"
     | "/account"
@@ -540,7 +568,6 @@ export interface FileRouteTypes {
     | "/services"
     | "/settings"
     | "/verify/$id"
-    | "/"
     | "/calendar/classify"
     | "/calendar/daily"
     | "/calendar/heatmap"
@@ -565,6 +592,8 @@ export interface FileRouteTypes {
     | "/hr/timesheets"
     | "/operations/inventory"
     | "/operations/supplies"
+    | "/patients/$id"
+    | "/patients/new"
     | "/services/agenda"
     | "/services/create"
     | "/services/templates"
@@ -577,6 +606,7 @@ export interface FileRouteTypes {
     | "/settings/users"
     | "/finanzas/"
     | "/hr/"
+    | "/patients/"
     | "/services/"
     | "/settings/"
     | "/finanzas/personal-credits/$creditId"
@@ -617,6 +647,8 @@ export interface FileRouteTypes {
     | "/hr/timesheets"
     | "/operations/inventory"
     | "/operations/supplies"
+    | "/patients/$id"
+    | "/patients/new"
     | "/services/agenda"
     | "/services/create"
     | "/services/templates"
@@ -629,6 +661,7 @@ export interface FileRouteTypes {
     | "/settings/users"
     | "/finanzas"
     | "/hr"
+    | "/patients"
     | "/services"
     | "/settings"
     | "/finanzas/personal-credits/$creditId"
@@ -674,6 +707,8 @@ export interface FileRouteTypes {
     | "/_authed/hr/timesheets"
     | "/_authed/operations/inventory"
     | "/_authed/operations/supplies"
+    | "/_authed/patients/$id"
+    | "/_authed/patients/new"
     | "/_authed/services/agenda"
     | "/_authed/services/create"
     | "/_authed/services/templates"
@@ -686,6 +721,7 @@ export interface FileRouteTypes {
     | "/_authed/settings/users"
     | "/_authed/finanzas/"
     | "/_authed/hr/"
+    | "/_authed/patients/"
     | "/_authed/services/"
     | "/_authed/settings/"
     | "/_authed/finanzas/personal-credits/$creditId"
@@ -720,7 +756,7 @@ declare module "@tanstack/react-router" {
     "/_authed": {
       id: "/_authed"
       path: ""
-      fullPath: ""
+      fullPath: "/"
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -808,6 +844,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedServicesIndexRouteImport
       parentRoute: typeof AuthedServicesRoute
     }
+    "/_authed/patients/": {
+      id: "/_authed/patients/"
+      path: "/patients"
+      fullPath: "/patients/"
+      preLoaderRoute: typeof AuthedPatientsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     "/_authed/hr/": {
       id: "/_authed/hr/"
       path: "/"
@@ -891,6 +934,20 @@ declare module "@tanstack/react-router" {
       fullPath: "/services/agenda"
       preLoaderRoute: typeof AuthedServicesAgendaRouteImport
       parentRoute: typeof AuthedServicesRoute
+    }
+    "/_authed/patients/new": {
+      id: "/_authed/patients/new"
+      path: "/patients/new"
+      fullPath: "/patients/new"
+      preLoaderRoute: typeof AuthedPatientsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    "/_authed/patients/$id": {
+      id: "/_authed/patients/$id"
+      path: "/patients/$id"
+      fullPath: "/patients/$id"
+      preLoaderRoute: typeof AuthedPatientsIdRouteImport
+      parentRoute: typeof AuthedRoute
     }
     "/_authed/operations/supplies": {
       id: "/_authed/operations/supplies"
@@ -1284,6 +1341,9 @@ interface AuthedRouteChildren {
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedDevRoutesAuditRoute: typeof AuthedDevRoutesAuditRoute
+  AuthedPatientsIdRoute: typeof AuthedPatientsIdRoute
+  AuthedPatientsNewRoute: typeof AuthedPatientsNewRoute
+  AuthedPatientsIndexRoute: typeof AuthedPatientsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -1297,6 +1357,9 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedDevRoutesAuditRoute: AuthedDevRoutesAuditRoute,
+  AuthedPatientsIdRoute: AuthedPatientsIdRoute,
+  AuthedPatientsNewRoute: AuthedPatientsNewRoute,
+  AuthedPatientsIndexRoute: AuthedPatientsIndexRoute,
 }
 
 const AuthedRouteWithChildren =
