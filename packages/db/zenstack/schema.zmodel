@@ -84,6 +84,7 @@ model User {
   supplyRequests          SupplyRequest[]
   permissionVersion       UserPermissionVersion?
   roles                   UserRoleAssignment[]
+  medicalCertificates     MedicalCertificate[]
   person                  Person                   @relation(fields: [personId], references: [id], onDelete: Cascade)
 
   // This model represents the authenticated user
@@ -1265,3 +1266,38 @@ model PersonalCreditInstallment {
   @@map("credit_installments")
 }
 
+
+model MedicalCertificate {
+  id            String   @id @default(cuid())
+  patientName   String   @map("patient_name")
+  patientRut    String   @map("patient_rut")
+  birthDate     DateTime @map("birth_date") @db.Date
+  address       String
+  
+  diagnosis     String
+  symptoms      String?
+  restDays      Int?     @map("rest_days")
+  restStartDate DateTime? @map("rest_start_date") @db.Date
+  restEndDate   DateTime? @map("rest_end_date") @db.Date
+  purpose       String
+  purposeDetail String?  @map("purpose_detail")
+  
+  issuedBy      Int      @map("issued_by")
+  issuedAt      DateTime @default(now()) @map("issued_at")
+  
+  driveFileId   String   @map("drive_file_id") // Google Drive file ID
+  pdfHash       String   @map("pdf_hash") // SHA-256
+  
+  metadata      Json?    // Full certificate data as backup
+  
+  issuer        User     @relation(fields: [issuedBy], references: [id])
+  
+  @@deny('all', auth() == null)
+  @@allow('read', auth().id == issuedBy)
+  @@allow('create', auth().status == 'ACTIVE')
+  @@allow('read', auth().roles?[role.name == 'ADMIN' || role.name == 'GOD'])
+  
+  @@index([patientRut])
+  @@index([issuedAt])
+  @@map("medical_certificates")
+}

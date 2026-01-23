@@ -30,7 +30,7 @@ importers:
     dependencies:
       '@finanzas/db':
         specifier: workspace:*
-        version: file:packages/db
+        version: link:../../packages/db
       '@googleapis/calendar':
         specifier: ^14.2.0
         version: 14.2.0
@@ -1603,9 +1603,6 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
-
-  '@finanzas/db@file:packages/db':
-    resolution: {directory: packages/db, type: directory}
 
   '@formatjs/ecma402-abstract@2.3.6':
     resolution: {integrity: sha512-HJnTFeRM2kVFVr5gr5kH1XP6K0JcJtE7Lzvtr3FS/so5f1kpsqqqxy5JF+FRaO6H2qmcMfAUIox7AJteieRtVw==}
@@ -8161,28 +8158,6 @@ snapshots:
   '@exodus/bytes@1.9.0(@noble/hashes@2.0.1)':
     optionalDependencies:
       '@noble/hashes': 2.0.1
-
-  '@finanzas/db@file:packages/db':
-    dependencies:
-      '@zenstackhq/orm': 3.2.1(pg@8.17.2)(zod@4.3.5)
-      '@zenstackhq/plugin-policy': 3.2.1(kysely@0.28.10)(pg@8.17.2)(zod@4.3.5)
-      '@zenstackhq/server': 3.2.1(hono@4.11.5)(pg@8.17.2)(zod@4.3.5)
-      hono: 4.11.5
-      kysely: 0.28.10
-      pg: 8.17.2
-      pg-types: 4.1.0
-      zod: 4.3.5
-    transitivePeerDependencies:
-      - '@sveltejs/kit'
-      - better-sqlite3
-      - elysia
-      - express
-      - fastify
-      - fastify-plugin
-      - next
-      - nuxt
-      - pg-native
-      - sql.js
 
   '@formatjs/ecma402-abstract@2.3.6':
     dependencies:
