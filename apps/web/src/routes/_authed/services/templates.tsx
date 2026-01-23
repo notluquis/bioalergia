@@ -10,6 +10,7 @@ export const Route = createFileRoute("/_authed/services/templates")({
     nav: { iconKey: "FileSpreadsheet", label: "Plantillas", order: 2, section: "Servicios" },
     permission: { action: "read", subject: "ServiceTemplate" },
     title: "Plantillas de servicios",
+    breadcrumb: "Plantillas",
   },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "ServiceTemplate")) {

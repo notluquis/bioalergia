@@ -1,14 +1,7 @@
-import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-
-interface Breadcrumb {
-  label: string;
-  to?: string;
-}
 
 interface ServicesHeroProps {
   actions?: ReactNode;
-  breadcrumbs?: Breadcrumb[];
   description: string;
   title: string;
 }
@@ -21,7 +14,7 @@ export function ServicesGrid({ children }: { children: ReactNode }) {
   );
 }
 
-export function ServicesHero({ actions, breadcrumbs, description, title }: ServicesHeroProps) {
+export function ServicesHero({ actions, description, title }: ServicesHeroProps) {
   return (
     <header className="surface-elevated flex flex-col gap-4 rounded-[28px] p-6 shadow-xl lg:flex-row lg:items-center lg:justify-between">
       <div className="space-y-3">

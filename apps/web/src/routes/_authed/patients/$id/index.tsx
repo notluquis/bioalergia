@@ -22,18 +22,11 @@ import { useState } from "react";
 
 import Button from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import DataTable from "@/components/ui/DataTable";
+import { DataTable } from "@/components/data-table/DataTable";
 import Separator from "@/components/ui/Separator";
 import Tabs from "@/components/ui/Tabs";
 import NewAttachmentModal from "@/features/patients/components/NewAttachmentModal";
 import { apiClient } from "@/lib/api-client";
-
-export const Route = createFileRoute("/_authed/patients/$id/")({
-  staticData: {
-    permission: { action: "read", subject: "Patient" },
-  },
-  component: PatientDetailsPage,
-});
 
 interface Person {
   rut: string;
@@ -112,6 +105,23 @@ interface Patient {
   attachments: PatientAttachment[];
 }
 
+export const Route = createFileRoute("/_authed/patients/$id/")({
+  staticData: {
+    permission: { action: "read", subject: "Patient" },
+    breadcrumb: (data: Patient) =>
+      `${data?.person?.names} ${data?.person?.fatherName}`.trim() || "Paciente",
+  },
+  loader: async ({ context: { queryClient }, params: { id } }) => {
+    return await queryClient.ensureQueryData({
+      queryKey: ["patient", id],
+      queryFn: async () => {
+        return await apiClient.get<Patient>(`/api/patients/${id}`);
+      },
+    });
+  },
+  component: PatientDetailsPage,
+});
+
 function PatientDetailsPage() {
   const { id } = useParams({ from: "/_authed/patients/$id/" });
   const navigate = useNavigate();
@@ -148,7 +158,6 @@ function PatientDetailsPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      {/* Header / Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
