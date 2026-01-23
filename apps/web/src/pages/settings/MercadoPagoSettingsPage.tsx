@@ -1,3 +1,4 @@
+import { Tabs } from "@heroui/react";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { CheckCircle2, Clock, FileText, Plus, Settings } from "lucide-react";
@@ -6,14 +7,7 @@ import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import GenerateReportModal from "@/components/mercadopago/GenerateReportModal";
 import Button from "@/components/ui/Button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu";
+import { DropdownMenu } from "@/components/ui/DropdownMenu";
 import Modal from "@/components/ui/Modal";
 import StatCard from "@/components/ui/StatCard";
 import { useToast } from "@/context/ToastContext";
@@ -124,36 +118,25 @@ export default function MercadoPagoSettingsPage() {
       {/* Header: Tabs + Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Tabs */}
-        <div className="tabs tabs-boxed bg-default-50/50 w-full p-1 sm:w-auto" role="tablist">
-          <button
-            type="button"
-            className={cn(
-              "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
-              activeTab === "release" &&
-                "tab-active bg-background text-foreground font-medium shadow-sm transition-all",
-            )}
-            onClick={() => {
-              setActiveTab("release");
-            }}
-            role="tab"
-          >
-            Liberación
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "tab h-9 flex-1 px-3 text-sm sm:flex-none sm:px-4",
-              activeTab === "settlement" &&
-                "tab-active bg-background text-foreground font-medium shadow-sm transition-all",
-            )}
-            onClick={() => {
-              setActiveTab("settlement");
-            }}
-            role="tab"
-          >
-            Conciliación
-          </button>
-        </div>
+        <Tabs
+          selectedKey={activeTab}
+          onSelectionChange={(key) => setActiveTab(key as MpReportType)}
+          variant="secondary"
+          className="w-full sm:w-auto"
+        >
+          <Tabs.ListContainer>
+            <Tabs.List aria-label="Tipo de reporte" className="bg-default-50/50 rounded-lg p-1">
+              <Tabs.Tab id="release">
+                Liberación
+                <Tabs.Indicator />
+              </Tabs.Tab>
+              <Tabs.Tab id="settlement">
+                Conciliación
+                <Tabs.Indicator />
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs.ListContainer>
+        </Tabs>
 
         {/* Action Button */}
         <Button
@@ -288,17 +271,17 @@ export default function MercadoPagoSettingsPage() {
           </div>
 
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenu.Trigger asChild>
               <Button className="h-8" size="sm" variant="outline">
                 <Settings className="mr-2 h-3.5 w-3.5" />
                 Columnas
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-45">
-              <DropdownMenuLabel>Columnas Visibles</DropdownMenuLabel>
-              <DropdownMenuSeparator />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end" className="w-45">
+              <DropdownMenu.Label>Columnas Visibles</DropdownMenu.Label>
+              <DropdownMenu.Separator />
               {ALL_TABLE_COLUMNS.filter((c) => c.key !== "actions").map((column) => (
-                <DropdownMenuCheckboxItem
+                <DropdownMenu.CheckboxItem
                   checked={visibleColumns.has(column.key)}
                   key={column.key}
                   onCheckedChange={() => {
@@ -306,9 +289,9 @@ export default function MercadoPagoSettingsPage() {
                   }}
                 >
                   {column.label}
-                </DropdownMenuCheckboxItem>
+                </DropdownMenu.CheckboxItem>
               ))}
-            </DropdownMenuContent>
+            </DropdownMenu.Content>
           </DropdownMenu>
         </div>
 

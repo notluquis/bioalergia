@@ -1,19 +1,12 @@
-import {
-  Button,
-  FieldError,
-  Input,
-  Label,
-  Modal,
-  Spinner,
-  TextArea,
-  TextField,
-} from "@heroui/react";
+import { Spinner } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, User as UserIcon } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
-
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Modal from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { createRole, type RoleUser, roleKeys, roleQueries, updateRole } from "@/features/roles/api";
 import type { Role } from "@/types/roles";
@@ -42,30 +35,22 @@ type RoleFormData = z.infer<typeof formSchema>;
 
 export function RoleFormModal({ isOpen, onClose, role }: RoleFormModalProps) {
   return (
-    <Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <Modal.Backdrop />
-      <Modal.Container placement="center">
-        <Modal.Dialog>
-          <Modal.Header>
-            <h3 className="text-lg font-bold">{role ? "Editar Rol" : "Nuevo Rol"}</h3>
-          </Modal.Header>
-          <Modal.Body className="pb-6">
-            {role ? (
-              <Suspense
-                fallback={
-                  <div className="flex h-64 items-center justify-center">
-                    <Spinner className="text-primary" />
-                  </div>
-                }
-              >
-                <RoleEditForm onClose={onClose} roleEntity={role} />
-              </Suspense>
-            ) : (
-              <RoleBaseForm onClose={onClose} roleEntity={null} userData={[]} />
-            )}
-          </Modal.Body>
-        </Modal.Dialog>
-      </Modal.Container>
+    <Modal isOpen={isOpen} onClose={onClose} title={role ? "Editar Rol" : "Nuevo Rol"}>
+      <div className="pb-6">
+        {role ? (
+          <Suspense
+            fallback={
+              <div className="flex h-64 items-center justify-center">
+                <Spinner className="text-primary" />
+              </div>
+            }
+          >
+            <RoleEditForm onClose={onClose} roleEntity={role} />
+          </Suspense>
+        ) : (
+          <RoleBaseForm onClose={onClose} roleEntity={null} userData={[]} />
+        )}
+      </div>
     </Modal>
   );
 }
@@ -149,41 +134,29 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
     >
       <form.Field name="name">
         {(field) => (
-          <TextField className="w-full" isInvalid={field.state.meta.errors.length > 0}>
-            <Label className="text-sm font-medium">Nombre del Rol</Label>
-            <Input
-              className="border-default-200 mt-1 w-full rounded-md border px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              onBlur={field.handleBlur}
-              onChange={(e) => field.handleChange(e.target.value)}
-              placeholder="Ej. Supervisor de Finanzas"
-              type="text"
-              value={field.state.value}
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError className="text-danger mt-1 text-xs">
-                {field.state.meta.errors.join(", ")}
-              </FieldError>
-            )}
-          </TextField>
+          <Input
+            label="Nombre del Rol"
+            placeholder="Ej. Supervisor de Finanzas"
+            onBlur={field.handleBlur}
+            onChange={(e) => field.handleChange(e.target.value)}
+            value={field.state.value}
+            error={field.state.meta.errors[0]?.message}
+          />
         )}
       </form.Field>
 
       <form.Field name="description">
         {(field) => (
-          <div className="flex w-full flex-col gap-1">
-            <Label className="text-sm font-medium" htmlFor="role-desc">
-              Descripción
-            </Label>
-            <TextArea
-              className="border-default-200 w-full rounded-md border px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              id="role-desc"
-              onBlur={field.handleBlur}
-              onChange={(e) => field.handleChange(e.target.value)}
-              placeholder="Descripción breve de las responsabilidades"
-              rows={3}
-              value={field.state.value ?? ""}
-            />
-          </div>
+          <Input
+            as="textarea"
+            label="Descripción"
+            placeholder="Descripción breve de las responsabilidades"
+            rows={3}
+            onBlur={field.handleBlur}
+            onChange={(e) => field.handleChange(e.target.value)}
+            value={field.state.value ?? ""}
+            error={field.state.meta.errors[0]?.message}
+          />
         )}
       </form.Field>
 

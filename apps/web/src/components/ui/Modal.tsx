@@ -22,7 +22,7 @@ interface ModalProps {
 export default function Modal({ boxClassName, children, isOpen, onClose, title }: ModalProps) {
   return (
     <ModalRoot isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <ModalBackdrop className="bg-black/50 backdrop-blur-sm" />
+      <ModalBackdrop className="bg-black/40" />
       <ModalContainer>
         <ModalDialog
           className={cn(

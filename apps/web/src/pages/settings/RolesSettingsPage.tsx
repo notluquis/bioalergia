@@ -1,9 +1,10 @@
-import { ListBox, Select } from "@heroui/react";
+// No ListBox needed here
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Plus, RotateCw, Shield } from "lucide-react";
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { syncPermissions, updateRolePermissions } from "@/features/roles/api";
@@ -63,7 +64,7 @@ export default function RolesSettingsPage() {
       await queryClient.cancelQueries({ queryKey: ["roles"] });
       const previousRoles = queryClient.getQueryData<Role[]>(["roles"]);
 
-      queryClient.setQueryData<Role[]>(["roles"], (old) =>
+      queryClient.setQueryData<Role[]>(["roles"], (old: Role[] | undefined) =>
         optimisticUpdateRole(old, roleId, permissionIds),
       );
 
@@ -157,21 +158,14 @@ export default function RolesSettingsPage() {
                 selectedKey={viewModeRole}
                 onSelectionChange={(key) => setViewModeRole(key ? key.toString() : "")}
               >
-                <Select.Trigger>
-                  <Select.Value />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    <ListBox.Item key="all" textValue="Ver todos los roles">
-                      Ver todos los roles
-                    </ListBox.Item>
-                    {roles.map((r) => (
-                      <ListBox.Item key={r.id} textValue={r.name}>
-                        {r.name}
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
+                <SelectItem id="all" textValue="Ver todos los roles">
+                  Ver todos los roles
+                </SelectItem>
+                {roles.map((r) => (
+                  <SelectItem id={r.id.toString()} key={r.id} textValue={r.name}>
+                    {r.name}
+                  </SelectItem>
+                ))}
               </Select>
             </div>
 
