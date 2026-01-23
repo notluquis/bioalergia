@@ -83,8 +83,8 @@ function NewBudgetPage() {
           Volver
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-base-content">Nuevo Presupuesto</h1>
-          <p className="text-base-content/60 text-sm">Cruce de servicios y valores estimados</p>
+          <h1 className="text-2xl font-bold text-foreground">Nuevo Presupuesto</h1>
+          <p className="text-default-500 text-sm">Cruce de servicios y valores estimados</p>
         </div>
       </header>
 
@@ -126,11 +126,11 @@ function NewBudgetPage() {
           <form.Field name="notes">
             {(field) => (
               <label className="space-y-1 block">
-                <span className="text-sm font-medium text-base-content/70">
+                <span className="text-sm font-medium text-default-600">
                   Notas / Observaciones
                 </span>
                 <textarea
-                  className="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                  className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                   rows={2}
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
@@ -164,7 +164,7 @@ function NewBudgetPage() {
                   {field.state.value.map((_, index) => (
                     <div
                       key={index}
-                      className="grid grid-cols-12 gap-3 items-end border-b border-base-200 pb-4 last:border-0 last:pb-0"
+                      className="grid grid-cols-12 gap-3 items-end border-b border-default-100 pb-4 last:border-0 last:pb-0"
                     >
                       <div className="col-span-12 sm:col-span-6">
                         <form.Field name={`items[${index}].description`}>
@@ -207,7 +207,7 @@ function NewBudgetPage() {
                           variant="ghost"
                           size="sm"
                           isIconOnly
-                          className="text-error"
+                          className="text-danger"
                           isDisabled={field.state.value.length === 1}
                           onClick={() => form.removeFieldValue("items", index)}
                         >

@@ -20,7 +20,7 @@ const moneyColumn = (
     const currency = row.original.currency;
     if (!amount) return <div className={`text-${align}`}>-</div>;
     let className = `text-${align}`;
-    if (isNegative) className += " text-error";
+    if (isNegative) className += " text-danger";
     return <div className={className}>{formatAmount(amount as number | string, currency)}</div>;
   },
   header,
@@ -39,7 +39,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
           isIconOnly
           size="sm"
           variant="ghost"
-          className="hover:bg-base-200 h-6 w-6 rounded-md p-0"
+          className="hover:bg-default-50 h-6 w-6 rounded-md p-0"
         >
           {row.getIsExpanded() ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </Button>
@@ -115,7 +115,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
       const val = row.original.netDebitAmount;
       if (val && Number(val) > 0) {
         return (
-          <div className="text-error flex items-center justify-end gap-1">
+          <div className="text-danger flex items-center justify-end gap-1">
             <ArrowUpFromLine className="h-3 w-3" />
             {formatAmount(val, row.original.currency)}
           </div>

@@ -42,13 +42,13 @@ function AllergyInventoryView() {
     <section className="surface-recessed space-y-4 rounded-3xl p-6 shadow-inner">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-base-content/60 text-xs tracking-[0.3em] uppercase">
+          <p className="text-default-500 text-xs tracking-[0.3em] uppercase">
             Insumos de alergia
           </p>
-          <h3 className="text-base-content text-xl font-semibold">
+          <h3 className="text-foreground text-xl font-semibold">
             Reactivos y haptenos con proveedores
           </h3>
-          <p className="text-base-content/70 text-xs">
+          <p className="text-default-600 text-xs">
             Agrupados por tipo/categoría. Revisa stock, precio y cuentas disponibles.
           </p>
         </div>
@@ -58,29 +58,29 @@ function AllergyInventoryView() {
       </div>
       {error && <Alert variant="error">{error}</Alert>}
       {loading && data.length === 0 && (
-        <p className="text-base-content/60 text-xs">Cargando datos…</p>
+        <p className="text-default-500 text-xs">Cargando datos…</p>
       )}
       {!loading && data.length === 0 && (
-        <p className="text-base-content/60 text-xs">No hay insumos registrados aún.</p>
+        <p className="text-default-500 text-xs">No hay insumos registrados aún.</p>
       )}
       <div className="space-y-6">
         {[...grouped.values()].map((group) => (
           <div className="space-y-4" key={group.typeName}>
             <div className="flex items-center justify-between">
-              <h4 className="text-base-content text-lg font-semibold">{group.typeName}</h4>
-              <span className="text-base-content/70 text-xs">
+              <h4 className="text-foreground text-lg font-semibold">{group.typeName}</h4>
+              <span className="text-default-600 text-xs">
                 {group.categories.size} categorías
               </span>
             </div>
             <div className="space-y-4">
               {[...group.categories.entries()].map(([categoryName, items]) => (
                 <div
-                  className="border-base-300/60 bg-base-100/80 rounded-2xl border p-4 shadow-sm"
+                  className="border-default-200/60 bg-background/80 rounded-2xl border p-4 shadow-sm"
                   key={categoryName}
                 >
                   <div className="flex items-center justify-between">
-                    <p className="text-base-content text-sm font-semibold">{categoryName}</p>
-                    <span className="text-base-content/60 text-xs">{items.length} insumos</span>
+                    <p className="text-foreground text-sm font-semibold">{categoryName}</p>
+                    <span className="text-default-500 text-xs">{items.length} insumos</span>
                   </div>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     {items.map((item) => (
@@ -99,17 +99,17 @@ function AllergyInventoryView() {
 
 function ItemCard({ item }: { item: AllergyInventoryOverview }) {
   return (
-    <div className="border-base-300 bg-base-100 text-base-content rounded-2xl border p-3 text-sm shadow-inner">
+    <div className="border-default-200 bg-background text-foreground rounded-2xl border p-3 text-sm shadow-inner">
       <div className="flex items-center justify-between">
         <p className="font-semibold">{item.name}</p>
-        <span className="text-base-content/60 text-xs">Stock {item.current_stock}</span>
+        <span className="text-default-500 text-xs">Stock {item.current_stock}</span>
       </div>
-      {item.description && <p className="text-base-content/70 mt-1 text-xs">{item.description}</p>}
+      {item.description && <p className="text-default-600 mt-1 text-xs">{item.description}</p>}
       <div className="mt-3 space-y-2 text-xs">
         {item.providers.length > 0 ? (
           item.providers.map((p) => <ProviderCard key={p.provider_id} provider={p} />)
         ) : (
-          <p className="text-base-content/50 text-xs italic">Sin proveedores asignados</p>
+          <p className="text-default-400 text-xs italic">Sin proveedores asignados</p>
         )}
       </div>
     </div>
@@ -118,23 +118,23 @@ function ItemCard({ item }: { item: AllergyInventoryOverview }) {
 
 function ProviderCard({ provider }: { provider: AllergyInventoryOverview["providers"][number] }) {
   return (
-    <div className="border-base-200 bg-base-200/80 space-y-1 rounded-xl border px-3 py-2">
+    <div className="border-default-100 bg-default-50/80 space-y-1 rounded-xl border px-3 py-2">
       <div className="flex items-center justify-between">
         <span className="font-semibold">{provider.provider_name}</span>
-        <span className="text-base-content/50 text-xs tracking-wide uppercase">
+        <span className="text-default-400 text-xs tracking-wide uppercase">
           {provider.provider_rut}
         </span>
       </div>
-      <p className="text-base-content/70 text-xs">
+      <p className="text-default-600 text-xs">
         Precio: {provider.current_price == null ? "Sin precio" : fmtCLP(provider.current_price)}
       </p>
-      <p className="text-base-content/60 text-[11px]">
+      <p className="text-default-500 text-[11px]">
         Último stock: {provider.last_stock_check ? formatDate(provider.last_stock_check) : "Nunca"}
       </p>
-      <p className="text-base-content/60 text-[11px]">
+      <p className="text-default-500 text-[11px]">
         Último precio: {provider.last_price_check ? formatDate(provider.last_price_check) : "Nunca"}
       </p>
-      <p className="text-base-content/60 text-[11px]">
+      <p className="text-default-500 text-[11px]">
         Cuentas: {provider.accounts.join(", ") || "Sin cuentas"}
       </p>
     </div>

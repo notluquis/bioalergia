@@ -16,7 +16,7 @@ export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
   {
     accessorKey: "id",
     cell: ({ getValue }) => (
-      <span className="text-base-content font-medium">{getValue() as number}</span>
+      <span className="text-foreground font-medium">{getValue() as number}</span>
     ),
     header: "ID",
   },
@@ -81,7 +81,7 @@ export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
       return (
         <Input
           as="select"
-          className="bg-base-100 border-base-300 mt-1 block w-full rounded-md py-2 pr-10 pl-3 text-base focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+          className="bg-background border-default-200 mt-1 block w-full rounded-md py-2 pr-10 pl-3 text-base focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
           onChange={(event: ChangeEvent<HTMLSelectElement>) => {
             meta.onStatusChange(row.original.id, event.target.value as SupplyRequest["status"]);
           }}

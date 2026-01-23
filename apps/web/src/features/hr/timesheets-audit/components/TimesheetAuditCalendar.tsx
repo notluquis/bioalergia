@@ -268,10 +268,10 @@ export default function TimesheetAuditCalendar({
   })();
 
   return (
-    <div className="bg-base-200/30 border-base-200 w-full overflow-hidden rounded-xl border p-6">
+    <div className="bg-default-50/30 border-default-100 w-full overflow-hidden rounded-xl border p-6">
       <div className="timesheet-audit-calendar-wrapper">
         {loading && (
-          <div className="bg-base-100/80 absolute inset-0 z-50 flex items-center justify-center">
+          <div className="bg-background/80 absolute inset-0 z-50 flex items-center justify-center">
             <Spinner size="md" />
           </div>
         )}
@@ -322,13 +322,13 @@ export default function TimesheetAuditCalendar({
       </div>
 
       {/* Legend */}
-      <div className="text-base-content/70 mt-6 flex flex-col gap-3 text-sm">
+      <div className="text-default-600 mt-6 flex flex-col gap-3 text-sm">
         <div className="flex items-center gap-3">
           <div className="bg-accent h-4 w-4 rounded"></div>
           <span>Sin solapamiento</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="bg-error h-4 w-4 rounded"></div>
+          <div className="bg-danger h-4 w-4 rounded"></div>
           <span>Con solapamiento detectado</span>
         </div>
       </div>

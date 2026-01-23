@@ -10,7 +10,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "date",
     cell: ({ row }) => (
-      <span className="text-base-content font-medium whitespace-nowrap">
+      <span className="text-foreground font-medium whitespace-nowrap">
         {dayjs(row.original.date).format("DD MMM YYYY HH:mm")}
       </span>
     ),
@@ -19,7 +19,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "externalReference",
     cell: ({ row }) => (
-      <span className="text-base-content/70 font-mono text-xs">
+      <span className="text-default-600 font-mono text-xs">
         {row.original.externalReference || "-"}
       </span>
     ),
@@ -49,7 +49,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
       const amount = row.original.netDebitAmount;
       if (!amount) return <div className="text-right">-</div>;
       return (
-        <div className="text-error flex items-center justify-end gap-1 font-medium">
+        <div className="text-danger flex items-center justify-end gap-1 font-medium">
           {fmtCLP(String(amount))}
           <ArrowDownLeft className="h-3 w-3" />
         </div>
@@ -74,7 +74,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "balanceAmount",
     cell: ({ row }) => (
-      <div className="text-base-content text-right font-bold">
+      <div className="text-foreground text-right font-bold">
         {row.original.balanceAmount ? fmtCLP(String(row.original.balanceAmount)) : "-"}
       </div>
     ),
@@ -83,7 +83,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "payoutBankAccountNumber",
     cell: ({ row }) => (
-      <span className="text-base-content/70 font-mono text-xs">
+      <span className="text-default-600 font-mono text-xs">
         {row.original.payoutBankAccountNumber || "-"}
       </span>
     ),

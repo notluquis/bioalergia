@@ -32,7 +32,7 @@ export default function GoogleDriveConnectWrapper() {
   return (
     <Suspense
       fallback={
-        <div className="bg-base-200/50 flex items-center justify-center rounded-xl p-8">
+        <div className="bg-default-50/50 flex items-center justify-center rounded-xl p-8">
           <Loader2 className="text-primary size-6 animate-spin" />
         </div>
       }
@@ -124,7 +124,7 @@ function GoogleDriveConnect() {
     if (isConfigured && !status.valid) {
       return "bg-warning/10 text-warning";
     }
-    return "bg-base-content/5 text-base-content/40";
+    return "bg-default-50 text-default-300";
   };
 
   // Helper function to get status message
@@ -147,7 +147,7 @@ function GoogleDriveConnect() {
   };
 
   return (
-    <div className="bg-base-200/50 rounded-xl p-6">
+    <div className="bg-default-50/50 rounded-xl p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className={cn("rounded-xl p-3", getIconClassName())}>
@@ -155,7 +155,7 @@ function GoogleDriveConnect() {
           </div>
           <div>
             <h3 className="font-semibold">Conexión Google Drive</h3>
-            <p className="text-base-content/60 text-sm">{getStatusMessage()}</p>
+            <p className="text-default-500 text-sm">{getStatusMessage()}</p>
           </div>
         </div>
 
@@ -176,7 +176,7 @@ function GoogleDriveConnect() {
                 </Button>
               )}
               <Button
-                className="hover:bg-error/10 hover:text-error hover:border-error gap-2"
+                className="hover:bg-danger/10 hover:text-danger hover:border-danger gap-2"
                 disabled={isEnv || disconnectMutation.isPending}
                 onClick={() => {
                   if (

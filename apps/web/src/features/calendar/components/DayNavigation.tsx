@@ -87,7 +87,7 @@ export function DayNavigation({
                 className={cn(
                   "relative mx-0.5 flex min-w-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 transition-all duration-200",
                   isSelected
-                    ? "bg-primary text-primary-content z-10 scale-105 font-semibold shadow-md"
+                    ? "bg-primary text-primary-foreground z-10 scale-105 font-semibold shadow-md"
                     : "hover:bg-default-100 text-foreground-500",
                   isToday && !isSelected && "bg-default-100 text-foreground font-medium",
                 )}

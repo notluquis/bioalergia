@@ -14,10 +14,10 @@ export const PAGE_CONTAINER_RELAXED = "mx-auto max-w-7xl space-y-6";
 // ===== CARDS =====
 
 /** Standard card: base background, subtle shadow */
-export const CARD = "card bg-base-100 shadow-sm";
+export const CARD = "card bg-background shadow-sm";
 
 /** Compact card variant (tighter padding) */
-export const CARD_COMPACT = "card card-compact bg-base-100 shadow-sm";
+export const CARD_COMPACT = "card card-compact bg-background shadow-sm";
 
 /** Card with explicit body (for flex layouts) */
 export const CARD_BODY = "card-body";
@@ -25,7 +25,7 @@ export const CARD_BODY = "card-body";
 // ===== TYPOGRAPHY =====
 
 /** Large page title (3xl) */
-export const TITLE_XL = "text-3xl font-bold text-base-content";
+export const TITLE_XL = "text-3xl font-bold text-foreground";
 
 /** Standard page title (2xl) */
 export const TITLE_LG = "text-2xl font-bold text-primary";

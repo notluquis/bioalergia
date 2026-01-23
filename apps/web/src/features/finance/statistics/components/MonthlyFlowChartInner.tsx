@@ -45,9 +45,9 @@ export default function MonthlyFlowChartInner({ data }: MonthlyFlowChartInnerPro
     <ResponsiveContainer height={320} width="100%">
       <BarChart data={chartData} margin={{ bottom: 10, left: 10, right: 10, top: 10 }}>
         <CartesianGrid className="stroke-base-300" strokeDasharray="3 3" />
-        <XAxis className="text-base-content/70 text-xs" dataKey="month" tick={{ fontSize: 12 }} />
+        <XAxis className="text-default-600 text-xs" dataKey="month" tick={{ fontSize: 12 }} />
         <YAxis
-          className="text-base-content/70 text-xs"
+          className="text-default-600 text-xs"
           tick={{ fontSize: 12 }}
           tickFormatter={(value) => {
             const num = typeof value === "number" ? value : 0;

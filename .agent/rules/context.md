@@ -39,7 +39,7 @@ trigger: always_on
 - **Data Fetching**: **TanStack Query** (v5) + **ZenStack Hooks** (`@finanzas/db/hooks`).
 - **State Management**: `zustand`.
 - **Forms**: `react-hook-form` + `zod`.
-- **Styling**: **Tailwind CSS** + **DaisyUI**.
+- **Styling**: **Tailwind CSS** + **HeroUI v3 Beta 5**.
 - **Dates**: `dayjs`.
 
 ---
@@ -49,11 +49,11 @@ trigger: always_on
 ### 🎨 Styling & UI
 
 1.  **Semantic Tokens ONLY**:
-    - ✅ Use: `bg-base-100`, `text-base-content`, `text-success`, `bg-error/10`.
-    - ❌ NEVER Use: `bg-white`, `text-gray-900`, hardcoded hex.
-2.  **Contrast**: Use `text-base-content/70` for metadata (not `/40`).
+    - ✅ Use: `bg-background`, `bg-content1`, `text-foreground`, `text-default-500`, `text-success`, `bg-danger/10`.
+    - ❌ NEVER Use: `bg-white`, `text-gray-900`, hardcoded hex, `bg-base-100` (DaisyUI).
+2.  **Contrast**: Use `text-default-500` or `text-foreground/70` for metadata.
 3.  **Layout**: Respect safe areas (Harmonic Layout) using `pt-[env(safe-area-inset-top)]`.
-4.  **Components**: Use `shadcn` / `radix-ui` primitives where installed, otherwise DaisyUI.
+4.  **Components**: Use **HeroUI v3** components for all UI elements. Do NOT use DaisyUI or hardcoded CSS.
 
 ### 🔐 Security & Access Control
 

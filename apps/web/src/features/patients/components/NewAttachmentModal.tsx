@@ -63,7 +63,7 @@ export default function NewAttachmentModal({
     <Modal isOpen={isOpen} onClose={handleClose} title="Cargar Documento">
       <div className="space-y-6">
         <div className="space-y-4">
-          <div className="flex flex-col items-center justify-center border-2 border-dashed border-base-300 rounded-xl p-8 bg-base-200/50 hover:bg-base-200 transition-colors">
+          <div className="flex flex-col items-center justify-center border-2 border-dashed border-default-200 rounded-xl p-8 bg-default-50/50 hover:bg-default-50 transition-colors">
             {file ? (
               <div className="flex items-center gap-3 w-full">
                 <div className="bg-primary/10 p-3 rounded-lg text-primary text-sm font-bold truncate flex-1">
@@ -79,7 +79,7 @@ export default function NewAttachmentModal({
                   <FileUp size={32} />
                 </div>
                 <span className="text-sm font-medium">Haga clic para seleccionar un archivo</span>
-                <span className="text-xs text-base-content/40">PDF, Imágenes, etc.</span>
+                <span className="text-xs text-default-300">PDF, Imágenes, etc.</span>
                 <input
                   type="file"
                   className="hidden"
@@ -124,7 +124,7 @@ export default function NewAttachmentModal({
           </Select>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-base-200">
+        <div className="flex justify-end gap-3 pt-4 border-t border-default-100">
           <Button variant="ghost" onClick={handleClose} isDisabled={mutation.isPending}>
             Cancelar
           </Button>

@@ -99,26 +99,26 @@ export const SERVICE_TEMPLATES: ServiceTemplate[] = [
 
 export default function ServiceTemplateGallery({ onApply }: ServiceTemplateGalleryProps) {
   return (
-    <section className="border-base-300 text-base-content bg-base-100 space-y-4 border p-4 text-sm">
+    <section className="border-default-200 text-foreground bg-background space-y-4 border p-4 text-sm">
       <div className="flex flex-col gap-1">
-        <h2 className="text-base-content/60 text-sm font-semibold tracking-wide uppercase">
+        <h2 className="text-default-500 text-sm font-semibold tracking-wide uppercase">
           Plantillas rápidas
         </h2>
-        <p className="text-base-content/50 text-xs">
+        <p className="text-default-400 text-xs">
           Usa plantillas predefinidas para acelerar la creación de servicios.
         </p>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {SERVICE_TEMPLATES.map((template) => (
           <article
-            className="border-base-300 bg-base-200 hover:border-primary/45 flex h-full flex-col justify-between rounded-2xl border p-4 shadow-sm transition hover:shadow-md"
+            className="border-default-200 bg-default-50 hover:border-primary/45 flex h-full flex-col justify-between rounded-2xl border p-4 shadow-sm transition hover:shadow-md"
             key={template.id}
           >
             <div className="space-y-2">
-              <p className="text-base-content text-sm font-semibold">{template.name}</p>
-              <p className="text-base-content/60 text-xs">{template.description}</p>
+              <p className="text-foreground text-sm font-semibold">{template.name}</p>
+              <p className="text-default-500 text-xs">{template.description}</p>
               {template.category && (
-                <span className="border-base-300 bg-base-200 text-base-content/60 inline-flex items-center rounded-full border px-2 py-1 text-xs font-semibold tracking-wide uppercase">
+                <span className="border-default-200 bg-default-50 text-default-500 inline-flex items-center rounded-full border px-2 py-1 text-xs font-semibold tracking-wide uppercase">
                   {template.category}
                 </span>
               )}

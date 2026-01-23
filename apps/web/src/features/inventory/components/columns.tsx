@@ -15,26 +15,26 @@ export interface InventoryTableMeta {
 export const columns: ColumnDef<InventoryItem>[] = [
   {
     accessorKey: "name",
-    cell: ({ row }) => <span className="text-base-content font-medium">{row.original.name}</span>,
+    cell: ({ row }) => <span className="text-foreground font-medium">{row.original.name}</span>,
     header: "Nombre",
   },
   {
     accessorKey: "category_name",
     cell: ({ row }) => (
-      <span className="text-base-content">{row.original.category_name ?? "Sin categoría"}</span>
+      <span className="text-foreground">{row.original.category_name ?? "Sin categoría"}</span>
     ),
     header: "Categoría",
   },
   {
     accessorKey: "description",
     cell: ({ row }) => (
-      <span className="text-base-content/60">{row.original.description ?? "—"}</span>
+      <span className="text-default-500">{row.original.description ?? "—"}</span>
     ),
     header: "Descripción",
   },
   {
     accessorKey: "current_stock",
-    cell: ({ row }) => <span className="text-base-content">{row.original.current_stock}</span>,
+    cell: ({ row }) => <span className="text-foreground">{row.original.current_stock}</span>,
     header: "Stock actual",
   },
   {

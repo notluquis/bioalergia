@@ -99,7 +99,7 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
           <div className="text-sm font-medium">
             {bankAccountHolder || counterpart || "(desconocido)"}
           </div>
-          <div className="text-base-content/60 mt-0.5 text-xs">{formattedRut || "-"}</div>
+          <div className="text-default-500 mt-0.5 text-xs">{formattedRut || "-"}</div>
         </div>
       );
     },
@@ -156,7 +156,7 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
     cell: ({ row }) => (
       <div className="whitespace-nowrap">
         <div className="text-sm font-medium">{fmtCLP(row.original.outgoingAmount)}</div>
-        <div className="text-base-content/60 text-xs">{row.original.outgoingCount} txs</div>
+        <div className="text-default-500 text-xs">{row.original.outgoingCount} txs</div>
       </div>
     ),
     header: "Monto",

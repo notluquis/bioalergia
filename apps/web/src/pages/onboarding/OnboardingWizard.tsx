@@ -1,3 +1,4 @@
+import { Divider } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -254,13 +255,13 @@ export default function OnboardingWizard() {
   };
 
   return (
-    <div className="bg-base-200 flex min-h-screen items-center justify-center p-4">
-      <div className="bg-base-100 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl shadow-xl">
+    <div className="bg-default-50 flex min-h-screen items-center justify-center p-4">
+      <div className="bg-background flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl shadow-xl">
         {/* Progress Bar */}
         <div className="mb-4 p-4">
           <div className="relative mx-auto flex max-w-4xl items-center justify-between px-4">
             {/* Connecting Line */}
-            <div className="bg-base-300 absolute top-1/2 left-0 z-0 h-0.5 w-full -translate-y-1/2" />
+            <div className="bg-default-100 absolute top-1/2 left-0 z-0 h-0.5 w-full -translate-y-1/2" />
             <div
               className="bg-primary absolute top-1/2 left-0 z-0 h-0.5 -translate-y-1/2 transition-all duration-500"
               style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
@@ -272,8 +273,8 @@ export default function OnboardingWizard() {
                   className={cn(
                     "flex h-8 w-8 items-center justify-center rounded-full border-4 text-xs font-bold transition-all duration-300 sm:h-10 sm:w-10 sm:text-sm",
                     idx <= currentStep
-                      ? "bg-primary text-primary-content border-primary shadow-primary/30 scale-110 shadow-lg"
-                      : "bg-base-100 text-base-content/50 border-base-200",
+                      ? "bg-primary text-primary-foreground border-primary shadow-primary/30 scale-110 shadow-lg"
+                      : "bg-background text-default-400 border-default-100",
                   )}
                 >
                   {idx < currentStep ? <Check size={14} strokeWidth={3} /> : idx + 1}
@@ -281,7 +282,7 @@ export default function OnboardingWizard() {
                 <span
                   className={cn(
                     "absolute top-full mt-2 text-[10px] font-medium tracking-wider whitespace-nowrap uppercase transition-colors",
-                    idx <= currentStep ? "text-primary" : "text-base-content/60",
+                    idx <= currentStep ? "text-primary" : "text-default-500",
                     // Show all labels on sm+ screens, smart hiding on very small screens
                     "hidden sm:block",
                     // Always show current step label even on mobile
@@ -310,10 +311,10 @@ export default function OnboardingWizard() {
                 <Shield size={40} />
               </div>
               <div>
-                <h1 className="text-base-content text-2xl font-bold break-all sm:text-3xl">
+                <h1 className="text-foreground text-2xl font-bold break-all sm:text-3xl">
                   Hola, {user?.email}
                 </h1>
-                <p className="text-base-content/60 mx-auto mt-2 max-w-md">
+                <p className="text-default-500 mx-auto mt-2 max-w-md">
                   Bienvenido a la intranet de Bioalergia. Antes de comenzar, necesitamos completar
                   tu perfil y asegurar tu cuenta.
                 </p>
@@ -339,7 +340,7 @@ export default function OnboardingWizard() {
                   <User size={24} />
                 </div>
                 <h2 className="text-2xl font-bold">Datos personales</h2>
-                <p className="text-base-content/60 text-sm">Información básica para tu perfil.</p>
+                <p className="text-default-500 text-sm">Información básica para tu perfil.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -432,7 +433,7 @@ export default function OnboardingWizard() {
                   <CreditCard size={24} />
                 </div>
                 <h2 className="text-2xl font-bold">Datos bancarios</h2>
-                <p className="text-base-content/60 text-sm">
+                <p className="text-default-500 text-sm">
                   Para gestionar tus pagos y remuneraciones.
                 </p>
               </div>
@@ -499,11 +500,11 @@ export default function OnboardingWizard() {
               onSubmit={handlePasswordSubmit}
             >
               <div className="mb-6 text-center">
-                <div className="bg-accent/10 text-accent mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+                <div className="bg-secondary/10 text-secondary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                   <Key size={24} />
                 </div>
                 <h2 className="text-2xl font-bold">Seguridad</h2>
-                <p className="text-base-content/60 text-sm">Crea una contraseña segura.</p>
+                <p className="text-default-500 text-sm">Crea una contraseña segura.</p>
               </div>
 
               <div className="space-y-4">
@@ -557,7 +558,7 @@ export default function OnboardingWizard() {
                   <Smartphone size={24} />
                 </div>
                 <h2 className="text-2xl font-bold">Configurar MFA</h2>
-                <p className="text-base-content/60 text-sm">
+                <p className="text-default-500 text-sm">
                   Escanea el código con tu app de autenticación (Google Authenticator, Microsoft
                   Authenticator, Apple Passwords, etc).
                 </p>
@@ -610,7 +611,11 @@ export default function OnboardingWizard() {
                         {loading ? <Loader2 className="animate-spin" /> : "Verificar y activar"}
                       </Button>
 
-                      <div className="divider text-base-content/40 text-xs">O usa biometría</div>
+                      <div className="flex w-full items-center gap-2 max-w-xs">
+                        <Divider className="flex-1" />
+                        <span className="text-default-300 text-xs">O usa biometría</span>
+                        <Divider className="flex-1" />
+                      </div>
 
                       <Button
                         className="w-full max-w-xs gap-2"
@@ -623,7 +628,7 @@ export default function OnboardingWizard() {
                       </Button>
 
                       <Button
-                        className="text-base-content/50 hover:text-base-content mt-2"
+                        className="text-default-400 hover:text-foreground mt-2"
                         disabled={loading}
                         onClick={handleNext}
                         size="sm"
@@ -636,7 +641,7 @@ export default function OnboardingWizard() {
                 }
 
                 return (
-                  <div className="text-error text-center">No se pudo cargar el código QR.</div>
+                  <div className="text-danger text-center">No se pudo cargar el código QR.</div>
                 );
               })()}
             </div>
@@ -648,8 +653,8 @@ export default function OnboardingWizard() {
                 <Check size={48} strokeWidth={3} />
               </div>
               <div>
-                <h1 className="text-base-content text-3xl font-bold">¡Todo listo!</h1>
-                <p className="text-base-content/60 mt-2">
+                <h1 className="text-foreground text-3xl font-bold">¡Todo listo!</h1>
+                <p className="text-default-500 mt-2">
                   Tu perfil ha sido completado y tu cuenta está segura.
                 </p>
               </div>

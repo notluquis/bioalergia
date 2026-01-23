@@ -25,7 +25,7 @@ export default function TimesheetSummaryTable({
   })();
 
   return (
-    <div className="border-primary/15 bg-base-100 overflow-hidden rounded-2xl border shadow-sm">
+    <div className="border-primary/15 bg-background overflow-hidden rounded-2xl border shadow-sm">
       <DataTable
         columns={columns}
         data={summary?.employees ?? []}

@@ -23,7 +23,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
         <Tooltip
           classNames={{
             content:
-              "bg-base-300 border-base-200 text-base-content z-100 px-3 py-1.5 text-xs font-bold shadow-xl",
+              "bg-default-100 border-default-100 text-foreground z-100 px-3 py-1.5 text-xs font-bold shadow-xl",
           }}
           content={!isMobile ? item.label : null}
           delay={0}
@@ -37,7 +37,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
               isMobile ? "w-full justify-start px-4 py-3" : "mx-auto h-12 w-12 justify-center p-0",
               isActive
                 ? "bg-primary/10 text-primary font-semibold"
-                : "text-base-content/60 hover:text-base-content hover:bg-base-content/5",
+                : "text-default-500 hover:text-foreground hover:bg-default-50",
             )}
           >
             {/* Active Indicator */}

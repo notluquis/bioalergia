@@ -208,14 +208,14 @@ export default function TimesheetAuditPage() {
   return (
     <section className="space-y-6">
       {/* Step 1: Period Selection */}
-      <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
+      <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
           <Chip color="accent" size="lg" variant="primary">
             1
           </Chip>
-          <h2 className="text-base-content text-lg font-semibold">Selecciona el periodo</h2>
+          <h2 className="text-foreground text-lg font-semibold">Selecciona el periodo</h2>
           {rangeSummary && (
-            <span className="text-base-content/60 ml-auto text-sm">({rangeSummary})</span>
+            <span className="text-default-500 ml-auto text-sm">({rangeSummary})</span>
           )}
         </div>
 
@@ -237,7 +237,7 @@ export default function TimesheetAuditPage() {
 
         {/* Custom Week Picker (collapsible) */}
         {quickRange === "custom" && (
-          <div className="bg-base-200/50 mt-4 rounded-xl">
+          <div className="bg-default-50/50 mt-4 rounded-xl">
             <button
               className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left font-medium select-none"
               onClick={() => {
@@ -307,7 +307,7 @@ export default function TimesheetAuditPage() {
                         className={`rounded-lg border p-3 text-left transition-all ${
                           isActive
                             ? "border-primary bg-primary/10 text-primary"
-                            : "border-base-300 bg-base-100 text-base-content hover:border-primary/50"
+                            : "border-default-200 bg-background text-foreground hover:border-primary/50"
                         }`}
                         key={week.key}
                         onClick={() => {
@@ -331,13 +331,13 @@ export default function TimesheetAuditPage() {
       </div>
 
       {/* Step 2: Employee Selection */}
-      <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
+      <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
           <Chip color="accent" size="lg" variant="primary">
             2
           </Chip>
-          <h2 className="text-base-content text-lg font-semibold">Selecciona empleados</h2>
-          <span className="text-base-content/60 ml-auto text-sm">
+          <h2 className="text-foreground text-lg font-semibold">Selecciona empleados</h2>
+          <span className="text-default-500 ml-auto text-sm">
             {selectedEmployeeIds.length}/{MAX_EMPLOYEES}
           </span>
         </div>
@@ -407,11 +407,11 @@ export default function TimesheetAuditPage() {
                   }}
                 />
                 {/* Dropdown Content */}
-                <div className="border-base-300 bg-base-100 absolute top-full right-0 left-0 z-50 mt-2 rounded-xl border shadow-xl">
+                <div className="border-default-200 bg-background absolute top-full right-0 left-0 z-50 mt-2 rounded-xl border shadow-xl">
                   {/* Search */}
-                  <div className="border-base-300 border-b p-3">
+                  <div className="border-default-200 border-b p-3">
                     <label className={INPUT_SEARCH_SM}>
-                      <Search className="text-base-content/50 h-4 w-4" />
+                      <Search className="text-default-400 h-4 w-4" />
                       <input
                         className="grow bg-transparent outline-none"
                         onChange={(e) => {
@@ -429,7 +429,7 @@ export default function TimesheetAuditPage() {
                     {(() => {
                       if (filteredEmployees.length === 0) {
                         return (
-                          <li className="text-base-content/50 p-4 text-center text-sm">
+                          <li className="text-default-400 p-4 text-center text-sm">
                             No se encontraron empleados
                           </li>
                         );
@@ -442,7 +442,7 @@ export default function TimesheetAuditPage() {
                               <li key={emp.id}>
                                 <button
                                   className={`flex w-full items-center justify-between rounded-lg p-2 transition-all ${
-                                    isSelected ? "bg-primary/20 text-primary" : "hover:bg-base-200"
+                                    isSelected ? "bg-primary/20 text-primary" : "hover:bg-default-50"
                                   }`}
                                   onClick={() => {
                                     handleEmployeeToggle(emp.id);
@@ -478,7 +478,7 @@ export default function TimesheetAuditPage() {
         )}
 
         {isMaxEmployees && (
-          <p className="text-base-content/60 mt-2 text-sm">
+          <p className="text-default-500 mt-2 text-sm">
             Máximo {MAX_EMPLOYEES} empleados simultáneos
           </p>
         )}
@@ -486,36 +486,36 @@ export default function TimesheetAuditPage() {
 
       {/* Step 3: Results */}
       {canShowCalendar && (
-        <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
+        <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
           <div className="mb-6 flex items-center gap-3">
             <Chip color="accent" size="lg" variant="primary">
               3
             </Chip>
-            <h2 className="text-base-content text-lg font-semibold">Resultados del análisis</h2>
+            <h2 className="text-foreground text-lg font-semibold">Resultados del análisis</h2>
           </div>
 
           {/* Stats Grid */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="border-base-300 bg-base-100 rounded-xl border p-4">
-              <div className="text-base-content/70 text-sm">Periodos</div>
+            <div className="border-default-200 bg-background rounded-xl border p-4">
+              <div className="text-default-600 text-sm">Periodos</div>
               <div className="text-primary mt-2 text-2xl font-bold">{effectiveRanges.length}</div>
             </div>
-            <div className="border-base-300 bg-base-100 rounded-xl border p-4">
-              <div className="text-base-content/70 text-sm">Registros</div>
-              <div className="text-base-content mt-2 text-2xl font-bold">{entries.length}</div>
+            <div className="border-default-200 bg-background rounded-xl border p-4">
+              <div className="text-default-600 text-sm">Registros</div>
+              <div className="text-foreground mt-2 text-2xl font-bold">{entries.length}</div>
             </div>
-            <div className="border-base-300 bg-base-100 rounded-xl border p-4">
-              <div className="text-base-content/70 text-sm">Días con alertas</div>
+            <div className="border-default-200 bg-background rounded-xl border p-4">
+              <div className="text-default-600 text-sm">Días con alertas</div>
               <div
                 className={`mt-2 text-2xl font-bold ${totalOverlapDays > 0 ? "text-warning" : "text-success"}`}
               >
                 {totalOverlapDays}
               </div>
             </div>
-            <div className="border-base-300 bg-base-100 rounded-xl border p-4">
-              <div className="text-base-content/70 text-sm">Conflictos</div>
+            <div className="border-default-200 bg-background rounded-xl border p-4">
+              <div className="text-default-600 text-sm">Conflictos</div>
               <div
-                className={`mt-2 text-2xl font-bold ${totalOverlapPairs > 0 ? "text-error" : "text-success"}`}
+                className={`mt-2 text-2xl font-bold ${totalOverlapPairs > 0 ? "text-danger" : "text-success"}`}
               >
                 {totalOverlapPairs}
               </div>
@@ -528,11 +528,11 @@ export default function TimesheetAuditPage() {
       {(() => {
         if (selectedEmployeeIds.length === 0) {
           return (
-            <div className="card bg-base-100 shadow-sm">
+            <div className="card bg-background shadow-sm">
               <div className="card-body items-center py-16 text-center">
-                <Users className="text-base-content/30 mb-4 h-12 w-12" />
-                <h3 className="text-base-content/70 text-lg font-semibold">Selecciona empleados</h3>
-                <p className="text-base-content/50 max-w-md text-sm">
+                <Users className="text-default-200 mb-4 h-12 w-12" />
+                <h3 className="text-default-600 text-lg font-semibold">Selecciona empleados</h3>
+                <p className="text-default-400 max-w-md text-sm">
                   Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar
                   solapamientos
                 </p>
@@ -552,8 +552,8 @@ export default function TimesheetAuditPage() {
 
       {/* Calendar */}
       {canShowCalendar && (
-        <div className="border-base-300 bg-base-100 rounded-2xl border p-6 shadow-sm">
-          <h2 className="text-base-content mb-6 text-lg font-semibold">Calendario de auditoría</h2>
+        <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
+          <h2 className="text-foreground mb-6 text-lg font-semibold">Calendario de auditoría</h2>
           <Suspense
             fallback={
               <div className="flex h-64 items-center justify-center">
@@ -574,7 +574,7 @@ export default function TimesheetAuditPage() {
 
       {/* Legend (collapsible) */}
       {canShowCalendar && entries.length > 0 && (
-        <div className="border-base-300 bg-base-100 rounded-2xl border shadow-sm">
+        <div className="border-default-200 bg-background rounded-2xl border shadow-sm">
           <button
             className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left font-medium select-none"
             onClick={() => {
@@ -597,15 +597,15 @@ export default function TimesheetAuditPage() {
                 <div className="flex items-start gap-3">
                   <div className="bg-accent mt-1 h-4 w-4 shrink-0 rounded" />
                   <div>
-                    <p className="text-base-content font-semibold">Sin conflicto</p>
-                    <p className="text-base-content/70 text-sm">Turnos sin solapamiento</p>
+                    <p className="text-foreground font-semibold">Sin conflicto</p>
+                    <p className="text-default-600 text-sm">Turnos sin solapamiento</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="bg-error mt-1 h-4 w-4 shrink-0 rounded" />
+                  <div className="bg-danger mt-1 h-4 w-4 shrink-0 rounded" />
                   <div>
-                    <p className="text-base-content font-semibold">Conflicto detectado</p>
-                    <p className="text-base-content/70 text-sm">
+                    <p className="text-foreground font-semibold">Conflicto detectado</p>
+                    <p className="text-default-600 text-sm">
                       Horarios traslapados entre empleados
                     </p>
                   </div>
@@ -613,8 +613,8 @@ export default function TimesheetAuditPage() {
                 <div className="flex items-start gap-3">
                   <span className="text-lg">👩‍⚕️</span>
                   <div>
-                    <p className="text-base-content font-semibold">Compatibles</p>
-                    <p className="text-base-content/70 text-sm">
+                    <p className="text-foreground font-semibold">Compatibles</p>
+                    <p className="text-default-600 text-sm">
                       Enfermero + TENS pueden coexistir
                     </p>
                   </div>
@@ -622,8 +622,8 @@ export default function TimesheetAuditPage() {
                 <div className="flex items-start gap-3">
                   <span className="text-lg">⌛</span>
                   <div>
-                    <p className="text-base-content font-semibold">Tooltip</p>
-                    <p className="text-base-content/70 text-sm">
+                    <p className="text-foreground font-semibold">Tooltip</p>
+                    <p className="text-default-600 text-sm">
                       Pasa el cursor para ver detalles del conflicto
                     </p>
                   </div>

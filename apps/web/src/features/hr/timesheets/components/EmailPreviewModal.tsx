@@ -71,9 +71,9 @@ export default function EmailPreviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-base-100 w-full max-w-2xl rounded-2xl shadow-2xl">
+      <div className="bg-background w-full max-w-2xl rounded-2xl shadow-2xl">
         {/* Header */}
-        <div className="from-primary to-primary/80 text-primary-content rounded-t-2xl bg-linear-to-r px-6 py-5">
+        <div className="from-primary to-primary/80 text-primary-foreground rounded-t-2xl bg-linear-to-r px-6 py-5">
           <h2 className="text-xl font-bold">Vista previa del correo</h2>
           <p className="mt-1 text-sm opacity-90">
             Servicios de {summary.role} - {monthLabelEs}
@@ -83,29 +83,29 @@ export default function EmailPreviewModal({
         {/* Content */}
         <div className="max-h-[60vh] overflow-y-auto p-6">
           {/* Destinatario */}
-          <div className="bg-base-200/50 mb-4 rounded-xl p-4">
-            <p className="text-base-content/70 text-sm">
+          <div className="bg-default-50/50 mb-4 rounded-xl p-4">
+            <p className="text-default-600 text-sm">
               <strong>Para:</strong>{" "}
               {employeeEmail ? (
-                <span className="text-base-content font-medium">{employeeEmail}</span>
+                <span className="text-foreground font-medium">{employeeEmail}</span>
               ) : (
-                <span className="text-error">⚠️ Sin email registrado</span>
+                <span className="text-danger">⚠️ Sin email registrado</span>
               )}
             </p>
-            <p className="text-base-content/70 mt-1 text-sm">
+            <p className="text-default-600 mt-1 text-sm">
               <strong>Asunto:</strong>{" "}
-              <span className="text-base-content font-medium">
+              <span className="text-foreground font-medium">
                 Boleta de Honorarios - {monthLabelEs} - {employee.full_name}
               </span>
             </p>
           </div>
 
           {/* Preview del email - simula cómo se verá en el cliente de correo */}
-          <div className="border-base-300 bg-base-100 rounded-xl border p-5">
-            <p className="text-base-content mb-4">
+          <div className="border-default-200 bg-background rounded-xl border p-5">
+            <p className="text-foreground mb-4">
               Estimado/a <strong>{employee.full_name}</strong>,
             </p>
-            <p className="text-base-content mb-4 text-sm">
+            <p className="text-foreground mb-4 text-sm">
               A continuación encontrarás el resumen de los servicios prestados durante el periodo{" "}
               <strong>{monthLabelEs}</strong>, favor corroborar y emitir boleta de honorarios.
             </p>
@@ -131,27 +131,27 @@ export default function EmailPreviewModal({
 
             {/* Tabla resumen (Grid Layout) */}
             <div className="mb-4 w-full text-sm">
-              <div className="bg-base-200 grid grid-cols-[1fr_auto] gap-x-3 px-3 py-2 text-xs font-semibold uppercase">
-                <div className="text-base-content/70">Concepto</div>
-                <div className="text-base-content/70 text-right">Detalle</div>
+              <div className="bg-default-50 grid grid-cols-[1fr_auto] gap-x-3 px-3 py-2 text-xs font-semibold uppercase">
+                <div className="text-default-600">Concepto</div>
+                <div className="text-default-600 text-right">Detalle</div>
               </div>
 
-              <div className="divide-base-300 border-base-300 divide-y border-x border-b">
+              <div className="divide-base-300 border-default-200 divide-y border-x border-b">
                 <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-3">
-                  <div className="text-base-content">Horas totales</div>
-                  <div className="text-base-content text-right font-mono">
+                  <div className="text-foreground">Horas totales</div>
+                  <div className="text-foreground text-right font-mono">
                     {totalHoursFormatted}
                   </div>
                 </div>
                 <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-3">
-                  <div className="text-base-content">Monto Bruto</div>
-                  <div className="text-base-content text-right font-mono">
+                  <div className="text-foreground">Monto Bruto</div>
+                  <div className="text-foreground text-right font-mono">
                     {fmtCLP(summary.subtotal)}
                   </div>
                 </div>
                 <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-3">
-                  <div className="text-base-content">Retención ({retentionPercent})</div>
-                  <div className="text-base-content text-right font-mono">
+                  <div className="text-foreground">Retención ({retentionPercent})</div>
+                  <div className="text-foreground text-right font-mono">
                     -{fmtCLP(summary.retention)}
                   </div>
                 </div>
@@ -180,8 +180,8 @@ export default function EmailPreviewModal({
         </div>
 
         {/* Footer */}
-        <div className="border-base-300 flex items-center justify-between border-t px-6 py-4">
-          <p className="text-base-content/50 text-xs">
+        <div className="border-default-200 flex items-center justify-between border-t px-6 py-4">
+          <p className="text-default-400 text-xs">
             {prepareStatus === "generating-pdf" && "Generando documento PDF..."}
             {prepareStatus === "preparing" && "Preparando archivo de email..."}
             {prepareStatus === "done" &&

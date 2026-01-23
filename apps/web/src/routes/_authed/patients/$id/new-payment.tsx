@@ -99,8 +99,8 @@ function NewPaymentPage() {
           Volver
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-base-content">Registrar Pago de Paciente</h1>
-          <p className="text-base-content/60 text-sm">
+          <h1 className="text-2xl font-bold text-foreground">Registrar Pago de Paciente</h1>
+          <p className="text-default-500 text-sm">
             Registro de ingresos financieros por servicios
           </p>
         </div>
@@ -207,9 +207,9 @@ function NewPaymentPage() {
               <form.Field name="notes">
                 {(field) => (
                   <label className="space-y-1 block">
-                    <span className="text-sm font-medium text-base-content/70">Observaciones</span>
+                    <span className="text-sm font-medium text-default-600">Observaciones</span>
                     <textarea
-                      className="w-full rounded-lg border border-base-300 bg-base-100 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                      className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                       rows={2}
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -221,7 +221,7 @@ function NewPaymentPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-base-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-default-100">
             <Button
               type="button"
               variant="ghost"

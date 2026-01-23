@@ -25,9 +25,9 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
   return (
     <div className="space-y-4">
       {/* Ingresos por método */}
-      <section className="bg-base-200/30 border-base-content/5 rounded-2xl border p-4">
+      <section className="bg-default-50/30 border-default-100 rounded-2xl border p-4">
         <div className="mb-4 flex items-center gap-2">
-          <CreditCard className="text-base-content/60 size-5" />
+          <CreditCard className="text-default-500 size-5" />
           <h3 className="text-base font-semibold">Ingresos por método</h3>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
@@ -62,9 +62,9 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
       </section>
 
       {/* Gastos */}
-      <section className="bg-base-200/30 border-base-content/5 rounded-2xl border p-4">
+      <section className="bg-default-50/30 border-default-100 rounded-2xl border p-4">
         <div className="mb-4 flex items-center gap-2">
-          <Receipt className="text-base-content/60 size-5" />
+          <Receipt className="text-default-500 size-5" />
           <h3 className="text-base font-semibold">Gastos</h3>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -96,7 +96,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
       </section>
 
       {/* Ingresos por servicio (desglose) */}
-      <section className="bg-base-200/30 border-base-content/5 mt-4 rounded-2xl border p-4">
+      <section className="bg-default-50/30 border-default-100 mt-4 rounded-2xl border p-4">
         <h3 className="mb-4 text-base font-semibold">Desglose por servicio</h3>
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <MoneyInput

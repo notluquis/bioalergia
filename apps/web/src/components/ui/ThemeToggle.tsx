@@ -61,17 +61,17 @@ export default function ThemeToggle() {
       aria-label={label}
       isIconOnly
       variant="ghost"
-      className={`rounded-full border-base-300/70 bg-base-100/80 text-base-content border shadow-sm transition-all duration-300 ${
+      className={`rounded-full border-default-200/70 bg-background/80 text-foreground border shadow-sm transition-all duration-300 ${
         isDark
-          ? "hover:bg-base-200/40 hover:border-primary/60"
-          : "hover:bg-base-200/70 hover:border-primary/60"
+          ? "hover:bg-default-50/40 hover:border-primary/60"
+          : "hover:bg-default-50/70 hover:border-primary/60"
       }`}
       onPress={toggleTheme}
     >
       <span
         className={`flex h-6 w-6 items-center justify-center rounded-full transition-all duration-300 ${
           isDark
-            ? "from-base-200 via-primary/40 to-primary text-primary-content shadow-primary/20 bg-linear-to-br shadow-inner"
+            ? "from-base-200 via-primary/40 to-primary text-primary-foreground shadow-primary/20 bg-linear-to-br shadow-inner"
             : "from-base-100 via-primary/10 to-primary/70 text-primary shadow-primary/10 bg-linear-to-br shadow-inner"
         }`}
       >

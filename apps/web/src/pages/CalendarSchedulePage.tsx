@@ -98,17 +98,17 @@ function CalendarSchedulePage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Left: Week Navigation */}
           <div className="flex items-center gap-2">
-            <div className="bg-base-200 flex items-center gap-0.5 rounded-lg p-1">
+            <div className="bg-default-50 flex items-center gap-0.5 rounded-lg p-1">
               <button
                 aria-label="Semana anterior"
-                className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+                className="hover:bg-background text-default-600 hover:text-primary rounded-md p-1.5 transition-colors"
                 onClick={goToPreviousWeek}
                 type="button"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
-                className="hover:bg-base-100 rounded-md px-2 py-1 text-xs font-medium uppercase transition-colors"
+                className="hover:bg-background rounded-md px-2 py-1 text-xs font-medium uppercase transition-colors"
                 onClick={goToThisWeek}
                 type="button"
               >
@@ -116,14 +116,14 @@ function CalendarSchedulePage() {
               </button>
               <button
                 aria-label="Semana siguiente"
-                className="hover:bg-base-100 text-base-content/70 hover:text-primary rounded-md p-1.5 transition-colors"
+                className="hover:bg-background text-default-600 hover:text-primary rounded-md p-1.5 transition-colors"
                 onClick={goToNextWeek}
                 type="button"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-            <span className="text-base-content/70 hidden text-sm font-medium sm:inline">
+            <span className="text-default-600 hidden text-sm font-medium sm:inline">
               {rangeLabel}
             </span>
           </div>
@@ -131,7 +131,7 @@ function CalendarSchedulePage() {
           {/* Right: Event count + Filter toggle */}
           <div className="flex items-center gap-2">
             {summary && (
-              <span className="text-base-content/50 text-xs">
+              <span className="text-default-400 text-xs">
                 {numberFormatter.format(allEvents.length)} eventos
               </span>
             )}

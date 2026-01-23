@@ -131,10 +131,10 @@ function RoutesAuditPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Errors</CardTitle>
-            <AlertCircle className="text-error size-4" />
+            <AlertCircle className="text-danger size-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-error text-2xl font-bold">{stats.error}</div>
+            <div className="text-danger text-2xl font-bold">{stats.error}</div>
             <p className="text-muted-foreground text-xs">Missing required data</p>
           </CardContent>
         </Card>
@@ -175,7 +175,7 @@ function RoutesAuditPage() {
             </Badge>
             <Badge
               variant={filter === "error" ? "destructive" : "outline"}
-              className="hover:bg-error cursor-pointer"
+              className="hover:bg-danger cursor-pointer"
               onClick={() => setFilter("error")}
             >
               Errors
@@ -184,7 +184,7 @@ function RoutesAuditPage() {
         </div>
 
         <div className="rounded-md border">
-          <div className="bg-base-200 grid grid-cols-12 gap-4 px-4 py-3 text-sm font-medium">
+          <div className="bg-default-50 grid grid-cols-12 gap-4 px-4 py-3 text-sm font-medium">
             <div className="col-span-8">Route Path</div>
             <div className="col-span-2">Status</div>
             <div className="col-span-2">Notes</div>
@@ -193,7 +193,7 @@ function RoutesAuditPage() {
             {filteredRoutes.map((route) => (
               <div
                 key={route.path}
-                className="hover:bg-base-100 grid grid-cols-12 items-center gap-4 px-4 py-3 text-sm transition-colors"
+                className="hover:bg-background grid grid-cols-12 items-center gap-4 px-4 py-3 text-sm transition-colors"
               >
                 <div className="col-span-8 font-mono">{route.path}</div>
                 <div className="col-span-2">

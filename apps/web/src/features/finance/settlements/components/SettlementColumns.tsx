@@ -23,7 +23,7 @@ const moneyColumn = (
     let className = `text-${align}`;
     if (accessorKey === "settlementNetAmount" && Number(amount) > 0)
       className += " text-success font-medium";
-    if (isNegative) className += " text-error";
+    if (isNegative) className += " text-danger";
 
     return <div className={className}>{formatAmount(amount as number | string, currency)}</div>;
   },
@@ -58,7 +58,7 @@ export const columns: ColumnDef<SettlementTransaction, any>[] = [
           isIconOnly
           size="sm"
           variant="ghost"
-          className="hover:bg-base-200 h-6 w-6 rounded-md p-0"
+          className="hover:bg-default-50 h-6 w-6 rounded-md p-0"
         >
           {row.getIsExpanded() ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </Button>

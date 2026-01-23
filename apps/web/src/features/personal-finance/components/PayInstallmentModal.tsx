@@ -98,7 +98,7 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
                   value={field.state.value}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                  <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
                 )}
               </div>
             )}
@@ -118,7 +118,7 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
                   value={field.state.value ? field.state.value.toISOString().split("T")[0] : ""}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-error mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                  <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
                 )}
               </div>
             )}
