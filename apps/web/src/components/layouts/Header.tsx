@@ -1,5 +1,6 @@
-import { useLocation, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ChevronRight, Loader2, LogOut } from "lucide-react";
+import { Breadcrumbs, BreadcrumbsItem } from "@heroui/react";
+import { Link, useMatches, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Loader2, LogOut } from "lucide-react";
 import React from "react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -9,65 +10,58 @@ import Button from "../ui/Button";
 import ThemeToggle from "../ui/ThemeToggle";
 
 export default function Header() {
-  const location = useLocation();
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const matches = useMatches();
 
   const isNavigating = routerStatus === "pending";
 
-  const { breadcrumbs, title } = React.useMemo(() => {
-    const path = location.pathname;
+  const { crumbs, pageTitle } = React.useMemo(() => {
+    const activeMatches = matches.filter(
+      (match) => match.staticData?.breadcrumb || match.staticData?.title,
+    );
 
-    // Extract title from path
-    const parts = path.split("/").filter(Boolean);
+    const crumbsList = activeMatches
+      .map((match) => {
+        const { breadcrumb, title } = match.staticData;
+        let label = "";
+
+        if (typeof breadcrumb === "function") {
+          label = breadcrumb(match.loaderData);
+        } else if (typeof breadcrumb === "string") {
+          label = breadcrumb;
+        } else {
+          label = title || "";
+        }
+
+        return {
+          label,
+          to: match.pathname,
+        };
+      })
+      .filter((item) => item.label);
+
+    const lastMatch = activeMatches[activeMatches.length - 1];
     let titleText = "Inicio";
-    const crumbs: string[] = [];
 
-    switch (parts[0]) {
-      case "calendar": {
-        crumbs.push("Calendario");
-        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Calendario";
-
-        break;
+    if (lastMatch) {
+      if (lastMatch.staticData?.title) {
+        titleText = lastMatch.staticData.title;
+      } else {
+        const { breadcrumb } = lastMatch.staticData || {};
+        if (typeof breadcrumb === "function") {
+          titleText = breadcrumb(lastMatch.loaderData);
+        } else if (typeof breadcrumb === "string") {
+          titleText = breadcrumb;
+        }
       }
-      case "finanzas": {
-        crumbs.push("Finanzas");
-        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "Finanzas";
-
-        break;
-      }
-      case "hr": {
-        crumbs.push("RRHH");
-        titleText = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1) : "RRHH";
-
-        break;
-      }
-      case "operations": {
-        crumbs.push("Operaciones");
-        titleText = "Operaciones";
-
-        break;
-      }
-      case "services": {
-        crumbs.push("Servicios");
-        titleText = "Servicios";
-
-        break;
-      }
-      case "settings": {
-        crumbs.push("Configuración");
-        titleText = parts[1]
-          ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1)
-          : "Configuración";
-
-        break;
-      }
-      // No default
+    } else if (crumbsList.length > 0) {
+      titleText = crumbsList[crumbsList.length - 1].label;
     }
 
-    return { breadcrumbs: crumbs, title: titleText };
-  }, [location.pathname]);
+    return { crumbs: crumbsList, pageTitle: titleText };
+  }, [matches]);
 
   const handleLogout = async () => {
     await logout();
@@ -77,19 +71,32 @@ export default function Header() {
   return (
     <header className="scroll-header-animation sticky top-0 z-30 flex items-center justify-between rounded-3xl px-6 py-1 transition-all duration-300">
       <div className="flex flex-col gap-0.5">
-        {breadcrumbs.length > 0 && (
-          <div className="text-base-content/60 flex items-center gap-1 text-xs">
-            {breadcrumbs.map((crumb, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: simple breadcrumb list
-              <React.Fragment key={i}>
-                <span>{crumb}</span>
-                <ChevronRight className="h-3 w-3" />
-              </React.Fragment>
-            ))}
-          </div>
+        {crumbs.length > 0 && (
+          <Breadcrumbs
+            className="text-base-content/60"
+            itemClasses={{
+              item: "text-base-content/60 data-[current=true]:text-base-content font-normal",
+              separator: "text-base-content/40",
+            }}
+          >
+            {crumbs.map((crumb, i) => {
+              const isCurrent = i === crumbs.length - 1;
+              return (
+                <BreadcrumbsItem key={crumb.to} isCurrent={isCurrent}>
+                  {isCurrent ? (
+                    crumb.label
+                  ) : (
+                    <Link to={crumb.to} className="hover:text-base-content transition-colors">
+                      {crumb.label}
+                    </Link>
+                  )}
+                </BreadcrumbsItem>
+              );
+            })}
+          </Breadcrumbs>
         )}
         <div className="flex items-center gap-3">
-          <h1 className="text-base-content text-2xl font-bold tracking-tight">{title}</h1>
+          <h1 className="text-base-content text-2xl font-bold tracking-tight">{pageTitle}</h1>
           {isNavigating && (
             <span className="text-primary flex items-center gap-1 text-xs font-semibold">
               <Loader2 className="h-3 w-3 animate-spin" />
