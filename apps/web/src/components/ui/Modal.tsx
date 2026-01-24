@@ -33,7 +33,7 @@ export default function Modal({ boxClassName, children, isOpen, onClose, title }
               )}
             >
               <ModalHeader className="text-primary text-xl font-bold mb-4">{title}</ModalHeader>
-              <ModalBody className="max-h-[80vh] overflow-y-auto mt-2 text-foreground">
+              <ModalBody className="max-h-[80vh] max-h-[80dvh] overflow-y-auto overscroll-contain mt-2 text-foreground">
                 {children}
               </ModalBody>
             </ModalDialog>

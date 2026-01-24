@@ -30,7 +30,7 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-6 left-1/2 z-50 w-[min(100%-2rem,400px)] -translate-x-1/2 md:hidden">
+    <nav className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] left-1/2 z-50 w-[min(100%-2rem,400px)] -translate-x-1/2 md:hidden">
       <div className="bg-background/80 border-default-100 flex items-center justify-between gap-1 rounded-4xl border p-2 shadow-2xl backdrop-blur-xl">
         {NAV_ITEMS.map(({ icon: Icon, label, path }) => {
           const active = isActive(path);
