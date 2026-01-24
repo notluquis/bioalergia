@@ -46,8 +46,13 @@ mercadopagoRoutes.get("/reports", async (c) => {
   if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   try {
+    const limit = Number(c.req.query("limit") ?? "50");
+    const offset = Number(c.req.query("offset") ?? "0");
     const data = await MercadoPagoService.listReports("release");
-    return reply(c, data);
+    const safeLimit = Number.isNaN(limit) ? 50 : Math.min(limit, 200);
+    const safeOffset = Number.isNaN(offset) ? 0 : Math.max(offset, 0);
+    const sliced = data.slice(safeOffset, safeOffset + safeLimit);
+    return reply(c, { status: "ok", reports: sliced, total: data.length });
   } catch (e) {
     return reply(c, { status: "error", message: String(e) }, 500);
   }
@@ -115,8 +120,13 @@ mercadopagoRoutes.get("/settlement/reports", async (c) => {
   if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   try {
+    const limit = Number(c.req.query("limit") ?? "50");
+    const offset = Number(c.req.query("offset") ?? "0");
     const data = await MercadoPagoService.listReports("settlement");
-    return reply(c, data);
+    const safeLimit = Number.isNaN(limit) ? 50 : Math.min(limit, 200);
+    const safeOffset = Number.isNaN(offset) ? 0 : Math.max(offset, 0);
+    const sliced = data.slice(safeOffset, safeOffset + safeLimit);
+    return reply(c, { status: "ok", reports: sliced, total: data.length });
   } catch (e) {
     return reply(c, { status: "error", message: String(e) }, 500);
   }
@@ -324,8 +334,11 @@ mercadopagoRoutes.get("/sync/logs", async (c) => {
   if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const limit = Number(c.req.query("limit") ?? "50");
-  const logs = await listMpSyncLogs(Number.isNaN(limit) ? 50 : limit);
-  return reply(c, { status: "ok", logs });
+  const offset = Number(c.req.query("offset") ?? "0");
+  const safeLimit = Number.isNaN(limit) ? 50 : Math.min(limit, 200);
+  const safeOffset = Number.isNaN(offset) ? 0 : Math.max(offset, 0);
+  const { logs, total } = await listMpSyncLogs({ limit: safeLimit, offset: safeOffset });
+  return reply(c, { status: "ok", logs, total });
 });
 
 async function retryAcquireSchedulerLock(maxRetries: number) {

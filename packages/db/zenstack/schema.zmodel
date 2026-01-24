@@ -760,6 +760,8 @@ model SyncLog {
   @@deny('all', auth() == null)
   @@allow('read', auth() != null)
 
+  @@index([triggerSource])
+  @@index([startedAt])
   @@map("sync_logs")
 }
 
