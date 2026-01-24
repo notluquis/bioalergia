@@ -21,6 +21,7 @@ export const transactionsQuerySchema = z.object({
   transactionType: z.string().optional(),
   status: z.string().optional(),
   includeAmounts: z.enum(["true", "false"]).optional(),
+  includeTotal: z.enum(["true", "false"]).optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(500).optional(),
   search: z.string().optional(),

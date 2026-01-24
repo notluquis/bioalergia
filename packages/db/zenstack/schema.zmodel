@@ -370,6 +370,10 @@ model Transaction {
   @@unique([sourceId, transactionType], map: "unique_mp_tx")
   @@index([person_id])
   @@index([transactionDate])
+  @@index([status])
+  @@index([transactionType])
+  @@index([externalReference])
+  @@index([sourceId])
   @@map("transactions")
 }
 

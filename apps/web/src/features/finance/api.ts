@@ -21,6 +21,7 @@ export interface FetchTransactionsParams {
     to?: string;
     transactionType?: string;
   };
+  includeTotal?: boolean;
   page: number;
   pageSize: number;
 }
@@ -48,7 +49,12 @@ export async function fetchSettlementTransactions(page: number, pageSize: number
   return apiClient.get<SettlementListResponse>(`/api/settlement-transactions?${params.toString()}`);
 }
 
-export async function fetchTransactions({ filters, page, pageSize }: FetchTransactionsParams) {
+export async function fetchTransactions({
+  filters,
+  includeTotal = true,
+  page,
+  pageSize,
+}: FetchTransactionsParams) {
   const params = new URLSearchParams();
   params.set("page", String(page));
   params.set("pageSize", String(pageSize));
@@ -61,6 +67,7 @@ export async function fetchTransactions({ filters, page, pageSize }: FetchTransa
   if (filters.paymentMethod) params.set("paymentMethod", filters.paymentMethod);
   if (filters.search) params.set("search", filters.search);
   if (filters.includeAmounts) params.set("includeAmounts", "true");
+  if (!includeTotal) params.set("includeTotal", "false");
 
   // Map filters to API params
   // API supports: from, to, origin, destination, paymentMethod, transactionType, status, search, includeAmounts

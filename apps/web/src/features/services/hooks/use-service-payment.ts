@@ -44,6 +44,7 @@ export function useServicePayment() {
           to,
           transactionType: "",
         },
+        includeTotal: false,
         page: 1,
         pageSize: 50,
       });

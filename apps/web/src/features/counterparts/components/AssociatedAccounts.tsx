@@ -323,6 +323,7 @@ export default function AssociatedAccounts({
         to: range.to || "",
         transactionType: "",
       },
+      includeTotal: false,
       page: 1,
       pageSize: 200,
     });
