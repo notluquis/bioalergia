@@ -81,7 +81,7 @@ function CalendarDailyPage() {
   return (
     <section className="space-y-4">
       {/* Header with Navigation */}
-      <header className="space-y-3">
+      <header className="space-y-2">
         <DayNavigation
           onSelect={setSelectedDate}
           rightSlot={

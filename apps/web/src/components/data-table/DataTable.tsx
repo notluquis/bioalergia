@@ -253,7 +253,7 @@ export function DataTable<TData, TValue>({
             return (
               <React.Fragment key={row.id}>
                 <tr
-                  className="hover:bg-background/50 border-default-100/50 border-b transition-colors last:border-0"
+                  className="group hover:bg-background/50 border-default-100/50 border-b transition-colors last:border-0"
                   data-index={virtualRow.index}
                   data-state={row.getIsSelected() && "selected"}
                   ref={virtualizer.measureElement}
@@ -294,7 +294,7 @@ export function DataTable<TData, TValue>({
           <React.Fragment key={row.id}>
             <tr
               className={cn(
-                "hover:bg-background/50 data-[state=selected]:bg-primary/10 border-default-100/50 border-b transition-colors last:border-0",
+                "group hover:bg-background/50 data-[state=selected]:bg-primary/10 border-default-100/50 border-b transition-colors last:border-0",
                 onRowClick && "cursor-pointer",
               )}
               data-state={row.getIsSelected() && "selected"}

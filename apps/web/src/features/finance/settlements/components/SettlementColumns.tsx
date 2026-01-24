@@ -20,7 +20,7 @@ const moneyColumn = (
     const currency = row.original.transactionCurrency;
     if (amount == null) return <div className={`text-${align}`}>-</div>;
 
-    let className = `text-${align}`;
+    let className = `text-${align} tabular-nums`;
     if (accessorKey === "settlementNetAmount" && Number(amount) > 0)
       className += " text-success font-medium";
     if (isNegative) className += " text-danger";

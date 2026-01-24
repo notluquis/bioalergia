@@ -92,9 +92,9 @@ function CalendarSchedulePage() {
   return (
     <section className="space-y-4">
       {/* Compact Header */}
-      <header className="space-y-3">
+      <header className="space-y-2">
         {/* Navigation Row */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           {/* Left: Week Navigation */}
           <div className="flex items-center gap-2">
             <div className="bg-default-50 flex items-center gap-0.5 rounded-lg p-1">
