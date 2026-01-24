@@ -98,7 +98,7 @@ export const getMpReportColumns = (
       return (
         <div className="flex justify-end gap-1 text-right">
           <Button
-            className="h-9 w-9 p-0 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
+            className="h-9 w-9 p-0 transition-opacity sm:opacity-70 sm:group-hover:opacity-100"
             disabled={downloadPending || report.status === "pending" || !report.file_name}
             onClick={(e) => {
               if (report.file_name) handleDownload(e, report.file_name);
@@ -113,7 +113,7 @@ export const getMpReportColumns = (
             )}
           </Button>
           <Button
-            className="h-9 w-9 p-0 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
+            className="h-9 w-9 p-0 transition-opacity sm:opacity-70 sm:group-hover:opacity-100"
             disabled={processPending || report.status === "pending" || !report.file_name}
             onClick={(e) => {
               if (report.file_name) handleProcess(e, report.file_name);

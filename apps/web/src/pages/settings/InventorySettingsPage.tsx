@@ -236,7 +236,7 @@ function InventoryList({
                   {catItems.length} items
                 </Chip>
               </button>
-              <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="flex gap-1 opacity-100 transition-opacity sm:opacity-70 sm:group-hover:opacity-100">
                 <Button isIconOnly size="sm" variant="ghost">
                   <Edit2 size={14} />
                 </Button>
