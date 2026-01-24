@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -20,7 +20,7 @@ function CertificatesLayout() {
         </header>
 
         {/* Content rendered by child routes */}
-        <div>{/* Placeholder - will be replaced by medical.tsx */}</div>
+        <Outlet />
       </div>
     </div>
   );
