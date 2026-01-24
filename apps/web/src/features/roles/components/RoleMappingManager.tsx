@@ -116,6 +116,7 @@ export default function RoleMappingManager() {
         columns={columns}
         data={mappings}
         enableToolbar={false}
+        containerVariant="plain"
         pagination={{ pageIndex: 0, pageSize: 100 }}
       />
 

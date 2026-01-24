@@ -92,6 +92,7 @@ export default function ReleaseTransactionsPage() {
             <DataTable
               columns={columns}
               data={rows ?? []}
+              containerVariant="plain"
               isLoading={isLoading}
               noDataMessage="No se encontraron liberaciones de fondos."
             />

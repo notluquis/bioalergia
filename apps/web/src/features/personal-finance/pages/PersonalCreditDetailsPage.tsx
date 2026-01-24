@@ -126,6 +126,7 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
           <DataTable
             columns={columns}
             data={credit.installments || []}
+            containerVariant="plain"
             enableToolbar={false}
             enableVirtualization={false}
             pageCount={-1}

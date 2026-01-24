@@ -90,6 +90,7 @@ export default function SettlementTransactionsPage() {
             <DataTable
               columns={columns}
               data={rows ?? []}
+              containerVariant="plain"
               isLoading={isLoading}
               noDataMessage="No se encontraron conciliaciones en el rango seleccionado."
             />
