@@ -15,6 +15,7 @@ const MAX_PROCESSED_FILES = 250;
 const MAX_PROCESS_PER_RUN = 4;
 const CREATE_COOLDOWN_MINUTES = 30;
 const ADVISORY_LOCK_KEY = 924_017_221;
+const JITTER_MAX_MS = 45_000;
 
 const SETTINGS_KEYS = {
   lastGenerated: (type: ReportType) => `mp:lastGenerated:${type}`,
@@ -22,6 +23,7 @@ const SETTINGS_KEYS = {
   processedFiles: (type: ReportType) => `mp:processedFiles:${type}`,
   lastProcessedAt: (type: ReportType) => `mp:lastProcessedAt:${type}`,
   lastRun: "mp:lastAutoSyncRun",
+  pendingWebhooks: "mp:webhook:pending",
 };
 
 export function startMercadoPagoScheduler() {
@@ -68,6 +70,7 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
   updateJobProgress(jobId, 0, "Inicio sincronización MercadoPago");
 
   try {
+    await jitterDelay();
     const types: ReportType[] = ["release", "settlement"];
     const lists = await Promise.all(types.map((type) => MercadoPagoService.listReports(type)));
     updateJobProgress(jobId, 1, "Reportes listados");
@@ -78,7 +81,10 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
     }
     updateJobProgress(jobId, 2, "Reportes diarios verificados");
 
-    const results: Record<string, number> = {};
+    const pendingProcessed = await processPendingWebhooks(jobId);
+    const results: Record<string, number> = {
+      pendingWebhooks: pendingProcessed,
+    };
     for (const [index, type] of types.entries()) {
       const reports = lists[index] as MPReportSummary[];
       results[type] = await processReadyReports(type, reports, jobId);
@@ -179,6 +185,42 @@ async function processReadyReports(
   return processedCount;
 }
 
+async function processPendingWebhooks(jobId: string) {
+  const pending = await loadPendingWebhooks();
+  if (pending.length === 0) return 0;
+
+  const processed = await loadProcessedFiles("mp:processedFiles:webhook");
+  let processedCount = 0;
+
+  for (const payload of pending) {
+    if (!payload.files?.length) continue;
+
+    for (const file of payload.files) {
+      if (processed.has(file.name)) continue;
+      if (!(file.type === ".csv" || file.name.endsWith(".csv"))) continue;
+
+      const type: ReportType = payload.report_type.includes("settlement")
+        ? "settlement"
+        : "release";
+
+      updateJobProgress(jobId, 3, `Procesando webhook: ${file.name}`);
+
+      try {
+        await MercadoPagoService.processReport(type, { url: file.url });
+        processed.add(file.name);
+        processedCount += 1;
+        logEvent("mp.autoSync.webhookProcessed", { type, file: file.name });
+      } catch (error) {
+        logError("mp.autoSync.webhookFailed", error, { type, file: file.name });
+      }
+    }
+  }
+
+  await persistProcessedFiles("mp:processedFiles:webhook", processed);
+  await updateSetting(SETTINGS_KEYS.pendingWebhooks, JSON.stringify([]));
+  return processedCount;
+}
+
 async function loadProcessedFiles(type: ReportType) {
   const raw = await getSetting(SETTINGS_KEYS.processedFiles(type));
   if (!raw) return new Set<string>();
@@ -248,6 +290,14 @@ function minutesSince(date: Date) {
   return (Date.now() - date.getTime()) / 60000;
 }
 
+async function jitterDelay() {
+  const delay = Math.floor(Math.random() * JITTER_MAX_MS);
+  if (delay <= 0) return;
+  await new Promise((resolve) => {
+    setTimeout(resolve, delay);
+  });
+}
+
 export async function acquireSchedulerLock() {
   try {
     const result = await db.$queryRaw<{ acquired: boolean }[]>`
@@ -267,5 +317,20 @@ export async function releaseSchedulerLock() {
     `;
   } catch (error) {
     logError("mp.autoSync.unlockError", error, {});
+  }
+}
+
+async function loadPendingWebhooks() {
+  const raw = await getSetting(SETTINGS_KEYS.pendingWebhooks);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as Array<{
+      transaction_id: string;
+      report_type: string;
+      files: Array<{ name: string; type: string; url: string }>;
+      createdAt: string;
+    }>;
+  } catch {
+    return [];
   }
 }
