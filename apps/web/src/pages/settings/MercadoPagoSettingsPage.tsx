@@ -1,5 +1,5 @@
 import { Tabs } from "@heroui/react";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { CheckCircle2, Clock, FileText, Plus, Settings } from "lucide-react";
 import { useState } from "react";
@@ -15,7 +15,12 @@ import { getMpReportColumns } from "@/features/finance/mercadopago/components/Mp
 import { mercadoPagoKeys } from "@/features/finance/mercadopago/queries";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import { type ImportStats, MPService, type MpReportType } from "@/services/mercadopago";
+import {
+  type ImportStats,
+  type MPReport,
+  MPService,
+  type MpReportType,
+} from "@/services/mercadopago";
 
 const ALL_TABLE_COLUMNS = [
   { key: "id", label: "ID" },
@@ -29,6 +34,7 @@ const ALL_TABLE_COLUMNS = [
 ];
 
 export default function MercadoPagoSettingsPage() {
+  const queryClient = useQueryClient();
   const { error: showError, success: showSuccess } = useToast();
   const [activeTab, setActiveTab] = useState<MpReportType>("release");
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
@@ -48,7 +54,13 @@ export default function MercadoPagoSettingsPage() {
   };
 
   // Queries
-  const { data: reports } = useSuspenseQuery(mercadoPagoKeys.lists(activeTab));
+  const { data: reports } = useSuspenseQuery({
+    ...mercadoPagoKeys.lists(activeTab),
+    refetchInterval: getMpReportsRefetchInterval,
+    refetchIntervalInBackground: false,
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
+  });
 
   // Mutations
 
@@ -89,6 +101,7 @@ export default function MercadoPagoSettingsPage() {
         `Reporte procesado: ${stats.insertedRows} insertados, ${stats.duplicateRows} duplicados`,
       );
       setProcessingFile(null);
+      void queryClient.invalidateQueries({ queryKey: ["mp-reports", activeTab] });
     },
   });
 
@@ -313,4 +326,23 @@ export default function MercadoPagoSettingsPage() {
       />
     </div>
   );
+}
+
+function getMpReportsRefetchInterval(query: { state: { data?: MPReport[] } }) {
+  if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+    return false;
+  }
+
+  const reports = query.state.data;
+  if (!reports || reports.length === 0) {
+    return 60_000;
+  }
+
+  const hasPending = reports.some((report) => isReportPending(report.status));
+  return hasPending ? 15_000 : 60_000;
+}
+
+function isReportPending(status?: string) {
+  if (!status) return false;
+  return /processing|pending|in_progress|waiting|generating|queued|creating/i.test(status);
 }
