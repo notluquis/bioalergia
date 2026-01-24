@@ -93,6 +93,8 @@ export default function ReleaseTransactionsPage() {
               columns={columns}
               data={rows ?? []}
               containerVariant="plain"
+              enableExport={false}
+              enableGlobalFilter={false}
               isLoading={isLoading}
               noDataMessage="No se encontraron liberaciones de fondos."
             />

@@ -20,8 +20,8 @@ export default function SettlementsPage() {
 
   return (
     <div className="flex h-full flex-col space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="relative max-w-sm flex-1">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative w-full max-w-sm">
           <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-gray-500" />
           <Input
             className="pl-9"

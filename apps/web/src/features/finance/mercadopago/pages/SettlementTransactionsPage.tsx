@@ -91,6 +91,8 @@ export default function SettlementTransactionsPage() {
               columns={columns}
               data={rows ?? []}
               containerVariant="plain"
+              enableExport={false}
+              enableGlobalFilter={false}
               isLoading={isLoading}
               noDataMessage="No se encontraron conciliaciones en el rango seleccionado."
             />
