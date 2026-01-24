@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
+import { signalAppFallback } from "@/lib/app-recovery";
 import { logger } from "@/lib/logger";
 
 import Button from "./Button";
@@ -42,6 +43,7 @@ export class GlobalError extends Component<Props, State> {
     // Dejar que el render muestre la UI de "Nueva versión" con un botón manual.
     if (isDeployError(error)) {
       logger.info("[GlobalError] 🔄 Deploy error detected, waiting for user action...");
+      signalAppFallback("update");
     }
   }
 
@@ -51,71 +53,7 @@ export class GlobalError extends Component<Props, State> {
 
       // Si es error de deploy, mostrar UI mínima mientras recarga
       if (isDeployIssue || this.state.isReloading) {
-        return (
-          <div className="bg-background/50 fixed inset-0 z-9999 flex items-center justify-center p-6 backdrop-blur-md">
-            <div className="bg-background border-default-100 w-full max-w-sm overflow-hidden rounded-[2.5rem] border p-8 text-center shadow-2xl">
-              <div className="bg-primary/10 text-primary ring-primary/5 mx-auto mb-6 flex h-24 w-24 animate-pulse items-center justify-center rounded-full ring-8">
-                <svg
-                  className="h-12 w-12"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <title>Error Icon</title>
-                  <path
-                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-
-              <div className="space-y-3">
-                <h1 className="text-foreground text-2xl font-bold tracking-tight">
-                  Actualización Lista
-                </h1>
-                <p className="text-default-500 px-4 text-sm leading-relaxed">
-                  Hemos mejorado el sistema. Para disfrutar de las últimas mejoras, necesitamos
-                  reiniciar la aplicación.
-                </p>
-              </div>
-
-              <div className="mt-8">
-                <Button
-                  size="lg"
-                  className="ring-primary/20 w-full rounded-2xl shadow-lg ring"
-                  onClick={this.handleAutoReload}
-                >
-                  {this.state.isReloading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <title>Loading</title>
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          fill="currentColor"
-                        />
-                      </svg>
-                      Actualizando...
-                    </span>
-                  ) : (
-                    "Actualizar Ahora"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        );
+        return <></>;
       }
 
       // Error genérico - mostrar UI completa

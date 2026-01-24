@@ -10,51 +10,25 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
 import React from "react";
 import ReactDOM from "react-dom/client";
-
+import { AppFallback } from "./components/features/AppFallback";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import { GlobalError } from "./components/ui/GlobalError";
 import PageLoader from "./components/ui/PageLoader";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
+import { signalAppFallback } from "./lib/app-recovery";
 import { AbilityProvider } from "./lib/authz/AbilityProvider";
 import { createLogger } from "./lib/logger";
 import { initPerformanceMonitoring } from "./lib/performance";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 
-// Aggressive recovery from chunk load errors
-// Clears all caches, unregisters service workers, then reloads
 import "./index.css";
 import "./i18n";
 
 // Create namespaced logger for chunk errors
 const log = createLogger("ChunkRecovery");
-
-async function handleChunkLoadError() {
-  log.warn("Chunk load error detected, clearing caches and reloading...");
-
-  try {
-    // Unregister all service workers
-    if ("serviceWorker" in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map((r) => r.unregister()));
-      log.info("Service workers unregistered");
-    }
-
-    // Clear all caches
-    if ("caches" in globalThis) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map((name) => caches.delete(name)));
-      log.info("All caches cleared:", cacheNames);
-    }
-  } catch (error) {
-    log.error("Error during cache cleanup:", error);
-  }
-
-  // Force reload to recover
-  globalThis.location.reload();
-}
 
 // Global error handler for chunk load failures (runs before React mounts)
 globalThis.addEventListener("error", (event) => {
@@ -64,7 +38,8 @@ globalThis.addEventListener("error", (event) => {
       message,
     )
   ) {
-    void handleChunkLoadError();
+    log.warn("Chunk load error detected. Awaiting user recovery action.");
+    signalAppFallback("chunk");
   }
 });
 
@@ -76,7 +51,8 @@ globalThis.addEventListener("unhandledrejection", (event) => {
     )
   ) {
     event.preventDefault();
-    void handleChunkLoadError();
+    log.warn("Chunk load rejection detected. Awaiting user recovery action.");
+    signalAppFallback("chunk");
   }
 });
 
@@ -154,6 +130,7 @@ initPerformanceMonitoring();
 // biome-ignore lint/style/noNonNullAssertion: root element exists
 ReactDOM.createRoot(document.querySelector("#root")!).render(
   <React.StrictMode>
+    <AppFallback />
     <GlobalError>
       <ChunkErrorBoundary>
         <QueryClientProvider client={queryClient}>
