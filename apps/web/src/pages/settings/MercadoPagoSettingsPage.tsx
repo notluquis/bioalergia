@@ -1,5 +1,5 @@
 import { Tabs } from "@heroui/react";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { CheckCircle2, Clock, FileText, Plus, Settings } from "lucide-react";
@@ -70,25 +70,27 @@ export default function MercadoPagoSettingsPage() {
   const reportType = activeTab === "sync" ? "release" : activeTab;
   const reportLimit = reportPagination.pageSize;
   const reportOffset = reportPagination.pageIndex * reportPagination.pageSize;
-  const { data: reportResponse } = useSuspenseQuery({
+  const { data: reportResponse } = useQuery({
     ...mercadoPagoKeys.lists(reportType, { limit: reportLimit, offset: reportOffset }),
     refetchInterval: getMpReportsRefetchInterval,
     refetchIntervalInBackground: false,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
+    placeholderData: keepPreviousData,
   });
-  const reports = reportResponse.reports ?? [];
-  const reportTotal = reportResponse.total ?? reports.length;
+  const reports = reportResponse?.reports ?? [];
+  const reportTotal = reportResponse?.total ?? reports.length;
 
   const syncLimit = syncPagination.pageSize;
   const syncOffset = syncPagination.pageIndex * syncPagination.pageSize;
-  const { data: syncResponse } = useSuspenseQuery({
+  const { data: syncResponse } = useQuery({
     ...mercadoPagoKeys.syncLogs({ limit: syncLimit, offset: syncOffset }),
     refetchInterval: activeTab === "sync" ? 30_000 : false,
     refetchIntervalInBackground: false,
+    placeholderData: keepPreviousData,
   });
-  const syncLogs = syncResponse.logs ?? [];
-  const syncTotal = syncResponse.total ?? syncLogs.length;
+  const syncLogs = syncResponse?.logs ?? [];
+  const syncTotal = syncResponse?.total ?? syncLogs.length;
 
   // Mutations
 
