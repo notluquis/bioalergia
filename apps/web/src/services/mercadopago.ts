@@ -28,6 +28,21 @@ export interface MPReport {
   status?: string;
 }
 
+export interface MpSyncLog {
+  changeDetails?: Record<string, unknown> | null;
+  errorMessage?: string | null;
+  excluded?: number | null;
+  finishedAt?: string | null;
+  id: number;
+  inserted?: number | null;
+  skipped?: number | null;
+  startedAt: string;
+  status: "RUNNING" | "SUCCESS" | "ERROR";
+  triggerLabel?: string | null;
+  triggerSource: string;
+  updated?: number | null;
+}
+
 interface ProcessReportResponse {
   message: string;
   stats: ImportStats;
@@ -132,6 +147,12 @@ export const MPService = {
   listReports: async (type: MpReportType = "release"): Promise<MPReport[]> => {
     const baseUrl = getBaseUrl(type);
     return apiClient.get<MPReport[]>(`${baseUrl}/reports`);
+  },
+  listSyncLogs: async (limit = 50): Promise<MpSyncLog[]> => {
+    const response = await apiClient.get<{ logs: MpSyncLog[]; status: string }>(
+      `/api/mercadopago/sync/logs?limit=${limit}`,
+    );
+    return response.logs ?? [];
   },
 
   processReport: async (fileName: string, type: MpReportType): Promise<ImportStats> => {

@@ -16,6 +16,11 @@ import {
   acquireSchedulerLock,
   releaseSchedulerLock,
 } from "../lib/mercadopago/mercadopago-scheduler";
+import {
+  createMpSyncLogEntry,
+  finalizeMpSyncLogEntry,
+  listMpSyncLogs,
+} from "../services/mercadopago-sync";
 import { getSetting, updateSetting } from "../services/settings";
 import { reply } from "../utils/reply";
 
@@ -268,6 +273,11 @@ mercadopagoRoutes.post("/webhook", async (c) => {
     // Process files
     if (payload.files?.length) {
       const processed = await loadProcessedFiles(PROCESSED_FILES_KEY);
+      const logId = await createMpSyncLogEntry({
+        triggerSource: "mp:webhook",
+        triggerLabel: payload.transaction_id,
+      });
+      let queuedCount = 0;
       for (const file of payload.files) {
         if (processed.has(file.name)) {
           continue;
@@ -282,9 +292,19 @@ mercadopagoRoutes.post("/webhook", async (c) => {
             console.error("[MP Webhook] Async processing failed:", err);
           });
           processed.add(file.name);
+          queuedCount += 1;
         }
       }
       await persistProcessedFiles(PROCESSED_FILES_KEY, processed);
+      await finalizeMpSyncLogEntry(logId, {
+        status: "SUCCESS",
+        inserted: queuedCount,
+        changeDetails: {
+          queuedFiles: queuedCount,
+          transactionId: payload.transaction_id,
+          reportType: payload.report_type,
+        },
+      });
     }
 
     return reply(c, { status: "ok", message: "Notification received" });
@@ -294,6 +314,18 @@ mercadopagoRoutes.post("/webhook", async (c) => {
   } finally {
     await releaseSchedulerLock();
   }
+});
+
+mercadopagoRoutes.get("/sync/logs", async (c) => {
+  const auth = await getAuth(c);
+  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+
+  const canRead = await hasPermission(auth.userId, "read", "Integration");
+  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+
+  const limit = Number(c.req.query("limit") ?? "50");
+  const logs = await listMpSyncLogs(Number.isNaN(limit) ? 50 : limit);
+  return reply(c, { status: "ok", logs });
 });
 
 async function retryAcquireSchedulerLock(maxRetries: number) {
