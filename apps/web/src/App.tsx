@@ -178,7 +178,7 @@ export default function App() {
 
           <main className="flex-1 overflow-hidden rounded-3xl transition-all duration-300">
             <div className="surface-recessed border-default-100/50 bg-background/50 h-full w-full overflow-hidden rounded-3xl border shadow-inner">
-              <div className="h-full w-full overflow-x-hidden overflow-y-auto p-3 md:p-5">
+              <div className="muted-scrollbar h-full w-full overflow-x-hidden overflow-y-auto p-3 md:p-5">
                 <Outlet />
               </div>
             </div>
