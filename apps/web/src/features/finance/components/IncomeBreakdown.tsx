@@ -43,9 +43,9 @@ export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdown
     {
       accessorKey: "amount",
       cell: ({ row }) => (
-        <span className="tabular-nums text-right text-xs font-mono">
+        <div className="tabular-nums text-right text-xs font-mono">
           ${row.original.amount.toLocaleString("es-CL")}
-        </span>
+        </div>
       ),
       header: "Monto",
       minSize: 120,
