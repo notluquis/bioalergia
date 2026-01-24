@@ -12,7 +12,10 @@ import { type Context, Hono } from "hono";
 import { stream } from "hono/streaming";
 import { getSessionUser, hasPermission } from "../auth";
 import { MercadoPagoService, MP_WEBHOOK_PASSWORD } from "../services/mercadopago";
-import { acquireSchedulerLock, releaseSchedulerLock } from "../lib/mercadopago/mercadopago-scheduler";
+import {
+  acquireSchedulerLock,
+  releaseSchedulerLock,
+} from "../lib/mercadopago/mercadopago-scheduler";
 import { getSetting, updateSetting } from "../services/settings";
 import { reply } from "../utils/reply";
 
@@ -224,12 +227,13 @@ interface MPWebhookPayload {
 }
 
 const PROCESSED_FILES_KEY = "mp:processedFiles:webhook";
+const PENDING_WEBHOOKS_KEY = "mp:webhook:pending";
+const MAX_PENDING_WEBHOOKS = 50;
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy webhook logic
 mercadopagoRoutes.post("/webhook", async (c) => {
-  const lockAcquired = await acquireSchedulerLock();
-  if (!lockAcquired) {
-    return reply(c, { status: "error", message: "Sync in progress" }, 409);
+  if (process.env.NODE_ENV === "production" && !MP_WEBHOOK_PASSWORD) {
+    return reply(c, { status: "error", message: "Webhook not configured" }, 500);
   }
 
   try {
@@ -252,6 +256,12 @@ mercadopagoRoutes.post("/webhook", async (c) => {
         console.warn("[MP Webhook] Invalid signature for transaction:", payload.transaction_id);
         return reply(c, { status: "error", message: "Invalid signature" }, 401);
       }
+    }
+
+    const lockAcquired = await retryAcquireSchedulerLock(4);
+    if (!lockAcquired) {
+      await enqueuePendingWebhook(payload);
+      return reply(c, { status: "accepted", message: "Queued for processing" }, 202);
     }
 
     // Process files
@@ -285,6 +295,51 @@ mercadopagoRoutes.post("/webhook", async (c) => {
   }
 });
 
+async function retryAcquireSchedulerLock(maxRetries: number) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const acquired = await acquireSchedulerLock();
+    if (acquired) return true;
+    if (attempt < maxRetries) {
+      await sleep(200 + Math.random() * 600);
+    }
+  }
+  return false;
+}
+
+async function enqueuePendingWebhook(payload: MPWebhookPayload) {
+  const pending = await loadPendingWebhooks();
+  if (pending.some((item) => item.transaction_id === payload.transaction_id)) {
+    return;
+  }
+  pending.push({
+    transaction_id: payload.transaction_id,
+    report_type: payload.report_type,
+    files: payload.files?.map((file) => ({
+      name: file.name,
+      type: file.type,
+      url: file.url,
+    })),
+    createdAt: new Date().toISOString(),
+  });
+  const trimmed = pending.slice(-MAX_PENDING_WEBHOOKS);
+  await updateSetting(PENDING_WEBHOOKS_KEY, JSON.stringify(trimmed));
+}
+
+async function loadPendingWebhooks() {
+  const raw = await getSetting(PENDING_WEBHOOKS_KEY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as Array<{
+      transaction_id: string;
+      report_type: string;
+      files: Array<{ name: string; type: string; url: string }>;
+      createdAt: string;
+    }>;
+  } catch {
+    return [];
+  }
+}
+
 async function loadProcessedFiles(key: string) {
   const raw = await getSetting(key);
   if (!raw) return new Set<string>();
@@ -299,4 +354,10 @@ async function loadProcessedFiles(key: string) {
 async function persistProcessedFiles(key: string, processed: Set<string>) {
   const trimmed = Array.from(processed).slice(-250);
   await updateSetting(key, JSON.stringify(trimmed));
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }

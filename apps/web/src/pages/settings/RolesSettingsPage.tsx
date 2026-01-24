@@ -1,7 +1,7 @@
 // No ListBox needed here
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Plus, RotateCw, Shield } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Select, SelectItem } from "@/components/ui/Select";
@@ -142,7 +142,35 @@ export default function RolesSettingsPage() {
     buildSubjectNavKeyMap(routeTree, allPermissions || []),
   );
 
-  const unmappedSubjects = getUnmappedSubjects(allPermissions || [], usedPermissionIds);
+  const unmappedSubjects = useMemo(
+    () => getUnmappedSubjects(allPermissions || [], usedPermissionIds),
+    [allPermissions, usedPermissionIds],
+  );
+
+  useEffect(() => {
+    if (unmappedSubjects.length === 0) return;
+    const payload = {
+      subjects: unmappedSubjects,
+      total: unmappedSubjects.length,
+      timestamp: new Date().toISOString(),
+    };
+    const key = `roles-unmapped-${payload.subjects.join(",")}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+
+    if (navigator.sendBeacon) {
+      const body = new Blob([JSON.stringify(payload)], { type: "application/json" });
+      navigator.sendBeacon("/api/roles/telemetry/unmapped-subjects", body);
+      return;
+    }
+
+    fetch("/api/roles/telemetry/unmapped-subjects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {});
+  }, [unmappedSubjects]);
 
   return (
     <div className="space-y-6">

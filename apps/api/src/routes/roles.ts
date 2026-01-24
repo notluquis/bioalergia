@@ -16,6 +16,7 @@ import {
   updateRole,
 } from "../services/roles";
 import { reply } from "../utils/reply";
+import { logEvent } from "../lib/logger";
 
 const app = new Hono();
 
@@ -140,6 +141,23 @@ app.post("/permissions/sync", async (c) => {
     console.error("[syncPermissions] Error details:", e);
     return reply(c, { status: "error", message: e.message }, 500);
   }
+});
+
+app.post("/telemetry/unmapped-subjects", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+
+  const canRead = await hasPermission(user.id, "read", "Role");
+  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+
+  const body = await c.req.json<{ subjects?: string[]; total?: number; timestamp?: string }>();
+  logEvent("roles.unmappedSubjects", {
+    total: body.total ?? body.subjects?.length ?? 0,
+    subjects: body.subjects?.slice(0, 25),
+    timestamp: body.timestamp,
+    userId: user.id,
+  });
+  return reply(c, { status: "ok" });
 });
 
 export default app;
