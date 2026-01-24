@@ -5,6 +5,34 @@
     <script>
       // Community 2025 Standard: Global Chunk Load Error Handler
       // Catches errors before React even mounts or during module evaluation
+      function ensureFallback() {
+        var container = document.getElementById("app-fallback");
+        if (!container) {
+          return;
+        }
+        container.addEventListener("click", (e) => {
+          var target = e.target;
+          if (!(target instanceof HTMLElement)) {
+            return;
+          }
+          var action = target.getAttribute("data-action");
+          if (action === "reload" || action === "retry") {
+            location.reload();
+          }
+        });
+      }
+
+      function showFallback(reason) {
+        var container = document.getElementById("app-fallback");
+        if (!container) {
+          return;
+        }
+        container.removeAttribute("hidden");
+        window.__APP_FALLBACK_REASON__ = reason || "unknown";
+        window.dispatchEvent(new CustomEvent("app:fallback", { detail: { reason: reason } }));
+      }
+
+      document.addEventListener("DOMContentLoaded", ensureFallback);
 
       // CAPTURE PHASE handler for script/link load failures (404s)
       window.addEventListener(
@@ -12,7 +40,7 @@
         (e) => {
           if (e.target && (e.target.tagName === "SCRIPT" || e.target.tagName === "LINK")) {
             console.warn("Resource load failure detected:", e.target.src || e.target.href);
-            attemptRecovery();
+            showFallback("chunk");
           }
         },
         true
@@ -27,39 +55,13 @@
           )
         ) {
           console.warn("Dynamic import error detected:", msg);
-          attemptRecovery();
+          showFallback("chunk");
         }
       });
 
-      function attemptRecovery() {
-        // Prevent infinite reload loops (max 1 reload per 10 seconds)
-        var lastReload = sessionStorage.getItem("chunk_reload_ts");
-        var now = Date.now();
-        if (!lastReload || now - Number(lastReload) > 10000) {
-          sessionStorage.setItem("chunk_reload_ts", String(now));
-
-          // Nuclear cache clear
-          if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.getRegistrations().then((regs) => {
-              regs.forEach((r) => {
-                r.unregister();
-              });
-            });
-          }
-          if ("caches" in window) {
-            caches
-              .keys()
-              .then((names) => Promise.all(
-                  names.map((n) => caches.delete(n))
-                ))
-              .then(() => {
-                window.location.reload();
-              });
-          } else {
-            window.location.reload();
-          }
-        }
-      }
+      window.addEventListener("offline", () => {
+        showFallback("offline");
+      });
     </script>
     <script>
       (() => {
@@ -93,6 +95,21 @@
     <!-- Performance Hints (2026 Standard) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      />
+    </noscript>
     <title>Bioalergia Suite</title>
 
     <!-- PWA Manifest -->
@@ -116,6 +133,12 @@
   </head>
   <body>
     <div id="root"></div>
+    <div id="app-fallback" hidden role="alert" aria-live="polite">
+      <p>Tenemos problemas para cargar Bioalergia Suite.</p>
+      <p>Si tu conexión volvió, puedes reintentar o recargar.</p>
+      <button type="button" data-action="retry">Reintentar</button>
+      <button type="button" data-action="reload">Recargar</button>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -3,9 +3,12 @@ import { X } from "lucide-react";
 import { useState } from "react";
 
 import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import { clearAppCaches } from "@/lib/app-recovery";
 
 export function UpdateNotification() {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -46,16 +49,24 @@ export function UpdateNotification() {
         });
       }
 
-      // Step 3: Now clear all caches (the new SW is in control)
-      if ("caches" in globalThis) {
-        const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map((name) => caches.delete(name)));
-      }
-
-      // Step 4: Force a complete reload from network
+      // Step 3: Force a complete reload from network
       globalThis.location.reload();
     } catch (error) {
       console.error("Update failed", error);
+      globalThis.location.reload();
+    }
+  };
+
+  const handleCleanUpdate = async () => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    setNeedRefresh(false);
+    try {
+      await updateServiceWorker(true);
+      await clearAppCaches();
+      globalThis.location.reload();
+    } catch (error) {
+      console.error("Clean update failed", error);
       globalThis.location.reload();
     }
   };
@@ -66,48 +77,72 @@ export function UpdateNotification() {
   if (!needRefresh) return null;
 
   return (
-    <div className="animate-in slide-in-from-bottom-5 fade-in fixed right-4 bottom-4 z-50 max-w-sm">
-      <div className="border-primary/20 bg-background rounded-2xl border p-4 shadow-2xl">
-        <div className="flex items-start gap-3">
-          <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
-            <svg
-              className="text-primary h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <title>Update Available</title>
-              <path
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-              />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <h3 className="text-foreground text-sm font-semibold">Nueva versión disponible</h3>
-            <p className="text-default-600 mt-1 text-xs">
-              Actualiza cuando estés listo. No perderás tu progreso.
-            </p>
-            <div className="mt-3 flex gap-2">
-              <Button className="flex-1" disabled={isUpdating} onClick={handleUpdate} size="sm">
-                {isUpdating ? "Actualizando..." : "Actualizar"}
-              </Button>
-              <Button
-                className="px-3"
-                onClick={() => {
-                  setNeedRefresh(false);
-                }}
-                size="sm"
-                variant="ghost"
+    <>
+      <div className="animate-in slide-in-from-bottom-5 fade-in fixed right-4 bottom-4 z-50 max-w-sm">
+        <div className="border-primary/20 bg-background rounded-2xl border p-4 shadow-2xl">
+          <div className="flex items-start gap-3">
+            <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+              <svg
+                className="text-primary h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <X className="h-4 w-4" />
-              </Button>
+                <title>Update Available</title>
+                <path
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-foreground text-sm font-semibold">Nueva versión disponible</h3>
+              <p className="text-default-600 mt-1 text-xs">
+                Actualiza cuando estés listo. No perderás tu progreso.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Button className="flex-1" disabled={isUpdating} onClick={handleUpdate} size="sm">
+                  {isUpdating ? "Actualizando..." : "Actualizar"}
+                </Button>
+                <Button onClick={() => setIsConfirmOpen(true)} size="sm" variant="secondary">
+                  Limpiar caché
+                </Button>
+                <Button
+                  className="px-3"
+                  onClick={() => {
+                    setNeedRefresh(false);
+                  }}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <Modal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title="Limpiar caché y actualizar"
+      >
+        <p className="text-default-600 text-sm">
+          Esto elimina la caché local y fuerza una recarga completa. Úsalo solo si ves errores al
+          actualizar.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button onClick={handleCleanUpdate} size="sm" variant="primary" disabled={isUpdating}>
+            {isUpdating ? "Actualizando..." : "Limpiar y actualizar"}
+          </Button>
+          <Button onClick={() => setIsConfirmOpen(false)} size="sm" variant="ghost">
+            Cancelar
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 }
