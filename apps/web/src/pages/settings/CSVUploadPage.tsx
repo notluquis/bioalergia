@@ -653,7 +653,7 @@ export default function CSVUploadPage() {
   }
 
   return (
-    <div className={PAGE_CONTAINER}>
+    <div className={cn(PAGE_CONTAINER, "space-y-3")}>
       {/* 1. Select Table */}
       <TableSelectionCard
         allowedTableOptions={allowedTableOptions}

@@ -84,7 +84,7 @@ export function CalendarFilterPanel({
   const { syncNow, syncing } = useCalendarSync();
 
   return (
-    <Card className="animate-in slide-in-from-top-2 duration-200">
+    <Card className="animate-in slide-in-from-top-2 duration-200 ease-out origin-top">
       <form className="flex flex-wrap items-end gap-3 p-3" onSubmit={handleSubmit}>
         {/* Date Range Inputs */}
         {showDateRange && (

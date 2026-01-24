@@ -211,7 +211,7 @@ export default function MercadoPagoSettingsPage() {
   const syncPageCount = Math.max(1, Math.ceil(syncTotal / syncPagination.pageSize));
 
   return (
-    <div className={cn(PAGE_CONTAINER, "space-y-6")}>
+    <div className={cn(PAGE_CONTAINER, "space-y-5")}>
       {/* Header: Tabs + Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Tabs */}
@@ -329,7 +329,7 @@ export default function MercadoPagoSettingsPage() {
       </Modal>
 
       {activeTab !== "sync" && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Last Report Card */}
           <article className="bg-background border-default-200 rounded-2xl border p-6 shadow-sm">
             <div className="flex items-start justify-between">
@@ -369,11 +369,14 @@ export default function MercadoPagoSettingsPage() {
 
       {/* Reports List */}
       {activeTab !== "sync" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between px-1">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2">
               <FileText className="text-primary h-4 w-4" />
-              <h3 className="text-lg font-semibold">Historial de Reportes</h3>
+              <div>
+                <h3 className="text-lg font-semibold">Historial de Reportes</h3>
+                <p className="text-default-500 text-xs">Total: {reportTotal}</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -406,21 +409,21 @@ export default function MercadoPagoSettingsPage() {
             onPaginationChange={setReportPagination}
             onColumnVisibilityChange={setColumnVisibility}
             pageCount={reportPageCount}
-            noDataMessage="No se encontraron reportes generados."
+            noDataMessage="Aún no hay reportes. Genera uno para comenzar."
           />
         </div>
       )}
 
       {activeTab === "sync" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between px-1">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2">
               <Clock className="text-primary h-4 w-4" />
-              <h3 className="text-lg font-semibold">Historial de Sync</h3>
+              <div>
+                <h3 className="text-lg font-semibold">Historial de Sync</h3>
+                <p className="text-default-500 text-xs">Total: {syncTotal}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center justify-between px-1">
-            <span className="text-default-500 text-xs">Total: {syncTotal}</span>
             <Select
               aria-label="Cantidad de filas"
               selectedKey={String(syncPagination.pageSize)}
@@ -446,7 +449,7 @@ export default function MercadoPagoSettingsPage() {
             pagination={syncPagination}
             onPaginationChange={setSyncPagination}
             pageCount={syncPageCount}
-            noDataMessage="No hay sincronizaciones registradas."
+            noDataMessage="Aún no hay sincronizaciones registradas."
           />
         </div>
       )}
