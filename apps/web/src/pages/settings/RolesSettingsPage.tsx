@@ -139,7 +139,7 @@ export default function RolesSettingsPage() {
     getNavSections(),
     allPermissions || [],
     usedPermissionIds,
-    buildSubjectNavKeyMap(routeTree),
+    buildSubjectNavKeyMap(routeTree, allPermissions || []),
   );
 
   return (
@@ -401,7 +401,7 @@ function buildMatrixItem({
   };
 }
 
-function buildSubjectNavKeyMap(routeTreeData: unknown) {
+function buildSubjectNavKeyMap(routeTreeData: unknown, allPermissions: Permission[]) {
   const mapping = new Map<string, Set<string>>();
 
   // biome-ignore lint/suspicious/noExplicitAny: TanStack route tree is dynamic
@@ -424,5 +424,70 @@ function buildSubjectNavKeyMap(routeTreeData: unknown) {
 
   walk(routeTreeData);
 
+  return addInferredAliases(mapping, allPermissions);
+}
+
+function addInferredAliases(mapping: Map<string, Set<string>>, allPermissions: Permission[]) {
+  const mappedSubjects = Array.from(mapping.keys());
+  const mappedTokenMap = new Map(
+    mappedSubjects.map((subject) => [subject, tokenizeSubject(subject)]),
+  );
+  const knownSubjects = new Set(allPermissions.map((perm) => perm.subject.toLowerCase()));
+
+  for (const subject of knownSubjects) {
+    if (mapping.has(subject)) continue;
+    const best = findBestMappedSubject(subject, mappedSubjects, mappedTokenMap);
+    if (!best) continue;
+    const target = mapping.get(best);
+    if (target) {
+      mapping.set(subject, new Set(target));
+    }
+  }
+
   return mapping;
+}
+
+function findBestMappedSubject(
+  subject: string,
+  mappedSubjects: string[],
+  mappedTokenMap: Map<string, string[]>,
+) {
+  const subjectLower = subject.toLowerCase();
+  const subjectTokens = tokenizeSubject(subjectLower);
+
+  let best: string | null = null;
+  let bestScore = 0;
+
+  for (const candidate of mappedSubjects) {
+    const candidateLower = candidate.toLowerCase();
+    const candidateTokens = mappedTokenMap.get(candidate) ?? tokenizeSubject(candidateLower);
+
+    let score = 0;
+    if (subjectLower.includes(candidateLower)) {
+      score = 1000 + candidateLower.length;
+    } else if (candidateTokens.length > 0) {
+      const matchCount = candidateTokens.filter((token) => subjectTokens.includes(token)).length;
+      if (matchCount === candidateTokens.length && matchCount > 0) {
+        score = 500 + matchCount;
+      } else if (matchCount > 0 && candidateLower.length >= 6) {
+        score = matchCount;
+      }
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = candidate;
+    }
+  }
+
+  if (!best || bestScore < 1) return null;
+  return best;
+}
+
+function tokenizeSubject(subject: string) {
+  const normalized = subject
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .toLowerCase();
+  return normalized.split(" ").filter(Boolean);
 }
