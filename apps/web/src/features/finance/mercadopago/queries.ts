@@ -4,14 +4,14 @@ import { MPService, type MpReportType } from "@/services/mercadopago";
 
 export const mercadoPagoKeys = {
   all: ["mp-reports"] as const,
-  lists: (type: MpReportType) =>
+  lists: (type: MpReportType, params?: { limit?: number; offset?: number }) =>
     queryOptions({
-      queryFn: () => MPService.listReports(type),
-      queryKey: ["mp-reports", type],
+      queryFn: () => MPService.listReports(type, params),
+      queryKey: ["mp-reports", type, params?.limit ?? null, params?.offset ?? null],
     }),
-  syncLogs: (limit = 50) =>
+  syncLogs: (params?: { limit?: number; offset?: number }) =>
     queryOptions({
-      queryFn: () => MPService.listSyncLogs(limit),
-      queryKey: ["mp-sync-logs", limit],
+      queryFn: () => MPService.listSyncLogs(params),
+      queryKey: ["mp-sync-logs", params?.limit ?? null, params?.offset ?? null],
     }),
 };

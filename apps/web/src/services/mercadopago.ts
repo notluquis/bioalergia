@@ -28,6 +28,11 @@ export interface MPReport {
   status?: string;
 }
 
+export interface MPReportListResponse {
+  reports: MPReport[];
+  total: number;
+}
+
 export interface MpSyncLog {
   changeDetails?: Record<string, unknown> | null;
   errorMessage?: string | null;
@@ -144,15 +149,33 @@ export const MPService = {
     });
   },
 
-  listReports: async (type: MpReportType = "release"): Promise<MPReport[]> => {
+  listReports: async (
+    type: MpReportType = "release",
+    params?: { limit?: number; offset?: number },
+  ): Promise<MPReportListResponse> => {
     const baseUrl = getBaseUrl(type);
-    return apiClient.get<MPReport[]>(`${baseUrl}/reports`);
-  },
-  listSyncLogs: async (limit = 50): Promise<MpSyncLog[]> => {
-    const response = await apiClient.get<{ logs: MpSyncLog[]; status: string }>(
-      `/api/mercadopago/sync/logs?limit=${limit}`,
+    const query = new URLSearchParams();
+    if (params?.limit != null) query.set("limit", String(params.limit));
+    if (params?.offset != null) query.set("offset", String(params.offset));
+    const response = await apiClient.get<{ reports: MPReport[]; total: number; status: string }>(
+      `${baseUrl}/reports?${query.toString()}`,
     );
-    return response.logs ?? [];
+    return { reports: response.reports ?? [], total: response.total ?? 0 };
+  },
+  listSyncLogs: async (params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    logs: MpSyncLog[];
+    total: number;
+  }> => {
+    const query = new URLSearchParams();
+    if (params?.limit != null) query.set("limit", String(params.limit));
+    if (params?.offset != null) query.set("offset", String(params.offset));
+    const response = await apiClient.get<{ logs: MpSyncLog[]; status: string; total: number }>(
+      `/api/mercadopago/sync/logs?${query.toString()}`,
+    );
+    return { logs: response.logs ?? [], total: response.total ?? 0 };
   },
 
   processReport: async (fileName: string, type: MpReportType): Promise<ImportStats> => {

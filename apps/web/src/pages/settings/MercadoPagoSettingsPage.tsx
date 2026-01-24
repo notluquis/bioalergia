@@ -68,14 +68,27 @@ export default function MercadoPagoSettingsPage() {
 
   // Queries
   const reportType = activeTab === "sync" ? "release" : activeTab;
-  const { data: reports } = useSuspenseQuery({
-    ...mercadoPagoKeys.lists(reportType),
+  const reportLimit = reportPagination.pageSize;
+  const reportOffset = reportPagination.pageIndex * reportPagination.pageSize;
+  const { data: reportResponse } = useSuspenseQuery({
+    ...mercadoPagoKeys.lists(reportType, { limit: reportLimit, offset: reportOffset }),
     refetchInterval: getMpReportsRefetchInterval,
     refetchIntervalInBackground: false,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
   });
-  const { data: syncLogs } = useSuspenseQuery(mercadoPagoKeys.syncLogs(50));
+  const reports = reportResponse.reports ?? [];
+  const reportTotal = reportResponse.total ?? reports.length;
+
+  const syncLimit = syncPagination.pageSize;
+  const syncOffset = syncPagination.pageIndex * syncPagination.pageSize;
+  const { data: syncResponse } = useSuspenseQuery({
+    ...mercadoPagoKeys.syncLogs({ limit: syncLimit, offset: syncOffset }),
+    refetchInterval: activeTab === "sync" ? 30_000 : false,
+    refetchIntervalInBackground: false,
+  });
+  const syncLogs = syncResponse.logs ?? [];
+  const syncTotal = syncResponse.total ?? syncLogs.length;
 
   // Mutations
 
@@ -140,15 +153,8 @@ export default function MercadoPagoSettingsPage() {
     processMutation.isPending,
     processingFile,
   );
-  const paginatedReports = useMemo(() => {
-    const start = reportPagination.pageIndex * reportPagination.pageSize;
-    const end = start + reportPagination.pageSize;
-    return (reports ?? []).slice(start, end);
-  }, [reports, reportPagination]);
-  const reportPageCount = Math.max(
-    1,
-    Math.ceil((reports ?? []).length / reportPagination.pageSize),
-  );
+  const paginatedReports = useMemo(() => reports, [reports]);
+  const reportPageCount = Math.max(1, Math.ceil(reportTotal / reportPagination.pageSize));
 
   const syncColumns = useMemo<ColumnDef<MpSyncLog>[]>(
     () => [
@@ -214,12 +220,8 @@ export default function MercadoPagoSettingsPage() {
     ],
     [],
   );
-  const paginatedSyncLogs = useMemo(() => {
-    const start = syncPagination.pageIndex * syncPagination.pageSize;
-    const end = start + syncPagination.pageSize;
-    return (syncLogs ?? []).slice(start, end);
-  }, [syncLogs, syncPagination]);
-  const syncPageCount = Math.max(1, Math.ceil((syncLogs ?? []).length / syncPagination.pageSize));
+  const paginatedSyncLogs = useMemo(() => syncLogs, [syncLogs]);
+  const syncPageCount = Math.max(1, Math.ceil(syncTotal / syncPagination.pageSize));
 
   return (
     <div className={cn(PAGE_CONTAINER, "space-y-6")}>
@@ -373,7 +375,7 @@ export default function MercadoPagoSettingsPage() {
             subtitle={`Tipo: ${reportType === "release" ? "Liberación" : "Conciliación"}`}
             title="Total Reportes"
             tone="default"
-            value={reports.length}
+            value={reportTotal}
           />
         </div>
       )}
@@ -452,7 +454,7 @@ export default function MercadoPagoSettingsPage() {
             </div>
           </div>
           <div className="flex items-center justify-between px-1">
-            <span className="text-default-500 text-xs">Total: {syncLogs.length}</span>
+            <span className="text-default-500 text-xs">Total: {syncTotal}</span>
             <Select
               aria-label="Cantidad de filas"
               selectedKey={String(syncPagination.pageSize)}
@@ -493,12 +495,12 @@ export default function MercadoPagoSettingsPage() {
   );
 }
 
-function getMpReportsRefetchInterval(query: { state: { data?: MPReport[] } }) {
+function getMpReportsRefetchInterval(query: { state: { data?: { reports?: MPReport[] } } }) {
   if (typeof document !== "undefined" && document.visibilityState !== "visible") {
     return false;
   }
 
-  const reports = query.state.data;
+  const reports = query.state.data?.reports;
   if (!reports || reports.length === 0) {
     return 60_000;
   }

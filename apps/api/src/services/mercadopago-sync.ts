@@ -44,10 +44,16 @@ export async function finalizeMpSyncLogEntry(
   });
 }
 
-export async function listMpSyncLogs(limit = 50) {
-  return db.syncLog.findMany({
-    where: { triggerSource: { startsWith: "mp:" } },
-    orderBy: { startedAt: "desc" },
-    take: limit,
-  });
+export async function listMpSyncLogs(options?: { limit?: number; offset?: number }) {
+  const { limit = 50, offset = 0 } = options ?? {};
+  const [logs, total] = await db.$transaction([
+    db.syncLog.findMany({
+      where: { triggerSource: { startsWith: "mp:" } },
+      orderBy: { startedAt: "desc" },
+      take: limit,
+      skip: offset,
+    }),
+    db.syncLog.count({ where: { triggerSource: { startsWith: "mp:" } } }),
+  ]);
+  return { logs, total };
 }
