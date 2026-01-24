@@ -1,5 +1,6 @@
+import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Table, type TableColumn } from "@/components/ui/Table";
+import { DataTable } from "@/components/data-table/DataTable";
 import type { FinancialSummary, IncomeItem } from "../types";
 
 interface IncomeBreakdownProps {
@@ -12,11 +13,43 @@ export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdown
     return <div className="bg-background h-64 w-full animate-pulse rounded-2xl" />;
   }
 
-  const columns: TableColumn<keyof IncomeItem>[] = [
-    { key: "date", label: "Fecha", width: "120px" },
-    { key: "category", label: "Categoría", width: "150px" },
-    { key: "summary", label: "Descripción" },
-    { key: "amount", label: "Monto", align: "right", width: "120px" },
+  const columns: ColumnDef<IncomeItem>[] = [
+    {
+      accessorKey: "date",
+      cell: ({ row }) => (
+        <span className="text-xs tabular-nums">
+          {dayjs(row.original.date).format("DD/MM/YYYY")}
+        </span>
+      ),
+      header: "Fecha",
+      minSize: 120,
+    },
+    {
+      accessorKey: "category",
+      cell: ({ row }) => <span className="text-xs font-medium">{row.original.category}</span>,
+      header: "Categoría",
+      minSize: 150,
+    },
+    {
+      accessorKey: "summary",
+      cell: ({ row }) => (
+        <span className="max-w-50 truncate text-xs" title={row.original.summary}>
+          {row.original.summary}
+        </span>
+      ),
+      header: "Descripción",
+      minSize: 200,
+    },
+    {
+      accessorKey: "amount",
+      cell: ({ row }) => (
+        <span className="tabular-nums text-right text-xs font-mono">
+          ${row.original.amount.toLocaleString("es-CL")}
+        </span>
+      ),
+      header: "Monto",
+      minSize: 120,
+    },
   ];
 
   if (summary.totalIncome === 0) {
@@ -37,24 +70,13 @@ export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdown
               Total: ${group.total.toLocaleString("es-CL")}
             </span>
           </div>
-
-          <Table<keyof IncomeItem | "dateDisplay"> columns={columns} variant="default">
-            <Table.Header<keyof IncomeItem | "dateDisplay"> columns={columns} />
-            <Table.Body columnsCount={columns.length}>
-              {group.items.map((item) => (
-                <tr key={item.id} className="hover:bg-default-50/50">
-                  <td className="px-4 py-3 text-xs">{dayjs(item.date).format("DD/MM/YYYY")}</td>
-                  <td className="px-4 py-3 text-xs font-medium">{item.category}</td>
-                  <td className="truncate px-4 py-3 text-xs max-w-50" title={item.summary}>
-                    {item.summary}
-                  </td>
-                  <td className="px-4 py-3 text-right text-xs font-mono">
-                    ${item.amount.toLocaleString("es-CL")}
-                  </td>
-                </tr>
-              ))}
-            </Table.Body>
-          </Table>
+          <DataTable
+            columns={columns}
+            data={group.items}
+            containerVariant="plain"
+            enablePagination={false}
+            enableToolbar={false}
+          />
         </section>
       ))}
     </div>

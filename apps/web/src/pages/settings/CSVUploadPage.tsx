@@ -14,7 +14,6 @@ import { Select, SelectItem } from "@/components/ui/Select";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { type CsvImportPayload, importCsvData, previewCsvImport } from "@/features/data-import/api";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -366,7 +365,13 @@ function ColumnMappingCard({
         </CardDescription>
       </CardHeader>
       <div className="border-t">
-        <DataTable columns={columns} data={fields} enableToolbar={false} containerVariant="plain" />
+        <DataTable
+          columns={columns}
+          data={fields}
+          containerVariant="plain"
+          enablePagination={false}
+          enableToolbar={false}
+        />
       </div>
     </Card>
   );
@@ -646,14 +651,14 @@ export default function CSVUploadPage() {
 
   if (allowedTableOptions.length === 0) {
     return (
-      <div className={PAGE_CONTAINER}>
+      <div className="space-y-4">
         <AccessDeniedAlert />
       </div>
     );
   }
 
   return (
-    <div className={cn(PAGE_CONTAINER, "space-y-3")}>
+    <div className="space-y-3">
       {/* 1. Select Table */}
       <TableSelectionCard
         allowedTableOptions={allowedTableOptions}

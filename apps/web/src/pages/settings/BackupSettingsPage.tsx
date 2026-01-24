@@ -28,7 +28,6 @@ import { triggerBackup, triggerRestore } from "@/features/backup/api";
 import { backupKeys } from "@/features/backup/queries";
 import type { BackupFile, BackupJob, RestoreJob } from "@/features/backup/types";
 import { formatFileSize } from "@/lib/format";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 import "dayjs/locale/es";
@@ -140,9 +139,7 @@ export default function BackupSettingsPage() {
 
   const renderBackupListContent = () => {
     if (fullBackups.length === 0) {
-      return (
-        <div className="text-default-500 py-12 text-center">No hay backups disponibles</div>
-      );
+      return <div className="text-default-500 py-12 text-center">No hay backups disponibles</div>;
     }
 
     return (
@@ -159,7 +156,7 @@ export default function BackupSettingsPage() {
   };
 
   return (
-    <div className={cn(PAGE_CONTAINER, "space-y-6")}>
+    <div className="space-y-6">
       {/* Progress Bar */}
       {isRunning && (
         <div className="bg-default-50 rounded-xl p-6 shadow-sm">

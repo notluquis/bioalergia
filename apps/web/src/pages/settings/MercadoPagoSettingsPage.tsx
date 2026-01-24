@@ -14,7 +14,6 @@ import StatCard from "@/components/ui/StatCard";
 import { useToast } from "@/context/ToastContext";
 import { getMpReportColumns } from "@/features/finance/mercadopago/components/MpReportColumns";
 import { mercadoPagoKeys } from "@/features/finance/mercadopago/queries";
-import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 import {
   type ImportStats,
@@ -211,7 +210,7 @@ export default function MercadoPagoSettingsPage() {
   const syncPageCount = Math.max(1, Math.ceil(syncTotal / syncPagination.pageSize));
 
   return (
-    <div className={cn(PAGE_CONTAINER, "space-y-5")}>
+    <div className="space-y-5">
       {/* Header: Tabs + Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Tabs */}
