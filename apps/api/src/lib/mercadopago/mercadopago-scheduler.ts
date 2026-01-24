@@ -248,7 +248,7 @@ function minutesSince(date: Date) {
   return (Date.now() - date.getTime()) / 60000;
 }
 
-async function acquireSchedulerLock() {
+export async function acquireSchedulerLock() {
   try {
     const result = await db.$queryRaw<{ acquired: boolean }[]>`
       SELECT pg_try_advisory_lock(${ADVISORY_LOCK_KEY}) AS acquired
@@ -260,7 +260,7 @@ async function acquireSchedulerLock() {
   }
 }
 
-async function releaseSchedulerLock() {
+export async function releaseSchedulerLock() {
   try {
     await db.$queryRaw`
       SELECT pg_advisory_unlock(${ADVISORY_LOCK_KEY})

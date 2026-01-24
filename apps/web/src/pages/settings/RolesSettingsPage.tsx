@@ -142,6 +142,8 @@ export default function RolesSettingsPage() {
     buildSubjectNavKeyMap(routeTree, allPermissions || []),
   );
 
+  const unmappedSubjects = getUnmappedSubjects(allPermissions || [], usedPermissionIds);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -206,6 +208,12 @@ export default function RolesSettingsPage() {
             updatingRoleId={updatingVariables?.roleId}
             viewModeRole={viewModeRole}
           />
+          {unmappedSubjects.length > 0 && (
+            <div className="text-default-500 border-default-200 border-t px-6 py-3 text-xs">
+              Subjects sin ruta: {unmappedSubjects.slice(0, 8).join(", ")}
+              {unmappedSubjects.length > 8 && ` +${unmappedSubjects.length - 8} más`}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -323,6 +331,21 @@ function processNavSections(
   }
 
   return mappedSections;
+}
+
+function getUnmappedSubjects(allPermissions: Permission[], usedPermissionIds: Set<number>) {
+  const subjects = new Set<string>();
+  const usedSubjects = new Set<string>();
+
+  for (const permission of allPermissions) {
+    const subject = permission.subject.toLowerCase();
+    subjects.add(subject);
+    if (usedPermissionIds.has(permission.id)) {
+      usedSubjects.add(subject);
+    }
+  }
+
+  return Array.from(subjects).filter((subject) => !usedSubjects.has(subject));
 }
 
 function getNavKey(section: string, label: string) {
