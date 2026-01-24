@@ -182,7 +182,7 @@ export default function RolesSettingsPage() {
               Gestiona los permisos y roles del sistema
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Role Filter Selector */}
             <div className="hidden sm:block">
               <Select
