@@ -480,7 +480,7 @@ function findBestMappedSubject(
     }
   }
 
-  if (!best || bestScore < 1) return null;
+  if (!best || bestScore < 2) return null;
   return best;
 }
 
