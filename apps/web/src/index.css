@@ -89,6 +89,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--background);
   color: var(--foreground);
   font-family: "Inter", system-ui, sans-serif;
@@ -99,6 +100,65 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Scrollbar helpers */
+.muted-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--default-300) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.muted-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.muted-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.muted-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--default-200);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+.muted-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: var(--default-300);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--default-400) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--default-300);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* View Transitions */
