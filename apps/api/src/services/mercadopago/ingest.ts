@@ -48,15 +48,27 @@ export async function processReportUrl(url: string, reportType: string): Promise
     // Convert Web Stream to Node Stream
     const nodeStream = Readable.fromWeb(body as import("stream/web").ReadableStream);
 
-    // biome-ignore lint/suspicious/noExplicitAny: legacy csv parsing
-    const rows: any[] = [];
     let isFirstRow = true;
+    let batch: ReportRowInput[] = [];
+    let batchValid = 0;
+    let flushPromise: Promise<void> = Promise.resolve();
+
+    const flushBatch = async () => {
+      if (batch.length === 0) return;
+      const inserted = await insertBatch(reportType, batch);
+      stats.insertedRows += inserted;
+      stats.duplicateRows += Math.max(batchValid - inserted, 0);
+      batch = [];
+      batchValid = 0;
+    };
 
     await new Promise<void>((resolve, reject) => {
       nodeStream
         // MercadoPago CSVs use semicolons as separators
         .pipe(csv({ separator: ";" }))
         .on("data", (row) => {
+          stats.totalRows++;
+
           // Clean keys (trim whitespace)
           // biome-ignore lint/suspicious/noExplicitAny: legacy csv parsing
           const cleanRow: any = {};
@@ -72,27 +84,45 @@ export async function processReportUrl(url: string, reportType: string): Promise
             isFirstRow = false;
           }
 
-          rows.push(cleanRow);
+          try {
+            const record =
+              reportType.toLowerCase().includes("settlement")
+                ? mapRowToSettlementTransaction(cleanRow)
+                : mapRowToReleaseTransaction(cleanRow);
+
+            if (!record.sourceId) {
+              stats.skippedRows++;
+              return;
+            }
+
+            batch.push(record);
+            batchValid++;
+            stats.validRows++;
+
+            if (batch.length >= BATCH_SIZE) {
+              nodeStream.pause();
+              flushPromise = flushPromise
+                .then(async () => {
+                  await flushBatch();
+                })
+                .then(() => {
+                  nodeStream.resume();
+                })
+                .catch((err) => {
+                  reject(err);
+                });
+            }
+          } catch (err) {
+            stats.errors.push(
+              `Row ${stats.totalRows}: ${err instanceof Error ? err.message : String(err)}`,
+            );
+            stats.skippedRows++;
+          }
         })
         .on("end", async () => {
           try {
-            stats.totalRows = rows.length;
-            console.log(
-              `[MP Ingest] CSV Downloaded. Rows: ${rows.length}. Starting batch insert...`,
-            );
-
-            for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-              const batch = rows.slice(i, i + BATCH_SIZE);
-              const batchStats = await saveReportBatch(batch, reportType);
-              stats.validRows += batchStats.valid;
-              stats.skippedRows += batchStats.skipped;
-              stats.insertedRows += batchStats.inserted;
-              stats.duplicateRows += batchStats.duplicates;
-              if (batchStats.errors.length > 0) {
-                stats.errors.push(...batchStats.errors);
-              }
-            }
-
+            await flushPromise;
+            await flushBatch();
             console.log(`[MP Ingest] Finished processing CSV for ${reportType}. Stats:`, stats);
             resolve();
           } catch (err) {
@@ -113,91 +143,26 @@ export async function processReportUrl(url: string, reportType: string): Promise
   return stats;
 }
 
-interface BatchStats {
-  valid: number;
-  skipped: number;
-  inserted: number;
-  duplicates: number;
-  errors: string[];
-}
+type ReleaseInput = ReturnType<typeof mapRowToReleaseTransaction>;
+type SettlementInput = ReturnType<typeof mapRowToSettlementTransaction>;
+type ReportRowInput = ReleaseInput | SettlementInput;
 
-// Save batch to DB with detailed statistics
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy batch processing
-// biome-ignore lint/suspicious/noExplicitAny: legacy batch processing
-async function saveReportBatch(rows: any[], reportType: string): Promise<BatchStats> {
-  const batchStats: BatchStats = {
-    valid: 0,
-    skipped: 0,
-    inserted: 0,
-    duplicates: 0,
-    errors: [],
-  };
+async function insertBatch(reportType: string, rows: ReportRowInput[]) {
+  if (rows.length === 0) return 0;
 
   const type = reportType.toLowerCase();
 
-  try {
-    if (type.includes("settlement")) {
-      const transactions = rows.map(mapRowToSettlementTransaction);
-
-      for (const tx of transactions) {
-        if (!tx.sourceId) {
-          batchStats.skipped++;
-          continue;
-        }
-        batchStats.valid++;
-
-        try {
-          // Check if exists
-          const existing = await db.settlementTransaction.findUnique({
-            where: { sourceId: tx.sourceId },
-            select: { id: true },
-          });
-
-          if (existing) {
-            batchStats.duplicates++;
-          } else {
-            await db.settlementTransaction.create({ data: tx });
-            batchStats.inserted++;
-          }
-        } catch (err) {
-          batchStats.errors.push(
-            `Settlement ${tx.sourceId}: ${err instanceof Error ? err.message : String(err)}`,
-          );
-        }
-      }
-    } else if (type.includes("release")) {
-      const transactions = rows.map(mapRowToReleaseTransaction);
-
-      for (const tx of transactions) {
-        if (!tx.sourceId) {
-          batchStats.skipped++;
-          continue;
-        }
-        batchStats.valid++;
-
-        try {
-          // Check if exists
-          const existing = await db.releaseTransaction.findUnique({
-            where: { sourceId: tx.sourceId },
-            select: { id: true },
-          });
-
-          if (existing) {
-            batchStats.duplicates++;
-          } else {
-            await db.releaseTransaction.create({ data: tx });
-            batchStats.inserted++;
-          }
-        } catch (err) {
-          batchStats.errors.push(
-            `Release ${tx.sourceId}: ${err instanceof Error ? err.message : String(err)}`,
-          );
-        }
-      }
-    }
-  } catch (err) {
-    batchStats.errors.push(`Batch error: ${err instanceof Error ? err.message : String(err)}`);
+  if (type.includes("settlement")) {
+    const result = await db.settlementTransaction.createMany({
+      data: rows as SettlementInput[],
+      skipDuplicates: true,
+    });
+    return result.count;
   }
 
-  return batchStats;
+  const result = await db.releaseTransaction.createMany({
+    data: rows as ReleaseInput[],
+    skipDuplicates: true,
+  });
+  return result.count;
 }

@@ -35,6 +35,7 @@ app.get("/", async (c) => {
 
   const limit = Math.min(parsed.data.limit || 100, 2000);
   const includeAmounts = parsed.data.includeAmounts === "true";
+  const includeTotal = parsed.data.includeTotal !== "false";
   const page = parsed.data.page ?? 1;
   const pageSize = parsed.data.pageSize ?? limit;
   const offset = (page - 1) * pageSize;
@@ -53,7 +54,7 @@ app.get("/", async (c) => {
     includeTest: includeTestData,
   };
 
-  const { total, transactions } = await listTransactions(filters, pageSize, offset);
+  const { total, transactions } = await listTransactions(filters, pageSize, offset, includeTotal);
   const data = transactions.map(mapTransaction);
 
   return reply(c, {

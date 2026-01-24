@@ -15,7 +15,12 @@ export type TransactionFilters = {
 };
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy filtering logic
-export async function listTransactions(filters: TransactionFilters, limit = 100, offset = 0) {
+export async function listTransactions(
+  filters: TransactionFilters,
+  limit = 100,
+  offset = 0,
+  includeTotal = true,
+) {
   // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
   const where: any = {};
 
@@ -77,14 +82,21 @@ export async function listTransactions(filters: TransactionFilters, limit = 100,
     });
   }
 
+  const transactionsPromise = db.transaction.findMany({
+    where,
+    orderBy: { transactionDate: "desc" },
+    take: limit,
+    skip: offset,
+  });
+
+  if (!includeTotal) {
+    const transactions = await transactionsPromise;
+    return { total: undefined, transactions };
+  }
+
   const [total, transactions] = await Promise.all([
     db.transaction.count({ where }),
-    db.transaction.findMany({
-      where,
-      orderBy: { transactionDate: "desc" },
-      take: limit,
-      skip: offset,
-    }),
+    transactionsPromise,
   ]);
 
   return { total, transactions };
