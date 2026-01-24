@@ -1,5 +1,6 @@
 import cron from "node-cron";
 
+import { db } from "@finanzas/db";
 import { getSetting, updateSetting } from "../../services/settings";
 import { MercadoPagoService } from "../../services/mercadopago";
 import { getActiveJobsByType, startJob, updateJobProgress, completeJob, failJob } from "../jobQueue";
@@ -12,10 +13,14 @@ const DEFAULT_CRON = "*/20 * * * *";
 const DEFAULT_TIMEZONE = "America/Santiago";
 const MAX_PROCESSED_FILES = 250;
 const MAX_PROCESS_PER_RUN = 4;
+const CREATE_COOLDOWN_MINUTES = 30;
+const ADVISORY_LOCK_KEY = 924_017_221;
 
 const SETTINGS_KEYS = {
   lastGenerated: (type: ReportType) => `mp:lastGenerated:${type}`,
+  lastCreateAttempt: (type: ReportType) => `mp:lastCreateAttempt:${type}`,
   processedFiles: (type: ReportType) => `mp:processedFiles:${type}`,
+  lastProcessedAt: (type: ReportType) => `mp:lastProcessedAt:${type}`,
   lastRun: "mp:lastAutoSyncRun",
 };
 
@@ -46,8 +51,15 @@ export function startMercadoPagoScheduler() {
 }
 
 export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
+  const acquired = await acquireSchedulerLock();
+  if (!acquired) {
+    logWarn("mp.autoSync.skip", { reason: "lock_busy", trigger });
+    return;
+  }
+
   if (getActiveJobsByType(JOB_TYPE).length > 0) {
     logWarn("mp.autoSync.skip", { reason: "already_running", trigger });
+    await releaseSchedulerLock();
     return;
   }
 
@@ -78,6 +90,8 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
   } catch (error) {
     failJob(jobId, error instanceof Error ? error.message : String(error));
     logError("mp.autoSync.error", error, { trigger });
+  } finally {
+    await releaseSchedulerLock();
   }
 }
 
@@ -101,7 +115,13 @@ async function ensureDailyReport(type: ReportType, reports: MPReportSummary[]) {
     return;
   }
 
+  const lastCreateAttempt = await getSetting(SETTINGS_KEYS.lastCreateAttempt(type));
+  if (lastCreateAttempt && minutesSince(new Date(lastCreateAttempt)) < CREATE_COOLDOWN_MINUTES) {
+    return;
+  }
+
   const { beginDate, endDate } = toDayRange(targetDate);
+  await updateSetting(SETTINGS_KEYS.lastCreateAttempt(type), new Date().toISOString());
   await MercadoPagoService.createReport(type, {
     begin_date: beginDate.toISOString(),
     end_date: endDate.toISOString(),
@@ -116,11 +136,20 @@ async function processReadyReports(
   jobId: string,
 ) {
   const processedSet = await loadProcessedFiles(type);
+  const lastProcessedAt = await getLastProcessedAt(type);
   let processedCount = 0;
 
   const readyReports = reports
     .filter((report) => report.file_name && isReportReady(report.status))
+    .filter((report) => {
+      if (!lastProcessedAt) return true;
+      const createdAt = parseDate(report.date_created);
+      if (!createdAt) return true;
+      return createdAt.getTime() > lastProcessedAt.getTime();
+    })
     .sort((a, b) => (a.date_created ?? "").localeCompare(b.date_created ?? ""));
+
+  let newestProcessedAt: Date | null = lastProcessedAt;
 
   for (const report of readyReports) {
     if (processedCount >= MAX_PROCESS_PER_RUN) break;
@@ -133,6 +162,10 @@ async function processReadyReports(
       await MercadoPagoService.processReport(type, { fileName });
       processedSet.add(fileName);
       processedCount += 1;
+      const createdAt = parseDate(report.date_created);
+      if (createdAt && (!newestProcessedAt || createdAt > newestProcessedAt)) {
+        newestProcessedAt = createdAt;
+      }
       logEvent("mp.autoSync.reportProcessed", { type, fileName });
     } catch (error) {
       logError("mp.autoSync.reportFailed", error, { type, fileName });
@@ -140,6 +173,9 @@ async function processReadyReports(
   }
 
   await persistProcessedFiles(type, processedSet);
+  if (newestProcessedAt) {
+    await updateSetting(SETTINGS_KEYS.lastProcessedAt(type), newestProcessedAt.toISOString());
+  }
   return processedCount;
 }
 
@@ -157,6 +193,14 @@ async function loadProcessedFiles(type: ReportType) {
 async function persistProcessedFiles(type: ReportType, processed: Set<string>) {
   const trimmed = Array.from(processed).slice(-MAX_PROCESSED_FILES);
   await updateSetting(SETTINGS_KEYS.processedFiles(type), JSON.stringify(trimmed));
+}
+
+async function getLastProcessedAt(type: ReportType) {
+  const raw = await getSetting(SETTINGS_KEYS.lastProcessedAt(type));
+  if (!raw) return null;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
 }
 
 function isReportReady(status?: string) {
@@ -198,4 +242,30 @@ function isSameDay(a: Date, b: Date) {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
+}
+
+function minutesSince(date: Date) {
+  return (Date.now() - date.getTime()) / 60000;
+}
+
+async function acquireSchedulerLock() {
+  try {
+    const result = await db.$queryRaw<{ acquired: boolean }[]>`
+      SELECT pg_try_advisory_lock(${ADVISORY_LOCK_KEY}) AS acquired
+    `;
+    return result[0]?.acquired === true;
+  } catch (error) {
+    logError("mp.autoSync.lockError", error, {});
+    return false;
+  }
+}
+
+async function releaseSchedulerLock() {
+  try {
+    await db.$queryRaw`
+      SELECT pg_advisory_unlock(${ADVISORY_LOCK_KEY})
+    `;
+  } catch (error) {
+    logError("mp.autoSync.unlockError", error, {});
+  }
 }
