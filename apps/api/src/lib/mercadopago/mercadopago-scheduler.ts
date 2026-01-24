@@ -3,6 +3,7 @@ import cron from "node-cron";
 import { db } from "@finanzas/db";
 import { getSetting, updateSetting } from "../../services/settings";
 import { MercadoPagoService } from "../../services/mercadopago";
+import { createMpSyncLogEntry, finalizeMpSyncLogEntry } from "../../services/mercadopago-sync";
 import { getActiveJobsByType, startJob, updateJobProgress, completeJob, failJob } from "../jobQueue";
 import { logError, logEvent, logWarn } from "../logger";
 
@@ -76,6 +77,10 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
   const jobId = startJob(JOB_TYPE, 6);
   const startedAt = new Date();
   updateJobProgress(jobId, 0, "Inicio sincronización MercadoPago");
+  const logId = await createMpSyncLogEntry({
+    triggerSource: "mp:auto-sync",
+    triggerLabel: trigger,
+  });
 
   try {
     await jitterDelay();
@@ -98,12 +103,23 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
       results[type] = await processReadyReports(type, reports, jobId);
     }
 
+    const totalProcessed = (results.release ?? 0) + (results.settlement ?? 0);
+    await finalizeMpSyncLogEntry(logId, {
+      status: "SUCCESS",
+      inserted: totalProcessed,
+      skipped: results.pendingWebhooks ?? 0,
+      changeDetails: results,
+    });
     await updateSetting(SETTINGS_KEYS.lastRun, startedAt.toISOString());
     completeJob(jobId, { processed: results, startedAt });
     logEvent("mp.autoSync.success", { processed: results, trigger });
   } catch (error) {
     failJob(jobId, error instanceof Error ? error.message : String(error));
     logError("mp.autoSync.error", error, { trigger });
+    await finalizeMpSyncLogEntry(logId, {
+      status: "ERROR",
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
   } finally {
     await releaseSchedulerLock();
   }

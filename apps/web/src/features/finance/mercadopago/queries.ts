@@ -9,4 +9,9 @@ export const mercadoPagoKeys = {
       queryFn: () => MPService.listReports(type),
       queryKey: ["mp-reports", type],
     }),
+  syncLogs: (limit = 50) =>
+    queryOptions({
+      queryFn: () => MPService.listSyncLogs(limit),
+      queryKey: ["mp-sync-logs", limit],
+    }),
 };

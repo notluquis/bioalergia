@@ -20,6 +20,7 @@ import {
   type MPReport,
   MPService,
   type MpReportType,
+  type MpSyncLog,
 } from "@/services/mercadopago";
 
 const ALL_TABLE_COLUMNS = [
@@ -61,6 +62,7 @@ export default function MercadoPagoSettingsPage() {
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
   });
+  const { data: syncLogs } = useSuspenseQuery(mercadoPagoKeys.syncLogs(50));
 
   // Mutations
 
@@ -314,6 +316,66 @@ export default function MercadoPagoSettingsPage() {
           data={reports || []}
           noDataMessage="No se encontraron reportes generados."
         />
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <Clock className="text-primary h-4 w-4" />
+            <h3 className="text-lg font-semibold">Historial de Sync</h3>
+          </div>
+        </div>
+        <div className="bg-background border-default-200 rounded-2xl border p-4 shadow-sm">
+          {syncLogs.length === 0 ? (
+            <div className="text-default-400 py-6 text-center text-sm">
+              No hay sincronizaciones registradas.
+            </div>
+          ) : (
+            <div className="divide-default-200 divide-y">
+              {syncLogs.map((log: MpSyncLog) => (
+                <div className="flex flex-wrap items-center gap-3 py-3" key={log.id}>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-semibold",
+                      log.status === "SUCCESS" && "bg-success/10 text-success",
+                      log.status === "ERROR" && "bg-danger/10 text-danger",
+                      log.status === "RUNNING" && "bg-warning/10 text-warning",
+                    )}
+                  >
+                    {log.status}
+                  </span>
+                  <span className="text-sm font-medium">
+                    {dayjs(log.startedAt).format("DD/MM/YYYY HH:mm")}
+                  </span>
+                  <span className="text-default-500 text-xs font-mono">{log.triggerSource}</span>
+                  {log.triggerLabel && (
+                    <span className="text-default-400 text-xs">{log.triggerLabel}</span>
+                  )}
+                  <div className="ml-auto flex flex-wrap items-center gap-2 text-xs">
+                    <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
+                      +{log.inserted ?? 0}
+                    </span>
+                    {log.skipped != null && (
+                      <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                        !{log.skipped}
+                      </span>
+                    )}
+                    {log.updated != null && log.updated > 0 && (
+                      <span className="bg-info/10 text-info rounded px-1.5 py-0.5">
+                        ~{log.updated}
+                      </span>
+                    )}
+                    {log.excluded != null && log.excluded > 0 && (
+                      <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
+                        -{log.excluded}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modals */}
