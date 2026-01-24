@@ -287,6 +287,7 @@ export default function UserManagementPage() {
           columns={columns}
           data={filteredUsers}
           containerVariant="plain"
+          enableGlobalFilter={false}
           enableToolbar={true}
           isLoading={isLoading}
         />
