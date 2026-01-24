@@ -10,7 +10,6 @@ import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilt
 import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { numberFormatter } from "@/lib/format";
-import { PAGE_CONTAINER } from "@/lib/styles";
 
 import "dayjs/locale/es";
 
@@ -91,7 +90,7 @@ function CalendarSchedulePage() {
   }, [displayedWeekStart, appliedFilters.from, appliedFilters.to, updateFilters, applyFilters]);
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <section className="space-y-4">
       {/* Compact Header */}
       <header className="space-y-3">
         {/* Navigation Row */}

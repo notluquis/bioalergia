@@ -13,7 +13,6 @@ import { DailyStatsCards } from "@/features/calendar/components/DailyStatsCards"
 import { DayNavigation } from "@/features/calendar/components/DayNavigation";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { today } from "@/lib/dates";
-import { PAGE_CONTAINER } from "@/lib/styles";
 
 import "dayjs/locale/es";
 
@@ -80,7 +79,7 @@ function CalendarDailyPage() {
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <section className="space-y-4">
       {/* Header with Navigation */}
       <header className="space-y-3">
         <DayNavigation

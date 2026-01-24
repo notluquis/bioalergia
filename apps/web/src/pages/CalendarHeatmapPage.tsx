@@ -17,7 +17,6 @@ import {
 import { NULL_CATEGORY_VALUE } from "@/features/calendar/constants";
 import type { CalendarFilters } from "@/features/calendar/types";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
-import { PAGE_CONTAINER } from "@/lib/styles";
 
 import "dayjs/locale/es";
 
@@ -173,7 +172,7 @@ function CalendarHeatmapPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
-    <section className={PAGE_CONTAINER}>
+    <section className="space-y-4">
       {/* Collapsible Filter Toolbar */}
       <Card className="overflow-hidden transition-all duration-300">
         <button
