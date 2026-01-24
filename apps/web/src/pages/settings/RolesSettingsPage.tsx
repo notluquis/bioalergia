@@ -17,6 +17,8 @@ import { RoleFormModal } from "@/features/roles/components/RoleFormModal";
 import { roleKeys } from "@/features/roles/queries";
 import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
 import { cn } from "@/lib/utils";
+import { routeTree } from "@/routeTree.gen";
+import type { NavConfig } from "@/types/navigation";
 import type { Permission, Role } from "@/types/roles";
 
 // --- Page Component ---
@@ -137,6 +139,7 @@ export default function RolesSettingsPage() {
     getNavSections(),
     allPermissions || [],
     usedPermissionIds,
+    buildSubjectNavKeyMap(routeTree),
   );
 
   return (
@@ -255,7 +258,11 @@ function processNavSections(
   navSections: NavSectionData[],
   allPermissions: Permission[],
   usedPermissionIds: Set<number>,
+  subjectNavKeyMap: Map<string, Set<string>>,
 ) {
+  const permissionsBySubject = buildPermissionsBySubject(allPermissions);
+  const navKeyToSubjects = buildNavKeyToSubjects(subjectNavKeyMap);
+
   // 1. Get permissions explicitly defined in routes
   // This helps finding permissions even if they are not in the main nav structure
   // Although not strictly used for filtering navigation, it's useful context
@@ -264,32 +271,15 @@ function processNavSections(
   const mappedSections = navSections
     .map((section: NavSectionData) => {
       const itemsWithPermissions = section.items
-        .map((item: NavItem) => {
-          const perms: Permission[] = [];
-
-          if (item.requiredPermission) {
-            const subject = item.requiredPermission.subject;
-            // Match by exact subject (case insensitive)
-            const related = allPermissions.filter(
-              (p) => p.subject.toLowerCase() === subject.toLowerCase(),
-            );
-            perms.push(...related);
-          }
-
-          const uniquePermissions = [...new Map(perms.map((p) => [p.id, p])).values()];
-          for (const p of uniquePermissions) usedPermissionIds.add(p.id);
-
-          // Show item even if no permissions found in DB yet, but ideally we want them matched
-          // If 0 permissions, it shows up as an empty row in matrix which is fine or we filter it
-          if (uniquePermissions.length === 0) return null;
-
-          return {
-            icon: item.icon,
-            label: item.label,
-            permissionIds: uniquePermissions.map((p) => p.id),
-            relatedPermissions: uniquePermissions,
-          };
-        })
+        .map((item: NavItem) =>
+          buildMatrixItem({
+            item,
+            navKeyToSubjects,
+            permissionsBySubject,
+            sectionTitle: section.title,
+            usedPermissionIds,
+          }),
+        )
         .filter((item): item is NonNullable<typeof item> => item !== null);
 
       const sectionPermissionIds = itemsWithPermissions.flatMap((item) => item.permissionIds);
@@ -333,4 +323,106 @@ function processNavSections(
   }
 
   return mappedSections;
+}
+
+function getNavKey(section: string, label: string) {
+  return `${section}::${label}`;
+}
+
+function buildPermissionsBySubject(allPermissions: Permission[]) {
+  const map = new Map<string, Permission[]>();
+  for (const permission of allPermissions) {
+    const key = permission.subject.toLowerCase();
+    const existing = map.get(key) ?? [];
+    existing.push(permission);
+    map.set(key, existing);
+  }
+  return map;
+}
+
+function buildNavKeyToSubjects(subjectNavKeyMap: Map<string, Set<string>>) {
+  const navKeyToSubjects = new Map<string, Set<string>>();
+  for (const [subject, navKeys] of subjectNavKeyMap.entries()) {
+    for (const navKey of navKeys) {
+      const existing = navKeyToSubjects.get(navKey) ?? new Set<string>();
+      existing.add(subject);
+      navKeyToSubjects.set(navKey, existing);
+    }
+  }
+  return navKeyToSubjects;
+}
+
+function buildMatrixItem({
+  item,
+  navKeyToSubjects,
+  permissionsBySubject,
+  sectionTitle,
+  usedPermissionIds,
+}: {
+  item: NavItem;
+  navKeyToSubjects: Map<string, Set<string>>;
+  permissionsBySubject: Map<string, Permission[]>;
+  sectionTitle: string;
+  usedPermissionIds: Set<number>;
+}): MatrixItem | null {
+  const subjects = new Set<string>();
+  if (item.requiredPermission) {
+    subjects.add(item.requiredPermission.subject.toLowerCase());
+  }
+
+  const navKey = getNavKey(sectionTitle, item.label);
+  const extraSubjects = navKeyToSubjects.get(navKey);
+  if (extraSubjects) {
+    for (const subject of extraSubjects) {
+      subjects.add(subject);
+    }
+  }
+
+  const perms: Permission[] = [];
+  for (const subject of subjects) {
+    const subjectPerms = permissionsBySubject.get(subject);
+    if (subjectPerms) {
+      perms.push(...subjectPerms);
+    }
+  }
+
+  const uniquePermissions = [...new Map(perms.map((p) => [p.id, p])).values()].sort((a, b) =>
+    a.subject.localeCompare(b.subject),
+  );
+  for (const p of uniquePermissions) usedPermissionIds.add(p.id);
+
+  if (uniquePermissions.length === 0) return null;
+
+  return {
+    icon: item.icon,
+    label: item.label,
+    permissionIds: uniquePermissions.map((p) => p.id),
+    relatedPermissions: uniquePermissions,
+  };
+}
+
+function buildSubjectNavKeyMap(routeTreeData: unknown) {
+  const mapping = new Map<string, Set<string>>();
+
+  // biome-ignore lint/suspicious/noExplicitAny: TanStack route tree is dynamic
+  const walk = (route: any, activeNav?: NavConfig) => {
+    const currentNav = (route.options?.staticData?.nav as NavConfig | undefined) ?? activeNav;
+    const permission = route.options?.staticData?.permission as { subject?: string } | undefined;
+
+    if (permission?.subject && currentNav) {
+      const key = getNavKey(currentNav.section, currentNav.label);
+      const subject = permission.subject.toLowerCase();
+      const existing = mapping.get(subject) ?? new Set<string>();
+      existing.add(key);
+      mapping.set(subject, existing);
+    }
+
+    route.children?.forEach((child: unknown) => {
+      walk(child, currentNav);
+    });
+  };
+
+  walk(routeTreeData);
+
+  return mapping;
 }
