@@ -78,7 +78,7 @@ export function UpdateNotification() {
 
   return (
     <>
-      <div className="animate-in slide-in-from-bottom-5 fade-in fixed right-4 bottom-4 z-50 max-w-sm">
+      <div className="animate-in slide-in-from-bottom-5 fade-in fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+6rem)] z-50 max-w-sm md:bottom-4">
         <div className="border-primary/20 bg-background rounded-2xl border p-4 shadow-2xl">
           <div className="flex items-start gap-3">
             <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
