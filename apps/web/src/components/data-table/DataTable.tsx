@@ -36,6 +36,11 @@ interface DataTableProps<TData, TValue> {
    */
   readonly containerVariant?: "default" | "plain";
   /**
+   * Show pagination controls below the table.
+   * @default true
+   */
+  readonly enablePagination?: boolean;
+  /**
    * Enable toolbars (search, export, view options)
    * @default true
    */
@@ -118,6 +123,7 @@ export function DataTable<TData, TValue>({
   data,
   enableExport = true,
   enableGlobalFilter = true,
+  enablePagination = true,
   enableToolbar = true,
   enableVirtualization = false,
   estimatedRowHeight = 48,
@@ -437,7 +443,7 @@ export function DataTable<TData, TValue>({
           </table>
         </div>
       </div>
-      <DataTablePagination table={table} />
+      {enablePagination && <DataTablePagination table={table} />}
     </div>
   );
 }
