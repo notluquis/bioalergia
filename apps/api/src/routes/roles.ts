@@ -17,6 +17,7 @@ import {
 } from "../services/roles";
 import { reply } from "../utils/reply";
 import { logEvent } from "../lib/logger";
+import { getSetting, updateSetting } from "../services/settings";
 
 const app = new Hono();
 
@@ -151,6 +152,11 @@ app.post("/telemetry/unmapped-subjects", async (c) => {
   if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json<{ subjects?: string[]; total?: number; timestamp?: string }>();
+  const shouldLog = await shouldLogUnmappedSubjects();
+  if (!shouldLog) {
+    return reply(c, { status: "ok", skipped: true });
+  }
+
   logEvent("roles.unmappedSubjects", {
     total: body.total ?? body.subjects?.length ?? 0,
     subjects: body.subjects?.slice(0, 25),
@@ -159,5 +165,19 @@ app.post("/telemetry/unmapped-subjects", async (c) => {
   });
   return reply(c, { status: "ok" });
 });
+
+async function shouldLogUnmappedSubjects() {
+  const key = "roles:unmapped:lastLog";
+  const last = await getSetting(key);
+  if (last) {
+    const lastDate = new Date(last);
+    if (!Number.isNaN(lastDate.getTime())) {
+      const hoursSince = (Date.now() - lastDate.getTime()) / 3600000;
+      if (hoursSince < 12) return false;
+    }
+  }
+  await updateSetting(key, new Date().toISOString());
+  return true;
+}
 
 export default app;

@@ -16,6 +16,7 @@ const MAX_PROCESS_PER_RUN = 4;
 const CREATE_COOLDOWN_MINUTES = 30;
 const ADVISORY_LOCK_KEY = 924_017_221;
 const JITTER_MAX_MS = 45_000;
+const PROCESSED_TTL_DAYS = 45;
 
 const SETTINGS_KEYS = {
   lastGenerated: (type: ReportType) => `mp:lastGenerated:${type}`,
@@ -24,6 +25,7 @@ const SETTINGS_KEYS = {
   lastProcessedAt: (type: ReportType) => `mp:lastProcessedAt:${type}`,
   lastRun: "mp:lastAutoSyncRun",
   pendingWebhooks: "mp:webhook:pending",
+  autoSyncEnabled: "mp:autoSync:enabled",
 };
 
 export function startMercadoPagoScheduler() {
@@ -53,6 +55,12 @@ export function startMercadoPagoScheduler() {
 }
 
 export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
+  const enabled = await isAutoSyncEnabled();
+  if (!enabled) {
+    logWarn("mp.autoSync.skip", { reason: "disabled", trigger });
+    return;
+  }
+
   const acquired = await acquireSchedulerLock();
   if (!acquired) {
     logWarn("mp.autoSync.skip", { reason: "lock_busy", trigger });
@@ -221,19 +229,44 @@ async function processPendingWebhooks(jobId: string) {
   return processedCount;
 }
 
+async function isAutoSyncEnabled() {
+  const raw = await getSetting(SETTINGS_KEYS.autoSyncEnabled);
+  if (raw == null || raw === "") return true;
+  return raw === "true";
+}
+
 async function loadProcessedFiles(type: ReportType) {
   const raw = await getSetting(SETTINGS_KEYS.processedFiles(type));
   if (!raw) return new Set<string>();
   try {
-    const parsed = JSON.parse(raw) as string[];
-    return new Set(parsed.filter(Boolean));
+    const parsed = JSON.parse(raw) as Array<string | { name: string; at?: string }>;
+    const now = Date.now();
+    const ttlMs = PROCESSED_TTL_DAYS * 24 * 60 * 60 * 1000;
+    const entries = parsed
+      .map((item) => {
+        if (typeof item === "string") return { name: item, at: null };
+        return { name: item.name, at: item.at ?? null };
+      })
+      .filter((item) => item.name);
+
+    const filtered = entries.filter((entry) => {
+      if (!entry.at) return true;
+      const timestamp = Date.parse(entry.at);
+      if (Number.isNaN(timestamp)) return true;
+      return now - timestamp <= ttlMs;
+    });
+
+    return new Set(filtered.map((entry) => entry.name));
   } catch {
     return new Set<string>();
   }
 }
 
 async function persistProcessedFiles(type: ReportType, processed: Set<string>) {
-  const trimmed = Array.from(processed).slice(-MAX_PROCESSED_FILES);
+  const now = new Date().toISOString();
+  const trimmed = Array.from(processed)
+    .slice(-MAX_PROCESSED_FILES)
+    .map((name) => ({ name, at: now }));
   await updateSetting(SETTINGS_KEYS.processedFiles(type), JSON.stringify(trimmed));
 }
 

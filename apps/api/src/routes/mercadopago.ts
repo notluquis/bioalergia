@@ -229,6 +229,7 @@ interface MPWebhookPayload {
 const PROCESSED_FILES_KEY = "mp:processedFiles:webhook";
 const PENDING_WEBHOOKS_KEY = "mp:webhook:pending";
 const MAX_PENDING_WEBHOOKS = 50;
+const PROCESSED_TTL_DAYS = 45;
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy webhook logic
 mercadopagoRoutes.post("/webhook", async (c) => {
@@ -344,15 +345,34 @@ async function loadProcessedFiles(key: string) {
   const raw = await getSetting(key);
   if (!raw) return new Set<string>();
   try {
-    const parsed = JSON.parse(raw) as string[];
-    return new Set(parsed.filter(Boolean));
+    const parsed = JSON.parse(raw) as Array<string | { name: string; at?: string }>;
+    const now = Date.now();
+    const ttlMs = PROCESSED_TTL_DAYS * 24 * 60 * 60 * 1000;
+    const entries = parsed
+      .map((item) => {
+        if (typeof item === "string") return { name: item, at: null };
+        return { name: item.name, at: item.at ?? null };
+      })
+      .filter((item) => item.name);
+
+    const filtered = entries.filter((entry) => {
+      if (!entry.at) return true;
+      const timestamp = Date.parse(entry.at);
+      if (Number.isNaN(timestamp)) return true;
+      return now - timestamp <= ttlMs;
+    });
+
+    return new Set(filtered.map((entry) => entry.name));
   } catch {
     return new Set<string>();
   }
 }
 
 async function persistProcessedFiles(key: string, processed: Set<string>) {
-  const trimmed = Array.from(processed).slice(-250);
+  const now = new Date().toISOString();
+  const trimmed = Array.from(processed)
+    .slice(-250)
+    .map((name) => ({ name, at: now }));
   await updateSetting(key, JSON.stringify(trimmed));
 }
 
