@@ -619,6 +619,7 @@ export default function ReportsPage() {
                     <DataTable
                       columns={columns}
                       data={reportData}
+                      containerVariant="plain"
                       enableToolbar={false}
                       enableVirtualization={false}
                       meta={meta as unknown as Record<string, unknown>}

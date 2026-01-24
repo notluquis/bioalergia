@@ -34,6 +34,7 @@ export function ServiceScheduleTable({
       <DataTable
         columns={columns}
         data={schedules}
+        containerVariant="plain"
         enableToolbar={false} // Small sub-table usually doesn't need search/filter toolbar
         pagination={{ pageIndex: 0, pageSize: 100 }} // Show all rows by default for schedules
       />

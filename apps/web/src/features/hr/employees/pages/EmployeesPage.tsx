@@ -155,6 +155,9 @@ export default function EmployeesPage() {
         <DataTable
           columns={columns}
           data={paginatedEmployees}
+          containerVariant="plain"
+          enableExport={false}
+          enableGlobalFilter={false}
           enableVirtualization
           filters={[
             {

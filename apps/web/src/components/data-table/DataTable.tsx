@@ -31,10 +31,25 @@ interface DataTableProps<TData, TValue> {
   readonly columnVisibility?: VisibilityState;
   readonly data: TData[];
   /**
+   * Controls the DataTable container styling when wrapped by cards/surfaces.
+   * @default "default"
+   */
+  readonly containerVariant?: "default" | "plain";
+  /**
    * Enable toolbars (search, export, view options)
    * @default true
    */
   readonly enableToolbar?: boolean;
+  /**
+   * Enable CSV export in toolbar
+   * @default true
+   */
+  readonly enableExport?: boolean;
+  /**
+   * Enable global filtering (search input) in toolbar
+   * @default true
+   */
+  readonly enableGlobalFilter?: boolean;
   /**
    * Enable row virtualization for large datasets.
    * Recommended for lists > 100 rows.
@@ -99,7 +114,10 @@ const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties =>
 export function DataTable<TData, TValue>({
   columns,
   columnVisibility: controlledColumnVisibility,
+  containerVariant = "default",
   data,
+  enableExport = true,
+  enableGlobalFilter = true,
   enableToolbar = true,
   enableVirtualization = false,
   estimatedRowHeight = 48,
@@ -308,8 +326,22 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      {enableToolbar && <DataTableToolbar filters={filters} table={table} />}
-      <div className="border-default-200/50 bg-background relative overflow-visible rounded-2xl border shadow-sm">
+      {enableToolbar && (
+        <DataTableToolbar
+          enableExport={enableExport}
+          enableGlobalFilter={enableGlobalFilter}
+          filters={filters}
+          table={table}
+        />
+      )}
+      <div
+        className={cn(
+          "relative overflow-visible",
+          containerVariant === "plain"
+            ? "bg-transparent border-0 shadow-none"
+            : "border-default-200/50 bg-background rounded-2xl border shadow-sm",
+        )}
+      >
         <div
           className="muted-scrollbar overflow-x-auto"
           ref={tableContainerRef}

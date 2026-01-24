@@ -366,7 +366,7 @@ function ColumnMappingCard({
         </CardDescription>
       </CardHeader>
       <div className="border-t">
-        <DataTable columns={columns} data={fields} />
+        <DataTable columns={columns} data={fields} enableToolbar={false} containerVariant="plain" />
       </div>
     </Card>
   );

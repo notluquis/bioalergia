@@ -29,6 +29,7 @@ export default function TimesheetSummaryTable({
       <DataTable
         columns={columns}
         data={summary?.employees ?? []}
+        containerVariant="plain"
         enableToolbar={false}
         enableVirtualization={false}
         isLoading={loading}

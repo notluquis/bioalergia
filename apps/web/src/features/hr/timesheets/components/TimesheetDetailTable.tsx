@@ -114,6 +114,7 @@ export default function TimesheetDetailTable({
         <DataTable
           columns={columns as ColumnDef<BulkRow, unknown>[]}
           data={bulkRows}
+          containerVariant="plain"
           enableToolbar={false}
           enableVirtualization={false}
           isLoading={loadingDetail}

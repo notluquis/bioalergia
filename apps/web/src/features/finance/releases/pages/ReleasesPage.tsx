@@ -38,6 +38,8 @@ export default function ReleasesPage() {
       <DataTable
         columns={columns}
         data={data.data}
+        enableExport={false}
+        enableGlobalFilter={false}
         initialPinning={{ left: ["expander", "sourceId"], right: [] }}
         onPaginationChange={(updater: Updater<PaginationState>) => {
           if (typeof updater === "function") {

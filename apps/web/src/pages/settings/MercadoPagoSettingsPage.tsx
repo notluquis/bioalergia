@@ -1,14 +1,13 @@
 import { Tabs } from "@heroui/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ColumnDef, PaginationState } from "@tanstack/react-table";
+import type { ColumnDef, PaginationState, VisibilityState } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { CheckCircle2, Clock, FileText, Plus, Settings } from "lucide-react";
+import { CheckCircle2, Clock, FileText, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
 import GenerateReportModal from "@/components/mercadopago/GenerateReportModal";
 import Button from "@/components/ui/Button";
-import { DropdownMenu } from "@/components/ui/DropdownMenu";
 import Modal from "@/components/ui/Modal";
 import { Select, SelectItem } from "@/components/ui/Select";
 import StatCard from "@/components/ui/StatCard";
@@ -27,25 +26,21 @@ import {
 
 type MpTab = MpReportType | "sync";
 
-const ALL_TABLE_COLUMNS = [
-  { key: "id", label: "ID" },
-  { key: "date", label: "Creado" },
-  { key: "begin_date", label: "Desde" },
-  { key: "end_date", label: "Hasta" },
-  { key: "file", label: "Archivo" },
-  { key: "source", label: "Origen" },
-  { key: "status", label: "Estado" },
-  { key: "actions", label: "Acciones" },
-];
-
 export default function MercadoPagoSettingsPage() {
   const queryClient = useQueryClient();
   const { error: showError, success: showSuccess } = useToast();
   const [activeTab, setActiveTab] = useState<MpTab>("release");
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
-  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
-    new Set(["actions", "begin_date", "date", "end_date", "file", "status"]),
-  );
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    actions: true,
+    begin_date: true,
+    date: true,
+    end_date: true,
+    file_name: true,
+    id: true,
+    source: true,
+    status: true,
+  });
   const [lastImportStats, setLastImportStats] = useState<ImportStats | null>(null);
   const [reportPagination, setReportPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -55,16 +50,6 @@ export default function MercadoPagoSettingsPage() {
     pageIndex: 0,
     pageSize: 10,
   });
-
-  const toggleColumn = (key: string) => {
-    const newSet = new Set(visibleColumns);
-    if (newSet.has(key)) {
-      newSet.delete(key);
-    } else {
-      newSet.add(key);
-    }
-    setVisibleColumns(newSet);
-  };
 
   // Queries
   const reportType = activeTab === "sync" ? "release" : activeTab;
@@ -408,39 +393,18 @@ export default function MercadoPagoSettingsPage() {
                 <SelectItem id="25">25</SelectItem>
                 <SelectItem id="50">50</SelectItem>
               </Select>
-
-              <DropdownMenu>
-                <DropdownMenu.Trigger asChild>
-                  <Button className="h-8" size="sm" variant="outline">
-                    <Settings className="mr-2 h-3.5 w-3.5" />
-                    Columnas
-                  </Button>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content align="end" className="w-45">
-                  <DropdownMenu.Label>Columnas Visibles</DropdownMenu.Label>
-                  <DropdownMenu.Separator />
-                  {ALL_TABLE_COLUMNS.filter((c) => c.key !== "actions").map((column) => (
-                    <DropdownMenu.CheckboxItem
-                      checked={visibleColumns.has(column.key)}
-                      key={column.key}
-                      onCheckedChange={() => {
-                        toggleColumn(column.key);
-                      }}
-                    >
-                      {column.label}
-                    </DropdownMenu.CheckboxItem>
-                  ))}
-                </DropdownMenu.Content>
-              </DropdownMenu>
             </div>
           </div>
 
           <DataTable
             columns={columns}
-            columnVisibility={Object.fromEntries([...visibleColumns].map((key) => [key, true]))}
+            columnVisibility={columnVisibility}
             data={paginatedReports}
+            enableExport={false}
+            enableGlobalFilter={false}
             pagination={reportPagination}
             onPaginationChange={setReportPagination}
+            onColumnVisibilityChange={setColumnVisibility}
             pageCount={reportPageCount}
             noDataMessage="No se encontraron reportes generados."
           />
@@ -477,6 +441,8 @@ export default function MercadoPagoSettingsPage() {
           <DataTable
             columns={syncColumns}
             data={paginatedSyncLogs}
+            enableExport={false}
+            enableGlobalFilter={false}
             pagination={syncPagination}
             onPaginationChange={setSyncPagination}
             pageCount={syncPageCount}

@@ -399,6 +399,7 @@ export default function AssociatedAccounts({
           // biome-ignore lint/suspicious/noExplicitAny: tanstack table generic
           columns={quickViewColumns as ColumnDef<Transaction, any>[]}
           data={rows}
+          containerVariant="plain"
           enableToolbar={false}
           enableVirtualization={false}
           noDataMessage="Sin movimientos dentro del rango seleccionado."
@@ -502,6 +503,7 @@ export default function AssociatedAccounts({
           // biome-ignore lint/suspicious/noExplicitAny: tanstack table generic
           columns={accountGroupColumns as ColumnDef<AccountGroup, any>[]}
           data={accountGroups}
+          containerVariant="plain"
           enableToolbar={false}
           enableVirtualization={false}
           noDataMessage="Sin cuentas asociadas."

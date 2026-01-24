@@ -94,6 +94,7 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
         <DataTable
           columns={columns}
           data={report.days}
+          containerVariant="plain"
           enableToolbar={false}
           enableVirtualization={false} // Important for inputs
           meta={{

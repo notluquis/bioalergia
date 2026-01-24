@@ -31,6 +31,7 @@ export default function LoanScheduleTable({
       <DataTable
         columns={columns}
         data={schedules}
+        containerVariant="plain"
         enableToolbar={false}
         noDataMessage="No hay cronograma disponible."
         pagination={{ pageIndex: 0, pageSize: 100 }}

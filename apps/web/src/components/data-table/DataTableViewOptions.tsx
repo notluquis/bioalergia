@@ -6,7 +6,6 @@ import Button from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
@@ -20,8 +19,8 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
   const [search, setSearch] = useState("");
 
   const columns = table
-    .getAllColumns()
-    .filter((column) => column.accessorFn !== undefined && column.getCanHide());
+    .getAllLeafColumns()
+    .filter((column) => column.getCanHide() && !["actions", "select"].includes(column.id));
 
   const filteredColumns = columns.filter((c) => {
     // Try to find a human readable label usually stored in columnDef.header if it's a string
@@ -35,31 +34,12 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <Button className="ml-auto hidden h-8 lg:flex" size="sm" variant="outline">
+        <Button className="ml-auto h-8" size="sm" variant="outline">
           <Settings2 className="mr-2 h-4 w-4" />
           Columnas
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="flex max-h-100 w-50 flex-col"
-        selectionMode="multiple"
-        selectedKeys={new Set(filteredColumns.filter((c) => c.getIsVisible()).map((c) => c.id))}
-        onSelectionChange={(keys) => {
-          // keys is a Set of selected keys (or "all")
-          if (keys === "all") {
-            // Handle all selected? Usually columns have specific IDs.
-            // If "all", we enable all filtered columns?
-            filteredColumns.forEach((c) => {
-              c.toggleVisibility(true);
-            });
-          }
-          const selectedSet = keys as Set<string>;
-          filteredColumns.forEach((column) => {
-            column.toggleVisibility(selectedSet.has(column.id));
-          });
-        }}
-      >
+      <DropdownMenuContent align="end" className="flex max-h-100 w-50 flex-col">
         <DropdownMenuLabel>Alternar columnas</DropdownMenuLabel>
         <div className="border-b px-2 py-2">
           <Input
@@ -79,9 +59,16 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
             const label =
               typeof column.columnDef.header === "string" ? column.columnDef.header : column.id;
             return (
-              <DropdownMenuItem key={column.id} className="capitalize">
+              <DropdownMenu.CheckboxItem
+                className="capitalize"
+                checked={column.getIsVisible()}
+                key={column.id}
+                onCheckedChange={(checked) => {
+                  column.toggleVisibility(!!checked);
+                }}
+              >
                 {label}
-              </DropdownMenuItem>
+              </DropdownMenu.CheckboxItem>
             );
           })}
           {filteredColumns.length === 0 && (

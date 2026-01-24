@@ -155,6 +155,7 @@ export default function InventoryPage() {
         <DataTable
           columns={columns}
           data={items}
+          containerVariant="plain"
           enableVirtualization
           isLoading={loading}
           meta={{

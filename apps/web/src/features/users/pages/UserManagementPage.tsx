@@ -286,6 +286,7 @@ export default function UserManagementPage() {
         <DataTable
           columns={columns}
           data={filteredUsers}
+          containerVariant="plain"
           enableToolbar={true}
           isLoading={isLoading}
         />

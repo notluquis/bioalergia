@@ -34,6 +34,7 @@ export default function SupplyRequestsTable({
         columns={columns}
         columnVisibility={columnVisibility}
         data={requests}
+        containerVariant="plain"
         enableToolbar={false}
         enableVirtualization={false}
         initialPinning={{ right: ["actions"] }}
