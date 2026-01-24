@@ -71,7 +71,7 @@ export default function Header() {
   return (
     <header className="scroll-header-animation sticky top-0 z-30 flex items-center justify-between rounded-3xl px-6 py-1 transition-all duration-300">
       <div className="flex flex-col gap-0.5">
-        {crumbs.length > 0 && (
+        {(crumbs.length > 1 || (crumbs.length === 1 && crumbs[0]?.label !== pageTitle)) && (
           <Breadcrumbs className="text-default-500/60">
             {crumbs.map((crumb, i) => {
               const isCurrent = i === crumbs.length - 1;

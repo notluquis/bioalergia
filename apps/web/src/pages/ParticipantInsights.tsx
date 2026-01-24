@@ -184,6 +184,7 @@ export default function ParticipantInsightsPage() {
                 <DataTable
                   columns={monthlyColumns}
                   data={monthly}
+                  enableToolbar={false}
                   containerVariant="plain"
                   isLoading={detailLoading}
                   noDataMessage="Sin movimientos."
@@ -199,6 +200,7 @@ export default function ParticipantInsightsPage() {
                 <DataTable
                   columns={counterpartsColumns}
                   data={counterparts}
+                  enableToolbar={false}
                   containerVariant="plain"
                   isLoading={detailLoading}
                   noDataMessage="No hay contrapartes."
