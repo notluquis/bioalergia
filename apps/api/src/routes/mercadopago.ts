@@ -12,6 +12,8 @@ import { type Context, Hono } from "hono";
 import { stream } from "hono/streaming";
 import { getSessionUser, hasPermission } from "../auth";
 import { MercadoPagoService, MP_WEBHOOK_PASSWORD } from "../services/mercadopago";
+import { acquireSchedulerLock, releaseSchedulerLock } from "../lib/mercadopago/mercadopago-scheduler";
+import { getSetting, updateSetting } from "../services/settings";
 import { reply } from "../utils/reply";
 
 export const mercadopagoRoutes = new Hono();
@@ -221,8 +223,15 @@ interface MPWebhookPayload {
   signature: string;
 }
 
+const PROCESSED_FILES_KEY = "mp:processedFiles:webhook";
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy webhook logic
 mercadopagoRoutes.post("/webhook", async (c) => {
+  const lockAcquired = await acquireSchedulerLock();
+  if (!lockAcquired) {
+    return reply(c, { status: "error", message: "Sync in progress" }, 409);
+  }
+
   try {
     const payload = await c.req.json<MPWebhookPayload>();
 
@@ -247,7 +256,11 @@ mercadopagoRoutes.post("/webhook", async (c) => {
 
     // Process files
     if (payload.files?.length) {
+      const processed = await loadProcessedFiles(PROCESSED_FILES_KEY);
       for (const file of payload.files) {
+        if (processed.has(file.name)) {
+          continue;
+        }
         console.log("[MP Webhook] Processing file:", file.name);
         if (file.type === ".csv" || file.name.endsWith(".csv")) {
           // Determine type from report_type
@@ -257,13 +270,33 @@ mercadopagoRoutes.post("/webhook", async (c) => {
           MercadoPagoService.processReport(type, { url: file.url }).catch((err) => {
             console.error("[MP Webhook] Async processing failed:", err);
           });
+          processed.add(file.name);
         }
       }
+      await persistProcessedFiles(PROCESSED_FILES_KEY, processed);
     }
 
     return reply(c, { status: "ok", message: "Notification received" });
   } catch (e) {
     console.error("[MP Webhook] Error processing notification:", e);
     return reply(c, { status: "error", message: String(e) }, 500);
+  } finally {
+    await releaseSchedulerLock();
   }
 });
+
+async function loadProcessedFiles(key: string) {
+  const raw = await getSetting(key);
+  if (!raw) return new Set<string>();
+  try {
+    const parsed = JSON.parse(raw) as string[];
+    return new Set(parsed.filter(Boolean));
+  } catch {
+    return new Set<string>();
+  }
+}
+
+async function persistProcessedFiles(key: string, processed: Set<string>) {
+  const trimmed = Array.from(processed).slice(-250);
+  await updateSetting(key, JSON.stringify(trimmed));
+}
