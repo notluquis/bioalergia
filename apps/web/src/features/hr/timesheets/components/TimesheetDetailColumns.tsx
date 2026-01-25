@@ -48,7 +48,9 @@ const DateCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => 
 
   return (
     <div className={`flex items-center gap-2 ${isMarkedNotWorked ? "opacity-60" : ""}`}>
-      <span className="text-default-600 whitespace-nowrap">{formatDateLabel(row.date)}</span>
+      <span className="text-default-600 whitespace-nowrap text-xs sm:text-sm">
+        {formatDateLabel(row.date)}
+      </span>
       <span
         className={`rounded px-1.5 py-0.5 text-xs font-semibold uppercase ${
           isSun ? "bg-default-100 text-default-400" : "bg-default-50 text-default-500"
@@ -78,7 +80,7 @@ const InputCell = ({
   return (
     <div className={isMarkedNotWorked ? "pointer-events-none opacity-60" : ""}>
       <TimeInput
-        className="w-28"
+        className="w-24 sm:w-28"
         disabled={!canEditRow}
         onBlur={() => field === "salida" && meta.onSalidaBlur(index)}
         onChange={(value) => {
@@ -143,7 +145,7 @@ const OvertimeCell = ({
 
   return (
     <TimeInput
-      className="w-28"
+      className="w-24 sm:w-28"
       disabled={!canEditRow}
       onChange={(value) => {
         meta.onRowChange(index, "overtime", value);
@@ -195,6 +197,16 @@ const StatusCell = ({
   if (showWarning && warningText) tooltipParts.push(warningText);
   if (hasComment) tooltipParts.push(`Comentario: ${row.comment.trim()}`);
 
+  const tooltipContent = (
+    <div className="max-w-xs space-y-1 text-xs">
+      {tooltipParts.map((part) => (
+        <span className="block" key={part}>
+          {part}
+        </span>
+      ))}
+    </div>
+  );
+
   const statusColor = (() => {
     if (status === "Registrado") return "text-success";
     if (status === "Sin guardar") return "text-warning";
@@ -207,18 +219,15 @@ const StatusCell = ({
     >
       {status}
       {showBang && (
-        <div className="group relative">
-          <span className={`cursor-help font-bold ${bangColor}`}>!</span>
-          <div className="bg-neutral text-neutral-content invisible absolute bottom-full left-1/2 z-50 mb-2 max-w-xs -translate-x-1/2 rounded-lg px-3 py-2 text-xs font-normal tracking-normal whitespace-nowrap normal-case shadow-lg group-hover:visible">
-            {tooltipParts.map((part, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: parts are static
-              <span className="block" key={i}>
-                {part}
-              </span>
-            ))}
-            <span className="border-t-neutral absolute top-full left-1/2 h-0 w-0 -translate-x-1/2 border-t-4 border-r-4 border-l-4 border-transparent"></span>
-          </div>
-        </div>
+        <Tooltip content={tooltipContent} placement="top" showArrow>
+          <button
+            aria-label="Ver detalles"
+            className={`cursor-help font-bold ${bangColor}`}
+            type="button"
+          >
+            !
+          </button>
+        </Tooltip>
       )}
     </div>
   );
@@ -303,6 +312,9 @@ export const getTimesheetDetailColumns = () => [
       <DateCell meta={table.options.meta as TimesheetTableMeta} row={row.original} />
     ),
     header: "Fecha",
+    maxSize: 200,
+    minSize: 160,
+    size: 180,
   }),
   columnHelper.accessor("entrada", {
     cell: ({ row, table }) => (
@@ -314,6 +326,9 @@ export const getTimesheetDetailColumns = () => [
       />
     ),
     header: "Entrada",
+    maxSize: 130,
+    minSize: 100,
+    size: 110,
   }),
   columnHelper.accessor("salida", {
     cell: ({ row, table }) => (
@@ -325,6 +340,9 @@ export const getTimesheetDetailColumns = () => [
       />
     ),
     header: "Salida",
+    maxSize: 130,
+    minSize: 100,
+    size: 110,
   }),
   columnHelper.display({
     cell: ({ row, table }) => (
@@ -332,6 +350,9 @@ export const getTimesheetDetailColumns = () => [
     ),
     header: "Trabajadas",
     id: "trabajadas",
+    maxSize: 120,
+    minSize: 90,
+    size: 100,
   }),
   columnHelper.accessor("overtime", {
     cell: ({ row, table }) => (
@@ -342,6 +363,9 @@ export const getTimesheetDetailColumns = () => [
       />
     ),
     header: "Extras",
+    maxSize: 120,
+    minSize: 90,
+    size: 100,
   }),
   columnHelper.display({
     cell: ({ row, table }) => (
@@ -353,6 +377,9 @@ export const getTimesheetDetailColumns = () => [
     ),
     header: "Estado",
     id: "status",
+    maxSize: 140,
+    minSize: 110,
+    size: 120,
   }),
   columnHelper.display({
     cell: ({ row, table }) => (
@@ -364,5 +391,8 @@ export const getTimesheetDetailColumns = () => [
     ),
     header: "Acciones",
     id: "actions",
+    maxSize: 120,
+    minSize: 80,
+    size: 100,
   }),
 ];

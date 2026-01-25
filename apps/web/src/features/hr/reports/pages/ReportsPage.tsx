@@ -412,12 +412,14 @@ export default function ReportsPage() {
         {/* Right Column: Results */}
         <div className="space-y-6 lg:col-span-8">
           {reportData.length === 0 && !loading ? (
-            <div className="border-default-200 bg-default-50/50 flex h-full min-h-100 flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center">
-              <div className="bg-default-50 mb-6 flex h-20 w-20 items-center justify-center rounded-full">
-                <BarChart2 className="text-default-200 h-10 w-10" />
+            <div className="border-default-200 bg-default-50/50 flex min-h-[260px] flex-col items-center justify-center rounded-3xl border-2 border-dashed p-6 text-center sm:min-h-[400px] sm:p-8">
+              <div className="bg-default-50 mb-5 flex h-16 w-16 items-center justify-center rounded-full sm:mb-6 sm:h-20 sm:w-20">
+                <BarChart2 className="text-default-200 h-9 w-9 sm:h-10 sm:w-10" />
               </div>
-              <h3 className="text-foreground text-xl font-bold">Sin datos para mostrar</h3>
-              <p className="text-default-500 mt-2 max-w-sm">
+              <h3 className="text-foreground text-lg font-bold sm:text-xl">
+                Sin datos para mostrar
+              </h3>
+              <p className="text-default-500 mt-2 max-w-sm text-sm sm:text-base">
                 Selecciona el periodo y los empleados que deseas analizar para generar gráficas y
                 estadísticas detalladas.
               </p>

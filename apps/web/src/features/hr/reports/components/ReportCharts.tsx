@@ -34,9 +34,11 @@ interface TemporalChartProps {
 }
 
 const tooltipStyle = {
-  border: "none",
+  backgroundColor: "var(--color-background)",
+  border: "1px solid var(--default-200)",
   borderRadius: "12px",
-  boxShadow: "0 4px 6px -1px hsl(var(--b3) / 0.5)",
+  boxShadow: "0 10px 24px -18px rgb(0 0 0 / 0.45)",
+  color: "var(--color-foreground)",
 };
 
 interface DistributionChartProps {
@@ -57,12 +59,12 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
   }));
 
   return (
-    <div className="bg-background border-default-100 rounded-3xl border p-6 shadow-sm">
+    <div className="bg-background border-default-100 rounded-3xl border p-4 shadow-sm sm:p-6">
       <h3 className="mb-2 flex items-center gap-2 text-lg font-bold">
         <PieChartIcon className="text-secondary h-5 w-5" />
         Distribución Total
       </h3>
-      <div className="h-80 w-full">
+      <div className="h-64 w-full sm:h-80">
         <ResponsiveContainer height="100%" width="100%">
           <PieChart>
             <Pie
@@ -79,13 +81,20 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
                   fill={chartColors[idx % chartColors.length]}
                   // biome-ignore lint/suspicious/noArrayIndexKey: colors depend on index
                   key={`cell-${idx}`}
-                  stroke="hsl(var(--b1))"
+                  stroke="var(--default-200)"
                   strokeWidth={2}
                 />
               ))}
             </Pie>
             <Tooltip contentStyle={tooltipStyle} />
-            <Legend align="center" height={70} iconType="circle" verticalAlign="bottom" />
+            <Legend
+              align="center"
+              height={70}
+              iconSize={8}
+              iconType="circle"
+              verticalAlign="bottom"
+              wrapperStyle={{ fontSize: 11 }}
+            />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -100,7 +109,7 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
   const chartColors = getChartColors();
 
   return (
-    <div className="bg-background border-default-100 rounded-3xl border p-6 shadow-sm">
+    <div className="bg-background border-default-100 rounded-3xl border p-4 shadow-sm sm:p-6">
       <div className="mb-6 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-lg font-bold">
           <BarChart2 className="text-primary h-5 w-5" />
@@ -118,15 +127,15 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
         </Chip>
       </div>
 
-      <div className="w-full" style={{ height: 350, minHeight: 350 }}>
+      <div className="h-64 w-full sm:h-[350px]">
         <ResponsiveContainer height="100%" width="100%">
           {granularity === "month" ? (
             <BarChart data={chartData} margin={{ bottom: 0, left: 0, right: 10, top: 10 }}>
               <CartesianGrid opacity={0.3} strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="period" stroke="hsl(var(--bc) / 0.4)" tick={{ fontSize: 12 }} />
-              <YAxis stroke="hsl(var(--bc) / 0.4)" tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--bc) / 0.05)" }} />
-              <Legend />
+              <XAxis dataKey="period" stroke="var(--default-400)" tick={{ fontSize: 12 }} />
+              <YAxis stroke="var(--default-400)" tick={{ fontSize: 12 }} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--default-100)" }} />
+              <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
               {reportData.map((emp, idx) => (
                 <Bar
                   dataKey={emp.fullName}
@@ -140,10 +149,10 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
           ) : (
             <LineChart data={chartData} margin={{ bottom: 0, left: 0, right: 10, top: 10 }}>
               <CartesianGrid opacity={0.3} strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="period" stroke="hsl(var(--bc) / 0.4)" tick={{ fontSize: 12 }} />
-              <YAxis stroke="hsl(var(--bc) / 0.4)" tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--bc) / 0.05)" }} />
-              <Legend iconType="circle" />
+              <XAxis dataKey="period" stroke="var(--default-400)" tick={{ fontSize: 12 }} />
+              <YAxis stroke="var(--default-400)" tick={{ fontSize: 12 }} />
+              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--default-100)" }} />
+              <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
               {reportData.map((emp, idx) => (
                 <Line
                   activeDot={{ r: 6 }}

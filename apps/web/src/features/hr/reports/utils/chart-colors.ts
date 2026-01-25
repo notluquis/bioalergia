@@ -20,18 +20,17 @@ export function getChartColors(): string[] {
     const styles = globalThis.window.getComputedStyle(document.documentElement);
     const getVar = (name: string) => {
       const val = styles.getPropertyValue(name).trim();
-      return val ? `hsl(${val})` : null;
+      return val || null;
     };
 
     const themeColors = [
-      getVar("--p"),
-      getVar("--s"),
-      getVar("--a"),
-      getVar("--n"),
-      getVar("--in"),
-      getVar("--su"),
-      getVar("--wa"),
-      getVar("--er"),
+      getVar("--color-primary"),
+      getVar("--color-secondary"),
+      getVar("--color-info"),
+      getVar("--color-success"),
+      getVar("--color-warning"),
+      getVar("--color-danger"),
+      getVar("--color-foreground"),
     ].filter(Boolean) as string[];
 
     return themeColors.length > 0 ? themeColors : defaultColors;
