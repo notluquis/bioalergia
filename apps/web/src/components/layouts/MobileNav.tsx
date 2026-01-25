@@ -15,7 +15,11 @@ const NAV_ITEMS: NavItem[] = [
   { icon: BarChart3, label: "Reportes", path: "/hr/reports" },
 ];
 
-export function BottomNav() {
+interface BottomNavProps {
+  isHidden?: boolean;
+}
+
+export function BottomNav({ isHidden = false }: Readonly<BottomNavProps>) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [pendingPath, setPendingPath] = React.useState<null | string>(null);
@@ -28,6 +32,10 @@ export function BottomNav() {
     if (path === "/") return pathname === "/";
     return pathname.startsWith(path);
   };
+
+  if (isHidden) {
+    return null;
+  }
 
   return (
     <nav className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] left-1/2 z-50 w-[min(100%-2rem,400px)] -translate-x-1/2 md:hidden">

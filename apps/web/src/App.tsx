@@ -159,21 +159,11 @@ export default function App() {
           </span>
         </button>
 
-        {/* Overlay for mobile/tablet when sidebar is open */}
-        {isMobile && sidebarOpen && (
-          <div
-            aria-hidden="true"
-            className="bg-default-300 fixed inset-0 z-30 backdrop-blur-[1px] transition-opacity duration-300"
-            onClick={closeSidebar}
-            role="presentation"
-          />
-        )}
-
         {/* Sidebar */}
         <Sidebar isMobile={isMobile} isOpen={sidebarOpen} onClose={closeSidebar} />
 
         {/* Main content */}
-        <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pb-[calc(110px+env(safe-area-inset-bottom))] md:pb-0">
+        <div className="layout-container flex min-w-0 flex-1 flex-col gap-3 pt-[calc(env(safe-area-inset-top)+0.25rem)] pb-[calc(110px+env(safe-area-inset-bottom))] md:pt-0 md:pb-0">
           <Header />
 
           <main className="flex-1 overflow-hidden rounded-3xl transition-all duration-300">
@@ -205,7 +195,7 @@ export default function App() {
         </div>
 
         {/* Mobile bottom navigation */}
-        <BottomNav />
+        <BottomNav isHidden={isMobile && sidebarOpen} />
 
         {/* Update notification popup */}
         <UpdateNotification />

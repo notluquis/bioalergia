@@ -45,17 +45,14 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
               <span
                 className={cn(
                   "bg-primary absolute rounded-full transition-all duration-300",
-                  isMobile ? "top-1/2 left-0 h-6 w-1 -translate-y-1/2" : "top-2 -right-0.5 h-8 w-1",
+                  isMobile ? "top-1/2 left-0 h-6 w-1 -translate-y-1/2" : "top-2 right-0 h-7 w-1",
                 )}
               />
             )}
 
             {/* Icon */}
             <item.icon
-              className={cn(
-                "h-6 w-6 transform-gpu transition-transform duration-200 will-change-transform",
-                isActive ? "scale-110" : "group-hover:scale-110",
-              )}
+              className="h-6 w-6 transition-transform duration-200"
               strokeWidth={isActive ? 2.5 : 2}
             />
 
