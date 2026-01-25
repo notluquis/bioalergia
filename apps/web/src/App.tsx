@@ -177,6 +177,9 @@ export default function App() {
           <footer className="surface-elevated text-foreground hidden items-center justify-between px-6 py-3 text-sm md:flex">
             <div className="flex items-center gap-3 text-xs">
               <span className="text-default-500">Build: {buildLabel}</span>
+              <span className="text-default-400">
+                Hecho con ♥ por Lucas Pulgar Escobar para Bioalergia
+              </span>
             </div>
 
             <div className="flex items-center gap-3">

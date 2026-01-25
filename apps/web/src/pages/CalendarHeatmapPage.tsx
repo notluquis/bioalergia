@@ -75,7 +75,25 @@ function CalendarHeatmapPage() {
 
   // KEEP useMemo: Heavy Map operation iterating over all events
   const statsByDate = useMemo(() => {
-    const map = new Map<string, { amountExpected: number; amountPaid: number; total: number }>();
+    const map = new Map<
+      string,
+      {
+        amountExpected: number;
+        amountPaid: number;
+        total: number;
+        typeCounts: Record<string, number>;
+      }
+    >();
+    const typeCountsByDate = new Map<string, Record<string, number>>();
+
+    for (const entry of summary?.aggregates.byDateType ?? []) {
+      const key = String(entry.date).slice(0, 10);
+      const typeKey = entry.eventType ?? "Sin tipo";
+      const existing = typeCountsByDate.get(key) ?? {};
+      existing[typeKey] = (existing[typeKey] ?? 0) + (entry.total ?? 0);
+      typeCountsByDate.set(key, existing);
+    }
+
     for (const entry of summary?.aggregates.byDate ?? []) {
       // Server now returns dates as "YYYY-MM-DD" strings via TO_CHAR in SQL
       const key = String(entry.date).slice(0, 10);
@@ -83,10 +101,11 @@ function CalendarHeatmapPage() {
         amountExpected: entry.amountExpected ?? 0,
         amountPaid: entry.amountPaid ?? 0,
         total: entry.total,
+        typeCounts: typeCountsByDate.get(key) ?? {},
       });
     }
     return map;
-  }, [summary?.aggregates.byDate]);
+  }, [summary?.aggregates.byDate, summary?.aggregates.byDateType]);
 
   // KEEP useMemo: Complex date range calculation with while loop
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: date calculation logic
@@ -257,6 +276,16 @@ function CalendarHeatmapPage() {
             paid: currencyFormatter.format(summary.totals.amountPaid),
           })}
         </p>
+        {summary.available.eventTypes.length > 0 && (
+          <p className="text-default-500 text-xs">
+            {summary.available.eventTypes
+              .map((item) => {
+                const label = item.eventType ?? "Sin tipo";
+                return `${numberFormatter.format(item.total)} ${label}`;
+              })
+              .join(" · ")}
+          </p>
+        )}
       </section>
     </section>
   );
