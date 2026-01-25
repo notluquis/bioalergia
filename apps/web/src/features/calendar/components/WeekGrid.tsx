@@ -109,12 +109,15 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
   // eslint-disable-next-line sonarjs/cognitive-complexity
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy time calculation
   const { endHour, startHour } = (() => {
+    const businessStart = 9;
+    const businessEnd = 20;
     // Filter events to only those in the displayed week (Mon-Sat)
     const weekEnd = monday.add(5, "day").endOf("day");
 
     // Check if we need to include current time (if today is in range)
     const now = dayjs();
     const isTodayInView = now.isAfter(monday.startOf("day")) && now.isBefore(weekEnd);
+    const isNowWithinBusiness = now.hour() >= businessStart && now.hour() <= businessEnd;
 
     const weekEvents = events.filter((event) => {
       if (!event.startDateTime) return false;
@@ -125,21 +128,14 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
 
     // If no events in week, show reasonable default range
     if (weekEvents.length === 0) {
-      if (isTodayInView) {
-        // Show a window around current time if we have no events
-        return {
-          endHour: Math.min(24, now.hour() + 4),
-          startHour: Math.max(0, now.hour() - 2),
-        };
-      }
-      return { endHour: 18, startHour: 9 };
+      return { endHour: businessEnd, startHour: businessStart };
     }
 
     let min = 23;
     let max = 0;
 
-    // Expand to show current time if today is in view
-    if (isTodayInView) {
+    // Expand to show current time if today is in view AND within business hours
+    if (isTodayInView && isNowWithinBusiness) {
       min = Math.min(min, now.hour());
       max = Math.max(max, now.hour() + 1);
     }
@@ -178,7 +174,11 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
     const paddedStart = Math.max(0, min - 1);
     const paddedEnd = Math.min(24, max + 1); // Allow extending to 24 (midnight)
 
-    return { endHour: paddedEnd, startHour: paddedStart };
+    // Keep default business hours unless events require more space.
+    const constrainedStart = Math.min(paddedStart, businessStart);
+    const constrainedEnd = Math.max(paddedEnd, businessEnd);
+
+    return { endHour: constrainedEnd, startHour: constrainedStart };
   })();
 
   const hours = generateHours(startHour, endHour);
