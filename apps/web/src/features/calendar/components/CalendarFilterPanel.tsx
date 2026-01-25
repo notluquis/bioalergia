@@ -22,6 +22,7 @@ import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
 export interface CalendarFilterPanelProps {
   className?: string;
   formClassName?: string;
+  layout?: "row" | "dropdown";
   /** Available categories for dropdown */
   availableCategories?: { category: null | string; total: number }[];
   /** Available event types for dropdown */
@@ -55,6 +56,33 @@ export type FilterPanelState = Pick<
   "categories" | "eventTypes" | "from" | "search" | "to"
 >;
 
+function dateContainerClass(isDropdownLayout: boolean) {
+  return cn(isDropdownLayout ? "col-span-1" : "min-w-28 flex-1");
+}
+
+function eventTypeClass(isDropdownLayout: boolean) {
+  return cn(isDropdownLayout ? "col-span-1" : "flex-1 min-w-44");
+}
+
+function categoryClass(
+  isDropdownLayout: boolean,
+  showDateRange: boolean,
+  hasEventTypes: boolean,
+  showSearch: boolean,
+) {
+  if (!isDropdownLayout) return "flex-1 min-w-44";
+  if (showDateRange && !hasEventTypes && !showSearch) return "col-span-2";
+  return "col-span-1";
+}
+
+function searchClass(isDropdownLayout: boolean) {
+  return cn(isDropdownLayout ? "col-span-2" : "min-w-44 flex-1");
+}
+
+function actionClass(isDropdownLayout: boolean) {
+  return cn("flex flex-wrap items-center gap-2", isDropdownLayout && "col-span-2 justify-end pt-1");
+}
+
 /**
  * Shared filter panel for calendar pages
  * Reduces code duplication across CalendarDailyPage, CalendarSchedulePage, CalendarHeatmapPage
@@ -62,6 +90,7 @@ export type FilterPanelState = Pick<
 export function CalendarFilterPanel({
   className,
   formClassName,
+  layout = "row",
   availableCategories = [],
   availableEventTypes = [],
   filters,
@@ -99,15 +128,23 @@ export function CalendarFilterPanel({
   const applyLabel =
     applyCount == null ? "Aplicar" : `Aplicar · ${numberFormatter.format(applyCount)}`;
 
+  const isDropdownLayout = layout === "dropdown";
+  const hasEventTypes = availableEventTypes.length > 0;
+  const hasCategories = availableCategories.length > 0;
   const form = (
     <form
-      className={cn("flex flex-wrap items-end gap-2.5 p-3", formClassName)}
+      className={cn(
+        isDropdownLayout
+          ? "grid grid-cols-2 items-end gap-2.5 p-3"
+          : "flex flex-wrap items-end gap-2.5 p-3",
+        formClassName,
+      )}
       onSubmit={handleSubmit}
     >
       {/* Date Range Inputs */}
       {showDateRange && (
         <>
-          <div className="min-w-28 flex-1">
+          <div className={dateContainerClass(isDropdownLayout)}>
             <DatePicker
               label="Desde"
               className="max-w-xs"
@@ -119,7 +156,7 @@ export function CalendarFilterPanel({
               variant="bordered"
             />
           </div>
-          <div className="min-w-28 flex-1">
+          <div className={dateContainerClass(isDropdownLayout)}>
             <DatePicker
               label="Hasta"
               className="max-w-xs"
@@ -135,9 +172,9 @@ export function CalendarFilterPanel({
       )}
 
       {/* Event Types Filter */}
-      {availableEventTypes.length > 0 && (
+      {hasEventTypes && (
         <MultiSelectFilter
-          className="flex-1 min-w-44"
+          className={eventTypeClass(isDropdownLayout)}
           density="compact"
           label="Tipos de evento"
           onChange={(values) => onFilterChange("eventTypes", values)}
@@ -148,9 +185,9 @@ export function CalendarFilterPanel({
       )}
 
       {/* Categories Filter */}
-      {availableCategories.length > 0 && (
+      {hasCategories && (
         <MultiSelectFilter
-          className="flex-1 min-w-44"
+          className={cn(categoryClass(isDropdownLayout, showDateRange, hasEventTypes, showSearch))}
           density="compact"
           label="Clasificación"
           onChange={(values) => onFilterChange("categories", values)}
@@ -162,7 +199,7 @@ export function CalendarFilterPanel({
 
       {/* Search Input */}
       {showSearch && (
-        <div className="min-w-44 flex-1">
+        <div className={searchClass(isDropdownLayout)}>
           <Input
             enterKeyHint="search"
             label="Buscar"
@@ -177,7 +214,7 @@ export function CalendarFilterPanel({
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className={cn(actionClass(isDropdownLayout))}>
         {showSync && (
           <Button
             disabled={syncing || loading}

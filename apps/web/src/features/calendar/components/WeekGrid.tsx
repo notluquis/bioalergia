@@ -206,7 +206,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
       role="none"
     >
       <div className="muted-scrollbar flex-1 overflow-x-auto overscroll-x-contain">
-        <div className="min-w-[720px]">
+        <div className="min-w-180">
           {/* Header row */}
           {/* biome-ignore lint/a11y/useSemanticElements: grid layout */}
           <div

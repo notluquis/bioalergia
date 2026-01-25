@@ -24,7 +24,7 @@ dayjs.locale("es");
 const DATE_FORMAT = "YYYY-MM-DD";
 
 function CalendarSchedulePage() {
-  const { isOpen: filtersOpen, set: setFiltersOpen, toggle: toggleFilters } = useDisclosure(false);
+  const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
   const {
     appliedFilters,
@@ -40,12 +40,22 @@ function CalendarSchedulePage() {
     updateFilters,
   } = useCalendarEvents();
 
-  const allEvents = daily?.days.flatMap((day) => day.events) ?? [];
-
   // Separate state for which week is displayed (independent from data filter range)
   const [displayedWeekStart, setDisplayedWeekStart] = useState(() => {
     // Start on current week's Monday
     return dayjs().isoWeekday(1).format(DATE_FORMAT);
+  });
+
+  const allEvents = daily?.days.flatMap((day) => day.events) ?? [];
+  const displayedWeekEnd = dayjs(displayedWeekStart).add(6, "day").endOf("day");
+  const displayedWeekEvents = allEvents.filter((event) => {
+    const start = event.startDateTime ?? event.startDate;
+    if (!start) return false;
+    const eventDate = dayjs(start);
+    return (
+      eventDate.isSameOrAfter(dayjs(displayedWeekStart).startOf("day")) &&
+      eventDate.isSameOrBefore(displayedWeekEnd)
+    );
   });
 
   // Navigation helpers
@@ -133,22 +143,17 @@ function CalendarSchedulePage() {
           <div className="flex items-center gap-2">
             {summary && (
               <span className="text-default-400 text-xs">
-                {numberFormatter.format(allEvents.length)} eventos
+                {numberFormatter.format(displayedWeekEvents.length)} eventos
               </span>
             )}
             <PopoverRoot isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
               <PopoverTrigger>
-                <Button
-                  className="gap-1.5"
-                  onClick={toggleFilters}
-                  size="sm"
-                  variant={filtersOpen ? "secondary" : "ghost"}
-                >
+                <Button className="gap-1.5" size="sm" variant={filtersOpen ? "secondary" : "ghost"}>
                   <Filter className="h-4 w-4" />
                   <span className="hidden sm:inline">{filtersOpen ? "Cerrar" : "Filtros"}</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0" isNonModal offset={8} placement="bottom end">
+              <PopoverContent className="z-50 p-0" isNonModal offset={8} placement="bottom end">
                 <div className="w-[min(92vw,520px)]">
                   <CalendarFilterPanel
                     availableCategories={availableCategories}
@@ -156,7 +161,8 @@ function CalendarSchedulePage() {
                     filters={filters}
                     isDirty={isDirty}
                     loading={loading}
-                    applyCount={daily?.totals.events}
+                    applyCount={displayedWeekEvents.length}
+                    layout="dropdown"
                     onApply={() => {
                       applyFilters();
                       setFiltersOpen(false);
