@@ -183,9 +183,24 @@ export default function MercadoPagoSettingsPage() {
         header: "Resultados",
         cell: ({ row }) => {
           const importStats = getSyncImportStats(row.original.changeDetails);
+          const reportTypes = getSyncReportTypes(row.original);
           if (importStats) {
             return (
               <div className="flex flex-wrap items-center gap-2 text-xs">
+                {reportTypes.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    {reportTypes.includes("release") && (
+                      <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                        Liberación
+                      </span>
+                    )}
+                    {reportTypes.includes("settlement") && (
+                      <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                        Conciliación
+                      </span>
+                    )}
+                  </div>
+                )}
                 <Tooltip content="Total filas">
                   <span className="bg-default-100 text-default-600 rounded px-1.5 py-0.5">
                     T{importStats.totalRows}
@@ -224,6 +239,20 @@ export default function MercadoPagoSettingsPage() {
 
           return (
             <div className="flex flex-wrap items-center gap-2 text-xs">
+              {reportTypes.length > 0 && (
+                <div className="flex items-center gap-1">
+                  {reportTypes.includes("release") && (
+                    <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                      Liberación
+                    </span>
+                  )}
+                  {reportTypes.includes("settlement") && (
+                    <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                      Conciliación
+                    </span>
+                  )}
+                </div>
+              )}
               <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
                 +{row.original.inserted ?? 0}
               </span>
@@ -545,4 +574,20 @@ function getSyncImportStats(details?: MpSyncChangeDetails | null) {
     skippedRows: toNumber(raw.skippedRows),
     errorCount: toNumber(raw.errorCount),
   };
+}
+
+function getSyncReportTypes(log: MpSyncLog) {
+  const details = log.changeDetails;
+  if (details && typeof details === "object") {
+    const raw = details.reportTypes;
+    if (Array.isArray(raw)) {
+      return raw.filter(
+        (item): item is "release" | "settlement" => item === "release" || item === "settlement",
+      );
+    }
+  }
+  if (log.triggerSource === "mp:auto-sync") {
+    return ["release", "settlement"] as const;
+  }
+  return [];
 }

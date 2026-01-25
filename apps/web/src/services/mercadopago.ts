@@ -59,6 +59,7 @@ export interface MpSyncImportStats {
 
 export type MpSyncChangeDetails = Record<string, unknown> & {
   importStats?: MpSyncImportStats;
+  reportTypes?: Array<"release" | "settlement">;
 };
 
 interface ProcessReportResponse {
