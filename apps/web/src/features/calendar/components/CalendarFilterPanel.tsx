@@ -57,11 +57,11 @@ export type FilterPanelState = Pick<
 >;
 
 function dateContainerClass(isDropdownLayout: boolean) {
-  return cn(isDropdownLayout ? "col-span-1" : "min-w-28 flex-1");
+  return cn(isDropdownLayout ? "sm:col-span-1" : "min-w-28 flex-1");
 }
 
 function eventTypeClass(isDropdownLayout: boolean) {
-  return cn(isDropdownLayout ? "col-span-1" : "flex-1 min-w-44");
+  return cn(isDropdownLayout ? "sm:col-span-1" : "flex-1 min-w-44");
 }
 
 function categoryClass(
@@ -71,16 +71,19 @@ function categoryClass(
   showSearch: boolean,
 ) {
   if (!isDropdownLayout) return "flex-1 min-w-44";
-  if (showDateRange && !hasEventTypes && !showSearch) return "col-span-2";
-  return "col-span-1";
+  if (showDateRange && !hasEventTypes && !showSearch) return "sm:col-span-2";
+  return "sm:col-span-1";
 }
 
 function searchClass(isDropdownLayout: boolean) {
-  return cn(isDropdownLayout ? "col-span-2" : "min-w-44 flex-1");
+  return cn(isDropdownLayout ? "sm:col-span-2" : "min-w-44 flex-1");
 }
 
 function actionClass(isDropdownLayout: boolean) {
-  return cn("flex flex-wrap items-center gap-2", isDropdownLayout && "col-span-2 justify-end pt-1");
+  return cn(
+    "flex flex-wrap items-center gap-2",
+    isDropdownLayout ? "sm:col-span-2 justify-end border-t border-default-100/70 pt-3" : "ml-auto",
+  );
 }
 
 /**
@@ -136,7 +139,7 @@ export function CalendarFilterPanel({
     <form
       className={cn(
         isDropdownLayout
-          ? "grid grid-cols-2 items-end gap-2.5 p-3"
+          ? "grid grid-cols-1 gap-2.5 p-3 sm:grid-cols-2 sm:items-end"
           : "flex flex-wrap items-end gap-2.5 p-3",
         formClassName,
       )}
@@ -253,6 +256,7 @@ export function CalendarFilterPanel({
         >
           Limpiar
         </Button>
+
         <Button disabled={loading} size="sm" type="submit">
           {loading ? "..." : applyLabel}
         </Button>
