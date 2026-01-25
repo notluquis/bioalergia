@@ -38,7 +38,7 @@ export function ServiceList({
           </Button>
         )}
       </header>
-      <div className="muted-scrollbar flex-1 space-y-3 overflow-y-auto pr-2">
+      <div className="muted-scrollbar flex-1 space-y-3 overflow-y-auto overscroll-y-contain pr-2">
         {loading &&
           services.length === 0 &&
           skeletons.map((value) => (

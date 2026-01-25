@@ -615,17 +615,16 @@ export default function ReportsPage() {
                     <List className="text-accent h-5 w-5" />
                     Detalle Numérico
                   </h3>
-                  <div className="grow overflow-x-auto">
-                    <DataTable
-                      columns={columns}
-                      data={reportData}
-                      containerVariant="plain"
-                      enableToolbar={false}
-                      enableVirtualization={false}
-                      meta={meta as unknown as Record<string, unknown>}
-                      noDataMessage="No hay datos para mostrar."
-                    />
-                  </div>
+                  <DataTable
+                    columns={columns}
+                    data={reportData}
+                    containerVariant="plain"
+                    enablePagination={false}
+                    enableToolbar={false}
+                    enableVirtualization={false}
+                    meta={meta as unknown as Record<string, unknown>}
+                    noDataMessage="No hay datos para mostrar."
+                  />
                 </div>
               </div>
             </>

@@ -400,10 +400,10 @@ export default function AssociatedAccounts({
           columns={quickViewColumns as ColumnDef<Transaction, any>[]}
           data={rows}
           containerVariant="plain"
+          enablePagination={false}
           enableToolbar={false}
           enableVirtualization={false}
           noDataMessage="Sin movimientos dentro del rango seleccionado."
-          pagination={{ pageIndex: 0, pageSize: 50 }}
         />
       </div>
     );
@@ -504,10 +504,10 @@ export default function AssociatedAccounts({
           columns={accountGroupColumns as ColumnDef<AccountGroup, any>[]}
           data={accountGroups}
           containerVariant="plain"
+          enablePagination={false}
           enableToolbar={false}
           enableVirtualization={false}
           noDataMessage="Sin cuentas asociadas."
-          pagination={{ pageIndex: 0, pageSize: 50 }}
         />
       </div>
 

@@ -26,21 +26,17 @@ export default function SupplyRequestsTable({
   };
 
   return (
-    <div className="bg-background rounded-lg p-6 shadow-md">
-      <h2 className="mb-4 text-xl font-semibold">
-        {isAdmin ? "Todas las solicitudes" : "Solicitudes activas"}
-      </h2>
-      <DataTable
-        columns={columns}
-        columnVisibility={columnVisibility}
-        data={requests}
-        containerVariant="plain"
-        enableToolbar={false}
-        enableVirtualization={false}
-        initialPinning={{ right: ["actions"] }}
-        meta={{ isAdmin, onStatusChange }}
-        noDataMessage="No se encontraron solicitudes de insumos."
-      />
-    </div>
+    <DataTable
+      columns={columns}
+      columnVisibility={columnVisibility}
+      data={requests}
+      containerVariant="plain"
+      enablePagination={false}
+      enableToolbar={false}
+      enableVirtualization={false}
+      initialPinning={{ right: ["actions"] }}
+      meta={{ isAdmin, onStatusChange }}
+      noDataMessage="No se encontraron solicitudes de insumos."
+    />
   );
 }

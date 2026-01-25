@@ -725,6 +725,7 @@ model Event {
   attended        Boolean?
   dosage          String?
   treatmentStage  String?        @map("treatment_stage")
+  controlIncluded Boolean        @default(false) @map("control_included")
   rawEvent        Json?          @map("raw_event")
   lastSyncedAt    DateTime       @map("last_synced_at")
   calendar        Calendar       @relation(fields: [calendarId], references: [id])

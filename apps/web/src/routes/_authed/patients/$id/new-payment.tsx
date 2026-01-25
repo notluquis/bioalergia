@@ -202,16 +202,14 @@ function NewPaymentPage() {
             <div className="sm:col-span-2">
               <form.Field name="notes">
                 {(field) => (
-                  <label className="space-y-1 block">
-                    <span className="text-sm font-medium text-default-600">Observaciones</span>
-                    <textarea
-                      className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                      rows={2}
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="Detalles adicionales del pago..."
-                    />
-                  </label>
+                  <Input
+                    as="textarea"
+                    label="Observaciones"
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Detalles adicionales del pago..."
+                    rows={2}
+                    value={field.state.value}
+                  />
                 )}
               </form.Field>
             </div>

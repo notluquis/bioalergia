@@ -412,6 +412,7 @@ calendarRoutes.post("/events/classify", requireAuth, async (c) => {
     attended: payload.attended ?? null,
     dosage: payload.dosage ?? null,
     treatmentStage: payload.treatmentStage ?? null,
+    controlIncluded: payload.controlIncluded ?? null,
   });
 
   return reply(c, { status: "ok" });

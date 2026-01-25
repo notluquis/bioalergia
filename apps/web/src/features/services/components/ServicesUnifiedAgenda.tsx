@@ -179,7 +179,7 @@ export default function ServicesUnifiedAgenda({
             ))}
           </div>
         )}
-        <div className="muted-scrollbar max-h-128 space-y-2 overflow-y-auto pr-1">
+        <div className="muted-scrollbar max-h-128 space-y-2 overflow-y-auto overscroll-y-contain pr-1">
           {groups.map((group) => {
             const isExpanded = expanded[group.dateKey] ?? false;
             return (

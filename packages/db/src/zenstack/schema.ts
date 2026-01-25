@@ -2708,6 +2708,12 @@ export class SchemaType implements SchemaDef {
                     optional: true,
                     attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("treatment_stage") }] }]
                 },
+                controlIncluded: {
+                    name: "controlIncluded",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("control_included") }] }],
+                    default: false
+                },
                 rawEvent: {
                     name: "rawEvent",
                     type: "Json",

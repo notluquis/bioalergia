@@ -98,149 +98,146 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
       : [];
 
   return (
-    <div className="card bg-background mb-8 p-6 shadow-lg">
-      <h2 className="mb-4 text-xl font-semibold">Solicitar nuevo insumo</h2>
-      <form
-        className="grid grid-cols-1 gap-4 md:grid-cols-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          form.handleSubmit();
-        }}
-      >
-        <form.Field name="selectedSupply">
-          {(field) => (
-            <div>
-              <Input
-                as="select"
-                label="Nombre del insumo"
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(e.target.value);
-                  // Reset dependent fields
-                  form.setFieldValue("selectedBrand", "");
-                  form.setFieldValue("selectedModel", "");
-                }}
-                required
-                value={field.state.value}
-              >
-                <option value="">Seleccione un insumo</option>
-                {supplyNames.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </Input>
-              {field.state.meta.errors.length > 0 && (
-                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
-              )}
-            </div>
-          )}
-        </form.Field>
+    <form
+      className="grid grid-cols-1 gap-4 md:grid-cols-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+    >
+      <form.Field name="selectedSupply">
+        {(field) => (
+          <div>
+            <Input
+              as="select"
+              label="Nombre del insumo"
+              onBlur={field.handleBlur}
+              onChange={(e) => {
+                field.handleChange(e.target.value);
+                // Reset dependent fields
+                form.setFieldValue("selectedBrand", "");
+                form.setFieldValue("selectedModel", "");
+              }}
+              required
+              value={field.state.value}
+            >
+              <option value="">Seleccione un insumo</option>
+              {supplyNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </Input>
+            {field.state.meta.errors.length > 0 && (
+              <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+            )}
+          </div>
+        )}
+      </form.Field>
 
-        <form.Field name="quantity">
-          {(field) => (
-            <div>
-              <Input
-                inputMode="numeric"
-                label="Cantidad"
-                min="1"
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(Number.parseInt(e.target.value, 10) || 1);
-                }}
-                required
-                type="number"
-                value={field.state.value}
-              />
-              {field.state.meta.errors.length > 0 && (
-                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
-              )}
-            </div>
-          )}
-        </form.Field>
+      <form.Field name="quantity">
+        {(field) => (
+          <div>
+            <Input
+              inputMode="numeric"
+              label="Cantidad"
+              min="1"
+              onBlur={field.handleBlur}
+              onChange={(e) => {
+                field.handleChange(Number.parseInt(e.target.value, 10) || 1);
+              }}
+              required
+              type="number"
+              value={field.state.value}
+            />
+            {field.state.meta.errors.length > 0 && (
+              <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+            )}
+          </div>
+        )}
+      </form.Field>
 
-        <form.Field name="selectedBrand">
-          {(field) => (
-            <div>
-              <Input
-                as="select"
-                disabled={!selectedSupply}
-                label="Marca"
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(e.target.value);
-                  form.setFieldValue("selectedModel", "");
-                }}
-                value={field.state.value ?? ""}
-              >
-                <option value="">Seleccione una marca</option>
-                {availableBrands.map((brand) => (
-                  <option key={brand} value={brand}>
-                    {brand}
-                  </option>
-                ))}
-              </Input>
-              {field.state.meta.errors.length > 0 && (
-                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
-              )}
-            </div>
-          )}
-        </form.Field>
+      <form.Field name="selectedBrand">
+        {(field) => (
+          <div>
+            <Input
+              as="select"
+              disabled={!selectedSupply}
+              label="Marca"
+              onBlur={field.handleBlur}
+              onChange={(e) => {
+                field.handleChange(e.target.value);
+                form.setFieldValue("selectedModel", "");
+              }}
+              value={field.state.value ?? ""}
+            >
+              <option value="">Seleccione una marca</option>
+              {availableBrands.map((brand) => (
+                <option key={brand} value={brand}>
+                  {brand}
+                </option>
+              ))}
+            </Input>
+            {field.state.meta.errors.length > 0 && (
+              <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+            )}
+          </div>
+        )}
+      </form.Field>
 
-        <form.Field name="selectedModel">
-          {(field) => (
-            <div>
-              <Input
-                as="select"
-                disabled={!selectedBrand || availableModels.length === 0}
-                label="Modelo"
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(e.target.value);
-                }}
-                value={field.state.value ?? ""}
-              >
-                <option value="">Seleccione un modelo</option>
-                {availableModels.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-              </Input>
-              {field.state.meta.errors.length > 0 && (
-                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
-              )}
-            </div>
-          )}
-        </form.Field>
+      <form.Field name="selectedModel">
+        {(field) => (
+          <div>
+            <Input
+              as="select"
+              disabled={!selectedBrand || availableModels.length === 0}
+              label="Modelo"
+              onBlur={field.handleBlur}
+              onChange={(e) => {
+                field.handleChange(e.target.value);
+              }}
+              value={field.state.value ?? ""}
+            >
+              <option value="">Seleccione un modelo</option>
+              {availableModels.map((model) => (
+                <option key={model} value={model}>
+                  {model}
+                </option>
+              ))}
+            </Input>
+            {field.state.meta.errors.length > 0 && (
+              <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+            )}
+          </div>
+        )}
+      </form.Field>
 
-        <form.Field name="notes">
-          {(field) => (
-            <div className="md:col-span-2">
-              <Input
-                as="textarea"
-                enterKeyHint="done"
-                label="Notas (opcional)"
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(e.target.value);
-                }}
-                rows={3}
-                value={field.state.value ?? ""}
-              />
-              {field.state.meta.errors.length > 0 && (
-                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
-              )}
-            </div>
-          )}
-        </form.Field>
+      <form.Field name="notes">
+        {(field) => (
+          <div className="md:col-span-2">
+            <Input
+              as="textarea"
+              enterKeyHint="done"
+              label="Notas (opcional)"
+              onBlur={field.handleBlur}
+              onChange={(e) => {
+                field.handleChange(e.target.value);
+              }}
+              rows={3}
+              value={field.state.value ?? ""}
+            />
+            {field.state.meta.errors.length > 0 && (
+              <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+            )}
+          </div>
+        )}
+      </form.Field>
 
-        <div className="flex justify-end md:col-span-2">
-          <Button disabled={form.state.isSubmitting} type="submit">
-            {form.state.isSubmitting ? "Enviando..." : "Enviar solicitud"}
-          </Button>
-        </div>
-      </form>
-    </div>
+      <div className="flex justify-end md:col-span-2">
+        <Button disabled={form.state.isSubmitting} type="submit">
+          {form.state.isSubmitting ? "Enviando..." : "Enviar solicitud"}
+        </Button>
+      </div>
+    </form>
   );
 }

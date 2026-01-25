@@ -32,6 +32,7 @@ export default function PayoutsPage() {
       <DataTable
         columns={columns}
         data={payouts}
+        enablePagination={false}
         enableVirtualization
         noDataMessage="No hay retiros registrados."
       />

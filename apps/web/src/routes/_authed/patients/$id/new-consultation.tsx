@@ -109,89 +109,59 @@ function NewConsultationPage() {
 
             <form.Field name="reason">
               {(field) => (
-                <div>
-                  <label
-                    htmlFor="reason"
-                    className="block text-sm font-medium text-foreground mb-2"
-                  >
-                    Motivo de Consulta <span className="text-danger">*</span>
-                  </label>
-                  <textarea
-                    id="reason"
-                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    rows={3}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    placeholder="Escriba el motivo principal de la atención..."
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <p className="text-danger text-sm mt-1">{field.state.meta.errors.join(", ")}</p>
-                  )}
-                </div>
+                <Input
+                  as="textarea"
+                  label="Motivo de consulta"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Escriba el motivo principal de la atención..."
+                  required
+                  rows={3}
+                  value={field.state.value}
+                  error={field.state.meta.errors.join(", ")}
+                />
               )}
             </form.Field>
 
             <form.Field name="diagnosis">
               {(field) => (
-                <div>
-                  <label
-                    htmlFor="diagnosis"
-                    className="block text-sm font-medium text-foreground mb-2"
-                  >
-                    Diagnóstico
-                  </label>
-                  <textarea
-                    id="diagnosis"
-                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    rows={2}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    placeholder="Diagnóstico presuntivo o confirmado..."
-                  />
-                </div>
+                <Input
+                  as="textarea"
+                  label="Diagnóstico"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Diagnóstico presuntivo o confirmado..."
+                  rows={2}
+                  value={field.state.value}
+                />
               )}
             </form.Field>
 
             <form.Field name="treatment">
               {(field) => (
-                <div>
-                  <label
-                    htmlFor="treatment"
-                    className="block text-sm font-medium text-foreground mb-2"
-                  >
-                    Tratamiento Indicado
-                  </label>
-                  <textarea
-                    id="treatment"
-                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    rows={3}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    placeholder="Medicamentos, dosis, indicaciones generales..."
-                  />
-                </div>
+                <Input
+                  as="textarea"
+                  label="Tratamiento indicado"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Medicamentos, dosis, indicaciones generales..."
+                  rows={3}
+                  value={field.state.value}
+                />
               )}
             </form.Field>
 
             <form.Field name="notes">
               {(field) => (
-                <div>
-                  <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-2">
-                    Notas Privadas
-                  </label>
-                  <textarea
-                    id="notes"
-                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    rows={2}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    placeholder="Observaciones adicionales no visibles en certificados..."
-                  />
-                </div>
+                <Input
+                  as="textarea"
+                  label="Notas privadas"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Observaciones adicionales no visibles en certificados..."
+                  rows={2}
+                  value={field.state.value}
+                />
               )}
             </form.Field>
 

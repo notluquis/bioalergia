@@ -30,13 +30,13 @@ export function ServiceScheduleTable({
   const columns = useMemo(() => getColumns(actions, canManage), [actions, canManage]);
 
   return (
-    <div className="bg-background overflow-hidden">
+    <div className="bg-background">
       <DataTable
         columns={columns}
         data={schedules}
         containerVariant="plain"
+        enablePagination={false}
         enableToolbar={false} // Small sub-table usually doesn't need search/filter toolbar
-        pagination={{ pageIndex: 0, pageSize: 100 }} // Show all rows by default for schedules
       />
     </div>
   );

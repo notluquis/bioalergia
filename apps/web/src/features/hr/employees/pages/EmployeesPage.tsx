@@ -3,7 +3,7 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
 import { ChevronUp, Plus } from "lucide-react";
 import type { ChangeEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
@@ -36,12 +36,9 @@ export default function EmployeesPage() {
 
   const loading = false; // Suspense handles loading
 
-  // Client-side pagination logic
-  const pageCount = Math.ceil(employees.length / pagination.pageSize);
-  const paginatedEmployees = employees.slice(
-    pagination.pageIndex * pagination.pageSize,
-    (pagination.pageIndex + 1) * pagination.pageSize,
-  );
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, [includeInactive]);
 
   // ... rest of mutation logic ...
   const updateStatusMutation = useUpdateEmployee();
@@ -154,11 +151,11 @@ export default function EmployeesPage() {
       <div className="surface-elevated rounded-2xl p-4">
         <DataTable
           columns={columns}
-          data={paginatedEmployees}
+          data={employees}
           containerVariant="plain"
           enableExport={false}
           enableGlobalFilter={false}
-          enableVirtualization
+          enableVirtualization={false}
           filters={[
             {
               columnId: "status",
@@ -177,7 +174,6 @@ export default function EmployeesPage() {
             onEdit: handleEdit,
           }}
           onPaginationChange={setPagination}
-          pageCount={pageCount}
           pagination={pagination}
         />
       </div>

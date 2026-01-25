@@ -79,6 +79,7 @@ export interface CalendarEventClassificationPayload {
   attended?: boolean | null;
   calendarId: string;
   category?: null | string;
+  controlIncluded?: boolean | null;
   dosage?: null | string;
   eventId: string;
   treatmentStage?: null | string;
@@ -91,6 +92,7 @@ export interface CalendarEventDetail {
   calendarId: string;
   category?: null | string;
   colorId: null | string;
+  controlIncluded?: boolean | null;
   description: null | string;
   dosage?: null | string;
   endDate: null | string;

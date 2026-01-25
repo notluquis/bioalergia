@@ -275,6 +275,7 @@ export class CalendarSyncService {
             attended: metadata.attended,
             dosage: metadata.dosage,
             treatmentStage: metadata.treatmentStage,
+            controlIncluded: metadata.controlIncluded,
           });
         }
       }
