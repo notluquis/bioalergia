@@ -107,6 +107,7 @@ function CalendarDailyPage() {
             availableEventTypes={availableEventTypes}
             filters={filters}
             loading={loading}
+            applyCount={daily?.totals.events}
             onApply={applyFilters}
             onFilterChange={updateFilters}
             onReset={resetFilters}
