@@ -1,3 +1,4 @@
+import { PopoverContent, PopoverRoot, PopoverTrigger } from "@heroui/react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
@@ -9,6 +10,7 @@ import Button from "@/components/ui/Button";
 import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
 import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
+import { useDisclosure } from "@/hooks/use-disclosure";
 import { numberFormatter } from "@/lib/format";
 
 import "dayjs/locale/es";
@@ -22,7 +24,7 @@ dayjs.locale("es");
 const DATE_FORMAT = "YYYY-MM-DD";
 
 function CalendarSchedulePage() {
-  const [showFilters, setShowFilters] = useState(false);
+  const { isOpen: filtersOpen, set: setFiltersOpen, toggle: toggleFilters } = useDisclosure(false);
 
   const {
     appliedFilters,
@@ -134,35 +136,41 @@ function CalendarSchedulePage() {
                 {numberFormatter.format(allEvents.length)} eventos
               </span>
             )}
-            <Button
-              className="gap-1.5"
-              onClick={() => {
-                setShowFilters(!showFilters);
-              }}
-              size="sm"
-              variant={showFilters ? "secondary" : "ghost"}
-            >
-              <Filter className="h-4 w-4" />
-              <span className="hidden sm:inline">{showFilters ? "Cerrar" : "Filtros"}</span>
-            </Button>
+            <PopoverRoot isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
+              <PopoverTrigger>
+                <Button
+                  className="gap-1.5"
+                  onClick={toggleFilters}
+                  size="sm"
+                  variant={filtersOpen ? "secondary" : "ghost"}
+                >
+                  <Filter className="h-4 w-4" />
+                  <span className="hidden sm:inline">{filtersOpen ? "Cerrar" : "Filtros"}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0" isNonModal offset={8} placement="bottom end">
+                <div className="w-[min(92vw,520px)]">
+                  <CalendarFilterPanel
+                    availableCategories={availableCategories}
+                    availableEventTypes={availableEventTypes}
+                    filters={filters}
+                    isDirty={isDirty}
+                    loading={loading}
+                    applyCount={daily?.totals.events}
+                    onApply={() => {
+                      applyFilters();
+                      setFiltersOpen(false);
+                    }}
+                    onFilterChange={updateFilters}
+                    onReset={resetFilters}
+                    showSearch
+                    className="shadow-lg"
+                  />
+                </div>
+              </PopoverContent>
+            </PopoverRoot>
           </div>
         </div>
-
-        {/* Collapsible Filters */}
-        {showFilters && (
-          <CalendarFilterPanel
-            availableCategories={availableCategories}
-            availableEventTypes={availableEventTypes}
-            filters={filters}
-            isDirty={isDirty}
-            loading={loading}
-            applyCount={daily?.totals.events}
-            onApply={applyFilters}
-            onFilterChange={updateFilters}
-            onReset={resetFilters}
-            showSearch
-          />
-        )}
       </header>
 
       {/* Calendar - Main Content */}
