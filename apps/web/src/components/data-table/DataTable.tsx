@@ -462,7 +462,9 @@ export function DataTable<TData, TValue>({
       {enablePagination && (
         <DataTablePagination
           enablePageSizeSelector={enablePageSizeSelector}
+          pageCount={pageCount}
           pageSizeOptions={pageSizeOptions}
+          pagination={pagination ?? internalPagination}
           table={table}
         />
       )}
