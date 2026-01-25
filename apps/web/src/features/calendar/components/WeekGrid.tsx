@@ -269,7 +269,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
             {days.map((day) => (
               <div
                 className={cn(
-                  "border-default-100 relative min-h-full overflow-visible border-r last:border-r-0",
+                  "border-default-100 relative min-h-full overflow-hidden border-r last:border-r-0",
                   day.isToday && "bg-primary/5",
                 )}
                 key={day.key}
@@ -280,7 +280,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                 ))}
 
                 {/* Events */}
-                <div className="absolute inset-0 z-5 isolate overflow-visible px-0.5">
+                <div className="absolute inset-0 z-5 isolate overflow-hidden px-0.5">
                   {}
                   {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy rendering */}
                   {calculateEventLayout(eventsByDay[day.key] ?? []).map((event) => {
@@ -324,7 +324,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                     const title = event.summary?.trim() ?? "(Sin título)";
 
                     // Calculate width and left based on column layout
-                    const padding = 3; // pixels on each side
+                    const padding = event.totalColumns > 1 ? 2 : 3; // pixels on each side
                     const totalWidth = 100; // percentage
                     const columnWidth = totalWidth / event.totalColumns;
                     const leftPos = event.column * columnWidth;
@@ -332,7 +332,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                     return (
                       <Button
                         className={cn(
-                          "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden wrap-break-word rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-transform hover:z-100 hover:-translate-y-px hover:scale-[1.02] hover:overflow-visible hover:py-1.5 hover:shadow-lg",
+                          "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden wrap-break-word rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-transform hover:z-10 hover:-translate-y-px hover:shadow-md",
                           getCategoryClass(event.category),
                           // Display modes
                           displayMode === "minimal" &&
