@@ -1,14 +1,7 @@
-import { Chip } from "@heroui/react";
+import { Accordion, Chip } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import {
-  Calendar as CalendarIcon,
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  RefreshCw,
-  Settings2,
-} from "lucide-react";
+import { Calendar as CalendarIcon, ChevronDown, Loader2, RefreshCw, Settings2 } from "lucide-react";
 import { useState } from "react";
 
 import Button from "@/components/ui/Button";
@@ -21,7 +14,6 @@ import type { CalendarData } from "@/features/calendar/types";
 import { cn } from "@/lib/utils";
 
 export default function CalendarSyncHistoryPage() {
-  const [expandedId, setExpandedId] = useState<null | number>(null);
   const [showConfig, setShowConfig] = useState(false);
 
   const {
@@ -49,10 +41,6 @@ export default function CalendarSyncHistoryPage() {
     return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000;
   });
   const isSyncing = syncing || hasRunningSyncFromOtherSource || hasRunningSyncInHistory;
-
-  const toggleExpanded = (id: number) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
 
   return (
     <section className="space-y-6">
@@ -125,113 +113,94 @@ export default function CalendarSyncHistoryPage() {
           }
 
           return (
-            <div className="divide-base-200 divide-y">
+            <Accordion className="divide-base-200 divide-y" variant="surface">
               {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: row rendering logic */}
               {syncLogs.map((log) => {
-                const isExpanded = expandedId === log.id;
                 const duration = log.endedAt
                   ? dayjs(log.endedAt).diff(dayjs(log.startedAt), "s")
                   : null;
 
                 return (
-                  <div className="bg-background" key={log.id.toString()}>
-                    {/* Row Header */}
-                    <button
-                      className="hover:bg-default-50/50 flex w-full items-center gap-4 px-4 py-3 text-left transition-colors"
-                      onClick={() => {
-                        toggleExpanded(log.id);
-                      }}
-                      type="button"
-                    >
-                      {/* Expand Icon */}
-                      <span className="text-default-300">
-                        {isExpanded ? (
+                  <Accordion.Item id={log.id.toString()} key={log.id.toString()}>
+                    <Accordion.Heading>
+                      <Accordion.Trigger className="hover:bg-default-50/50 flex w-full items-center gap-4 px-4 py-3 text-left transition-colors">
+                        <StatusBadge status={log.status} />
+
+                        <div className="min-w-24">
+                          <div className="text-sm font-medium">
+                            {dayjs(log.startedAt).format("DD/MM/YYYY")}
+                          </div>
+                          <div className="text-default-400 text-xs">
+                            {dayjs(log.startedAt).format("HH:mm:ss")}
+                          </div>
+                        </div>
+
+                        <div className="flex-1">
+                          <Chip size="sm" variant="secondary" className="font-mono text-xs">
+                            {log.triggerSource}
+                          </Chip>
+                          {log.triggerLabel && (
+                            <span
+                              className="text-default-500 ml-2 text-xs"
+                              title={log.triggerLabel}
+                            >
+                              {log.triggerLabel.slice(0, 30)}
+                              {log.triggerLabel.length > 30 ? "..." : ""}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2 text-xs">
+                          {log.inserted > 0 && (
+                            <span
+                              className="bg-success/10 text-success rounded px-1.5 py-0.5"
+                              title="Insertados"
+                            >
+                              +{log.inserted}
+                            </span>
+                          )}
+                          {log.updated > 0 && (
+                            <span
+                              className="bg-info/10 text-info rounded px-1.5 py-0.5"
+                              title="Actualizados"
+                            >
+                              ~{log.updated}
+                            </span>
+                          )}
+                          {log.excluded > 0 && (
+                            <span
+                              className="bg-danger/10 text-danger rounded px-1.5 py-0.5"
+                              title="Eliminados/Excluidos"
+                            >
+                              -{log.excluded}
+                            </span>
+                          )}
+                          {log.skipped > 0 && (
+                            <span
+                              className="bg-warning/10 text-warning rounded px-1.5 py-0.5"
+                              title="Omitidos"
+                            >
+                              !{log.skipped}
+                            </span>
+                          )}
+                          {log.inserted === 0 &&
+                            log.updated === 0 &&
+                            log.excluded === 0 &&
+                            log.skipped === 0 && <span className="text-default-200">-</span>}
+                        </div>
+
+                        <div className="text-default-600 min-w-12 text-right text-sm">
+                          {duration === null ? "-" : `${duration}s`}
+                        </div>
+
+                        <Accordion.Indicator className="text-default-300">
                           <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                      </span>
-
-                      {/* Status */}
-                      <StatusBadge status={log.status} />
-
-                      {/* Date */}
-                      <div className="min-w-24">
-                        <div className="text-sm font-medium">
-                          {dayjs(log.startedAt).format("DD/MM/YYYY")}
-                        </div>
-                        <div className="text-default-400 text-xs">
-                          {dayjs(log.startedAt).format("HH:mm:ss")}
-                        </div>
-                      </div>
-
-                      {/* Source */}
-                      <div className="flex-1">
-                        <Chip size="sm" variant="secondary" className="font-mono text-xs">
-                          {log.triggerSource}
-                        </Chip>
-                        {log.triggerLabel && (
-                          <span
-                            className="text-default-500 ml-2 text-xs"
-                            title={log.triggerLabel}
-                          >
-                            {log.triggerLabel.slice(0, 30)}
-                            {log.triggerLabel.length > 30 ? "..." : ""}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Metrics */}
-                      <div className="flex gap-2 text-xs">
-                        {log.inserted > 0 && (
-                          <span
-                            className="bg-success/10 text-success rounded px-1.5 py-0.5"
-                            title="Insertados"
-                          >
-                            +{log.inserted}
-                          </span>
-                        )}
-                        {log.updated > 0 && (
-                          <span
-                            className="bg-info/10 text-info rounded px-1.5 py-0.5"
-                            title="Actualizados"
-                          >
-                            ~{log.updated}
-                          </span>
-                        )}
-                        {log.excluded > 0 && (
-                          <span
-                            className="bg-danger/10 text-danger rounded px-1.5 py-0.5"
-                            title="Eliminados/Excluidos"
-                          >
-                            -{log.excluded}
-                          </span>
-                        )}
-                        {log.skipped > 0 && (
-                          <span
-                            className="bg-warning/10 text-warning rounded px-1.5 py-0.5"
-                            title="Omitidos"
-                          >
-                            !{log.skipped}
-                          </span>
-                        )}
-                        {log.inserted === 0 &&
-                          log.updated === 0 &&
-                          log.excluded === 0 &&
-                          log.skipped === 0 && <span className="text-default-200">-</span>}
-                      </div>
-
-                      {/* Duration */}
-                      <div className="text-default-600 min-w-12 text-right text-sm">
-                        {duration === null ? "-" : `${duration}s`}
-                      </div>
-                    </button>
-
-                    {/* Expanded Content */}
-                    {isExpanded && (
-                      <div className="bg-default-50/30 border-default-100 border-t px-6 py-4">
+                        </Accordion.Indicator>
+                      </Accordion.Trigger>
+                    </Accordion.Heading>
+                    <Accordion.Panel>
+                      <Accordion.Body className="bg-default-50/30 border-default-100 border-t px-6 py-4">
                         <div className="grid gap-6 md:grid-cols-2">
-                          {/* Stats Summary */}
                           <div>
                             <h4 className="mb-3 text-sm font-semibold">
                               Resumen de la Sincronización
@@ -252,24 +221,20 @@ export default function CalendarSyncHistoryPage() {
                                 </span>
                               </div>
                               <div>
-                                <span className="text-default-500 block text-xs">
-                                  Insertados
-                                </span>
+                                <span className="text-default-500 block text-xs">Insertados</span>
                                 <span className="text-success text-lg font-bold">
                                   {log.inserted}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-default-500 block text-xs">
-                                  Actualizados
-                                </span>
+                                <span className="text-default-500 block text-xs">Actualizados</span>
                                 <span className="text-info text-lg font-bold">{log.updated}</span>
                               </div>
                               <div>
-                                <span className="text-default-500 block text-xs">
-                                  Excluidos
+                                <span className="text-default-500 block text-xs">Excluidos</span>
+                                <span className="text-danger text-lg font-bold">
+                                  {log.excluded}
                                 </span>
-                                <span className="text-danger text-lg font-bold">{log.excluded}</span>
                               </div>
                               <div>
                                 <span className="text-default-500 block text-xs">Omitidos</span>
@@ -279,7 +244,6 @@ export default function CalendarSyncHistoryPage() {
                               </div>
                             </div>
 
-                            {/* Error Message */}
                             {log.errorMessage && (
                               <div className="mt-4">
                                 <span className="text-danger mb-1 block text-xs font-bold">
@@ -292,18 +256,16 @@ export default function CalendarSyncHistoryPage() {
                             )}
                           </div>
 
-                          {/* Change Details */}
                           <div>
-                            {/* <h4 className="mb-3 text-sm font-semibold">Detalle de Cambios</h4> duplicate header removed */}
                             <ChangeDetailsViewer data={log.changeDetails} />
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      </Accordion.Body>
+                    </Accordion.Panel>
+                  </Accordion.Item>
                 );
               })}
-            </div>
+            </Accordion>
           );
         })()}
       </div>
@@ -314,9 +276,7 @@ export default function CalendarSyncHistoryPage() {
 function renderCalendarsList(calendars: CalendarData[]) {
   if (calendars.length === 0) {
     return (
-      <div className="text-default-400 p-4 text-center text-sm">
-        No hay calendarios conectados
-      </div>
+      <div className="text-default-400 p-4 text-center text-sm">No hay calendarios conectados</div>
     );
   }
 

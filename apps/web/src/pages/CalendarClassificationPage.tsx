@@ -1,3 +1,4 @@
+import { Chip } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -32,9 +33,6 @@ import "dayjs/locale/es";
 dayjs.locale("es");
 
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
-
-const ACTIVE_FILTER_CLASS = "bg-primary text-primary-foreground shadow-sm";
-const INACTIVE_FILTER_CLASS = "bg-default-100/50 text-default-600 hover:bg-default-100";
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: optimized for integration
 function CalendarClassificationPage() {
@@ -199,10 +197,10 @@ function CalendarClassificationPage() {
             Filtrar:
           </span>
           <div className="flex flex-wrap gap-2">
-            <button
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                filters.missingCategory ? ACTIVE_FILTER_CLASS : INACTIVE_FILTER_CLASS
-              }`}
+            <Chip
+              as="button"
+              className="text-xs font-medium"
+              color={filters.missingCategory ? "primary" : "default"}
               onClick={() => {
                 setFilters((prev) => ({
                   ...prev,
@@ -210,14 +208,15 @@ function CalendarClassificationPage() {
                 }));
                 setPage(0);
               }}
-              type="button"
+              size="sm"
+              variant={filters.missingCategory ? "solid" : "flat"}
             >
               Sin categoría
-            </button>
-            <button
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                filters.missingAmount ? ACTIVE_FILTER_CLASS : INACTIVE_FILTER_CLASS
-              }`}
+            </Chip>
+            <Chip
+              as="button"
+              className="text-xs font-medium"
+              color={filters.missingAmount ? "primary" : "default"}
               onClick={() => {
                 setFilters((prev) => ({
                   ...prev,
@@ -225,16 +224,15 @@ function CalendarClassificationPage() {
                 }));
                 setPage(0);
               }}
-              type="button"
+              size="sm"
+              variant={filters.missingAmount ? "solid" : "flat"}
             >
               Sin monto
-            </button>
-            <button
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                filters.missingAttended
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-default-100/50 text-default-600 hover:bg-default-100"
-              }`}
+            </Chip>
+            <Chip
+              as="button"
+              className="text-xs font-medium"
+              color={filters.missingAttended ? "primary" : "default"}
               onClick={() => {
                 setFilters((prev) => ({
                   ...prev,
@@ -242,16 +240,15 @@ function CalendarClassificationPage() {
                 }));
                 setPage(0);
               }}
-              type="button"
+              size="sm"
+              variant={filters.missingAttended ? "solid" : "flat"}
             >
               Sin asistencia
-            </button>
-            <button
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                filters.missingDosage
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-default-100/50 text-default-600 hover:bg-default-100"
-              }`}
+            </Chip>
+            <Chip
+              as="button"
+              className="text-xs font-medium"
+              color={filters.missingDosage ? "primary" : "default"}
               onClick={() => {
                 setFilters((prev) => ({
                   ...prev,
@@ -259,16 +256,15 @@ function CalendarClassificationPage() {
                 }));
                 setPage(0);
               }}
-              type="button"
+              size="sm"
+              variant={filters.missingDosage ? "solid" : "flat"}
             >
               Sin dosis
-            </button>
-            <button
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                filters.missingTreatmentStage
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-default-100/50 text-default-600 hover:bg-default-100"
-              }`}
+            </Chip>
+            <Chip
+              as="button"
+              className="text-xs font-medium"
+              color={filters.missingTreatmentStage ? "primary" : "default"}
               onClick={() => {
                 setFilters((prev) => ({
                   ...prev,
@@ -276,68 +272,58 @@ function CalendarClassificationPage() {
                 }));
                 setPage(0);
               }}
-              type="button"
+              size="sm"
+              variant={filters.missingTreatmentStage ? "solid" : "flat"}
             >
               Sin etapa
-            </button>
+            </Chip>
             {hasActiveFilters && (
               <>
                 {/* Filter Mode Toggle */}
                 <div className="border-default-200/50 flex items-center gap-1 border-l pl-3">
                   <span className="text-default-300 mr-1 text-xs">Coincide:</span>
-                  <button
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                      !filters.filterMode || filters.filterMode === "OR"
-                        ? "bg-secondary text-secondary-foreground shadow-sm"
-                        : "text-default-500 hover:text-foreground bg-transparent"
-                    }`}
+                  <Chip
+                    as="button"
+                    className="text-xs font-medium"
+                    color={
+                      !filters.filterMode || filters.filterMode === "OR" ? "secondary" : "default"
+                    }
                     onClick={() => {
                       setFilters((prev) => ({ ...prev, filterMode: undefined }));
                       setPage(0);
                     }}
-                    type="button"
+                    size="sm"
+                    variant={!filters.filterMode || filters.filterMode === "OR" ? "solid" : "flat"}
                   >
                     Cualquiera
-                  </button>
-                  <button
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-all ${
-                      filters.filterMode === "AND"
-                        ? "bg-secondary text-secondary-foreground shadow-sm"
-                        : "text-default-500 hover:text-foreground bg-transparent"
-                    }`}
+                  </Chip>
+                  <Chip
+                    as="button"
+                    className="text-xs font-medium"
+                    color={filters.filterMode === "AND" ? "secondary" : "default"}
                     onClick={() => {
                       setFilters((prev) => ({ ...prev, filterMode: "AND" }));
                       setPage(0);
                     }}
-                    type="button"
+                    size="sm"
+                    variant={filters.filterMode === "AND" ? "solid" : "flat"}
                   >
                     Todos
-                  </button>
+                  </Chip>
                 </div>
-                <button
-                  className="text-danger/80 hover:text-danger flex items-center gap-1 px-2 py-1.5 text-xs font-medium transition-colors"
+                <Chip
+                  as="button"
+                  className="text-xs font-medium"
+                  color="danger"
                   onClick={() => {
                     setFilters({});
                     setPage(0);
                   }}
-                  type="button"
+                  size="sm"
+                  variant="flat"
                 >
-                  <svg
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      d="M6 18L18 6M6 6l12 12"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                    />
-                  </svg>
                   Limpiar
-                </button>
+                </Chip>
               </>
             )}
           </div>
@@ -504,9 +490,7 @@ function CalendarClassificationPage() {
             </svg>
           </div>
           <h3 className="text-success text-lg font-semibold">¡Todo clasificado!</h3>
-          <p className="text-default-500 mt-1 text-sm">
-            No hay eventos pendientes de clasificar.
-          </p>
+          <p className="text-default-500 mt-1 text-sm">No hay eventos pendientes de clasificar.</p>
         </div>
       )}
 
