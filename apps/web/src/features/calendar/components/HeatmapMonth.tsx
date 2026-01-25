@@ -8,7 +8,15 @@ import { fmtCLP } from "@/lib/format";
 export interface HeatmapMonthProps {
   maxValue: number;
   month: Dayjs;
-  statsByDate: Map<string, { amountExpected: number; amountPaid: number; total: number }>;
+  statsByDate: Map<
+    string,
+    {
+      amountExpected: number;
+      amountPaid: number;
+      total: number;
+      typeCounts: Record<string, number>;
+    }
+  >;
 }
 
 // Colors based on intensity (0 to 4)
@@ -53,6 +61,7 @@ interface DayCell {
   isToday: boolean;
   key: string;
   total: number;
+  typeCounts: Record<string, number>;
   type: "day";
 }
 
@@ -87,7 +96,12 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
       .map((_, i) => {
         const date = startOfMonth.add(i, "day");
         const isoDate = date.format("YYYY-MM-DD");
-        const stats = statsByDate.get(isoDate) ?? { amountExpected: 0, amountPaid: 0, total: 0 };
+        const stats = statsByDate.get(isoDate) ?? {
+          amountExpected: 0,
+          amountPaid: 0,
+          total: 0,
+          typeCounts: {},
+        };
 
         return {
           date: date,
@@ -114,12 +128,16 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
     let expectedFuture = 0; // Expected from today onwards
     let expectedPast = 0; // Expected before today
     let paidPast = 0; // Paid before today
+    const byType: Record<string, number> = {};
 
     for (const d of dates) {
       if (d.type === "day") {
         events += d.total;
         expected += d.amountExpected;
         paid += d.amountPaid;
+        for (const [label, count] of Object.entries(d.typeCounts)) {
+          byType[label] = (byType[label] ?? 0) + count;
+        }
 
         // Split by past/future relative to today
         if (d.date.isBefore(today, "day")) {
@@ -137,7 +155,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
     // Remaining: what's left to pay from today onwards (future only)
     const remaining = expectedFuture;
 
-    return { events, expected, paid, remaining, unclassified };
+    return { events, expected, paid, remaining, unclassified, byType };
   }, [dates]);
 
   return (
@@ -212,6 +230,11 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                       <p>
                         {cell.total} evento{cell.total !== 1 && "s"}
                       </p>
+                      {formatTypeBreakdown(cell.typeCounts).map((line) => (
+                        <p className="text-default-600" key={line}>
+                          {line}
+                        </p>
+                      ))}
                       <p className="opacity-80">Esperado: {fmtCLP(cell.amountExpected)}</p>
                       <p className="opacity-80">Pagado: {fmtCLP(cell.amountPaid)}</p>
                     </div>
@@ -280,9 +303,23 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
             </Tooltip>
           </div>
         </div>
+        {formatTypeBreakdown(monthTotals.byType).length > 0 && (
+          <div className="text-default-400 mt-2 flex flex-wrap gap-x-3 gap-y-1">
+            {formatTypeBreakdown(monthTotals.byType).map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </div>
+        )}
       </div>
     </Card>
   );
 }
 
 export default HeatmapMonthComponent;
+
+function formatTypeBreakdown(typeCounts: Record<string, number>) {
+  return Object.entries(typeCounts)
+    .filter(([, count]) => count > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, count]) => `${count} ${label}`);
+}

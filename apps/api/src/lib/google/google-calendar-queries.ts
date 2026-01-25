@@ -261,6 +261,17 @@ export async function getCalendarAggregates(
     .orderBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`, "desc")
     .execute();
 
+  // 4b. By Date + Event Type
+  const byDateType = await filteredQuery
+    .select([
+      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("date"),
+      "e.eventType as eventType",
+      sql<number>`count(e.id)`.as("total"),
+    ])
+    .groupBy([sql`DATE(coalesce(e.start_date_time, e.start_date))`, "e.eventType"])
+    .orderBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`, "desc")
+    .execute();
+
   // 5. By Weekday
   const byWeekday = await filteredQuery
     .select([
@@ -344,6 +355,11 @@ export async function getCalendarAggregates(
     amountExpected: number | string;
     amountPaid: number | string;
   };
+  type DateTypeRow = {
+    date: string | Date;
+    eventType: string | null;
+    total: number | string;
+  };
   const maxEventCount = (byDate as unknown as DateRow[]).reduce(
     (max, row) => Math.max(max, Number(row.total)),
     0,
@@ -398,6 +414,11 @@ export async function getCalendarAggregates(
         total: Number(r.total),
         amountExpected: Number(r.amountExpected),
         amountPaid: Number(r.amountPaid),
+      })),
+      byDateType: (byDateType as unknown as DateTypeRow[]).map((r: DateTypeRow) => ({
+        date: dayjs(r.date).format("YYYY-MM-DD"),
+        eventType: r.eventType,
+        total: Number(r.total),
       })),
     },
     available: {
