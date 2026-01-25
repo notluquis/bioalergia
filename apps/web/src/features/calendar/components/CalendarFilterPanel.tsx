@@ -87,6 +87,7 @@ function actionClass(isDropdownLayout: boolean) {
  * Shared filter panel for calendar pages
  * Reduces code duplication across CalendarDailyPage, CalendarSchedulePage, CalendarHeatmapPage
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shared filter with many toggles
 export function CalendarFilterPanel({
   className,
   formClassName,
@@ -148,6 +149,11 @@ export function CalendarFilterPanel({
             <DatePicker
               label="Desde"
               className="max-w-xs"
+              classNames={{
+                inputWrapper: "bg-content1",
+                selectorButton: "bg-default-100 hover:bg-default-200 border border-default-200",
+                selectorIcon: "text-foreground-500",
+              }}
               value={filters.from ? parseDate(filters.from) : undefined}
               onChange={(date: DateValue | null) =>
                 onFilterChange("from", date ? date.toString() : "")
@@ -160,6 +166,11 @@ export function CalendarFilterPanel({
             <DatePicker
               label="Hasta"
               className="max-w-xs"
+              classNames={{
+                inputWrapper: "bg-content1",
+                selectorButton: "bg-default-100 hover:bg-default-200 border border-default-200",
+                selectorIcon: "text-foreground-500",
+              }}
               value={filters.to ? parseDate(filters.to) : undefined}
               onChange={(date: DateValue | null) =>
                 onFilterChange("to", date ? date.toString() : "")

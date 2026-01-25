@@ -234,6 +234,16 @@ mercadopagoRoutes.post("/process-report", async (c) => {
         reportType,
         fileName,
         reportTypes: [reportType],
+        importStatsByType: {
+          [reportType]: {
+            totalRows: stats.totalRows,
+            validRows: stats.validRows,
+            insertedRows: stats.insertedRows,
+            duplicateRows: stats.duplicateRows,
+            skippedRows: stats.skippedRows,
+            errorCount: stats.errors?.length ?? 0,
+          },
+        },
         importStats: {
           totalRows: stats.totalRows,
           validRows: stats.validRows,

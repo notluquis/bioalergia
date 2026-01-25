@@ -165,9 +165,9 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
           }
 
           return (
-            <Tooltip key={cell.key}>
+            <Tooltip delay={0} key={cell.key} trigger="focus">
               <Tooltip.Trigger>
-                <div
+                <button
                   className={clsx(
                     "relative flex aspect-square w-full cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
                     // Default empty state
@@ -184,6 +184,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                     !cell.isToday &&
                       "hover:ring-primary hover:ring-offset-content1 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2",
                   )}
+                  type="button"
                 >
                   {/* Day Number */}
                   <span
@@ -201,7 +202,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                       {cell.total}
                     </span>
                   )}
-                </div>
+                </button>
               </Tooltip.Trigger>
               <Tooltip.Content className="p-0">
                 {cell.total > 0 ? (
@@ -227,51 +228,51 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
         <div className="text-foreground-500 flex flex-wrap items-center justify-between gap-2">
           <span className="font-semibold">Σ {monthTotals.events} eventos</span>
           <div className="flex flex-wrap gap-x-3 gap-y-1">
-            <Tooltip>
+            <Tooltip delay={0} trigger="focus">
               <Tooltip.Trigger>
-                <span className="cursor-help">
+                <button className="cursor-help text-left" type="button">
                   Esperado:{" "}
                   <span className="text-foreground font-medium">
                     {fmtCLP(monthTotals.expected)}
                   </span>
-                </span>
+                </button>
               </Tooltip.Trigger>
               <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
                 Total esperado del mes completo
               </Tooltip.Content>
             </Tooltip>
-            <Tooltip>
+            <Tooltip delay={0} trigger="focus">
               <Tooltip.Trigger>
-                <span className="cursor-help">
+                <button className="cursor-help text-left" type="button">
                   Pagado:{" "}
                   <span className="text-foreground font-medium">{fmtCLP(monthTotals.paid)}</span>
-                </span>
+                </button>
               </Tooltip.Trigger>
               <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
                 Total pagado del mes completo
               </Tooltip.Content>
             </Tooltip>
             {monthTotals.unclassified > 0 && (
-              <Tooltip>
+              <Tooltip delay={0} trigger="focus">
                 <Tooltip.Trigger>
-                  <span className="text-warning cursor-help">
+                  <button className="text-warning cursor-help text-left" type="button">
                     No cobrado:{" "}
                     <span className="font-medium">{fmtCLP(monthTotals.unclassified)}</span>
-                  </span>
+                  </button>
                 </Tooltip.Trigger>
                 <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
                   Eventos pasados que no fueron cobrados (no asistieron, cancelaron, etc.)
                 </Tooltip.Content>
               </Tooltip>
             )}
-            <Tooltip>
+            <Tooltip delay={0} trigger="focus">
               <Tooltip.Trigger>
-                <span className="cursor-help">
+                <button className="cursor-help text-left" type="button">
                   Restante:{" "}
                   <span className="text-foreground font-medium">
                     {fmtCLP(monthTotals.remaining)}
                   </span>
-                </span>
+                </button>
               </Tooltip.Trigger>
               <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
                 Lo que falta pagar desde hoy en adelante (solo eventos futuros)

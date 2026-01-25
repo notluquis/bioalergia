@@ -79,7 +79,7 @@ export const getMpReportColumns = (
   {
     accessorKey: "status",
     cell: ({ row }) =>
-      row.original.status === "pending" ? (
+      isReportPending(row.original.status) ? (
         <Chip className="gap-1.5" color="warning" size="sm" variant="soft">
           <Loader2 className="h-3 w-3 animate-spin" />
           Generando...
@@ -95,15 +95,16 @@ export const getMpReportColumns = (
   {
     cell: ({ row }) => {
       const report = row.original;
+      const pending = isReportPending(report.status);
       return (
         <div className="flex justify-end gap-1 text-right">
           <Button
             className="h-9 w-9 p-0 transition-opacity sm:opacity-70 sm:group-hover:opacity-100"
-            disabled={downloadPending || report.status === "pending" || !report.file_name}
+            disabled={downloadPending || pending || !report.file_name}
             onClick={(e) => {
               if (report.file_name) handleDownload(e, report.file_name);
             }}
-            title={report.status === "pending" ? "Reporte aún generándose" : "Descargar"}
+            title={pending ? "Reporte aún generándose" : "Descargar"}
             variant="ghost"
           >
             {downloadPending ? (
@@ -114,11 +115,11 @@ export const getMpReportColumns = (
           </Button>
           <Button
             className="h-9 w-9 p-0 transition-opacity sm:opacity-70 sm:group-hover:opacity-100"
-            disabled={processPending || report.status === "pending" || !report.file_name}
+            disabled={processPending || pending || !report.file_name}
             onClick={(e) => {
               if (report.file_name) handleProcess(e, report.file_name);
             }}
-            title={report.status === "pending" ? "Reporte aún generándose" : "Sincronizar a BD"}
+            title={pending ? "Reporte aún generándose" : "Sincronizar a BD"}
             variant="ghost"
           >
             {processPending && processingFile === (report.file_name ?? null) ? (
@@ -134,3 +135,8 @@ export const getMpReportColumns = (
     id: "actions",
   },
 ];
+
+function isReportPending(status?: string) {
+  if (!status) return false;
+  return /processing|pending|in_progress|waiting|generating|queued|creating/i.test(status);
+}

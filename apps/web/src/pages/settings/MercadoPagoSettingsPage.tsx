@@ -21,11 +21,13 @@ import {
   MPService,
   type MpReportType,
   type MpSyncChangeDetails,
+  type MpSyncImportStats,
   type MpSyncLog,
 } from "@/services/mercadopago";
 
 type MpTab = MpReportType | "sync";
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: large settings page with multiple sections
 export default function MercadoPagoSettingsPage() {
   const queryClient = useQueryClient();
   const { error: showError, success: showSuccess } = useToast();
@@ -182,9 +184,9 @@ export default function MercadoPagoSettingsPage() {
         id: "metrics",
         header: "Resultados",
         cell: ({ row }) => {
-          const importStats = getSyncImportStats(row.original.changeDetails);
+          const importStatsByType = getSyncImportStatsByType(row.original);
           const reportTypes = getSyncReportTypes(row.original);
-          if (importStats) {
+          if (importStatsByType) {
             return (
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 {reportTypes.length > 0 && (
@@ -201,38 +203,51 @@ export default function MercadoPagoSettingsPage() {
                     )}
                   </div>
                 )}
-                <Tooltip content="Total filas">
-                  <span className="bg-default-100 text-default-600 rounded px-1.5 py-0.5">
-                    T{importStats.totalRows}
-                  </span>
-                </Tooltip>
-                <Tooltip content="Validas">
-                  <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
-                    V{importStats.validRows}
-                  </span>
-                </Tooltip>
-                <Tooltip content="Insertadas">
-                  <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
-                    +{importStats.insertedRows}
-                  </span>
-                </Tooltip>
-                <Tooltip content="Duplicados">
-                  <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
-                    D{importStats.duplicateRows}
-                  </span>
-                </Tooltip>
-                <Tooltip content="Omitidas">
-                  <span className="bg-default-100 text-default-500 rounded px-1.5 py-0.5">
-                    S{importStats.skippedRows}
-                  </span>
-                </Tooltip>
-                {importStats.errorCount > 0 && (
-                  <Tooltip content="Errores">
-                    <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
-                      E{importStats.errorCount}
+                {importStatsByType.map(({ label, stats, tone }) => (
+                  <div className="flex items-center gap-1" key={label}>
+                    <span
+                      className={cn(
+                        "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase",
+                        tone === "release" && "bg-primary/10 text-primary",
+                        tone === "settlement" && "bg-warning/10 text-warning",
+                      )}
+                    >
+                      {label}
                     </span>
-                  </Tooltip>
-                )}
+                    <Tooltip content="Total filas">
+                      <span className="bg-default-100 text-default-600 rounded px-1.5 py-0.5">
+                        T{stats.totalRows}
+                      </span>
+                    </Tooltip>
+                    <Tooltip content="Validas">
+                      <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                        V{stats.validRows}
+                      </span>
+                    </Tooltip>
+                    <Tooltip content="Insertadas">
+                      <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
+                        +{stats.insertedRows}
+                      </span>
+                    </Tooltip>
+                    <Tooltip content="Duplicados">
+                      <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                        D{stats.duplicateRows}
+                      </span>
+                    </Tooltip>
+                    <Tooltip content="Omitidas">
+                      <span className="bg-default-100 text-default-500 rounded px-1.5 py-0.5">
+                        S{stats.skippedRows}
+                      </span>
+                    </Tooltip>
+                    {stats.errorCount > 0 && (
+                      <Tooltip content="Errores">
+                        <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
+                          E{stats.errorCount}
+                        </span>
+                      </Tooltip>
+                    )}
+                  </div>
+                ))}
               </div>
             );
           }
@@ -574,6 +589,58 @@ function getSyncImportStats(details?: MpSyncChangeDetails | null) {
     skippedRows: toNumber(raw.skippedRows),
     errorCount: toNumber(raw.errorCount),
   };
+}
+
+function getSyncImportStatsByType(log: MpSyncLog) {
+  const details = log.changeDetails;
+  if (!details || typeof details !== "object") return null;
+  const raw = details.importStatsByType;
+  const toNumber = (value: unknown) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const buildStats = (stats?: MpSyncImportStats | null) => {
+    if (!stats) return null;
+    return {
+      totalRows: toNumber(stats.totalRows),
+      validRows: toNumber(stats.validRows),
+      insertedRows: toNumber(stats.insertedRows),
+      duplicateRows: toNumber(stats.duplicateRows),
+      skippedRows: toNumber(stats.skippedRows),
+      errorCount: toNumber(stats.errorCount),
+    };
+  };
+
+  const entries: Array<{
+    label: string;
+    stats: ReturnType<typeof buildStats>;
+    tone: "release" | "settlement";
+  }> = [];
+
+  if (raw && typeof raw === "object") {
+    const releaseStats = buildStats(raw.release ?? null);
+    if (releaseStats) entries.push({ label: "Liberación", stats: releaseStats, tone: "release" });
+    const settlementStats = buildStats(raw.settlement ?? null);
+    if (settlementStats)
+      entries.push({ label: "Conciliación", stats: settlementStats, tone: "settlement" });
+  }
+
+  if (entries.length > 0) {
+    return entries;
+  }
+
+  const fallback = getSyncImportStats(details);
+  const reportTypes = getSyncReportTypes(log);
+  if (!fallback || reportTypes.length !== 1) return null;
+
+  return [
+    {
+      label: reportTypes[0] === "release" ? "Liberación" : "Conciliación",
+      stats: fallback,
+      tone: reportTypes[0],
+    },
+  ];
 }
 
 function getSyncReportTypes(log: MpSyncLog) {

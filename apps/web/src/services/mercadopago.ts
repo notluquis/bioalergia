@@ -59,6 +59,7 @@ export interface MpSyncImportStats {
 
 export type MpSyncChangeDetails = Record<string, unknown> & {
   importStats?: MpSyncImportStats;
+  importStatsByType?: Partial<Record<"release" | "settlement", MpSyncImportStats>>;
   reportTypes?: Array<"release" | "settlement">;
 };
 
