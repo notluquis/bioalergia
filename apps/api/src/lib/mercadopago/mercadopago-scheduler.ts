@@ -153,8 +153,8 @@ async function ensureDailyReport(type: ReportType, reports: MPReportSummary[]) {
   const { beginDate, endDate } = toDayRange(targetDate);
   await updateSetting(SETTINGS_KEYS.lastCreateAttempt(type), new Date().toISOString());
   await MercadoPagoService.createReport(type, {
-    begin_date: beginDate.toISOString(),
-    end_date: endDate.toISOString(),
+    begin_date: formatMpDate(beginDate),
+    end_date: formatMpDate(endDate),
   });
   await updateSetting(SETTINGS_KEYS.lastGenerated(type), targetDate.toISOString());
   logEvent("mp.autoSync.reportCreated", { type, begin: beginDate, end: endDate });
@@ -337,6 +337,10 @@ function isSameDay(a: Date, b: Date) {
 
 function minutesSince(date: Date) {
   return (Date.now() - date.getTime()) / 60000;
+}
+
+function formatMpDate(date: Date) {
+  return date.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
 async function jitterDelay() {

@@ -20,12 +20,12 @@ export const MercadoPagoService = {
    */
   async createReport(
     type: "release" | "settlement",
-    // biome-ignore lint/suspicious/noExplicitAny: overload
-    range: { begin_date: string; end_date: string } | any,
+    range: { begin_date: string; end_date: string },
   ) {
     console.log(`[MP Service] Creating ${type} report with range:`, range);
     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
-    const res = await mpFetch("", baseUrl, {
+    const urlWithQuery = appendReportRange(baseUrl, range);
+    const res = await mpFetch("", urlWithQuery, {
       method: "POST",
       body: JSON.stringify(range),
     });
@@ -73,3 +73,12 @@ export const MercadoPagoService = {
     return await processReportUrl(downloadUrl, type);
   },
 };
+
+function appendReportRange(baseUrl: string, range: { begin_date: string; end_date: string }) {
+  const params = new URLSearchParams();
+  if (range.begin_date) params.set("begin_date", range.begin_date);
+  if (range.end_date) params.set("end_date", range.end_date);
+  const query = params.toString();
+  if (!query) return baseUrl;
+  return `${baseUrl}?${query}`;
+}
