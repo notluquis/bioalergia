@@ -2,6 +2,7 @@ import { Chip } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
+import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -434,10 +435,12 @@ function CalendarClassificationPage() {
             placement="bottom"
             showArrow
           >
-            <button
-              className="text-warning/80 hover:text-warning hover:bg-warning/10 rounded-lg p-2 transition-colors disabled:opacity-50"
-              disabled={reclassifyAllMutation.isPending || isJobRunning}
-              onClick={() => {
+            <Button
+              aria-label="Reclasificar todo"
+              color="warning"
+              isDisabled={reclassifyAllMutation.isPending || isJobRunning}
+              isIconOnly
+              onPress={() => {
                 if (
                   globalThis.confirm(
                     "¿Reclasificar TODOS los eventos? Esto sobrescribirá las clasificaciones existentes.",
@@ -446,23 +449,11 @@ function CalendarClassificationPage() {
                   reclassifyAllMutation.mutate();
                 }
               }}
-              type="button"
+              size="sm"
+              variant="ghost"
             >
-              <svg
-                aria-hidden="true"
-                className={`h-5 w-5 ${isJobRunning ? "animate-spin" : ""}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                />
-              </svg>
-            </button>
+              <RefreshCw className={isJobRunning ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+            </Button>
           </Tooltip>
         </div>
       </div>

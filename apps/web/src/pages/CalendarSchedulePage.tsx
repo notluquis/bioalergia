@@ -1,4 +1,4 @@
-import { Chip } from "@heroui/react";
+import { Button, ButtonGroup, Chip } from "@heroui/react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
@@ -114,32 +114,21 @@ function CalendarSchedulePage() {
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           {/* Left: Week Navigation */}
           <div className="flex items-center gap-2">
-            <div className="bg-default-50 flex items-center gap-0.5 rounded-lg p-1">
-              <button
-                aria-label="Semana anterior"
-                className="hover:bg-background text-default-600 hover:text-primary rounded-md p-1.5 transition-colors"
-                onClick={goToPreviousWeek}
-                type="button"
-              >
+            <ButtonGroup size="sm" variant="tertiary">
+              <Button aria-label="Semana anterior" isIconOnly onPress={goToPreviousWeek}>
                 <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                className="hover:bg-background rounded-md px-2 py-1 text-xs font-medium uppercase transition-colors disabled:cursor-default disabled:opacity-50"
-                disabled={isCurrentWeek}
-                onClick={goToThisWeek}
-                type="button"
+              </Button>
+              <Button
+                className="text-[11px] font-medium uppercase tracking-wide"
+                isDisabled={isCurrentWeek}
+                onPress={goToThisWeek}
               >
                 Semana actual
-              </button>
-              <button
-                aria-label="Semana siguiente"
-                className="hover:bg-background text-default-600 hover:text-primary rounded-md p-1.5 transition-colors"
-                onClick={goToNextWeek}
-                type="button"
-              >
+              </Button>
+              <Button aria-label="Semana siguiente" isIconOnly onPress={goToNextWeek}>
                 <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
+              </Button>
+            </ButtonGroup>
             <div className="hidden items-center gap-2 text-sm sm:flex">
               <span className="text-default-600 font-medium">{rangeLabel}</span>
               {isNextWeek && (
