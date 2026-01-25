@@ -85,7 +85,7 @@ export default function TimesheetDetailTable({
   };
 
   return (
-    <div className="bg-background space-y-4 p-6">
+    <div className="bg-background space-y-4 p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-default-600 text-sm">
           <span className="font-semibold">{monthLabel}</span>
@@ -94,7 +94,7 @@ export default function TimesheetDetailTable({
           )}
         </div>
         {canEdit && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               disabled={saving || (pendingCount === 0 && modifiedCount === 0)}
               onClick={onBulkSave}
@@ -102,7 +102,7 @@ export default function TimesheetDetailTable({
             >
               Guardar cambios
             </Button>
-            <div className="text-default-500 text-xs">
+            <div className="text-default-500 text-xs sm:text-sm">
               {pendingCount > 0 && <span className="mr-2">Pendientes: {pendingCount}</span>}
               {modifiedCount > 0 && <span>Modificados: {modifiedCount}</span>}
             </div>

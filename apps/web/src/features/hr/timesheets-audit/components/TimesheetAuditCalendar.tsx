@@ -268,7 +268,7 @@ export default function TimesheetAuditCalendar({
   })();
 
   return (
-    <div className="bg-default-50/30 border-default-100 w-full overflow-hidden rounded-xl border p-6">
+    <div className="bg-default-50/30 border-default-100 w-full overflow-hidden rounded-xl border p-4 sm:p-6">
       <div className="timesheet-audit-calendar-wrapper">
         {loading && (
           <div className="bg-background/80 absolute inset-0 z-50 flex items-center justify-center">
@@ -322,7 +322,7 @@ export default function TimesheetAuditCalendar({
       </div>
 
       {/* Legend */}
-      <div className="text-default-600 mt-6 flex flex-col gap-3 text-sm">
+      <div className="text-default-600 mt-6 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
         <div className="flex items-center gap-3">
           <div className="bg-success h-4 w-4 rounded"></div>
           <span>Sin solapamiento</span>
