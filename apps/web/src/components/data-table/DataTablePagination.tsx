@@ -1,4 +1,4 @@
-import type { Table } from "@tanstack/react-table";
+import type { PaginationState, Table } from "@tanstack/react-table";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import Button from "@/components/ui/Button";
@@ -6,16 +6,23 @@ import { Select, SelectItem } from "@/components/ui/Select";
 
 interface DataTablePaginationProps<TData> {
   readonly enablePageSizeSelector?: boolean;
+  readonly pageCount?: number;
   readonly pageSizeOptions?: number[];
+  readonly pagination?: PaginationState;
   readonly table: Table<TData>;
 }
 
 export function DataTablePagination<TData>({
   enablePageSizeSelector = true,
+  pageCount,
   pageSizeOptions = [10, 25, 50],
+  pagination,
   table,
 }: DataTablePaginationProps<TData>) {
-  const currentPageSize = table.getState().pagination.pageSize;
+  const currentPagination = pagination ?? table.getState().pagination;
+  const currentPageSize = currentPagination.pageSize;
+  const currentPageIndex = currentPagination.pageIndex;
+  const totalPages = pageCount ?? table.getPageCount();
   const normalizedOptions = Array.from(new Set([...pageSizeOptions, currentPageSize])).sort(
     (a, b) => a - b,
   );
@@ -50,7 +57,7 @@ export function DataTablePagination<TData>({
       </div>
       <div className="flex items-center space-x-6 lg:space-x-8">
         <div className="flex items-center justify-center text-sm font-medium">
-          Página {table.getState().pagination.pageIndex + 1} de {Math.max(1, table.getPageCount())}
+          Página {currentPageIndex + 1} de {Math.max(1, totalPages)}
         </div>
         <div className="flex items-center space-x-2">
           <Button
