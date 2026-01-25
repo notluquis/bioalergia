@@ -5,6 +5,7 @@ import {
   Label,
   ListBox,
   Select,
+  Separator,
   Spinner,
   Tabs,
 } from "@heroui/react";
@@ -12,18 +13,7 @@ import { parseDate } from "@internationalized/date";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import {
-  BarChart2,
-  BarChart3,
-  Calendar,
-  Check,
-  Clock,
-  Filter,
-  List,
-  Search,
-  TrendingUp,
-  X,
-} from "lucide-react";
+import { BarChart2, BarChart3, Calendar, Clock, Filter, List, TrendingUp, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
@@ -31,6 +21,7 @@ import Button from "@/components/ui/Button";
 
 import StatCard from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
+import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { fetchEmployees } from "@/features/hr/employees/api";
 import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
@@ -85,8 +76,6 @@ export default function ReportsPage() {
   const [timestamp, setTimestamp] = useState(0); // To force re-fetch on click
 
   // UI State
-  const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
-  const [employeeSearch, setEmployeeSearch] = useState("");
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
 
   // 1. Load Months and Employees
@@ -114,11 +103,10 @@ export default function ReportsPage() {
     (emp) => emp.status === "ACTIVE" && emp.salaryType !== "FIXED",
   );
 
-  const filteredEmployees = (() => {
-    if (!employeeSearch.trim()) return activeEmployees;
-    const search = employeeSearch.toLowerCase();
-    return activeEmployees.filter((emp) => emp.full_name.toLowerCase().includes(search));
-  })();
+  const employeeOptions = activeEmployees.map((emp) => ({
+    id: emp.id,
+    label: emp.full_name,
+  }));
 
   // 2. Report Query
   const dateParams = (() => {
@@ -259,10 +247,10 @@ export default function ReportsPage() {
             {/* Date Controls */}
             <div className="space-y-4">
               {viewMode === "month" && (
-                <div className="form-control">
-                  <label className="label text-sm font-medium" htmlFor="month-select">
+                <div className="space-y-2">
+                  <Label htmlFor="month-select" className="text-sm font-medium">
                     Seleccionar Mes
-                  </label>
+                  </Label>
                   <Select
                     aria-label="Seleccionar Mes"
                     className="w-full"
@@ -291,7 +279,7 @@ export default function ReportsPage() {
 
               {viewMode === "range" && (
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="form-control">
+                  <div className="space-y-2">
                     <DateField
                       className="w-full"
                       onChange={(val) => setStartDate(val ? val.toString() : "")}
@@ -305,7 +293,7 @@ export default function ReportsPage() {
                       </DateInputGroup>
                     </DateField>
                   </div>
-                  <div className="form-control">
+                  <div className="space-y-2">
                     <DateField
                       className="w-full"
                       onChange={(val) => setEndDate(val ? val.toString() : "")}
@@ -323,16 +311,18 @@ export default function ReportsPage() {
               )}
 
               {viewMode === "all" && (
-                <div className="alert bg-default-50/50 text-sm">
-                  <Calendar className="text-primary h-4 w-4" />
-                  <span>Se analizará todo el historial disponible en la base de datos.</span>
-                </div>
+                <Alert className="text-sm" variant="info">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>Se analizará todo el historial disponible en la base de datos.</span>
+                  </div>
+                </Alert>
               )}
 
-              <div className="form-control">
-                <label className="label text-sm font-medium" htmlFor="granularity-select">
+              <div className="space-y-2">
+                <Label htmlFor="granularity-select" className="text-sm font-medium">
                   Agrupación temporal
-                </label>
+                </Label>
                 <Select
                   aria-label="Agrupación temporal"
                   className="w-full"
@@ -361,7 +351,7 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            <div className="divider my-2"></div>
+            <Separator className="my-2" />
 
             {/* Employee Selector */}
             <div className="space-y-3">
@@ -369,13 +359,14 @@ export default function ReportsPage() {
                 <span className="text-sm font-medium">
                   Empleados ({selectedEmployeeIds.length})
                 </span>
-                <button
-                  className="link link-primary text-xs no-underline hover:underline"
-                  onClick={handleSelectAll}
-                  type="button"
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onPress={handleSelectAll}
+                  className="text-primary text-xs"
                 >
-                  {selectedEmployeeIds.length === filteredEmployees.length ? "Ninguno" : "Todos"}
-                </button>
+                  {selectedEmployeeIds.length === activeEmployees.length ? "Ninguno" : "Todos"}
+                </Button>
               </div>
 
               {/* Selected Tags */}
@@ -395,15 +386,17 @@ export default function ReportsPage() {
                         <span className="max-w-25 truncate">
                           {emp.person?.names.split(" ")[0] ?? emp.full_name}
                         </span>
-                        <button
-                          className="hover:text-white/80"
-                          onClick={() => {
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => {
                             handleEmployeeToggle(id);
                           }}
-                          type="button"
+                          className="h-5 w-5 min-w-5 text-white/80"
                         >
                           <X className="h-3 w-3" />
-                        </button>
+                        </Button>
                       </Chip>
                     );
                   })}
@@ -416,80 +409,13 @@ export default function ReportsPage() {
               )}
 
               {/* Add Dropdown */}
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-between font-normal"
-                  onPress={() => {
-                    setShowEmployeeDropdown(!showEmployeeDropdown);
-                  }}
-                >
-                  <span>Seleccionar empleados...</span>
-                  <Search className="h-3.5 w-3.5 opacity-50" />
-                </Button>
-
-                {showEmployeeDropdown && (
-                  <>
-                    <button
-                      aria-label="Cerrar búsqueda"
-                      className="fixed inset-0 z-40 w-full h-full cursor-default bg-transparent"
-                      onClick={() => {
-                        setShowEmployeeDropdown(false);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Escape") setShowEmployeeDropdown(false);
-                      }}
-                      tabIndex={-1}
-                      type="button"
-                    />
-                    <div className="bg-background border-default-100 absolute top-full right-0 left-0 z-50 mt-2 flex max-h-80 flex-col overflow-hidden rounded-xl border shadow-xl">
-                      <div className="border-default-100 bg-base-50 border-b p-2">
-                        <label className="input input-sm input-bordered flex items-center gap-2 bg-white">
-                          <Search className="h-4 w-4 opacity-50" />
-                          <input
-                            className="grow"
-                            onChange={(e) => {
-                              setEmployeeSearch(e.target.value);
-                            }}
-                            placeholder="Buscar..."
-                            type="text"
-                            value={employeeSearch}
-                          />
-                        </label>
-                      </div>
-                      <div className="overflow-y-auto p-1">
-                        {filteredEmployees.map((emp) => {
-                          const isSelected = selectedEmployeeIds.includes(emp.id);
-                          return (
-                            <button
-                              className={cn(
-                                "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors",
-                                isSelected
-                                  ? "bg-primary/10 text-primary font-medium"
-                                  : "hover:bg-default-50 text-foreground",
-                              )}
-                              key={emp.id}
-                              onClick={() => {
-                                handleEmployeeToggle(emp.id);
-                              }}
-                              type="button"
-                            >
-                              <span className="truncate">{emp.full_name}</span>
-                              {isSelected && <Check className="ml-2 h-4 w-4" />}
-                            </button>
-                          );
-                        })}
-                        {filteredEmployees.length === 0 && (
-                          <div className="text-default-400 p-4 text-center text-sm">
-                            No hay resultados
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
+              <EmployeeMultiSelectPopover
+                buttonLabel="Seleccionar empleados..."
+                onChange={setSelectedEmployeeIds}
+                options={employeeOptions}
+                selectedIds={selectedEmployeeIds}
+                className="w-full"
+              />
             </div>
 
             <Button
@@ -519,7 +445,7 @@ export default function ReportsPage() {
         {/* Right Column: Results */}
         <div className="space-y-6 lg:col-span-8">
           {reportData.length === 0 && !loading ? (
-            <div className="border-default-200 bg-base-50/50 flex h-full min-h-100 flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center">
+            <div className="border-default-200 bg-default-50/50 flex h-full min-h-100 flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center">
               <div className="bg-default-50 mb-6 flex h-20 w-20 items-center justify-center rounded-full">
                 <BarChart2 className="text-default-200 h-10 w-10" />
               </div>

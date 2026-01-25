@@ -7,13 +7,13 @@ import { ButtonGroup, Chip, ListBox, Select, Spinner } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import { Check, ChevronDown, ChevronUp, Search, Users, X } from "lucide-react";
+import { ChevronDown, Users, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import Alert from "@/components/ui/Alert";
-import Backdrop from "@/components/ui/Backdrop";
 import Button from "@/components/ui/Button";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { useAuth } from "@/context/AuthContext";
+import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { fetchEmployees } from "@/features/hr/employees/api";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import {
@@ -22,7 +22,6 @@ import {
 } from "@/features/hr/timesheets-audit/hooks/use-timesheet-audit";
 import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlap-detection";
 import { endOfMonth, monthsAgoEnd, monthsAgoStart, startOfMonth } from "@/lib/dates";
-import { INPUT_SEARCH_SM } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 import "dayjs/locale/es";
@@ -84,8 +83,6 @@ export default function TimesheetAuditPage() {
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
 
   // UI state
-  const [employeeSearch, setEmployeeSearch] = useState("");
-  const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
   const [customWeeksOpen, setCustomWeeksOpen] = useState(true);
   const [legendOpen, setLegendOpen] = useState(false);
 
@@ -98,11 +95,10 @@ export default function TimesheetAuditPage() {
   // Active employees with search
   const activeEmployees = employees.filter((emp) => emp.status === "ACTIVE");
 
-  const filteredEmployees = (() => {
-    if (!employeeSearch.trim()) return activeEmployees;
-    const search = employeeSearch.toLowerCase();
-    return activeEmployees.filter((emp) => emp.full_name.toLowerCase().includes(search));
-  })();
+  const employeeOptions = activeEmployees.map((emp) => ({
+    id: emp.id,
+    label: emp.full_name,
+  }));
 
   // Set default month when months load (only once)
   useEffect(() => {
@@ -112,13 +108,6 @@ export default function TimesheetAuditPage() {
       monthInitialized.current = true;
     }
   }, [months, selectedMonth]);
-
-  // Cleanup: close dropdown on unmount to prevent event listeners hanging
-  useEffect(() => {
-    return () => {
-      setShowEmployeeDropdown(false);
-    };
-  }, []);
 
   // Calculate effective date ranges based on quick range or custom selection
   const effectiveRanges = ((): AuditDateRange[] => {
@@ -176,16 +165,6 @@ export default function TimesheetAuditPage() {
     });
   };
 
-  const handleEmployeeToggle = (employeeId: number) => {
-    setSelectedEmployeeIds((prev) => {
-      if (prev.includes(employeeId)) {
-        return prev.filter((id) => id !== employeeId);
-      }
-      if (prev.length >= MAX_EMPLOYEES) return prev;
-      return [...prev, employeeId];
-    });
-  };
-
   const handleRemoveEmployee = (employeeId: number) => {
     setSelectedEmployeeIds((prev) => prev.filter((id) => id !== employeeId));
   };
@@ -240,12 +219,12 @@ export default function TimesheetAuditPage() {
         {/* Custom Week Picker (collapsible) */}
         {quickRange === "custom" && (
           <div className="bg-default-50/50 mt-4 rounded-xl">
-            <button
-              className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left font-medium select-none"
-              onClick={() => {
+            <Button
+              className="w-full justify-between px-4 py-3"
+              onPress={() => {
                 setCustomWeeksOpen(!customWeeksOpen);
               }}
-              type="button"
+              variant="ghost"
             >
               <span>Personalizar semanas específicas</span>
               <ChevronDown
@@ -255,7 +234,7 @@ export default function TimesheetAuditPage() {
                 )}
                 size={16}
               />
-            </button>
+            </Button>
             <SmoothCollapse isOpen={customWeeksOpen}>
               <div className="space-y-4 px-4 pt-0 pb-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -288,15 +267,16 @@ export default function TimesheetAuditPage() {
                     </Select.Popover>
                   </Select>
                   {weeksForMonth.length > 0 && (
-                    <button
-                      className="link link-primary text-sm whitespace-nowrap"
-                      onClick={handleSelectAllWeeks}
-                      type="button"
+                    <Button
+                      className="text-primary text-sm"
+                      onPress={handleSelectAllWeeks}
+                      size="sm"
+                      variant="ghost"
                     >
                       {selectedWeekKeys.length === weeksForMonth.length
                         ? "Deseleccionar todas"
                         : "Seleccionar todas"}
-                    </button>
+                    </Button>
                   )}
                 </div>
 
@@ -305,20 +285,21 @@ export default function TimesheetAuditPage() {
                   {weeksForMonth.map((week) => {
                     const isActive = selectedWeekKeys.includes(week.key);
                     return (
-                      <button
-                        className={`rounded-lg border p-3 text-left transition-all ${
+                      <Button
+                        className={cn(
+                          "justify-start rounded-lg border p-3 text-left transition-all",
                           isActive
                             ? "border-primary bg-primary/10 text-primary"
-                            : "border-default-200 bg-background text-foreground hover:border-primary/50"
-                        }`}
+                            : "border-default-200 bg-background text-foreground hover:border-primary/50",
+                        )}
                         key={week.key}
-                        onClick={() => {
+                        onPress={() => {
                           handleWeekToggle(week.key);
                         }}
-                        type="button"
+                        variant="ghost"
                       >
                         <div className="text-sm font-medium">{week.label}</div>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -369,108 +350,27 @@ export default function TimesheetAuditPage() {
               );
             })}
             {selectedEmployeeIds.length > 0 && (
-              <button
-                className="link link-error text-sm"
-                onClick={handleClearEmployees}
-                type="button"
+              <Button
+                className="text-danger text-sm"
+                onPress={handleClearEmployees}
+                size="sm"
+                variant="ghost"
               >
                 Limpiar todos
-              </button>
+              </Button>
             )}
           </div>
         )}
 
         {/* Add Employee Dropdown */}
         {!isMaxEmployees && (
-          <div className="relative">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start gap-2"
-              onPress={() => {
-                setShowEmployeeDropdown(!showEmployeeDropdown);
-              }}
-            >
-              <span>+ Agregar empleado</span>
-              {showEmployeeDropdown ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
-
-            {showEmployeeDropdown && (
-              <>
-                {/* Backdrop to close dropdown */}
-                <Backdrop
-                  isVisible={true}
-                  onClose={() => {
-                    setShowEmployeeDropdown(false);
-                  }}
-                />
-                {/* Dropdown Content */}
-                <div className="border-default-200 bg-background absolute top-full right-0 left-0 z-50 mt-2 rounded-xl border shadow-xl">
-                  {/* Search */}
-                  <div className="border-default-200 border-b p-3">
-                    <label className={INPUT_SEARCH_SM}>
-                      <Search className="text-default-400 h-4 w-4" />
-                      <input
-                        className="grow bg-transparent outline-none"
-                        onChange={(e) => {
-                          setEmployeeSearch(e.target.value);
-                        }}
-                        placeholder="Buscar empleado..."
-                        type="text"
-                        value={employeeSearch}
-                      />
-                    </label>
-                  </div>
-
-                  {/* Employee List */}
-                  <ul className="max-h-64 overflow-y-auto p-2">
-                    {(() => {
-                      if (filteredEmployees.length === 0) {
-                        return (
-                          <li className="text-default-400 p-4 text-center text-sm">
-                            No se encontraron empleados
-                          </li>
-                        );
-                      }
-                      return (
-                        <>
-                          {filteredEmployees.map((emp) => {
-                            const isSelected = selectedEmployeeIds.includes(emp.id);
-                            return (
-                              <li key={emp.id}>
-                                <button
-                                  className={`flex w-full items-center justify-between rounded-lg p-2 transition-all ${
-                                    isSelected ? "bg-primary/20 text-primary" : "hover:bg-default-50"
-                                  }`}
-                                  onClick={() => {
-                                    handleEmployeeToggle(emp.id);
-                                    if (
-                                      !isSelected &&
-                                      selectedEmployeeIds.length + 1 >= MAX_EMPLOYEES
-                                    ) {
-                                      setShowEmployeeDropdown(false);
-                                    }
-                                  }}
-                                  type="button"
-                                >
-                                  <span className="truncate">{emp.full_name}</span>
-                                  {isSelected && <Check className="h-4 w-4 shrink-0" />}
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </>
-                      );
-                    })()}
-                  </ul>
-                </div>
-              </>
-            )}
-          </div>
+          <EmployeeMultiSelectPopover
+            buttonLabel="+ Agregar empleado"
+            maxSelected={MAX_EMPLOYEES}
+            onChange={setSelectedEmployeeIds}
+            options={employeeOptions}
+            selectedIds={selectedEmployeeIds}
+          />
         )}
 
         {selectedEmployeeIds.length === 0 && (
@@ -577,12 +477,12 @@ export default function TimesheetAuditPage() {
       {/* Legend (collapsible) */}
       {canShowCalendar && entries.length > 0 && (
         <div className="border-default-200 bg-background rounded-2xl border shadow-sm">
-          <button
-            className="flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left font-medium select-none"
-            onClick={() => {
+          <Button
+            className="w-full justify-between px-4 py-3"
+            onPress={() => {
               setLegendOpen(!legendOpen);
             }}
-            type="button"
+            variant="ghost"
           >
             <span>📋 Guía de interpretación</span>
             <ChevronDown
@@ -592,7 +492,7 @@ export default function TimesheetAuditPage() {
               )}
               size={16}
             />
-          </button>
+          </Button>
           <SmoothCollapse isOpen={legendOpen}>
             <div className="px-4 pt-0 pb-4">
               <div className="grid gap-6 pt-4 sm:grid-cols-2">
@@ -607,18 +507,14 @@ export default function TimesheetAuditPage() {
                   <div className="bg-danger mt-1 h-4 w-4 shrink-0 rounded" />
                   <div>
                     <p className="text-foreground font-semibold">Conflicto detectado</p>
-                    <p className="text-default-600 text-sm">
-                      Horarios traslapados entre empleados
-                    </p>
+                    <p className="text-default-600 text-sm">Horarios traslapados entre empleados</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="text-lg">👩‍⚕️</span>
                   <div>
                     <p className="text-foreground font-semibold">Compatibles</p>
-                    <p className="text-default-600 text-sm">
-                      Enfermero + TENS pueden coexistir
-                    </p>
+                    <p className="text-default-600 text-sm">Enfermero + TENS pueden coexistir</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
