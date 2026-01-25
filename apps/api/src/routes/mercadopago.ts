@@ -209,13 +209,39 @@ mercadopagoRoutes.post("/process-report", async (c) => {
     return reply(c, { status: "error", message: "Missing fileName or reportType" }, 400);
   }
 
+  let logId: number | null = null;
   try {
     console.log(
       `[MP Process] Manual processing triggered for ${fileName} (${reportType}) by ${auth.email}`,
     );
 
+    logId = await createMpSyncLogEntry({
+      triggerSource: "mp:manual",
+      triggerLabel: `${reportType}:${fileName}`,
+      triggerUserId: auth.userId,
+    });
+
     const stats = await MercadoPagoService.processReport(reportType, {
       fileName,
+    });
+
+    await finalizeMpSyncLogEntry(logId, {
+      status: "SUCCESS",
+      inserted: stats.insertedRows,
+      skipped: stats.skippedRows,
+      excluded: stats.duplicateRows,
+      changeDetails: {
+        reportType,
+        fileName,
+        importStats: {
+          totalRows: stats.totalRows,
+          validRows: stats.validRows,
+          insertedRows: stats.insertedRows,
+          duplicateRows: stats.duplicateRows,
+          skippedRows: stats.skippedRows,
+          errorCount: stats.errors?.length ?? 0,
+        },
+      },
     });
 
     return reply(c, {
@@ -225,6 +251,13 @@ mercadopagoRoutes.post("/process-report", async (c) => {
     });
   } catch (e) {
     console.error(`[MP Process] Failed to process ${fileName}:`, e);
+    if (logId != null) {
+      await finalizeMpSyncLogEntry(logId, {
+        status: "ERROR",
+        errorMessage: e instanceof Error ? e.message : String(e),
+        changeDetails: { reportType, fileName },
+      });
+    }
     return reply(c, { status: "error", message: String(e) }, 500);
   }
 });
