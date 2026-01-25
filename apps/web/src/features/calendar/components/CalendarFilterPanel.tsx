@@ -12,6 +12,7 @@ import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { numberFormatter } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 import { NULL_CATEGORY_VALUE, NULL_EVENT_TYPE_VALUE } from "../constants";
 import { useCalendarSync } from "../hooks/useCalendarSync";
@@ -19,6 +20,8 @@ import type { CalendarFilters } from "../types";
 import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
 
 export interface CalendarFilterPanelProps {
+  className?: string;
+  formClassName?: string;
   /** Available categories for dropdown */
   availableCategories?: { category: null | string; total: number }[];
   /** Available event types for dropdown */
@@ -33,6 +36,8 @@ export interface CalendarFilterPanelProps {
   onApply: () => void;
   /** Count of items that would be shown after applying filters */
   applyCount?: number;
+  /** Show sync button */
+  showSync?: boolean;
   /** Callback when a filter value changes - compatible with useCalendarEvents updateFilters */
   onFilterChange: <K extends keyof FilterPanelState>(key: K, value: CalendarFilters[K]) => void;
   /** Callback when filters should be reset */
@@ -41,6 +46,7 @@ export interface CalendarFilterPanelProps {
   showDateRange?: boolean;
   /** Show search input */
   showSearch?: boolean;
+  variant?: "card" | "plain";
 }
 
 /** Filter state used by the filter panel - subset of CalendarFilters */
@@ -54,6 +60,8 @@ export type FilterPanelState = Pick<
  * Reduces code duplication across CalendarDailyPage, CalendarSchedulePage, CalendarHeatmapPage
  */
 export function CalendarFilterPanel({
+  className,
+  formClassName,
   availableCategories = [],
   availableEventTypes = [],
   filters,
@@ -61,10 +69,12 @@ export function CalendarFilterPanel({
   loading = false,
   onApply,
   applyCount,
+  showSync = true,
   onFilterChange,
   onReset,
   showDateRange = false,
   showSearch = false,
+  variant = "card",
 }: Readonly<CalendarFilterPanelProps>) {
   // Build event type options for MultiSelect
   const eventTypeOptions: MultiSelectOption[] = availableEventTypes.map((entry) => {
@@ -89,83 +99,86 @@ export function CalendarFilterPanel({
   const applyLabel =
     applyCount == null ? "Aplicar" : `Aplicar · ${numberFormatter.format(applyCount)}`;
 
-  return (
-    <Card className="animate-in slide-in-from-top-2 origin-top rounded-xl border border-default-200/70 bg-content1/70 shadow-sm backdrop-blur duration-200 ease-out">
-      <form className="flex flex-wrap items-end gap-2.5 p-3" onSubmit={handleSubmit}>
-        {/* Date Range Inputs */}
-        {showDateRange && (
-          <>
-            <div className="min-w-28 flex-1">
-              <DatePicker
-                label="Desde"
-                className="max-w-xs"
-                value={filters.from ? parseDate(filters.from) : undefined}
-                onChange={(date: DateValue | null) =>
-                  onFilterChange("from", date ? date.toString() : "")
-                }
-                labelPlacement="inside"
-                variant="bordered"
-              />
-            </div>
-            <div className="min-w-28 flex-1">
-              <DatePicker
-                label="Hasta"
-                className="max-w-xs"
-                value={filters.to ? parseDate(filters.to) : undefined}
-                onChange={(date: DateValue | null) =>
-                  onFilterChange("to", date ? date.toString() : "")
-                }
-                labelPlacement="inside"
-                variant="bordered"
-              />
-            </div>
-          </>
-        )}
-
-        {/* Event Types Filter */}
-        {availableEventTypes.length > 0 && (
-          <MultiSelectFilter
-            className="flex-1 min-w-44"
-            density="compact"
-            label="Tipos de evento"
-            onChange={(values) => onFilterChange("eventTypes", values)}
-            options={eventTypeOptions}
-            placeholder="Todos"
-            selected={filters.eventTypes ?? []}
-          />
-        )}
-
-        {/* Categories Filter */}
-        {availableCategories.length > 0 && (
-          <MultiSelectFilter
-            className="flex-1 min-w-44"
-            density="compact"
-            label="Clasificación"
-            onChange={(values) => onFilterChange("categories", values)}
-            options={categoryOptions}
-            placeholder="Todas"
-            selected={filters.categories}
-          />
-        )}
-
-        {/* Search Input */}
-        {showSearch && (
-          <div className="min-w-44 flex-1">
-            <Input
-              enterKeyHint="search"
-              label="Buscar"
-              size="sm"
-              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                onFilterChange("search", e.target.value);
-              }}
-              placeholder="Paciente, tratamiento..."
-              value={filters.search ?? ""}
+  const form = (
+    <form
+      className={cn("flex flex-wrap items-end gap-2.5 p-3", formClassName)}
+      onSubmit={handleSubmit}
+    >
+      {/* Date Range Inputs */}
+      {showDateRange && (
+        <>
+          <div className="min-w-28 flex-1">
+            <DatePicker
+              label="Desde"
+              className="max-w-xs"
+              value={filters.from ? parseDate(filters.from) : undefined}
+              onChange={(date: DateValue | null) =>
+                onFilterChange("from", date ? date.toString() : "")
+              }
+              labelPlacement="inside"
+              variant="bordered"
             />
           </div>
-        )}
+          <div className="min-w-28 flex-1">
+            <DatePicker
+              label="Hasta"
+              className="max-w-xs"
+              value={filters.to ? parseDate(filters.to) : undefined}
+              onChange={(date: DateValue | null) =>
+                onFilterChange("to", date ? date.toString() : "")
+              }
+              labelPlacement="inside"
+              variant="bordered"
+            />
+          </div>
+        </>
+      )}
 
-        {/* Action Buttons */}
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+      {/* Event Types Filter */}
+      {availableEventTypes.length > 0 && (
+        <MultiSelectFilter
+          className="flex-1 min-w-44"
+          density="compact"
+          label="Tipos de evento"
+          onChange={(values) => onFilterChange("eventTypes", values)}
+          options={eventTypeOptions}
+          placeholder="Todos"
+          selected={filters.eventTypes ?? []}
+        />
+      )}
+
+      {/* Categories Filter */}
+      {availableCategories.length > 0 && (
+        <MultiSelectFilter
+          className="flex-1 min-w-44"
+          density="compact"
+          label="Clasificación"
+          onChange={(values) => onFilterChange("categories", values)}
+          options={categoryOptions}
+          placeholder="Todas"
+          selected={filters.categories}
+        />
+      )}
+
+      {/* Search Input */}
+      {showSearch && (
+        <div className="min-w-44 flex-1">
+          <Input
+            enterKeyHint="search"
+            label="Buscar"
+            size="sm"
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+              onFilterChange("search", e.target.value);
+            }}
+            placeholder="Paciente, tratamiento..."
+            value={filters.search ?? ""}
+          />
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap items-center gap-2">
+        {showSync && (
           <Button
             disabled={syncing || loading}
             onClick={(e) => {
@@ -176,27 +189,41 @@ export function CalendarFilterPanel({
             size="sm"
             type="button"
             variant="outline"
-            className="mr-auto"
             title="Sincronizar con Google Calendar"
           >
             <RefreshCw className={syncing ? "animate-spin" : ""} size={14} />
             <span className="sr-only">Sincronizar</span>
           </Button>
+        )}
 
-          <Button
-            disabled={loading || !isDirty}
-            onClick={onReset}
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            Limpiar
-          </Button>
-          <Button disabled={loading} size="sm" type="submit">
-            {loading ? "..." : applyLabel}
-          </Button>
-        </div>
-      </form>
+        <Button
+          disabled={loading || !isDirty}
+          onClick={onReset}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
+          Limpiar
+        </Button>
+        <Button disabled={loading} size="sm" type="submit">
+          {loading ? "..." : applyLabel}
+        </Button>
+      </div>
+    </form>
+  );
+
+  if (variant === "plain") {
+    return form;
+  }
+
+  return (
+    <Card
+      className={cn(
+        "animate-in slide-in-from-top-2 origin-top rounded-xl border border-default-200/70 bg-content1/70 shadow-sm backdrop-blur duration-200 ease-out",
+        className,
+      )}
+    >
+      {form}
     </Card>
   );
 }
