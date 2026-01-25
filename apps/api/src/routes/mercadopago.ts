@@ -233,6 +233,7 @@ mercadopagoRoutes.post("/process-report", async (c) => {
       changeDetails: {
         reportType,
         fileName,
+        reportTypes: [reportType],
         importStats: {
           totalRows: stats.totalRows,
           validRows: stats.validRows,
@@ -376,6 +377,7 @@ mercadopagoRoutes.post("/webhook", async (c) => {
           queuedFiles: queuedCount,
           transactionId: payload.transaction_id,
           reportType: payload.report_type,
+          reportTypes: [payload.report_type.includes("settlement") ? "settlement" : "release"],
         },
       });
     }

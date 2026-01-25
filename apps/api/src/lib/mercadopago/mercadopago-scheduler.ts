@@ -139,6 +139,7 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
       changeDetails: {
         ...results,
         importStats,
+        reportTypes: ["release", "settlement"],
       },
     });
     await updateSetting(SETTINGS_KEYS.lastRun, startedAt.toISOString());
