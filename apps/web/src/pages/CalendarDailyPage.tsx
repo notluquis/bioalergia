@@ -1,12 +1,10 @@
-import { PopoverContent, PopoverRoot, PopoverTrigger } from "@heroui/react";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { Filter } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import Button from "@/components/ui/Button";
-import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
+import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
 import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
 // Components
@@ -88,33 +86,24 @@ function CalendarDailyPage() {
           onSelect={setSelectedDate}
           allowedWeekdays={[1, 2, 3, 4, 5, 6]}
           rightSlot={
-            <PopoverRoot isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
-              <PopoverTrigger>
-                <Button className="gap-1.5" size="sm" variant={filtersOpen ? "secondary" : "ghost"}>
-                  <Filter className="h-4 w-4" />
-                  <span className="hidden sm:inline">{filtersOpen ? "Cerrar" : "Filtros"}</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="z-50 p-0" isNonModal offset={8} placement="bottom end">
-                <div className="w-[min(92vw,480px)]">
-                  <CalendarFilterPanel
-                    availableCategories={availableCategories}
-                    availableEventTypes={availableEventTypes}
-                    filters={filters}
-                    loading={loading}
-                    applyCount={daily?.totals.events}
-                    layout="dropdown"
-                    onApply={() => {
-                      applyFilters();
-                      setFiltersOpen(false);
-                    }}
-                    onFilterChange={updateFilters}
-                    onReset={resetFilters}
-                    className="shadow-lg"
-                  />
-                </div>
-              </PopoverContent>
-            </PopoverRoot>
+            <CalendarFiltersPopover
+              applyCount={daily?.totals.events}
+              availableCategories={availableCategories}
+              availableEventTypes={availableEventTypes}
+              className="shadow-lg"
+              filters={filters}
+              isOpen={filtersOpen}
+              layout="dropdown"
+              loading={loading}
+              onApply={() => {
+                applyFilters();
+                setFiltersOpen(false);
+              }}
+              onFilterChange={updateFilters}
+              onOpenChange={setFiltersOpen}
+              onReset={resetFilters}
+              panelWidthClassName="w-[min(92vw,480px)]"
+            />
           }
           selectedDate={selectedDate}
         />
