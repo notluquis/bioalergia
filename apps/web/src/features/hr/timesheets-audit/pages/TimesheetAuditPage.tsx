@@ -3,7 +3,7 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
-import { ButtonGroup, Chip, ListBox, Select, Spinner } from "@heroui/react";
+import { ButtonGroup, Chip, Spinner } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -11,10 +11,12 @@ import { ChevronDown, Users, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
+import { Card, CardContent } from "@/components/ui/Card";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { useAuth } from "@/context/AuthContext";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
-import { fetchEmployees } from "@/features/hr/employees/api";
+import { employeeKeys } from "@/features/hr/employees/queries";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import {
   type AuditDateRange,
@@ -22,6 +24,7 @@ import {
 } from "@/features/hr/timesheets-audit/hooks/use-timesheet-audit";
 import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlap-detection";
 import { endOfMonth, monthsAgoEnd, monthsAgoStart, startOfMonth } from "@/lib/dates";
+import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
 
 import "dayjs/locale/es";
@@ -71,8 +74,7 @@ export default function TimesheetAuditPage() {
   const { months } = useMonths();
 
   const { data: employees } = useSuspenseQuery({
-    queryFn: () => fetchEmployees(false),
-    queryKey: ["employees", "active-only"], // We might want to be specific if we change the fetch param later
+    ...employeeKeys.list({ includeInactive: false }),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -185,7 +187,7 @@ export default function TimesheetAuditPage() {
   const canShowCalendar = selectedEmployeeIds.length > 0 && effectiveRanges.length > 0;
 
   return (
-    <section className="space-y-6">
+    <section className={PAGE_CONTAINER}>
       {/* Step 1: Period Selection */}
       <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
@@ -250,21 +252,11 @@ export default function TimesheetAuditPage() {
                       }
                     }}
                   >
-                    <Select.Trigger>
-                      <Select.Value />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {months.map((month) => (
-                          <ListBox.Item
-                            key={month}
-                            textValue={dayjs(`${month}-01`).format("MMMM YYYY")}
-                          >
-                            {dayjs(`${month}-01`).format("MMMM YYYY")}
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
+                    {months.map((month) => (
+                      <SelectItem id={month} key={month}>
+                        {dayjs(`${month}-01`).format("MMMM YYYY")}
+                      </SelectItem>
+                    ))}
                   </Select>
                   {weeksForMonth.length > 0 && (
                     <Button
@@ -430,16 +422,16 @@ export default function TimesheetAuditPage() {
       {(() => {
         if (selectedEmployeeIds.length === 0) {
           return (
-            <div className="card bg-background shadow-sm">
-              <div className="card-body items-center py-16 text-center">
+            <Card className="shadow-sm">
+              <CardContent className="flex flex-col items-center py-16 text-center">
                 <Users className="text-default-200 mb-4 h-12 w-12" />
                 <h3 className="text-default-600 text-lg font-semibold">Selecciona empleados</h3>
                 <p className="text-default-400 max-w-md text-sm">
                   Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar
                   solapamientos
                 </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           );
         }
         if (entries.length === 0) {
