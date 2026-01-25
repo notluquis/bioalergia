@@ -67,6 +67,10 @@ mercadopagoRoutes.post("/reports", async (c) => {
   if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
+  const validationError = validateReportRange(body);
+  if (validationError) {
+    return reply(c, { status: "error", message: validationError }, 400);
+  }
 
   try {
     const data = await MercadoPagoService.createReport("release", body);
@@ -141,6 +145,10 @@ mercadopagoRoutes.post("/settlement/reports", async (c) => {
   if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   const body = await c.req.json();
+  const validationError = validateReportRange(body);
+  if (validationError) {
+    return reply(c, { status: "error", message: validationError }, 400);
+  }
 
   try {
     const data = await MercadoPagoService.createReport("settlement", body);
@@ -239,6 +247,28 @@ interface MPWebhookPayload {
   report_type: string;
   is_test: boolean;
   signature: string;
+}
+
+function validateReportRange(body: unknown) {
+  if (!body || typeof body !== "object") {
+    return "Missing begin_date or end_date";
+  }
+  const { begin_date, end_date } = body as { begin_date?: unknown; end_date?: unknown };
+  if (typeof begin_date !== "string" || begin_date.trim() === "") {
+    return "Missing begin_date";
+  }
+  if (typeof end_date !== "string" || end_date.trim() === "") {
+    return "Missing end_date";
+  }
+  const begin = new Date(begin_date);
+  const end = new Date(end_date);
+  if (Number.isNaN(begin.getTime()) || Number.isNaN(end.getTime())) {
+    return "Invalid begin_date or end_date";
+  }
+  if (begin.getTime() > end.getTime()) {
+    return "begin_date must be before end_date";
+  }
+  return null;
 }
 
 const PROCESSED_FILES_KEY = "mp:processedFiles:webhook";
