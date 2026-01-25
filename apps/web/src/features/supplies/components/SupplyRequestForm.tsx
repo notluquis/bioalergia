@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { queryKeys } from "@/lib/query-keys";
 import { createSupplyRequest, type SupplyRequestPayload } from "../api";
@@ -108,29 +109,26 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
       <form.Field name="selectedSupply">
         {(field) => (
           <div>
-            <Input
-              as="select"
+            <Select
               label="Nombre del insumo"
-              onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value);
-                // Reset dependent fields
+              placeholder="Seleccione un insumo"
+              selectedKey={field.state.value || null}
+              onSelectionChange={(key) => {
+                field.handleChange(key ? String(key) : "");
                 form.setFieldValue("selectedBrand", "");
                 form.setFieldValue("selectedModel", "");
               }}
-              required
-              value={field.state.value}
+              onBlur={field.handleBlur}
+              isRequired
+              isInvalid={field.state.meta.errors.length > 0}
+              errorMessage={field.state.meta.errors.join(", ")}
             >
-              <option value="">Seleccione un insumo</option>
               {supplyNames.map((name) => (
-                <option key={name} value={name}>
+                <SelectItem id={name} key={name}>
                   {name}
-                </option>
+                </SelectItem>
               ))}
-            </Input>
-            {field.state.meta.errors.length > 0 && (
-              <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
-            )}
+            </Select>
           </div>
         )}
       </form.Field>
@@ -160,27 +158,25 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
       <form.Field name="selectedBrand">
         {(field) => (
           <div>
-            <Input
-              as="select"
-              disabled={!selectedSupply}
+            <Select
               label="Marca"
-              onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value);
+              placeholder="Seleccione una marca"
+              selectedKey={field.state.value || null}
+              onSelectionChange={(key) => {
+                field.handleChange(key ? String(key) : "");
                 form.setFieldValue("selectedModel", "");
               }}
-              value={field.state.value ?? ""}
+              onBlur={field.handleBlur}
+              isDisabled={!selectedSupply}
+              isInvalid={field.state.meta.errors.length > 0}
+              errorMessage={field.state.meta.errors.join(", ")}
             >
-              <option value="">Seleccione una marca</option>
               {availableBrands.map((brand) => (
-                <option key={brand} value={brand}>
-                  {brand}
-                </option>
+                <SelectItem id={brand} key={brand}>
+                  {brand === "N/A" ? "Sin marca" : brand}
+                </SelectItem>
               ))}
-            </Input>
-            {field.state.meta.errors.length > 0 && (
-              <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
-            )}
+            </Select>
           </div>
         )}
       </form.Field>
@@ -188,26 +184,24 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
       <form.Field name="selectedModel">
         {(field) => (
           <div>
-            <Input
-              as="select"
-              disabled={!selectedBrand || availableModels.length === 0}
+            <Select
               label="Modelo"
-              onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value);
+              placeholder="Seleccione un modelo"
+              selectedKey={field.state.value || null}
+              onSelectionChange={(key) => {
+                field.handleChange(key ? String(key) : "");
               }}
-              value={field.state.value ?? ""}
+              onBlur={field.handleBlur}
+              isDisabled={!selectedBrand || availableModels.length === 0}
+              isInvalid={field.state.meta.errors.length > 0}
+              errorMessage={field.state.meta.errors.join(", ")}
             >
-              <option value="">Seleccione un modelo</option>
               {availableModels.map((model) => (
-                <option key={model} value={model}>
+                <SelectItem id={model} key={model}>
                   {model}
-                </option>
+                </SelectItem>
               ))}
-            </Input>
-            {field.state.meta.errors.length > 0 && (
-              <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
-            )}
+            </Select>
           </div>
         )}
       </form.Field>

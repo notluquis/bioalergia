@@ -28,7 +28,7 @@ export default function EmployeesPage() {
   // Pagination State
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 20,
   });
 
   // Query for employees
@@ -91,7 +91,7 @@ export default function EmployeesPage() {
     <section className={PAGE_CONTAINER}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <h1 className={TITLE_LG}>Equipo y tarifas</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Checkbox
             checked={includeInactive}
             label="Ver inactivos"
@@ -101,6 +101,7 @@ export default function EmployeesPage() {
           />
           {canEdit && (
             <Button
+              className="w-full sm:w-auto"
               onClick={() => {
                 if (showForm) {
                   handleCancel();
@@ -174,6 +175,7 @@ export default function EmployeesPage() {
             onEdit: handleEdit,
           }}
           onPaginationChange={setPagination}
+          pageSizeOptions={[10, 20, 50]}
           pagination={pagination}
         />
       </div>

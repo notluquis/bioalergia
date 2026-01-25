@@ -42,6 +42,11 @@ interface DataTableProps<TData, TValue> {
    */
   readonly enablePagination?: boolean;
   /**
+   * Show page size selector in pagination controls.
+   * @default true
+   */
+  readonly enablePageSizeSelector?: boolean;
+  /**
    * Enable toolbars (search, export, view options)
    * @default true
    */
@@ -88,6 +93,10 @@ interface DataTableProps<TData, TValue> {
   readonly onRowClick?: (row: TData) => void;
   readonly onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   readonly pageCount?: number;
+  /**
+   * Page size options shown in pagination selector.
+   */
+  readonly pageSizeOptions?: number[];
   readonly pagination?: PaginationState;
   /**
    * Optional component to render when row is expanded
@@ -124,6 +133,7 @@ export function DataTable<TData, TValue>({
   data,
   enableExport = true,
   enableGlobalFilter = true,
+  enablePageSizeSelector = true,
   enablePagination = true,
   enableToolbar = true,
   enableVirtualization = false,
@@ -138,6 +148,7 @@ export function DataTable<TData, TValue>({
   onRowClick,
   onRowSelectionChange: controlledOnRowSelectionChange,
   pageCount,
+  pageSizeOptions,
   pagination,
   renderSubComponent,
   rowSelection: controlledRowSelection,
@@ -354,11 +365,11 @@ export function DataTable<TData, TValue>({
         )}
       >
         <div
-          className="muted-scrollbar overflow-x-auto"
+          className="muted-scrollbar overflow-x-auto overscroll-x-contain overscroll-y-contain"
           ref={tableContainerRef}
           style={{
             maxWidth: "100%",
-            ...(enableVirtualization ? { maxHeight: "70vh", overflowY: "auto" } : {}),
+            ...(enableVirtualization ? { maxHeight: "70dvh", overflowY: "auto" } : {}),
           }}
         >
           <table
@@ -448,7 +459,13 @@ export function DataTable<TData, TValue>({
           </table>
         </div>
       </div>
-      {enablePagination && <DataTablePagination table={table} />}
+      {enablePagination && (
+        <DataTablePagination
+          enablePageSizeSelector={enablePageSizeSelector}
+          pageSizeOptions={pageSizeOptions}
+          table={table}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { Card } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowRight, Calendar, Search, User, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import { CardContent } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { apiClient } from "@/lib/api-client";
+import { PAGE_CONTAINER_RELAXED, TITLE_LG } from "@/lib/styles";
 
 export const Route = createFileRoute("/_authed/patients/")({
   staticData: {
@@ -38,6 +39,10 @@ interface Patient {
 
 function PatientsListPage() {
   const [search, setSearch] = useState("");
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 20,
+  });
 
   const { data: patients, isLoading } = useQuery({
     queryKey: ["patients", search],
@@ -124,14 +129,14 @@ function PatientsListPage() {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <section className={PAGE_CONTAINER_RELAXED}>
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Pacientes</h1>
+          <h1 className={TITLE_LG}>Pacientes</h1>
           <p className="text-default-500 text-sm">Gestión de ficha clínica y certificados</p>
         </div>
         <Link to="/patients/new">
-          <Button variant="primary" className="shadow-md">
+          <Button variant="primary" className="shadow-md w-full sm:w-auto">
             <UserPlus size={18} className="mr-2" />
             Registrar Paciente
           </Button>
@@ -144,7 +149,10 @@ function PatientsListPage() {
             placeholder="Buscar por nombre o RUT..."
             rightElement={<Search size={18} className="text-default-300" />}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+            }}
             className="max-w-md"
           />
         </CardContent>
@@ -153,11 +161,16 @@ function PatientsListPage() {
       <DataTable
         columns={columns}
         data={patients || []}
+        containerVariant="plain"
         enableExport={false}
         enableGlobalFilter={false}
+        enableToolbar={false}
         isLoading={isLoading}
+        onPaginationChange={setPagination}
+        pageSizeOptions={[10, 20, 50]}
+        pagination={pagination}
         noDataMessage="No se encontraron pacientes registrados."
       />
-    </div>
+    </section>
   );
 }

@@ -20,6 +20,7 @@ export default function Supplies() {
       <ServicesHero
         actions={
           <Button
+            className="w-full sm:w-auto"
             onClick={() => void refresh()}
             size="sm"
             variant="secondary"
