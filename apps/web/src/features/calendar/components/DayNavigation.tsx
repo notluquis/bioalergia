@@ -106,7 +106,7 @@ export function DayNavigation({
 
       <div className="relative">
         {/* Day Strip */}
-        <div className="bg-content1 border-default-200 no-scrollbar flex items-center justify-between overflow-x-auto rounded-xl border p-1 shadow-sm touch-pan-x">
+        <div className="bg-content1 border-default-200 no-scrollbar flex min-h-16 items-center justify-between overflow-x-auto rounded-xl border p-2 shadow-sm touch-pan-x">
           {days.map((date) => {
             const isSelected = date.isSame(current, "day");
             const isToday = date.isSame(today, "day");
@@ -114,7 +114,7 @@ export function DayNavigation({
             return (
               <Button
                 className={cn(
-                  "relative mx-0.5 flex min-w-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 transition-all duration-200",
+                  "relative mx-0.5 flex min-h-12 min-w-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2.5 transition-all duration-200",
                   isSelected
                     ? "bg-primary text-primary-foreground z-10 scale-105 font-semibold shadow-md"
                     : "hover:bg-default-100 text-foreground-500",
