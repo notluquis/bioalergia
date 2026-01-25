@@ -156,7 +156,7 @@ function CalendarHeatmapPage() {
   const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
   const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
 
-  const { isOpen: filtersOpen, set: setFiltersOpen, toggle: toggleFilters } = useDisclosure(false);
+  const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
   return (
     <section className="space-y-3">
@@ -175,14 +175,13 @@ function CalendarHeatmapPage() {
                 "hover:bg-default-50/60 border-default-200 text-default-700 flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors",
                 filtersOpen && "bg-default-50",
               )}
-              onClick={toggleFilters}
               type="button"
             >
               <Filter className="h-4 w-4" />
               Filtros
             </button>
           </PopoverTrigger>
-          <PopoverContent className="p-0" isNonModal offset={8} placement="bottom end">
+          <PopoverContent className="z-50 p-0" isNonModal offset={8} placement="bottom end">
             <div className="w-[min(92vw,520px)]">
               <Card className="rounded-xl border border-default-200/70 bg-content1/90 shadow-lg backdrop-blur">
                 <CalendarFilterPanel
@@ -198,6 +197,7 @@ function CalendarHeatmapPage() {
                   isDirty={isDirty}
                   loading={busy}
                   applyCount={summary?.totals.events}
+                  layout="dropdown"
                   onApply={() => {
                     handleApply();
                     setFiltersOpen(false);

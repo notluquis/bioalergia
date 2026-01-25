@@ -36,7 +36,7 @@ function CalendarDailyPage() {
   } = useCalendarEvents();
 
   const [selectedDate, setSelectedDate] = useState(() => today());
-  const { isOpen: filtersOpen, set: setFiltersOpen, toggle: toggleFilters } = useDisclosure(false);
+  const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
   // Sync selectedDate filter range to ensure data is loaded
   // Load ±2 weeks around the selected date initially, extend when navigating outside
@@ -89,17 +89,12 @@ function CalendarDailyPage() {
           rightSlot={
             <PopoverRoot isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
               <PopoverTrigger>
-                <Button
-                  className="gap-1.5"
-                  onClick={toggleFilters}
-                  size="sm"
-                  variant={filtersOpen ? "secondary" : "ghost"}
-                >
+                <Button className="gap-1.5" size="sm" variant={filtersOpen ? "secondary" : "ghost"}>
                   <Filter className="h-4 w-4" />
                   <span className="hidden sm:inline">{filtersOpen ? "Cerrar" : "Filtros"}</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0" isNonModal offset={8} placement="bottom end">
+              <PopoverContent className="z-50 p-0" isNonModal offset={8} placement="bottom end">
                 <div className="w-[min(92vw,480px)]">
                   <CalendarFilterPanel
                     availableCategories={availableCategories}
@@ -107,6 +102,7 @@ function CalendarDailyPage() {
                     filters={filters}
                     loading={loading}
                     applyCount={daily?.totals.events}
+                    layout="dropdown"
                     onApply={() => {
                       applyFilters();
                       setFiltersOpen(false);
