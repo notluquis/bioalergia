@@ -1,13 +1,12 @@
 import { useUpdateEmployee } from "@finanzas/db/hooks";
+import { Switch } from "@heroui/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
 import { ChevronUp, Plus } from "lucide-react";
-import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
-import Checkbox from "@/components/ui/Checkbox";
 import { useAuth } from "@/context/AuthContext";
 import { columns } from "@/features/hr/employees/components/columns";
 import EmployeeForm from "@/features/hr/employees/components/EmployeeForm";
@@ -92,13 +91,14 @@ export default function EmployeesPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <h1 className={TITLE_LG}>Equipo y tarifas</h1>
         <div className="flex flex-wrap items-center gap-3">
-          <Checkbox
-            checked={includeInactive}
-            label="Ver inactivos"
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setIncludeInactive(event.target.checked);
+          <Switch
+            isSelected={includeInactive}
+            onValueChange={(value) => {
+              setIncludeInactive(value);
             }}
-          />
+          >
+            Ver inactivos
+          </Switch>
           {canEdit && (
             <Button
               className="w-full sm:w-auto"

@@ -1,9 +1,9 @@
+import { Checkbox, Popover } from "@heroui/react";
 import { formatRetentionPercent } from "@shared/retention";
 import dayjs from "dayjs";
 import type { CellHookData } from "jspdf-autotable";
 import React from "react";
 import Button from "@/components/ui/Button";
-import Checkbox from "@/components/ui/Checkbox";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
@@ -243,69 +243,76 @@ export default function TimesheetExportPDF({
         >
           Exportar PDF
         </Button>
-        <Tooltip content="Opciones">
-          <Button
-            className="border-default-200 bg-background text-primary hover:bg-background/90 ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border shadow"
-            onClick={() => {
-              setShowOptions((v) => !v);
-            }}
-            size="sm"
-            type="button"
-            variant="secondary"
+        <Popover isOpen={showOptions} onOpenChange={setShowOptions}>
+          <Popover.Trigger>
+            <Tooltip content="Opciones">
+              <Button
+                className="border-default-200 bg-background text-primary hover:bg-background/90 ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border shadow"
+                size="sm"
+                type="button"
+                variant="secondary"
+              >
+                ⋯
+              </Button>
+            </Tooltip>
+          </Popover.Trigger>
+          <Popover.Content
+            className="bg-background border-default-200 w-64 rounded-xl border p-0 shadow-xl"
+            isNonModal
+            offset={8}
+            placement="bottom end"
           >
-            ⋯
-          </Button>
-        </Tooltip>
-        {showOptions && (
-          <div className="bg-background absolute right-0 z-20 mt-2 w-56 rounded-xl p-3 shadow-xl ring-1 ring-black/5">
-            <p className="text-default-700 mb-2 text-xs font-semibold">Columnas del detalle</p>
-            {[...defaultCols].map((key) => (
-              // biome-ignore lint/a11y/noLabelWithoutControl: wraps checkbox
-              <label className="text-foreground mb-1 flex items-center gap-2 text-sm" key={key}>
-                <Checkbox
-                  checked={selectedCols.includes(key)}
-                  onChange={(e) => {
-                    setSelectedCols((prev) => {
-                      const set = new Set<TimesheetColumnKey>(prev);
-                      if (e.target.checked) set.add(key);
-                      else set.delete(key);
-                      return [...set];
-                    });
+            <Popover.Dialog className="p-3">
+              <p className="text-default-700 mb-2 text-xs font-semibold">Columnas del detalle</p>
+              <div className="space-y-2">
+                {[...defaultCols].map((key) => (
+                  <Checkbox
+                    key={key}
+                    isSelected={selectedCols.includes(key)}
+                    onValueChange={(checked) => {
+                      setSelectedCols((prev) => {
+                        const set = new Set<TimesheetColumnKey>(prev);
+                        if (checked) set.add(key);
+                        else set.delete(key);
+                        return [...set];
+                      });
+                    }}
+                  >
+                    {COLUMN_LABELS[key] || key}
+                  </Checkbox>
+                ))}
+              </div>
+              <div className="mt-3 flex justify-end gap-2">
+                <Button
+                  className="text-default-500 text-xs"
+                  onClick={() => {
+                    setShowOptions(false);
                   }}
-                />
-                {COLUMN_LABELS[key] || key}
-              </label>
-            ))}
-            <div className="mt-3 flex justify-end gap-2">
-              <Button
-                className="text-default-500 hover:text-foreground text-xs"
-                onClick={() => {
-                  setShowOptions(false);
-                }}
-                size="sm"
-                variant="secondary"
-              >
-                Cerrar
-              </Button>
-              <Button
-                className="text-primary text-xs hover:underline"
-                onClick={() => handleExport(true)}
-                size="sm"
-                variant="secondary"
-              >
-                Vista previa
-              </Button>
-              <Button
-                className="text-primary text-xs hover:underline"
-                onClick={() => handleExport(false)}
-                size="sm"
-                variant="secondary"
-              >
-                Descargar
-              </Button>
-            </div>
-          </div>
-        )}
+                  size="sm"
+                  variant="ghost"
+                >
+                  Cerrar
+                </Button>
+                <Button
+                  className="text-primary text-xs"
+                  onClick={() => handleExport(true)}
+                  size="sm"
+                  variant="ghost"
+                >
+                  Vista previa
+                </Button>
+                <Button
+                  className="text-primary text-xs"
+                  onClick={() => handleExport(false)}
+                  size="sm"
+                  variant="ghost"
+                >
+                  Descargar
+                </Button>
+              </div>
+            </Popover.Dialog>
+          </Popover.Content>
+        </Popover>
       </div>
     </div>
   );
