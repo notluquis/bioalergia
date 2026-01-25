@@ -1,4 +1,4 @@
-import { PopoverContent, PopoverRoot, PopoverTrigger } from "@heroui/react";
+import { Chip, PopoverContent, PopoverRoot, PopoverTrigger } from "@heroui/react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
@@ -41,10 +41,13 @@ function CalendarSchedulePage() {
   } = useCalendarEvents();
 
   // Separate state for which week is displayed (independent from data filter range)
-  const [displayedWeekStart, setDisplayedWeekStart] = useState(() => {
-    // Start on current week's Monday
-    return dayjs().isoWeekday(1).format(DATE_FORMAT);
-  });
+  const getCurrentWeekStart = () => {
+    const today = dayjs();
+    const base = today.day() === 0 ? today.add(1, "day") : today;
+    return base.isoWeekday(1).format(DATE_FORMAT);
+  };
+
+  const [displayedWeekStart, setDisplayedWeekStart] = useState(getCurrentWeekStart);
 
   const allEvents = daily?.days.flatMap((day) => day.events) ?? [];
   const displayedWeekEnd = dayjs(displayedWeekStart).add(6, "day").endOf("day");
@@ -63,6 +66,9 @@ function CalendarSchedulePage() {
   const rangeLabel = currentDisplayed.isValid()
     ? `${currentDisplayed.format("D MMM")} - ${currentDisplayed.add(5, "day").format("D MMM YYYY")}`
     : "Seleccionar rango";
+  const isCurrentWeek = currentDisplayed.isSame(dayjs(getCurrentWeekStart()), "day");
+  const actualWeekStart = dayjs().isoWeekday(1);
+  const isNextWeek = currentDisplayed.isSame(actualWeekStart.add(1, "week"), "day");
 
   const goToPreviousWeek = () => {
     setDisplayedWeekStart(currentDisplayed.subtract(1, "week").format(DATE_FORMAT));
@@ -73,7 +79,7 @@ function CalendarSchedulePage() {
   };
 
   const goToThisWeek = () => {
-    setDisplayedWeekStart(dayjs().isoWeekday(1).format(DATE_FORMAT));
+    setDisplayedWeekStart(getCurrentWeekStart());
   };
 
   // On-demand loading: extend date range when navigating to weeks outside current range
@@ -119,11 +125,12 @@ function CalendarSchedulePage() {
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
-                className="hover:bg-background rounded-md px-2 py-1 text-xs font-medium uppercase transition-colors"
+                className="hover:bg-background rounded-md px-2 py-1 text-xs font-medium uppercase transition-colors disabled:cursor-default disabled:opacity-50"
+                disabled={isCurrentWeek}
                 onClick={goToThisWeek}
                 type="button"
               >
-                Hoy
+                Semana actual
               </button>
               <button
                 aria-label="Semana siguiente"
@@ -134,9 +141,14 @@ function CalendarSchedulePage() {
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-            <span className="text-default-600 hidden text-sm font-medium sm:inline">
-              {rangeLabel}
-            </span>
+            <div className="hidden items-center gap-2 text-sm sm:flex">
+              <span className="text-default-600 font-medium">{rangeLabel}</span>
+              {isNextWeek && (
+                <Chip size="sm" variant="flat" color="primary" className="text-[11px]">
+                  Próxima semana
+                </Chip>
+              )}
+            </div>
           </div>
 
           {/* Right: Event count + Filter toggle */}

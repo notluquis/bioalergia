@@ -126,6 +126,7 @@ const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties =>
   };
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component with many feature flags
 export function DataTable<TData, TValue>({
   columns,
   columnVisibility: controlledColumnVisibility,
@@ -177,6 +178,7 @@ export function DataTable<TData, TValue>({
   const shouldPaginate = enablePagination && !manualPagination;
 
   const table = useReactTable({
+    autoResetPageIndex: !manualPagination,
     columnResizeMode: "onChange",
     columns,
     data,

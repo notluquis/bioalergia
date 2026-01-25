@@ -23,6 +23,8 @@ export function DataTablePagination<TData>({
   const currentPageSize = currentPagination.pageSize;
   const currentPageIndex = currentPagination.pageIndex;
   const totalPages = pageCount ?? table.getPageCount();
+  const canPrevious = currentPageIndex > 0;
+  const canNext = totalPages === -1 ? true : currentPageIndex < Math.max(1, totalPages) - 1;
   const normalizedOptions = Array.from(new Set([...pageSizeOptions, currentPageSize])).sort(
     (a, b) => a - b,
   );
@@ -62,7 +64,7 @@ export function DataTablePagination<TData>({
         <div className="flex items-center space-x-2">
           <Button
             className="hidden h-8 w-8 p-0 lg:flex"
-            disabled={!table.getCanPreviousPage()}
+            disabled={!canPrevious}
             onClick={() => {
               table.setPageIndex(0);
             }}
@@ -73,9 +75,9 @@ export function DataTablePagination<TData>({
           </Button>
           <Button
             className="h-8 w-8 p-0"
-            disabled={!table.getCanPreviousPage()}
+            disabled={!canPrevious}
             onClick={() => {
-              table.previousPage();
+              table.setPageIndex(Math.max(0, currentPageIndex - 1));
             }}
             variant="outline"
           >
@@ -84,9 +86,9 @@ export function DataTablePagination<TData>({
           </Button>
           <Button
             className="h-8 w-8 p-0"
-            disabled={!table.getCanNextPage()}
+            disabled={!canNext}
             onClick={() => {
-              table.nextPage();
+              table.setPageIndex(canNext ? currentPageIndex + 1 : currentPageIndex);
             }}
             variant="outline"
           >
@@ -95,9 +97,10 @@ export function DataTablePagination<TData>({
           </Button>
           <Button
             className="hidden h-8 w-8 p-0 lg:flex"
-            disabled={!table.getCanNextPage()}
+            disabled={!canNext || totalPages === -1}
             onClick={() => {
-              table.setPageIndex(table.getPageCount() - 1);
+              const lastIndex = Math.max(1, totalPages) - 1;
+              table.setPageIndex(lastIndex);
             }}
             variant="outline"
           >

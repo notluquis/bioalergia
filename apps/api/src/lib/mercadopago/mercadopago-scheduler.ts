@@ -116,19 +116,29 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
     updateJobProgress(jobId, 1, "Reportes listados");
 
     const importStats = createImportStatsAggregate();
+    const importStatsByType: Record<ReportType, ImportStatsAggregate> = {
+      release: createImportStatsAggregate(),
+      settlement: createImportStatsAggregate(),
+    };
     for (const [index, type] of types.entries()) {
       const reports = lists[index] as MPReportSummary[];
       await ensureDailyReport(type, reports);
     }
     updateJobProgress(jobId, 2, "Reportes diarios verificados");
 
-    const pendingProcessed = await processPendingWebhooks(jobId, importStats);
+    const pendingProcessed = await processPendingWebhooks(jobId, importStats, importStatsByType);
     const results: Record<string, number> = {
       pendingWebhooks: pendingProcessed,
     };
     for (const [index, type] of types.entries()) {
       const reports = lists[index] as MPReportSummary[];
-      results[type] = await processReadyReports(type, reports, jobId, importStats);
+      results[type] = await processReadyReports(
+        type,
+        reports,
+        jobId,
+        importStats,
+        importStatsByType[type],
+      );
     }
 
     await finalizeMpSyncLogEntry(logId, {
@@ -139,6 +149,7 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
       changeDetails: {
         ...results,
         importStats,
+        importStatsByType,
         reportTypes: ["release", "settlement"],
       },
     });
@@ -219,6 +230,7 @@ async function processReadyReports(
   reports: MPReportSummary[],
   jobId: string,
   importStats: ImportStatsAggregate,
+  importStatsForType: ImportStatsAggregate,
 ) {
   const processedSet = await loadProcessedFiles(type);
   const lastProcessedAt = await getLastProcessedAt(type);
@@ -243,12 +255,13 @@ async function processReadyReports(
 
     updateJobProgress(jobId, 3 + processedCount, `Procesando ${type}: ${fileName}`);
 
-    try {
-      const stats = await MercadoPagoService.processReport(type, { fileName });
-      accumulateImportStats(importStats, stats);
-      processedSet.add(fileName);
-      processedCount += 1;
-      const createdAt = parseDate(report.date_created);
+      try {
+        const stats = await MercadoPagoService.processReport(type, { fileName });
+        accumulateImportStats(importStats, stats);
+        accumulateImportStats(importStatsForType, stats);
+        processedSet.add(fileName);
+        processedCount += 1;
+        const createdAt = parseDate(report.date_created);
       if (createdAt && (!newestProcessedAt || createdAt > newestProcessedAt)) {
         newestProcessedAt = createdAt;
       }
@@ -265,7 +278,11 @@ async function processReadyReports(
   return processedCount;
 }
 
-async function processPendingWebhooks(jobId: string, importStats: ImportStatsAggregate) {
+async function processPendingWebhooks(
+  jobId: string,
+  importStats: ImportStatsAggregate,
+  importStatsByType: Record<ReportType, ImportStatsAggregate>,
+) {
   const pending = await loadPendingWebhooks();
   if (pending.length === 0) return 0;
 
@@ -288,6 +305,7 @@ async function processPendingWebhooks(jobId: string, importStats: ImportStatsAgg
       try {
         const stats = await MercadoPagoService.processReport(type, { url: file.url });
         accumulateImportStats(importStats, stats);
+        accumulateImportStats(importStatsByType[type], stats);
         processed.add(file.name);
         processedCount += 1;
         logEvent("mp.autoSync.webhookProcessed", { type, file: file.name });
