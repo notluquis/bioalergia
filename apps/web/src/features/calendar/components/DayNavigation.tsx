@@ -1,3 +1,4 @@
+import { Button, ButtonGroup } from "@heroui/react";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
@@ -77,33 +78,17 @@ export function DayNavigation({
         {/* Right side: optional slot + navigation buttons */}
         <div className="flex items-center gap-2">
           {rightSlot}
-          <div className="bg-default-100 flex gap-0.5 rounded-lg p-1">
-            <button
-              type="button"
-              aria-label="Día anterior"
-              className="hover:bg-default-200 text-foreground-500 hover:text-primary rounded-md p-1.5 transition-colors"
-              onClick={handlePrev}
-            >
+          <ButtonGroup size="sm" variant="tertiary">
+            <Button aria-label="Día anterior" isIconOnly onPress={handlePrev}>
               <ChevronLeft className="h-4 w-4" />
-            </button>
-
-            <button
-              type="button"
-              className="hover:bg-default-200 rounded-md px-2 py-1 text-xs font-semibold uppercase transition-colors"
-              onClick={handleToday}
-            >
+            </Button>
+            <Button className="text-xs font-semibold uppercase" onPress={handleToday}>
               Hoy
-            </button>
-
-            <button
-              type="button"
-              aria-label="Día siguiente"
-              className="hover:bg-default-200 text-foreground-500 hover:text-primary rounded-md p-1.5 transition-colors"
-              onClick={handleNext}
-            >
+            </Button>
+            <Button aria-label="Día siguiente" isIconOnly onPress={handleNext}>
               <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+            </Button>
+          </ButtonGroup>
         </div>
       </div>
 
@@ -115,8 +100,7 @@ export function DayNavigation({
             const isToday = date.isSame(today, "day");
 
             return (
-              <button
-                type="button"
+              <Button
                 className={cn(
                   "relative mx-0.5 flex min-w-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 transition-all duration-200",
                   isSelected
@@ -125,9 +109,11 @@ export function DayNavigation({
                   isToday && !isSelected && "bg-default-100 text-foreground font-medium",
                 )}
                 key={date.toString()}
-                onClick={() => {
+                onPress={() => {
                   onSelect(date.format("YYYY-MM-DD"));
                 }}
+                size="sm"
+                variant="ghost"
               >
                 {isToday && !isSelected && (
                   <span className="bg-primary absolute top-1 right-1 h-1.5 w-1.5 rounded-full" />
@@ -145,7 +131,7 @@ export function DayNavigation({
                 >
                   {date.format("D")}
                 </span>
-              </button>
+              </Button>
             );
           })}
         </div>

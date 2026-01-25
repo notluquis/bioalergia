@@ -1,4 +1,4 @@
-import { Card, Tooltip } from "@heroui/react";
+import { Button, Card, Tooltip } from "@heroui/react";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
 import { useMemo } from "react";
@@ -185,9 +185,9 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
           return (
             <Tooltip delay={0} key={cell.key} trigger="focus">
               <Tooltip.Trigger>
-                <button
+                <Button
                   className={clsx(
-                    "relative flex aspect-square w-full cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
+                    "relative flex h-full w-full min-h-0 aspect-square cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
                     // Default empty state
                     "bg-default-100/50 text-foreground-500",
                     // Intensity colors
@@ -202,7 +202,8 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                     !cell.isToday &&
                       "hover:ring-primary hover:ring-offset-content1 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2",
                   )}
-                  type="button"
+                  size="sm"
+                  variant="ghost"
                 >
                   {/* Day Number */}
                   <span
@@ -220,7 +221,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                       {cell.total}
                     </span>
                   )}
-                </button>
+                </Button>
               </Tooltip.Trigger>
               <Tooltip.Content className="p-0">
                 {cell.total > 0 ? (
@@ -253,12 +254,12 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             <Tooltip delay={0} trigger="focus">
               <Tooltip.Trigger>
-                <button className="cursor-help text-left" type="button">
+                <Button className="h-auto px-0 text-[10px]" size="sm" variant="ghost">
                   Esperado:{" "}
                   <span className="text-foreground font-medium">
                     {fmtCLP(monthTotals.expected)}
                   </span>
-                </button>
+                </Button>
               </Tooltip.Trigger>
               <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
                 Total esperado del mes completo
@@ -266,10 +267,10 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
             </Tooltip>
             <Tooltip delay={0} trigger="focus">
               <Tooltip.Trigger>
-                <button className="cursor-help text-left" type="button">
+                <Button className="h-auto px-0 text-[10px]" size="sm" variant="ghost">
                   Pagado:{" "}
                   <span className="text-foreground font-medium">{fmtCLP(monthTotals.paid)}</span>
-                </button>
+                </Button>
               </Tooltip.Trigger>
               <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
                 Total pagado del mes completo
@@ -278,10 +279,14 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
             {monthTotals.unclassified > 0 && (
               <Tooltip delay={0} trigger="focus">
                 <Tooltip.Trigger>
-                  <button className="text-warning cursor-help text-left" type="button">
+                  <Button
+                    className="text-warning h-auto px-0 text-[10px]"
+                    size="sm"
+                    variant="ghost"
+                  >
                     No cobrado:{" "}
                     <span className="font-medium">{fmtCLP(monthTotals.unclassified)}</span>
-                  </button>
+                  </Button>
                 </Tooltip.Trigger>
                 <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
                   Eventos pasados que no fueron cobrados (no asistieron, cancelaron, etc.)
@@ -290,12 +295,12 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
             )}
             <Tooltip delay={0} trigger="focus">
               <Tooltip.Trigger>
-                <button className="cursor-help text-left" type="button">
+                <Button className="h-auto px-0 text-[10px]" size="sm" variant="ghost">
                   Restante:{" "}
                   <span className="text-foreground font-medium">
                     {fmtCLP(monthTotals.remaining)}
                   </span>
-                </button>
+                </Button>
               </Tooltip.Trigger>
               <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
                 Lo que falta pagar desde hoy en adelante (solo eventos futuros)
