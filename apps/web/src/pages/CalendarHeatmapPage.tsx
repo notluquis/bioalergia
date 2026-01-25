@@ -202,7 +202,12 @@ function CalendarHeatmapPage() {
               Filtros
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="z-50 p-0" isNonModal offset={8} placement="bottom end">
+          <PopoverContent
+            className="z-50 max-h-[80svh] overflow-y-auto p-0"
+            isNonModal
+            offset={8}
+            placement="bottom"
+          >
             <div className="w-[min(92vw,520px)]">
               <Card className="rounded-xl border border-default-200/70 bg-content1/90 shadow-lg backdrop-blur">
                 <CalendarFilterPanel
