@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -9,32 +10,64 @@ interface DayNavigationProps {
   onSelect: (date: string) => void;
   /** Optional slot for content to render on the right side of the header */
   rightSlot?: ReactNode;
+  /** Optional list of allowed weekdays (dayjs day indices: 0=Sun ... 6=Sat) */
+  allowedWeekdays?: number[];
   selectedDate: string;
 }
 
 export function DayNavigation({
   className,
+  allowedWeekdays,
   onSelect,
   rightSlot,
   selectedDate,
 }: Readonly<DayNavigationProps>) {
   const current = dayjs(selectedDate);
   const today = dayjs();
+  const allowedSet = allowedWeekdays?.length ? new Set(allowedWeekdays) : null;
+
+  const isAllowed = (date: dayjs.Dayjs) => {
+    if (!allowedSet) return true;
+    return allowedSet.has(date.day());
+  };
+
+  const findAdjacentAllowed = (date: dayjs.Dayjs, direction: 1 | -1) => {
+    let cursor = date;
+    for (let i = 0; i < 7; i += 1) {
+      cursor = cursor.add(direction, "day");
+      if (isAllowed(cursor)) {
+        return cursor;
+      }
+    }
+    return date;
+  };
+
+  const normalizeToAllowed = (date: dayjs.Dayjs) => {
+    if (isAllowed(date)) return date;
+    return findAdjacentAllowed(date, 1);
+  };
 
   // Generate range of dates (-4 to +4 around selected = 9 days)
-  const days = Array.from({ length: 9 }, (_, i) => {
-    return current.add(i - 4, "day");
-  });
+  const days = Array.from({ length: 9 }, (_, i) => current.add(i - 4, "day")).filter(isAllowed);
 
   const handlePrev = () => {
-    onSelect(current.subtract(1, "day").format("YYYY-MM-DD"));
+    onSelect(findAdjacentAllowed(current, -1).format("YYYY-MM-DD"));
   };
   const handleNext = () => {
-    onSelect(current.add(1, "day").format("YYYY-MM-DD"));
+    onSelect(findAdjacentAllowed(current, 1).format("YYYY-MM-DD"));
   };
   const handleToday = () => {
-    onSelect(today.format("YYYY-MM-DD"));
+    onSelect(normalizeToAllowed(today).format("YYYY-MM-DD"));
   };
+
+  useEffect(() => {
+    if (!isAllowed(current)) {
+      const normalized = normalizeToAllowed(current);
+      if (!normalized.isSame(current, "day")) {
+        onSelect(normalized.format("YYYY-MM-DD"));
+      }
+    }
+  }, [selectedDate, allowedWeekdays, onSelect]);
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>

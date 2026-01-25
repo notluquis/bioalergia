@@ -86,6 +86,7 @@ function CalendarDailyPage() {
       <header className="space-y-1.5">
         <DayNavigation
           onSelect={setSelectedDate}
+          allowedWeekdays={[1, 2, 3, 4, 5]}
           rightSlot={
             <PopoverRoot isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
               <PopoverTrigger>
