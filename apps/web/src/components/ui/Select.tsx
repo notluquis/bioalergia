@@ -91,10 +91,13 @@ export const Select = Object.assign(SelectBase, {
 });
 
 function SelectPortal({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [mounted, setMounted] = useState(() => typeof document !== "undefined");
 
-  if (!mounted || typeof document === "undefined") return <>{children}</>;
+  useEffect(() => {
+    if (!mounted) setMounted(true);
+  }, [mounted]);
+
+  if (!mounted || typeof document === "undefined") return null;
   return createPortal(children, document.body);
 }
 
