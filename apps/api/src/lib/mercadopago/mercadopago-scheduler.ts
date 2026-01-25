@@ -11,6 +11,8 @@ type ReportType = "release" | "settlement";
 
 const JOB_TYPE = "mp-auto-sync";
 const DEFAULT_CRON = "*/20 * * * *";
+const PEAK_CRON = "*/20 9-23 * * 1-6";
+const OFF_PEAK_CRON = "0 */5 * * *";
 const DEFAULT_TIMEZONE = "America/Santiago";
 const MAX_PROCESSED_FILES = 250;
 const MAX_PROCESS_PER_RUN = 4;
@@ -33,24 +35,49 @@ export function startMercadoPagoScheduler() {
   const cronExpression = process.env.MP_AUTO_SYNC_CRON || DEFAULT_CRON;
   const timezone = process.env.MP_AUTO_SYNC_TIMEZONE || DEFAULT_TIMEZONE;
 
-  if (!cron.validate(cronExpression)) {
-    logWarn("mp.scheduler.disabled", {
-      reason: "invalid_cron",
+  if (process.env.MP_AUTO_SYNC_CRON) {
+    if (!cron.validate(cronExpression)) {
+      logWarn("mp.scheduler.disabled", {
+        reason: "invalid_cron",
+        cronExpression,
+      });
+      return;
+    }
+
+    cron.schedule(
       cronExpression,
+      async () => {
+        await runMercadoPagoAutoSync({ trigger: `cron:${cronExpression}` });
+      },
+      { timezone },
+    );
+
+    logEvent("mp.scheduler.started", {
+      cronExpression,
+      timezone,
     });
     return;
   }
 
   cron.schedule(
-    cronExpression,
+    PEAK_CRON,
     async () => {
-      await runMercadoPagoAutoSync({ trigger: `cron:${cronExpression}` });
+      await runMercadoPagoAutoSync({ trigger: `cron:${PEAK_CRON}` });
+    },
+    { timezone },
+  );
+
+  cron.schedule(
+    OFF_PEAK_CRON,
+    async () => {
+      if (isPeakWindow()) return;
+      await runMercadoPagoAutoSync({ trigger: `cron:${OFF_PEAK_CRON}` });
     },
     { timezone },
   );
 
   logEvent("mp.scheduler.started", {
-    cronExpression,
+    cronExpression: `${PEAK_CRON} | ${OFF_PEAK_CRON}`,
     timezone,
   });
 }
@@ -370,6 +397,13 @@ function minutesSince(date: Date) {
 
 function formatMpDate(date: Date) {
   return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+function isPeakWindow(date = new Date()) {
+  const day = date.getDay();
+  const hour = date.getHours();
+  const isWeekday = day >= 1 && day <= 6;
+  return isWeekday && hour >= 9 && hour <= 23;
 }
 
 type ImportStatsAggregate = {
