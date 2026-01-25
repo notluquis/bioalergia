@@ -1,3 +1,4 @@
+import { Button } from "@heroui/react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { useEffect, useState } from "react";
@@ -328,7 +329,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                     const leftPos = event.column * columnWidth;
 
                     return (
-                      <button
+                      <Button
                         className={cn(
                           "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden wrap-break-word rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-transform hover:z-100 hover:-translate-y-px hover:scale-[1.02] hover:overflow-visible hover:py-1.5 hover:shadow-lg",
                           getCategoryClass(event.category),
@@ -340,7 +341,8 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                           displayMode === "detailed" && "px-[0.45rem] py-1",
                         )}
                         key={event.eventId}
-                        onClick={() => onEventClick?.(event)}
+                        onPress={() => onEventClick?.(event)}
+                        size="sm"
                         style={{
                           height: position.height,
                           left: `calc(${leftPos}% + ${padding}px)`,
@@ -348,7 +350,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                           width: `calc(${columnWidth}% - ${padding * 2}px)`,
                         }}
                         title={tooltipLines.join("\n")}
-                        type="button"
+                        variant="ghost"
                       >
                         {(() => {
                           switch (displayMode) {
@@ -412,7 +414,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                             }
                           }
                         })()}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>

@@ -1,9 +1,8 @@
 import dayjs from "dayjs";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-
+import Button from "@/components/ui/Button";
 import type { CalendarEventDetail } from "../types";
-
 import { DailyEventCard } from "./DailyEventCard";
 import WeekGrid from "./WeekGrid";
 
@@ -60,16 +59,18 @@ export function ScheduleCalendar({
           className="animate-in slide-in-from-bottom-2 relative scroll-mt-4"
           ref={detailPanelRef}
         >
-          <button
+          <Button
             aria-label="Cerrar"
-            className="bg-content1 border-default-200 text-foreground-500 hover:text-foreground hover:bg-default-100 absolute -top-2 -right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border shadow-sm transition-colors"
-            onClick={() => {
+            className="bg-content1 border-default-200 text-foreground-500 hover:text-foreground hover:bg-default-100 absolute -top-2 -right-2 z-10 h-7 w-7 min-w-0 rounded-full border shadow-sm"
+            isIconOnly
+            onPress={() => {
               setSelectedEvent(null);
             }}
-            type="button"
+            size="sm"
+            variant="ghost"
           >
             <X size={14} />
-          </button>
+          </Button>
           <DailyEventCard event={selectedEvent} />
         </div>
       )}
