@@ -1,14 +1,4 @@
-import {
-  Chip,
-  DateField,
-  DateInputGroup,
-  Label,
-  ListBox,
-  Select,
-  Separator,
-  Spinner,
-  Tabs,
-} from "@heroui/react";
+import { Chip, DateField, DateInputGroup, Label, Separator, Spinner, Tabs } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -18,11 +8,12 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
+import { Select, SelectItem } from "@/components/ui/Select";
 
 import StatCard from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
-import { fetchEmployees } from "@/features/hr/employees/api";
+import { employeeKeys } from "@/features/hr/employees/queries";
 import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -94,8 +85,7 @@ export default function ReportsPage() {
   }, [viewMode]);
 
   const { data: employees } = useSuspenseQuery({
-    queryFn: () => fetchEmployees(false),
-    queryKey: ["employees-list"],
+    ...employeeKeys.list({ includeInactive: false }),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -165,10 +155,10 @@ export default function ReportsPage() {
   };
 
   const handleSelectAll = () => {
-    if (filteredEmployees.length === selectedEmployeeIds.length) {
+    if (activeEmployees.length === selectedEmployeeIds.length) {
       setSelectedEmployeeIds([]);
     } else {
-      setSelectedEmployeeIds(filteredEmployees.map((e) => e.id));
+      setSelectedEmployeeIds(activeEmployees.map((e) => e.id));
     }
   };
 
@@ -248,31 +238,18 @@ export default function ReportsPage() {
             <div className="space-y-4">
               {viewMode === "month" && (
                 <div className="space-y-2">
-                  <Label htmlFor="month-select" className="text-sm font-medium">
-                    Seleccionar Mes
-                  </Label>
                   <Select
-                    aria-label="Seleccionar Mes"
+                    label="Seleccionar mes"
                     className="w-full"
                     selectedKey={selectedMonth}
                     onSelectionChange={(key) => setSelectedMonth(key ? String(key) : "")}
                   >
-                    <Select.Trigger>
-                      <Select.Value />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {months.map((month) => (
-                          <ListBox.Item
-                            key={month}
-                            textValue={dayjs(`${month}-01`).format("MMMM YYYY")}
-                          >
-                            {dayjs(`${month}-01`).format("MMMM YYYY")}{" "}
-                            {monthsWithData.has(month) ? "✓" : ""}
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
+                    {months.map((month) => (
+                      <SelectItem id={month} key={month}>
+                        {dayjs(`${month}-01`).format("MMMM YYYY")}{" "}
+                        {monthsWithData.has(month) ? "✓" : ""}
+                      </SelectItem>
+                    ))}
                   </Select>
                 </div>
               )}
@@ -320,33 +297,23 @@ export default function ReportsPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="granularity-select" className="text-sm font-medium">
-                  Agrupación temporal
-                </Label>
                 <Select
-                  aria-label="Agrupación temporal"
+                  label="Agrupación temporal"
                   className="w-full"
                   selectedKey={granularity}
                   onSelectionChange={(key) => {
                     if (key) setGranularity(key.toString() as ReportGranularity);
                   }}
                 >
-                  <Select.Trigger>
-                    <Select.Value />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      <ListBox.Item key="day" textValue="Diaria">
-                        Diaria
-                      </ListBox.Item>
-                      <ListBox.Item key="week" textValue="Semanal">
-                        Semanal
-                      </ListBox.Item>
-                      <ListBox.Item key="month" textValue="Mensual">
-                        Mensual
-                      </ListBox.Item>
-                    </ListBox>
-                  </Select.Popover>
+                  <SelectItem id="day" key="day">
+                    Diaria
+                  </SelectItem>
+                  <SelectItem id="week" key="week">
+                    Semanal
+                  </SelectItem>
+                  <SelectItem id="month" key="month">
+                    Mensual
+                  </SelectItem>
                 </Select>
               </div>
             </div>

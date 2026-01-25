@@ -157,16 +157,6 @@ export default function EmployeesPage() {
           enableExport={false}
           enableGlobalFilter={false}
           enableVirtualization={false}
-          filters={[
-            {
-              columnId: "status",
-              options: [
-                { label: "Activo", value: "ACTIVE" },
-                { label: "Inactivo", value: "INACTIVE" },
-              ],
-              title: "Estado",
-            },
-          ]}
           isLoading={loading || isMutating}
           meta={{
             canEdit,

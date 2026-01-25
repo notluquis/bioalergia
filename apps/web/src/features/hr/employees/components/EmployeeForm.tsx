@@ -4,6 +4,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { formatRut, normalizeRut, validateRut } from "@/lib/rut";
@@ -203,17 +204,21 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="grid gap-4 md:grid-cols-3">
         <div className="md:col-span-3">
-          <Input
-            as="select"
+          <Select
             label="Tipo de salario"
-            onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-              setForm((prev) => ({ ...prev, salaryType: event.target.value }));
+            onSelectionChange={(key) => {
+              if (!key) return;
+              setForm((prev) => ({ ...prev, salaryType: String(key) }));
             }}
-            value={form.salaryType}
+            selectedKey={form.salaryType}
           >
-            <option value="HOURLY">Por hora</option>
-            <option value="FIXED">Sueldo fijo mensual</option>
-          </Input>
+            <SelectItem id="HOURLY" key="HOURLY">
+              Por hora
+            </SelectItem>
+            <SelectItem id="FIXED" key="FIXED">
+              Sueldo fijo mensual
+            </SelectItem>
+          </Select>
         </div>
         <Input
           label="Nombre completo"
