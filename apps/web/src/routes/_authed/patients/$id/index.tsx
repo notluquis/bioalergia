@@ -153,7 +153,7 @@ function PatientDetailsPage() {
   const person = patient.person;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <section className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
@@ -266,33 +266,33 @@ function PatientDetailsPage() {
         {/* Main: Tabs Content */}
         <div className="lg:col-span-2">
           <Tabs aria-label="Patient details tabs">
-            <Tabs.List className="gap-6 w-full relative h-12 border-b border-divider">
-              <Tabs.Tab id="history" className="gap-2 font-semibold">
+            <Tabs.List className="no-scrollbar flex w-full gap-4 overflow-x-auto border-b border-divider pb-1">
+              <Tabs.Tab id="history" className="gap-2 font-semibold min-w-max">
                 <Calendar size={18} />
                 <span>Consultas</span>
               </Tabs.Tab>
 
-              <Tabs.Tab id="certificates" className="gap-2 font-semibold">
+              <Tabs.Tab id="certificates" className="gap-2 font-semibold min-w-max">
                 <FileText size={18} />
                 <span>Certificados</span>
               </Tabs.Tab>
 
-              <Tabs.Tab id="budgets" className="gap-2 font-semibold">
+              <Tabs.Tab id="budgets" className="gap-2 font-semibold min-w-max">
                 <DollarSign size={18} />
                 <span>Presupuestos</span>
               </Tabs.Tab>
 
-              <Tabs.Tab id="payments" className="gap-2 font-semibold">
+              <Tabs.Tab id="payments" className="gap-2 font-semibold min-w-max">
                 <PlusCircle size={18} />
                 <span>Pagos</span>
               </Tabs.Tab>
 
-              <Tabs.Tab id="docs" className="gap-2 font-semibold">
+              <Tabs.Tab id="docs" className="gap-2 font-semibold min-w-max">
                 <FileText size={18} />
                 <span>Documentos</span>
               </Tabs.Tab>
 
-              <Tabs.Tab id="info" className="gap-2 font-semibold">
+              <Tabs.Tab id="info" className="gap-2 font-semibold min-w-max">
                 <User size={18} />
                 <span>Info Detallada</span>
               </Tabs.Tab>
@@ -423,7 +423,7 @@ function PatientDetailsPage() {
         onClose={() => setIsAttachmentModalOpen(false)}
         patientId={String(patient.id)}
       />
-    </div>
+    </section>
   );
 }
 

@@ -205,220 +205,224 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
       )}
       role="none"
     >
-      {/* Header row */}
-      {/* biome-ignore lint/a11y/useSemanticElements: grid layout */}
-      <div
-        className="border-default-200 bg-content2/60 grid grid-cols-[52px_repeat(6,1fr)] border-b backdrop-blur-md"
-        role="row"
-        tabIndex={0}
-      >
-        <div className="border-default-200 border-r" />
-        {days.map((day) => (
-          // biome-ignore lint/a11y/useSemanticElements: grid layout
+      <div className="muted-scrollbar flex-1 overflow-x-auto overscroll-x-contain">
+        <div className="min-w-[720px]">
+          {/* Header row */}
+          {/* biome-ignore lint/a11y/useSemanticElements: grid layout */}
           <div
-            aria-current={day.isToday ? "date" : undefined}
-            className={cn(
-              "border-default-200 flex flex-col items-center justify-center gap-1 border-r px-1 py-3 text-center last:border-r-0",
-              day.isToday && "bg-primary/20 border-t-4 border-primary relative",
-            )}
-            key={day.key}
-            role="columnheader"
+            className="border-default-200 bg-content2/60 grid grid-cols-[52px_repeat(6,1fr)] border-b backdrop-blur-md"
+            role="row"
             tabIndex={0}
           >
-            <abbr
-              className="text-foreground-400 text-[0.65rem] font-bold uppercase tracking-wider"
-              title={day.fullDayName}
-            >
-              {day.dayName}
-            </abbr>
-            <time
-              className={cn(
-                "text-foreground text-2xl font-extrabold leading-none",
-                day.isToday &&
-                  "bg-primary text-primary-foreground grid size-10 place-items-center rounded-full text-xl font-black shadow-lg shadow-primary/40",
-              )}
-              dateTime={day.isoDate}
-            >
-              {day.dayNumber}
-            </time>
-          </div>
-        ))}
-      </div>
-
-      {/* Time grid body */}
-      <div className="grid min-h-100 grid-cols-[52px_repeat(6,1fr)] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-default-200 hover:scrollbar-thumb-default-300">
-        {/* Time axis */}
-        <div className="border-default-200 bg-content2/40 border-r">
-          {hours.map((hour) => (
-            <div
-              className="border-default-100 flex h-13 items-start justify-end border-b pr-2"
-              key={hour}
-            >
-              <span className="text-foreground-500 -translate-y-1/2 text-[0.7rem] font-medium tabular-nums">
-                {String(hour).padStart(2, "0")}:00
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Day columns */}
-        {days.map((day) => (
-          <div
-            className={cn(
-              "border-default-100 relative min-h-full overflow-visible border-r last:border-r-0",
-              day.isToday && "bg-primary/5",
-            )}
-            key={day.key}
-          >
-            {/* Hour grid lines */}
-            {hours.map((hour) => (
-              <div className="border-default-200/50 h-13 border-b" key={hour} />
+            <div className="border-default-200 border-r" />
+            {days.map((day) => (
+              // biome-ignore lint/a11y/useSemanticElements: grid layout
+              <div
+                aria-current={day.isToday ? "date" : undefined}
+                className={cn(
+                  "border-default-200 flex flex-col items-center justify-center gap-1 border-r px-1 py-3 text-center last:border-r-0",
+                  day.isToday && "bg-primary/20 border-t-4 border-primary relative",
+                )}
+                key={day.key}
+                role="columnheader"
+                tabIndex={0}
+              >
+                <abbr
+                  className="text-foreground-400 text-[0.65rem] font-bold uppercase tracking-wider"
+                  title={day.fullDayName}
+                >
+                  {day.dayName}
+                </abbr>
+                <time
+                  className={cn(
+                    "text-foreground text-2xl font-extrabold leading-none",
+                    day.isToday &&
+                      "bg-primary text-primary-foreground grid size-10 place-items-center rounded-full text-xl font-black shadow-lg shadow-primary/40",
+                  )}
+                  dateTime={day.isoDate}
+                >
+                  {day.dayNumber}
+                </time>
+              </div>
             ))}
+          </div>
 
-            {/* Events */}
-            <div className="absolute inset-0 z-5 isolate overflow-visible px-0.5">
-              {}
-              {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy rendering */}
-              {calculateEventLayout(eventsByDay[day.key] ?? []).map((event) => {
-                const position = getEventPosition(event, startHour, endHour);
-                if (!position) return null;
-
-                // Calculate duration to determine display mode
-                const start = event.startDateTime ? dayjs(event.startDateTime) : null;
-                const end = event.endDateTime ? dayjs(event.endDateTime) : null;
-                const durationMinutes = start && end ? end.diff(start, "minute") : 30;
-
-                // Display mode based on duration (prioritize showing TITLE, time is secondary)
-                type DisplayMode = "compact" | "detailed" | "minimal" | "normal";
-                let displayMode: DisplayMode;
-                if (durationMinutes < 20) {
-                  displayMode = "minimal";
-                } else if (durationMinutes < 45) {
-                  displayMode = "compact";
-                } else if (durationMinutes < 90) {
-                  displayMode = "normal";
-                } else {
-                  displayMode = "detailed";
-                }
-
-                // Build tooltip text (always complete info)
-                const timeStr = start ? start.format("HH:mm") : "";
-                const endTimeStr = end ? end.format("HH:mm") : "";
-                const amountStr =
-                  event.amountExpected == null
-                    ? ""
-                    : currencyFormatter.format(event.amountExpected);
-                const controlFlag = event.controlIncluded === true;
-                const tooltipLines = [
-                  event.summary ?? "(Sin título)",
-                  `${timeStr} - ${endTimeStr}`,
-                  amountStr,
-                  controlFlag ? "Control" : "",
-                ].filter(Boolean);
-
-                // Title - prioritize this over time for readability
-                const title = event.summary?.trim() ?? "(Sin título)";
-
-                // Calculate width and left based on column layout
-                const padding = 3; // pixels on each side
-                const totalWidth = 100; // percentage
-                const columnWidth = totalWidth / event.totalColumns;
-                const leftPos = event.column * columnWidth;
-
-                return (
-                  <button
-                    className={cn(
-                      "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden wrap-break-word rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-transform hover:z-100 hover:-translate-y-px hover:scale-[1.02] hover:overflow-visible hover:py-1.5 hover:shadow-lg",
-                      getCategoryClass(event.category),
-                      // Display modes
-                      displayMode === "minimal" &&
-                        "items-center justify-center px-[0.3rem] py-[0.1rem]",
-                      displayMode === "compact" && "px-[0.35rem] py-[0.15rem]",
-                      displayMode === "normal" && "px-[0.4rem] py-[0.2rem]",
-                      displayMode === "detailed" && "px-[0.45rem] py-1",
-                    )}
-                    key={event.eventId}
-                    onClick={() => onEventClick?.(event)}
-                    style={{
-                      height: position.height,
-                      left: `calc(${leftPos}% + ${padding}px)`,
-                      top: position.top,
-                      width: `calc(${columnWidth}% - ${padding * 2}px)`,
-                    }}
-                    title={tooltipLines.join("\n")}
-                    type="button"
-                  >
-                    {(() => {
-                      switch (displayMode) {
-                        case "compact":
-                        case "minimal":
-                        case "normal": {
-                          return (
-                            <span className="flex min-w-0 items-center gap-[0.3rem] overflow-hidden">
-                              <span
-                                className={cn(
-                                  "shrink-0 font-bold tabular-nums opacity-75",
-                                  displayMode === "minimal" && "hidden",
-                                  displayMode === "compact" && "text-[0.55rem]",
-                                  displayMode === "normal" && "text-[0.6rem]",
-                                )}
-                              >
-                                {timeStr}
-                              </span>
-                              <span
-                                className={cn(
-                                  "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight",
-                                  displayMode === "minimal" &&
-                                    "line-clamp-1 whitespace-nowrap text-[0.55rem]",
-                                  displayMode === "compact" && "text-[0.55rem]",
-                                  displayMode === "normal" && "line-clamp-2 text-[0.6rem]",
-                                )}
-                              >
-                                {title}
-                              </span>
-                              {controlFlag && displayMode !== "minimal" && (
-                                <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
-                                  Ctrl
-                                </span>
-                              )}
-                            </span>
-                          );
-                        }
-                        default: {
-                          return (
-                            <>
-                              <span className="flex min-w-0 items-center gap-[0.3rem] overflow-hidden">
-                                <span className="shrink-0 text-[0.65rem] font-bold tabular-nums opacity-75">
-                                  {timeStr}
-                                </span>
-                                <span className="line-clamp-2 text-[0.65rem] font-semibold leading-tight">
-                                  {title}
-                                </span>
-                                {controlFlag && (
-                                  <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
-                                    Ctrl
-                                  </span>
-                                )}
-                              </span>
-                              {event.amountExpected != null && (
-                                <span className="text-success-600 mt-auto overflow-hidden text-ellipsis whitespace-nowrap text-[0.6rem] font-bold">
-                                  {currencyFormatter.format(event.amountExpected)}
-                                </span>
-                              )}
-                            </>
-                          );
-                        }
-                      }
-                    })()}
-                  </button>
-                );
-              })}
+          {/* Time grid body */}
+          <div className="muted-scrollbar grid min-h-100 grid-cols-[52px_repeat(6,1fr)] overflow-y-auto overscroll-y-contain">
+            {/* Time axis */}
+            <div className="border-default-200 bg-content2/40 border-r">
+              {hours.map((hour) => (
+                <div
+                  className="border-default-100 flex h-13 items-start justify-end border-b pr-2"
+                  key={hour}
+                >
+                  <span className="text-foreground-500 -translate-y-1/2 text-[0.7rem] font-medium tabular-nums">
+                    {String(hour).padStart(2, "0")}:00
+                  </span>
+                </div>
+              ))}
             </div>
 
-            {/* Now indicator */}
-            {day.isToday && <NowIndicator endHour={endHour} startHour={startHour} />}
+            {/* Day columns */}
+            {days.map((day) => (
+              <div
+                className={cn(
+                  "border-default-100 relative min-h-full overflow-visible border-r last:border-r-0",
+                  day.isToday && "bg-primary/5",
+                )}
+                key={day.key}
+              >
+                {/* Hour grid lines */}
+                {hours.map((hour) => (
+                  <div className="border-default-200/50 h-13 border-b" key={hour} />
+                ))}
+
+                {/* Events */}
+                <div className="absolute inset-0 z-5 isolate overflow-visible px-0.5">
+                  {}
+                  {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy rendering */}
+                  {calculateEventLayout(eventsByDay[day.key] ?? []).map((event) => {
+                    const position = getEventPosition(event, startHour, endHour);
+                    if (!position) return null;
+
+                    // Calculate duration to determine display mode
+                    const start = event.startDateTime ? dayjs(event.startDateTime) : null;
+                    const end = event.endDateTime ? dayjs(event.endDateTime) : null;
+                    const durationMinutes = start && end ? end.diff(start, "minute") : 30;
+
+                    // Display mode based on duration (prioritize showing TITLE, time is secondary)
+                    type DisplayMode = "compact" | "detailed" | "minimal" | "normal";
+                    let displayMode: DisplayMode;
+                    if (durationMinutes < 20) {
+                      displayMode = "minimal";
+                    } else if (durationMinutes < 45) {
+                      displayMode = "compact";
+                    } else if (durationMinutes < 90) {
+                      displayMode = "normal";
+                    } else {
+                      displayMode = "detailed";
+                    }
+
+                    // Build tooltip text (always complete info)
+                    const timeStr = start ? start.format("HH:mm") : "";
+                    const endTimeStr = end ? end.format("HH:mm") : "";
+                    const amountStr =
+                      event.amountExpected == null
+                        ? ""
+                        : currencyFormatter.format(event.amountExpected);
+                    const controlFlag = event.controlIncluded === true;
+                    const tooltipLines = [
+                      event.summary ?? "(Sin título)",
+                      `${timeStr} - ${endTimeStr}`,
+                      amountStr,
+                      controlFlag ? "Control" : "",
+                    ].filter(Boolean);
+
+                    // Title - prioritize this over time for readability
+                    const title = event.summary?.trim() ?? "(Sin título)";
+
+                    // Calculate width and left based on column layout
+                    const padding = 3; // pixels on each side
+                    const totalWidth = 100; // percentage
+                    const columnWidth = totalWidth / event.totalColumns;
+                    const leftPos = event.column * columnWidth;
+
+                    return (
+                      <button
+                        className={cn(
+                          "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden wrap-break-word rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-transform hover:z-100 hover:-translate-y-px hover:scale-[1.02] hover:overflow-visible hover:py-1.5 hover:shadow-lg",
+                          getCategoryClass(event.category),
+                          // Display modes
+                          displayMode === "minimal" &&
+                            "items-center justify-center px-[0.3rem] py-[0.1rem]",
+                          displayMode === "compact" && "px-[0.35rem] py-[0.15rem]",
+                          displayMode === "normal" && "px-[0.4rem] py-[0.2rem]",
+                          displayMode === "detailed" && "px-[0.45rem] py-1",
+                        )}
+                        key={event.eventId}
+                        onClick={() => onEventClick?.(event)}
+                        style={{
+                          height: position.height,
+                          left: `calc(${leftPos}% + ${padding}px)`,
+                          top: position.top,
+                          width: `calc(${columnWidth}% - ${padding * 2}px)`,
+                        }}
+                        title={tooltipLines.join("\n")}
+                        type="button"
+                      >
+                        {(() => {
+                          switch (displayMode) {
+                            case "compact":
+                            case "minimal":
+                            case "normal": {
+                              return (
+                                <span className="flex min-w-0 items-center gap-[0.3rem] overflow-hidden">
+                                  <span
+                                    className={cn(
+                                      "shrink-0 font-bold tabular-nums opacity-75",
+                                      displayMode === "minimal" && "hidden",
+                                      displayMode === "compact" && "text-[0.55rem]",
+                                      displayMode === "normal" && "text-[0.6rem]",
+                                    )}
+                                  >
+                                    {timeStr}
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight",
+                                      displayMode === "minimal" &&
+                                        "line-clamp-1 whitespace-nowrap text-[0.55rem]",
+                                      displayMode === "compact" && "text-[0.55rem]",
+                                      displayMode === "normal" && "line-clamp-2 text-[0.6rem]",
+                                    )}
+                                  >
+                                    {title}
+                                  </span>
+                                  {controlFlag && displayMode !== "minimal" && (
+                                    <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
+                                      Ctrl
+                                    </span>
+                                  )}
+                                </span>
+                              );
+                            }
+                            default: {
+                              return (
+                                <>
+                                  <span className="flex min-w-0 items-center gap-[0.3rem] overflow-hidden">
+                                    <span className="shrink-0 text-[0.65rem] font-bold tabular-nums opacity-75">
+                                      {timeStr}
+                                    </span>
+                                    <span className="line-clamp-2 text-[0.65rem] font-semibold leading-tight">
+                                      {title}
+                                    </span>
+                                    {controlFlag && (
+                                      <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
+                                        Ctrl
+                                      </span>
+                                    )}
+                                  </span>
+                                  {event.amountExpected != null && (
+                                    <span className="text-success-600 mt-auto overflow-hidden text-ellipsis whitespace-nowrap text-[0.6rem] font-bold">
+                                      {currencyFormatter.format(event.amountExpected)}
+                                    </span>
+                                  )}
+                                </>
+                              );
+                            }
+                          }
+                        })()}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Now indicator */}
+                {day.isToday && <NowIndicator endHour={endHour} startHour={startHour} />}
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
