@@ -2,19 +2,13 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
 import { ChevronDown, Filter } from "lucide-react";
-import { type ChangeEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
 import { fetchCalendarSummary } from "@/features/calendar/api";
+import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
 import HeatmapMonth from "@/features/calendar/components/HeatmapMonth";
-import {
-  MultiSelectFilter,
-  type MultiSelectOption,
-} from "@/features/calendar/components/MultiSelectFilter";
-import { NULL_CATEGORY_VALUE } from "@/features/calendar/constants";
 import type { CalendarFilters } from "@/features/calendar/types";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 
@@ -76,15 +70,6 @@ function CalendarHeatmapPage() {
 
   // React Compiler auto-memoizes comparison functions
   const isDirty = !filtersEqual(filters, appliedFilters);
-
-  // React Compiler auto-memoizes array transformations
-  const availableCategories: MultiSelectOption[] = (summary?.available.categories ?? []).map(
-    (entry) => {
-      const value = entry.category ?? NULL_CATEGORY_VALUE;
-      const label = entry.category ?? "Sin clasificación";
-      return { label: `${label} · ${numberFormatter.format(entry.total)}`, value };
-    },
-  );
 
   // KEEP useMemo: Heavy Map operation iterating over all events
   const statsByDate = useMemo(() => {
@@ -212,61 +197,42 @@ function CalendarHeatmapPage() {
           )}
         >
           <div className="overflow-hidden">
-            <form
-              className="border-default-100/50 space-y-4 border-t p-4 pt-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                handleApply();
-                setShowAdvanced(false); // Auto-close on apply for cleaner UX
+            <CalendarFilterPanel
+              availableCategories={summary?.available.categories ?? []}
+              filters={{
+                categories: filters.categories,
+                eventTypes: [],
+                from: filters.from,
+                search: "",
+                to: filters.to,
               }}
-            >
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                <Input
-                  label={tc("filters.from")}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setFilters((prev) => ({ ...prev, from: event.target.value }));
-                  }}
-                  size="sm"
-                  type="date"
-                  value={filters.from}
-                />
-                <Input
-                  label={tc("filters.to")}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                    setFilters((prev) => ({ ...prev, to: event.target.value }));
-                  }}
-                  size="sm"
-                  type="date"
-                  value={filters.to}
-                />
-                <MultiSelectFilter
-                  density="compact"
-                  label={tc("filters.categories")}
-                  onChange={(values) => {
-                    setFilters((prev) => ({ ...prev, categories: values }));
-                  }}
-                  options={availableCategories}
-                  placeholder={tc("filters.allCategories")}
-                  selected={filters.categories}
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <Button
-                  disabled={busy || !isDirty}
-                  onClick={() => {
-                    handleReset();
-                  }}
-                  type="button"
-                  variant="ghost"
-                >
-                  {tc("resetFilters")}
-                </Button>
-                <Button disabled={busy} type="submit">
-                  {tc("applyFilters")}
-                </Button>
-              </div>
-            </form>
+              formClassName="border-default-100/50 border-t p-4 pt-2"
+              isDirty={isDirty}
+              loading={busy}
+              applyCount={summary?.totals.events}
+              onApply={() => {
+                handleApply();
+                setShowAdvanced(false);
+              }}
+              onFilterChange={(key, value) => {
+                if (key === "categories") {
+                  setFilters((prev) => ({ ...prev, categories: value as string[] }));
+                  return;
+                }
+                if (key === "from") {
+                  setFilters((prev) => ({ ...prev, from: String(value ?? "") }));
+                  return;
+                }
+                if (key === "to") {
+                  setFilters((prev) => ({ ...prev, to: String(value ?? "") }));
+                }
+              }}
+              onReset={handleReset}
+              showDateRange
+              showSearch={false}
+              showSync={false}
+              variant="plain"
+            />
           </div>
         </div>
       </Card>

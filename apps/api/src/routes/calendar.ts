@@ -742,6 +742,7 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
       attended: true,
       amountExpected: true,
       amountPaid: true,
+      controlIncluded: true,
     },
   });
 
@@ -764,6 +765,7 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
           attended?: boolean;
           amountExpected?: number;
           amountPaid?: number;
+          controlIncluded?: boolean;
         };
       };
       const updates: EventUpdate[] = [];
@@ -774,6 +776,7 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
         attended: 0,
         amountExpected: 0,
         amountPaid: 0,
+        controlIncluded: 0,
       };
 
       for (let i = 0; i < events.length; i++) {
@@ -807,6 +810,10 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
         if (event.amountPaid === null && metadata.amountPaid !== null) {
           updateData.amountPaid = metadata.amountPaid;
           fieldCounts.amountPaid++;
+        }
+        if (metadata.controlIncluded && event.controlIncluded === false) {
+          updateData.controlIncluded = true;
+          fieldCounts.controlIncluded++;
         }
 
         if (Object.keys(updateData).length > 0) {
@@ -863,11 +870,12 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
 
   const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue");
 
-  const events = await db.event.findMany({
+      const events = await db.event.findMany({
     select: {
       id: true,
       summary: true,
       description: true,
+      controlIncluded: true,
     },
   });
 
@@ -885,6 +893,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
           attended: boolean | null;
           amountExpected: number | null;
           amountPaid: number | null;
+          controlIncluded: boolean;
         };
       };
 
@@ -896,6 +905,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
         attended: 0,
         amountExpected: 0,
         amountPaid: 0,
+        controlIncluded: 0,
       };
 
       for (let i = 0; i < events.length; i++) {
@@ -912,6 +922,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
           attended: metadata.attended,
           amountExpected: metadata.amountExpected,
           amountPaid: metadata.amountPaid,
+          controlIncluded: metadata.controlIncluded,
         };
 
         if (metadata.category) fieldCounts.category++;
@@ -920,6 +931,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
         if (metadata.attended !== null) fieldCounts.attended++;
         if (metadata.amountExpected !== null) fieldCounts.amountExpected++;
         if (metadata.amountPaid !== null) fieldCounts.amountPaid++;
+        if (metadata.controlIncluded) fieldCounts.controlIncluded++;
 
         updates.push({ id: event.id, data: updateData });
 

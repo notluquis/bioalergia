@@ -308,11 +308,12 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                   event.amountExpected == null
                     ? ""
                     : currencyFormatter.format(event.amountExpected);
+                const controlFlag = event.controlIncluded === true;
                 const tooltipLines = [
                   event.summary ?? "(Sin título)",
                   `${timeStr} - ${endTimeStr}`,
                   amountStr,
-                  event.controlIncluded ? "Control" : "",
+                  controlFlag ? "Control" : "",
                 ].filter(Boolean);
 
                 // Title - prioritize this over time for readability
@@ -375,7 +376,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                               >
                                 {title}
                               </span>
-                              {event.controlIncluded && displayMode !== "minimal" && (
+                              {controlFlag && displayMode !== "minimal" && (
                                 <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
                                   Ctrl
                                 </span>
@@ -393,7 +394,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                                 <span className="line-clamp-2 text-[0.65rem] font-semibold leading-tight">
                                   {title}
                                 </span>
-                                {event.controlIncluded && (
+                                {controlFlag && (
                                   <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
                                     Ctrl
                                   </span>
