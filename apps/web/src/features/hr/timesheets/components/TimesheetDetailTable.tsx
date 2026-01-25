@@ -110,22 +110,20 @@ export default function TimesheetDetailTable({
         )}
       </div>
 
-      <div className="muted-scrollbar border-default-100 transform-gpu overflow-x-auto rounded-lg border">
-        <DataTable
-          columns={columns as ColumnDef<BulkRow, unknown>[]}
-          data={bulkRows}
-          containerVariant="plain"
-          enableToolbar={false}
-          enableVirtualization={false}
-          isLoading={loadingDetail}
-          meta={meta as unknown as Record<string, unknown>}
-          noDataMessage={
-            employeeOptions.length > 0
-              ? "Selecciona un trabajador para ver o editar sus horas."
-              : "Registra a trabajadores activos para comenzar a cargar horas."
-          }
-        />
-      </div>
+      <DataTable
+        columns={columns as ColumnDef<BulkRow, unknown>[]}
+        data={bulkRows}
+        enablePagination={false}
+        enableToolbar={false}
+        enableVirtualization={false}
+        isLoading={loadingDetail}
+        meta={meta as unknown as Record<string, unknown>}
+        noDataMessage={
+          employeeOptions.length > 0
+            ? "Selecciona un trabajador para ver o editar sus horas."
+            : "Registra a trabajadores activos para comenzar a cargar horas."
+        }
+      />
 
       {/* Modal para ver comentario */}
       <Modal

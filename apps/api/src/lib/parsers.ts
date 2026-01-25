@@ -43,6 +43,7 @@ export type ParsedCalendarMetadata = {
   attended: boolean | null;
   dosage: string | null;
   treatmentStage: string | null;
+  controlIncluded: boolean;
 };
 
 // ============================================================================
@@ -241,6 +242,9 @@ const MONEY_CONFIRMED_PATTERNS = [
   /\bpagado\b/i,
 ];
 
+/** Patterns for domicilio (home visit) to mark as paid */
+const DOMICILIO_PATTERNS = [/\bdomicilio\b/i];
+
 /** Phone number patterns to exclude from amount parsing */
 const PHONE_PATTERNS = [
   /^9\d{8}$/, // 9XXXXXXXX (Chilean mobile)
@@ -408,7 +412,7 @@ function extractAmounts(summary: string, description: string) {
   }
 
   // 6. S/C (sin costo) = 0
-  if (SIN_COSTO_PATTERN.test(text)) {
+  if (SIN_COSTO_PATTERN.test(text) && amountExpected == null && amountPaid == null) {
     amountExpected = 0;
     amountPaid = 0;
   }
@@ -427,6 +431,13 @@ function refineAmounts(
   // If confirmed (llegó, envio, etc.) and only expected is set, assume paid
   if (isConfirmed && amounts.amountExpected != null && amounts.amountPaid == null) {
     return { ...amounts, amountPaid: amounts.amountExpected };
+  }
+
+  const isDomicilio = matchesAny(text, DOMICILIO_PATTERNS);
+  if (isDomicilio && amounts.amountExpected != null) {
+    if (amounts.amountPaid == null || amounts.amountPaid === 0) {
+      return { ...amounts, amountPaid: amounts.amountExpected };
+    }
   }
 
   return amounts;
@@ -554,6 +565,7 @@ export function parseCalendarMetadata(input: {
   const attended = detectAttendance(summary, description);
   const dosage = extractDosage(summary, description);
   const treatmentStage = detectTreatmentStage(summary, description);
+  const controlIncluded = matchesAny(`${summary} ${description}`, CONTROL_PATTERNS);
 
   // Logic: Dosage and Treatment Stage only apply to "Tratamiento subcutáneo"
   const isSubcut = category === "Tratamiento subcutáneo";
@@ -579,6 +591,7 @@ export function parseCalendarMetadata(input: {
     attended,
     dosage: isSubcut ? dosage : null,
     treatmentStage: finalTreatmentStage,
+    controlIncluded,
   };
 }
 

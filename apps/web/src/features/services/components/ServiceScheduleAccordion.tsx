@@ -140,7 +140,7 @@ function ServiceScheduleAccordion({
           {service.pending_count + service.overdue_count} pendientes totales
         </span>
       </header>
-      <div className="muted-scrollbar max-h-80 space-y-2 overflow-y-auto pr-1">
+      <div className="muted-scrollbar max-h-80 space-y-2 overflow-y-auto overscroll-y-contain pr-1">
         {groups.map((group) => {
           const isExpanded = expanded[group.dateKey] ?? false;
           return (
@@ -156,9 +156,7 @@ function ServiceScheduleAccordion({
                 type="button"
               >
                 <div>
-                  <p className="text-foreground text-sm font-semibold capitalize">
-                    {group.label}
-                  </p>
+                  <p className="text-foreground text-sm font-semibold capitalize">{group.label}</p>
                   <p className="text-default-400 text-xs">
                     {group.items.length} {group.items.length === 1 ? "cuota" : "cuotas"}
                   </p>
@@ -172,7 +170,9 @@ function ServiceScheduleAccordion({
                 </span>
               </button>
               <div
-                className={isExpanded ? "border-default-200 space-y-2 border-t px-4 py-3" : "hidden"}
+                className={
+                  isExpanded ? "border-default-200 space-y-2 border-t px-4 py-3" : "hidden"
+                }
               >
                 {group.items.map((item) => {
                   const dueDate = dayjs(item.due_date);

@@ -2312,6 +2312,11 @@ export class SchemaType implements SchemaDef {
           type: "String",
           optional: true,
         },
+        controlIncluded: {
+          name: "controlIncluded",
+          type: "Boolean",
+          default: false,
+        },
         rawEvent: {
           name: "rawEvent",
           type: "Json",

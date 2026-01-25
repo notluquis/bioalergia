@@ -27,14 +27,14 @@ export default function LoanScheduleTable({
   const columns = getColumns(actions, canManage);
 
   return (
-    <div className="border-default-200 bg-background overflow-hidden rounded-2xl border shadow-sm">
+    <div className="border-default-200 bg-background rounded-2xl border shadow-sm">
       <DataTable
         columns={columns}
         data={schedules}
         containerVariant="plain"
+        enablePagination={false}
         enableToolbar={false}
         noDataMessage="No hay cronograma disponible."
-        pagination={{ pageIndex: 0, pageSize: 100 }}
       />
     </div>
   );

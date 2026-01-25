@@ -123,16 +123,14 @@ function NewBudgetPage() {
 
           <form.Field name="notes">
             {(field) => (
-              <label className="space-y-1 block">
-                <span className="text-sm font-medium text-default-600">Notas / Observaciones</span>
-                <textarea
-                  className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                  rows={2}
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="Información adicional para el paciente..."
-                />
-              </label>
+              <Input
+                as="textarea"
+                label="Notas / Observaciones"
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="Información adicional para el paciente..."
+                rows={2}
+                value={field.state.value}
+              />
             )}
           </form.Field>
         </Card>

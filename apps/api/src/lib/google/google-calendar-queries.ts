@@ -95,6 +95,7 @@ export type CalendarEventDetail = {
   attended?: boolean | null;
   dosage?: string | null;
   treatmentStage?: string | null;
+  controlIncluded?: boolean | null;
 };
 
 export type CalendarEventsByDate = {
@@ -500,6 +501,7 @@ export async function getCalendarEventsByDate(
       "e.attended",
       "e.dosage",
       "e.treatmentStage as treatmentStage",
+      "e.controlIncluded as controlIncluded",
       sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("eventDateString"), // helper for grouping: use raw SQL names
     ])
     .orderBy("e.startDateTime", "desc")
@@ -550,6 +552,7 @@ export async function getCalendarEventsByDate(
     attended: boolean | null;
     dosage: string | null;
     treatmentStage: string | null;
+    controlIncluded: boolean | null;
   };
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy function needing refactor
@@ -594,6 +597,7 @@ export async function getCalendarEventsByDate(
       attended: ev.attended,
       dosage: ev.dosage,
       treatmentStage: ev.treatmentStage,
+      controlIncluded: ev.controlIncluded,
     };
 
     grouped[dateKey].events.push(detail);

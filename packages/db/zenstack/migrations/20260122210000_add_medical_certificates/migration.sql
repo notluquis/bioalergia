@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "medical_certificates" (
+CREATE TABLE IF NOT EXISTS "medical_certificates" (
     "id" TEXT NOT NULL,
     "patient_name" TEXT NOT NULL,
     "patient_rut" TEXT NOT NULL,
@@ -21,11 +21,22 @@ CREATE TABLE "medical_certificates" (
 );
 
 -- CreateIndex
-CREATE INDEX "medical_certificates_patient_rut_idx" ON "medical_certificates" ("patient_rut");
+CREATE INDEX IF NOT EXISTS "medical_certificates_patient_rut_idx" ON "medical_certificates" ("patient_rut");
 
 -- CreateIndex
-CREATE INDEX "medical_certificates_issued_at_idx" ON "medical_certificates" ("issued_at");
+CREATE INDEX IF NOT EXISTS "medical_certificates_issued_at_idx" ON "medical_certificates" ("issued_at");
 
 -- AddForeignKey
-ALTER TABLE "medical_certificates"
-ADD CONSTRAINT "medical_certificates_issued_by_fkey" FOREIGN KEY ("issued_by") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'medical_certificates_issued_by_fkey'
+    ) THEN
+        ALTER TABLE "medical_certificates"
+        ADD CONSTRAINT "medical_certificates_issued_by_fkey"
+        FOREIGN KEY ("issued_by") REFERENCES "users" ("id")
+        ON DELETE RESTRICT ON UPDATE CASCADE;
+    END IF;
+END $$;

@@ -30,6 +30,7 @@ export default function TimesheetSummaryTable({
         columns={columns}
         data={summary?.employees ?? []}
         containerVariant="plain"
+        enablePagination={false}
         enableToolbar={false}
         enableVirtualization={false}
         isLoading={loading}

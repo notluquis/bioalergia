@@ -1,4 +1,7 @@
+import { RefreshCcw } from "lucide-react";
+import Button from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
+import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import SupplyRequestForm from "@/features/supplies/components/SupplyRequestForm";
 import SupplyRequestsTable from "@/features/supplies/components/SupplyRequestsTable";
 import { useSupplyManagement } from "@/features/supplies/hooks/use-supply-management";
@@ -9,15 +12,55 @@ export default function Supplies() {
 
   const canCreate = can("create", "SupplyRequest");
   const canUpdate = can("update", "SupplyRequest");
+  const isAdmin = canUpdate;
+  const tableTitle = isAdmin ? "Todas las solicitudes" : "Solicitudes activas";
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      {canCreate && <SupplyRequestForm commonSupplies={commonSupplies} onSuccess={refresh} />}
-
-      <SupplyRequestsTable
-        onStatusChange={canUpdate ? handleStatusChange : () => {}}
-        requests={requests}
+    <section className="space-y-8">
+      <ServicesHero
+        actions={
+          <Button
+            onClick={() => void refresh()}
+            size="sm"
+            variant="secondary"
+            aria-label="Actualizar solicitudes de insumos"
+          >
+            <RefreshCcw className="h-4 w-4" />
+            Actualizar
+          </Button>
+        }
+        description="Solicita insumos críticos y sigue el estado de aprobación y entrega."
+        title="Insumos"
       />
-    </div>
+
+      {canCreate && (
+        <ServicesSurface>
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-foreground text-lg font-semibold">Solicitar nuevo insumo</h2>
+              <p className="text-default-500 text-xs">
+                Selecciona el insumo y añade observaciones para el equipo de compras.
+              </p>
+            </div>
+            <SupplyRequestForm commonSupplies={commonSupplies} onSuccess={refresh} />
+          </div>
+        </ServicesSurface>
+      )}
+
+      <ServicesSurface>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-foreground text-lg font-semibold">{tableTitle}</h2>
+            <p className="text-default-500 text-xs">{requests.length} solicitudes en el periodo.</p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <SupplyRequestsTable
+            onStatusChange={canUpdate ? handleStatusChange : () => {}}
+            requests={requests}
+          />
+        </div>
+      </ServicesSurface>
+    </section>
   );
 }

@@ -9,6 +9,7 @@ import {
   getCoreRowModel,
   getExpandedRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   type OnChangeFn,
   type PaginationState,
@@ -161,17 +162,21 @@ export function DataTable<TData, TValue>({
     pageSize: 10,
   });
 
+  const manualPagination = pageCount !== undefined;
+  const shouldPaginate = enablePagination && !manualPagination;
+
   const table = useReactTable({
     columnResizeMode: "onChange",
     columns,
     data,
     enableColumnResizing: true,
-    enableGlobalFilter: true,
+    enableGlobalFilter,
     enablePinning: true,
     enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: shouldPaginate ? getPaginationRowModel() : undefined,
     getSortedRowModel: getSortedRowModel(),
     getRowId: (originalRow: TData) => {
       const row = originalRow as Record<string, unknown>;
@@ -183,7 +188,7 @@ export function DataTable<TData, TValue>({
         ""
       );
     },
-    manualPagination: pageCount !== undefined,
+    manualPagination,
     meta,
     onColumnFiltersChange: setColumnFilters,
     onColumnPinningChange: setColumnPinning,

@@ -153,6 +153,8 @@ function PatientsListPage() {
       <DataTable
         columns={columns}
         data={patients || []}
+        enableExport={false}
+        enableGlobalFilter={false}
         isLoading={isLoading}
         noDataMessage="No se encontraron pacientes registrados."
       />

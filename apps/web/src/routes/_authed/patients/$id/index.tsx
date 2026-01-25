@@ -302,6 +302,8 @@ function PatientDetailsPage() {
               <DataTable
                 columns={consultationColumns}
                 data={patient.consultations || []}
+                enablePagination={false}
+                enableToolbar={false}
                 noDataMessage="No hay consultas registradas para este paciente."
               />
             </Tabs.Panel>
@@ -310,6 +312,8 @@ function PatientDetailsPage() {
               <DataTable
                 columns={certificateColumns}
                 data={patient.medicalCertificates || []}
+                enablePagination={false}
+                enableToolbar={false}
                 noDataMessage="No se han emitido certificados a este paciente."
               />
             </Tabs.Panel>
@@ -333,6 +337,8 @@ function PatientDetailsPage() {
               <DataTable
                 columns={budgetColumns}
                 data={patient.budgets || []}
+                enablePagination={false}
+                enableToolbar={false}
                 noDataMessage="No hay presupuestos registrados."
               />
             </Tabs.Panel>
@@ -356,6 +362,8 @@ function PatientDetailsPage() {
               <DataTable
                 columns={paymentColumns}
                 data={patient.payments || []}
+                enablePagination={false}
+                enableToolbar={false}
                 noDataMessage="No hay pagos registrados."
               />
             </Tabs.Panel>
@@ -375,6 +383,8 @@ function PatientDetailsPage() {
               <DataTable
                 columns={attachmentColumns}
                 data={patient.attachments || []}
+                enablePagination={false}
+                enableToolbar={false}
                 noDataMessage="No hay documentos adjuntos."
               />
             </Tabs.Panel>

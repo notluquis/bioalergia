@@ -156,6 +156,7 @@ export default function InventoryPage() {
           columns={columns}
           data={items}
           containerVariant="plain"
+          enablePagination={false}
           enableVirtualization
           isLoading={loading}
           meta={{
