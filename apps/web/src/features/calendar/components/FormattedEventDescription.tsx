@@ -14,6 +14,9 @@ export function FormattedEventDescription({
   const htmlContent = (() => {
     let html = text;
 
+    // Preserve line breaks from calendar descriptions
+    html = html.replace(/\r\n|\n/g, "<br />");
+
     // 1. Highlight common keys for better readability
     const keysToBold = [
       "Edad",
