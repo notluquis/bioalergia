@@ -2,7 +2,7 @@ import { Button, ButtonGroup } from "@heroui/react";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -23,30 +23,42 @@ export function DayNavigation({
   rightSlot,
   selectedDate,
 }: Readonly<DayNavigationProps>) {
-  const current = dayjs(selectedDate);
+  const current = useMemo(() => dayjs(selectedDate), [selectedDate]);
   const today = dayjs();
-  const allowedSet = allowedWeekdays?.length ? new Set(allowedWeekdays) : null;
+  const allowedSet = useMemo(
+    () => (allowedWeekdays?.length ? new Set(allowedWeekdays) : null),
+    [allowedWeekdays],
+  );
 
-  const isAllowed = (date: dayjs.Dayjs) => {
-    if (!allowedSet) return true;
-    return allowedSet.has(date.day());
-  };
+  const isAllowed = useCallback(
+    (date: dayjs.Dayjs) => {
+      if (!allowedSet) return true;
+      return allowedSet.has(date.day());
+    },
+    [allowedSet],
+  );
 
-  const findAdjacentAllowed = (date: dayjs.Dayjs, direction: 1 | -1) => {
-    let cursor = date;
-    for (let i = 0; i < 7; i += 1) {
-      cursor = cursor.add(direction, "day");
-      if (isAllowed(cursor)) {
-        return cursor;
+  const findAdjacentAllowed = useCallback(
+    (date: dayjs.Dayjs, direction: 1 | -1) => {
+      let cursor = date;
+      for (let i = 0; i < 7; i += 1) {
+        cursor = cursor.add(direction, "day");
+        if (isAllowed(cursor)) {
+          return cursor;
+        }
       }
-    }
-    return date;
-  };
+      return date;
+    },
+    [isAllowed],
+  );
 
-  const normalizeToAllowed = (date: dayjs.Dayjs) => {
-    if (isAllowed(date)) return date;
-    return findAdjacentAllowed(date, 1);
-  };
+  const normalizeToAllowed = useCallback(
+    (date: dayjs.Dayjs) => {
+      if (isAllowed(date)) return date;
+      return findAdjacentAllowed(date, 1);
+    },
+    [findAdjacentAllowed, isAllowed],
+  );
 
   // Generate range of dates (-4 to +4 around selected = 9 days)
   const days = Array.from({ length: 9 }, (_, i) => current.add(i - 4, "day")).filter(isAllowed);
@@ -68,7 +80,7 @@ export function DayNavigation({
         onSelect(normalized.format("YYYY-MM-DD"));
       }
     }
-  }, [selectedDate, allowedWeekdays, onSelect]);
+  }, [current, isAllowed, normalizeToAllowed, onSelect]);
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
@@ -94,7 +106,7 @@ export function DayNavigation({
 
       <div className="relative">
         {/* Day Strip */}
-        <div className="bg-content1 border-default-200 no-scrollbar flex items-center justify-between overflow-x-auto rounded-xl border p-1 shadow-sm">
+        <div className="bg-content1 border-default-200 no-scrollbar flex items-center justify-between overflow-x-auto rounded-xl border p-1 shadow-sm touch-pan-x">
           {days.map((date) => {
             const isSelected = date.isSame(current, "day");
             const isToday = date.isSame(today, "day");

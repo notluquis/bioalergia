@@ -201,12 +201,13 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
   return (
     <div
       className={cn(
-        "bg-content1 border-default-200 flex h-[min(100dvh-220px,800px)] flex-col overflow-hidden rounded-2xl border shadow-sm",
+        "bg-content1 border-default-200 flex min-h-[520px] h-[min(100dvh-220px,800px)] flex-col overflow-hidden rounded-2xl border shadow-sm",
         loading && "pointer-events-none opacity-50 grayscale-[0.3]",
       )}
+      style={{ height: "min(100svh - 220px, 800px)" }}
       role="none"
     >
-      <div className="muted-scrollbar flex-1 overflow-x-auto overscroll-x-contain">
+      <div className="muted-scrollbar flex-1 overflow-x-auto overscroll-x-contain touch-pan-x">
         <div className="min-w-180">
           {/* Header row */}
           {/* biome-ignore lint/a11y/useSemanticElements: grid layout */}
@@ -249,7 +250,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
           </div>
 
           {/* Time grid body */}
-          <div className="muted-scrollbar grid min-h-100 grid-cols-[52px_repeat(6,1fr)] overflow-y-auto overscroll-y-contain">
+          <div className="muted-scrollbar grid min-h-100 grid-cols-[52px_repeat(6,1fr)] overflow-y-auto overscroll-y-contain touch-pan-y">
             {/* Time axis */}
             <div className="border-default-200 bg-content2/40 border-r">
               {hours.map((hour) => (
