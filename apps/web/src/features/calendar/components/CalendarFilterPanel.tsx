@@ -5,6 +5,7 @@
 
 import { DatePicker } from "@heroui/date-picker";
 import { type DateValue, parseDate } from "@internationalized/date";
+import { RefreshCw } from "lucide-react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import Button from "@/components/ui/Button";
@@ -30,6 +31,8 @@ export interface CalendarFilterPanelProps {
   loading?: boolean;
   /** Callback when filters should be applied */
   onApply: () => void;
+  /** Count of items that would be shown after applying filters */
+  applyCount?: number;
   /** Callback when a filter value changes - compatible with useCalendarEvents updateFilters */
   onFilterChange: <K extends keyof FilterPanelState>(key: K, value: CalendarFilters[K]) => void;
   /** Callback when filters should be reset */
@@ -57,6 +60,7 @@ export function CalendarFilterPanel({
   isDirty = true,
   loading = false,
   onApply,
+  applyCount,
   onFilterChange,
   onReset,
   showDateRange = false,
@@ -82,6 +86,8 @@ export function CalendarFilterPanel({
   };
 
   const { syncNow, syncing } = useCalendarSync();
+  const applyLabel =
+    applyCount == null ? "Aplicar" : `Aplicar · ${numberFormatter.format(applyCount)}`;
 
   return (
     <Card className="animate-in slide-in-from-top-2 origin-top rounded-xl border border-default-200/70 bg-content1/70 shadow-sm backdrop-blur duration-200 ease-out">
@@ -166,13 +172,15 @@ export function CalendarFilterPanel({
               e.preventDefault();
               syncNow();
             }}
+            isIconOnly
             size="sm"
             type="button"
             variant="outline"
             className="mr-auto"
             title="Sincronizar con Google Calendar"
           >
-            {syncing ? "Sincronizando..." : "Sincronizar"}
+            <RefreshCw className={syncing ? "animate-spin" : ""} size={14} />
+            <span className="sr-only">Sincronizar</span>
           </Button>
 
           <Button
@@ -185,7 +193,7 @@ export function CalendarFilterPanel({
             Limpiar
           </Button>
           <Button disabled={loading} size="sm" type="submit">
-            {loading ? "..." : "Aplicar"}
+            {loading ? "..." : applyLabel}
           </Button>
         </div>
       </form>

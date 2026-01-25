@@ -156,6 +156,7 @@ function CalendarSchedulePage() {
             filters={filters}
             isDirty={isDirty}
             loading={loading}
+            applyCount={daily?.totals.events}
             onApply={applyFilters}
             onFilterChange={updateFilters}
             onReset={resetFilters}
