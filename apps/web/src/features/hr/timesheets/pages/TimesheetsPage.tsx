@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { type ChangeEvent, Suspense, useState } from "react";
+import { Suspense, useState } from "react";
 
-import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import { fetchTimesheetSummary } from "@/features/hr/timesheets/api";
@@ -69,49 +69,48 @@ export default function TimesheetsPage() {
         <h1 className={TITLE_LG}>Registro de horas y pagos</h1>
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="min-w-52">
-            <Input
-              as="select"
-              className="bg-background"
-              disabled={activeEmployees.length === 0}
+            <Select
+              className="w-full"
+              isDisabled={activeEmployees.length === 0}
               label="Trabajador"
-              onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-                const value = event.target.value;
-                setSelectedEmployeeId(value ? Number(value) : null);
+              placeholder="Seleccionar..."
+              selectedKey={selectedEmployeeId ? String(selectedEmployeeId) : null}
+              onSelectionChange={(key) => {
+                const value = key ? Number(key) : null;
+                setSelectedEmployeeId(value);
               }}
-              value={selectedEmployeeId ?? ""}
             >
-              <option value="">Seleccionar...</option>
               {activeEmployees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
+                <SelectItem id={String(emp.id)} key={emp.id}>
                   {emp.full_name}
-                </option>
+                </SelectItem>
               ))}
-            </Input>
+            </Select>
           </div>
           <div className="min-w-44">
-            <Input
-              as="select"
-              className="bg-background"
+            <Select
+              className="w-full"
               label="Periodo"
-              onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-                setMonth(event.target.value);
+              selectedKey={month}
+              onSelectionChange={(key) => {
+                if (key) setMonth(key.toString());
               }}
-              value={month}
             >
-              {groupedMonths.map((group) => (
-                <optgroup key={group.year} label={group.year}>
-                  {group.months.map((m) => {
-                    const hasData = monthsWithData.has(m);
-                    const label = dayjs(`${m}-01`).format("MMMM");
-                    return (
-                      <option key={m} value={m}>
-                        {label} {hasData ? "✓" : ""}
-                      </option>
-                    );
-                  })}
-                </optgroup>
-              ))}
-            </Input>
+              {groupedMonths.flatMap((group) => [
+                <SelectItem id={`year-${group.year}`} isDisabled key={`year-${group.year}`}>
+                  {group.year}
+                </SelectItem>,
+                ...group.months.map((m) => {
+                  const hasData = monthsWithData.has(m);
+                  const label = dayjs(`${m}-01`).format("MMMM");
+                  return (
+                    <SelectItem id={m} key={m}>
+                      {label} {hasData ? "✓" : ""}
+                    </SelectItem>
+                  );
+                }),
+              ])}
+            </Select>
           </div>
         </div>
       </div>

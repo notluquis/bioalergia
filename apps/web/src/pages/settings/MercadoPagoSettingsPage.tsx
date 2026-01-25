@@ -402,6 +402,7 @@ export default function MercadoPagoSettingsPage() {
             columns={columns}
             columnVisibility={columnVisibility}
             data={paginatedReports}
+            enablePageSizeSelector={false}
             enableExport={false}
             enableGlobalFilter={false}
             pagination={reportPagination}
@@ -443,6 +444,7 @@ export default function MercadoPagoSettingsPage() {
           <DataTable
             columns={syncColumns}
             data={paginatedSyncLogs}
+            enablePageSizeSelector={false}
             enableExport={false}
             enableGlobalFilter={false}
             pagination={syncPagination}

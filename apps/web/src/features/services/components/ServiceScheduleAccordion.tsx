@@ -140,7 +140,7 @@ function ServiceScheduleAccordion({
           {service.pending_count + service.overdue_count} pendientes totales
         </span>
       </header>
-      <div className="muted-scrollbar max-h-80 space-y-2 overflow-y-auto overscroll-y-contain pr-1">
+      <div className="muted-scrollbar max-h-none space-y-2 pr-1 sm:max-h-80 sm:overflow-y-auto sm:overscroll-y-contain">
         {groups.map((group) => {
           const isExpanded = expanded[group.dateKey] ?? false;
           return (

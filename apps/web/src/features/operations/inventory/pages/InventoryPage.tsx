@@ -137,6 +137,7 @@ export default function InventoryPage() {
       <ServicesHero
         actions={
           <Button
+            className="w-full sm:w-auto"
             disabled={!canCreateItem}
             onClick={openCreateModal}
             title={canCreateItem ? undefined : "Requiere permiso para crear ítems"}

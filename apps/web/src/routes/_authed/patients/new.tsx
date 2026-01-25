@@ -10,6 +10,7 @@ import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
 import { formatRut, validateRut } from "@/lib/rut";
+import { TITLE_LG } from "@/lib/styles";
 
 export const Route = createFileRoute("/_authed/patients/new")({
   staticData: {
@@ -76,10 +77,10 @@ function AddPatientPage() {
   });
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
+    <section className="mx-auto max-w-4xl space-y-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Registrar Nuevo Paciente</h1>
+          <h1 className={TITLE_LG}>Registrar Nuevo Paciente</h1>
           <p className="text-default-500 text-sm">Crea un perfil clínico para un nuevo paciente</p>
         </div>
         <Button
@@ -286,6 +287,6 @@ function AddPatientPage() {
           </form.Subscribe>
         </div>
       </form>
-    </div>
+    </section>
   );
 }

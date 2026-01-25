@@ -1,4 +1,13 @@
-import { Chip, DateField, DateInputGroup, Label, ListBox, Select, Spinner } from "@heroui/react";
+import {
+  Chip,
+  DateField,
+  DateInputGroup,
+  Label,
+  ListBox,
+  Select,
+  Spinner,
+  Tabs,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -220,47 +229,32 @@ export default function ReportsPage() {
             </div>
 
             {/* View Mode Tabs */}
-            <div className="tabs tabs-boxed bg-default-50/50 p-1" role="tablist">
-              <button
-                className={cn(
-                  "tab transition-all duration-200",
-                  viewMode === "month" && "tab-active bg-background shadow-sm",
-                )}
-                onClick={() => {
-                  setViewMode("month");
-                }}
-                role="tab"
-                type="button"
-              >
-                Mensual
-              </button>
-              <button
-                className={cn(
-                  "tab transition-all duration-200",
-                  viewMode === "range" && "tab-active bg-background shadow-sm",
-                )}
-                onClick={() => {
-                  setViewMode("range");
-                }}
-                role="tab"
-                type="button"
-              >
-                Rango
-              </button>
-              <button
-                className={cn(
-                  "tab transition-all duration-200",
-                  viewMode === "all" && "tab-active bg-background shadow-sm",
-                )}
-                onClick={() => {
-                  setViewMode("all");
-                }}
-                role="tab"
-                type="button"
-              >
-                Todo
-              </button>
-            </div>
+            <Tabs
+              selectedKey={viewMode}
+              onSelectionChange={(key) => setViewMode(key as ViewMode)}
+              variant="secondary"
+              className="w-full"
+            >
+              <Tabs.ListContainer>
+                <Tabs.List
+                  aria-label="Vista del reporte"
+                  className="bg-default-50/50 rounded-lg p-1"
+                >
+                  <Tabs.Tab id="month">
+                    Mensual
+                    <Tabs.Indicator />
+                  </Tabs.Tab>
+                  <Tabs.Tab id="range">
+                    Rango
+                    <Tabs.Indicator />
+                  </Tabs.Tab>
+                  <Tabs.Tab id="all">
+                    Todo
+                    <Tabs.Indicator />
+                  </Tabs.Tab>
+                </Tabs.List>
+              </Tabs.ListContainer>
+            </Tabs>
 
             {/* Date Controls */}
             <div className="space-y-4">
