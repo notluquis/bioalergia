@@ -50,20 +50,25 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      <Backdrop isVisible={isMobile && isOpen} onClose={onClose} zIndex={40} />
+      <Backdrop
+        className="bg-default-300/60 backdrop-blur-[1px]"
+        isVisible={isMobile && isOpen}
+        onClose={onClose}
+        zIndex={40}
+      />
 
       <div
         className={cn(
           "z-50 h-full transition-[width] duration-300 ease-in-out",
           isMobile
-            ? "safe-area-left fixed inset-y-0 left-0 w-64 rounded-r-3xl border-r shadow-2xl"
+            ? "bg-background fixed inset-y-0 left-0 w-[min(85vw,320px)] rounded-r-3xl border-r shadow-2xl pl-[env(safe-area-inset-left)]"
             : "bg-background border-default-100 relative w-20 rounded-2xl border shadow-xl",
           isMobile && (isOpen ? "translate-x-0" : "-translate-x-full"),
         )}
       >
         <aside
           aria-label="Navegación principal"
-          className="flex h-full w-full flex-col overflow-hidden"
+          className="flex h-full w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)]"
         >
           {/* Header / Logo */}
           <div
