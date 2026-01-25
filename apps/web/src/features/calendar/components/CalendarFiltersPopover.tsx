@@ -25,7 +25,12 @@ export function CalendarFiltersPopover({
           <span className="hidden sm:inline">{isOpen ? "Cerrar" : "Filtros"}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="z-50 p-0" isNonModal offset={8} placement="bottom end">
+      <PopoverContent
+        className="z-50 max-h-[80svh] overflow-y-auto p-0"
+        isNonModal
+        offset={8}
+        placement="bottom"
+      >
         <div className={panelWidthClassName}>
           <CalendarFilterPanel {...panelProps} />
         </div>

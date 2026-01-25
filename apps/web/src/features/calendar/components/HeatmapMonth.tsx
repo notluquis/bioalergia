@@ -223,7 +223,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                   )}
                 </Button>
               </Tooltip.Trigger>
-              <Tooltip.Content className="p-0">
+              <Tooltip.Content className="max-w-[min(90vw,260px)] p-0">
                 {cell.total > 0 ? (
                   <div className="bg-content1 text-foreground border-default-200 rounded-lg border p-3 text-xs shadow-xl">
                     <p className="mb-1 font-bold">{cell.date.format("dddd DD MMMM")}</p>
@@ -261,7 +261,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                   </span>
                 </Button>
               </Tooltip.Trigger>
-              <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
+              <Tooltip.Content className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs">
                 Total esperado del mes completo
               </Tooltip.Content>
             </Tooltip>
@@ -272,7 +272,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                   <span className="text-foreground font-medium">{fmtCLP(monthTotals.paid)}</span>
                 </Button>
               </Tooltip.Trigger>
-              <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
+              <Tooltip.Content className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs">
                 Total pagado del mes completo
               </Tooltip.Content>
             </Tooltip>
@@ -288,7 +288,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                     <span className="font-medium">{fmtCLP(monthTotals.unclassified)}</span>
                   </Button>
                 </Tooltip.Trigger>
-                <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
+                <Tooltip.Content className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs">
                   Eventos pasados que no fueron cobrados (no asistieron, cancelaron, etc.)
                 </Tooltip.Content>
               </Tooltip>
@@ -302,7 +302,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                   </span>
                 </Button>
               </Tooltip.Trigger>
-              <Tooltip.Content className="bg-content1 text-foreground border-default-200 rounded-lg border p-2 text-xs">
+              <Tooltip.Content className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs">
                 Lo que falta pagar desde hoy en adelante (solo eventos futuros)
               </Tooltip.Content>
             </Tooltip>
