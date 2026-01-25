@@ -2,7 +2,7 @@ import cron from "node-cron";
 
 import { db } from "@finanzas/db";
 import { getSetting, updateSetting } from "../../services/settings";
-import { MercadoPagoService } from "../../services/mercadopago";
+import { MercadoPagoService, type ImportStats } from "../../services/mercadopago";
 import { createMpSyncLogEntry, finalizeMpSyncLogEntry } from "../../services/mercadopago-sync";
 import { getActiveJobsByType, startJob, updateJobProgress, completeJob, failJob } from "../jobQueue";
 import { logError, logEvent, logWarn } from "../logger";
@@ -88,27 +88,31 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
     const lists = await Promise.all(types.map((type) => MercadoPagoService.listReports(type)));
     updateJobProgress(jobId, 1, "Reportes listados");
 
+    const importStats = createImportStatsAggregate();
     for (const [index, type] of types.entries()) {
       const reports = lists[index] as MPReportSummary[];
       await ensureDailyReport(type, reports);
     }
     updateJobProgress(jobId, 2, "Reportes diarios verificados");
 
-    const pendingProcessed = await processPendingWebhooks(jobId);
+    const pendingProcessed = await processPendingWebhooks(jobId, importStats);
     const results: Record<string, number> = {
       pendingWebhooks: pendingProcessed,
     };
     for (const [index, type] of types.entries()) {
       const reports = lists[index] as MPReportSummary[];
-      results[type] = await processReadyReports(type, reports, jobId);
+      results[type] = await processReadyReports(type, reports, jobId, importStats);
     }
 
-    const totalProcessed = (results.release ?? 0) + (results.settlement ?? 0);
     await finalizeMpSyncLogEntry(logId, {
       status: "SUCCESS",
-      inserted: totalProcessed,
-      skipped: results.pendingWebhooks ?? 0,
-      changeDetails: results,
+      inserted: importStats.insertedRows,
+      skipped: importStats.skippedRows,
+      excluded: importStats.duplicateRows,
+      changeDetails: {
+        ...results,
+        importStats,
+      },
     });
     await updateSetting(SETTINGS_KEYS.lastRun, startedAt.toISOString());
     completeJob(jobId, { processed: results, startedAt });
@@ -186,6 +190,7 @@ async function processReadyReports(
   type: ReportType,
   reports: MPReportSummary[],
   jobId: string,
+  importStats: ImportStatsAggregate,
 ) {
   const processedSet = await loadProcessedFiles(type);
   const lastProcessedAt = await getLastProcessedAt(type);
@@ -211,7 +216,8 @@ async function processReadyReports(
     updateJobProgress(jobId, 3 + processedCount, `Procesando ${type}: ${fileName}`);
 
     try {
-      await MercadoPagoService.processReport(type, { fileName });
+      const stats = await MercadoPagoService.processReport(type, { fileName });
+      accumulateImportStats(importStats, stats);
       processedSet.add(fileName);
       processedCount += 1;
       const createdAt = parseDate(report.date_created);
@@ -231,7 +237,7 @@ async function processReadyReports(
   return processedCount;
 }
 
-async function processPendingWebhooks(jobId: string) {
+async function processPendingWebhooks(jobId: string, importStats: ImportStatsAggregate) {
   const pending = await loadPendingWebhooks();
   if (pending.length === 0) return 0;
 
@@ -252,7 +258,8 @@ async function processPendingWebhooks(jobId: string) {
       updateJobProgress(jobId, 3, `Procesando webhook: ${file.name}`);
 
       try {
-        await MercadoPagoService.processReport(type, { url: file.url });
+        const stats = await MercadoPagoService.processReport(type, { url: file.url });
+        accumulateImportStats(importStats, stats);
         processed.add(file.name);
         processedCount += 1;
         logEvent("mp.autoSync.webhookProcessed", { type, file: file.name });
@@ -363,6 +370,35 @@ function minutesSince(date: Date) {
 
 function formatMpDate(date: Date) {
   return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+type ImportStatsAggregate = {
+  totalRows: number;
+  validRows: number;
+  insertedRows: number;
+  duplicateRows: number;
+  skippedRows: number;
+  errorCount: number;
+};
+
+function createImportStatsAggregate(): ImportStatsAggregate {
+  return {
+    totalRows: 0,
+    validRows: 0,
+    insertedRows: 0,
+    duplicateRows: 0,
+    skippedRows: 0,
+    errorCount: 0,
+  };
+}
+
+function accumulateImportStats(target: ImportStatsAggregate, stats: ImportStats) {
+  target.totalRows += stats.totalRows ?? 0;
+  target.validRows += stats.validRows ?? 0;
+  target.insertedRows += stats.insertedRows ?? 0;
+  target.duplicateRows += stats.duplicateRows ?? 0;
+  target.skippedRows += stats.skippedRows ?? 0;
+  target.errorCount += stats.errors?.length ?? 0;
 }
 
 async function getValidSettingDate(key: string) {

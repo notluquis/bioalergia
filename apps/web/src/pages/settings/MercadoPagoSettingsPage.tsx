@@ -20,6 +20,7 @@ import {
   type MPReport,
   MPService,
   type MpReportType,
+  type MpSyncChangeDetails,
   type MpSyncLog,
 } from "@/services/mercadopago";
 
@@ -180,28 +181,58 @@ export default function MercadoPagoSettingsPage() {
       {
         id: "metrics",
         header: "Resultados",
-        cell: ({ row }) => (
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
-              +{row.original.inserted ?? 0}
-            </span>
-            {row.original.skipped != null && (
-              <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
-                !{row.original.skipped}
+        cell: ({ row }) => {
+          const importStats = getSyncImportStats(row.original.changeDetails);
+          if (importStats) {
+            return (
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="bg-default-100 text-default-600 rounded px-1.5 py-0.5">
+                  T{importStats.totalRows}
+                </span>
+                <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                  V{importStats.validRows}
+                </span>
+                <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
+                  +{importStats.insertedRows}
+                </span>
+                <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                  D{importStats.duplicateRows}
+                </span>
+                <span className="bg-default-100 text-default-500 rounded px-1.5 py-0.5">
+                  S{importStats.skippedRows}
+                </span>
+                {importStats.errorCount > 0 && (
+                  <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
+                    E{importStats.errorCount}
+                  </span>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
+                +{row.original.inserted ?? 0}
               </span>
-            )}
-            {row.original.updated != null && row.original.updated > 0 && (
-              <span className="bg-info/10 text-info rounded px-1.5 py-0.5">
-                ~{row.original.updated}
-              </span>
-            )}
-            {row.original.excluded != null && row.original.excluded > 0 && (
-              <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
-                -{row.original.excluded}
-              </span>
-            )}
-          </div>
-        ),
+              {row.original.skipped != null && (
+                <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                  !{row.original.skipped}
+                </span>
+              )}
+              {row.original.updated != null && row.original.updated > 0 && (
+                <span className="bg-info/10 text-info rounded px-1.5 py-0.5">
+                  ~{row.original.updated}
+                </span>
+              )}
+              {row.original.excluded != null && row.original.excluded > 0 && (
+                <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
+                  -{row.original.excluded}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
     ],
     [],
@@ -484,4 +515,22 @@ function getMpReportsRefetchInterval(query: { state: { data?: { reports?: MPRepo
 function isReportPending(status?: string) {
   if (!status) return false;
   return /processing|pending|in_progress|waiting|generating|queued|creating/i.test(status);
+}
+
+function getSyncImportStats(details?: MpSyncChangeDetails | null) {
+  if (!details || typeof details !== "object") return null;
+  const raw = details.importStats;
+  if (!raw || typeof raw !== "object") return null;
+  const toNumber = (value: unknown) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+  };
+  return {
+    totalRows: toNumber(raw.totalRows),
+    validRows: toNumber(raw.validRows),
+    insertedRows: toNumber(raw.insertedRows),
+    duplicateRows: toNumber(raw.duplicateRows),
+    skippedRows: toNumber(raw.skippedRows),
+    errorCount: toNumber(raw.errorCount),
+  };
 }

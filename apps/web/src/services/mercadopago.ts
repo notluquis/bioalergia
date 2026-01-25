@@ -34,7 +34,7 @@ export interface MPReportListResponse {
 }
 
 export interface MpSyncLog {
-  changeDetails?: Record<string, unknown> | null;
+  changeDetails?: MpSyncChangeDetails | null;
   errorMessage?: string | null;
   excluded?: number | null;
   finishedAt?: string | null;
@@ -47,6 +47,19 @@ export interface MpSyncLog {
   triggerSource: string;
   updated?: number | null;
 }
+
+export interface MpSyncImportStats {
+  duplicateRows: number;
+  errorCount?: number;
+  insertedRows: number;
+  skippedRows: number;
+  totalRows: number;
+  validRows: number;
+}
+
+export type MpSyncChangeDetails = Record<string, unknown> & {
+  importStats?: MpSyncImportStats;
+};
 
 interface ProcessReportResponse {
   message: string;
