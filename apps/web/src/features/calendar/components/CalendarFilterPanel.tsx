@@ -84,12 +84,12 @@ export function CalendarFilterPanel({
   const { syncNow, syncing } = useCalendarSync();
 
   return (
-    <Card className="animate-in slide-in-from-top-2 duration-200 ease-out origin-top">
-      <form className="flex flex-wrap items-end gap-3 p-3" onSubmit={handleSubmit}>
+    <Card className="animate-in slide-in-from-top-2 origin-top rounded-xl border border-default-200/70 bg-content1/70 shadow-sm backdrop-blur duration-200 ease-out">
+      <form className="flex flex-wrap items-end gap-2.5 p-3" onSubmit={handleSubmit}>
         {/* Date Range Inputs */}
         {showDateRange && (
           <>
-            <div className="min-w-32 flex-1">
+            <div className="min-w-28 flex-1">
               <DatePicker
                 label="Desde"
                 className="max-w-xs"
@@ -101,7 +101,7 @@ export function CalendarFilterPanel({
                 variant="bordered"
               />
             </div>
-            <div className="min-w-32 flex-1">
+            <div className="min-w-28 flex-1">
               <DatePicker
                 label="Hasta"
                 className="max-w-xs"
@@ -119,7 +119,8 @@ export function CalendarFilterPanel({
         {/* Event Types Filter */}
         {availableEventTypes.length > 0 && (
           <MultiSelectFilter
-            className="flex-1 min-w-50"
+            className="flex-1 min-w-44"
+            density="compact"
             label="Tipos de evento"
             onChange={(values) => onFilterChange("eventTypes", values)}
             options={eventTypeOptions}
@@ -131,7 +132,8 @@ export function CalendarFilterPanel({
         {/* Categories Filter */}
         {availableCategories.length > 0 && (
           <MultiSelectFilter
-            className="flex-1 min-w-50"
+            className="flex-1 min-w-44"
+            density="compact"
             label="Clasificación"
             onChange={(values) => onFilterChange("categories", values)}
             options={categoryOptions}
@@ -142,10 +144,11 @@ export function CalendarFilterPanel({
 
         {/* Search Input */}
         {showSearch && (
-          <div className="min-w-40 flex-1">
+          <div className="min-w-44 flex-1">
             <Input
               enterKeyHint="search"
               label="Buscar"
+              size="sm"
               onChange={(e: ChangeEvent<HTMLInputElement>) => {
                 onFilterChange("search", e.target.value);
               }}
@@ -156,7 +159,7 @@ export function CalendarFilterPanel({
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <Button
             disabled={syncing || loading}
             onClick={(e) => {

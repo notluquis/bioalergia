@@ -15,6 +15,7 @@ export interface MultiSelectOption {
 
 interface MultiSelectFilterProps {
   className?: string;
+  density?: "comfortable" | "compact";
   label: string;
   onChange: (values: string[]) => void;
   options: MultiSelectOption[];
@@ -24,6 +25,7 @@ interface MultiSelectFilterProps {
 
 export function MultiSelectFilter({
   className,
+  density = "comfortable",
   label,
   onChange,
   options,
@@ -31,6 +33,7 @@ export function MultiSelectFilter({
   selected,
 }: Readonly<MultiSelectFilterProps>) {
   const selectedKeys = new Set(selected);
+  const isCompact = density === "compact";
 
   // Derived display text logic
   const getDisplayText = () => {
@@ -58,14 +61,20 @@ export function MultiSelectFilter({
   return (
     <div className={className}>
       {label && (
-        <span className="mb-1.5 block text-xs font-semibold tracking-wider text-foreground-600 uppercase">
+        <span
+          className={`block font-semibold tracking-wider text-foreground-600 uppercase ${
+            isCompact ? "mb-1 text-[10px]" : "mb-1.5 text-xs"
+          }`}
+        >
           {label}
         </span>
       )}
       <Dropdown>
         <DropdownTrigger>
           <Button
-            className="flex h-10 w-full min-w-0 items-center justify-between rounded-md border border-default-200 bg-content1/50 px-3 py-2 text-sm text-foreground hover:bg-content1 focus:bg-content1"
+            className={`flex w-full min-w-0 items-center justify-between rounded-md border border-default-200 bg-content1/50 px-3 py-2 text-foreground hover:bg-content1 focus:bg-content1 ${
+              isCompact ? "h-9 text-[13px]" : "h-10 text-sm"
+            }`}
             variant="ghost"
           >
             <span className="truncate font-medium">{displayText}</span>

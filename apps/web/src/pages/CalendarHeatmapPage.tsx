@@ -172,23 +172,23 @@ function CalendarHeatmapPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-3">
       {/* Collapsible Filter Toolbar */}
-      <Card className="overflow-hidden transition-all duration-300">
+      <Card className="overflow-hidden rounded-xl border border-default-200/70 bg-content1/70 shadow-sm backdrop-blur transition-all duration-300">
         <button
-          className="hover:bg-default-50/50 flex w-full items-center justify-between px-6 py-4 text-left transition-colors"
+          className="hover:bg-default-50/50 flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors"
           onClick={() => {
             setShowAdvanced((prev) => !prev);
           }}
           type="button"
         >
           <div className="flex items-center gap-4">
-            <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-full">
-              <Filter className="h-5 w-5" />
+            <div className="bg-primary/10 text-primary flex h-9 w-9 items-center justify-center rounded-full">
+              <Filter className="h-4 w-4" />
             </div>
 
             <div>
-              <h3 className="text-foreground text-sm font-medium">Filtros y Visualización</h3>
+              <h3 className="text-foreground text-sm font-medium">Filtros</h3>
               <div className="text-default-500 mt-0.5 flex flex-wrap gap-2 text-xs">
                 <span className="font-medium">
                   {rangeStartLabel} - {rangeEndLabel}
@@ -199,7 +199,7 @@ function CalendarHeatmapPage() {
 
           <ChevronDown
             className={clsx(
-              "text-default-300 h-5 w-5 transition-transform duration-300",
+              "text-default-300 h-4 w-4 transition-transform duration-300",
               showAdvanced && "rotate-180",
             )}
           />
@@ -213,19 +213,20 @@ function CalendarHeatmapPage() {
         >
           <div className="overflow-hidden">
             <form
-              className="border-default-100/50 space-y-6 border-t p-6 pt-2"
+              className="border-default-100/50 space-y-4 border-t p-4 pt-2"
               onSubmit={(event) => {
                 event.preventDefault();
                 handleApply();
                 setShowAdvanced(false); // Auto-close on apply for cleaner UX
               }}
             >
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 <Input
                   label={tc("filters.from")}
                   onChange={(event: ChangeEvent<HTMLInputElement>) => {
                     setFilters((prev) => ({ ...prev, from: event.target.value }));
                   }}
+                  size="sm"
                   type="date"
                   value={filters.from}
                 />
@@ -234,10 +235,12 @@ function CalendarHeatmapPage() {
                   onChange={(event: ChangeEvent<HTMLInputElement>) => {
                     setFilters((prev) => ({ ...prev, to: event.target.value }));
                   }}
+                  size="sm"
                   type="date"
                   value={filters.to}
                 />
                 <MultiSelectFilter
+                  density="compact"
                   label={tc("filters.categories")}
                   onChange={(values) => {
                     setFilters((prev) => ({ ...prev, categories: values }));
@@ -268,7 +271,7 @@ function CalendarHeatmapPage() {
         </div>
       </Card>
 
-      <section className="space-y-3">
+      <section className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-default-500 text-sm font-semibold tracking-wide uppercase">
             {tc("heatmapSection")}

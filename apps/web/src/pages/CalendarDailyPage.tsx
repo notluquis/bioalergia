@@ -79,9 +79,9 @@ function CalendarDailyPage() {
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-3">
       {/* Header with Navigation */}
-      <header className="space-y-2">
+      <header className="space-y-1.5">
         <DayNavigation
           onSelect={setSelectedDate}
           rightSlot={
@@ -119,13 +119,13 @@ function CalendarDailyPage() {
         <DailyStatsCards
           amountExpected={selectedDayEntry.amountExpected}
           amountPaid={selectedDayEntry.amountPaid}
-          className="mt-4"
+          className="mt-3"
           eventsCount={selectedDayEntry.total}
         />
       )}
 
       {/* Main Content - Events List */}
-      <div className="mt-6 space-y-3">
+      <div className="mt-4 space-y-3">
         {(() => {
           if (loading && !daily) {
             return <CalendarSkeleton days={1} />;

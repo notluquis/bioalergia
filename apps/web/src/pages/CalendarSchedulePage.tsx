@@ -90,9 +90,9 @@ function CalendarSchedulePage() {
   }, [displayedWeekStart, appliedFilters.from, appliedFilters.to, updateFilters, applyFilters]);
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-3">
       {/* Compact Header */}
-      <header className="space-y-2">
+      <header className="space-y-1.5">
         {/* Navigation Row */}
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           {/* Left: Week Navigation */}
@@ -165,7 +165,7 @@ function CalendarSchedulePage() {
       </header>
 
       {/* Calendar - Main Content */}
-      <div className="mt-4">
+      <div className="mt-3">
         <ScheduleCalendar events={allEvents} loading={loading} weekStart={displayedWeekStart} />
       </div>
     </section>

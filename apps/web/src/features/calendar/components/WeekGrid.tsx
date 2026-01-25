@@ -312,6 +312,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                   event.summary ?? "(Sin título)",
                   `${timeStr} - ${endTimeStr}`,
                   amountStr,
+                  event.controlIncluded ? "Control" : "",
                 ].filter(Boolean);
 
                 // Title - prioritize this over time for readability
@@ -374,6 +375,11 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                               >
                                 {title}
                               </span>
+                              {event.controlIncluded && displayMode !== "minimal" && (
+                                <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
+                                  Ctrl
+                                </span>
+                              )}
                             </span>
                           );
                         }
@@ -387,6 +393,11 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                                 <span className="line-clamp-2 text-[0.65rem] font-semibold leading-tight">
                                   {title}
                                 </span>
+                                {event.controlIncluded && (
+                                  <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
+                                    Ctrl
+                                  </span>
+                                )}
                               </span>
                               {event.amountExpected != null && (
                                 <span className="text-success-600 mt-auto overflow-hidden text-ellipsis whitespace-nowrap text-[0.6rem] font-bold">

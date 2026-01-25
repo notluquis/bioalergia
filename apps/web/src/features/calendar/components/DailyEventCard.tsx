@@ -14,6 +14,7 @@ interface DailyEventCardProps {
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export function DailyEventCard({ event }: DailyEventCardProps) {
   const isSubcutaneous = event.category === "Tratamiento subcutáneo";
+  const hasControl = event.controlIncluded === true;
 
   // Calculate times and duration
   const start = event.startDateTime ? dayjs(event.startDateTime) : null;
@@ -77,7 +78,9 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
             {event.attended != null &&
               (event.attended ||
                 (event.startDateTime && dayjs(event.startDateTime).isBefore(dayjs()))) && (
-                <span className={cn("font-medium", event.attended ? "text-success" : "text-danger")}>
+                <span
+                  className={cn("font-medium", event.attended ? "text-success" : "text-danger")}
+                >
                   {event.attended ? "✓ Asistió" : "✗ No asistió"}
                 </span>
               )}
@@ -98,6 +101,16 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
               className="h-6 text-[10px] font-medium tracking-wide uppercase"
             >
               {event.category}
+            </Chip>
+          )}
+          {hasControl && (
+            <Chip
+              size="sm"
+              variant="soft"
+              color="warning"
+              className="h-6 text-[10px] font-medium tracking-wide uppercase"
+            >
+              Control
             </Chip>
           )}
           {isSubcutaneous && event.treatmentStage && (
