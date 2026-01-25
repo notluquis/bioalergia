@@ -187,7 +187,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
               <Tooltip.Trigger>
                 <Button
                   className={clsx(
-                    "relative flex h-full w-full min-h-0 aspect-square cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
+                    "relative flex h-full w-full min-h-0 min-w-0 aspect-square cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
                     // Default empty state
                     "bg-default-100/50 text-foreground-500",
                     // Intensity colors
@@ -254,7 +254,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             <Tooltip delay={0} trigger="focus">
               <Tooltip.Trigger>
-                <Button className="h-auto px-0 text-[10px]" size="sm" variant="ghost">
+                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Esperado:{" "}
                   <span className="text-foreground font-medium">
                     {fmtCLP(monthTotals.expected)}
@@ -267,7 +267,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
             </Tooltip>
             <Tooltip delay={0} trigger="focus">
               <Tooltip.Trigger>
-                <Button className="h-auto px-0 text-[10px]" size="sm" variant="ghost">
+                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Pagado:{" "}
                   <span className="text-foreground font-medium">{fmtCLP(monthTotals.paid)}</span>
                 </Button>
@@ -280,7 +280,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
               <Tooltip delay={0} trigger="focus">
                 <Tooltip.Trigger>
                   <Button
-                    className="text-warning h-auto px-0 text-[10px]"
+                    className="text-warning h-auto min-w-0 px-0 text-[10px]"
                     size="sm"
                     variant="ghost"
                   >
@@ -295,7 +295,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
             )}
             <Tooltip delay={0} trigger="focus">
               <Tooltip.Trigger>
-                <Button className="h-auto px-0 text-[10px]" size="sm" variant="ghost">
+                <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Restante:{" "}
                   <span className="text-foreground font-medium">
                     {fmtCLP(monthTotals.remaining)}
