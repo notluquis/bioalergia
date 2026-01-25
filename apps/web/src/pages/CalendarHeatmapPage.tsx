@@ -6,6 +6,7 @@ import { Filter } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { fetchCalendarSummary } from "@/features/calendar/api";
 import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
@@ -189,16 +190,17 @@ function CalendarHeatmapPage() {
 
         <PopoverRoot isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
           <PopoverTrigger>
-            <button
+            <Button
               className={clsx(
-                "hover:bg-default-50/60 border-default-200 text-default-700 flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors",
+                "rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide",
                 filtersOpen && "bg-default-50",
               )}
-              type="button"
+              size="sm"
+              variant="outline"
             >
               <Filter className="h-4 w-4" />
               Filtros
-            </button>
+            </Button>
           </PopoverTrigger>
           <PopoverContent className="z-50 p-0" isNonModal offset={8} placement="bottom end">
             <div className="w-[min(92vw,520px)]">
