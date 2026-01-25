@@ -1,7 +1,8 @@
+import { PopoverContent, PopoverRoot, PopoverTrigger } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
-import { ChevronDown, Filter } from "lucide-react";
+import { Filter } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -10,6 +11,7 @@ import { fetchCalendarSummary } from "@/features/calendar/api";
 import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
 import HeatmapMonth from "@/features/calendar/components/HeatmapMonth";
 import type { CalendarFilters } from "@/features/calendar/types";
+import { useDisclosure } from "@/hooks/use-disclosure";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 
 import "dayjs/locale/es";
@@ -154,88 +156,76 @@ function CalendarHeatmapPage() {
   const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
   const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
 
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const { isOpen: filtersOpen, set: setFiltersOpen, toggle: toggleFilters } = useDisclosure(false);
 
   return (
     <section className="space-y-3">
-      {/* Collapsible Filter Toolbar */}
-      <Card className="overflow-hidden rounded-xl border border-default-200/70 bg-content1/70 shadow-sm backdrop-blur transition-all duration-300">
-        <button
-          className="hover:bg-default-50/50 flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors"
-          onClick={() => {
-            setShowAdvanced((prev) => !prev);
-          }}
-          type="button"
-        >
-          <div className="flex items-center gap-4">
-            <div className="bg-primary/10 text-primary flex h-9 w-9 items-center justify-center rounded-full">
-              <Filter className="h-4 w-4" />
-            </div>
-
-            <div>
-              <h3 className="text-foreground text-sm font-medium">Filtros</h3>
-              <div className="text-default-500 mt-0.5 flex flex-wrap gap-2 text-xs">
-                <span className="font-medium">
-                  {rangeStartLabel} - {rangeEndLabel}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <ChevronDown
-            className={clsx(
-              "text-default-300 h-4 w-4 transition-transform duration-300",
-              showAdvanced && "rotate-180",
-            )}
-          />
-        </button>
-
-        <div
-          className={clsx(
-            "grid transition-[grid-template-rows] duration-300 ease-in-out",
-            showAdvanced ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-          )}
-        >
-          <div className="overflow-hidden">
-            <CalendarFilterPanel
-              availableCategories={summary?.available.categories ?? []}
-              filters={{
-                categories: filters.categories,
-                eventTypes: [],
-                from: filters.from,
-                search: "",
-                to: filters.to,
-              }}
-              formClassName="border-default-100/50 border-t p-4 pt-2"
-              isDirty={isDirty}
-              loading={busy}
-              applyCount={summary?.totals.events}
-              onApply={() => {
-                handleApply();
-                setShowAdvanced(false);
-              }}
-              onFilterChange={(key, value) => {
-                if (key === "categories") {
-                  setFilters((prev) => ({ ...prev, categories: value as string[] }));
-                  return;
-                }
-                if (key === "from") {
-                  setFilters((prev) => ({ ...prev, from: String(value ?? "") }));
-                  return;
-                }
-                if (key === "to") {
-                  setFilters((prev) => ({ ...prev, to: String(value ?? "") }));
-                }
-              }}
-              onReset={handleReset}
-              showDateRange
-              showSearch={false}
-              showSync={false}
-              variant="plain"
-            />
-          </div>
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <span className="text-default-500">Heatmap</span>
+          <span className="text-default-400 text-xs">
+            {rangeStartLabel} - {rangeEndLabel}
+          </span>
         </div>
-      </Card>
+
+        <PopoverRoot isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
+          <PopoverTrigger>
+            <button
+              className={clsx(
+                "hover:bg-default-50/60 border-default-200 text-default-700 flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors",
+                filtersOpen && "bg-default-50",
+              )}
+              onClick={toggleFilters}
+              type="button"
+            >
+              <Filter className="h-4 w-4" />
+              Filtros
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="p-0" isNonModal offset={8} placement="bottom end">
+            <div className="w-[min(92vw,520px)]">
+              <Card className="rounded-xl border border-default-200/70 bg-content1/90 shadow-lg backdrop-blur">
+                <CalendarFilterPanel
+                  availableCategories={summary?.available.categories ?? []}
+                  filters={{
+                    categories: filters.categories,
+                    eventTypes: [],
+                    from: filters.from,
+                    search: "",
+                    to: filters.to,
+                  }}
+                  formClassName="p-3"
+                  isDirty={isDirty}
+                  loading={busy}
+                  applyCount={summary?.totals.events}
+                  onApply={() => {
+                    handleApply();
+                    setFiltersOpen(false);
+                  }}
+                  onFilterChange={(key, value) => {
+                    if (key === "categories") {
+                      setFilters((prev) => ({ ...prev, categories: value as string[] }));
+                      return;
+                    }
+                    if (key === "from") {
+                      setFilters((prev) => ({ ...prev, from: String(value ?? "") }));
+                      return;
+                    }
+                    if (key === "to") {
+                      setFilters((prev) => ({ ...prev, to: String(value ?? "") }));
+                    }
+                  }}
+                  onReset={handleReset}
+                  showDateRange
+                  showSearch={false}
+                  showSync={false}
+                  variant="plain"
+                />
+              </Card>
+            </div>
+          </PopoverContent>
+        </PopoverRoot>
+      </header>
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">

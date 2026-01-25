@@ -1,3 +1,4 @@
+import { PopoverContent, PopoverRoot, PopoverTrigger } from "@heroui/react";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
@@ -12,6 +13,7 @@ import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
 import { DailyStatsCards } from "@/features/calendar/components/DailyStatsCards";
 import { DayNavigation } from "@/features/calendar/components/DayNavigation";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
+import { useDisclosure } from "@/hooks/use-disclosure";
 import { today } from "@/lib/dates";
 
 import "dayjs/locale/es";
@@ -34,7 +36,7 @@ function CalendarDailyPage() {
   } = useCalendarEvents();
 
   const [selectedDate, setSelectedDate] = useState(() => today());
-  const [showFilters, setShowFilters] = useState(false);
+  const { isOpen: filtersOpen, set: setFiltersOpen, toggle: toggleFilters } = useDisclosure(false);
 
   // Sync selectedDate filter range to ensure data is loaded
   // Load ±2 weeks around the selected date initially, extend when navigating outside
@@ -85,34 +87,40 @@ function CalendarDailyPage() {
         <DayNavigation
           onSelect={setSelectedDate}
           rightSlot={
-            <Button
-              className="gap-1.5"
-              onClick={() => {
-                setShowFilters(!showFilters);
-              }}
-              size="sm"
-              variant={showFilters ? "secondary" : "ghost"}
-            >
-              <Filter className="h-4 w-4" />
-              <span className="hidden sm:inline">{showFilters ? "Cerrar" : "Filtros"}</span>
-            </Button>
+            <PopoverRoot isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
+              <PopoverTrigger>
+                <Button
+                  className="gap-1.5"
+                  onClick={toggleFilters}
+                  size="sm"
+                  variant={filtersOpen ? "secondary" : "ghost"}
+                >
+                  <Filter className="h-4 w-4" />
+                  <span className="hidden sm:inline">{filtersOpen ? "Cerrar" : "Filtros"}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0" isNonModal offset={8} placement="bottom end">
+                <div className="w-[min(92vw,480px)]">
+                  <CalendarFilterPanel
+                    availableCategories={availableCategories}
+                    availableEventTypes={availableEventTypes}
+                    filters={filters}
+                    loading={loading}
+                    applyCount={daily?.totals.events}
+                    onApply={() => {
+                      applyFilters();
+                      setFiltersOpen(false);
+                    }}
+                    onFilterChange={updateFilters}
+                    onReset={resetFilters}
+                    className="shadow-lg"
+                  />
+                </div>
+              </PopoverContent>
+            </PopoverRoot>
           }
           selectedDate={selectedDate}
         />
-
-        {/* Filters Panel (Collapsible) */}
-        {showFilters && (
-          <CalendarFilterPanel
-            availableCategories={availableCategories}
-            availableEventTypes={availableEventTypes}
-            filters={filters}
-            loading={loading}
-            applyCount={daily?.totals.events}
-            onApply={applyFilters}
-            onFilterChange={updateFilters}
-            onReset={resetFilters}
-          />
-        )}
       </header>
 
       {/* Stats Cards - Compact summary */}
