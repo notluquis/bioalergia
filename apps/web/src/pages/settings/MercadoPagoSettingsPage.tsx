@@ -1,4 +1,4 @@
-import { Tabs } from "@heroui/react";
+import { Tabs, Tooltip } from "@heroui/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, PaginationState, VisibilityState } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -186,25 +186,37 @@ export default function MercadoPagoSettingsPage() {
           if (importStats) {
             return (
               <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="bg-default-100 text-default-600 rounded px-1.5 py-0.5">
-                  T{importStats.totalRows}
-                </span>
-                <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
-                  V{importStats.validRows}
-                </span>
-                <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
-                  +{importStats.insertedRows}
-                </span>
-                <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
-                  D{importStats.duplicateRows}
-                </span>
-                <span className="bg-default-100 text-default-500 rounded px-1.5 py-0.5">
-                  S{importStats.skippedRows}
-                </span>
-                {importStats.errorCount > 0 && (
-                  <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
-                    E{importStats.errorCount}
+                <Tooltip content="Total filas">
+                  <span className="bg-default-100 text-default-600 rounded px-1.5 py-0.5">
+                    T{importStats.totalRows}
                   </span>
+                </Tooltip>
+                <Tooltip content="Validas">
+                  <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                    V{importStats.validRows}
+                  </span>
+                </Tooltip>
+                <Tooltip content="Insertadas">
+                  <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
+                    +{importStats.insertedRows}
+                  </span>
+                </Tooltip>
+                <Tooltip content="Duplicados">
+                  <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                    D{importStats.duplicateRows}
+                  </span>
+                </Tooltip>
+                <Tooltip content="Omitidas">
+                  <span className="bg-default-100 text-default-500 rounded px-1.5 py-0.5">
+                    S{importStats.skippedRows}
+                  </span>
+                </Tooltip>
+                {importStats.errorCount > 0 && (
+                  <Tooltip content="Errores">
+                    <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
+                      E{importStats.errorCount}
+                    </span>
+                  </Tooltip>
                 )}
               </div>
             );
