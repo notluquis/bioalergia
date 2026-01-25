@@ -137,20 +137,42 @@ async function ensureDailyReport(type: ReportType, reports: MPReportSummary[]) {
   const targetDate = getYesterdayDate();
   const existing = reports.find((report) => reportCoversDate(report, targetDate));
   if (existing) {
+    logEvent("mp.autoSync.reportSkipped", {
+      type,
+      reason: "already_exists",
+      begin: existing.begin_date,
+      end: existing.end_date,
+    });
     return;
   }
 
-  const lastGenerated = await getSetting(SETTINGS_KEYS.lastGenerated(type));
-  if (lastGenerated && isSameDay(new Date(lastGenerated), targetDate)) {
-    return;
+  const lastGenerated = await getValidSettingDate(SETTINGS_KEYS.lastGenerated(type));
+  if (lastGenerated && isSameDay(lastGenerated, targetDate)) {
+    logWarn("mp.autoSync.reportSkipped", {
+      type,
+      reason: "last_generated_same_day_missing_report",
+      lastGenerated: lastGenerated.toISOString(),
+      targetDate: targetDate.toISOString(),
+    });
   }
 
-  const lastCreateAttempt = await getSetting(SETTINGS_KEYS.lastCreateAttempt(type));
-  if (lastCreateAttempt && minutesSince(new Date(lastCreateAttempt)) < CREATE_COOLDOWN_MINUTES) {
+  const lastCreateAttempt = await getValidSettingDate(SETTINGS_KEYS.lastCreateAttempt(type));
+  if (lastCreateAttempt && minutesSince(lastCreateAttempt) < CREATE_COOLDOWN_MINUTES) {
+    logWarn("mp.autoSync.reportSkipped", {
+      type,
+      reason: "cooldown",
+      lastCreateAttempt: lastCreateAttempt.toISOString(),
+      cooldownMinutes: CREATE_COOLDOWN_MINUTES,
+    });
     return;
   }
 
   const { beginDate, endDate } = toDayRange(targetDate);
+  logEvent("mp.autoSync.reportCreating", {
+    type,
+    begin: beginDate.toISOString(),
+    end: endDate.toISOString(),
+  });
   await updateSetting(SETTINGS_KEYS.lastCreateAttempt(type), new Date().toISOString());
   await MercadoPagoService.createReport(type, {
     begin_date: formatMpDate(beginDate),
@@ -341,6 +363,23 @@ function minutesSince(date: Date) {
 
 function formatMpDate(date: Date) {
   return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+async function getValidSettingDate(key: string) {
+  const raw = await getSetting(key);
+  if (!raw) return null;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    logWarn("mp.autoSync.settingInvalid", { key, value: raw });
+    await updateSetting(key, "");
+    return null;
+  }
+  if (parsed.getTime() > Date.now() + 5 * 60 * 1000) {
+    logWarn("mp.autoSync.settingFuture", { key, value: raw });
+    await updateSetting(key, "");
+    return null;
+  }
+  return parsed;
 }
 
 async function jitterDelay() {
