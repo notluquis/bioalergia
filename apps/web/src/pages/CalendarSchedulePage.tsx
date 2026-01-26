@@ -107,13 +107,13 @@ function CalendarSchedulePage() {
   }, [displayedWeekStart, appliedFilters.from, appliedFilters.to, updateFilters, applyFilters]);
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
       {/* Compact Header */}
-      <header className="space-y-2">
+      <header className="space-y-3">
         {/* Navigation Row */}
-        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
           {/* Left: Week Navigation */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <ButtonGroup size="sm" variant="tertiary">
               <Button aria-label="Semana anterior" isIconOnly onPress={goToPreviousWeek}>
                 <ChevronLeft className="h-4 w-4" />
@@ -141,7 +141,7 @@ function CalendarSchedulePage() {
           </div>
 
           {/* Right: Event count + Filter toggle */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {summary && (
               <span className="text-default-400 text-xs">
                 {numberFormatter.format(displayedWeekEvents.length)} eventos

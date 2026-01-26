@@ -83,7 +83,7 @@ export function DayNavigation({
   }, [current, isAllowed, normalizeToAllowed, onSelect]);
 
   return (
-    <div className={cn("flex flex-col gap-3", className)}>
+    <div className={cn("flex flex-col gap-4", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-bold capitalize sm:text-xl">{current.format("MMMM YYYY")}</h2>
 
@@ -106,7 +106,7 @@ export function DayNavigation({
 
       <div className="relative">
         {/* Day Strip */}
-        <div className="bg-content1 border-default-200 no-scrollbar flex min-h-16 items-center justify-between overflow-x-auto rounded-xl border p-2 shadow-sm touch-pan-x">
+        <div className="bg-content1 border-default-200 no-scrollbar flex min-h-16 items-center justify-between overflow-x-auto rounded-xl border p-3 shadow-sm touch-pan-x">
           {days.map((date) => {
             const isSelected = date.isSame(current, "day");
             const isToday = date.isSame(today, "day");

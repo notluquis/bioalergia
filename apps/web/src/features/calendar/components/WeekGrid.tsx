@@ -216,7 +216,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
       role="none"
     >
       <div className="muted-scrollbar flex-1 overflow-x-auto overscroll-x-contain touch-pan-x">
-        <div className="min-w-[960px]">
+        <div className="min-w-[1080px]">
           {/* Header row */}
           {/* biome-ignore lint/a11y/useSemanticElements: grid layout */}
           <div
@@ -230,7 +230,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
               <div
                 aria-current={day.isToday ? "date" : undefined}
                 className={cn(
-                  "border-default-200 flex flex-col items-center justify-center gap-1 border-r px-1 py-3 text-center last:border-r-0",
+                  "border-default-200 flex flex-col items-center justify-center gap-1 border-r px-1 py-3 text-center last:border-r-0 sm:py-4",
                   day.isToday && "bg-primary/20 border-t-4 border-primary relative",
                 )}
                 key={day.key}
@@ -288,7 +288,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                 ))}
 
                 {/* Events */}
-                <div className="absolute inset-0 z-5 isolate overflow-hidden px-0.5">
+                <div className="absolute inset-0 z-5 isolate overflow-visible px-0.5">
                   {}
                   {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy rendering */}
                   {calculateEventLayout(eventsByDay[day.key] ?? []).map((event) => {
@@ -449,6 +449,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                           </div>
                         }
                         delay={0}
+                        isDisabled={tooltipTrigger === "focus"}
                         key={event.eventId}
                         placement="top"
                         showArrow
