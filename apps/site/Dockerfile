@@ -7,7 +7,7 @@ FROM node:current-slim AS pruner
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
+RUN npm install -g corepack@latest --force && corepack enable && corepack prepare pnpm@10.28.0 --activate
 COPY . .
 RUN pnpm dlx turbo@2.7.5 prune --scope=@finanzas/site --docker
 
@@ -18,7 +18,7 @@ FROM node:current-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
+RUN npm install -g corepack@latest --force && corepack enable && corepack prepare pnpm@10.28.0 --activate
 
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
