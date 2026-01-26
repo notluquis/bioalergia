@@ -74,7 +74,6 @@ export function EmployeeMultiSelectPopover({
       </div>
       <Popover.Content
         className="border-default-200 bg-background z-50 max-h-[70svh] w-[min(92vw,420px)] overflow-hidden rounded-xl border p-0 shadow-xl"
-        isNonModal
         offset={8}
         placement="bottom"
       >
