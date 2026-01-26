@@ -23,7 +23,7 @@ export function DoctoraliaBookingWidget() {
   return (
     <Card
       className="rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[0_24px_70px_rgba(0,0,0,0.18)]"
-      variant="flat"
+      variant="secondary"
     >
       <Card.Header className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
@@ -70,7 +70,7 @@ export function DoctoraliaCertificate() {
   return (
     <Card
       className="h-full rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)]"
-      variant="flat"
+      variant="secondary"
     >
       <Card.Header className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-2">
