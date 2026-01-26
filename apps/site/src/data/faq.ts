@@ -31,8 +31,7 @@ export const faqItems = [
   },
   {
     question: "¿Qué pruebas usan para diagnosticar alergias?",
-    answer:
-      "Realizamos pruebas cutáneas (prick tests) e IgE específica en sangre, además de evaluación clínica detallada.",
+    answer: "Realizamos pruebas cutáneas (prick tests), además de evaluación clínica detallada.",
   },
   {
     question: "¿Puedo hacer inmunoterapia si tengo asma?",

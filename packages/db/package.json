@@ -48,7 +48,7 @@
     "@zenstackhq/orm": "3.2.1",
     "@zenstackhq/plugin-policy": "^3.2.1",
     "@zenstackhq/server": "^3.2.1",
-    "hono": "^4.11.5",
+    "hono": "^4.11.6",
     "kysely": "^0.28.10",
     "pg": "^8.17.2",
     "pg-types": "^4.1.0",

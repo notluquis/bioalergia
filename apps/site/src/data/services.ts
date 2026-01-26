@@ -25,7 +25,6 @@ export const services = [
       "Evaluación clínica con pruebas cutáneas y medición de IgE específica para definir desencadenantes y diseñar tratamientos precisos.",
     points: [
       "Prick tests con extractos de alta calidad.",
-      "Paneles de IgE específica y diagnóstico molecular cuando aplica.",
       "Informe personalizado para control ambiental y terapéutico.",
     ],
   },
@@ -44,8 +43,7 @@ export const services = [
 export const immunotherapyComparison = [
   {
     aspect: "Efectividad",
-    scit:
-      "Alta eficacia con evidencia histórica sólida; reduce síntomas y el riesgo de progresión a asma.",
+    scit: "Alta eficacia con evidencia histórica sólida; reduce síntomas y el riesgo de progresión a asma.",
     slit: "Eficacia comparable en rinitis alérgica con alta adherencia.",
   },
   {

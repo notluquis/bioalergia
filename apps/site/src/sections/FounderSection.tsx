@@ -6,7 +6,7 @@ export function FounderSection() {
   return (
     <Section
       id="fundador"
-      eyebrow="Fundador"
+      eyebrow="Fundador y Director Médico"
       title={founderProfile.name}
       subtitle="Trayectoria clínica internacional y enfoque centrado en el paciente alérgico."
     >
