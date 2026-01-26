@@ -33,7 +33,7 @@ export function ContactSection() {
             </div>
           </div>
           <Button
-            className="rounded-full bg-(--accent-2) px-6 text-white w-full md:w-auto"
+            className="rounded-full bg-(--accent) px-6 text-white w-full md:w-auto"
             onPress={() => window.open(doctoraliaLink, "_blank", "noopener,noreferrer")}
           >
             Hablar con el equipo

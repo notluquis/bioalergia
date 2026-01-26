@@ -12,7 +12,12 @@ export function FAQSection() {
     >
       <Card className="rounded-3xl" variant="default">
         <Card.Content className="px-6 py-6">
-          <Accordion className="grid w-full gap-3" variant="surface" allowsMultipleExpanded>
+          <Accordion
+            className="grid w-full gap-3"
+            variant="surface"
+            allowsMultipleExpanded
+            defaultExpandedKeys={[faqItems[0]?.question || ""]}
+          >
             {faqItems.map((item) => (
               <Accordion.Item
                 key={item.question}

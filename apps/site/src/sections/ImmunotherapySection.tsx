@@ -40,31 +40,32 @@ export function ImmunotherapySection() {
           </Card.Description>
         </Card.Header>
         <Card.Content className="overflow-x-auto pb-6 sm:overflow-x-visible">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {/* Header */}
-            <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted) font-semibold border-b border-(--border) pb-3 sm:border-b-0">
-              Aspecto
-            </div>
-            <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted) font-semibold border-b border-(--border) pb-3">
-              SCIT · subcutánea
-            </div>
-            <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted) font-semibold border-b border-(--border) pb-3">
-              SLIT · sublingual
+          <div className="space-y-0">
+            {/* Header Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 border-b border-(--border) pb-3 sm:pb-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted) font-semibold">
+                Aspecto
+              </div>
+              <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted) font-semibold">
+                SCIT · subcutánea
+              </div>
+              <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted) font-semibold">
+                SLIT · sublingual
+              </div>
             </div>
 
-            {/* Rows */}
-            {immunotherapyComparison.map((row) => (
-              <>
-                <div className="text-(--ink) font-semibold text-sm sm:text-base border-b border-(--border) pb-4 sm:border-b-0 sm:py-4">
-                  {row.aspect}
-                </div>
-                <div className="text-sm text-(--ink-muted) border-b border-(--border) pb-4 sm:border-b sm:py-4 last:border-b-0">
-                  {row.scit}
-                </div>
-                <div className="text-sm text-(--ink-muted) border-b border-(--border) pb-4 sm:border-b sm:py-4 last:border-b-0">
-                  {row.slit}
-                </div>
-              </>
+            {/* Data Rows with zebra striping */}
+            {immunotherapyComparison.map((row, index) => (
+              <div
+                key={row.aspect}
+                className={`grid grid-cols-1 sm:grid-cols-3 gap-6 border-b border-(--border) py-4 px-4 -mx-4 ${
+                  index % 2 === 0 ? "bg-(--surface-2)" : ""
+                }`}
+              >
+                <div className="text-(--ink) font-semibold text-sm sm:text-base">{row.aspect}</div>
+                <div className="text-sm text-(--ink-muted)">{row.scit}</div>
+                <div className="text-sm text-(--ink-muted)">{row.slit}</div>
+              </div>
             ))}
           </div>
         </Card.Content>

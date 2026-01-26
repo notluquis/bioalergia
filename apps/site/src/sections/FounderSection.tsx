@@ -1,8 +1,14 @@
-import { Card, ScrollShadow } from "@heroui/react";
+import { Button, Card } from "@heroui/react";
+import { useState } from "react";
 import { founderProfile } from "@/data/founder";
 import { Section } from "@/sections/Section";
 
 export function FounderSection() {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const visibleParagraphs = isExpanded
+    ? founderProfile.paragraphs
+    : founderProfile.paragraphs.slice(0, 2);
+
   return (
     <Section
       id="fundador"
@@ -11,16 +17,23 @@ export function FounderSection() {
       subtitle="Trayectoria clínica internacional y enfoque centrado en el paciente alérgico."
     >
       <Card className="rounded-3xl" variant="secondary">
-        <Card.Content className="p-0">
-          <ScrollShadow className="max-h-[360px] space-y-4 p-6" hideScrollBar>
-            {founderProfile.paragraphs.map((paragraph) => (
+        <Card.Content className="space-y-4 p-6">
+          <div className="space-y-4">
+            {visibleParagraphs.map((paragraph) => (
               <p className="text-sm leading-6 text-(--ink-muted)" key={paragraph}>
                 {paragraph}
               </p>
             ))}
-          </ScrollShadow>
+          </div>
+          <Button
+            className="w-full rounded-full border border-(--accent) bg-transparent text-sm text-(--accent) hover:bg-(--accent) hover:text-white transition-colors"
+            onPress={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? "Leer menos" : "Leer más"}
+          </Button>
         </Card.Content>
       </Card>
     </Section>
   );
+}
 }

@@ -17,7 +17,7 @@ export function LocationSection() {
           </Card.Description>
         </div>
         <Button
-          className="rounded-full bg-(--accent-2) text-white"
+          className="rounded-full bg-(--accent) text-white"
           onPress={() => window.open(clinicMapUrl, "_blank", "noopener,noreferrer")}
         >
           Cómo llegar

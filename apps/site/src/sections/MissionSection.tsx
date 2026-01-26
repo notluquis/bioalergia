@@ -1,4 +1,4 @@
-import { Card, Chip } from "@heroui/react";
+import { Card } from "@heroui/react";
 import { clinicOverview } from "@/data/clinic";
 import { Section } from "@/sections/Section";
 
@@ -18,9 +18,6 @@ export function MissionSection() {
         ].map((item) => (
           <Card className="rounded-3xl" key={item.title} variant="secondary">
             <Card.Header className="gap-3">
-              <Chip size="sm" variant="soft">
-                {item.title}
-              </Chip>
               <Card.Title className="text-xl">{item.title}</Card.Title>
             </Card.Header>
             <Card.Content className="text-sm text-(--ink-muted)">{item.text}</Card.Content>
