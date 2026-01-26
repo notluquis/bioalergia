@@ -5,8 +5,8 @@
   --bg: #f7f3ea;
   --bg-2: #e9f0f4;
   --ink: #0f1c26;
-  --accent: #c97b63;
-  --accent-2: #2f7f8f;
+  --accent: hsl(38, 90%, 55%);
+  --accent-2: hsl(210, 82%, 40%);
 }
 
 * {
@@ -19,8 +19,8 @@ body {
   font-family: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(800px 420px at 15% 10%, rgba(201, 123, 99, 0.2), transparent 60%),
-    radial-gradient(600px 400px at 85% 20%, rgba(47, 127, 143, 0.2), transparent 60%),
+    radial-gradient(800px 420px at 15% 10%, hsla(38, 90%, 55%, 0.2), transparent 60%),
+    radial-gradient(600px 400px at 85% 20%, hsla(210, 82%, 40%, 0.2), transparent 60%),
     linear-gradient(135deg, var(--bg), var(--bg-2));
 }
 

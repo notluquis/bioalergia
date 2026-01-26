@@ -1,4 +1,59 @@
+import { useEffect } from "react";
+
 const badges = ["Alergología", "Inmunología", "Adultos y niños", "Santiago, Chile"];
+
+
+function DoctoraliaWidget() {
+  useEffect(() => {
+    const existing = document.getElementById("zl-widget-s");
+    if (existing) return;
+
+    const script = document.createElement("script");
+    script.id = "zl-widget-s";
+    script.src = "//platform.docplanner.com/js/widget.js";
+    script.async = true;
+    document.body.appendChild(script);
+  }, []);
+
+  return (
+    <div className="rounded-3xl border border-black/10 bg-white/80 p-6 shadow-[0_20px_60px_-40px_rgba(15,28,38,0.45)]">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <div className="text-xs uppercase tracking-wide text-black/50">Reserva online</div>
+          <h3 className="mt-2 text-2xl font-semibold">Agenda tu cita en Doctoralia</h3>
+          <p className="mt-2 max-w-xl text-sm text-black/70">
+            Disponibilidad actualizada en tiempo real y confirmacion por correo.
+          </p>
+        </div>
+        <span className="hidden rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide sm:inline-flex">
+          Agenda inmediata
+        </span>
+      </div>
+
+      <div className="mt-6">
+        <a
+          id="zl-url"
+          className="zl-url"
+          href="https://www.doctoralia.cl/jose-manuel-martinez-martinez/inmunologo-alergologo/concepcion"
+          rel="nofollow"
+          data-zlw-doctor="jose-manuel-martinez-martinez"
+          data-zlw-type="big_with_calendar"
+          data-zlw-opinion="false"
+          data-zlw-hide-branding="true"
+          data-zlw-saas-only="true"
+          data-zlw-a11y-title="Widget de reserva de citas medicas"
+        >
+          Jose Manuel Martinez Martinez - Doctoralia.cl
+        </a>
+        <noscript>
+          <a href="https://www.doctoralia.cl/jose-manuel-martinez-martinez/inmunologo-alergologo/concepcion">
+            Ver disponibilidad en Doctoralia
+          </a>
+        </noscript>
+      </div>
+    </div>
+  );
+}
 
 const highlights = [
   {
@@ -115,6 +170,10 @@ export default function App() {
                 <p className="mt-2 text-sm text-black/70">{item.copy}</p>
               </div>
             ))}
+          </section>
+
+          <section>
+            <DoctoraliaWidget />
           </section>
 
           <section className="rounded-3xl border border-black/10 bg-white/70 p-8">
