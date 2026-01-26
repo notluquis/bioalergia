@@ -91,8 +91,8 @@
 
 **Configuration**:
 
-- **Infrastructure**: Defined in `railway.json` + `Dockerfile`.
-- **Strategy**: Dockerfile Multi-Stage Build (Turbo Prune).
+- **Infrastructure**: Defined in per-app `railway.json` + per-app `Dockerfile`.
+- **Strategy**: Dockerfile multi-stage builds (Turbo prune per app).
 - **Service**: Single Service (API + Static Frontend).
   - API serves static frontend files from `./public`.
 
