@@ -1,22 +1,30 @@
 import { Button, Card, Link } from "@heroui/react";
 import { contactInfo, ctaCopy } from "@/data/clinic";
-import { Section } from "@/sections/Section";
 import { doctoraliaLink } from "@/sections/DoctoraliaWidgets";
+import { Section } from "@/sections/Section";
 
 export function ContactSection() {
   const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
   return (
-    <Section id="contacto" eyebrow="Contacto" title={ctaCopy.headline} subtitle={ctaCopy.description}>
+    <Section
+      id="contacto"
+      eyebrow="Contacto"
+      title={ctaCopy.headline}
+      subtitle={ctaCopy.description}
+    >
       <Card className="rounded-3xl" variant="secondary">
-        <Card.Header className="flex flex-wrap items-center justify-between gap-6">
+        <Card.Header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-6">
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">
               Contacto directo
             </div>
-            <Link href={`mailto:${contactInfo.email}`} className="text-2xl font-semibold no-underline">
+            <Link
+              href={`mailto:${contactInfo.email}`}
+              className="text-xl sm:text-2xl font-semibold no-underline break-all"
+            >
               {contactInfo.email}
             </Link>
-            <div className="flex flex-wrap gap-3 text-(--ink-muted)">
+            <div className="flex flex-wrap gap-3 text-(--ink-muted) text-sm sm:text-base">
               {contactInfo.phones.map((phone) => (
                 <Link key={phone} href={whatsappLink(phone)}>
                   {phone}
@@ -25,7 +33,7 @@ export function ContactSection() {
             </div>
           </div>
           <Button
-            className="rounded-full bg-(--accent-2) px-6 text-white"
+            className="rounded-full bg-(--accent-2) px-6 text-white w-full md:w-auto"
             onPress={() => window.open(doctoraliaLink, "_blank", "noopener,noreferrer")}
           >
             Hablar con el equipo
