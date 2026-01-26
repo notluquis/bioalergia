@@ -12,7 +12,7 @@ COPY . .
 RUN npx turbo@^2 prune --scope=@finanzas/api --scope=@finanzas/web --docker
 
 # ============================================================================
-# STAGE 2: Base - Install dependencies using the pruned lockfile
+# STAGE 2: Base - Install dependencies for pruned workspace
 # ============================================================================
 FROM node:current-slim AS base
 WORKDIR /app

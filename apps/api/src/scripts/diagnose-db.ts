@@ -1,7 +1,7 @@
 import { db } from "@finanzas/db";
 
 async function main() {
-  console.log("--- DIANOSTIC START ---");
+  console.log("--- DIAGNOSTIC START ---");
   try {
     const eventCount = await db.event.count();
     console.log(`Total Events in DB: ${eventCount}`);

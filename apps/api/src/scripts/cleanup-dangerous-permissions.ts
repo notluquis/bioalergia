@@ -8,7 +8,7 @@ async function main() {
     where: {
       OR: [
         { AND: [{ action: "manage" }, { subject: "all" }] },
-        { action: "manage" } // Project standard uses create, read, update, delete
+        { action: "manage" } // 'manage' is overly permissive; project standard requires explicit CRUD permissions, so 'manage' is treated as dangerous and removed
       ]
     }
   });

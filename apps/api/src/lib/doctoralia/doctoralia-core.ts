@@ -2,14 +2,14 @@
  * Doctoralia Core - OAuth2 Authentication
  *
  * Handles OAuth2 client credentials flow for Doctoralia API.
- * Domain is hardcoded to Chile (doctoralia.cl).
+ * Domain defaults to Chile (doctoralia.cl) and can be overridden.
  */
 
 import { request } from "gaxios";
 import type { OAuth2TokenResponse } from "./doctoralia-types.js";
 
-// Chile domain - hardcoded per user requirement
-const DOCTORALIA_DOMAIN = "doctoralia.cl";
+// Chile domain default; override with DOCTORALIA_DOMAIN if needed.
+const DOCTORALIA_DOMAIN = process.env.DOCTORALIA_DOMAIN || "doctoralia.cl";
 const TOKEN_URL = `https://www.${DOCTORALIA_DOMAIN}/oauth/v2/token`;
 
 // Token cache with expiration

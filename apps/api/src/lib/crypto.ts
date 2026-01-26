@@ -18,7 +18,7 @@ export async function hashPassword(password: string): Promise<string> {
 /**
  * Verifies a password against a hash.
  * Legacy Bcrypt support has been removed.
- * Returns an object with `valid` usage and `needsRehash` flag.
+ * Returns an object with `valid` status and `needsRehash` flag.
  */
 export async function verifyPassword(
   password: string,
