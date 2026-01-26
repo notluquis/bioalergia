@@ -21,10 +21,15 @@ export function DoctoraliaBookingWidget() {
   useDoctoraliaScript();
 
   return (
-    <Card className="rounded-3xl" variant="tertiary">
+    <Card
+      className="rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[0_24px_70px_rgba(0,0,0,0.18)]"
+      variant="flat"
+    >
       <Card.Header className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
-          <div className="text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">Reserva online</div>
+          <div className="text-xs uppercase tracking-[0.28em] text-[color:var(--ink-muted)]">
+            Reserva online
+          </div>
           <Card.Title className="text-2xl">Agenda tu cita en Doctoralia</Card.Title>
           <Card.Description className="max-w-xl text-[color:var(--ink-muted)]">
             Confirma tu evaluación directamente en Doctoralia y recibe la confirmación por correo.
@@ -63,10 +68,13 @@ export function DoctoraliaCertificate() {
   useDoctoraliaScript();
 
   return (
-    <Card className="rounded-3xl" variant="secondary">
+    <Card
+      className="h-full rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)]"
+      variant="flat"
+    >
       <Card.Header className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-2">
-          <div className="text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">
+          <div className="text-xs uppercase tracking-[0.28em] text-[color:var(--ink-muted)]">
             Pacientes satisfechos
           </div>
           <Card.Title className="text-2xl">Certificado Doctoralia</Card.Title>

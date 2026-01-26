@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Chip, Link, Separator } from "@heroui/react";
+import { Button, Link, Separator } from "@heroui/react";
 
+import { contactInfo } from "@/data/clinic";
 import { ContactSection } from "@/sections/ContactSection";
 import { DoctoraliaCertificate } from "@/sections/DoctoraliaWidgets";
 import { FAQSection } from "@/sections/FAQSection";
@@ -50,8 +51,20 @@ export default function App() {
 
   return (
     <div className="relative overflow-hidden">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-16 px-6 py-16">
-        <header className="flex flex-wrap items-center justify-between gap-6">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-6 py-12 lg:gap-16 lg:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-5 py-2 text-xs text-[color:var(--ink-muted)]">
+          <span>Bienvenidos a Bioalergia · Atención especializada en Concepción</span>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link className="no-underline" href={`tel:${contactInfo.phone.replace(/\s/g, "")}`}>
+              {contactInfo.phone}
+            </Link>
+            <Link className="no-underline" href={`mailto:${contactInfo.email}`}>
+              {contactInfo.email}
+            </Link>
+          </div>
+        </div>
+
+        <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <img
               src="/logo_sin_eslogan.png"
@@ -60,29 +73,38 @@ export default function App() {
               loading="eager"
             />
           </div>
-          <nav aria-label="Navegación principal" className="flex flex-wrap items-center gap-4 text-sm">
-            <Link className="no-underline" href="#servicios">
+          <nav
+            aria-label="Navegación principal"
+            className="flex flex-wrap items-center gap-4 text-sm text-[color:var(--ink-muted)]"
+          >
+            <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#inicio">
+              Inicio
+            </Link>
+            <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#servicios">
               Servicios
             </Link>
-            <Link className="no-underline" href="#inmunoterapia">
+            <Link
+              className="no-underline transition-colors hover:text-[color:var(--ink)]"
+              href="#inmunoterapia"
+            >
               Inmunoterapia
             </Link>
-            <Link className="no-underline" href="#faq">
+            <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#faq">
               FAQ
             </Link>
-            <Link className="no-underline" href="#contacto">
+            <Link
+              className="no-underline transition-colors hover:text-[color:var(--ink)]"
+              href="#contacto"
+            >
               Contacto
             </Link>
           </nav>
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <Chip size="sm" variant="soft">
-              Agenda online
-            </Chip>
-            <Button className="rounded-full bg-[var(--accent)] text-white" onPress={handleDoctoraliaOpen}>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <Button className="h-9 rounded-full bg-[var(--accent)] px-4 text-white" onPress={handleDoctoraliaOpen}>
               Agendar cita
             </Button>
             <Button
-              className="rounded-full border-[color:var(--border)] text-[color:var(--ink)]"
+              className="h-9 rounded-full border-[color:var(--border)] px-4 text-[color:var(--ink-muted)]"
               variant="outline"
               onPress={toggle}
             >
@@ -91,23 +113,28 @@ export default function App() {
           </div>
         </header>
 
-        <main className="grid gap-14">
+        <main className="grid gap-20">
           <HeroSection onBook={handleDoctoraliaOpen} />
 
-          <Separator />
+          <Separator className="opacity-60" />
 
           <MissionSection />
           <FounderSection />
           <ServicesSection />
           <ImmunotherapySection />
 
-          <section className="grid gap-6 lg:grid-cols-[0.6fr_1fr]">
+          <section className="grid gap-6 lg:grid-cols-[0.55fr_1fr] lg:items-stretch">
             <DoctoraliaCertificate />
             <LocationSection />
           </section>
 
+          <Separator className="opacity-60" />
+
           <FAQSection />
           <GlossarySection />
+
+          <Separator className="opacity-60" />
+
           <ContactSection />
         </main>
       </div>

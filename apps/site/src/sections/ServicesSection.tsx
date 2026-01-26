@@ -1,4 +1,4 @@
-import { Card, Chip } from "@heroui/react";
+import { Card } from "@heroui/react";
 import { services } from "@/data/services";
 import { Section } from "@/sections/Section";
 
@@ -21,10 +21,8 @@ export function ServicesSection() {
             </Card.Header>
             <Card.Content className="grid gap-2">
               {service.points.map((point) => (
-                <div className="flex items-start gap-2 text-sm" key={point}>
-                  <Chip size="sm" variant="soft">
-                    ✓
-                  </Chip>
+                <div className="flex items-start gap-3 text-sm" key={point}>
+                  <span className="mt-1 h-2 w-2 rounded-full bg-[var(--accent)]" />
                   <span className="text-[color:var(--ink-muted)]">{point}</span>
                 </div>
               ))}

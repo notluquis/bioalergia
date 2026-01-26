@@ -21,11 +21,9 @@ export function MissionSection() {
               <Chip size="sm" variant="soft">
                 {item.title}
               </Chip>
-              <Card.Title className="text-lg">{item.title}</Card.Title>
-              <Card.Description className="text-[color:var(--ink-muted)]">
-                {item.text}
-              </Card.Description>
+              <Card.Title className="text-xl">{item.title}</Card.Title>
             </Card.Header>
+            <Card.Content className="text-sm text-[color:var(--ink-muted)]">{item.text}</Card.Content>
           </Card>
         ))}
       </div>
@@ -34,11 +32,9 @@ export function MissionSection() {
         {clinicOverview.pillars.map((pillar) => (
           <Card className="rounded-2xl" key={pillar.title} variant="secondary">
             <Card.Header className="gap-2">
-              <Card.Title>{pillar.title}</Card.Title>
-              <Card.Description className="text-[color:var(--ink-muted)]">
-                {pillar.detail}
-              </Card.Description>
+              <Card.Title className="text-lg">{pillar.title}</Card.Title>
             </Card.Header>
+            <Card.Content className="text-sm text-[color:var(--ink-muted)]">{pillar.detail}</Card.Content>
           </Card>
         ))}
       </div>

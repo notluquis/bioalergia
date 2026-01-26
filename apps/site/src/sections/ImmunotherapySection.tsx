@@ -13,21 +13,21 @@ export function ImmunotherapySection() {
       <div className="grid gap-4">
         {immunotherapyComparison.map((row) => (
           <Card className="rounded-2xl" key={row.aspect} variant="secondary">
-            <Card.Header className="gap-2">
+            <Card.Header className="flex flex-wrap items-center justify-between gap-3">
               <Chip size="sm" variant="soft">
                 {row.aspect}
               </Chip>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <div className="text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">SCIT</div>
-                  <p className="text-sm text-[color:var(--ink-muted)]">{row.scit}</p>
-                </div>
-                <div>
-                  <div className="text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">SLIT</div>
-                  <p className="text-sm text-[color:var(--ink-muted)]">{row.slit}</p>
-                </div>
-              </div>
             </Card.Header>
+            <Card.Content className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <div className="text-xs uppercase tracking-[0.2em] text-[color:var(--ink-muted)]">SCIT</div>
+                <p className="text-sm text-[color:var(--ink-muted)]">{row.scit}</p>
+              </div>
+              <div className="space-y-2">
+                <div className="text-xs uppercase tracking-[0.2em] text-[color:var(--ink-muted)]">SLIT</div>
+                <p className="text-sm text-[color:var(--ink-muted)]">{row.slit}</p>
+              </div>
+            </Card.Content>
           </Card>
         ))}
       </div>
@@ -41,10 +41,8 @@ export function ImmunotherapySection() {
         </Card.Header>
         <Card.Content className="grid gap-2">
           {immunotherapyBenefits.map((benefit) => (
-            <div className="flex items-start gap-2 text-sm" key={benefit}>
-              <Chip size="sm" variant="soft">
-                ✓
-              </Chip>
+            <div className="flex items-start gap-3 text-sm" key={benefit}>
+              <span className="mt-1 h-2 w-2 rounded-full bg-[var(--accent)]" />
               <span className="text-[color:var(--ink-muted)]">{benefit}</span>
             </div>
           ))}

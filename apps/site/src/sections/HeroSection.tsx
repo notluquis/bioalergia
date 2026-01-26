@@ -1,4 +1,4 @@
-import { Button, Chip } from "@heroui/react";
+import { Button, Card, Chip, Link } from "@heroui/react";
 import { clinicOverview } from "@/data/clinic";
 import { DoctoraliaBookingWidget, doctoraliaLink } from "@/sections/DoctoraliaWidgets";
 
@@ -10,7 +10,7 @@ type HeroSectionProps = {
 
 export function HeroSection({ onBook }: HeroSectionProps) {
   return (
-    <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]" id="inicio">
+    <section className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]" id="inicio">
       <div className="flex flex-col gap-6" style={{ animation: "floatIn 0.8s ease-out" }}>
         <div className="flex flex-wrap gap-2">
           {badges.map((badge) => (
@@ -20,13 +20,13 @@ export function HeroSection({ onBook }: HeroSectionProps) {
           ))}
         </div>
         <div className="space-y-4">
-          <p className="text-sm uppercase tracking-wide text-[color:var(--ink-muted)]">
+          <p className="text-xs uppercase tracking-[0.28em] text-[color:var(--ink-muted)]">
             {clinicOverview.subtitle}
           </p>
-          <h1 className="text-4xl font-semibold leading-tight text-[color:var(--ink)] sm:text-6xl">
-            {clinicOverview.title}
+          <h1 className="text-4xl font-semibold leading-tight text-[color:var(--ink)] sm:text-5xl lg:text-6xl">
+            Clínica Bioalergia
             <span
-              className="mt-2 block text-4xl font-normal sm:text-5xl"
+              className="mt-3 block text-3xl font-normal text-[color:var(--ink-muted)] sm:text-4xl"
               style={{ fontFamily: '"Instrument Serif", serif' }}
             >
               Especialistas en alergias e inmunoterapia
@@ -37,27 +37,34 @@ export function HeroSection({ onBook }: HeroSectionProps) {
             calidad de vida.
           </p>
         </div>
-        <div className="flex flex-wrap gap-4">
-          <Button className="rounded-full bg-[var(--accent)] text-white" onPress={onBook}>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button className="rounded-full bg-[var(--accent)] px-6 text-white" onPress={onBook}>
             Reservar evaluación
           </Button>
-          <Button
-            className="rounded-full border-[color:var(--border)] text-[color:var(--ink)]"
-            variant="outline"
-            onPress={() => window.open(doctoraliaLink, "_blank", "noopener,noreferrer")}
+          <Link
+            className="text-sm text-[color:var(--ink-muted)] underline-offset-4"
+            href="#servicios"
+          >
+            Ver servicios
+          </Link>
+          <Link
+            className="text-sm text-[color:var(--ink-muted)] underline-offset-4"
+            href={doctoraliaLink}
+            target="_blank"
+            rel="noreferrer"
           >
             Agenda online
-          </Button>
+          </Link>
         </div>
-        <div className="grid gap-3">
+        <div className="grid gap-3 sm:grid-cols-3">
           {clinicOverview.summary.map((item) => (
-            <div key={item} className="text-sm text-[color:var(--ink-muted)]">
-              {item}
-            </div>
+            <Card className="rounded-2xl" key={item} variant="secondary">
+              <Card.Content className="text-sm text-[color:var(--ink-muted)]">{item}</Card.Content>
+            </Card>
           ))}
         </div>
       </div>
-      <div style={{ animation: "floatIn 0.9s ease-out" }}>
+      <div className="lg:pl-4" style={{ animation: "floatIn 0.9s ease-out" }}>
         <DoctoraliaBookingWidget />
       </div>
     </section>
