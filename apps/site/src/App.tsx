@@ -43,6 +43,40 @@ function useThemePreference() {
   );
 }
 
+function ThemeIcon({ theme }: { theme: "light" | "dark" }) {
+  return theme === "dark" ? (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36-6.36-1.42 1.42M7.06 16.94l-1.42 1.42m0-11.3 1.42 1.42m9.9 9.9 1.42 1.42"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="12" r="4" />
+    </svg>
+  ) : (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function App() {
   const { theme, toggle } = useThemePreference();
   const handleDoctoraliaOpen = () => {
@@ -51,25 +85,23 @@ export default function App() {
 
   return (
     <div className="relative overflow-hidden">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-6 pb-12 pt-48 lg:gap-16 lg:px-8">
-        <div className="fixed inset-x-0 top-0 z-50">
-          <div className="mx-auto w-full max-w-6xl px-6 lg:px-8">
-            <div className="mt-4 rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface-2)]/90 px-5 py-2 text-xs text-[color:var(--ink-muted)] shadow-[0_20px_60px_rgba(0,0,0,0.2)] backdrop-blur">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span>Bienvenidos a Bioalergia · Atención especializada en Concepción</span>
-                <div className="flex flex-wrap items-center gap-3">
-                  {contactInfo.phones.map((phone) => (
-                    <Link key={phone} className="no-underline" href={`tel:${phone.replace(/\s/g, "")}`}>
-                      {phone}
-                    </Link>
-                  ))}
-                  <Link className="no-underline" href={`mailto:${contactInfo.email}`}>
-                    {contactInfo.email}
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-6 pb-12 pt-12 lg:gap-16 lg:px-8">
+        <header className="sticky top-4 z-50">
+          <div className="rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)]/90 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur">
+            <div className="hidden flex-wrap items-center justify-between gap-3 border-b border-[color:var(--border)] px-5 py-2 text-xs text-[color:var(--ink-muted)] md:flex">
+              <span>Bienvenidos a Bioalergia · Atención especializada en Concepción</span>
+              <div className="flex flex-wrap items-center gap-3">
+                {contactInfo.phones.map((phone) => (
+                  <Link key={phone} className="no-underline" href={`tel:${phone.replace(/\s/g, "")}`}>
+                    {phone}
                   </Link>
-                </div>
+                ))}
+                <Link className="no-underline" href={`mailto:${contactInfo.email}`}>
+                  {contactInfo.email}
+                </Link>
               </div>
             </div>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)]/90 px-5 py-4 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur">
+            <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
               <div className="flex items-center gap-3">
                 <img
                   src="/logo_sin_eslogan.png"
@@ -109,16 +141,18 @@ export default function App() {
                   Agendar cita
                 </Button>
                 <Button
-                  className="h-9 rounded-full border-[color:var(--border)] px-4 text-[color:var(--ink-muted)]"
+                  aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                  className="h-9 w-9 rounded-full border-[color:var(--border)] text-[color:var(--ink-muted)]"
+                  isIconOnly
                   variant="outline"
                   onPress={toggle}
                 >
-                  {theme === "dark" ? "Modo claro" : "Modo oscuro"}
+                  <ThemeIcon theme={theme} />
                 </Button>
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
         <main className="grid gap-20">
           <HeroSection onBook={handleDoctoraliaOpen} />

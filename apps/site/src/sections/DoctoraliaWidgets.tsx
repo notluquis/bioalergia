@@ -39,21 +39,23 @@ export function DoctoraliaBookingWidget() {
           Reserva inmediata
         </Chip>
       </Card.Header>
-      <Card.Content className="space-y-3">
-        <a
-          id="zl-url-booking"
-          className="zl-url"
-          href={doctoraliaUrl}
-          rel="nofollow"
-          data-zlw-doctor="jose-manuel-martinez-martinez"
-          data-zlw-type="big_with_calendar"
-          data-zlw-opinion="false"
-          data-zlw-hide-branding="true"
-          data-zlw-saas-only="true"
-          data-zlw-a11y-title="Widget de reserva de citas médicas"
-        >
-          José Manuel Martínez Martínez - Doctoralia.cl
-        </a>
+      <Card.Content className="space-y-4">
+        <div className="rounded-2xl border border-[color:var(--border)] bg-white p-4 shadow-[0_18px_45px_rgba(0,0,0,0.12)]">
+          <a
+            id="zl-url-booking"
+            className="zl-url block"
+            href={doctoraliaUrl}
+            rel="nofollow"
+            data-zlw-doctor="jose-manuel-martinez-martinez"
+            data-zlw-type="big_with_calendar"
+            data-zlw-opinion="false"
+            data-zlw-hide-branding="true"
+            data-zlw-saas-only="true"
+            data-zlw-a11y-title="Widget de reserva de citas médicas"
+          >
+            José Manuel Martínez Martínez - Doctoralia.cl
+          </a>
+        </div>
         <noscript>
           <Link className="text-sm" href={doctoraliaUrl} rel="nofollow">
             Ver disponibilidad en Doctoralia
@@ -78,26 +80,31 @@ export function DoctoraliaCertificate() {
             Pacientes satisfechos
           </div>
           <Card.Title className="text-2xl">Certificado Doctoralia</Card.Title>
+          <Card.Description className="text-[color:var(--ink-muted)]">
+            Sello oficial de satisfacción y validación clínica.
+          </Card.Description>
         </div>
-        <Chip size="sm" variant="soft">
+        <Chip color="success" size="sm" variant="soft">
           Verificado
         </Chip>
       </Card.Header>
-      <Card.Content>
-        <a
-          id="zl-url-certificate"
-          className="zl-url"
-          href={doctoraliaUrl}
-          rel="nofollow"
-          data-zlw-doctor="jose-manuel-martinez-martinez"
-          data-zlw-type="certificate"
-          data-zlw-opinion="false"
-          data-zlw-hide-branding="true"
-          data-zlw-saas-only="true"
-          data-zlw-a11y-title="Certificado de pacientes satisfechos"
-        >
-          José Manuel Martínez Martínez - Doctoralia.cl
-        </a>
+      <Card.Content className="flex justify-center pb-6">
+        <div className="w-full max-w-[320px] rounded-2xl border border-[color:var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(0,0,0,0.12)]">
+          <a
+            id="zl-url-certificate"
+            className="zl-url block"
+            href={doctoraliaUrl}
+            rel="nofollow"
+            data-zlw-doctor="jose-manuel-martinez-martinez"
+            data-zlw-type="certificate"
+            data-zlw-opinion="false"
+            data-zlw-hide-branding="true"
+            data-zlw-saas-only="true"
+            data-zlw-a11y-title="Certificado de pacientes satisfechos"
+          >
+            José Manuel Martínez Martínez - Doctoralia.cl
+          </a>
+        </div>
       </Card.Content>
     </Card>
   );

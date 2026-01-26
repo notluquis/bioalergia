@@ -1,6 +1,17 @@
-import { Card, Chip } from "@heroui/react";
+import { Card } from "@heroui/react";
 import { immunotherapyBenefits, immunotherapyComparison } from "@/data/services";
 import { Section } from "@/sections/Section";
+
+const abbreviations = [
+  {
+    label: "SCIT",
+    detail: "Inmunoterapia subcutánea: inyecciones controladas en clínica.",
+  },
+  {
+    label: "SLIT",
+    detail: "Inmunoterapia sublingual: gotas o tabletas en casa con seguimiento.",
+  },
+];
 
 export function ImmunotherapySection() {
   return (
@@ -10,27 +21,48 @@ export function ImmunotherapySection() {
       title="SCIT vs SLIT"
       subtitle="Elegimos la modalidad adecuada según diagnóstico, estilo de vida y seguridad clínica."
     >
-      <div className="grid gap-4">
-        {immunotherapyComparison.map((row) => (
-          <Card className="rounded-2xl" key={row.aspect} variant="default">
-            <Card.Header className="flex flex-wrap items-center justify-between gap-3">
-              <Chip size="sm" variant="soft">
-                {row.aspect}
-              </Chip>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {abbreviations.map((item) => (
+          <Card className="rounded-2xl" key={item.label} variant="default">
+            <Card.Header className="gap-3 pb-5">
+              <Card.Title className="text-lg">{item.label}</Card.Title>
+              <Card.Description className="text-[color:var(--ink-muted)]">
+                {item.detail}
+              </Card.Description>
             </Card.Header>
-            <Card.Content className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <div className="text-xs uppercase tracking-[0.2em] text-[color:var(--ink-muted)]">SCIT</div>
-                <p className="text-sm text-[color:var(--ink-muted)]">{row.scit}</p>
-              </div>
-              <div className="space-y-2">
-                <div className="text-xs uppercase tracking-[0.2em] text-[color:var(--ink-muted)]">SLIT</div>
-                <p className="text-sm text-[color:var(--ink-muted)]">{row.slit}</p>
-              </div>
-            </Card.Content>
           </Card>
         ))}
       </div>
+
+      <Card className="rounded-3xl" variant="default">
+        <Card.Header className="gap-2">
+          <Card.Title className="text-xl">Comparativa clínica</Card.Title>
+          <Card.Description className="text-[color:var(--ink-muted)]">
+            Diferencias clave para tomar una decisión informada.
+          </Card.Description>
+        </Card.Header>
+        <Card.Content className="overflow-x-auto pb-6">
+          <div className="min-w-[560px]">
+            <div className="grid grid-cols-[160px_1fr_1fr] gap-6 border-b border-[color:var(--border)] pb-3 text-xs uppercase tracking-[0.2em] text-[color:var(--ink-muted)]">
+              <span>Aspecto</span>
+              <span>SCIT · subcutánea</span>
+              <span>SLIT · sublingual</span>
+            </div>
+            <div className="grid gap-4 pt-4">
+              {immunotherapyComparison.map((row) => (
+                <div
+                  className="grid grid-cols-[160px_1fr_1fr] gap-6 border-b border-[color:var(--border)] pb-4 text-sm text-[color:var(--ink-muted)] last:border-b-0"
+                  key={row.aspect}
+                >
+                  <span className="text-[color:var(--ink)]">{row.aspect}</span>
+                  <span>{row.scit}</span>
+                  <span>{row.slit}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card.Content>
+      </Card>
 
       <Card className="rounded-3xl" variant="secondary">
         <Card.Header className="gap-3">
@@ -39,10 +71,10 @@ export function ImmunotherapySection() {
             Tratamiento modificador de la enfermedad, con impacto sostenido en el tiempo.
           </Card.Description>
         </Card.Header>
-        <Card.Content className="grid gap-2">
+        <Card.Content className="grid gap-4 pb-6">
           {immunotherapyBenefits.map((benefit) => (
-            <div className="flex items-start gap-3 text-sm" key={benefit}>
-              <span className="mt-1 h-2 w-2 rounded-full bg-[var(--accent)]" />
+            <div className="flex items-start gap-3 text-sm leading-relaxed" key={benefit}>
+              <span className="mt-2 h-2 w-2 rounded-full bg-[var(--accent)]" />
               <span className="text-[color:var(--ink-muted)]">{benefit}</span>
             </div>
           ))}
