@@ -3,7 +3,7 @@
 # ==========================================================================
 # Stage 1: Prune monorepo for site
 # ==========================================================================
-FROM node:current-slim AS pruner
+FROM node:20-slim AS pruner
 WORKDIR /app
 COPY . .
 RUN npx turbo@^2 prune --scope=@finanzas/site --docker
@@ -11,7 +11,7 @@ RUN npx turbo@^2 prune --scope=@finanzas/site --docker
 # ==========================================================================
 # Stage 2: Base deps
 # ==========================================================================
-FROM node:current-slim AS base
+FROM node:20-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -40,11 +40,11 @@ ENV CI=true
 RUN pnpm turbo run build --filter=@finanzas/site
 
 # ==========================================================================
-# Stage 4: Runner
+# Stage 4: Runner (Nginx)
 # ==========================================================================
-FROM build AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-ENV PORT=3000
+FROM nginxinc/nginx-unprivileged:mainline-alpine AS runner
+WORKDIR /usr/share/nginx/html
+COPY --from=build /app/apps/site/dist ./
+COPY apps/site/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 3000
-CMD ["sh", "-c", "pnpm --filter @finanzas/site preview --host 0.0.0.0 --port ${PORT:-3000}"]
+CMD ["nginx", "-g", "daemon off;"]
