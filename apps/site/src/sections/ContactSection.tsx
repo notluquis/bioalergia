@@ -12,7 +12,7 @@ export function ContactSection() {
       title={ctaCopy.headline}
       subtitle={ctaCopy.description}
     >
-      <Card className="rounded-3xl" variant="secondary">
+      <Card className="rounded-3xl pt-2 sm:pt-4" variant="secondary">
         <Card.Header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-6">
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">
