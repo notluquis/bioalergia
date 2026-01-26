@@ -90,6 +90,23 @@
   text-overflow: ellipsis;
 }
 
+.timesheet-audit-event-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timesheet-audit-event-time {
+  font-size: 0.65rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.timesheet-audit-event-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
 .timesheet-audit-event:hover {
   opacity: 0.9;
   box-shadow: var(--shadow-md, 0 2px 8px rgba(0, 0, 0, 0.15));

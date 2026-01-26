@@ -514,7 +514,7 @@ export default function TimesheetAuditPage() {
                   <div>
                     <p className="text-foreground font-semibold">Tooltip</p>
                     <p className="text-default-600 text-sm">
-                      Pasa el cursor para ver detalles del conflicto
+                      Pasa el cursor o toca un bloque para ver detalles del conflicto
                     </p>
                   </div>
                 </div>

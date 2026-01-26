@@ -4,14 +4,15 @@
  * Optimized for production with proper type safety and performance
  */
 
-import type { CalendarApi } from "@fullcalendar/core";
+import type { CalendarApi, EventContentArg } from "@fullcalendar/core";
 import esLocale from "@fullcalendar/core/locales/es";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { Spinner } from "@heroui/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { Tooltip } from "@/components/ui/Tooltip";
 import type { CalendarEventData, TimesheetEntryWithEmployee } from "../types";
 
 import {
@@ -152,26 +153,23 @@ function toFullCalendarEvents(calendarEvents: CalendarEventData[]): {
     .filter((value): value is NonNullable<typeof value> => value != null);
 }
 
-const handleEventDidMount = (info: {
-  el: HTMLElement;
-  event: {
-    extendedProps: {
-      duration_hours: number;
-      employee_name: string;
-      employee_role: null | string;
-      has_overlap: boolean;
-    };
-  };
+const buildTooltipContent = (props: {
+  duration_hours: number;
+  employee_name: string;
+  employee_role: null | string;
+  has_overlap: boolean;
 }) => {
-  const props = info.event.extendedProps;
   const roleLabel = props.employee_role ? ` · ${props.employee_role}` : "";
-  const tooltipText = `${props.employee_name}${roleLabel} · ${formatDuration(props.duration_hours)}${
-    props.has_overlap ? " · ⚠️ Solapamiento" : ""
-  }`;
-  info.el.setAttribute("title", tooltipText);
-  if (props.has_overlap) {
-    info.el.classList.add("has-overlap");
-  }
+  return (
+    <div className="space-y-1 text-xs">
+      <p className="font-semibold">
+        {props.employee_name}
+        {roleLabel}
+      </p>
+      <p className="text-default-600">Duración: {formatDuration(props.duration_hours)}</p>
+      {props.has_overlap && <p className="text-danger">⚠️ Solapamiento detectado</p>}
+    </div>
+  );
 };
 
 export default function TimesheetAuditCalendar({
@@ -181,12 +179,19 @@ export default function TimesheetAuditCalendar({
   visibleDateRanges,
 }: TimesheetAuditCalendarProps) {
   const calendarApiRef = useRef<CalendarApi | null>(null);
+  const [tooltipTrigger, setTooltipTrigger] = useState<"focus" | "hover">("hover");
 
   // Navigate to focus date when it changes
   useEffect(() => {
     if (!focusDate) return;
     calendarApiRef.current?.gotoDate(focusDate);
   }, [focusDate]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    setTooltipTrigger(canHover ? "hover" : "focus");
+  }, []);
 
   // Cleanup: destroy calendar API on unmount to prevent memory leaks
   useEffect(() => {
@@ -279,7 +284,30 @@ export default function TimesheetAuditCalendar({
           contentHeight="auto"
           dayMaxEvents={false}
           editable={false}
-          eventDidMount={handleEventDidMount}
+          eventContent={(info: EventContentArg) => {
+            const props = info.event.extendedProps as {
+              duration_hours: number;
+              employee_name: string;
+              employee_role: null | string;
+              has_overlap: boolean;
+            };
+            return (
+              <Tooltip
+                content={buildTooltipContent(props)}
+                delay={0}
+                placement="top"
+                showArrow
+                trigger={tooltipTrigger}
+              >
+                <div className="timesheet-audit-event-inner">
+                  {info.timeText && (
+                    <span className="timesheet-audit-event-time">{info.timeText}</span>
+                  )}
+                  <span className="timesheet-audit-event-title">{info.event.title}</span>
+                </div>
+              </Tooltip>
+            );
+          }}
           eventDisplay="block"
           events={fullCalendarEvents}
           eventTimeFormat={{
