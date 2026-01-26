@@ -1,4 +1,4 @@
-import { PopoverContent, PopoverRoot, PopoverTrigger } from "@heroui/react";
+import { Popover } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
@@ -188,8 +188,8 @@ function CalendarHeatmapPage() {
           </span>
         </div>
 
-        <PopoverRoot isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
-          <PopoverTrigger>
+        <Popover isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
+          <Popover.Trigger>
             <Button
               className={clsx(
                 "rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide",
@@ -201,56 +201,53 @@ function CalendarHeatmapPage() {
               <Filter className="h-4 w-4" />
               Filtros
             </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="z-50 max-h-[80svh] overflow-y-auto p-0"
-            isNonModal
-            offset={8}
-            placement="bottom"
-          >
-            <div className="w-[min(92vw,520px)]">
-              <Card className="rounded-xl border border-default-200/70 bg-content1/90 shadow-lg backdrop-blur">
-                <CalendarFilterPanel
-                  availableCategories={summary?.available.categories ?? []}
-                  filters={{
-                    categories: filters.categories,
-                    eventTypes: [],
-                    from: filters.from,
-                    search: "",
-                    to: filters.to,
-                  }}
-                  formClassName="p-3"
-                  isDirty={isDirty}
-                  loading={busy}
-                  applyCount={summary?.totals.events}
-                  layout="dropdown"
-                  onApply={() => {
-                    handleApply();
-                    setFiltersOpen(false);
-                  }}
-                  onFilterChange={(key, value) => {
-                    if (key === "categories") {
-                      setFilters((prev) => ({ ...prev, categories: value as string[] }));
-                      return;
-                    }
-                    if (key === "from") {
-                      setFilters((prev) => ({ ...prev, from: String(value ?? "") }));
-                      return;
-                    }
-                    if (key === "to") {
-                      setFilters((prev) => ({ ...prev, to: String(value ?? "") }));
-                    }
-                  }}
-                  onReset={handleReset}
-                  showDateRange
-                  showSearch={false}
-                  showSync={false}
-                  variant="plain"
-                />
-              </Card>
-            </div>
-          </PopoverContent>
-        </PopoverRoot>
+          </Popover.Trigger>
+          <Popover.Content className="z-50 max-h-[80svh] overflow-y-auto p-0" offset={8}>
+            <Popover.Dialog className="p-0">
+              <div className="w-[min(92vw,520px)]">
+                <Card className="rounded-xl border border-default-200/70 bg-content1/90 shadow-lg backdrop-blur">
+                  <CalendarFilterPanel
+                    availableCategories={summary?.available.categories ?? []}
+                    filters={{
+                      categories: filters.categories,
+                      eventTypes: [],
+                      from: filters.from,
+                      search: "",
+                      to: filters.to,
+                    }}
+                    formClassName="p-3"
+                    isDirty={isDirty}
+                    loading={busy}
+                    applyCount={summary?.totals.events}
+                    layout="dropdown"
+                    onApply={() => {
+                      handleApply();
+                      setFiltersOpen(false);
+                    }}
+                    onFilterChange={(key, value) => {
+                      if (key === "categories") {
+                        setFilters((prev) => ({ ...prev, categories: value as string[] }));
+                        return;
+                      }
+                      if (key === "from") {
+                        setFilters((prev) => ({ ...prev, from: String(value ?? "") }));
+                        return;
+                      }
+                      if (key === "to") {
+                        setFilters((prev) => ({ ...prev, to: String(value ?? "") }));
+                      }
+                    }}
+                    onReset={handleReset}
+                    showDateRange
+                    showSearch={false}
+                    showSync={false}
+                    variant="plain"
+                  />
+                </Card>
+              </div>
+            </Popover.Dialog>
+          </Popover.Content>
+        </Popover>
       </header>
 
       <section className="space-y-2">

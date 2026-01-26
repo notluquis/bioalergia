@@ -81,7 +81,7 @@ export function MultiSelectFilter({
             <ChevronDown className="h-4 w-4 shrink-0 text-foreground-500" />
           </Button>
         </DropdownTrigger>
-        <DropdownPopover isNonModal>
+        <DropdownPopover>
           <DropdownMenu
             aria-label={label}
             selectedKeys={selectedKeys}
