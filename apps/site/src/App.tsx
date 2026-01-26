@@ -84,9 +84,9 @@ export default function App() {
   };
 
   return (
-    <div className="relative overflow-hidden">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-6 pb-12 pt-12 lg:gap-16 lg:px-8">
-        <header className="sticky top-4 z-50">
+    <div className="relative">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-4 pb-12 pt-10 sm:px-6 lg:gap-16 lg:px-8">
+        <header className="sticky top-3 z-50 sm:top-4">
           <div className="rounded-3xl border border-(--border) bg-(--surface)/90 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur">
             <div className="hidden flex-wrap items-center justify-between gap-3 border-b border-(--border) px-5 py-2 text-xs text-(--ink-muted) md:flex">
               <span>Bienvenidos a Bioalergia · Atención especializada en Concepción</span>
@@ -101,18 +101,32 @@ export default function App() {
                 </Link>
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:gap-6">
+              <div className="flex items-center justify-between gap-3 md:justify-start">
                 <img
                   src="/logo_sin_eslogan.png"
                   alt="Bioalergia"
-                  className="h-12 w-auto sm:h-14"
+                  className="h-11 w-auto sm:h-14"
                   loading="eager"
                 />
+                <div className="flex items-center gap-2 md:hidden">
+                  <Button className="h-9 rounded-full bg-(--accent) px-4 text-white" onPress={handleDoctoraliaOpen}>
+                    Agendar cita
+                  </Button>
+                  <Button
+                    aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                    className="h-9 w-9 rounded-full border-(--border) text-(--ink-muted)"
+                    isIconOnly
+                    variant="outline"
+                    onPress={toggle}
+                  >
+                    <ThemeIcon theme={theme} />
+                  </Button>
+                </div>
               </div>
               <nav
                 aria-label="Navegación principal"
-                className="flex flex-wrap items-center gap-4 text-sm text-(--ink-muted)"
+                className="flex w-full items-center gap-4 overflow-x-auto text-sm text-(--ink-muted) whitespace-nowrap md:w-auto md:flex-1 md:justify-center md:overflow-visible"
               >
                 <Link className="no-underline transition-colors hover:text-(--ink)" href="#inicio">
                   Inicio
@@ -136,7 +150,7 @@ export default function App() {
                   Contacto
                 </Link>
               </nav>
-              <div className="flex flex-wrap items-center gap-2 text-sm">
+              <div className="hidden items-center gap-2 text-sm md:flex">
                 <Button className="h-9 rounded-full bg-(--accent) px-4 text-white" onPress={handleDoctoraliaOpen}>
                   Agendar cita
                 </Button>
