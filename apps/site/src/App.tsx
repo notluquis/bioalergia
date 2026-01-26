@@ -56,12 +56,12 @@ function DoctoraliaBookingWidget() {
   useDoctoraliaScript();
 
   return (
-    <Card className="rounded-3xl" variant="secondary">
+    <Card className="rounded-3xl" variant="tertiary">
       <Card.Header className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
-          <div className="text-xs uppercase tracking-wide text-black/50">Reserva online</div>
+          <div className="text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">Reserva online</div>
           <Card.Title className="text-2xl">Agenda tu cita en Doctoralia</Card.Title>
-          <Card.Description className="max-w-xl">
+          <Card.Description className="max-w-xl text-[color:var(--ink-muted)]">
             Confirma tu evaluación directamente en Doctoralia y recibe la confirmación por correo.
           </Card.Description>
         </div>
@@ -101,7 +101,7 @@ function DoctoraliaCertificate() {
     <Card className="rounded-3xl" variant="secondary">
       <Card.Header className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-2">
-          <div className="text-xs uppercase tracking-wide text-black/50">Pacientes satisfechos</div>
+          <div className="text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">Pacientes satisfechos</div>
           <Card.Title className="text-2xl">Certificado Doctoralia</Card.Title>
         </div>
         <Chip size="sm" variant="soft">
@@ -133,20 +133,19 @@ function LocationSection() {
     <Card className="rounded-3xl" variant="secondary">
       <Card.Header className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
-          <div className="text-xs uppercase tracking-wide text-black/50">Ubicación</div>
+          <div className="text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">Ubicación</div>
           <Card.Title className="text-2xl">Centro Costanera</Card.Title>
-          <Card.Description className="max-w-md">{clinicAddress}</Card.Description>
+          <Card.Description className="max-w-md text-[color:var(--ink-muted)]">{clinicAddress}</Card.Description>
         </div>
         <Button
-          className="rounded-full"
-          variant="secondary"
+          className="rounded-full bg-[var(--accent-2)] text-white"
           onPress={() => window.open(clinicMapUrl, "_blank", "noopener,noreferrer")}
         >
           Cómo llegar
         </Button>
       </Card.Header>
       <Card.Content className="p-0">
-        <div className="overflow-hidden rounded-2xl border border-black/10">
+        <div className="overflow-hidden rounded-2xl border border-[color:var(--border)]">
           <iframe
             title="Mapa Bioalergia"
             src={clinicMapEmbedUrl}
@@ -189,19 +188,22 @@ export default function App() {
             <img
               src="/logo_sin_eslogan.png"
               alt="Bioalergia"
-              className="h-10 w-auto"
+              className="h-12 w-auto sm:h-14 lg:h-16"
               loading="eager"
             />
-            <div className="text-lg font-semibold tracking-wide">Bioalergia</div>
           </div>
-          <div className="flex items-center gap-3 text-sm">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
             <Chip size="sm" variant="soft">
               Agenda online
             </Chip>
-            <Button className="rounded-full" onPress={handleDoctoraliaOpen}>
+            <Button className="rounded-full bg-[var(--accent)] text-white" onPress={handleDoctoraliaOpen}>
               Agendar cita
             </Button>
-            <Button className="rounded-full" variant="outline" onPress={toggle}>
+            <Button
+              className="rounded-full border-[color:var(--border)] text-[color:var(--ink)]"
+              variant="outline"
+              onPress={toggle}
+            >
               {theme === "dark" ? "Modo claro" : "Modo oscuro"}
             </Button>
           </div>
@@ -217,7 +219,7 @@ export default function App() {
                   </Chip>
                 ))}
               </div>
-              <h1 className="text-4xl font-semibold leading-tight text-[var(--ink)] sm:text-5xl">
+              <h1 className="text-4xl font-semibold leading-tight text-[color:var(--ink)] sm:text-6xl">
                 Atención especializada en
                 <span
                   className="ml-2 block text-5xl font-normal sm:text-6xl"
@@ -226,14 +228,14 @@ export default function App() {
                   alergias respiratorias y alimentarias
                 </span>
               </h1>
-              <p className="max-w-xl text-lg text-black/70">
+              <p className="max-w-xl text-lg text-[color:var(--ink-muted)]">
                 Un enfoque integral para diagnosticar, tratar y acompañar a pacientes con alergias en cada etapa.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Button className="rounded-full" onPress={handleDoctoraliaOpen}>
+                <Button className="rounded-full bg-[var(--accent)] text-white" onPress={handleDoctoraliaOpen}>
                   Reservar evaluación
                 </Button>
-                <Button className="rounded-full" variant="outline">
+                <Button className="rounded-full border-[color:var(--border)] text-[color:var(--ink)]" variant="outline">
                   Ver servicios
                 </Button>
               </div>
@@ -253,7 +255,7 @@ export default function App() {
                     0{index + 1}
                   </Chip>
                   <Card.Title>{item.title}</Card.Title>
-                  <Card.Description>{item.copy}</Card.Description>
+                  <Card.Description className="text-[color:var(--ink-muted)]">{item.copy}</Card.Description>
                 </Card.Header>
               </Card>
             ))}
@@ -267,11 +269,11 @@ export default function App() {
           <Card className="rounded-3xl" variant="secondary">
             <Card.Header className="flex flex-wrap items-center justify-between gap-4">
               <div className="space-y-2">
-                <div className="text-xs uppercase tracking-wide text-black/50">Contacto directo</div>
+                <div className="text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">Contacto directo</div>
                 <Card.Title className="text-2xl">contacto@bioalergia.cl</Card.Title>
-                <Card.Description>+56 9 1234 5678</Card.Description>
+                <Card.Description className="text-[color:var(--ink-muted)]">+56 9 1234 5678</Card.Description>
               </div>
-              <Button className="rounded-full" variant="secondary">
+              <Button className="rounded-full bg-[var(--accent-2)] text-white">
                 Hablar con el equipo
               </Button>
             </Card.Header>
