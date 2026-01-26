@@ -10,7 +10,7 @@ export function GlossarySection() {
       title="Términos clave"
       subtitle="Definiciones simples para comprender mejor tu diagnóstico y tratamiento."
     >
-      <Card className="rounded-3xl" variant="secondary">
+      <Card className="rounded-3xl overflow-hidden" variant="secondary">
         <Card.Content className="p-0">
           <ScrollShadow className="max-h-70 sm:max-h-90 lg:max-h-100 space-y-4 p-6" hideScrollBar>
             {glossary.map((item) => (
