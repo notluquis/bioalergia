@@ -93,7 +93,7 @@ export function MultiSelectFilter({
                 onChange(Array.from(keys) as string[]);
               }
             }}
-            className="max-h-60 overflow-y-auto w-(--radix-dropdown-menu-trigger-width)"
+            className="max-h-60 w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(90vw,320px)] overflow-y-auto"
           >
             {options.map((option) => (
               <DropdownItem key={option.value} textValue={option.label.split(" · ")[0]}>

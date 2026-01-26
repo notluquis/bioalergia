@@ -79,9 +79,9 @@ function CalendarDailyPage() {
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
       {/* Header with Navigation */}
-      <header className="space-y-1.5">
+      <header className="space-y-2.5">
         <DayNavigation
           onSelect={setSelectedDate}
           allowedWeekdays={[1, 2, 3, 4, 5, 6]}
@@ -114,7 +114,7 @@ function CalendarDailyPage() {
         <DailyStatsCards
           amountExpected={selectedDayEntry.amountExpected}
           amountPaid={selectedDayEntry.amountPaid}
-          className="mt-3"
+          className="mt-4"
           eventsCount={selectedDayEntry.total}
         />
       )}

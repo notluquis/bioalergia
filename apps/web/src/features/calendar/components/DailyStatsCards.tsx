@@ -16,7 +16,7 @@ export function DailyStatsCards({
   eventsCount,
 }: Readonly<DailyStatsCardsProps>) {
   return (
-    <div className={cn("grid gap-4 sm:grid-cols-3", className)}>
+    <div className={cn("grid gap-3 sm:grid-cols-3", className)}>
       <StatCard
         className="transition-transform hover:scale-[1.02]"
         title="Eventos"

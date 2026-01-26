@@ -1,4 +1,4 @@
-import { Button, Card, Tooltip } from "@heroui/react";
+import { Button, Card, Popover, Tooltip } from "@heroui/react";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
 import { useEffect, useMemo, useState } from "react";
@@ -190,65 +190,84 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
             return <div key={cell.key} />;
           }
 
+          const cellButton = (
+            <Button
+              className={clsx(
+                "relative flex h-full w-full min-h-0 min-w-0 aspect-square cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
+                // Default empty state
+                "bg-default-100/50 text-foreground-500",
+                // Intensity colors
+                INTENSITY_COLORS[cell.intensity],
+                // Conditional classes
+                {
+                  "cursor-pointer font-semibold": cell.total > 0,
+                  // TODAY indicator
+                  "ring-warning ring-offset-content1 shadow-warning/40 z-10 shadow-lg ring-2 ring-offset-2":
+                    cell.isToday,
+                },
+                !cell.isToday &&
+                  "hover:ring-primary hover:ring-offset-content1 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2",
+              )}
+              size="sm"
+              variant="ghost"
+            >
+              {/* Day Number */}
+              <span
+                className={clsx(
+                  "absolute top-0.5 left-1 text-[10px] leading-none opacity-60",
+                  cell.total > 0 && "text-[9px] font-normal opacity-80",
+                )}
+              >
+                {cell.dayNumber}
+              </span>
+
+              {/* Event Count */}
+              {cell.total > 0 && (
+                <span className="mt-1 text-sm font-bold tracking-tight shadow-sm drop-shadow-sm">
+                  {cell.total}
+                </span>
+              )}
+            </Button>
+          );
+
+          const cellDetails =
+            cell.total > 0 ? (
+              <div className="bg-content1 text-foreground border-default-200 rounded-lg border p-3 text-xs shadow-xl">
+                <p className="mb-1 font-bold">{cell.date.format("dddd DD MMMM")}</p>
+                <div className="space-y-0.5">
+                  <p>
+                    {cell.total} evento{cell.total !== 1 && "s"}
+                  </p>
+                  {formatTypeBreakdown(cell.typeCounts).map((line) => (
+                    <p className="text-default-600" key={line}>
+                      {line}
+                    </p>
+                  ))}
+                  <p className="opacity-80">Esperado: {fmtCLP(cell.amountExpected)}</p>
+                  <p className="opacity-80">Pagado: {fmtCLP(cell.amountPaid)}</p>
+                </div>
+              </div>
+            ) : null;
+
+          if (tooltipTrigger === "focus") {
+            if (!cellDetails) {
+              return <div key={cell.key}>{cellButton}</div>;
+            }
+            return (
+              <Popover key={cell.key}>
+                <Popover.Trigger>{cellButton}</Popover.Trigger>
+                <Popover.Content className="z-50 max-w-[min(90vw,260px)] p-0" offset={8}>
+                  <Popover.Dialog className="p-0">{cellDetails}</Popover.Dialog>
+                </Popover.Content>
+              </Popover>
+            );
+          }
+
           return (
             <Tooltip delay={0} key={cell.key} trigger={tooltipTrigger}>
-              <Tooltip.Trigger>
-                <Button
-                  className={clsx(
-                    "relative flex h-full w-full min-h-0 min-w-0 aspect-square cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
-                    // Default empty state
-                    "bg-default-100/50 text-foreground-500",
-                    // Intensity colors
-                    INTENSITY_COLORS[cell.intensity],
-                    // Conditional classes
-                    {
-                      "cursor-pointer font-semibold": cell.total > 0,
-                      // TODAY indicator
-                      "ring-warning ring-offset-content1 shadow-warning/40 z-10 shadow-lg ring-2 ring-offset-2":
-                        cell.isToday,
-                    },
-                    !cell.isToday &&
-                      "hover:ring-primary hover:ring-offset-content1 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2",
-                  )}
-                  size="sm"
-                  variant="ghost"
-                >
-                  {/* Day Number */}
-                  <span
-                    className={clsx(
-                      "absolute top-0.5 left-1 text-[10px] leading-none opacity-60",
-                      cell.total > 0 && "text-[9px] font-normal opacity-80",
-                    )}
-                  >
-                    {cell.dayNumber}
-                  </span>
-
-                  {/* Event Count */}
-                  {cell.total > 0 && (
-                    <span className="mt-1 text-sm font-bold tracking-tight shadow-sm drop-shadow-sm">
-                      {cell.total}
-                    </span>
-                  )}
-                </Button>
-              </Tooltip.Trigger>
+              <Tooltip.Trigger>{cellButton}</Tooltip.Trigger>
               <Tooltip.Content className="max-w-[min(90vw,260px)] p-0" showArrow>
-                {cell.total > 0 ? (
-                  <div className="bg-content1 text-foreground border-default-200 rounded-lg border p-3 text-xs shadow-xl">
-                    <p className="mb-1 font-bold">{cell.date.format("dddd DD MMMM")}</p>
-                    <div className="space-y-0.5">
-                      <p>
-                        {cell.total} evento{cell.total !== 1 && "s"}
-                      </p>
-                      {formatTypeBreakdown(cell.typeCounts).map((line) => (
-                        <p className="text-default-600" key={line}>
-                          {line}
-                        </p>
-                      ))}
-                      <p className="opacity-80">Esperado: {fmtCLP(cell.amountExpected)}</p>
-                      <p className="opacity-80">Pagado: {fmtCLP(cell.amountPaid)}</p>
-                    </div>
-                  </div>
-                ) : null}
+                {cellDetails}
               </Tooltip.Content>
             </Tooltip>
           );
@@ -260,7 +279,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
         <div className="text-foreground-500 flex flex-wrap items-center justify-between gap-2">
           <span className="font-semibold">Σ {monthTotals.events} eventos</span>
           <div className="flex flex-wrap gap-x-3 gap-y-1">
-            <Tooltip delay={0} trigger={tooltipTrigger}>
+            <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
                 <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Esperado:{" "}
@@ -276,7 +295,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                 Total esperado del mes completo
               </Tooltip.Content>
             </Tooltip>
-            <Tooltip delay={0} trigger={tooltipTrigger}>
+            <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
                 <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Pagado:{" "}
@@ -291,7 +310,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
               </Tooltip.Content>
             </Tooltip>
             {monthTotals.unclassified > 0 && (
-              <Tooltip delay={0} trigger={tooltipTrigger}>
+              <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
                 <Tooltip.Trigger>
                   <Button
                     className="text-warning h-auto min-w-0 px-0 text-[10px]"
@@ -310,7 +329,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                 </Tooltip.Content>
               </Tooltip>
             )}
-            <Tooltip delay={0} trigger={tooltipTrigger}>
+            <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
                 <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Restante:{" "}

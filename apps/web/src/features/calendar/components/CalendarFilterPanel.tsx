@@ -81,8 +81,10 @@ function searchClass(isDropdownLayout: boolean) {
 
 function actionClass(isDropdownLayout: boolean) {
   return cn(
-    "flex flex-wrap items-center gap-2",
-    isDropdownLayout ? "sm:col-span-2 justify-end border-t border-default-100/70 pt-3" : "ml-auto",
+    "flex w-full flex-wrap items-center gap-2",
+    isDropdownLayout
+      ? "sm:col-span-2 justify-between border-t border-default-100/70 pt-4 sm:justify-end"
+      : "ml-auto",
   );
 }
 
@@ -139,8 +141,8 @@ export function CalendarFilterPanel({
     <form
       className={cn(
         isDropdownLayout
-          ? "grid grid-cols-1 gap-2.5 p-3 sm:grid-cols-2 sm:items-end"
-          : "flex flex-wrap items-end gap-2.5 p-3",
+          ? "grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 sm:items-start"
+          : "flex flex-wrap items-end gap-3 p-3",
         formClassName,
       )}
       onSubmit={handleSubmit}
