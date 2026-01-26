@@ -4,6 +4,7 @@ import { Section } from "@/sections/Section";
 import { doctoraliaLink } from "@/sections/DoctoraliaWidgets";
 
 export function ContactSection() {
+  const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
   return (
     <Section id="contacto" eyebrow="Contacto" title={ctaCopy.headline} subtitle={ctaCopy.description}>
       <Card className="rounded-3xl" variant="secondary">
@@ -17,7 +18,7 @@ export function ContactSection() {
             </Link>
             <div className="flex flex-wrap gap-3 text-(--ink-muted)">
               {contactInfo.phones.map((phone) => (
-                <Link key={phone} href={`tel:${phone.replace(/\s/g, "")}`}>
+                <Link key={phone} href={whatsappLink(phone)}>
                   {phone}
                 </Link>
               ))}
