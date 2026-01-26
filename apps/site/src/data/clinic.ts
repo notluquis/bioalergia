@@ -33,7 +33,7 @@ export const clinicOverview = {
 
 export const contactInfo = {
   email: "contacto@bioalergia.cl",
-  phone: "+56 9 1234 5678",
+  phones: ["+56 9 3254 5883", "+56 9 3096 3316"],
   address: "Avenida Prat 199, Oficina A603, Edificio Centro Costanera, Concepción",
 };
 

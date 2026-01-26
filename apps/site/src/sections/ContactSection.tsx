@@ -15,9 +15,13 @@ export function ContactSection() {
             <Link href={`mailto:${contactInfo.email}`} className="text-2xl font-semibold no-underline">
               {contactInfo.email}
             </Link>
-            <Link href={`tel:${contactInfo.phone.replace(/\s/g, "")}`} className="text-[color:var(--ink-muted)]">
-              {contactInfo.phone}
-            </Link>
+            <div className="flex flex-wrap gap-3 text-[color:var(--ink-muted)]">
+              {contactInfo.phones.map((phone) => (
+                <Link key={phone} href={`tel:${phone.replace(/\s/g, "")}`}>
+                  {phone}
+                </Link>
+              ))}
+            </div>
           </div>
           <Button
             className="rounded-full bg-[var(--accent-2)] px-6 text-white"

@@ -30,7 +30,7 @@ export function MissionSection() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         {clinicOverview.pillars.map((pillar) => (
-          <Card className="rounded-2xl" key={pillar.title} variant="secondary">
+          <Card className="rounded-2xl" key={pillar.title} variant="default">
             <Card.Header className="gap-2">
               <Card.Title className="text-lg">{pillar.title}</Card.Title>
             </Card.Header>

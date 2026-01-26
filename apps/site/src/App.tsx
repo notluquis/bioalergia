@@ -51,67 +51,74 @@ export default function App() {
 
   return (
     <div className="relative overflow-hidden">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-6 py-12 lg:gap-16 lg:px-8">
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-5 py-2 text-xs text-[color:var(--ink-muted)]">
-          <span>Bienvenidos a Bioalergia · Atención especializada en Concepción</span>
-          <div className="flex flex-wrap items-center gap-4">
-            <Link className="no-underline" href={`tel:${contactInfo.phone.replace(/\s/g, "")}`}>
-              {contactInfo.phone}
-            </Link>
-            <Link className="no-underline" href={`mailto:${contactInfo.email}`}>
-              {contactInfo.email}
-            </Link>
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-6 pb-12 pt-48 lg:gap-16 lg:px-8">
+        <div className="fixed inset-x-0 top-0 z-50">
+          <div className="mx-auto w-full max-w-6xl px-6 lg:px-8">
+            <div className="mt-4 rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface-2)]/90 px-5 py-2 text-xs text-[color:var(--ink-muted)] shadow-[0_20px_60px_rgba(0,0,0,0.2)] backdrop-blur">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span>Bienvenidos a Bioalergia · Atención especializada en Concepción</span>
+                <div className="flex flex-wrap items-center gap-3">
+                  {contactInfo.phones.map((phone) => (
+                    <Link key={phone} className="no-underline" href={`tel:${phone.replace(/\s/g, "")}`}>
+                      {phone}
+                    </Link>
+                  ))}
+                  <Link className="no-underline" href={`mailto:${contactInfo.email}`}>
+                    {contactInfo.email}
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)]/90 px-5 py-4 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/logo_sin_eslogan.png"
+                  alt="Bioalergia"
+                  className="h-12 w-auto sm:h-14"
+                  loading="eager"
+                />
+              </div>
+              <nav
+                aria-label="Navegación principal"
+                className="flex flex-wrap items-center gap-4 text-sm text-[color:var(--ink-muted)]"
+              >
+                <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#inicio">
+                  Inicio
+                </Link>
+                <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#servicios">
+                  Servicios
+                </Link>
+                <Link
+                  className="no-underline transition-colors hover:text-[color:var(--ink)]"
+                  href="#inmunoterapia"
+                >
+                  Inmunoterapia
+                </Link>
+                <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#faq">
+                  FAQ
+                </Link>
+                <Link
+                  className="no-underline transition-colors hover:text-[color:var(--ink)]"
+                  href="#contacto"
+                >
+                  Contacto
+                </Link>
+              </nav>
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <Button className="h-9 rounded-full bg-[var(--accent)] px-4 text-white" onPress={handleDoctoraliaOpen}>
+                  Agendar cita
+                </Button>
+                <Button
+                  className="h-9 rounded-full border-[color:var(--border)] px-4 text-[color:var(--ink-muted)]"
+                  variant="outline"
+                  onPress={toggle}
+                >
+                  {theme === "dark" ? "Modo claro" : "Modo oscuro"}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo_sin_eslogan.png"
-              alt="Bioalergia"
-              className="h-12 w-auto sm:h-14 lg:h-16"
-              loading="eager"
-            />
-          </div>
-          <nav
-            aria-label="Navegación principal"
-            className="flex flex-wrap items-center gap-4 text-sm text-[color:var(--ink-muted)]"
-          >
-            <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#inicio">
-              Inicio
-            </Link>
-            <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#servicios">
-              Servicios
-            </Link>
-            <Link
-              className="no-underline transition-colors hover:text-[color:var(--ink)]"
-              href="#inmunoterapia"
-            >
-              Inmunoterapia
-            </Link>
-            <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#faq">
-              FAQ
-            </Link>
-            <Link
-              className="no-underline transition-colors hover:text-[color:var(--ink)]"
-              href="#contacto"
-            >
-              Contacto
-            </Link>
-          </nav>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Button className="h-9 rounded-full bg-[var(--accent)] px-4 text-white" onPress={handleDoctoraliaOpen}>
-              Agendar cita
-            </Button>
-            <Button
-              className="h-9 rounded-full border-[color:var(--border)] px-4 text-[color:var(--ink-muted)]"
-              variant="outline"
-              onPress={toggle}
-            >
-              {theme === "dark" ? "Modo claro" : "Modo oscuro"}
-            </Button>
-          </div>
-        </header>
 
         <main className="grid gap-20">
           <HeroSection onBook={handleDoctoraliaOpen} />

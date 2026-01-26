@@ -10,7 +10,7 @@ type SectionProps = {
 
 export function Section({ id, eyebrow, title, subtitle, children }: SectionProps) {
   return (
-    <section className="grid gap-8 scroll-mt-28" id={id}>
+    <section className="grid gap-8 scroll-mt-36" id={id}>
       {(eyebrow || title || subtitle) && (
         <div className="grid gap-3">
           {eyebrow ? (

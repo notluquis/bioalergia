@@ -12,7 +12,7 @@ export function ImmunotherapySection() {
     >
       <div className="grid gap-4">
         {immunotherapyComparison.map((row) => (
-          <Card className="rounded-2xl" key={row.aspect} variant="secondary">
+          <Card className="rounded-2xl" key={row.aspect} variant="default">
             <Card.Header className="flex flex-wrap items-center justify-between gap-3">
               <Chip size="sm" variant="soft">
                 {row.aspect}

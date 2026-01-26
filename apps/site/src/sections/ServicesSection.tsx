@@ -12,7 +12,7 @@ export function ServicesSection() {
     >
       <div className="grid gap-6 lg:grid-cols-2">
         {services.map((service) => (
-          <Card className="rounded-3xl" key={service.title} variant="secondary">
+          <Card className="rounded-3xl" key={service.title} variant="default">
             <Card.Header className="gap-3">
               <Card.Title className="text-xl">{service.title}</Card.Title>
               <Card.Description className="text-[color:var(--ink-muted)]">
