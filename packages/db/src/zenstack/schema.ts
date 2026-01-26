@@ -1343,6 +1343,10 @@ export class SchemaType implements SchemaDef {
                 { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("sourceId"), ExpressionUtils.field("transactionType")]) }, { name: "map", value: ExpressionUtils.literal("unique_mp_tx") }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("person_id")]) }] },
                 { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("transactionDate")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("status")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("transactionType")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("externalReference")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("sourceId")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("transactions") }] }
             ],
             idFields: ["id"],
@@ -2846,6 +2850,8 @@ export class SchemaType implements SchemaDef {
             attributes: [
                 { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
                 { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("triggerSource")]) }] },
+                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array([ExpressionUtils.field("startedAt")]) }] },
                 { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("sync_logs") }] }
             ],
             idFields: ["id"],

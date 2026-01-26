@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
 import { Button, Link, Separator } from "@heroui/react";
+import { useEffect, useMemo, useState } from "react";
 
 import { contactInfo } from "@/data/clinic";
 import { ContactSection } from "@/sections/ContactSection";
-import { DoctoraliaCertificate } from "@/sections/DoctoraliaWidgets";
+import { DoctoraliaCertificate, doctoraliaLink } from "@/sections/DoctoraliaWidgets";
 import { FAQSection } from "@/sections/FAQSection";
 import { FounderSection } from "@/sections/FounderSection";
 import { GlossarySection } from "@/sections/GlossarySection";
@@ -12,7 +12,6 @@ import { ImmunotherapySection } from "@/sections/ImmunotherapySection";
 import { LocationSection } from "@/sections/LocationSection";
 import { MissionSection } from "@/sections/MissionSection";
 import { ServicesSection } from "@/sections/ServicesSection";
-import { doctoraliaLink } from "@/sections/DoctoraliaWidgets";
 
 function useThemePreference() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -139,21 +138,33 @@ export default function App() {
                 <Link className="no-underline transition-colors hover:text-(--ink)" href="#inicio">
                   Inicio
                 </Link>
-                <Link className="no-underline transition-colors hover:text-(--ink)" href="#servicios">
+                <Link
+                  className="no-underline transition-colors hover:text-(--ink)"
+                  href="#servicios"
+                >
                   Servicios
                 </Link>
-                <Link className="no-underline transition-colors hover:text-(--ink)" href="#inmunoterapia">
+                <Link
+                  className="no-underline transition-colors hover:text-(--ink)"
+                  href="#inmunoterapia"
+                >
                   Inmunoterapia
                 </Link>
                 <Link className="no-underline transition-colors hover:text-(--ink)" href="#faq">
                   FAQ
                 </Link>
-                <Link className="no-underline transition-colors hover:text-(--ink)" href="#contacto">
+                <Link
+                  className="no-underline transition-colors hover:text-(--ink)"
+                  href="#contacto"
+                >
                   Contacto
                 </Link>
               </nav>
               <div className="hidden items-center gap-2 text-sm md:flex">
-                <Button className="h-9 rounded-full bg-(--accent) px-4 text-white" onPress={handleDoctoraliaOpen}>
+                <Button
+                  className="h-9 rounded-full bg-(--accent) px-4 text-white"
+                  onPress={handleDoctoraliaOpen}
+                >
                   Agendar cita
                 </Button>
                 <Button
