@@ -9,7 +9,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN npm install -g corepack@latest --force && corepack enable && corepack prepare pnpm@10.28.0 --activate
 COPY . .
-RUN pnpm dlx turbo@2.7.5 prune --scope=@finanzas/site --docker
+RUN pnpm -w turbo prune --scope=@finanzas/site --docker
 
 # ==========================================================================
 # Stage 2: Base deps
