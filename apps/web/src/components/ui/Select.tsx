@@ -74,9 +74,9 @@ function SelectBase<T extends object>({
   );
 }
 
-function SelectPopoverFixed({ children, ...props }: any) {
+function SelectPopoverFixed({ children, className, ...props }: any) {
   return (
-    <SelectPopover {...props} {...({ isNonModal: true } as any)}>
+    <SelectPopover {...props} className={cn("max-h-[min(60vh,320px)] overflow-y-auto", className)}>
       <SelectPortal>{children}</SelectPortal>
     </SelectPopover>
   );
