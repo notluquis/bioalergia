@@ -47,4 +47,4 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
-CMD ["sh", "-c", "pnpm --filter @finanzas/intranet preview --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "pnpm --filter @finanzas/intranet preview --host 0.0.0.0 --port ${PORT:-3000}"]
