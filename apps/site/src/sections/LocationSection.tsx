@@ -1,0 +1,39 @@
+import { Button, Card } from "@heroui/react";
+import { contactInfo } from "@/data/clinic";
+
+const clinicMapQuery = encodeURIComponent(contactInfo.address);
+const clinicMapUrl = `https://www.google.com/maps/search/?api=1&query=${clinicMapQuery}`;
+const clinicMapEmbedUrl = `https://www.google.com/maps?q=${clinicMapQuery}&output=embed`;
+
+export function LocationSection() {
+  return (
+    <Card className="rounded-3xl" variant="secondary">
+      <Card.Header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <div className="text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">Ubicación</div>
+          <Card.Title className="text-2xl">Centro Costanera</Card.Title>
+          <Card.Description className="max-w-md text-[color:var(--ink-muted)]">
+            {contactInfo.address}
+          </Card.Description>
+        </div>
+        <Button
+          className="rounded-full bg-[var(--accent-2)] text-white"
+          onPress={() => window.open(clinicMapUrl, "_blank", "noopener,noreferrer")}
+        >
+          Cómo llegar
+        </Button>
+      </Card.Header>
+      <Card.Content className="p-0">
+        <div className="overflow-hidden rounded-2xl border border-[color:var(--border)]">
+          <iframe
+            title="Mapa Bioalergia"
+            src={clinicMapEmbedUrl}
+            className="h-72 w-full"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
+      </Card.Content>
+    </Card>
+  );
+}
