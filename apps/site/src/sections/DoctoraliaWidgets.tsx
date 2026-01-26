@@ -22,16 +22,16 @@ export function DoctoraliaBookingWidget() {
 
   return (
     <Card
-      className="rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-[0_24px_70px_rgba(0,0,0,0.18)]"
+      className="rounded-3xl border border-(--border) bg-(--surface) shadow-[0_24px_70px_rgba(0,0,0,0.18)]"
       variant="tertiary"
     >
       <Card.Header className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
-          <div className="text-xs uppercase tracking-[0.28em] text-[color:var(--ink-muted)]">
+          <div className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">
             Reserva online
           </div>
           <Card.Title className="text-2xl">Agenda tu cita en Doctoralia</Card.Title>
-          <Card.Description className="max-w-xl text-[color:var(--ink-muted)]">
+          <Card.Description className="max-w-xl text-(--ink-muted)">
             Confirma tu evaluación directamente en Doctoralia y recibe la confirmación por correo.
           </Card.Description>
         </div>
@@ -40,7 +40,7 @@ export function DoctoraliaBookingWidget() {
         </Chip>
       </Card.Header>
       <Card.Content className="space-y-4">
-        <div className="rounded-2xl border border-[color:var(--border)] bg-white p-4 shadow-[0_18px_45px_rgba(0,0,0,0.12)]">
+        <div className="rounded-2xl border border-(--border) bg-white p-4 shadow-[0_18px_45px_rgba(0,0,0,0.12)]">
           <a
             id="zl-url-booking"
             className="zl-url block"
@@ -71,16 +71,16 @@ export function DoctoraliaCertificate() {
 
   return (
     <Card
-      className="h-full rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)]"
+      className="h-full rounded-3xl border border-(--border) bg-(--surface)"
       variant="default"
     >
       <Card.Header className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-2">
-          <div className="text-xs uppercase tracking-[0.28em] text-[color:var(--ink-muted)]">
+          <div className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">
             Pacientes satisfechos
           </div>
           <Card.Title className="text-2xl">Certificado Doctoralia</Card.Title>
-          <Card.Description className="text-[color:var(--ink-muted)]">
+          <Card.Description className="text-(--ink-muted)">
             Sello oficial de satisfacción y validación clínica.
           </Card.Description>
         </div>
@@ -89,7 +89,7 @@ export function DoctoraliaCertificate() {
         </Chip>
       </Card.Header>
       <Card.Content className="flex justify-center pb-6">
-        <div className="w-full max-w-[320px] rounded-2xl border border-[color:var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(0,0,0,0.12)]">
+        <div className="w-full max-w-[320px] rounded-2xl border border-(--border) bg-white p-5 shadow-[0_18px_45px_rgba(0,0,0,0.12)]">
           <a
             id="zl-url-certificate"
             className="zl-url block"

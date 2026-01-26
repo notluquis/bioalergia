@@ -26,7 +26,7 @@ export function ImmunotherapySection() {
           <Card className="rounded-2xl" key={item.label} variant="default">
             <Card.Header className="gap-3 pb-5">
               <Card.Title className="text-lg">{item.label}</Card.Title>
-              <Card.Description className="text-[color:var(--ink-muted)]">
+              <Card.Description className="text-(--ink-muted)">
                 {item.detail}
               </Card.Description>
             </Card.Header>
@@ -37,13 +37,13 @@ export function ImmunotherapySection() {
       <Card className="rounded-3xl" variant="default">
         <Card.Header className="gap-2">
           <Card.Title className="text-xl">Comparativa clínica</Card.Title>
-          <Card.Description className="text-[color:var(--ink-muted)]">
+          <Card.Description className="text-(--ink-muted)">
             Diferencias clave para tomar una decisión informada.
           </Card.Description>
         </Card.Header>
         <Card.Content className="overflow-x-auto pb-6">
           <div className="min-w-[560px]">
-            <div className="grid grid-cols-[160px_1fr_1fr] gap-6 border-b border-[color:var(--border)] pb-3 text-xs uppercase tracking-[0.2em] text-[color:var(--ink-muted)]">
+            <div className="grid grid-cols-[160px_1fr_1fr] gap-6 border-b border-(--border) pb-3 text-xs uppercase tracking-[0.2em] text-(--ink-muted)">
               <span>Aspecto</span>
               <span>SCIT · subcutánea</span>
               <span>SLIT · sublingual</span>
@@ -51,10 +51,10 @@ export function ImmunotherapySection() {
             <div className="grid gap-4 pt-4">
               {immunotherapyComparison.map((row) => (
                 <div
-                  className="grid grid-cols-[160px_1fr_1fr] gap-6 border-b border-[color:var(--border)] pb-4 text-sm text-[color:var(--ink-muted)] last:border-b-0"
+                  className="grid grid-cols-[160px_1fr_1fr] gap-6 border-b border-(--border) pb-4 text-sm text-(--ink-muted) last:border-b-0"
                   key={row.aspect}
                 >
-                  <span className="text-[color:var(--ink)]">{row.aspect}</span>
+                  <span className="text-(--ink)">{row.aspect}</span>
                   <span>{row.scit}</span>
                   <span>{row.slit}</span>
                 </div>
@@ -67,15 +67,15 @@ export function ImmunotherapySection() {
       <Card className="rounded-3xl" variant="secondary">
         <Card.Header className="gap-3">
           <Card.Title className="text-xl">Beneficios de la inmunoterapia</Card.Title>
-          <Card.Description className="text-[color:var(--ink-muted)]">
+          <Card.Description className="text-(--ink-muted)">
             Tratamiento modificador de la enfermedad, con impacto sostenido en el tiempo.
           </Card.Description>
         </Card.Header>
         <Card.Content className="grid gap-4 pb-6">
           {immunotherapyBenefits.map((benefit) => (
             <div className="flex items-start gap-3 text-sm leading-relaxed" key={benefit}>
-              <span className="mt-2 h-2 w-2 rounded-full bg-[var(--accent)]" />
-              <span className="text-[color:var(--ink-muted)]">{benefit}</span>
+              <span className="mt-2 h-2 w-2 rounded-full bg-(--accent)" />
+              <span className="text-(--ink-muted)">{benefit}</span>
             </div>
           ))}
         </Card.Content>

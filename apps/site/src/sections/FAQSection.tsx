@@ -16,16 +16,16 @@ export function FAQSection() {
             {faqItems.map((item) => (
               <Accordion.Item
                 key={item.question}
-                className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] px-5 py-3"
+                className="rounded-2xl border border-(--border) bg-(--surface-2) px-5 py-3"
               >
                 <Accordion.Heading>
                   <Accordion.Trigger className="items-center text-left text-base font-medium sm:text-lg">
                     {item.question}
-                    <Accordion.Indicator className="size-5 text-[color:var(--ink-muted)]" />
+                    <Accordion.Indicator className="size-5 text-(--ink-muted)" />
                   </Accordion.Trigger>
                 </Accordion.Heading>
                 <Accordion.Panel>
-                  <Accordion.Body className="pt-2 text-sm leading-relaxed text-[color:var(--ink-muted)]">
+                  <Accordion.Body className="pt-2 text-sm leading-relaxed text-(--ink-muted) sm:text-base">
                     {item.answer}
                   </Accordion.Body>
                 </Accordion.Panel>

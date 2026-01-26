@@ -14,7 +14,7 @@ export function FounderSection() {
         <Card.Content className="p-0">
           <ScrollShadow className="max-h-[360px] space-y-4 p-6" hideScrollBar>
             {founderProfile.paragraphs.map((paragraph) => (
-              <p className="text-sm leading-6 text-[color:var(--ink-muted)]" key={paragraph}>
+              <p className="text-sm leading-6 text-(--ink-muted)" key={paragraph}>
                 {paragraph}
               </p>
             ))}

@@ -15,15 +15,15 @@ export function ServicesSection() {
           <Card className="rounded-3xl" key={service.title} variant="default">
             <Card.Header className="gap-4 pb-0">
               <Card.Title className="text-xl">{service.title}</Card.Title>
-              <Card.Description className="text-[color:var(--ink-muted)]">
+              <Card.Description className="text-(--ink-muted)">
                 {service.description}
               </Card.Description>
             </Card.Header>
             <Card.Content className="grid gap-4 pb-6">
               {service.points.map((point) => (
                 <div className="flex items-start gap-3 text-sm leading-relaxed" key={point}>
-                  <span className="mt-2 h-2 w-2 rounded-full bg-[var(--accent)]" />
-                  <span className="text-[color:var(--ink-muted)]">{point}</span>
+                  <span className="mt-2 h-2 w-2 rounded-full bg-(--accent)" />
+                  <span className="text-(--ink-muted)">{point}</span>
                 </div>
               ))}
             </Card.Content>

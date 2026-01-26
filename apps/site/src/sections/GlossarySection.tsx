@@ -15,8 +15,8 @@ export function GlossarySection() {
           <ScrollShadow className="max-h-[360px] space-y-4 p-6" hideScrollBar>
             {glossary.map((item) => (
               <div className="grid gap-1" key={item.term}>
-                <div className="text-sm font-semibold text-[color:var(--ink)]">{item.term}</div>
-                <div className="text-sm text-[color:var(--ink-muted)]">{item.definition}</div>
+                <div className="text-sm font-semibold text-(--ink)">{item.term}</div>
+                <div className="text-sm text-(--ink-muted)">{item.definition}</div>
               </div>
             ))}
           </ScrollShadow>

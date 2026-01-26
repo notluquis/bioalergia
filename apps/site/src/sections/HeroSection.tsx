@@ -20,35 +20,35 @@ export function HeroSection({ onBook }: HeroSectionProps) {
           ))}
         </div>
         <div className="space-y-4">
-          <p className="text-xs uppercase tracking-[0.28em] text-[color:var(--ink-muted)]">
+          <p className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">
             {clinicOverview.subtitle}
           </p>
-          <h1 className="text-4xl font-semibold leading-tight text-[color:var(--ink)] sm:text-5xl lg:text-6xl">
+          <h1 className="text-4xl font-semibold leading-tight text-(--ink) sm:text-5xl lg:text-6xl">
             Clínica Bioalergia
             <span
-              className="mt-3 block text-3xl font-normal text-[color:var(--ink-muted)] sm:text-4xl"
+              className="mt-3 block text-3xl font-normal text-(--ink-muted) sm:text-4xl"
               style={{ fontFamily: '"Instrument Serif", serif' }}
             >
               Especialistas en alergias e inmunoterapia
             </span>
           </h1>
-          <p className="max-w-xl text-lg text-[color:var(--ink-muted)]">
+          <p className="max-w-xl text-lg text-(--ink-muted)">
             Diagnóstico preciso, tratamientos personalizados y acompañamiento clínico para mejorar tu
             calidad de vida.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button className="rounded-full bg-[var(--accent)] px-6 text-white" onPress={onBook}>
+          <Button className="rounded-full bg-(--accent) px-6 text-white" onPress={onBook}>
             Reservar evaluación
           </Button>
           <Link
-            className="text-sm text-[color:var(--ink-muted)] underline-offset-4"
+            className="text-sm text-(--ink-muted) underline-offset-4"
             href="#servicios"
           >
             Ver servicios
           </Link>
           <Link
-            className="text-sm text-[color:var(--ink-muted)] underline-offset-4"
+            className="text-sm text-(--ink-muted) underline-offset-4"
             href={doctoraliaLink}
             target="_blank"
             rel="noreferrer"
@@ -59,7 +59,7 @@ export function HeroSection({ onBook }: HeroSectionProps) {
         <div className="grid gap-3 sm:grid-cols-3">
           {clinicOverview.summary.map((item) => (
             <Card className="rounded-2xl" key={item} variant="secondary">
-              <Card.Content className="text-sm text-[color:var(--ink-muted)]">{item}</Card.Content>
+              <Card.Content className="text-sm text-(--ink-muted)">{item}</Card.Content>
             </Card>
           ))}
         </div>

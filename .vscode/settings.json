@@ -12,7 +12,8 @@
   "python-envs.pythonProjects": [],
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
+    "source.fixAll.eslint": "explicit",
+    "source.fixAll.biome": true
   },
   "eslint.validate": [
     "javascript",
@@ -24,5 +25,18 @@
   "editor.formatOnSave": true,
   "[zmodel-v3]": {
     "editor.defaultFormatter": "zenstack.zenstack-v3"
+  },
+  "editor.defaultFormatter": "biomejs.biome",
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
   }
 }

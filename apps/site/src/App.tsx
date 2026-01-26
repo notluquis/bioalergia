@@ -87,8 +87,8 @@ export default function App() {
     <div className="relative overflow-hidden">
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-6 pb-12 pt-12 lg:gap-16 lg:px-8">
         <header className="sticky top-4 z-50">
-          <div className="rounded-3xl border border-[color:var(--border)] bg-[color:var(--surface)]/90 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur">
-            <div className="hidden flex-wrap items-center justify-between gap-3 border-b border-[color:var(--border)] px-5 py-2 text-xs text-[color:var(--ink-muted)] md:flex">
+          <div className="rounded-3xl border border-(--border) bg-(--surface)/90 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur">
+            <div className="hidden flex-wrap items-center justify-between gap-3 border-b border-(--border) px-5 py-2 text-xs text-(--ink-muted) md:flex">
               <span>Bienvenidos a Bioalergia · Atención especializada en Concepción</span>
               <div className="flex flex-wrap items-center gap-3">
                 {contactInfo.phones.map((phone) => (
@@ -112,37 +112,37 @@ export default function App() {
               </div>
               <nav
                 aria-label="Navegación principal"
-                className="flex flex-wrap items-center gap-4 text-sm text-[color:var(--ink-muted)]"
+                className="flex flex-wrap items-center gap-4 text-sm text-(--ink-muted)"
               >
-                <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#inicio">
+                <Link className="no-underline transition-colors hover:text-(--ink)" href="#inicio">
                   Inicio
                 </Link>
-                <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#servicios">
+                <Link className="no-underline transition-colors hover:text-(--ink)" href="#servicios">
                   Servicios
                 </Link>
                 <Link
-                  className="no-underline transition-colors hover:text-[color:var(--ink)]"
+                  className="no-underline transition-colors hover:text-(--ink)"
                   href="#inmunoterapia"
                 >
                   Inmunoterapia
                 </Link>
-                <Link className="no-underline transition-colors hover:text-[color:var(--ink)]" href="#faq">
+                <Link className="no-underline transition-colors hover:text-(--ink)" href="#faq">
                   FAQ
                 </Link>
                 <Link
-                  className="no-underline transition-colors hover:text-[color:var(--ink)]"
+                  className="no-underline transition-colors hover:text-(--ink)"
                   href="#contacto"
                 >
                   Contacto
                 </Link>
               </nav>
               <div className="flex flex-wrap items-center gap-2 text-sm">
-                <Button className="h-9 rounded-full bg-[var(--accent)] px-4 text-white" onPress={handleDoctoraliaOpen}>
+                <Button className="h-9 rounded-full bg-(--accent) px-4 text-white" onPress={handleDoctoraliaOpen}>
                   Agendar cita
                 </Button>
                 <Button
                   aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-                  className="h-9 w-9 rounded-full border-[color:var(--border)] text-[color:var(--ink-muted)]"
+                  className="h-9 w-9 rounded-full border-(--border) text-(--ink-muted)"
                   isIconOnly
                   variant="outline"
                   onPress={toggle}
