@@ -205,7 +205,7 @@ export default function App() {
         aria-label="Escríbenos por WhatsApp"
         className="fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full bg-[#25D366] text-white shadow-[0_12px_30px_rgba(0,0,0,0.25)] sm:bottom-7 sm:right-7 sm:h-14 sm:w-14"
         isIconOnly
-        variant="solid"
+        variant="primary"
         onPress={handleWhatsAppOpen}
       >
         <svg aria-hidden="true" className="h-6 w-6 sm:h-7 sm:w-7" fill="currentColor" viewBox="0 0 24 24">
