@@ -2,7 +2,7 @@ import { Button } from "@heroui/react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { useEffect, useState } from "react";
-
+import { Tooltip } from "@/components/ui/Tooltip";
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -95,6 +95,14 @@ function groupEventsByDay(events: CalendarEventDetail[], weekStart: dayjs.Dayjs)
 const MAX_COLUMNS = 6;
 
 export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<WeekGridProps>) {
+  const [tooltipTrigger, setTooltipTrigger] = useState<"hover" | "focus">("hover");
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    setTooltipTrigger(canHover ? "hover" : "focus");
+  }, []);
+
   // Parse weekStart and get Monday of that week using ISO week (Monday = 1)
   const monday = (() => {
     const parsed = dayjs(weekStart);
@@ -208,7 +216,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
       role="none"
     >
       <div className="muted-scrollbar flex-1 overflow-x-auto overscroll-x-contain touch-pan-x">
-        <div className="min-w-180">
+        <div className="min-w-[960px]">
           {/* Header row */}
           {/* biome-ignore lint/a11y/useSemanticElements: grid layout */}
           <div
@@ -237,7 +245,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                 </abbr>
                 <time
                   className={cn(
-                    "text-foreground text-2xl font-extrabold leading-none",
+                    "text-foreground text-xl font-extrabold leading-none sm:text-2xl",
                     day.isToday &&
                       "bg-primary text-primary-foreground grid size-10 place-items-center rounded-full text-xl font-black shadow-lg shadow-primary/40",
                   )}
@@ -329,10 +337,10 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                     const columnWidth = totalWidth / event.totalColumns;
                     const leftPos = event.column * columnWidth;
 
-                    return (
+                    const eventButton = (
                       <Button
                         className={cn(
-                          "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden wrap-break-word rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-transform hover:z-10 hover:-translate-y-px hover:shadow-md",
+                          "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden break-words rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-shadow hover:z-10 hover:shadow-md",
                           getCategoryClass(event.category),
                           // Display modes
                           displayMode === "minimal" &&
@@ -350,7 +358,6 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                           top: position.top,
                           width: `calc(${columnWidth}% - ${padding * 2}px)`,
                         }}
-                        title={tooltipLines.join("\n")}
                         variant="ghost"
                       >
                         {(() => {
@@ -416,6 +423,39 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                           }
                         })()}
                       </Button>
+                    );
+
+                    if (tooltipLines.length === 0) {
+                      return eventButton;
+                    }
+
+                    const [heading, ...details] = tooltipLines;
+
+                    return (
+                      <Tooltip
+                        classNames={{ content: "bg-content1 text-foreground border-default-200" }}
+                        content={
+                          <div className="space-y-1 text-xs">
+                            {heading && (
+                              <p className="text-foreground font-semibold" key={`${heading}-t`}>
+                                {heading}
+                              </p>
+                            )}
+                            {details.map((line) => (
+                              <p className="text-default-600" key={line}>
+                                {line}
+                              </p>
+                            ))}
+                          </div>
+                        }
+                        delay={0}
+                        key={event.eventId}
+                        placement="top"
+                        showArrow
+                        trigger={tooltipTrigger}
+                      >
+                        {eventButton}
+                      </Tooltip>
                     );
                   })}
                 </div>

@@ -109,11 +109,11 @@ function CalendarSchedulePage() {
   return (
     <section className="space-y-3">
       {/* Compact Header */}
-      <header className="space-y-1.5">
+      <header className="space-y-2">
         {/* Navigation Row */}
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           {/* Left: Week Navigation */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ButtonGroup size="sm" variant="tertiary">
               <Button aria-label="Semana anterior" isIconOnly onPress={goToPreviousWeek}>
                 <ChevronLeft className="h-4 w-4" />
@@ -123,7 +123,8 @@ function CalendarSchedulePage() {
                 isDisabled={isCurrentWeek}
                 onPress={goToThisWeek}
               >
-                Semana actual
+                <span className="hidden sm:inline">Semana actual</span>
+                <span className="sm:hidden">Actual</span>
               </Button>
               <Button aria-label="Semana siguiente" isIconOnly onPress={goToNextWeek}>
                 <ChevronRight className="h-4 w-4" />
@@ -166,6 +167,15 @@ function CalendarSchedulePage() {
               showSearch
             />
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-xs sm:hidden">
+          <span className="text-default-500 font-medium">{rangeLabel}</span>
+          {isNextWeek && (
+            <Chip size="sm" variant="flat" color="primary" className="text-[11px]">
+              Próxima semana
+            </Chip>
+          )}
         </div>
       </header>
 

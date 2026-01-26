@@ -1,7 +1,7 @@
 import { Button, Card, Tooltip } from "@heroui/react";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { fmtCLP } from "@/lib/format";
 
@@ -71,6 +71,14 @@ interface PaddingCell {
 }
 
 function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<HeatmapMonthProps>) {
+  const [tooltipTrigger, setTooltipTrigger] = useState<"focus" | "hover">("hover");
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const isTouch = window.matchMedia("(hover: none)").matches;
+    setTooltipTrigger(isTouch ? "focus" : "hover");
+  }, []);
+
   // KEEP useMemo: Heavy Array generation with multiple map/format operations
   const dates = useMemo(() => {
     const startOfMonth = month.startOf("month");
@@ -183,7 +191,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
           }
 
           return (
-            <Tooltip delay={0} key={cell.key} trigger="focus">
+            <Tooltip delay={0} key={cell.key} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
                 <Button
                   className={clsx(
@@ -223,7 +231,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                   )}
                 </Button>
               </Tooltip.Trigger>
-              <Tooltip.Content className="max-w-[min(90vw,260px)] p-0">
+              <Tooltip.Content className="max-w-[min(90vw,260px)] p-0" showArrow>
                 {cell.total > 0 ? (
                   <div className="bg-content1 text-foreground border-default-200 rounded-lg border p-3 text-xs shadow-xl">
                     <p className="mb-1 font-bold">{cell.date.format("dddd DD MMMM")}</p>
@@ -252,7 +260,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
         <div className="text-foreground-500 flex flex-wrap items-center justify-between gap-2">
           <span className="font-semibold">Σ {monthTotals.events} eventos</span>
           <div className="flex flex-wrap gap-x-3 gap-y-1">
-            <Tooltip delay={0} trigger="focus">
+            <Tooltip delay={0} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
                 <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Esperado:{" "}
@@ -261,23 +269,29 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                   </span>
                 </Button>
               </Tooltip.Trigger>
-              <Tooltip.Content className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs">
+              <Tooltip.Content
+                className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs"
+                showArrow
+              >
                 Total esperado del mes completo
               </Tooltip.Content>
             </Tooltip>
-            <Tooltip delay={0} trigger="focus">
+            <Tooltip delay={0} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
                 <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Pagado:{" "}
                   <span className="text-foreground font-medium">{fmtCLP(monthTotals.paid)}</span>
                 </Button>
               </Tooltip.Trigger>
-              <Tooltip.Content className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs">
+              <Tooltip.Content
+                className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs"
+                showArrow
+              >
                 Total pagado del mes completo
               </Tooltip.Content>
             </Tooltip>
             {monthTotals.unclassified > 0 && (
-              <Tooltip delay={0} trigger="focus">
+              <Tooltip delay={0} trigger={tooltipTrigger}>
                 <Tooltip.Trigger>
                   <Button
                     className="text-warning h-auto min-w-0 px-0 text-[10px]"
@@ -288,12 +302,15 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                     <span className="font-medium">{fmtCLP(monthTotals.unclassified)}</span>
                   </Button>
                 </Tooltip.Trigger>
-                <Tooltip.Content className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs">
+                <Tooltip.Content
+                  className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs"
+                  showArrow
+                >
                   Eventos pasados que no fueron cobrados (no asistieron, cancelaron, etc.)
                 </Tooltip.Content>
               </Tooltip>
             )}
-            <Tooltip delay={0} trigger="focus">
+            <Tooltip delay={0} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
                 <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Restante:{" "}
@@ -302,7 +319,10 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                   </span>
                 </Button>
               </Tooltip.Trigger>
-              <Tooltip.Content className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs">
+              <Tooltip.Content
+                className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs"
+                showArrow
+              >
                 Lo que falta pagar desde hoy en adelante (solo eventos futuros)
               </Tooltip.Content>
             </Tooltip>
@@ -326,5 +346,8 @@ function formatTypeBreakdown(typeCounts: Record<string, number>) {
   return Object.entries(typeCounts)
     .filter(([, count]) => count > 0)
     .sort((a, b) => b[1] - a[1])
-    .map(([label, count]) => `${count} ${label}`);
+    .map(([label, count]) => {
+      const displayLabel = label === "default" ? "Sin tipo" : label;
+      return `${count} ${displayLabel}`;
+    });
 }
