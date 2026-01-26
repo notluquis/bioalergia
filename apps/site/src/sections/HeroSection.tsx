@@ -23,16 +23,16 @@ export function HeroSection({ onBook }: HeroSectionProps) {
           <p className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">
             {clinicOverview.subtitle}
           </p>
-          <h1 className="text-4xl font-semibold leading-tight text-(--ink) sm:text-5xl lg:text-6xl">
+          <h1 className="text-3xl font-semibold leading-tight text-(--ink) sm:text-4xl md:text-5xl lg:text-6xl">
             Clínica Bioalergia
             <span
-              className="mt-3 block text-3xl font-normal text-(--ink-muted) sm:text-4xl"
+              className="mt-2 block text-2xl font-normal text-(--ink-muted) sm:text-3xl md:text-4xl"
               style={{ fontFamily: '"Instrument Serif", serif' }}
             >
               Especialistas en alergias e inmunoterapia
             </span>
           </h1>
-          <p className="max-w-xl text-lg text-(--ink-muted)">
+          <p className="max-w-xl text-base text-(--ink-muted) sm:text-lg">
             Diagnóstico preciso, tratamientos personalizados y acompañamiento clínico para mejorar tu
             calidad de vida.
           </p>

@@ -89,8 +89,8 @@ export default function App() {
 
   return (
     <div className="relative">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-4 pb-12 pt-10 sm:px-6 lg:gap-16 lg:px-8">
-        <header className="sticky top-3 z-50 sm:top-4">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 pb-14 pt-6 sm:px-6 md:gap-12 lg:gap-16 lg:px-8">
+        <header className="sticky top-2 z-50 sm:top-3">
           <div className="rounded-2xl border border-(--border) bg-(--surface)/90 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur sm:rounded-3xl">
             <div className="hidden flex-wrap items-center justify-between gap-3 border-b border-(--border) px-4 py-2 text-xs text-(--ink-muted) md:flex lg:px-5">
               <span>Bienvenidos a Bioalergia · Atención especializada en Concepción</span>
@@ -105,12 +105,12 @@ export default function App() {
                 </Link>
               </div>
             </div>
-            <div className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:gap-6 lg:px-5 lg:py-4">
+            <div className="flex flex-col gap-3 px-4 py-3 sm:px-5 md:flex-row md:items-center md:gap-6 lg:py-4">
               <div className="flex items-center justify-between gap-3 md:justify-start">
                 <img
                   src="/logo_sin_eslogan.png"
                   alt="Bioalergia"
-                  className="h-11 w-auto sm:h-14"
+                  className="h-9 w-auto sm:h-11 md:h-14"
                   loading="eager"
                 />
                 <div className="flex items-center gap-2 md:hidden">
@@ -134,27 +134,21 @@ export default function App() {
               </div>
               <nav
                 aria-label="Navegación principal"
-                className="flex w-full items-center gap-4 overflow-x-auto text-xs text-(--ink-muted) whitespace-nowrap sm:text-sm md:w-auto md:flex-1 md:justify-center md:overflow-visible"
+                className="flex w-full flex-wrap items-center gap-2 text-xs text-(--ink-muted) sm:gap-4 sm:text-sm md:w-auto md:flex-1 md:justify-center md:overflow-visible"
               >
-                <Link className="shrink-0 no-underline transition-colors hover:text-(--ink)" href="#inicio">
+                <Link className="no-underline transition-colors hover:text-(--ink)" href="#inicio">
                   Inicio
                 </Link>
-                <Link className="shrink-0 no-underline transition-colors hover:text-(--ink)" href="#servicios">
+                <Link className="no-underline transition-colors hover:text-(--ink)" href="#servicios">
                   Servicios
                 </Link>
-                <Link
-                  className="shrink-0 no-underline transition-colors hover:text-(--ink)"
-                  href="#inmunoterapia"
-                >
+                <Link className="no-underline transition-colors hover:text-(--ink)" href="#inmunoterapia">
                   Inmunoterapia
                 </Link>
-                <Link className="shrink-0 no-underline transition-colors hover:text-(--ink)" href="#faq">
+                <Link className="no-underline transition-colors hover:text-(--ink)" href="#faq">
                   FAQ
                 </Link>
-                <Link
-                  className="shrink-0 no-underline transition-colors hover:text-(--ink)"
-                  href="#contacto"
-                >
+                <Link className="no-underline transition-colors hover:text-(--ink)" href="#contacto">
                   Contacto
                 </Link>
               </nav>
