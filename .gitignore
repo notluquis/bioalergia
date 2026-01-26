@@ -90,3 +90,4 @@ junit.xml
 # Lockfiles (pnpm is king)
 yarn.lock
 apps/api/assets/signatures/
+.vscode/*

@@ -13,7 +13,7 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
-    "source.fixAll.biome": true
+    "source.fixAll.biome": "explicit"
   },
   "eslint.validate": [
     "javascript",
