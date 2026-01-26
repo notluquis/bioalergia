@@ -9,7 +9,7 @@ FROM node:current-slim AS pruner
 WORKDIR /app
 COPY . .
 # npx downloads turbo pinned to major version - fastest approach for prune-only stage
-RUN npx turbo@^2 prune --scope=@finanzas/api --scope=@finanzas/web --docker
+RUN npx turbo@^2 prune --scope=@finanzas/api --docker
 
 # ============================================================================
 # STAGE 2: Base - Install dependencies for pruned workspace
@@ -47,12 +47,11 @@ COPY --from=pruner /app/out/full/ .
 
 ENV CI=true
 
-# Build DB first (dependency of api and web)
+# Build DB first (dependency of api)
 RUN pnpm turbo run build --filter=@finanzas/db
 
-# Build Web (Fast) and API in parallel
-# Web takes ~60s, API ~7s. Running them together saves the API build time from the critical path.
-RUN pnpm turbo run build:fast --filter=@finanzas/web & pnpm turbo run build --filter=@finanzas/api & wait
+# Build API
+RUN pnpm turbo run build --filter=@finanzas/api
 
 # Deploy API for production (isolates prod dependencies)
 RUN pnpm --filter @finanzas/api --prod deploy /prod/api
@@ -67,9 +66,6 @@ ENV PORT=3000
 
 # Copy deployed API
 COPY --from=build /prod/api .
-
-# Copy frontend build artifacts
-COPY --from=build /app/apps/web/dist/client ./public
 
 EXPOSE 3000
 

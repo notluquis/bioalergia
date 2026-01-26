@@ -1,6 +1,6 @@
 /**
  * Inventory Routes
- * Migrated from apps/web/server/routes/inventory.ts
+ * Migrated from apps/intranet/server/routes/inventory.ts
  */
 
 import { Hono } from "hono";

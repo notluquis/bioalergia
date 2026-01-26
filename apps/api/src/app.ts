@@ -216,7 +216,7 @@ if (process.env.NODE_ENV === "production") {
       service: "finanzas-api",
       stack: "Hono + ZenStack v3",
       mode: "development",
-      frontend: "Run `pnpm --filter @finanzas/web dev` separately",
+      frontend: "Run `pnpm --filter @finanzas/intranet dev` separately",
     });
   });
 }

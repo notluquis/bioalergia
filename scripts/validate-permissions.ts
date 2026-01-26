@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 // ============================================================================
 
 async function loadRouteData() {
-  const routeDataPath = path.resolve(__dirname, "../apps/web/shared/route-data.ts");
+  const routeDataPath = path.resolve(__dirname, "../apps/intranet/shared/route-data.ts");
   // Use dynamic import to load the ES module
   const { ROUTE_DATA, API_PERMISSIONS } = await import(routeDataPath);
   return { ROUTE_DATA, API_PERMISSIONS };

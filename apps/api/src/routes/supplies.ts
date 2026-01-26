@@ -1,6 +1,6 @@
 /**
  * Supplies Routes
- * Migrated from apps/web/server/routes/supplies.ts
+ * Migrated from apps/intranet/server/routes/supplies.ts
  */
 import { Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth";

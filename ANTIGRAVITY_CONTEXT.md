@@ -28,7 +28,7 @@
   - **Schema**: `packages/db/zenstack/schema.zmodel`.
 - **Auth**: WebAuthn/Passkeys + Session management.
 
-### Frontend (`apps/web`)
+### Frontend (`apps/intranet`)
 
 - **Framework**: **React 19** + **Vite**.
 - **Routing**: **TanStack Router** (File-based routing in `src/routes`).

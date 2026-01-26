@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the directory
-DIR="apps/web/src"
+DIR="apps/intranet/src"
 
 # Function to perform replacement
 replace() {

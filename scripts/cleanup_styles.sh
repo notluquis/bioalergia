@@ -1,5 +1,5 @@
 #!/bin/bash
-DIR="apps/web/src"
+DIR="apps/intranet/src"
 
 replace() {
     search="$1"

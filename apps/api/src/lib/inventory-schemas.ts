@@ -1,6 +1,6 @@
 /**
  * Inventory & Supplies schemas
- * Ported from apps/web/server/schemas/inventory.ts
+ * Ported from apps/intranet/server/schemas/inventory.ts
  */
 import { z } from "zod";
 
