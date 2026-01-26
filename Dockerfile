@@ -35,7 +35,7 @@ COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
 # Install dependencies (this layer is cached until lockfile changes)
-RUN --mount=type=cache,id=s/cc493466-c691-4384-8199-99f757a14014-pnpm,target=/pnpm/store \
+RUN --mount=type=cache,id=s/fbf6a604-cc46-46af-8d95-9e7503753301-/pnpm/store,target=/pnpm/store \
     pnpm install --frozen-lockfile
 
 # ============================================================================
