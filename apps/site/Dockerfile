@@ -3,7 +3,7 @@
 # ==========================================================================
 # Stage 1: Prune monorepo for site
 # ==========================================================================
-FROM node:20-slim AS pruner
+FROM node:current-slim AS pruner
 WORKDIR /app
 COPY . .
 RUN npx turbo@^2 prune --scope=@finanzas/site --docker
@@ -11,15 +11,10 @@ RUN npx turbo@^2 prune --scope=@finanzas/site --docker
 # ==========================================================================
 # Stage 2: Base deps
 # ==========================================================================
-FROM node:20-slim AS base
+FROM node:current-slim AS base
 WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    python3 \
-    && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g corepack@latest --force && \
     corepack enable pnpm && \
