@@ -46,7 +46,7 @@ export default function CalendarSyncHistoryPage() {
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">Historial de Sincronización</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => setShowConfig(!showConfig)}
             size="sm"
@@ -123,7 +123,7 @@ export default function CalendarSyncHistoryPage() {
                 return (
                   <Accordion.Item id={log.id.toString()} key={log.id.toString()}>
                     <Accordion.Heading>
-                      <Accordion.Trigger className="hover:bg-default-50/50 flex w-full items-center gap-4 px-4 py-3 text-left transition-colors">
+                      <Accordion.Trigger className="hover:bg-default-50/50 flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left transition-colors sm:flex-nowrap">
                         <StatusBadge status={log.status} />
 
                         <div className="min-w-24">
@@ -135,7 +135,7 @@ export default function CalendarSyncHistoryPage() {
                           </div>
                         </div>
 
-                        <div className="flex-1">
+                        <div className="flex min-w-[160px] flex-1 flex-wrap items-center gap-2">
                           <Chip size="sm" variant="secondary" className="font-mono text-xs">
                             {log.triggerSource}
                           </Chip>
@@ -150,7 +150,7 @@ export default function CalendarSyncHistoryPage() {
                           )}
                         </div>
 
-                        <div className="flex gap-2 text-xs">
+                        <div className="flex flex-wrap gap-2 text-xs">
                           {log.inserted > 0 && (
                             <span
                               className="bg-success/10 text-success rounded px-1.5 py-0.5"
@@ -193,7 +193,7 @@ export default function CalendarSyncHistoryPage() {
                           {duration === null ? "-" : `${duration}s`}
                         </div>
 
-                        <Accordion.Indicator className="text-default-300">
+                        <Accordion.Indicator className="text-default-300 ml-auto sm:ml-0">
                           <ChevronDown className="h-4 w-4" />
                         </Accordion.Indicator>
                       </Accordion.Trigger>
