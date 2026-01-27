@@ -1,5 +1,6 @@
 import { Card, Chip, Link } from "@heroui/react";
 import { useEffect } from "react";
+import { usePostHog } from "posthog-js/react";
 
 const doctoraliaUrl =
   "https://www.doctoralia.cl/jose-manuel-martinez-martinez/inmunologo-alergologo/concepcion";
@@ -19,6 +20,7 @@ function useDoctoraliaScript() {
 
 export function DoctoraliaBookingWidget() {
   useDoctoraliaScript();
+  const posthog = usePostHog();
 
   return (
     <Card
@@ -54,6 +56,12 @@ export function DoctoraliaBookingWidget() {
             data-zlw-hide-branding="true"
             data-zlw-saas-only="true"
             data-zlw-a11y-title="Widget de reserva de citas médicas"
+            onClick={() =>
+              posthog?.capture("doctoralia_widget_interaction", {
+                type: "booking_widget",
+                section: "doctoralia_widgets",
+              })
+            }
           >
             José Manuel Martínez Martínez - Doctoralia.cl
           </a>
@@ -70,6 +78,7 @@ export function DoctoraliaBookingWidget() {
 
 export function DoctoraliaCertificate() {
   useDoctoraliaScript();
+  const posthog = usePostHog();
 
   return (
     <Card
@@ -103,6 +112,12 @@ export function DoctoraliaCertificate() {
             data-zlw-hide-branding="true"
             data-zlw-saas-only="true"
             data-zlw-a11y-title="Certificado de pacientes satisfechos"
+            onClick={() =>
+              posthog?.capture("doctoralia_widget_interaction", {
+                type: "certificate_widget",
+                section: "doctoralia_widgets",
+              })
+            }
           >
             José Manuel Martínez Martínez - Doctoralia.cl
           </a>
