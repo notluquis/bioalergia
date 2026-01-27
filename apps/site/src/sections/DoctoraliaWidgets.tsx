@@ -1,6 +1,6 @@
 import { Card, Chip, Link } from "@heroui/react";
-import { useEffect } from "react";
 import { usePostHog } from "posthog-js/react";
+import { useEffect } from "react";
 
 const doctoraliaUrl =
   "https://www.doctoralia.cl/jose-manuel-martinez-martinez/inmunologo-alergologo/concepcion";

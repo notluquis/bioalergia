@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
 import { usePostHog } from "posthog-js/react";
+import { useEffect, useRef } from "react";
 
 /**
  * Hook para rastrear cuando una sección se vuelve visible en el viewport
@@ -24,7 +24,7 @@ export function useTrackSectionView(sectionId: string, sectionName: string) {
           hasTrackedRef.current = true;
         }
       },
-      { threshold: 0.25 }
+      { threshold: 0.25 },
     );
 
     observer.observe(elementRef.current);
