@@ -20,8 +20,13 @@ if (posthogKey && posthogHost) {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
+      // Static site: Data doesn't change during session
+      staleTime: Infinity, // Never refetch unless explicitly invalidated
+      gcTime: 1000 * 60 * 60, // Keep in cache for session duration (1 hour)
+      retry: 1, // Only retry once for network failures
+      refetchOnWindowFocus: false, // Don't refetch on tab focus
+      refetchOnMount: false, // Don't refetch on component remount
+      refetchOnReconnect: false, // Don't refetch when regaining connectivity
     },
   },
 });

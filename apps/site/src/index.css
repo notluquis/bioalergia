@@ -1,3 +1,4 @@
+@import "@heroui/styles";
 @import "tailwindcss";
 :root {
   --bg: #f7f3ea;
