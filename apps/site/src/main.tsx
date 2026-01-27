@@ -1,21 +1,10 @@
-import { PostHogProvider } from "@posthog/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import posthog from "posthog-js";
+import { PostHogProvider } from "posthog-js/react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import App from "./App";
 import "./index.css";
-
-const posthogKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
-const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
-
-if (posthogKey && posthogHost) {
-  posthog.init(posthogKey, {
-    api_host: posthogHost,
-    person_profiles: "identified_only",
-    autocapture: false, // Disable to protect sensitive health data
-  });
-}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,6 +20,12 @@ const queryClient = new QueryClient({
   },
 });
 
+const posthogOptions = {
+  api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+  person_profiles: "identified_only",
+  autocapture: false, // Disable to protect sensitive health data
+} as const;
+
 const root = document.getElementById("root");
 
 if (!root) {
@@ -38,9 +33,11 @@ if (!root) {
 }
 
 createRoot(root).render(
-  <QueryClientProvider client={queryClient}>
-    <PostHogProvider client={posthog}>
-      <App />
+  <StrictMode>
+    <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY} options={posthogOptions}>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
     </PostHogProvider>
-  </QueryClientProvider>,
+  </StrictMode>,
 );
