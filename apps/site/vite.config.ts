@@ -28,7 +28,7 @@ export default defineConfig({
           // Vendor chunks for better caching
           // Strategy: Separate heavy vendors to allow parallel download
           heroui: ["@heroui/react", "@heroui/styles"],
-          analytics: ["posthog-js", "@posthog/react"],
+          analytics: ["posthog-js"],
           tanstack: ["@tanstack/react-query"],
         },
       },
