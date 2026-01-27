@@ -2,6 +2,10 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "apps/site/Dockerfile"
+    "dockerfilePath": "apps/site/Dockerfile",
+    "buildArgs": [
+      "VITE_PUBLIC_POSTHOG_KEY",
+      "VITE_PUBLIC_POSTHOG_HOST"
+    ]
   }
 }
