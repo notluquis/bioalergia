@@ -381,6 +381,9 @@ importers:
       '@heroui/styles':
         specifier: 3.0.0-beta.5
         version: 3.0.0-beta.5(tailwind-merge@3.4.0)(tailwindcss@4.1.18)
+      '@posthog/react':
+        specifier: ^1.7.0
+        version: 1.7.0(@types/react@19.2.9)(posthog-js@1.335.3)(react@19.2.3)
       posthog-js:
         specifier: ^1.335.3
         version: 1.335.3
@@ -2093,6 +2096,16 @@ packages:
 
   '@posthog/core@1.14.0':
     resolution: {integrity: sha512-havjGYHwL8Gy6LXIR911h+M/sYlJLQbepxP/cc1M7Cp3v8F92bzpqkbuvUIUyb7/izkxfGwc9wMqKAo0QxMTrg==}
+
+  '@posthog/react@1.7.0':
+    resolution: {integrity: sha512-pM7GL7z/rKjiIwosbRiQA3buhLI6vUo+wg+T/ZrVZC7O5bVU07TfgNZTcuOj8E9dx7vDbfNrc1kjDN7PKMM8ug==}
+    peerDependencies:
+      '@types/react': '>=16.8.0'
+      posthog-js: '>=1.257.2'
+      react: '>=16.8.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   '@posthog/types@1.335.3':
     resolution: {integrity: sha512-mReFmfI+ep5sH3cnFhjvWfOcl3j6olKpN5lHFbOomLGxYTHMXcyMUBE3/o8WfrAgR1qxKQUsWMNcv6BhLr/GKA==}
@@ -8980,6 +8993,13 @@ snapshots:
   '@posthog/core@1.14.0':
     dependencies:
       cross-spawn: 7.0.6
+
+  '@posthog/react@1.7.0(@types/react@19.2.9)(posthog-js@1.335.3)(react@19.2.3)':
+    dependencies:
+      posthog-js: 1.335.3
+      react: 19.2.3
+    optionalDependencies:
+      '@types/react': 19.2.9
 
   '@posthog/types@1.335.3': {}
 

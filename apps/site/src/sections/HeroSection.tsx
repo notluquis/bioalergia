@@ -1,5 +1,5 @@
 import { Button, Card, Chip, Link } from "@heroui/react";
-import posthog from "posthog-js";
+import { usePostHog } from "@posthog/react";
 import { clinicOverview } from "@/data/clinic";
 import { DoctoraliaBookingWidget, doctoraliaLink } from "@/sections/DoctoraliaWidgets";
 
@@ -10,8 +10,10 @@ type HeroSectionProps = {
 };
 
 export function HeroSection({ onBook }: HeroSectionProps) {
+  const posthog = usePostHog();
+
   const handleDoctoraliaLink = () => {
-    posthog.capture("doctoralia_link_click", { location: "hero_section" });
+    posthog?.capture("doctoralia_link_click", { location: "hero_section" });
   };
   return (
     <section className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]" id="inicio">

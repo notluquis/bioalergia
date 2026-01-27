@@ -1,19 +1,20 @@
 import { Button, Card, Link } from "@heroui/react";
-import posthog from "posthog-js";
+import { usePostHog } from "@posthog/react";
 import { contactInfo, ctaCopy } from "@/data/clinic";
 import { doctoraliaLink } from "@/sections/DoctoraliaWidgets";
 import { Section } from "@/sections/Section";
 
 export function ContactSection() {
+  const posthog = usePostHog();
   const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
 
   const handleEmailClick = (email: string) => {
-    posthog.capture("email_click", { email, location: "contact_section" });
+    posthog?.capture("email_click", { email, location: "contact_section" });
     window.location.href = `mailto:${email}`;
   };
 
   const handleDoctoraliaClick = () => {
-    posthog.capture("doctoralia_booking_attempt", { location: "contact_section" });
+    posthog?.capture("doctoralia_booking_attempt", { location: "contact_section" });
     window.open(doctoraliaLink, "_blank", "noopener,noreferrer");
   };
 

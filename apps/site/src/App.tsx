@@ -1,5 +1,5 @@
 import { Button, Link, Separator } from "@heroui/react";
-import posthog from "posthog-js";
+import { usePostHog } from "@posthog/react";
 import { useEffect, useMemo, useState } from "react";
 
 import { contactInfo } from "@/data/clinic";
@@ -78,32 +78,29 @@ function ThemeIcon({ theme }: { theme: "light" | "dark" }) {
 }
 
 export default function App() {
+  const posthog = usePostHog();
   const { theme, toggle } = useThemePreference();
   const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
 
   // Initialize PostHog on component mount
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_POSTHOG_KEY;
-    if (apiKey) {
-      posthog.init(apiKey, {
-        api_host: "https://eu.i.posthog.com",
-        person_profiles: "identified_only",
-        autocapture: false, // Disable autocapture to avoid capturing sensitive health data
-      });
+    const apiKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
+    if (apiKey && posthog) {
+      posthog.identify(undefined, { clinic: "bioalergia" });
     }
-  }, []);
+  }, [posthog]);
 
   const handleDoctoraliaOpen = () => {
-    posthog.capture("doctoralia_booking_attempt");
+    posthog?.capture("doctoralia_booking_attempt", { location: "app_header" });
     window.open(doctoraliaLink, "_blank", "noopener,noreferrer");
   };
   const handleWhatsAppOpen = () => {
-    posthog.capture("whatsapp_click");
+    posthog?.capture("whatsapp_click", { location: "floating_button" });
     window.open(whatsappLink(contactInfo.phones[0]), "_blank", "noopener,noreferrer");
   };
 
   const handleEmailClick = (email: string) => {
-    posthog.capture("email_click", { email });
+    posthog?.capture("email_click", { email, location: "app_header" });
     window.location.href = `mailto:${email}`;
   };
 
