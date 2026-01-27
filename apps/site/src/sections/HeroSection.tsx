@@ -37,18 +37,15 @@ export function HeroSection({ onBook }: HeroSectionProps) {
             </span>
           </h1>
           <p className="max-w-xl text-base text-(--ink-muted) sm:text-lg">
-            Diagnóstico preciso, tratamientos personalizados y acompañamiento clínico para mejorar tu
-            calidad de vida.
+            Diagnóstico preciso, tratamientos personalizados y acompañamiento clínico para mejorar
+            tu calidad de vida.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Button className="rounded-full bg-(--accent) px-6 text-white" onPress={onBook}>
             Reservar evaluación
           </Button>
-          <Link
-            className="text-sm text-(--ink-muted) underline-offset-4"
-            href="#servicios"
-          >
+          <Link className="text-sm text-(--ink-muted) underline-offset-4" href="#servicios">
             Ver servicios
           </Link>
           <Link
