@@ -44,7 +44,7 @@ export function DoctoraliaBookingWidget() {
       <Card.Content className="space-y-4 px-4 pb-4 sm:px-5 sm:pb-5 md:px-6 md:pb-6">
         <div className="mx-auto w-full max-w-full rounded-2xl border border-(--border) bg-white p-2 shadow-[0_18px_45px_rgba(0,0,0,0.12)] sm:p-3 md:p-4">
           <a
-            id="zl-url"
+            id="zl-url-booking"
             className="zl-url block"
             href={doctoraliaUrl}
             rel="nofollow"
@@ -93,7 +93,7 @@ export function DoctoraliaCertificate() {
       <Card.Content className="flex justify-center px-4 pb-4 sm:px-5 sm:pb-5 md:px-6 md:pb-6">
         <div className="w-full rounded-2xl border border-(--border) bg-white p-3 shadow-[0_18px_45px_rgba(0,0,0,0.12)] sm:p-4 md:p-5">
           <a
-            id="zl-url"
+            id="zl-url-certificate"
             className="zl-url block"
             href={doctoraliaUrl}
             rel="nofollow"
