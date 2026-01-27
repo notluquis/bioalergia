@@ -1,10 +1,22 @@
 import { Button, Card, Link } from "@heroui/react";
+import posthog from "posthog-js";
 import { contactInfo, ctaCopy } from "@/data/clinic";
 import { doctoraliaLink } from "@/sections/DoctoraliaWidgets";
 import { Section } from "@/sections/Section";
 
 export function ContactSection() {
   const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
+
+  const handleEmailClick = (email: string) => {
+    posthog.capture("email_click", { email, location: "contact_section" });
+    window.location.href = `mailto:${email}`;
+  };
+
+  const handleDoctoraliaClick = () => {
+    posthog.capture("doctoralia_booking_attempt", { location: "contact_section" });
+    window.open(doctoraliaLink, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <Section
       id="contacto"
@@ -18,12 +30,13 @@ export function ContactSection() {
             <div className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">
               Contacto directo
             </div>
-            <Link
-              href={`mailto:${contactInfo.email}`}
-              className="text-xl sm:text-2xl font-semibold no-underline break-all"
+            <button
+              type="button"
+              className="text-xl sm:text-2xl font-semibold no-underline break-all text-left cursor-pointer hover:underline"
+              onClick={() => handleEmailClick(contactInfo.email)}
             >
               {contactInfo.email}
-            </Link>
+            </button>
             <div className="flex flex-wrap gap-3 text-(--ink-muted) text-sm sm:text-base">
               {contactInfo.phones.map((phone) => (
                 <Link key={phone} href={whatsappLink(phone)}>
@@ -34,7 +47,7 @@ export function ContactSection() {
           </div>
           <Button
             className="rounded-full bg-(--accent) px-6 text-white w-full md:w-auto"
-            onPress={() => window.open(doctoraliaLink, "_blank", "noopener,noreferrer")}
+            onPress={handleDoctoraliaClick}
           >
             Hablar con el equipo
           </Button>

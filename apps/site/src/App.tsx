@@ -1,4 +1,5 @@
 import { Button, Link, Separator } from "@heroui/react";
+import posthog from "posthog-js";
 import { useEffect, useMemo, useState } from "react";
 
 import { contactInfo } from "@/data/clinic";
@@ -79,11 +80,31 @@ function ThemeIcon({ theme }: { theme: "light" | "dark" }) {
 export default function App() {
   const { theme, toggle } = useThemePreference();
   const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
+
+  // Initialize PostHog on component mount
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_POSTHOG_KEY;
+    if (apiKey) {
+      posthog.init(apiKey, {
+        api_host: "https://eu.i.posthog.com",
+        person_profiles: "identified_only",
+        autocapture: false, // Disable autocapture to avoid capturing sensitive health data
+      });
+    }
+  }, []);
+
   const handleDoctoraliaOpen = () => {
+    posthog.capture("doctoralia_booking_attempt");
     window.open(doctoraliaLink, "_blank", "noopener,noreferrer");
   };
   const handleWhatsAppOpen = () => {
+    posthog.capture("whatsapp_click");
     window.open(whatsappLink(contactInfo.phones[0]), "_blank", "noopener,noreferrer");
+  };
+
+  const handleEmailClick = (email: string) => {
+    posthog.capture("email_click", { email });
+    window.location.href = `mailto:${email}`;
   };
 
   return (
@@ -99,9 +120,13 @@ export default function App() {
                     {phone}
                   </Link>
                 ))}
-                <Link className="no-underline" href={`mailto:${contactInfo.email}`}>
+                <button
+                  type="button"
+                  className="no-underline cursor-pointer text-inherit hover:underline"
+                  onClick={() => handleEmailClick(contactInfo.email)}
+                >
                   {contactInfo.email}
-                </Link>
+                </button>
               </div>
             </div>
             <div className="flex flex-col gap-3 px-4 py-3 sm:px-5 md:flex-row md:items-center md:gap-6 lg:py-4">
