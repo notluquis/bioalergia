@@ -1,5 +1,5 @@
 import { Button, Card, Link } from "@heroui/react";
-import { usePostHog } from "@posthog/react";
+import { usePostHog } from "posthog-js/react";
 import { contactInfo, ctaCopy } from "@/data/clinic";
 import { doctoraliaLink } from "@/lib/doctoralia";
 import { Section } from "@/sections/Section";

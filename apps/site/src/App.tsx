@@ -1,5 +1,5 @@
 import { Button, Link, Separator } from "@heroui/react";
-import { usePostHog } from "@posthog/react";
+import { usePostHog } from "posthog-js/react";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 
 import { contactInfo } from "@/data/clinic";
@@ -128,8 +128,8 @@ export default function App() {
     <div className="relative">
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 pb-14 pt-6 sm:px-6 md:gap-12 lg:gap-16 lg:px-8">
         <header className="sticky top-2 z-50 sm:top-3">
-          <div className="rounded-2xl border border-(--border) bg-(--surface)/90 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur sm:rounded-3xl">
-            <div className="hidden flex-wrap items-center justify-between gap-3 border-b border-(--border) px-4 py-2 text-xs text-(--ink-muted) md:flex lg:px-5">
+          <div className="rounded-2xl border border-border bg-(--surface)/90 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur sm:rounded-3xl">
+            <div className="hidden flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-2 text-xs text-(--ink-muted) md:flex lg:px-5">
               <span>Bienvenidos a Bioalergia · Atención especializada en Concepción</span>
               <div className="flex flex-wrap items-center gap-3">
                 {contactInfo.phones.map((phone) => (
@@ -164,7 +164,7 @@ export default function App() {
                   </Button>
                   <Button
                     aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-                    className="h-8 w-8 rounded-full border-(--border) text-(--ink-muted) sm:h-9 sm:w-9"
+                    className="h-8 w-8 rounded-full border-border text-(--ink-muted) sm:h-9 sm:w-9"
                     isIconOnly
                     variant="outline"
                     onPress={toggle}
@@ -211,7 +211,7 @@ export default function App() {
                 </Button>
                 <Button
                   aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-                  className="h-9 w-9 rounded-full border-(--border) text-(--ink-muted)"
+                  className="h-9 w-9 rounded-full border-border text-(--ink-muted)"
                   isIconOnly
                   variant="outline"
                   onPress={toggle}
