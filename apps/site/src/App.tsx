@@ -102,14 +102,6 @@ export default function App() {
   const { theme, toggle } = useThemePreference();
   const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
 
-  // Initialize PostHog on component mount
-  useEffect(() => {
-    const apiKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
-    if (apiKey && posthog) {
-      posthog.identify(undefined, { clinic: "bioalergia" });
-    }
-  }, [posthog]);
-
   const handleDoctoraliaOpen = () => {
     posthog?.capture("doctoralia_booking_attempt", { location: "app_header" });
     window.open(doctoraliaLink, "_blank", "noopener,noreferrer");
