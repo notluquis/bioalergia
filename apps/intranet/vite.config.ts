@@ -192,7 +192,8 @@ export default defineConfig(({ mode }) => ({
     outDir: "dist/client",
     chunkSizeWarningLimit: 1000,
     sourcemap: false,
-    minify: "esbuild", // 2026: esbuild is standard for speed/size balance
+    // minify: 'oxc' is default in Vite 8 (30-90x faster than Terser)
+    // Automatically minifies and removes console/debugger in production
     cssCodeSplit: true, // Split CSS for faster parallel loading
     reportCompressedSize: false, // Skip gzip size calculation during build (faster)
     // 2026: Trust the graph! Manual chunks often hurt HTTP/3 multiplexing.
@@ -200,10 +201,6 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       // Rolldown's automatic chunking handles splitting based on import graph
     },
-  },
-  esbuild: {
-    // 2026: Clean logs in production automatically
-    drop: mode === "production" ? ["console", "debugger"] : [],
   },
   resolve: {
     extensions: [".tsx", ".ts", ".jsx", ".js", ".json"],
