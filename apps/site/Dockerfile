@@ -31,6 +31,11 @@ RUN --mount=type=cache,id=s/15a5a9cb-b1d7-4fa9-8082-b013705c6f0f-/pnpm/store,tar
 FROM base AS build
 COPY --from=pruner /app/out/full/ .
 ENV CI=true
+# Pass environment variables for Vite (client-side)
+ARG VITE_PUBLIC_POSTHOG_KEY
+ARG VITE_PUBLIC_POSTHOG_HOST
+ENV VITE_PUBLIC_POSTHOG_KEY=${VITE_PUBLIC_POSTHOG_KEY}
+ENV VITE_PUBLIC_POSTHOG_HOST=${VITE_PUBLIC_POSTHOG_HOST}
 RUN pnpm -w turbo run build --filter=@finanzas/site
 
 # ==========================================================================
