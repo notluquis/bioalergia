@@ -12,6 +12,7 @@ vite-manifest.json
 coverage/
 .nyc_output/
 *.lcov
+junit.xml
 
 # Environment & local files
 .env.local
@@ -34,13 +35,20 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
+typecheck_error.log
+lint_output.txt
+lint_remaining.txt
+lint_report.txt
 
 # Turbo cache
 .turbo/
+
+# TanStack Router and Query caches
+.tanstack/
 
 # Temporary files
 *.tmp
 tmp/
 
-# Uploads directory (if local-only)
-uploads/
+# Generated files
+routeTree.gen.ts

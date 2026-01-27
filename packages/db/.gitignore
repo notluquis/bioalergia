@@ -1,17 +1,17 @@
 # Build outputs
 dist/
+build/
 *.tsbuildinfo
-.vite/
 
-# Build analysis artifacts
-stats.html
-bundle-analysis.html
-vite-manifest.json
+# Zenstack generated files
+zenstack/.env
+zenstack/.turbo/
 
 # Test outputs
 coverage/
 .nyc_output/
 *.lcov
+junit.xml
 
 # Environment & local files
 .env.local
@@ -42,5 +42,5 @@ pnpm-debug.log*
 *.tmp
 tmp/
 
-# Uploads directory (if local-only)
-uploads/
+# Prisma/Zenstack artifacts
+.prisma/
