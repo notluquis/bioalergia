@@ -1,18 +1,38 @@
 import { Button, Link, Separator } from "@heroui/react";
 import { usePostHog } from "@posthog/react";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 
 import { contactInfo } from "@/data/clinic";
+import { doctoraliaLink } from "@/lib/doctoralia";
 import { ContactSection } from "@/sections/ContactSection";
-import { DoctoraliaCertificate, doctoraliaLink } from "@/sections/DoctoraliaWidgets";
-import { FAQSection } from "@/sections/FAQSection";
-import { FounderSection } from "@/sections/FounderSection";
-import { GlossarySection } from "@/sections/GlossarySection";
+// Eager load critical sections (first fold)
 import { HeroSection } from "@/sections/HeroSection";
-import { ImmunotherapySection } from "@/sections/ImmunotherapySection";
-import { LocationSection } from "@/sections/LocationSection";
-import { MissionSection } from "@/sections/MissionSection";
-import { ServicesSection } from "@/sections/ServicesSection";
+
+// Lazy load non-critical sections (below the fold)
+const MissionSection = lazy(() =>
+  import("@/sections/MissionSection").then((m) => ({ default: m.MissionSection })),
+);
+const FounderSection = lazy(() =>
+  import("@/sections/FounderSection").then((m) => ({ default: m.FounderSection })),
+);
+const ServicesSection = lazy(() =>
+  import("@/sections/ServicesSection").then((m) => ({ default: m.ServicesSection })),
+);
+const ImmunotherapySection = lazy(() =>
+  import("@/sections/ImmunotherapySection").then((m) => ({ default: m.ImmunotherapySection })),
+);
+const LocationSection = lazy(() =>
+  import("@/sections/LocationSection").then((m) => ({ default: m.LocationSection })),
+);
+const FAQSection = lazy(() =>
+  import("@/sections/FAQSection").then((m) => ({ default: m.FAQSection })),
+);
+const GlossarySection = lazy(() =>
+  import("@/sections/GlossarySection").then((m) => ({ default: m.GlossarySection })),
+);
+const DoctoraliaCertificate = lazy(() =>
+  import("@/sections/DoctoraliaWidgets").then((m) => ({ default: m.DoctoraliaCertificate })),
+);
 
 function useThemePreference() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -208,20 +228,22 @@ export default function App() {
 
           <Separator className="opacity-60" />
 
-          <MissionSection />
-          <FounderSection />
-          <ServicesSection />
-          <ImmunotherapySection />
+          <Suspense fallback={<div className="h-64 animate-pulse bg-gray-200 rounded-lg" />}>
+            <MissionSection />
+            <FounderSection />
+            <ServicesSection />
+            <ImmunotherapySection />
 
-          <section className="grid gap-6 lg:grid-cols-[0.55fr_1fr] lg:items-stretch">
-            <DoctoraliaCertificate />
-            <LocationSection />
-          </section>
+            <section className="grid gap-6 lg:grid-cols-[0.55fr_1fr] lg:items-stretch">
+              <DoctoraliaCertificate />
+              <LocationSection />
+            </section>
 
-          <Separator className="opacity-60" />
+            <Separator className="opacity-60" />
 
-          <FAQSection />
-          <GlossarySection />
+            <FAQSection />
+            <GlossarySection />
+          </Suspense>
 
           <Separator className="opacity-60" />
 

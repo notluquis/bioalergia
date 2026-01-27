@@ -1,7 +1,14 @@
 import { Button, Card, Chip, Link } from "@heroui/react";
 import { usePostHog } from "@posthog/react";
+import { lazy, Suspense } from "react";
 import { clinicOverview } from "@/data/clinic";
-import { DoctoraliaBookingWidget, doctoraliaLink } from "@/sections/DoctoraliaWidgets";
+import { doctoraliaLink } from "@/lib/doctoralia";
+
+const DoctoraliaBookingWidget = lazy(() =>
+  import("@/sections/DoctoraliaWidgets").then(m => ({
+    default: m.DoctoraliaBookingWidget,
+  }))
+);
 
 const badges = ["Alergología", "Inmunología", "Adultos y niños", "Concepción, Chile"];
 
@@ -69,7 +76,9 @@ export function HeroSection({ onBook }: HeroSectionProps) {
         </div>
       </div>
       <div className="lg:pl-4" style={{ animation: "floatIn 0.9s ease-out" }}>
-        <DoctoraliaBookingWidget />
+        <Suspense fallback={<div className="h-96 animate-pulse bg-gray-200 rounded-lg" />}>
+          <DoctoraliaBookingWidget />
+        </Suspense>
       </div>
     </section>
   );

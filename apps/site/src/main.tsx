@@ -1,6 +1,6 @@
 import { PostHogProvider } from "@posthog/react";
-import posthog from "posthog-js";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import posthog from "posthog-js";
 import { createRoot } from "react-dom/client";
 
 import App from "./App";

@@ -1,7 +1,7 @@
 import { Button, Card, Link } from "@heroui/react";
 import { usePostHog } from "@posthog/react";
 import { contactInfo, ctaCopy } from "@/data/clinic";
-import { doctoraliaLink } from "@/sections/DoctoraliaWidgets";
+import { doctoraliaLink } from "@/lib/doctoralia";
 import { Section } from "@/sections/Section";
 
 export function ContactSection() {
