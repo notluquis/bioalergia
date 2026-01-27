@@ -213,6 +213,7 @@ export default defineConfig(({ mode }) => ({
     drop: mode === "production" ? ["console", "debugger"] : [],
   },
   resolve: {
+    extensions: [".tsx", ".ts", ".jsx", ".js", ".json"],
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
       "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
@@ -224,12 +225,21 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
+    warmup: {
+      clientFiles: ["./src/routeTree.gen.ts", "./src/main.tsx", "./src/App.tsx"],
+    },
+    open: true,
     proxy: {
       "/api": {
-        target: "http://localhost:4000",
+        target: "https://api.bioalergia.cl",
         changeOrigin: true,
+        secure: true,
       },
     },
+  },
+  experimental: {
+    // Enable Rolldown when stable (Rust-based bundler, faster than Rollup)
+    // rolldown: true,
   },
   test: {
     environment: "jsdom",
