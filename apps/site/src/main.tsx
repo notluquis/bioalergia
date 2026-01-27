@@ -1,6 +1,7 @@
-import { createRoot } from "react-dom/client";
-import posthog from "posthog-js";
 import { PostHogProvider } from "@posthog/react";
+import posthog from "posthog-js";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createRoot } from "react-dom/client";
 
 import App from "./App";
 import "./index.css";
@@ -16,6 +17,15 @@ if (posthogKey && posthogHost) {
   });
 }
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
+    },
+  },
+});
+
 const root = document.getElementById("root");
 
 if (!root) {
@@ -23,7 +33,9 @@ if (!root) {
 }
 
 createRoot(root).render(
-  <PostHogProvider client={posthog}>
-    <App />
-  </PostHogProvider>,
+  <QueryClientProvider client={queryClient}>
+    <PostHogProvider client={posthog}>
+      <App />
+    </PostHogProvider>
+  </QueryClientProvider>,
 );

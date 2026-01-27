@@ -22,6 +22,7 @@
     "@heroui/react": "3.0.0-beta.5",
     "@heroui/styles": "3.0.0-beta.5",
     "@posthog/react": "^1.7.0",
+    "@tanstack/react-query": "^5.90.20",
     "posthog-js": "^1.335.3",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
