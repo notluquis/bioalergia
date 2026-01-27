@@ -93,7 +93,7 @@ export default function EmployeesPage() {
         <div className="flex flex-wrap items-center gap-3">
           <Switch
             isSelected={includeInactive}
-            onValueChange={(value) => {
+            onChange={(value) => {
               setIncludeInactive(value);
             }}
           >

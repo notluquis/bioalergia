@@ -203,51 +203,83 @@ export default function MercadoPagoSettingsPage() {
                     )}
                   </div>
                 )}
-                {importStatsByType.map(({ label, stats, tone }) => (
-                  <div className="flex items-center gap-1" key={label}>
-                    <span
-                      className={cn(
-                        "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase",
-                        tone === "release" && "bg-primary/10 text-primary",
-                        tone === "settlement" && "bg-warning/10 text-warning",
-                      )}
-                    >
-                      {label}
-                    </span>
-                    <Tooltip content="Total filas">
-                      <span className="bg-default-100 text-default-600 rounded px-1.5 py-0.5">
-                        T{stats.totalRows}
+                {importStatsByType.map(({ label, stats, tone }) =>
+                  stats ? (
+                    <div className="flex items-center gap-1" key={label}>
+                      <span
+                        className={cn(
+                          "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase",
+                          tone === "release" && "bg-primary/10 text-primary",
+                          tone === "settlement" && "bg-warning/10 text-warning",
+                        )}
+                      >
+                        {label}
                       </span>
-                    </Tooltip>
-                    <Tooltip content="Validas">
-                      <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
-                        V{stats.validRows}
-                      </span>
-                    </Tooltip>
-                    <Tooltip content="Insertadas">
-                      <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
-                        +{stats.insertedRows}
-                      </span>
-                    </Tooltip>
-                    <Tooltip content="Duplicados">
-                      <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
-                        D{stats.duplicateRows}
-                      </span>
-                    </Tooltip>
-                    <Tooltip content="Omitidas">
-                      <span className="bg-default-100 text-default-500 rounded px-1.5 py-0.5">
-                        S{stats.skippedRows}
-                      </span>
-                    </Tooltip>
-                    {stats.errorCount > 0 && (
-                      <Tooltip content="Errores">
-                        <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
-                          E{stats.errorCount}
-                        </span>
+                      <Tooltip delay={0}>
+                        <Tooltip.Trigger>
+                          <span className="bg-default-100 text-default-600 rounded px-1.5 py-0.5">
+                            T{stats.totalRows}
+                          </span>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <p>Total filas</p>
+                        </Tooltip.Content>
                       </Tooltip>
-                    )}
-                  </div>
-                ))}
+                      <Tooltip delay={0}>
+                        <Tooltip.Trigger>
+                          <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                            V{stats.validRows}
+                          </span>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <p>Validas</p>
+                        </Tooltip.Content>
+                      </Tooltip>
+                      <Tooltip delay={0}>
+                        <Tooltip.Trigger>
+                          <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
+                            +{stats.insertedRows}
+                          </span>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <p>Insertadas</p>
+                        </Tooltip.Content>
+                      </Tooltip>
+                      <Tooltip delay={0}>
+                        <Tooltip.Trigger>
+                          <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                            D{stats.duplicateRows}
+                          </span>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <p>Duplicados</p>
+                        </Tooltip.Content>
+                      </Tooltip>
+                      <Tooltip delay={0}>
+                        <Tooltip.Trigger>
+                          <span className="bg-default-100 text-default-500 rounded px-1.5 py-0.5">
+                            S{stats.skippedRows}
+                          </span>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <p>Omitidas</p>
+                        </Tooltip.Content>
+                      </Tooltip>
+                      {stats.errorCount > 0 && (
+                        <Tooltip delay={0}>
+                          <Tooltip.Trigger>
+                            <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
+                              E{stats.errorCount}
+                            </span>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content>
+                            <p>Errores</p>
+                          </Tooltip.Content>
+                        </Tooltip>
+                      )}
+                    </div>
+                  ) : null,
+                )}
               </div>
             );
           }

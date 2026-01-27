@@ -1,4 +1,3 @@
-import { Chip } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -198,10 +197,8 @@ function CalendarClassificationPage() {
             Filtrar:
           </span>
           <div className="flex flex-wrap gap-2">
-            <Chip
-              as="button"
+            <Button
               className="text-xs font-medium"
-              color={filters.missingCategory ? "primary" : "default"}
               onClick={() => {
                 setFilters((prev) => ({
                   ...prev,
@@ -210,14 +207,12 @@ function CalendarClassificationPage() {
                 setPage(0);
               }}
               size="sm"
-              variant={filters.missingCategory ? "solid" : "flat"}
+              variant={filters.missingCategory ? "tertiary" : "ghost"}
             >
               Sin categoría
-            </Chip>
-            <Chip
-              as="button"
+            </Button>
+            <Button
               className="text-xs font-medium"
-              color={filters.missingAmount ? "primary" : "default"}
               onClick={() => {
                 setFilters((prev) => ({
                   ...prev,
@@ -226,14 +221,12 @@ function CalendarClassificationPage() {
                 setPage(0);
               }}
               size="sm"
-              variant={filters.missingAmount ? "solid" : "flat"}
+              variant={filters.missingAmount ? "tertiary" : "ghost"}
             >
               Sin monto
-            </Chip>
-            <Chip
-              as="button"
+            </Button>
+            <Button
               className="text-xs font-medium"
-              color={filters.missingAttended ? "primary" : "default"}
               onClick={() => {
                 setFilters((prev) => ({
                   ...prev,
@@ -242,14 +235,12 @@ function CalendarClassificationPage() {
                 setPage(0);
               }}
               size="sm"
-              variant={filters.missingAttended ? "solid" : "flat"}
+              variant={filters.missingAttended ? "tertiary" : "ghost"}
             >
               Sin asistencia
-            </Chip>
-            <Chip
-              as="button"
+            </Button>
+            <Button
               className="text-xs font-medium"
-              color={filters.missingDosage ? "primary" : "default"}
               onClick={() => {
                 setFilters((prev) => ({
                   ...prev,
@@ -258,14 +249,12 @@ function CalendarClassificationPage() {
                 setPage(0);
               }}
               size="sm"
-              variant={filters.missingDosage ? "solid" : "flat"}
+              variant={filters.missingDosage ? "tertiary" : "ghost"}
             >
               Sin dosis
-            </Chip>
-            <Chip
-              as="button"
+            </Button>
+            <Button
               className="text-xs font-medium"
-              color={filters.missingTreatmentStage ? "primary" : "default"}
               onClick={() => {
                 setFilters((prev) => ({
                   ...prev,
@@ -274,57 +263,51 @@ function CalendarClassificationPage() {
                 setPage(0);
               }}
               size="sm"
-              variant={filters.missingTreatmentStage ? "solid" : "flat"}
+              variant={filters.missingTreatmentStage ? "tertiary" : "ghost"}
             >
               Sin etapa
-            </Chip>
+            </Button>
             {hasActiveFilters && (
               <>
                 {/* Filter Mode Toggle */}
                 <div className="border-default-200/50 flex items-center gap-1 border-l pl-3">
                   <span className="text-default-300 mr-1 text-xs">Coincide:</span>
-                  <Chip
-                    as="button"
+                  <Button
                     className="text-xs font-medium"
-                    color={
-                      !filters.filterMode || filters.filterMode === "OR" ? "secondary" : "default"
-                    }
                     onClick={() => {
                       setFilters((prev) => ({ ...prev, filterMode: undefined }));
                       setPage(0);
                     }}
                     size="sm"
-                    variant={!filters.filterMode || filters.filterMode === "OR" ? "solid" : "flat"}
+                    variant={
+                      !filters.filterMode || filters.filterMode === "OR" ? "tertiary" : "ghost"
+                    }
                   >
                     Cualquiera
-                  </Chip>
-                  <Chip
-                    as="button"
+                  </Button>
+                  <Button
                     className="text-xs font-medium"
-                    color={filters.filterMode === "AND" ? "secondary" : "default"}
                     onClick={() => {
                       setFilters((prev) => ({ ...prev, filterMode: "AND" }));
                       setPage(0);
                     }}
                     size="sm"
-                    variant={filters.filterMode === "AND" ? "solid" : "flat"}
+                    variant={filters.filterMode === "AND" ? "tertiary" : "ghost"}
                   >
                     Todos
-                  </Chip>
+                  </Button>
                 </div>
-                <Chip
-                  as="button"
+                <Button
                   className="text-xs font-medium"
-                  color="danger"
                   onClick={() => {
                     setFilters({});
                     setPage(0);
                   }}
                   size="sm"
-                  variant="flat"
+                  variant="danger"
                 >
                   Limpiar
-                </Chip>
+                </Button>
               </>
             )}
           </div>
@@ -367,7 +350,7 @@ function CalendarClassificationPage() {
               reclassifyMutation.mutate();
             }}
             type="button"
-            variant="secondary"
+            variant="tertiary"
           >
             {/* Progress overlay inside button */}
             {isJobRunning && (
@@ -437,7 +420,6 @@ function CalendarClassificationPage() {
           >
             <Button
               aria-label="Reclasificar todo"
-              color="warning"
               isDisabled={reclassifyAllMutation.isPending || isJobRunning}
               isIconOnly
               onPress={() => {

@@ -269,7 +269,7 @@ export default function TimesheetExportPDF({
                   <Checkbox
                     key={key}
                     isSelected={selectedCols.includes(key)}
-                    onValueChange={(checked) => {
+                    onChange={(checked) => {
                       setSelectedCols((prev) => {
                         const set = new Set<TimesheetColumnKey>(prev);
                         if (checked) set.add(key);

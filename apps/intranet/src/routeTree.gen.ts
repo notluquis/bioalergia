@@ -388,7 +388,6 @@ const AuthedFinanzasPersonalCreditsCreditIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof AuthedIndexRoute
   "/login": typeof LoginRoute
   "/onboarding": typeof OnboardingRoute
   "/account": typeof AuthedAccountRoute
@@ -400,6 +399,7 @@ export interface FileRoutesByFullPath {
   "/services": typeof AuthedServicesRouteWithChildren
   "/settings": typeof AuthedSettingsRouteWithChildren
   "/verify/$id": typeof VerifyIdRoute
+  "/": typeof AuthedIndexRoute
   "/calendar/classify": typeof AuthedCalendarClassifyRoute
   "/calendar/daily": typeof AuthedCalendarDailyRoute
   "/calendar/heatmap": typeof AuthedCalendarHeatmapRoute
@@ -436,7 +436,7 @@ export interface FileRoutesByFullPath {
   "/settings/users": typeof AuthedSettingsUsersRouteWithChildren
   "/finanzas/": typeof AuthedFinanzasIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
-  "/patients/": typeof AuthedPatientsIndexRoute
+  "/patients": typeof AuthedPatientsIndexRoute
   "/services/": typeof AuthedServicesIndexRoute
   "/settings/": typeof AuthedSettingsIndexRoute
   "/finanzas/personal-credits/$creditId": typeof AuthedFinanzasPersonalCreditsCreditIdRoute
@@ -445,7 +445,7 @@ export interface FileRoutesByFullPath {
   "/patients/$id/new-payment": typeof AuthedPatientsIdNewPaymentRoute
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/settings/users/add": typeof AuthedSettingsUsersAddRoute
-  "/patients/$id/": typeof AuthedPatientsIdIndexRoute
+  "/patients/$id": typeof AuthedPatientsIdIndexRoute
 }
 export interface FileRoutesByTo {
   "/login": typeof LoginRoute
@@ -568,7 +568,6 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
     | "/login"
     | "/onboarding"
     | "/account"
@@ -580,6 +579,7 @@ export interface FileRouteTypes {
     | "/services"
     | "/settings"
     | "/verify/$id"
+    | "/"
     | "/calendar/classify"
     | "/calendar/daily"
     | "/calendar/heatmap"
@@ -616,7 +616,7 @@ export interface FileRouteTypes {
     | "/settings/users"
     | "/finanzas/"
     | "/hr/"
-    | "/patients/"
+    | "/patients"
     | "/services/"
     | "/settings/"
     | "/finanzas/personal-credits/$creditId"
@@ -625,7 +625,7 @@ export interface FileRouteTypes {
     | "/patients/$id/new-payment"
     | "/services/$id/edit"
     | "/settings/users/add"
-    | "/patients/$id/"
+    | "/patients/$id"
   fileRoutesByTo: FileRoutesByTo
   to:
     | "/login"
@@ -771,7 +771,7 @@ declare module "@tanstack/react-router" {
     "/_authed": {
       id: "/_authed"
       path: ""
-      fullPath: "/"
+      fullPath: ""
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -862,7 +862,7 @@ declare module "@tanstack/react-router" {
     "/_authed/patients/": {
       id: "/_authed/patients/"
       path: "/patients"
-      fullPath: "/patients/"
+      fullPath: "/patients"
       preLoaderRoute: typeof AuthedPatientsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
@@ -1121,7 +1121,7 @@ declare module "@tanstack/react-router" {
     "/_authed/patients/$id/": {
       id: "/_authed/patients/$id/"
       path: "/patients/$id"
-      fullPath: "/patients/$id/"
+      fullPath: "/patients/$id"
       preLoaderRoute: typeof AuthedPatientsIdIndexRouteImport
       parentRoute: typeof AuthedRoute
     }

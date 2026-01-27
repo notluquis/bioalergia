@@ -37,6 +37,12 @@ export interface CalendarAggregateByYear {
   year: number;
 }
 
+export interface CalendarAggregateByDateType {
+  date: string;
+  eventType: null | string;
+  total: number;
+}
+
 export interface CalendarDaily {
   days: CalendarDayEvents[];
   filters: {
@@ -130,6 +136,7 @@ export interface CalendarFilters {
 export interface CalendarSummary {
   aggregates: {
     byDate: CalendarAggregateByDate[];
+    byDateType: CalendarAggregateByDateType[];
     byMonth: CalendarAggregateByMonth[];
     byWeek: CalendarAggregateByWeek[];
     byWeekday: CalendarAggregateByWeekday[];

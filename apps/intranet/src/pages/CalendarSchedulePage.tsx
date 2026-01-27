@@ -133,7 +133,7 @@ function CalendarSchedulePage() {
             <div className="hidden items-center gap-2 text-sm sm:flex">
               <span className="text-default-600 font-medium">{rangeLabel}</span>
               {isNextWeek && (
-                <Chip size="sm" variant="flat" color="primary" className="text-[11px]">
+                <Chip size="sm" variant="secondary" color="default" className="text-[11px]">
                   Próxima semana
                 </Chip>
               )}
@@ -172,7 +172,7 @@ function CalendarSchedulePage() {
         <div className="flex flex-wrap items-center gap-2 text-xs sm:hidden">
           <span className="text-default-500 font-medium">{rangeLabel}</span>
           {isNextWeek && (
-            <Chip size="sm" variant="flat" color="primary" className="text-[11px]">
+            <Chip size="sm" variant="secondary" color="default" className="text-[11px]">
               Próxima semana
             </Chip>
           )}
