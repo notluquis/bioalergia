@@ -196,16 +196,9 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: true, // Split CSS for faster parallel loading
     reportCompressedSize: false, // Skip gzip size calculation during build (faster)
     // 2026: Trust the graph! Manual chunks often hurt HTTP/3 multiplexing.
-    // We let Vite/Rollup split based on dynamic imports (React.lazy).
+    // We let Rolldown split based on dynamic imports (React.lazy).
     rollupOptions: {
-      output: {
-        // Trust the graph. Vite/Rollup automatic chunking is optimal for HTTP/3.
-        // manualChunks removed to prevent bundle fragmentation and invalidation issues.
-        // Exception: Recharts has circular dependencies that break tree-shaking warnings.
-        manualChunks: {
-          recharts: ["recharts"],
-        },
-      },
+      // Rolldown's automatic chunking handles splitting based on import graph
     },
   },
   esbuild: {

@@ -22,18 +22,11 @@ export default defineConfig({
     },
   },
   build: {
+    target: "esnext",
     rollupOptions: {
-      output: {
-        manualChunks: {
-          // Vendor chunks for better caching
-          // Strategy: Separate heavy vendors to allow parallel download
-          heroui: ["@heroui/react", "@heroui/styles"],
-          analytics: ["posthog-js"],
-          tanstack: ["@tanstack/react-query"],
-        },
-      },
+      // Trust the graph: Let Rolldown's advanced automatic chunking work
+      // Removes manual chunks for optimal HTTP/3 multiplexing
     },
-    // Increase chunk size limit for this static site (gzip: ~160KB is acceptable)
     chunkSizeWarningLimit: 600,
   },
 });
