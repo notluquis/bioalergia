@@ -91,7 +91,7 @@ export function DoctoraliaCertificate() {
         </Chip>
       </Card.Header>
       <Card.Content className="flex justify-center px-4 pb-4 sm:px-5 sm:pb-5 md:px-6 md:pb-6">
-        <div className="w-full max-w-70 sm:max-w-80 rounded-2xl border border-(--border) bg-white p-3 shadow-[0_18px_45px_rgba(0,0,0,0.12)] sm:p-4 md:p-5">
+        <div className="w-full rounded-2xl border border-(--border) bg-white p-3 shadow-[0_18px_45px_rgba(0,0,0,0.12)] sm:p-4 md:p-5">
           <a
             id="zl-url-certificate"
             className="zl-url block"
