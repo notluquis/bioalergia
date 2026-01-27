@@ -21,7 +21,7 @@ export function FAQSection() {
             {faqItems.map((item) => (
               <Accordion.Item
                 key={item.question}
-                className="rounded-2xl border border-(--border) bg-(--surface-2) px-5 py-3"
+                className="rounded-2xl border border-border bg-(--surface-2) px-5 py-3"
               >
                 <Accordion.Heading>
                   <Accordion.Trigger className="items-center text-left text-base font-medium sm:text-lg">

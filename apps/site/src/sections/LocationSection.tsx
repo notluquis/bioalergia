@@ -24,7 +24,7 @@ export function LocationSection() {
         </Button>
       </Card.Header>
       <Card.Content className="p-4">
-        <div className="overflow-hidden rounded-2xl border border-(--border) aspect-video sm:aspect-auto">
+        <div className="overflow-hidden rounded-2xl border border-border aspect-video sm:aspect-auto">
           <iframe
             title="Mapa Bioalergia"
             src={clinicMapEmbedUrl}

@@ -42,7 +42,7 @@ export function ImmunotherapySection() {
         <Card.Content className="overflow-x-auto pb-6 sm:overflow-x-visible">
           <div className="space-y-0">
             {/* Header Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 border-b border-(--border) pb-3 sm:pb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 border-b border-border pb-3 sm:pb-4">
               <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted) font-semibold">
                 Aspecto
               </div>
@@ -58,7 +58,7 @@ export function ImmunotherapySection() {
             {immunotherapyComparison.map((row, index) => (
               <div
                 key={row.aspect}
-                className={`grid grid-cols-1 sm:grid-cols-3 gap-6 border-b border-(--border) py-4 px-4 -mx-4 ${
+                className={`grid grid-cols-1 sm:grid-cols-3 gap-6 border-b border-border py-4 px-4 -mx-4 ${
                   index % 2 === 0 ? "bg-(--surface-2)" : ""
                 }`}
               >
