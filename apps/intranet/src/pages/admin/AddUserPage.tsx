@@ -40,8 +40,13 @@ export default function AddUserPage({ hideHeader = false, onSuccess }: AddUserPa
   // Fetch available roles
   const { data: roles = [], isLoading: isRolesLoading } = useQuery({
     queryKey: ["roles"],
-    queryFn: () =>
-      apiClient.get<Array<{ id: number; name: string; description: string | null }>>("/roles"),
+    queryFn: async () => {
+      const response = await apiClient.get<{
+        status: string;
+        roles: Array<{ id: number; name: string; description: string | null }>;
+      }>("/roles");
+      return response.roles;
+    },
   });
 
   // Fetch people without users
