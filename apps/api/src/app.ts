@@ -228,6 +228,13 @@ if (process.env.NODE_ENV === "production") {
 
   // SPA fallback: serve index.html for all non-API, non-asset routes
   app.get("*", async (c) => {
+    const path = c.req.path;
+
+    // Exclude API routes from SPA fallback
+    if (path.startsWith("/api/")) {
+      return c.text("API route not found", 404);
+    }
+
     try {
       const indexPath = join(process.cwd(), "public", "index.html");
       const html = await readFile(indexPath, "utf-8");
