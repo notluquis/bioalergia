@@ -1,253 +1,79 @@
-import { startAuthentication } from "@simplewebauthn/browser";
-import { useMutation } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
 import { Fingerprint, Mail } from "lucide-react";
 import type { ChangeEvent, FormEvent } from "react";
-import { useCallback, useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
-import { fetchPasskeyLoginOptions } from "@/features/auth/api";
-import { logger } from "@/lib/logger";
+import { useLoginLogic } from "@/features/auth/hooks/useLoginLogic";
 
 type LoginStep = "credentials" | "mfa" | "passkey";
 
-interface LoginState {
-  email: string;
-  password: string;
-  mfaCode: string;
-  step: LoginStep;
-  tempUserId: null | number;
-  formError: null | string;
-  isSuccess: boolean;
-}
-
-const INITIAL_STATE: LoginState = {
-  email: "",
-  password: "",
-  mfaCode: "",
-  step: "passkey",
-  tempUserId: null,
-  formError: null,
-  isSuccess: false,
-};
-
-const REDIRECT_DELAY_MS = 800;
-
 export default function LoginPage() {
-  const { login, loginWithMfa, loginWithPasskey } = useAuth();
   const { settings } = useSettings();
-  const navigate = useNavigate();
   const location = useLocation();
-
-  const [state, setState] = useState<LoginState>(INITIAL_STATE);
-  const { email, password, mfaCode, step, tempUserId, formError, isSuccess } = state;
-
+  const from = (location.state as null | { from?: string })?.from ?? "/";
   const fallbackLogo = "/logo_sin_eslogan.png";
   const logoSrc = settings.logoUrl.trim() || fallbackLogo;
-  const supportEmail = "lpulgar@bioalergia.cl";
-
-  const from = (location.state as null | { from?: string })?.from ?? "/";
-
-  // Memoized update functions
-  const updateState = useCallback((updates: Partial<LoginState>) => {
-    setState((prev) => ({ ...prev, ...updates }));
-  }, []);
-
-  const clearError = useCallback(() => {
-    updateState({ formError: null });
-  }, [updateState]);
-
-  const redirectAfterSuccess = useCallback(() => {
-    updateState({ isSuccess: true });
-    setTimeout(() => {
-      logger.info("[login-page] redirecting after success", { to: from });
-      void navigate({ replace: true, to: from as "/" });
-    }, REDIRECT_DELAY_MS);
-  }, [from, navigate, updateState]);
-
-  // Credentials login mutation
-  const credentialsMutation = useMutation({
-    mutationFn: async () => {
-      const result = await login(email, password);
-
-      if (result.status === "mfa_required" && result.userId) {
-        return { requiresMfa: true, userId: result.userId };
-      }
-
-      return { requiresMfa: false };
-    },
-    onSuccess: (data) => {
-      if (data.requiresMfa) {
-        updateState({ tempUserId: data.userId, step: "mfa" });
-        logger.info("[login-page] MFA required", { userId: data.userId });
-      } else {
-        logger.info("[login-page] credentials login success", { user: email });
-        redirectAfterSuccess();
-      }
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "No se pudo iniciar sesión";
-      updateState({ formError: message });
-      logger.error("[login-page] credentials login error", { email, message });
-    },
-  });
-
-  // MFA login mutation
-  const mfaMutation = useMutation({
-    mutationFn: async () => {
-      if (!tempUserId) throw new Error("User ID not found");
-      await loginWithMfa(tempUserId, mfaCode);
-    },
-    onSuccess: () => {
-      logger.info("[login-page] MFA success", { userId: tempUserId });
-      redirectAfterSuccess();
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Código incorrecto";
-      updateState({ formError: message });
-      logger.error("[login-page] MFA error", { message });
-    },
-  });
-
-  // Passkey login mutation
-  const passkeyMutation = useMutation({
-    mutationFn: async () => {
-      const options = await fetchPasskeyLoginOptions();
-
-      if (!options?.challenge) {
-        logger.error("[login-page] passkey options missing challenge", { options });
-        throw new Error("Opciones de biometría incompletas");
-      }
-
-      const authResp = await startAuthentication({ optionsJSON: options });
-      await loginWithPasskey(authResp, options.challenge);
-    },
-    onSuccess: () => {
-      logger.info("[login-page] passkey success");
-      redirectAfterSuccess();
-    },
-    onError: (error) => {
-      const message = "No se pudo validar el acceso biométrico. Usa tu contraseña.";
-      logger.error("[login-page] passkey error", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      updateState({ formError: message, step: "credentials" });
-    },
-  });
-
-  // Event handlers
-  const handleCredentialsSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      clearError();
-      credentialsMutation.mutate();
-    },
-    [clearError, credentialsMutation],
-  );
-
-  const handleMfaSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      clearError();
-      mfaMutation.mutate();
-    },
-    [clearError, mfaMutation],
-  );
-
-  const handlePasskeyLogin = useCallback(() => {
-    clearError();
-    passkeyMutation.mutate();
-  }, [clearError, passkeyMutation]);
-
-  const handleEmailChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      updateState({ email: event.target.value });
-      clearError();
-    },
-    [clearError, updateState],
-  );
-
-  const handlePasswordChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      updateState({ password: event.target.value });
-      clearError();
-    },
-    [clearError, updateState],
-  );
-
-  const handleMfaCodeChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      updateState({ mfaCode: event.target.value });
-      clearError();
-    },
-    [clearError, updateState],
-  );
-
-  const switchToCredentials = useCallback(() => {
-    updateState({ step: "credentials", formError: null });
-  }, [updateState]);
-
-  const switchToPasskey = useCallback(() => {
-    updateState({ step: "passkey", formError: null });
-  }, [updateState]);
-
-  const switchToCredentialsFromMfa = useCallback(() => {
-    updateState({ step: "credentials", mfaCode: "", formError: null });
-  }, [updateState]);
-
-  const isLoading =
-    credentialsMutation.isPending || mfaMutation.isPending || passkeyMutation.isPending;
-
+  const {
+    state,
+    isLoading,
+    credentialsMutation,
+    mfaMutation,
+    passkeyMutation,
+    updateState,
+    clearError,
+  } = useLoginLogic(from);
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-4 py-10">
-      {/* Floating theme toggle - top right */}
       <div className="fixed top-4 right-4 z-10">
         <ThemeToggle />
       </div>
-
       <div className="w-full max-w-sm">
-        {/* Header */}
         <LoginHeader
-          step={step}
+          step={state.step}
           orgName={settings.orgName}
           logoSrc={logoSrc}
           fallbackLogo={fallbackLogo}
         />
-
-        {/* Content */}
-        {isSuccess ? null : (
+        {!state.isSuccess && (
           <LoginContent
-            step={step}
+            step={state.step}
             isLoading={isLoading}
-            email={email}
-            password={password}
-            mfaCode={mfaCode}
+            email={state.email}
+            password={state.password}
+            mfaCode={state.mfaCode}
             passkeyMutation={passkeyMutation}
-            handlePasskeyLogin={handlePasskeyLogin}
-            switchToCredentials={switchToCredentials}
-            handleCredentialsSubmit={handleCredentialsSubmit}
-            handleEmailChange={handleEmailChange}
-            handlePasswordChange={handlePasswordChange}
-            switchToPasskey={switchToPasskey}
-            handleMfaSubmit={handleMfaSubmit}
-            handleMfaCodeChange={handleMfaCodeChange}
-            switchToCredentialsFromMfa={switchToCredentialsFromMfa}
+            handlePasskeyLogin={() => {
+              clearError();
+              passkeyMutation.mutate();
+            }}
+            switchToCredentials={() => updateState({ step: "credentials", formError: null })}
+            handleCredentialsSubmit={(e) => {
+              e.preventDefault();
+              clearError();
+              credentialsMutation.mutate();
+            }}
+            handleEmailChange={(e) => updateState({ email: e.target.value })}
+            handlePasswordChange={(e) => updateState({ password: e.target.value })}
+            switchToPasskey={() => updateState({ step: "passkey", formError: null })}
+            handleMfaSubmit={(e) => {
+              e.preventDefault();
+              clearError();
+              mfaMutation.mutate();
+            }}
+            handleMfaCodeChange={(e) => updateState({ mfaCode: e.target.value })}
+            switchToCredentialsFromMfa={() =>
+              updateState({ step: "credentials", mfaCode: "", formError: null })
+            }
           />
         )}
-
-        {/* Success Transition */}
-        {isSuccess && <LoginSuccess />}
-
-        {/* Error */}
-        {formError && <LoginError error={formError} />}
-
-        {/* Footer */}
-        {step === "credentials" && !isSuccess && <LoginFooter supportEmail={supportEmail} />}
+        {state.isSuccess && <LoginSuccess />}
+        {state.formError && <LoginError error={state.formError} />}
+        {state.step === "credentials" && !state.isSuccess && (
+          <LoginFooter supportEmail="lpulgar@bioalergia.cl" />
+        )}
       </div>
     </div>
   );
