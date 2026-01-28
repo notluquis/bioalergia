@@ -21,6 +21,14 @@ const COOKIE_OPTIONS = {
 
 export const authRoutes = new Hono();
 
+// Prevent caching of auth responses (security + UX)
+authRoutes.use("*", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  c.header("Pragma", "no-cache");
+  c.header("Expires", "0");
+});
+
 // Types
 interface AuthSession {
   userId: number;
