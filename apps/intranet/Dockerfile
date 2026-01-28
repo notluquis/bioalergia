@@ -40,11 +40,23 @@ ENV CI=true
 RUN pnpm turbo run build --filter=@finanzas/intranet
 
 # ==========================================================================
-# Stage 4: Runner
+# Stage 4: Runner - Caddy (modern HTTP/3 server)
 # ==========================================================================
-FROM build AS runner
-WORKDIR /app
-ENV NODE_ENV=production
+FROM caddy:2-alpine AS runner
+WORKDIR /srv
 ENV PORT=3000
+
+# Copy built SPA
+COPY --from=build /app/apps/intranet/dist/client ./
+
+# Copy Caddyfile
+COPY apps/intranet/Caddyfile /etc/caddy/Caddyfile
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:${PORT:-3000}/health >/dev/null || exit 1
+
 EXPOSE 3000
-CMD ["sh", "-c", "pnpm --filter @finanzas/intranet preview --host 0.0.0.0 --port ${PORT:-3000}"]
+
+# Caddy runs as non-root by default, uses /etc/caddy/Caddyfile
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

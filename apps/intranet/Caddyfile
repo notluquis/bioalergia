@@ -1,0 +1,57 @@
+:{$PORT:3000} {
+	# Root directory for static files
+	root * /srv
+
+	# Automatic compression (gzip, zstd, brotli)
+	encode zstd gzip
+
+	# Security headers
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-origin"
+	}
+
+	# Health check endpoint
+	handle /health {
+		respond "OK" 200
+	}
+
+	# API proxy to backend (if needed in future)
+	# handle /api/* {
+	# 	reverse_proxy https://api.bioalergia.cl {
+	# 		header_up Host {upstream_hostport}
+	# 	}
+	# }
+
+	# SPA routing: try files, fallback to index.html
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+
+	# Cache headers for static assets
+	@static {
+		path *.js *.css *.png *.jpg *.jpeg *.gif *.svg *.webp *.ico *.woff *.woff2 *.ttf *.eot
+	}
+	header @static {
+		Cache-Control "public, max-age=2592000, immutable"
+	}
+
+	# No cache for index.html
+	@html {
+		path /index.html
+	}
+	header @html {
+		Cache-Control "no-store"
+	}
+
+	# Logging (structured JSON)
+	log {
+		output stdout
+		format json
+	}
+}

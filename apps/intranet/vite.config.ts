@@ -227,9 +227,6 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  preview: {
-    allowedHosts: [".bioalergia.cl"], // Allow domain + all subdomains in Railway
-  },
   experimental: {
     // Enable Rolldown when stable (Rust-based bundler, faster than Rollup)
     // rolldown: true,
