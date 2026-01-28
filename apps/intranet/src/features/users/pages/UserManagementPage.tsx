@@ -275,7 +275,7 @@ export default function UserManagementPage() {
 
           {can("create", "User") && (
             <Link to="/settings/users/add">
-              <Button as="div" variant="primary" className="gap-2 pointer-events-none">
+              <Button as="div" variant="primary" className="gap-2">
                 <UserPlus size={20} />
                 Agregar usuario
               </Button>
