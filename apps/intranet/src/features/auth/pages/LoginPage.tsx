@@ -174,26 +174,30 @@ function CredentialsStep({
 }: CredentialsStepProps) {
   return (
     <form className="w-full space-y-4" onSubmit={handleCredentialsSubmit}>
-      <Input
-        autoComplete="username"
-        label="Correo electrónico"
-        onChange={handleEmailChange}
-        placeholder="usuario@bioalergia.cl"
-        required
-        type="email"
-        value={email}
-        disabled={isLoading}
-      />
-      <Input
-        autoComplete="current-password"
-        enterKeyHint="go"
-        label="Contraseña"
-        onChange={handlePasswordChange}
-        placeholder="••••••••"
-        type="password"
-        value={password}
-        disabled={isLoading}
-      />
+      <div className="w-full">
+        <Input
+          autoComplete="username"
+          label="Correo electrónico"
+          onChange={handleEmailChange}
+          placeholder="usuario@bioalergia.cl"
+          required
+          type="email"
+          value={email}
+          disabled={isLoading}
+        />
+      </div>
+      <div className="w-full">
+        <Input
+          autoComplete="current-password"
+          enterKeyHint="go"
+          label="Contraseña"
+          onChange={handlePasswordChange}
+          placeholder="••••••••"
+          type="password"
+          value={password}
+          disabled={isLoading}
+        />
+      </div>
 
       <div className="flex w-full gap-2 pt-2">
         <Button
