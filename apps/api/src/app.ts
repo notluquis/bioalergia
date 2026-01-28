@@ -88,15 +88,25 @@ app.use(
   "/api/*",
   cors({
     origin: (origin) => {
-      // Allow requests from same origin (Railway static hosting) or explicit env var
-      if (!origin || origin === process.env.CORS_ORIGIN) {
-        return origin ?? "*";
-      }
-      if (!process.env.CORS_ORIGIN && origin.includes("localhost")) {
-        // Dev fallback
+      // No origin = same-origin request (always allowed)
+      if (!origin) return "*";
+
+      // Explicit CORS_ORIGIN env var (production)
+      if (process.env.CORS_ORIGIN && origin === process.env.CORS_ORIGIN) {
         return origin;
       }
-      // Not allowed
+
+      // Development: allow localhost
+      if (process.env.NODE_ENV !== "production" && origin.includes("localhost")) {
+        return origin;
+      }
+
+      // Production without CORS_ORIGIN: accept any (Railway same-domain deployment)
+      if (process.env.NODE_ENV === "production" && !process.env.CORS_ORIGIN) {
+        return origin;
+      }
+
+      // Reject
       return null;
     },
     credentials: true,
@@ -116,6 +126,8 @@ const authRateLimiter = rateLimiter({
   limit: 50, // 50 requests per 15 minutes per IP
   standardHeaders: "draft-6",
   keyGenerator: (c) => c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "anonymous",
+  // Skip OPTIONS requests to not interfere with CORS preflight
+  skip: (c) => c.req.method === "OPTIONS",
 });
 
 // Apply rate limiting to sensitive routes
