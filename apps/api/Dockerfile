@@ -61,15 +61,21 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
+# Copy workspace configuration for proper package resolution
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
 # Copy node_modules from build stage (includes proper workspace symlinks)
 COPY --from=build /app/node_modules ./node_modules
 
 # Copy built packages from build stage (includes @finanzas/db)
 COPY --from=build /app/packages ./packages
 
-# Copy built API bundle and package.json
-COPY --from=build /app/apps/api/dist ./dist
-COPY --from=build /app/apps/api/package.json ./package.json
+# Copy built API to the correct location
+COPY --from=build /app/apps/api/dist ./apps/api/dist
+COPY --from=build /app/apps/api/package.json ./apps/api/package.json
+
+WORKDIR /app/apps/api
 
 EXPOSE 3000
 
