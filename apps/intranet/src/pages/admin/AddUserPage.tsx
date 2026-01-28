@@ -38,10 +38,12 @@ export default function AddUserPage({ hideHeader = false, onSuccess }: AddUserPa
   const { error: toastError, success } = useToast();
 
   // Fetch available roles
-  const { data: rolesData } = useFindManyRole({
+  const { data: rolesData, isLoading: isRolesLoading } = useFindManyRole({
     orderBy: { name: "asc" },
   });
   const roles = rolesData ?? [];
+
+  console.log("Roles data:", { rolesData, roles, isRolesLoading });
 
   // Fetch people without users
   const { data: peopleData, isLoading: isPeopleLoading } = useQuery({
@@ -296,11 +298,12 @@ export default function AddUserPage({ hideHeader = false, onSuccess }: AddUserPa
                     errorMessage={field.state.meta.errors.join(", ")}
                     isInvalid={field.state.meta.errors.length > 0}
                     label="Rol del sistema"
-                    placeholder="Seleccionar rol"
+                    placeholder={isRolesLoading ? "Cargando roles..." : "Seleccionar rol"}
+                    isDisabled={isRolesLoading}
                     onSelectionChange={(val) => field.handleChange(val as string)}
                     selectedKey={field.state.value}
                   >
-                    {roles.map((r) => (
+                    {roles.map((r: { id: number; name: string; description: string | null }) => (
                       <SelectItem id={r.name} key={r.id} textValue={r.name}>
                         {r.name} ({r.description || "Sin descripción"})
                       </SelectItem>
