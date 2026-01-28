@@ -1,3 +1,4 @@
+import { useFindManyRole } from "@finanzas/db/hooks";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -10,7 +11,6 @@ import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople } from "@/features/people/api";
 import { inviteUser } from "@/features/users/api";
-import { apiClient } from "@/lib/api-client";
 import { getPersonFullName } from "@/lib/person";
 
 interface AddUserFormState {
@@ -38,16 +38,10 @@ export default function AddUserPage({ hideHeader = false, onSuccess }: AddUserPa
   const { error: toastError, success } = useToast();
 
   // Fetch available roles
-  const { data: roles = [], isLoading: isRolesLoading } = useQuery({
-    queryKey: ["roles"],
-    queryFn: async () => {
-      const response = await apiClient.get<{
-        status: string;
-        roles: Array<{ id: number; name: string; description: string | null }>;
-      }>("/roles");
-      return response.roles;
-    },
+  const { data: rolesData } = useFindManyRole({
+    orderBy: { name: "asc" },
   });
+  const roles = rolesData ?? [];
 
   // Fetch people without users
   const { data: peopleData, isLoading: isPeopleLoading } = useQuery({
@@ -141,7 +135,7 @@ export default function AddUserPage({ hideHeader = false, onSuccess }: AddUserPa
     }
   };
 
-  if (isRolesLoading || isPeopleLoading) {
+  if (isPeopleLoading) {
     return <PageLoader />;
   }
 
@@ -302,6 +296,7 @@ export default function AddUserPage({ hideHeader = false, onSuccess }: AddUserPa
                     errorMessage={field.state.meta.errors.join(", ")}
                     isInvalid={field.state.meta.errors.length > 0}
                     label="Rol del sistema"
+                    placeholder="Seleccionar rol"
                     onSelectionChange={(val) => field.handleChange(val as string)}
                     selectedKey={field.state.value}
                   >
