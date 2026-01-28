@@ -53,12 +53,6 @@ RUN pnpm turbo run build --filter=@finanzas/db
 # Build API
 RUN pnpm turbo run build --filter=@finanzas/api
 
-# Deploy API for production (isolates prod dependencies)
-RUN pnpm --filter @finanzas/api --prod deploy /prod/api
-
-# Copy built dist folder (pnpm deploy doesn't include it)
-RUN cp -r apps/api/dist /prod/api/
-
 # ============================================================================
 # STAGE 4: Runner - Production image
 # ============================================================================
@@ -67,8 +61,13 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copy deployed API
-COPY --from=build /prod/api .
+# Copy only production node_modules from base (no devDependencies)
+COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/packages ./packages
+
+# Copy built API bundle and package.json
+COPY --from=build /app/apps/api/dist ./dist
+COPY --from=build /app/apps/api/package.json ./package.json
 
 EXPOSE 3000
 
