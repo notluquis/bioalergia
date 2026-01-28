@@ -344,30 +344,26 @@ function CredentialsStep({
 }: CredentialsStepProps) {
   return (
     <form className="w-full space-y-4" onSubmit={handleCredentialsSubmit}>
-      <div className="w-full">
-        <Input
-          autoComplete="username"
-          label="Correo electrónico"
-          onChange={handleEmailChange}
-          placeholder="usuario@bioalergia.cl"
-          required
-          type="email"
-          value={email}
-          disabled={isLoading}
-        />
-      </div>
-      <div className="w-full">
-        <Input
-          autoComplete="current-password"
-          enterKeyHint="go"
-          label="Contraseña"
-          onChange={handlePasswordChange}
-          placeholder="••••••••"
-          type="password"
-          value={password}
-          disabled={isLoading}
-        />
-      </div>
+      <Input
+        autoComplete="username"
+        label="Correo electrónico"
+        onChange={handleEmailChange}
+        placeholder="usuario@bioalergia.cl"
+        required
+        type="email"
+        value={email}
+        disabled={isLoading}
+      />
+      <Input
+        autoComplete="current-password"
+        enterKeyHint="go"
+        label="Contraseña"
+        onChange={handlePasswordChange}
+        placeholder="••••••••"
+        type="password"
+        value={password}
+        disabled={isLoading}
+      />
 
       <div className="flex w-full gap-2 pt-2">
         <Button
@@ -410,22 +406,20 @@ function MfaStep({
 }: MfaStepProps) {
   return (
     <form className="w-full space-y-4" onSubmit={handleMfaSubmit}>
-      <div className="w-full">
-        <Input
-          autoComplete="one-time-code"
-          className="text-center text-2xl tracking-widest"
-          inputMode="numeric"
-          label="Código de seguridad"
-          maxLength={6}
-          onChange={handleMfaCodeChange}
-          pattern="[0-9]*"
-          placeholder="000000"
-          required
-          type="text"
-          value={mfaCode}
-          disabled={isLoading}
-        />
-      </div>
+      <Input
+        autoComplete="one-time-code"
+        className="text-center text-2xl tracking-widest"
+        inputMode="numeric"
+        label="Código de seguridad"
+        maxLength={6}
+        onChange={handleMfaCodeChange}
+        pattern="[0-9]*"
+        placeholder="000000"
+        required
+        type="text"
+        value={mfaCode}
+        disabled={isLoading}
+      />
 
       <div className="flex w-full gap-2 pt-2">
         <Button

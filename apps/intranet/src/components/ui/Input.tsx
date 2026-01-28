@@ -165,10 +165,10 @@ const renderInput = (props: {
   const { ref: _ref, ...inputRest } = rest as any;
 
   return (
-    <div className={cn("w-full", containerClassName)}>
+    <div className={cn("w-full!", containerClassName)}>
       <HeroInput
         classNames={{
-          base: className,
+          base: cn("w-full", className),
           input: cn("text-foreground", size === "xs" && "text-xs"),
           label: "text-default-600 font-semibold uppercase tracking-wider",
         }}
