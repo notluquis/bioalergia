@@ -165,11 +165,12 @@ const renderInput = (props: {
   const { ref: _ref, ...inputRest } = rest as any;
 
   return (
-    <div className={cn("w-full!", containerClassName)}>
+    <div className={cn("w-full", containerClassName)}>
       <HeroInput
         classNames={{
-          base: cn("w-full", className),
-          input: cn("text-foreground", size === "xs" && "text-xs"),
+          base: "w-full",
+          mainWrapper: "w-full",
+          input: cn("text-foreground", size === "xs" && "text-xs", className),
           label: "text-default-600 font-semibold uppercase tracking-wider",
         }}
         description={helper}
@@ -188,6 +189,16 @@ const renderInput = (props: {
   );
 };
 
+// Helper: Setup input state and return render props
+const useInputSetup = (type: string | undefined) => {
+  const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
+  const isPassword = type === "password";
+  const inputType = isPassword && isPasswordVisible ? "text" : type;
+  const toggleVisibility = () => setIsPasswordVisible(!isPasswordVisible);
+  const endContent = isPassword ? createPasswordToggle(isPasswordVisible, toggleVisibility) : null;
+  return { inputType, endContent };
+};
+
 export default function Input(props: Props) {
   const {
     as = "input",
@@ -200,19 +211,11 @@ export default function Input(props: Props) {
     type,
     ...rest
   } = props;
-
-  const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
-  const selectId = React.useId(); // Always call hooks at top level
-  const isPassword = type === "password";
-  const inputType = isPassword && isPasswordVisible ? "text" : type;
+  const selectId = React.useId();
   const heroSize = SIZE_MAPPING[size] || "md";
-  const toggleVisibility = () => setIsPasswordVisible(!isPasswordVisible);
+  const { inputType, endContent } = useInputSetup(type);
+  const rightElement = (props as InputProps).rightElement;
 
-  const endContent =
-    props.rightElement ??
-    (isPassword ? createPasswordToggle(isPasswordVisible, toggleVisibility) : null);
-
-  // --- RENDER: TEXTAREA ---
   if (as === "textarea") {
     return renderTextarea({
       className,
@@ -225,8 +228,6 @@ export default function Input(props: Props) {
       rest: rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>,
     });
   }
-
-  // --- RENDER: SELECT (Temporary Native Callback) ---
   if (as === "select") {
     return renderSelect({
       children: props.children,
@@ -240,12 +241,11 @@ export default function Input(props: Props) {
       size,
     });
   }
-
-  // --- RENDER: INPUT (HeroUI) ---
+  const finalEndContent = rightElement ?? endContent;
   return renderInput({
     className,
     containerClassName,
-    endContent,
+    endContent: finalEndContent,
     error,
     helper,
     heroSize,
