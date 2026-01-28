@@ -74,6 +74,7 @@ COPY --from=build /app/packages ./packages
 # Copy built API to the correct location
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
+COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
 
 WORKDIR /app/apps/api
 
