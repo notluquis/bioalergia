@@ -27,7 +27,12 @@ interface AddUserFormState {
   rut: string;
 }
 
-export default function AddUserPage() {
+interface AddUserPageProps {
+  hideHeader?: boolean;
+  onSuccess?: () => void;
+}
+
+export default function AddUserPage({ hideHeader = false, onSuccess }: AddUserPageProps = {}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { error: toastError, success } = useToast();
@@ -65,7 +70,11 @@ export default function AddUserPage() {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["people"] });
       success("Usuario creado exitosamente");
-      void navigate({ to: "/settings/users" });
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        void navigate({ to: "/settings/users" });
+      }
     },
   });
 
@@ -131,6 +140,231 @@ export default function AddUserPage() {
     return <PageLoader />;
   }
 
+  const formContent = (
+    <form
+      className="surface-elevated space-y-6 rounded-3xl p-6 shadow-lg"
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        void form.handleSubmit();
+      }}
+    >
+      {/* Opción de vincular a persona existente */}
+      {availablePeople.length > 0 ? (
+        <div className="border-info/20 bg-info/5 rounded-xl border p-4">
+          <div className="flex items-start gap-3">
+            <Users className="text-info mt-0.5 h-5 w-5" />
+            <div className="flex-1 space-y-3">
+              <div>
+                <p className="text-info font-medium">Vincular a persona existente</p>
+                <p className="text-default-600 text-xs">
+                  Si esta persona ya existe en el sistema, puedes vincular el usuario directamente.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <form.Field name="personId">
+                  {(field) => (
+                    <Select
+                      label="Vincular con persona (opcional)"
+                      onSelectionChange={(val) => {
+                        const pid = val ? Number(val) : undefined;
+                        handleLinkPerson(pid);
+                      }}
+                      selectedKey={field.state.value ? String(field.state.value) : ""}
+                    >
+                      <SelectItem id="" textValue="No vincular (Crear usuario nuevo)">
+                        No vincular (Crear usuario nuevo)
+                      </SelectItem>
+                      {availablePeople.map((person) => (
+                        <SelectItem
+                          id={String(person.id)}
+                          key={person.id}
+                          textValue={getPersonFullName(person)}
+                        >
+                          {getPersonFullName(person)} - {person.rut}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  )}
+                </form.Field>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <form.Subscribe selector={(state) => [state.values.personId]}>
+          {([personId]) => {
+            if (personId) return null;
+            return (
+              <>
+                <div className="md:col-span-2">
+                  <h3 className="text-foreground mb-4 font-semibold">Datos personales</h3>
+                </div>
+                <form.Field name="names">
+                  {(field) => (
+                    <Input
+                      label="Nombres"
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Ej: Juan Andrés"
+                      required
+                      value={field.state.value}
+                    />
+                  )}
+                </form.Field>
+                <form.Field name="fatherName">
+                  {(field) => (
+                    <Input
+                      label="Apellido Paterno"
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Ej: Pérez"
+                      required
+                      value={field.state.value}
+                    />
+                  )}
+                </form.Field>
+                <form.Field name="motherName">
+                  {(field) => (
+                    <Input
+                      label="Apellido Materno"
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Ej: González"
+                      required
+                      value={field.state.value}
+                    />
+                  )}
+                </form.Field>
+                <form.Field name="rut">
+                  {(field) => (
+                    <Input
+                      label="RUT"
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="12.345.678-9"
+                      required
+                      value={field.state.value}
+                    />
+                  )}
+                </form.Field>
+                <div className="md:col-span-1">{/* Spacer */}</div>
+              </>
+            );
+          }}
+        </form.Subscribe>
+
+        <div className="md:col-span-2">
+          <h3 className="text-foreground mt-2 mb-4 font-semibold">Datos de cuenta</h3>
+        </div>
+
+        <div className="md:col-span-2">
+          <form.Field name="email">
+            {(field) => (
+              <form.Subscribe selector={(state) => [state.values.personId]}>
+                {([personId]) => (
+                  <Input
+                    helper={personId ? "Verifica o actualiza el correo asociado" : undefined}
+                    label="Correo electrónico"
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="usuario@bioalergia.cl"
+                    required
+                    type="email"
+                    value={field.state.value}
+                  />
+                )}
+              </form.Subscribe>
+            )}
+          </form.Field>
+        </div>
+
+        <form.Field name="position">
+          {(field) => (
+            <Input
+              label="Cargo / posición"
+              onChange={(e) => field.handleChange(e.target.value)}
+              placeholder="Ej: Enfermera, Administrativo"
+              required
+              value={field.state.value}
+            />
+          )}
+        </form.Field>
+
+        <form.Subscribe selector={(state) => [state.values.personId]}>
+          {([personId]) => (
+            <div className={personId ? "md:col-span-2" : ""}>
+              <form.Field name="role">
+                {(field) => (
+                  <Select
+                    errorMessage={field.state.meta.errors.join(", ")}
+                    isInvalid={field.state.meta.errors.length > 0}
+                    label="Rol del sistema"
+                    onSelectionChange={(val) => field.handleChange(val as string)}
+                    selectedKey={field.state.value}
+                  >
+                    {roles.map((r) => (
+                      <SelectItem id={r.name} key={r.id} textValue={r.name}>
+                        {r.name} ({r.description || "Sin descripción"})
+                      </SelectItem>
+                    ))}
+                  </Select>
+                )}
+              </form.Field>
+            </div>
+          )}
+        </form.Subscribe>
+      </div>
+
+      <div className="border-primary/20 bg-primary/5 rounded-xl border p-4">
+        <div className="flex items-start gap-3">
+          <Shield className="text-primary mt-0.5 h-5 w-5" />
+          <div className="space-y-1">
+            <p className="text-primary font-medium">Seguridad reforzada</p>
+            <p className="text-default-600 text-xs">
+              Si activas esta opción, el usuario estará <strong>obligado</strong> a configurar
+              Passkey o MFA (Google Authenticator) antes de poder usar el sistema.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 space-y-3 pl-8">
+          <form.Field name="mfaEnforced">
+            {(field) => (
+              <Checkbox
+                checked={field.state.value}
+                label="Forzar passkey o MFA"
+                onChange={(e) => field.handleChange(e.target.checked)}
+              />
+            )}
+          </form.Field>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-3 pt-4">
+        <Button
+          onClick={() => navigate({ to: "/settings/users" })}
+          type="button"
+          variant="secondary"
+        >
+          Cancelar
+        </Button>
+        <form.Subscribe selector={(state) => [state.isSubmitting]}>
+          {([isSubmitting]) => (
+            <Button
+              className="gap-2"
+              disabled={isSubmitting || createUserMutation.isPending}
+              type="submit"
+            >
+              <UserPlus size={18} />
+              {isSubmitting || createUserMutation.isPending ? "Creando..." : "Crear usuario"}
+            </Button>
+          )}
+        </form.Subscribe>
+      </div>
+    </form>
+  );
+
+  if (hideHeader) {
+    return formContent;
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="space-y-2">
@@ -140,226 +374,7 @@ export default function AddUserPage() {
           deberá completar su configuración de seguridad al iniciar sesión.
         </p>
       </div>
-
-      <form
-        className="surface-elevated space-y-6 rounded-3xl p-6 shadow-lg"
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          void form.handleSubmit();
-        }}
-      >
-        {/* Opción de vincular a persona existente */}
-        {availablePeople.length > 0 ? (
-          <div className="border-info/20 bg-info/5 rounded-xl border p-4">
-            <div className="flex items-start gap-3">
-              <Users className="text-info mt-0.5 h-5 w-5" />
-              <div className="flex-1 space-y-3">
-                <div>
-                  <p className="text-info font-medium">Vincular a persona existente</p>
-                  <p className="text-default-600 text-xs">
-                    Si esta persona ya existe en el sistema, puedes vincular el usuario
-                    directamente.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <form.Field name="personId">
-                    {(field) => (
-                      <Select
-                        label="Vincular con persona (opcional)"
-                        onSelectionChange={(val) => {
-                          const pid = val ? Number(val) : undefined;
-                          handleLinkPerson(pid);
-                        }}
-                        selectedKey={field.state.value ? String(field.state.value) : ""}
-                      >
-                        <SelectItem id="" textValue="No vincular (Crear usuario nuevo)">
-                          No vincular (Crear usuario nuevo)
-                        </SelectItem>
-                        {availablePeople.map((person) => (
-                          <SelectItem
-                            id={String(person.id)}
-                            key={person.id}
-                            textValue={getPersonFullName(person)}
-                          >
-                            {getPersonFullName(person)} - {person.rut}
-                          </SelectItem>
-                        ))}
-                      </Select>
-                    )}
-                  </form.Field>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <form.Subscribe selector={(state) => [state.values.personId]}>
-            {([personId]) => {
-              if (personId) return null;
-              return (
-                <>
-                  <div className="md:col-span-2">
-                    <h3 className="text-foreground mb-4 font-semibold">Datos personales</h3>
-                  </div>
-                  <form.Field name="names">
-                    {(field) => (
-                      <Input
-                        label="Nombres"
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Ej: Juan Andrés"
-                        required
-                        value={field.state.value}
-                      />
-                    )}
-                  </form.Field>
-                  <form.Field name="fatherName">
-                    {(field) => (
-                      <Input
-                        label="Apellido Paterno"
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Ej: Pérez"
-                        required
-                        value={field.state.value}
-                      />
-                    )}
-                  </form.Field>
-                  <form.Field name="motherName">
-                    {(field) => (
-                      <Input
-                        label="Apellido Materno"
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Ej: González"
-                        required
-                        value={field.state.value}
-                      />
-                    )}
-                  </form.Field>
-                  <form.Field name="rut">
-                    {(field) => (
-                      <Input
-                        label="RUT"
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="12.345.678-9"
-                        required
-                        value={field.state.value}
-                      />
-                    )}
-                  </form.Field>
-                  <div className="md:col-span-1">{/* Spacer */}</div>
-                </>
-              );
-            }}
-          </form.Subscribe>
-
-          <div className="md:col-span-2">
-            <h3 className="text-foreground mt-2 mb-4 font-semibold">Datos de cuenta</h3>
-          </div>
-
-          <div className="md:col-span-2">
-            <form.Field name="email">
-              {(field) => (
-                <form.Subscribe selector={(state) => [state.values.personId]}>
-                  {([personId]) => (
-                    <Input
-                      helper={personId ? "Verifica o actualiza el correo asociado" : undefined}
-                      label="Correo electrónico"
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="usuario@bioalergia.cl"
-                      required
-                      type="email"
-                      value={field.state.value}
-                    />
-                  )}
-                </form.Subscribe>
-              )}
-            </form.Field>
-          </div>
-
-          <form.Field name="position">
-            {(field) => (
-              <Input
-                label="Cargo / posición"
-                onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Ej: Enfermera, Administrativo"
-                required
-                value={field.state.value}
-              />
-            )}
-          </form.Field>
-
-          <form.Subscribe selector={(state) => [state.values.personId]}>
-            {([personId]) => (
-              <div className={personId ? "md:col-span-2" : ""}>
-                <form.Field name="role">
-                  {(field) => (
-                    <Select
-                      errorMessage={field.state.meta.errors.join(", ")}
-                      isInvalid={field.state.meta.errors.length > 0}
-                      label="Rol del sistema"
-                      onSelectionChange={(val) => field.handleChange(val as string)}
-                      selectedKey={field.state.value}
-                    >
-                      {roles.map((r) => (
-                        <SelectItem id={r.name} key={r.id} textValue={r.name}>
-                          {r.name} ({r.description || "Sin descripción"})
-                        </SelectItem>
-                      ))}
-                    </Select>
-                  )}
-                </form.Field>
-              </div>
-            )}
-          </form.Subscribe>
-        </div>
-
-        <div className="border-primary/20 bg-primary/5 rounded-xl border p-4">
-          <div className="flex items-start gap-3">
-            <Shield className="text-primary mt-0.5 h-5 w-5" />
-            <div className="space-y-1">
-              <p className="text-primary font-medium">Seguridad reforzada</p>
-              <p className="text-default-600 text-xs">
-                Si activas esta opción, el usuario estará <strong>obligado</strong> a configurar
-                Passkey o MFA (Google Authenticator) antes de poder usar el sistema.
-              </p>
-            </div>
-          </div>
-          <div className="mt-4 space-y-3 pl-8">
-            <form.Field name="mfaEnforced">
-              {(field) => (
-                <Checkbox
-                  checked={field.state.value}
-                  label="Forzar passkey o MFA"
-                  onChange={(e) => field.handleChange(e.target.checked)}
-                />
-              )}
-            </form.Field>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-4">
-          <Button
-            onClick={() => navigate({ to: "/settings/users" })}
-            type="button"
-            variant="secondary"
-          >
-            Cancelar
-          </Button>
-          <form.Subscribe selector={(state) => [state.isSubmitting]}>
-            {([isSubmitting]) => (
-              <Button
-                className="gap-2"
-                disabled={isSubmitting || createUserMutation.isPending}
-                type="submit"
-              >
-                <UserPlus size={18} />
-                {isSubmitting || createUserMutation.isPending ? "Creando..." : "Crear usuario"}
-              </Button>
-            )}
-          </form.Subscribe>
-        </div>
-      </form>
+      {formContent}
     </div>
   );
 }

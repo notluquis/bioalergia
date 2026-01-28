@@ -1,4 +1,4 @@
-import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi, Outlet } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
 import PageLoader from "@/components/ui/PageLoader";
@@ -19,8 +19,11 @@ export const Route = createFileRoute("/_authed/settings/users")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <UserManagementPage />
-    </Suspense>
+    <>
+      <Suspense fallback={<PageLoader />}>
+        <UserManagementPage />
+      </Suspense>
+      <Outlet />
+    </>
   ),
 });
