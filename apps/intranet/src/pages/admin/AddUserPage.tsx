@@ -1,6 +1,6 @@
 import { useFindManyRole } from "@finanzas/db/hooks";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Shield, UserPlus, Users } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -38,7 +38,7 @@ export default function AddUserPage() {
   const roles = rolesData || [];
 
   // Fetch people without users
-  const { data: peopleData } = useSuspenseQuery({
+  const { data: peopleData, isLoading: isPeopleLoading } = useQuery({
     queryFn: fetchPeople,
     queryKey: ["people"],
   });
@@ -144,7 +144,14 @@ export default function AddUserPage() {
         }}
       >
         {/* Opción de vincular a persona existente */}
-        {availablePeople.length > 0 && (
+        {isPeopleLoading ? (
+          <div className="border-default/20 bg-default/5 rounded-xl border p-4">
+            <div className="flex items-center gap-3">
+              <Users className="text-default-500 h-5 w-5" />
+              <p className="text-default-600 text-sm">Cargando personas disponibles...</p>
+            </div>
+          </div>
+        ) : availablePeople.length > 0 ? (
           <div className="border-info/20 bg-info/5 rounded-xl border p-4">
             <div className="flex items-start gap-3">
               <Users className="text-info mt-0.5 h-5 w-5" />
@@ -186,7 +193,7 @@ export default function AddUserPage() {
               </div>
             </div>
           </div>
-        )}
+        ) : null}
 
         <div className="grid gap-6 md:grid-cols-2">
           <form.Subscribe selector={(state) => [state.values.personId]}>
