@@ -20,12 +20,14 @@
 		respond "OK" 200
 	}
 
-	# API proxy to backend (if needed in future)
-	# handle /api/* {
-	# 	reverse_proxy https://api.bioalergia.cl {
-	# 		header_up Host {upstream_hostport}
-	# 	}
-	# }
+	# API proxy to backend - Forward all /api/* requests to api.bioalergia.cl
+	handle /api/* {
+		reverse_proxy https://api.bioalergia.cl {
+			header_up Host {upstream_hostport}
+			header_up X-Forwarded-Host {host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
 
 	# SPA routing: try files, fallback to index.html
 	handle {
