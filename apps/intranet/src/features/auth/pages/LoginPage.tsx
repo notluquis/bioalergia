@@ -289,6 +289,168 @@ function LoginHeader({ step, orgName, logoSrc, fallbackLogo }: LoginHeaderProps)
   );
 }
 
+interface PasskeyStepProps {
+  isPending: boolean;
+  handlePasskeyLogin: () => void;
+  switchToCredentials: () => void;
+}
+
+function PasskeyStep({ isPending, handlePasskeyLogin, switchToCredentials }: PasskeyStepProps) {
+  return (
+    <div className="space-y-3">
+      <Button
+        className="h-14 w-full gap-2 text-base"
+        disabled={isPending}
+        onClick={handlePasskeyLogin}
+        type="button"
+        aria-label="Iniciar sesión con biometría"
+      >
+        <Fingerprint className="size-5" aria-hidden="true" />
+        {isPending ? "Verificando..." : "Ingresar con biometría"}
+      </Button>
+
+      <button
+        className="border-default-200 hover:bg-default-50 flex h-14 w-full items-center justify-center gap-2 rounded-lg border transition-colors disabled:opacity-50"
+        disabled={isPending}
+        onClick={switchToCredentials}
+        type="button"
+        aria-label="Usar correo electrónico y contraseña"
+      >
+        <Mail className="size-4" aria-hidden="true" />
+        <span className="text-sm font-medium">Usar correo y contraseña</span>
+      </button>
+    </div>
+  );
+}
+
+interface CredentialsStepProps {
+  isLoading: boolean;
+  email: string;
+  password: string;
+  handleCredentialsSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  handleEmailChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  handlePasswordChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  switchToPasskey: () => void;
+}
+
+function CredentialsStep({
+  isLoading,
+  email,
+  password,
+  handleCredentialsSubmit,
+  handleEmailChange,
+  handlePasswordChange,
+  switchToPasskey,
+}: CredentialsStepProps) {
+  return (
+    <form className="w-full space-y-4" onSubmit={handleCredentialsSubmit}>
+      <div className="w-full">
+        <Input
+          autoComplete="username"
+          label="Correo electrónico"
+          onChange={handleEmailChange}
+          placeholder="usuario@bioalergia.cl"
+          required
+          type="email"
+          value={email}
+          disabled={isLoading}
+        />
+      </div>
+      <div className="w-full">
+        <Input
+          autoComplete="current-password"
+          enterKeyHint="go"
+          label="Contraseña"
+          onChange={handlePasswordChange}
+          placeholder="••••••••"
+          type="password"
+          value={password}
+          disabled={isLoading}
+        />
+      </div>
+
+      <div className="flex w-full gap-2 pt-2">
+        <Button
+          className="h-14 flex-1 min-w-0"
+          disabled={isLoading}
+          onClick={switchToPasskey}
+          type="button"
+          variant="ghost"
+          aria-label="Volver a biometría"
+        >
+          Atrás
+        </Button>
+        <Button
+          className="h-14 flex-1 min-w-0"
+          disabled={isLoading}
+          type="submit"
+          aria-label="Continuar con credenciales"
+        >
+          {isLoading ? "Verificando..." : "Continuar"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+interface MfaStepProps {
+  isLoading: boolean;
+  mfaCode: string;
+  handleMfaSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  handleMfaCodeChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  switchToCredentialsFromMfa: () => void;
+}
+
+function MfaStep({
+  isLoading,
+  mfaCode,
+  handleMfaSubmit,
+  handleMfaCodeChange,
+  switchToCredentialsFromMfa,
+}: MfaStepProps) {
+  return (
+    <form className="w-full space-y-4" onSubmit={handleMfaSubmit}>
+      <div className="w-full">
+        <Input
+          autoComplete="one-time-code"
+          className="text-center text-2xl tracking-widest"
+          inputMode="numeric"
+          label="Código de seguridad"
+          maxLength={6}
+          onChange={handleMfaCodeChange}
+          pattern="[0-9]*"
+          placeholder="000000"
+          required
+          type="text"
+          value={mfaCode}
+          disabled={isLoading}
+        />
+      </div>
+
+      <div className="flex w-full gap-2 pt-2">
+        <Button
+          className="h-14 flex-1 min-w-0"
+          disabled={isLoading}
+          onClick={switchToCredentialsFromMfa}
+          type="button"
+          variant="ghost"
+          aria-label="Volver a credenciales"
+        >
+          Atrás
+        </Button>
+        <Button
+          className="h-14 flex-1 min-w-0"
+          disabled={isLoading}
+          type="submit"
+          aria-label="Confirmar código MFA"
+        >
+          {isLoading ? "Verificando..." : "Confirmar"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 interface LoginContentProps {
   step: LoginStep;
   isLoading: boolean;
@@ -326,119 +488,37 @@ function LoginContent({
 }: LoginContentProps) {
   if (step === "passkey") {
     return (
-      <div className="space-y-3">
-        <Button
-          className="h-14 w-full gap-2 text-base"
-          disabled={passkeyMutation.isPending}
-          onClick={handlePasskeyLogin}
-          type="button"
-          aria-label="Iniciar sesión con biometría"
-        >
-          <Fingerprint className="size-5" aria-hidden="true" />
-          {passkeyMutation.isPending ? "Verificando..." : "Ingresar con biometría"}
-        </Button>
-
-        <button
-          className="border-default-200 hover:bg-default-50 flex h-12 w-full items-center justify-center gap-2 rounded-lg border transition-colors disabled:opacity-50"
-          disabled={passkeyMutation.isPending}
-          onClick={switchToCredentials}
-          type="button"
-          aria-label="Usar correo electrónico y contraseña"
-        >
-          <Mail className="size-4" aria-hidden="true" />
-          <span className="text-sm font-medium">Usar correo y contraseña</span>
-        </button>
-      </div>
+      <PasskeyStep
+        isPending={passkeyMutation.isPending}
+        handlePasskeyLogin={handlePasskeyLogin}
+        switchToCredentials={switchToCredentials}
+      />
     );
   }
 
   if (step === "credentials") {
     return (
-      <form className="w-full space-y-4" onSubmit={handleCredentialsSubmit}>
-        <Input
-          autoComplete="username"
-          label="Correo electrónico"
-          onChange={handleEmailChange}
-          placeholder="usuario@bioalergia.cl"
-          required
-          type="email"
-          value={email}
-          disabled={isLoading}
-        />
-        <Input
-          autoComplete="current-password"
-          enterKeyHint="go"
-          label="Contraseña"
-          onChange={handlePasswordChange}
-          placeholder="••••••••"
-          type="password"
-          value={password}
-          disabled={isLoading}
-        />
-
-        <div className="flex gap-2 pt-2">
-          <Button
-            className="flex-1 min-w-0"
-            disabled={isLoading}
-            onClick={switchToPasskey}
-            type="button"
-            variant="ghost"
-            aria-label="Volver a biometría"
-          >
-            Atrás
-          </Button>
-          <Button
-            className="flex-1 min-w-0"
-            disabled={isLoading}
-            type="submit"
-            aria-label="Continuar con credenciales"
-          >
-            {isLoading ? "Verificando..." : "Continuar"}
-          </Button>
-        </div>
-      </form>
+      <CredentialsStep
+        isLoading={isLoading}
+        email={email}
+        password={password}
+        handleCredentialsSubmit={handleCredentialsSubmit}
+        handleEmailChange={handleEmailChange}
+        handlePasswordChange={handlePasswordChange}
+        switchToPasskey={switchToPasskey}
+      />
     );
   }
 
   if (step === "mfa") {
     return (
-      <form className="w-full space-y-4" onSubmit={handleMfaSubmit}>
-        <Input
-          autoComplete="one-time-code"
-          className="text-center text-2xl tracking-widest"
-          inputMode="numeric"
-          label="Código de seguridad"
-          maxLength={6}
-          onChange={handleMfaCodeChange}
-          pattern="[0-9]*"
-          placeholder="000000"
-          required
-          type="text"
-          value={mfaCode}
-          disabled={isLoading}
-        />
-
-        <div className="flex gap-2 pt-2">
-          <Button
-            className="flex-1 min-w-0"
-            disabled={isLoading}
-            onClick={switchToCredentialsFromMfa}
-            type="button"
-            variant="ghost"
-            aria-label="Volver a credenciales"
-          >
-            Atrás
-          </Button>
-          <Button
-            className="flex-1 min-w-0"
-            disabled={isLoading}
-            type="submit"
-            aria-label="Confirmar código MFA"
-          >
-            {isLoading ? "Verificando..." : "Confirmar"}
-          </Button>
-        </div>
-      </form>
+      <MfaStep
+        isLoading={isLoading}
+        mfaCode={mfaCode}
+        handleMfaSubmit={handleMfaSubmit}
+        handleMfaCodeChange={handleMfaCodeChange}
+        switchToCredentialsFromMfa={switchToCredentialsFromMfa}
+      />
     );
   }
 
