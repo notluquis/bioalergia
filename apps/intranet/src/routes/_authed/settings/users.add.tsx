@@ -1,9 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
-
 import PageLoader from "@/components/ui/PageLoader";
-
-const AddUserPage = lazy(() => import("@/pages/admin/AddUserPage"));
+import AddUserPage from "@/pages/admin/AddUserPage";
 
 export const Route = createFileRoute("/_authed/settings/users/add")({
   beforeLoad: ({ context }) => {
@@ -12,9 +9,6 @@ export const Route = createFileRoute("/_authed/settings/users/add")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <AddUserPage />
-    </Suspense>
-  ),
+  pendingComponent: () => <PageLoader />,
+  component: AddUserPage,
 });

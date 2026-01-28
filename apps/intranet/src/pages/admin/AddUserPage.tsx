@@ -1,4 +1,3 @@
-import { useFindManyRole } from "@finanzas/db/hooks";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -6,10 +5,12 @@ import { Shield, UserPlus, Users } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import Input from "@/components/ui/Input";
+import PageLoader from "@/components/ui/PageLoader";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople } from "@/features/people/api";
 import { inviteUser } from "@/features/users/api";
+import { apiClient } from "@/lib/api-client";
 import { getPersonFullName } from "@/lib/person";
 
 interface AddUserFormState {
@@ -32,10 +33,11 @@ export default function AddUserPage() {
   const { error: toastError, success } = useToast();
 
   // Fetch available roles
-  const { data: rolesData } = useFindManyRole({
-    orderBy: { name: "asc" },
+  const { data: roles = [], isLoading: isRolesLoading } = useQuery({
+    queryKey: ["roles"],
+    queryFn: () =>
+      apiClient.get<Array<{ id: number; name: string; description: string | null }>>("/roles"),
   });
-  const roles = rolesData || [];
 
   // Fetch people without users
   const { data: peopleData, isLoading: isPeopleLoading } = useQuery({
@@ -125,6 +127,10 @@ export default function AddUserPage() {
     }
   };
 
+  if (isRolesLoading || isPeopleLoading) {
+    return <PageLoader />;
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="space-y-2">
@@ -144,14 +150,7 @@ export default function AddUserPage() {
         }}
       >
         {/* Opción de vincular a persona existente */}
-        {isPeopleLoading ? (
-          <div className="border-default/20 bg-default/5 rounded-xl border p-4">
-            <div className="flex items-center gap-3">
-              <Users className="text-default-500 h-5 w-5" />
-              <p className="text-default-600 text-sm">Cargando personas disponibles...</p>
-            </div>
-          </div>
-        ) : availablePeople.length > 0 ? (
+        {availablePeople.length > 0 ? (
           <div className="border-info/20 bg-info/5 rounded-xl border p-4">
             <div className="flex items-start gap-3">
               <Users className="text-info mt-0.5 h-5 w-5" />
