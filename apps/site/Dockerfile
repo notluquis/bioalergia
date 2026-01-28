@@ -38,12 +38,23 @@ ENV VITE_PUBLIC_POSTHOG_HOST=${VITE_PUBLIC_POSTHOG_HOST}
 RUN pnpm -w turbo run build --filter=@finanzas/site
 
 # ==========================================================================
-# Stage 4: Runner (Nginx)
+# Stage 4: Runner - Caddy (modern HTTP/3 server)
 # ==========================================================================
-FROM nginxinc/nginx-unprivileged:mainline-alpine AS runner
-WORKDIR /usr/share/nginx/html
+FROM caddy:2-alpine AS runner
+WORKDIR /srv
+ENV PORT=3000
+
+# Copy built static site
 COPY --from=build /app/apps/site/dist ./
-COPY apps/site/nginx.conf /etc/nginx/conf.d/default.conf
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3   CMD wget -qO- http://127.0.0.1:3000/ >/dev/null || exit 1
+
+# Copy Caddyfile
+COPY apps/site/Caddyfile /etc/caddy/Caddyfile
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:${PORT:-3000}/health >/dev/null || exit 1
+
 EXPOSE 3000
-CMD ["nginx", "-g", "daemon off;"]
+
+# Caddy runs as non-root by default
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
