@@ -299,9 +299,10 @@ function PasskeyStep({ isPending, handlePasskeyLogin, switchToCredentials }: Pas
   return (
     <div className="space-y-3">
       <Button
-        className="h-14 w-full gap-2 text-base"
+        className="gap-2 text-base"
         disabled={isPending}
         onClick={handlePasskeyLogin}
+        size="lg"
         type="button"
         aria-label="Iniciar sesión con biometría"
       >
@@ -309,16 +310,17 @@ function PasskeyStep({ isPending, handlePasskeyLogin, switchToCredentials }: Pas
         {isPending ? "Verificando..." : "Ingresar con biometría"}
       </Button>
 
-      <button
-        className="border-default-200 hover:bg-default-50 flex h-14 w-full items-center justify-center gap-2 rounded-lg border transition-colors disabled:opacity-50"
+      <Button
         disabled={isPending}
         onClick={switchToCredentials}
+        size="lg"
         type="button"
+        variant="outline"
         aria-label="Usar correo electrónico y contraseña"
       >
         <Mail className="size-4" aria-hidden="true" />
         <span className="text-sm font-medium">Usar correo y contraseña</span>
-      </button>
+      </Button>
     </div>
   );
 }
