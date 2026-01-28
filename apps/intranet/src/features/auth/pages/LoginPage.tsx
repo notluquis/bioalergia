@@ -219,7 +219,7 @@ export default function LoginPage() {
 
             <div className="flex gap-2 pt-2">
               <Button
-                className="flex-1"
+                className="flex-1 min-w-0"
                 disabled={loading}
                 onClick={() => {
                   setStep("passkey");
@@ -230,7 +230,7 @@ export default function LoginPage() {
               >
                 Atrás
               </Button>
-              <Button className="flex-1" disabled={loading} type="submit">
+              <Button className="flex-1 min-w-0" disabled={loading} type="submit">
                 {loading ? "Verificando..." : "Continuar"}
               </Button>
             </div>

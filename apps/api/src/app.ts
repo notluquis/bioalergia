@@ -1,8 +1,5 @@
 // apps/api/src/app.ts
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { authDb, schema } from "@finanzas/db";
-import { serveStatic } from "@hono/node-server/serve-static";
 import { RPCApiHandler } from "@zenstackhq/server/api";
 import { createHonoHandler } from "@zenstackhq/server/hono";
 import { Hono } from "hono";
@@ -213,47 +210,39 @@ const zenStackHandler = createHonoHandler({
 app.use("/api/model/*", zenStackHandler);
 
 // ============================================================================
-// STATIC FILE SERVING (Frontend SPA)
+// ROOT ENDPOINT
 // ============================================================================
-// Only enable in production (when public folder exists)
-if (process.env.NODE_ENV === "production") {
-  // Serve static files from /public (Vite build output)
-  app.use(
-    "/*",
-    serveStatic({
-      root: "./public",
-      // Don't serve index.html for missing files yet - SPA fallback handles that
-    }),
-  );
+// Note: This API server does NOT serve the frontend in production.
+// The frontend is served separately from intranet.bioalergia.cl (Caddy)
+// which proxies /api/* requests to this server.
+app.get("/", (c) => {
+  const info: {
+    status: string;
+    service: string;
+    stack: string;
+    mode: string;
+    endpoints: Record<string, string>;
+    note?: string;
+  } = {
+    status: "ok",
+    service: "finanzas-api",
+    stack: "Hono + ZenStack v3",
+    mode: process.env.NODE_ENV || "development",
+    endpoints: {
+      health: "/health",
+      auth: "/api/auth/*",
+      model: "/api/model/*",
+      users: "/api/users/*",
+      mercadopago: "/api/mercadopago/*",
+      backup: "/api/backup/*",
+    },
+  };
 
-  // SPA fallback: serve index.html for all non-API, non-asset routes
-  app.get("*", async (c) => {
-    const path = c.req.path;
+  if (process.env.NODE_ENV !== "production") {
+    info.note = "Run `pnpm --filter @finanzas/intranet dev` for frontend";
+  }
 
-    // Exclude API routes from SPA fallback
-    if (path.startsWith("/api/")) {
-      return c.text("API route not found", 404);
-    }
-
-    try {
-      const indexPath = join(process.cwd(), "public", "index.html");
-      const html = await readFile(indexPath, "utf-8");
-      return c.html(html);
-    } catch {
-      return c.text("Frontend not found", 404);
-    }
-  });
-} else {
-  // Development: show API info at root
-  app.get("/", (c) => {
-    return c.json({
-      status: "ok",
-      service: "finanzas-api",
-      stack: "Hono + ZenStack v3",
-      mode: "development",
-      frontend: "Run `pnpm --filter @finanzas/intranet dev` separately",
-    });
-  });
-}
+  return c.json(info);
+});
 
 export default app;
