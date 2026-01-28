@@ -191,7 +191,7 @@ export default function LoginPage() {
             )}
 
         {step === "credentials" && !isSuccess && (
-          <form className="space-y-4" onSubmit={handleCredentialsSubmit}>
+          <form className="w-full space-y-4" onSubmit={handleCredentialsSubmit}>
             <Input
               autoComplete="username"
               label="Correo electrónico"
@@ -238,7 +238,7 @@ export default function LoginPage() {
         )}
 
         {step === "mfa" && !isSuccess && (
-          <form className="space-y-4" onSubmit={handleMfaSubmit}>
+          <form className="w-full space-y-4" onSubmit={handleMfaSubmit}>
             <Input
               autoComplete="one-time-code"
               className="text-center text-2xl tracking-widest"
@@ -258,7 +258,7 @@ export default function LoginPage() {
 
             <div className="flex gap-2 pt-2">
               <Button
-                className="flex-1"
+                className="flex-1 min-w-0"
                 disabled={loading}
                 onClick={() => {
                   setStep("credentials");
@@ -270,7 +270,7 @@ export default function LoginPage() {
               >
                 Atrás
               </Button>
-              <Button className="flex-1" disabled={loading} type="submit">
+              <Button className="flex-1 min-w-0" disabled={loading} type="submit">
                 {loading ? "Verificando..." : "Confirmar"}
               </Button>
             </div>
