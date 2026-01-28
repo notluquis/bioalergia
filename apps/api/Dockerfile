@@ -63,7 +63,9 @@ ENV PORT=3000
 
 # Copy only production node_modules from base (no devDependencies)
 COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/packages ./packages
+
+# Copy built packages from build stage (includes @finanzas/db)
+COPY --from=build /app/packages ./packages
 
 # Copy built API bundle and package.json
 COPY --from=build /app/apps/api/dist ./dist
