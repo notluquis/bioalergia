@@ -9,6 +9,8 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { rateLimiter } from "hono-rate-limiter";
 import { createAuthContext, getSessionUser } from "./auth";
+import certificatesRoutes from "./modules/certificates/index.js";
+import patientsRoutes from "./modules/patients/index.js";
 import { authRoutes } from "./routes/auth";
 import backupRoutes from "./routes/backups";
 import balanceRoutes from "./routes/balances";
@@ -38,10 +40,21 @@ import { suppliesRoutes } from "./routes/supplies";
 import timesheetRoutes from "./routes/timesheets";
 import transactionRoutes from "./routes/transactions";
 import { userRoutes } from "./routes/users";
-import certificatesRoutes from "./modules/certificates/index.js";
-import patientsRoutes from "./modules/patients/index.js";
 
 const app = new Hono();
+
+// Request logging middleware (before everything else)
+app.use("*", async (c, next) => {
+  const start = Date.now();
+  const method = c.req.method;
+  const path = c.req.path;
+  console.log(`[${new Date().toISOString()}] --> ${method} ${path}`);
+  await next();
+  const duration = Date.now() - start;
+  console.log(
+    `[${new Date().toISOString()}] <-- ${method} ${path} ${c.res.status} (${duration}ms)`,
+  );
+});
 
 // Security headers and CSP for Cloudflare + Vite
 app.use("*", async (c, next) => {
@@ -87,6 +100,9 @@ app.use(
       return null;
     },
     credentials: true,
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+    exposeHeaders: ["Content-Type", "Set-Cookie"],
   }),
 );
 
