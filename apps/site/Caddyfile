@@ -15,6 +15,17 @@
 		Cross-Origin-Resource-Policy "same-origin"
 	}
 
+	# ========== LOGGING CONFIGURATION ==========
+	# Skip health checks and favicon (high-frequency, low-value logs)
+	# These go to HTTP Logs in Railway but generate noise
+	log_skip /health
+	log_skip /favicon.ico
+
+	# Skip static assets (js, css, images, fonts)
+	# These are already cached and don't need to be logged
+	@assets path_regexp \.(js|css|png|jpe?g|gif|svg|ico|woff|woff2|ttf|eot|webp)$
+	log_skip @assets
+
 	# Health check endpoint
 	handle /health {
 		respond "OK" 200
@@ -42,9 +53,49 @@
 		Cache-Control "no-store"
 	}
 
-	# Logging (structured JSON)
+	# Structured JSON logging for Railway HTTP Logs
+	# Filters unnecessary headers to reduce log size by ~70-80%
 	log {
 		output stdout
-		format json
+		format filter {
+			# Request headers: filter non-critical information
+			request>headers>Accept delete
+			request>headers>Accept-Language delete
+			request>headers>Accept-Encoding delete
+			request>headers>Priority delete
+			request>headers>Sec-Fetch-Dest delete
+			request>headers>Sec-Fetch-Mode delete
+			request>headers>Sec-Fetch-Site delete
+			
+			# Cloudflare geolocation headers (not essential for debugging)
+			request>headers>Cf-Iplatitude delete
+			request>headers>Cf-Iplongitude delete
+			request>headers>Cf-Postal-Code delete
+			request>headers>Cf-Ipcity delete
+			request>headers>Cf-Ipcontinent delete
+			request>headers>Cf-Ipcountry delete
+			request>headers>Cf-Region delete
+			request>headers>Cf-Region-Code delete
+			request>headers>Cf-Timezone delete
+			request>headers>Cf-Visitor delete
+			
+			# Cloudflare certificate validation headers
+			request>headers>Cf-Cert-Presented delete
+			request>headers>Cf-Cert-Revoked delete
+			request>headers>Cf-Cert-Verified delete
+			
+			# Railway edge headers (X-Railway-Request-Id is kept in response)
+			request>headers>X-Railway-Edge delete
+			
+			# Response headers: remove CDN/proxy noise
+			resp_headers>Cf-Ray delete
+			resp_headers>Cf-Cache-Status delete
+			resp_headers>Nel delete
+			resp_headers>Report-To delete
+			resp_headers>Speculation-Rules delete
+			resp_headers>Server delete
+			
+			wrap json
+		}
 	}
 }
