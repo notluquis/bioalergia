@@ -53,19 +53,34 @@ export function useLoginLogic(from: string) {
         : { requiresMfa: false };
     },
     onSuccess: (d) => {
-      if (d.requiresMfa) updateState({ tempUserId: d.userId, step: "mfa" });
-      else redirectAfterSuccess();
+      if (d.requiresMfa) {
+        updateState({ tempUserId: d.userId, step: "mfa" });
+        logger.info("[login-page] MFA required", { userId: d.userId });
+      } else {
+        logger.info("[login-page] credentials login success", { user: email });
+        redirectAfterSuccess();
+      }
     },
-    onError: (e) => updateState({ formError: e instanceof Error ? e.message : "Error" }),
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : "No se pudo iniciar sesión";
+      updateState({ formError: msg });
+      logger.error("[login-page] credentials login error", { email, message: msg });
+    },
   });
   const mfaMutation = useMutation({
     mutationFn: async () => {
       if (!tempUserId) throw new Error("No user");
       await loginWithMfa(tempUserId, mfaCode);
     },
-    onSuccess: () => redirectAfterSuccess(),
-    onError: (e) =>
-      updateState({ formError: e instanceof Error ? e.message : "Código incorrecto" }),
+    onSuccess: () => {
+      logger.info("[login-page] MFA success", { userId: tempUserId });
+      redirectAfterSuccess();
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : "Código incorrecto";
+      updateState({ formError: msg });
+      logger.error("[login-page] MFA error", { message: msg });
+    },
   });
   const passkeyMutation = useMutation({
     mutationFn: async () => {
@@ -74,9 +89,16 @@ export function useLoginLogic(from: string) {
       const a = await startAuthentication({ optionsJSON: o });
       await loginWithPasskey(a, o.challenge);
     },
-    onSuccess: () => redirectAfterSuccess(),
-    onError: () =>
-      updateState({ formError: "No se pudo validar. Usa contraseña.", step: "credentials" }),
+    onSuccess: () => {
+      logger.info("[login-page] passkey success");
+      redirectAfterSuccess();
+    },
+    onError: (e) => {
+      logger.error("[login-page] passkey error", {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      updateState({ formError: "No se pudo validar. Usa contraseña.", step: "credentials" });
+    },
   });
   return {
     state,
