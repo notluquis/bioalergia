@@ -123,7 +123,7 @@ interface PasskeyStepProps {
 
 function PasskeyStep({ isPending, handlePasskeyLogin, switchToCredentials }: PasskeyStepProps) {
   return (
-    <div className="space-y-3 flex flex-col items-center">
+    <div className="space-y-3">
       <Button
         className="gap-2 text-base"
         disabled={isPending}
@@ -173,10 +173,7 @@ function CredentialsStep({
   switchToPasskey,
 }: CredentialsStepProps) {
   return (
-    <form
-      className="w-full space-y-4 flex flex-col items-center"
-      onSubmit={handleCredentialsSubmit}
-    >
+    <form className="w-full space-y-4" onSubmit={handleCredentialsSubmit}>
       <Input
         autoComplete="username"
         label="Correo electrónico"
@@ -186,7 +183,6 @@ function CredentialsStep({
         type="email"
         value={email}
         disabled={isLoading}
-        className="w-full"
       />
       <Input
         autoComplete="current-password"
@@ -197,7 +193,6 @@ function CredentialsStep({
         type="password"
         value={password}
         disabled={isLoading}
-        className="w-full"
       />
 
       <div className="flex w-full gap-2 pt-2">
@@ -240,10 +235,10 @@ function MfaStep({
   switchToCredentialsFromMfa,
 }: MfaStepProps) {
   return (
-    <form className="w-full space-y-4 flex flex-col items-center" onSubmit={handleMfaSubmit}>
+    <form className="w-full space-y-4" onSubmit={handleMfaSubmit}>
       <Input
         autoComplete="one-time-code"
-        className="text-center text-2xl tracking-widest w-full"
+        className="text-center text-2xl tracking-widest"
         inputMode="numeric"
         label="Código de seguridad"
         maxLength={6}
