@@ -1,5 +1,5 @@
-import { Breadcrumbs, BreadcrumbsItem } from "@heroui/react";
-import { Link, useMatches, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Breadcrumbs } from "@heroui/react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2, LogOut } from "lucide-react";
 import React from "react";
 
@@ -9,31 +9,29 @@ import Clock from "../features/Clock";
 import Button from "../ui/Button";
 import ThemeToggle from "../ui/ThemeToggle";
 
-// Helper: Extract label from match breadcrumb/title
-const getMatchLabel = (match: {
-  staticData: { breadcrumb?: unknown; title?: string };
-  loaderData: unknown;
-}): string => {
-  const { breadcrumb, title } = match.staticData;
-  if (typeof breadcrumb === "function") {
-    return breadcrumb(match.loaderData);
+// Helper: Extract label from match context
+const getMatchLabel = (match: { context: Record<string, unknown> }): string => {
+  const { getBreadcrumb, getTitle } = match.context;
+  if (typeof getBreadcrumb === "function") {
+    return getBreadcrumb();
   }
-  if (typeof breadcrumb === "string") {
-    return breadcrumb;
+  if (typeof getTitle === "function") {
+    return getTitle();
   }
-  return title || "";
+  return "";
 };
 
 // Helper: Build breadcrumb items from matches
 const buildCrumbs = (
   matches: Array<{
-    staticData: { breadcrumb?: unknown; title?: string };
-    loaderData: unknown;
+    context: Record<string, unknown>;
     pathname: string;
   }>,
 ) => {
   const activeMatches = matches.filter(
-    (match) => match.staticData?.breadcrumb || match.staticData?.title,
+    (match) =>
+      typeof match.context?.getTitle === "function" ||
+      typeof match.context?.getBreadcrumb === "function",
   );
 
   return activeMatches
@@ -46,16 +44,18 @@ const buildCrumbs = (
 
 // Helper: Extract page title from last match or crumbs
 const getPageTitle = (
-  matches: Array<{ staticData: { breadcrumb?: unknown; title?: string }; loaderData: unknown }>,
+  matches: Array<{ context: Record<string, unknown> }>,
   crumbsList: Array<{ label: string }>,
 ) => {
   const activeMatches = matches.filter(
-    (match) => match.staticData?.breadcrumb || match.staticData?.title,
+    (match) =>
+      typeof match.context?.getTitle === "function" ||
+      typeof match.context?.getBreadcrumb === "function",
   );
   const lastMatch = activeMatches[activeMatches.length - 1];
 
-  if (lastMatch?.staticData?.title) {
-    return lastMatch.staticData.title;
+  if (lastMatch && typeof lastMatch.context?.getTitle === "function") {
+    return (lastMatch.context.getTitle as () => string)();
   }
   if (lastMatch) {
     return getMatchLabel(lastMatch);
@@ -70,13 +70,18 @@ export default function Header() {
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const matches = useMatches();
+  const matches = useRouterState({ select: (s) => s.matches });
 
   const isNavigating = routerStatus === "pending";
 
   const { crumbs, pageTitle } = React.useMemo(() => {
-    const crumbsList = buildCrumbs(matches);
-    const titleText = getPageTitle(matches, crumbsList);
+    const crumbsList = buildCrumbs(
+      matches as unknown as Array<{ context: Record<string, unknown>; pathname: string }>,
+    );
+    const titleText = getPageTitle(
+      matches as unknown as Array<{ context: Record<string, unknown> }>,
+      crumbsList,
+    );
     return { crumbs: crumbsList, pageTitle: titleText };
   }, [matches]);
 
@@ -93,7 +98,7 @@ export default function Header() {
             {crumbs.map((crumb, i) => {
               const isCurrent = i === crumbs.length - 1;
               return (
-                <BreadcrumbsItem key={crumb.to || i}>
+                <Breadcrumbs.Item key={crumb.to || i}>
                   {isCurrent || !crumb.to ? (
                     crumb.label
                   ) : (
@@ -101,7 +106,7 @@ export default function Header() {
                       {crumb.label}
                     </Link>
                   )}
-                </BreadcrumbsItem>
+                </Breadcrumbs.Item>
               );
             })}
           </Breadcrumbs>
