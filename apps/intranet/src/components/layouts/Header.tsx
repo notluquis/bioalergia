@@ -9,6 +9,63 @@ import Clock from "../features/Clock";
 import Button from "../ui/Button";
 import ThemeToggle from "../ui/ThemeToggle";
 
+// Helper: Extract label from match breadcrumb/title
+const getMatchLabel = (match: {
+  staticData: { breadcrumb?: unknown; title?: string };
+  loaderData: unknown;
+}): string => {
+  const { breadcrumb, title } = match.staticData;
+  if (typeof breadcrumb === "function") {
+    return breadcrumb(match.loaderData);
+  }
+  if (typeof breadcrumb === "string") {
+    return breadcrumb;
+  }
+  return title || "";
+};
+
+// Helper: Build breadcrumb items from matches
+const buildCrumbs = (
+  matches: Array<{
+    staticData: { breadcrumb?: unknown; title?: string };
+    loaderData: unknown;
+    pathname: string;
+  }>,
+) => {
+  const activeMatches = matches.filter(
+    (match) => match.staticData?.breadcrumb || match.staticData?.title,
+  );
+
+  return activeMatches
+    .map((match) => ({
+      label: getMatchLabel(match),
+      to: match.pathname,
+    }))
+    .filter((item) => item.label);
+};
+
+// Helper: Extract page title from last match or crumbs
+const getPageTitle = (
+  matches: Array<{ staticData: { breadcrumb?: unknown; title?: string }; loaderData: unknown }>,
+  crumbsList: Array<{ label: string }>,
+) => {
+  const activeMatches = matches.filter(
+    (match) => match.staticData?.breadcrumb || match.staticData?.title,
+  );
+  const lastMatch = activeMatches[activeMatches.length - 1];
+
+  if (lastMatch?.staticData?.title) {
+    return lastMatch.staticData.title;
+  }
+  if (lastMatch) {
+    return getMatchLabel(lastMatch);
+  }
+  if (crumbsList.length > 0) {
+    return crumbsList[crumbsList.length - 1]?.label ?? "";
+  }
+  return "Inicio";
+};
+
 export default function Header() {
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
@@ -18,48 +75,8 @@ export default function Header() {
   const isNavigating = routerStatus === "pending";
 
   const { crumbs, pageTitle } = React.useMemo(() => {
-    const activeMatches = matches.filter(
-      (match) => match.staticData?.breadcrumb || match.staticData?.title,
-    );
-
-    const crumbsList = activeMatches
-      .map((match) => {
-        const { breadcrumb, title } = match.staticData;
-        let label = "";
-
-        if (typeof breadcrumb === "function") {
-          label = breadcrumb(match.loaderData);
-        } else if (typeof breadcrumb === "string") {
-          label = breadcrumb;
-        } else {
-          label = title || "";
-        }
-
-        return {
-          label,
-          to: match.pathname,
-        };
-      })
-      .filter((item) => item.label);
-
-    const lastMatch = activeMatches[activeMatches.length - 1];
-    let titleText = "Inicio";
-
-    if (lastMatch) {
-      if (lastMatch.staticData?.title) {
-        titleText = lastMatch.staticData.title;
-      } else {
-        const { breadcrumb } = lastMatch.staticData || {};
-        if (typeof breadcrumb === "function") {
-          titleText = breadcrumb(lastMatch.loaderData);
-        } else if (typeof breadcrumb === "string") {
-          titleText = breadcrumb;
-        }
-      }
-    } else if (crumbsList.length > 0) {
-      titleText = crumbsList[crumbsList.length - 1]?.label ?? "";
-    }
-
+    const crumbsList = buildCrumbs(matches);
+    const titleText = getPageTitle(matches, crumbsList);
     return { crumbs: crumbsList, pageTitle: titleText };
   }, [matches]);
 
