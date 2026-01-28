@@ -56,6 +56,9 @@ RUN pnpm turbo run build --filter=@finanzas/api
 # Deploy API for production (isolates prod dependencies)
 RUN pnpm --filter @finanzas/api --prod deploy /prod/api
 
+# Copy built dist folder (pnpm deploy doesn't include it)
+RUN cp -r apps/api/dist /prod/api/
+
 # ============================================================================
 # STAGE 4: Runner - Production image
 # ============================================================================
