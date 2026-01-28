@@ -352,6 +352,7 @@ function getChallenge(key: string): { challenge: string; userId?: number } | nul
 // PASSKEY LOGIN OPTIONS
 authRoutes.get("/passkey/login/options", async (c) => {
   try {
+    console.log("[passkey] Generating login options...");
     const { generateAuthenticationOptions } = await import("@simplewebauthn/server");
 
     // Use empty allowCredentials for discoverable (usernameless) login
@@ -359,6 +360,11 @@ authRoutes.get("/passkey/login/options", async (c) => {
       rpID: RP_ID,
       userVerification: "preferred",
       allowCredentials: [], // Allow any discoverable credential (usernameless)
+    });
+
+    console.log("[passkey] Options generated successfully", {
+      challenge: options.challenge?.slice(0, 20) + "...",
+      rpID: RP_ID,
     });
 
     // Store challenge for verification

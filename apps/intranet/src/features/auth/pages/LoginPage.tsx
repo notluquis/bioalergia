@@ -90,17 +90,26 @@ export default function LoginPage() {
 
   const passkeyLoginMutation = useMutation({
     mutationFn: async () => {
-      const options = await fetchPasskeyLoginOptions();
+      try {
+        const options = await fetchPasskeyLoginOptions();
 
-      if (!options.challenge) {
-        throw new Error("Error al obtener opciones de biometría");
+        if (!options || !options.challenge) {
+          logger.error("[login-page] passkey options missing challenge", { options });
+          throw new Error("Opciones de biometría incompletas");
+        }
+
+        const authResp = await startAuthentication({ optionsJSON: options });
+        await loginWithPasskey(authResp, options.challenge);
+      } catch (error) {
+        logger.error("[login-page] passkey login failed", {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        throw error;
       }
-
-      const authResp = await startAuthentication({ optionsJSON: options });
-      await loginWithPasskey(authResp, options.challenge);
     },
     onError: (err) => {
-      console.error(err);
+      logger.error("[login-page] passkey mutation error", { err });
       setFormError("No se pudo validar el acceso biométrico. Usa tu contraseña.");
       setStep("credentials");
     },
