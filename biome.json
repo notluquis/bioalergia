@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.12/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.3.13/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -30,24 +30,45 @@
       "recommended": true,
       "complexity": {
         "recommended": true,
-        "noExcessiveCognitiveComplexity": "warn"
-      },
-      "performance": {
-        "recommended": true
+        "noExcessiveCognitiveComplexity": "warn",
+        "noExcessiveLinesPerFunction": "warn",
+        "noExcessiveNestedTestSuites": "warn",
+        "noUselessCatch": "error",
+        "noUselessConstructor": "error",
+        "noUselessEmptyExport": "error",
+        "noUselessFragments": "error",
+        "noUselessLabel": "error",
+        "noUselessRename": "error",
+        "noUselessStringConcat": "error",
+        "noUselessTernary": "error",
+        "noUselessThisAlias": "error",
+        "noUselessTypeConstraint": "error",
+        "useArrowFunction": "warn",
+        "useFlatMap": "warn"
       },
       "correctness": {
         "recommended": true,
         "noInnerDeclarations": "off",
         "useExhaustiveDependencies": "warn",
         "noUnusedVariables": "error",
-        "noUnusedImports": "error"
+        "noUnusedImports": "error",
+        "noUnusedFunctionParameters": "warn",
+        "noUnusedPrivateClassMembers": "warn",
+        "useHookAtTopLevel": "error"
       },
       "suspicious": {
         "recommended": true,
         "noAssignInExpressions": "off",
         "noExplicitAny": "warn",
         "noArrayIndexKey": "warn",
-        "noConsole": "off"
+        "noConsole": "off",
+        "noApproximativeNumericConstant": "warn",
+        "noConfusingVoidType": "warn",
+        "noDoubleEquals": "warn",
+        "noDuplicateJsxProps": "error",
+        "noEmptyBlockStatements": "warn",
+        "noMisleadingInstantiator": "error",
+        "noUnsafeDeclarationMerging": "error"
       },
       "style": {
         "recommended": true,
@@ -55,10 +76,28 @@
         "useSelfClosingElements": "off",
         "noNonNullAssertion": "warn",
         "useImportType": "error",
-        "useExportType": "error"
+        "useExportType": "error",
+        "useConsistentArrayType": "warn",
+        "useEnumInitializers": "warn",
+        "useFilenamingConvention": "off",
+        "useForOf": "warn",
+        "useFragmentSyntax": "warn",
+        "useNamingConvention": "off",
+        "useNodejsImportProtocol": "warn",
+        "useNumberNamespace": "warn",
+        "useShorthandAssign": "warn",
+        "useSingleVarDeclarator": "warn"
+      },
+      "performance": {
+        "recommended": true,
+        "noAccumulatingSpread": "warn",
+        "noDelete": "warn",
+        "useTopLevelRegex": "warn"
       },
       "security": {
-        "recommended": true
+        "recommended": true,
+        "noDangerouslySetInnerHtml": "warn",
+        "noGlobalEval": "error"
       },
       "a11y": {
         "recommended": true,
@@ -66,10 +105,17 @@
         "noLabelWithoutControl": "warn",
         "useSemanticElements": "warn",
         "useFocusableInteractive": "warn",
-        "useAriaPropsSupportedByRole": "warn"
+        "useAriaPropsSupportedByRole": "warn",
+        "useAriaPropsForRole": "warn",
+        "useValidAriaValues": "error",
+        "useValidAriaRole": "error"
       },
       "nursery": {
-        "noFloatingPromises": "warn"
+        "recommended": true,
+        "noFloatingPromises": "warn",
+        "noImportCycles": "warn",
+        "noUnresolvedImports": "off",
+        "noUnnecessaryConditions": "warn"
       }
     }
   },
