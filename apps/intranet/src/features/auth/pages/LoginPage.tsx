@@ -123,7 +123,7 @@ interface PasskeyStepProps {
 
 function PasskeyStep({ isPending, handlePasskeyLogin, switchToCredentials }: PasskeyStepProps) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 w-full max-w-xs mx-auto">
       <Button
         className="gap-2 text-base"
         disabled={isPending}
@@ -174,7 +174,7 @@ function CredentialsStep({
 }: CredentialsStepProps) {
   return (
     <form className="w-full space-y-4" onSubmit={handleCredentialsSubmit}>
-      <div className="w-full">
+      <div className="w-full max-w-xs mx-auto">
         <Input
           autoComplete="username"
           label="Correo electrónico"
@@ -186,7 +186,7 @@ function CredentialsStep({
           disabled={isLoading}
         />
       </div>
-      <div className="w-full">
+      <div className="w-full max-w-xs mx-auto">
         <Input
           autoComplete="current-password"
           enterKeyHint="go"
@@ -199,25 +199,27 @@ function CredentialsStep({
         />
       </div>
 
-      <div className="flex w-full gap-2 pt-2">
-        <Button
-          className="h-14 flex-1 min-w-0"
-          disabled={isLoading}
-          onClick={switchToPasskey}
-          type="button"
-          variant="ghost"
-          aria-label="Volver a biometría"
-        >
-          Atrás
-        </Button>
-        <Button
-          className="h-14 flex-1 min-w-0"
-          disabled={isLoading}
-          type="submit"
-          aria-label="Continuar con credenciales"
-        >
-          {isLoading ? "Verificando..." : "Continuar"}
-        </Button>
+      <div className="w-full max-w-xs mx-auto">
+        <div className="flex w-full gap-2 pt-2">
+          <Button
+            className="h-14 flex-1 min-w-0"
+            disabled={isLoading}
+            onClick={switchToPasskey}
+            type="button"
+            variant="ghost"
+            aria-label="Volver a biometría"
+          >
+            Atrás
+          </Button>
+          <Button
+            className="h-14 flex-1 min-w-0"
+            disabled={isLoading}
+            type="submit"
+            aria-label="Continuar con credenciales"
+          >
+            {isLoading ? "Verificando..." : "Continuar"}
+          </Button>
+        </div>
       </div>
     </form>
   );
@@ -240,40 +242,44 @@ function MfaStep({
 }: MfaStepProps) {
   return (
     <form className="w-full space-y-4" onSubmit={handleMfaSubmit}>
-      <Input
-        autoComplete="one-time-code"
-        className="text-center text-2xl tracking-widest"
-        inputMode="numeric"
-        label="Código de seguridad"
-        maxLength={6}
-        onChange={handleMfaCodeChange}
-        pattern="[0-9]*"
-        placeholder="000000"
-        required
-        type="text"
-        value={mfaCode}
-        disabled={isLoading}
-      />
+      <div className="w-full max-w-xs mx-auto">
+        <Input
+          autoComplete="one-time-code"
+          className="text-center text-2xl tracking-widest"
+          inputMode="numeric"
+          label="Código de seguridad"
+          maxLength={6}
+          onChange={handleMfaCodeChange}
+          pattern="[0-9]*"
+          placeholder="000000"
+          required
+          type="text"
+          value={mfaCode}
+          disabled={isLoading}
+        />
+      </div>
 
-      <div className="flex w-full gap-2 pt-2">
-        <Button
-          className="h-14 flex-1 min-w-0"
-          disabled={isLoading}
-          onClick={switchToCredentialsFromMfa}
-          type="button"
-          variant="ghost"
-          aria-label="Volver a credenciales"
-        >
-          Atrás
-        </Button>
-        <Button
-          className="h-14 flex-1 min-w-0"
-          disabled={isLoading}
-          type="submit"
-          aria-label="Confirmar código MFA"
-        >
-          {isLoading ? "Verificando..." : "Confirmar"}
-        </Button>
+      <div className="w-full max-w-xs mx-auto">
+        <div className="flex w-full gap-2 pt-2">
+          <Button
+            className="h-14 flex-1 min-w-0"
+            disabled={isLoading}
+            onClick={switchToCredentialsFromMfa}
+            type="button"
+            variant="ghost"
+            aria-label="Volver a credenciales"
+          >
+            Atrás
+          </Button>
+          <Button
+            className="h-14 flex-1 min-w-0"
+            disabled={isLoading}
+            type="submit"
+            aria-label="Confirmar código MFA"
+          >
+            {isLoading ? "Verificando..." : "Confirmar"}
+          </Button>
+        </div>
       </div>
     </form>
   );
