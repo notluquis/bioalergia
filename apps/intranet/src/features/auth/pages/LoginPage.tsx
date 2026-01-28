@@ -123,13 +123,14 @@ interface PasskeyStepProps {
 
 function PasskeyStep({ isPending, handlePasskeyLogin, switchToCredentials }: PasskeyStepProps) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 flex flex-col items-center">
       <Button
         className="gap-2 text-base"
         disabled={isPending}
         onClick={handlePasskeyLogin}
         size="lg"
         type="button"
+        fullWidth
         aria-label="Iniciar sesión con biometría"
       >
         <Fingerprint className="size-5" aria-hidden="true" />
@@ -142,6 +143,7 @@ function PasskeyStep({ isPending, handlePasskeyLogin, switchToCredentials }: Pas
         size="lg"
         type="button"
         variant="outline"
+        fullWidth
         aria-label="Usar correo electrónico y contraseña"
       >
         <Mail className="size-4" aria-hidden="true" />
@@ -171,7 +173,10 @@ function CredentialsStep({
   switchToPasskey,
 }: CredentialsStepProps) {
   return (
-    <form className="w-full space-y-4" onSubmit={handleCredentialsSubmit}>
+    <form
+      className="w-full space-y-4 flex flex-col items-center"
+      onSubmit={handleCredentialsSubmit}
+    >
       <Input
         autoComplete="username"
         label="Correo electrónico"
@@ -181,6 +186,7 @@ function CredentialsStep({
         type="email"
         value={email}
         disabled={isLoading}
+        className="w-full"
       />
       <Input
         autoComplete="current-password"
@@ -191,6 +197,7 @@ function CredentialsStep({
         type="password"
         value={password}
         disabled={isLoading}
+        className="w-full"
       />
 
       <div className="flex w-full gap-2 pt-2">
@@ -233,10 +240,10 @@ function MfaStep({
   switchToCredentialsFromMfa,
 }: MfaStepProps) {
   return (
-    <form className="w-full space-y-4" onSubmit={handleMfaSubmit}>
+    <form className="w-full space-y-4 flex flex-col items-center" onSubmit={handleMfaSubmit}>
       <Input
         autoComplete="one-time-code"
-        className="text-center text-2xl tracking-widest"
+        className="text-center text-2xl tracking-widest w-full"
         inputMode="numeric"
         label="Código de seguridad"
         maxLength={6}
