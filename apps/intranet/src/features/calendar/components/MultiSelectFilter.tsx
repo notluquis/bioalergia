@@ -98,7 +98,7 @@ export function MultiSelectFilter({
             selectedKeys={selectedKeys}
             selectionMode="multiple"
             onSelectionChange={handleSelectionChange}
-            className="max-h-60 w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(90vw,320px)] overflow-y-auto"
+            className="max-h-60 w-(--radix-dropdown-menu-trigger-width) max-w-[min(90vw,320px)] overflow-y-auto"
           >
             {(item) => (
               <ListBox.Item key={item.id} textValue={item.label.split(" · ")[0]}>

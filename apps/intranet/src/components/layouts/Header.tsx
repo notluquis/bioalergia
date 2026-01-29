@@ -4,6 +4,7 @@ import { Loader2, LogOut } from "lucide-react";
 import React from "react";
 
 import { useAuth } from "@/context/AuthContext";
+import { NotificationHistory } from "@/features/notifications/components/NotificationHistory";
 
 import Clock from "../features/Clock";
 import Button from "../ui/Button";
@@ -125,6 +126,7 @@ export default function Header() {
         <div className="hidden md:block">
           <Clock />
         </div>
+        <NotificationHistory />
         <ThemeToggle />
         <Button
           isIconOnly
