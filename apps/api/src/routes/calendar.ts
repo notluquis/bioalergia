@@ -8,6 +8,8 @@ import {
   type CalendarEventFilters,
   getCalendarAggregates,
   getCalendarEventsByDate,
+  getTreatmentAnalytics,
+  type TreatmentAnalyticsFilters,
 } from "../lib/google/google-calendar-queries";
 import {
   CATEGORY_CHOICES,
@@ -147,6 +149,40 @@ calendarRoutes.get("/events/summary", requireAuth, async (c: Context) => {
     totals: aggregates.totals,
     aggregates: aggregates.aggregates,
     available: aggregates.available,
+  });
+});
+
+// ============================================================
+// TREATMENT ANALYTICS
+// ============================================================
+calendarRoutes.get("/events/treatment-analytics", requireAuth, async (c: Context) => {
+  const user = await getSessionUser(c);
+  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+
+  const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
+  if (!canReadEvents) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const query = c.req.query();
+  const filters: TreatmentAnalyticsFilters = {
+    from: query.from,
+    to: query.to,
+    calendarIds: query.calendarIds ? query.calendarIds.split(",") : undefined,
+  };
+
+  // Set default date range if not provided (last 30 days)
+  if (!filters.from || !filters.to) {
+    const today = dayjs();
+    filters.from = filters.from || today.subtract(30, "day").format("YYYY-MM-DD");
+    filters.to = filters.to || today.format("YYYY-MM-DD");
+  }
+
+  const analytics = await getTreatmentAnalytics(filters);
+  return reply(c, {
+    status: "ok",
+    filters,
+    data: analytics,
   });
 });
 

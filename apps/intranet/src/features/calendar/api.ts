@@ -8,6 +8,8 @@ import type {
   CalendarSummary,
   CalendarSyncLog,
   CalendarUnclassifiedEvent,
+  TreatmentAnalytics,
+  TreatmentAnalyticsFilters,
 } from "./types";
 
 export interface ClassificationOptions {
@@ -173,6 +175,25 @@ export async function reclassifyCalendarEvents(): Promise<ReclassifyJobResponse>
 export async function syncCalendarEvents(): Promise<CalendarSyncResponse> {
   const response = await apiClient.post<CalendarSyncResponse>("/api/calendar/events/sync", {});
   return response;
+}
+
+export async function fetchTreatmentAnalytics(
+  filters: TreatmentAnalyticsFilters,
+): Promise<TreatmentAnalytics> {
+  const params = new URLSearchParams();
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  if (filters.calendarIds?.length) {
+    params.set("calendarIds", filters.calendarIds.join(","));
+  }
+
+  const response = await apiClient.get<{
+    data: TreatmentAnalytics;
+    filters: TreatmentAnalyticsFilters;
+    status: "ok";
+  }>(`/api/calendar/events/treatment-analytics?${params.toString()}`);
+
+  return response.data;
 }
 
 function buildQuery(filters: CalendarFilters, options?: { includeMaxDays?: boolean }) {

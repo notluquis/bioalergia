@@ -244,3 +244,40 @@ export const calendarClassificationSchema = z.object({
   dosage: z.string().max(64).optional().nullable(),
   treatmentStage: z.string().max(64).optional().nullable(),
 });
+
+export interface TreatmentAnalyticsFilters {
+  calendarIds?: string[];
+  from?: string;
+  to?: string;
+}
+
+export interface TreatmentAnalyticsPeriodData {
+  amountExpected: number;
+  amountPaid: number;
+  domicilioCount: number;
+  dosageMl: number;
+  events: number;
+  induccionCount: number;
+  mantencionCount: number;
+}
+
+export interface TreatmentAnalyticsByDate extends TreatmentAnalyticsPeriodData {
+  date: string;
+}
+
+export interface TreatmentAnalyticsByWeek extends TreatmentAnalyticsPeriodData {
+  isoWeek: number;
+  isoYear: number;
+}
+
+export interface TreatmentAnalyticsByMonth extends TreatmentAnalyticsPeriodData {
+  month: number;
+  year: number;
+}
+
+export interface TreatmentAnalytics {
+  byDate: TreatmentAnalyticsByDate[];
+  byMonth: TreatmentAnalyticsByMonth[];
+  byWeek: TreatmentAnalyticsByWeek[];
+  totals: TreatmentAnalyticsPeriodData;
+}

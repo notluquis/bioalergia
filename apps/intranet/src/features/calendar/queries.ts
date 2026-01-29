@@ -5,10 +5,11 @@ import {
   fetchCalendarSyncLogs,
   fetchCalendars,
   fetchClassificationOptions,
+  fetchTreatmentAnalytics,
   fetchUnclassifiedCalendarEvents,
   type MissingFieldFilters,
 } from "./api";
-import type { CalendarFilters } from "./types";
+import type { CalendarFilters, TreatmentAnalyticsFilters } from "./types";
 import { normalizeFilters } from "./utils/filters";
 
 export const calendarSyncKeys = {
@@ -22,6 +23,8 @@ export const calendarKeys = {
   options: ["classification-options"] as const,
   summary: (filters: CalendarFilters) =>
     ["calendar", "summary", normalizeFilters(filters)] as const,
+  treatmentAnalytics: (filters: TreatmentAnalyticsFilters) =>
+    ["calendar", "treatment-analytics", filters] as const,
   unclassified: (page: number, pageSize: number, filters: MissingFieldFilters) =>
     ["calendar-unclassified", page, pageSize, filters] as const,
   list: ["calendars"] as const,
@@ -57,6 +60,12 @@ export const calendarQueries = {
     queryOptions({
       queryFn: () => fetchCalendarSummary(normalizeFilters(filters)),
       queryKey: calendarKeys.summary(filters),
+    }),
+  treatmentAnalytics: (filters: TreatmentAnalyticsFilters) =>
+    queryOptions({
+      queryFn: () => fetchTreatmentAnalytics(filters),
+      queryKey: calendarKeys.treatmentAnalytics(filters),
+      staleTime: 5 * 60 * 1000, // 5 minutes
     }),
   unclassified: (page: number, pageSize: number, filters: MissingFieldFilters = {}) =>
     queryOptions({
