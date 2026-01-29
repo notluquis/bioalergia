@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authed/operations/supplies-analytics")({
       iconKey: "ChartLine",
       label: "Analytics Tratamientos",
       order: 3,
-      section: "Operaciones",
+      section: "Calendario",
     },
     permission: { action: "read", subject: "CalendarEvent" },
     title: "Analytics de Tratamientos Subcutáneos",
