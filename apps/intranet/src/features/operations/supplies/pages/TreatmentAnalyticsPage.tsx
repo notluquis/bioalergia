@@ -1,4 +1,5 @@
-import { Chip, Spinner } from "@heroui/react";
+import { Chip, DateField, DateInputGroup, Label, Spinner } from "@heroui/react";
+import { parseDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -191,137 +192,151 @@ export default function TreatmentAnalyticsPage() {
           <CardContent className="space-y-3 p-4 border-t border-divider">
             {/* Custom Date Inputs */}
             <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-end">
-              <div className="flex flex-col gap-1.5 flex-1">
-                <label className="text-xs font-medium text-default-600" htmlFor="from-date">
-                  Desde
-                </label>
-                <input
-                  className="w-full px-3 py-2 rounded-lg bg-content1 border border-divider focus:border-primary focus:outline-none text-sm transition-colors text-foreground scheme-dark"
-                  id="from-date"
-                  max={filters.to}
-                  placeholder="Fecha inicial"
-                  type="date"
-                  value={filters.from || ""}
-                  onChange={(e) => handleDateChange(e.target.value, filters.to || e.target.value)}
-                />
+              <div className="flex-1">
+                <DateField
+                  value={filters.from ? parseDate(filters.from) : null}
+                  onChange={(date) => {
+                    if (date) {
+                      handleDateChange(date.toString(), filters.to || date.toString());
+                    }
+                  }}
+                  className="w-full"
+                >
+                  <Label>Desde</Label>
+                  <DateInputGroup>
+                    <DateInputGroup.Input>
+                      {(segment) => <DateInputGroup.Segment segment={segment} />}
+                    </DateInputGroup.Input>
+                  </DateInputGroup>
+                </DateField>
               </div>
-              <div className="flex flex-col gap-1.5 flex-1">
-                <label className="text-xs font-medium text-default-600" htmlFor="to-date">
-                  Hasta
-                </label>
-                <input
-                  className="w-full px-3 py-2 rounded-lg bg-content1 border border-divider focus:border-primary focus:outline-none text-sm transition-colors text-foreground scheme-dark"
-                  id="to-date"
-                  min={filters.from}
-                  placeholder="Fecha final"
-                  type="date"
-                  value={filters.to || ""}
-                  onChange={(e) => handleDateChange(filters.from || e.target.value, e.target.value)}
-                />
+              <div className="flex-1">
+                <DateField
+                  value={filters.to ? parseDate(filters.to) : null}
+                  onChange={(date) => {
+                    if (date) {
+                      handleDateChange(filters.from || date.toString(), date.toString());
+                    }
+                  }}
+                  className="w-full"
+                >
+                  <Label>Hasta</Label>
+                  <DateInputGroup>
+                    <DateInputGroup.Input>
+                      {(segment) => <DateInputGroup.Segment segment={segment} />}
+                    </DateInputGroup.Input>
+                  </DateInputGroup>
+                </DateField>
               </div>
             </div>
 
             {/* Quick Range Selectors */}
-            <div className="space-y-2.5 pt-1">
+            <div className="pt-1">
               <div className="border-t border-dashed border-default-200 pt-3">
                 <p className="text-xs font-semibold text-default-700 mb-2.5">Rangos rápidos</p>
-
-                <div className="space-y-2">
-                  <p className="text-xs text-default-500 font-medium">Día específico</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="default"
-                      className="cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => handleQuickRange(getYesterday())}
-                    >
-                      Ayer
-                    </Chip>
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="default"
-                      className="cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => handleQuickRange(getToday())}
-                    >
-                      Hoy
-                    </Chip>
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="default"
-                      className="cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => handleQuickRange(getTomorrow())}
-                    >
-                      Mañana
-                    </Chip>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {/* Día específico */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <p className="text-xs text-default-500 font-medium whitespace-nowrap">Día:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="default"
+                        className="cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => handleQuickRange(getYesterday())}
+                      >
+                        Ayer
+                      </Chip>
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="default"
+                        className="cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => handleQuickRange(getToday())}
+                      >
+                        Hoy
+                      </Chip>
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="default"
+                        className="cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => handleQuickRange(getTomorrow())}
+                      >
+                        Mañana
+                      </Chip>
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2 mt-2">
-                  <p className="text-xs text-default-500 font-medium">Semana</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="default"
-                      className="cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => handleQuickRange(getLastWeek())}
-                    >
-                      Semana pasada
-                    </Chip>
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="default"
-                      className="cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => handleQuickRange(getThisWeek())}
-                    >
-                      Esta semana
-                    </Chip>
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="default"
-                      className="cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => handleQuickRange(getNextWeek())}
-                    >
-                      Próxima semana
-                    </Chip>
+                  {/* Semana */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <p className="text-xs text-default-500 font-medium whitespace-nowrap">
+                      Semana:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="default"
+                        className="cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => handleQuickRange(getLastWeek())}
+                      >
+                        Pasada
+                      </Chip>
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="default"
+                        className="cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => handleQuickRange(getThisWeek())}
+                      >
+                        Actual
+                      </Chip>
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="default"
+                        className="cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => handleQuickRange(getNextWeek())}
+                      >
+                        Próxima
+                      </Chip>
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2 mt-2">
-                  <p className="text-xs text-default-500 font-medium">Mes</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="default"
-                      className="cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => handleQuickRange(getLastMonth())}
-                    >
-                      Mes pasado
-                    </Chip>
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="default"
-                      className="cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => handleQuickRange(getThisMonth())}
-                    >
-                      Este mes
-                    </Chip>
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="default"
-                      className="cursor-pointer hover:scale-105 transition-transform"
-                      onClick={() => handleQuickRange(getNextMonth())}
-                    >
-                      Próximo mes
-                    </Chip>
+                  {/* Mes */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <p className="text-xs text-default-500 font-medium whitespace-nowrap">Mes:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="default"
+                        className="cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => handleQuickRange(getLastMonth())}
+                      >
+                        Pasado
+                      </Chip>
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="default"
+                        className="cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => handleQuickRange(getThisMonth())}
+                      >
+                        Actual
+                      </Chip>
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="default"
+                        className="cursor-pointer hover:scale-105 transition-transform"
+                        onClick={() => handleQuickRange(getNextMonth())}
+                      >
+                        Próximo
+                      </Chip>
+                    </div>
                   </div>
                 </div>
               </div>
