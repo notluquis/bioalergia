@@ -7,7 +7,7 @@ const SuppliesPage = lazy(() => import("@/features/operations/supplies/pages/Sup
 
 export const Route = createFileRoute("/_authed/operations/supplies")({
   staticData: {
-    nav: { iconKey: "PackagePlus", label: "Insumos", order: 2, section: "Operaciones" },
+    nav: { iconKey: "PackagePlus", label: "Solicitudes", order: 2, section: "Insumos" },
     permission: { action: "read", subject: "SupplyRequest" },
     title: "Solicitudes de insumos",
   },

@@ -4,6 +4,11 @@ import { Alert, Card, Chip, Input, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
 
+type EventForDaily = Pick<
+  Event,
+  "id" | "startDate" | "summary" | "eventType" | "amountExpected" | "amountPaid"
+>;
+
 export function DailyIncomePage() {
   const [from, setFrom] = useState(dayjs().startOf("month").format("YYYY-MM-DD"));
   const [to, setTo] = useState(dayjs().endOf("month").format("YYYY-MM-DD"));
@@ -23,7 +28,7 @@ export function DailyIncomePage() {
       acc[date].push(event);
       return acc;
     },
-    {} as Record<string, Event[]>,
+    {} as Record<string, EventForDaily[]>,
   );
 
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
@@ -65,11 +70,11 @@ export function DailyIncomePage() {
         {sortedDates.map((date) => {
           const dayEvents = grouped[date] ?? [];
           const totalExpected = dayEvents.reduce(
-            (sum: number, e: Event) => sum + (e.amountExpected || 0),
+            (sum: number, e: EventForDaily) => sum + (e.amountExpected || 0),
             0,
           );
           const totalPaid = dayEvents.reduce(
-            (sum: number, e: Event) => sum + (e.amountPaid || 0),
+            (sum: number, e: EventForDaily) => sum + (e.amountPaid || 0),
             0,
           );
 
@@ -91,7 +96,7 @@ export function DailyIncomePage() {
                 </div>
                 <div className="divider my-0"></div>
                 <ul className="space-y-2">
-                  {dayEvents.map((event: Event) => (
+                  {dayEvents.map((event: EventForDaily) => (
                     <li key={event.id} className="flex justify-between text-sm items-center">
                       <div className="flex items-center gap-2">
                         <span>{event.summary || "Evento sin título"}</span>

@@ -259,6 +259,22 @@ const PHONE_PATTERNS = [
   /^56\d{9}$/, // 56XXXXXXXXX
 ];
 
+/** Amount parsing helper patterns */
+const SLASH_FORMAT_PATTERN = /^\d+\s*\/\s*\d+$/; // Detect "paid/expected" format like "25/50"
+const PAGADO_KEYWORD_PATTERN = /pagado/i; // Detect "pagado" keyword in parenthesized amounts
+const AMOUNT_AT_END_PATTERN = /\s(\d{2,3})\s*$/; // Detect amount at end of text (fallback)
+const DATE_PATTERN = /\b\d{1,2}[-]\d{1,2}\b/g; // Date pattern to remove from amount content
+
+/** Dosage extraction helper patterns */
+const CLUSTOID_DOSAGE_PATTERN = /clust(?:oid)?\s*(0[.,]\d+)/i; // "clustoid0,3" format
+const DECIMAL_STANDALONE_PATTERN = /\b(0[.,]\d+)\b/; // Standalone decimal like "0,5"
+
+/** Treatment stage helper patterns */
+const HALF_ML_PATTERN = /0[.,]5(\s*ml)?\b/i; // 0.5 ml indicator for maintenance
+
+/** Dosage parsing pattern */
+const DOSAGE_VALUE_PATTERN = /^([\d.,]+)\s*(ml|cc|mg)?/i; // Extract value and unit from dosage string
+
 // ============================================================================
 // VALIDATION & SCHEMAS
 // ============================================================================
@@ -352,15 +368,15 @@ function extractAmounts(summary: string, description: string) {
   let match: RegExpExecArray | null;
   while ((match = parenPattern.exec(text)) !== null) {
     let content = match[1]; // Use 'let' so we can modify it
-    if (/^\d+\s*\/\s*\d+$/.test(content)) continue; // Skip slash format
+    if (SLASH_FORMAT_PATTERN.test(content)) continue; // Skip slash format
 
     // Fix: Remove date patterns to avoid merging them into the amount (e.g. "pagado el 21-11/ 30")
     // Matches "21-11" or "21/11" (if surrounded by spaces or boundary)
-    content = content.replace(/\b\d{1,2}[-]\d{1,2}\b/g, "");
+    content = content.replace(DATE_PATTERN, "");
 
     const amount = normalizeAmountRaw(content);
     if (amount == null) continue;
-    if (/pagado/i.test(content)) {
+    if (PAGADO_KEYWORD_PATTERN.test(content)) {
       amountPaid = amount;
       if (amountExpected == null) amountExpected = amount;
     } else if (amountExpected == null) {
@@ -400,7 +416,7 @@ function extractAmounts(summary: string, description: string) {
 
   // 4. Fallback: amount at end without parens (e.g., "clusitoid 50")
   if (amountExpected == null) {
-    const endMatch = /\s(\d{2,3})\s*$/.exec(text);
+    const endMatch = AMOUNT_AT_END_PATTERN.exec(text);
     if (endMatch) {
       const amount = normalizeAmountRaw(endMatch[1]);
       if (amount != null) amountExpected = amount;
@@ -524,13 +540,13 @@ function extractDosage(summary: string, description: string): string | null {
   }
 
   // Pattern for clustoid+dosage format without space: "clustoid0,3", "clustoid0,1"
-  const clustoidDosageMatch = /clust(?:oid)?\s*(0[.,]\d+)/i.exec(text);
+  const clustoidDosageMatch = CLUSTOID_DOSAGE_PATTERN.exec(text);
   if (clustoidDosageMatch) {
     return `${clustoidDosageMatch[1].replace(".", ",")} ml`;
   }
 
   // Fallback: standalone decimal (e.g. "0,5") implies "ml" in this context
-  const decimalMatch = /\b(0[.,]\d+)\b/.exec(text);
+  const decimalMatch = DECIMAL_STANDALONE_PATTERN.exec(text);
   if (decimalMatch) {
     return `${decimalMatch[1].replace(".", ",")} ml`;
   }
@@ -549,7 +565,7 @@ function detectTreatmentStage(summary: string, description: string): string | nu
   }
 
   // Maintenance keywords or 0.5 (with or without ml) = Mantención
-  if (matchesAny(text, MAINTENANCE_PATTERNS) || /0[.,]5(\s*ml)?\b/i.test(text)) {
+  if (matchesAny(text, MAINTENANCE_PATTERNS) || HALF_ML_PATTERN.test(text)) {
     return "Mantención";
   }
 
@@ -610,7 +626,7 @@ export function parseCalendarMetadata(input: {
  */
 function parseDosageToMl(dosage: string): number | null {
   // Extract numeric value and unit from strings like "0,3 ml", "0.5 cc", "1 mg"
-  const match = dosage.match(/^([\d.,]+)\s*(ml|cc|mg)?/i);
+  const match = dosage.match(DOSAGE_VALUE_PATTERN);
   if (!match) return null;
 
   const valueStr = match[1].replace(",", ".");

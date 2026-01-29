@@ -4,6 +4,11 @@ import { useFindManyEvent } from "@finanzas/db/hooks";
 import { useMemo } from "react";
 import type { DateRange, FinancialSummary, IncomeCategoryGroup, IncomeItem } from "../types";
 
+type EventForIncome = Pick<
+  Event,
+  "id" | "externalEventId" | "startDate" | "summary" | "eventType" | "category" | "amountPaid"
+>;
+
 export function useFinancialSummary(dateRange: DateRange) {
   const { data: events, isLoading } = useFindManyEvent({
     where: {
@@ -52,7 +57,7 @@ export function useFinancialSummary(dateRange: DateRange) {
   return { summary, isLoading };
 }
 
-function mapEventToIncomeItem(event: Event): IncomeItem {
+function mapEventToIncomeItem(event: EventForIncome): IncomeItem {
   let category = "Otros";
   const text =
     `${event.summary || ""} ${event.eventType || ""} ${event.category || ""}`.toLowerCase();

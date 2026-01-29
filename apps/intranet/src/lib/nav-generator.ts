@@ -72,6 +72,7 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string; strokeWidth?:
 
 const SECTION_ORDER: NavSection[] = [
   "Calendario",
+  "Insumos",
   "Finanzas",
   "Servicios",
   "Operaciones",

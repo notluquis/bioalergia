@@ -53,7 +53,7 @@ export default function TreatmentAnalyticsPage() {
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+      <div className="flex flex-col items-center justify-center min-h-100 gap-4">
         <p className="text-danger">Error cargando analytics: {(error as Error).message}</p>
         <Button onClick={handleRefresh}>Reintentar</Button>
       </div>
@@ -141,7 +141,7 @@ export default function TreatmentAnalyticsPage() {
       </Card>
 
       {isLoading ? (
-        <div className="flex justify-center items-center min-h-[400px]">
+        <div className="flex justify-center items-center min-h-100">
           <Spinner size="lg" />
           <span className="ml-4">Cargando analytics...</span>
         </div>

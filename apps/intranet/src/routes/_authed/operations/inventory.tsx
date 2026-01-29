@@ -8,7 +8,7 @@ const InventoryPage = lazy(() => import("@/features/operations/inventory/pages/I
 
 export const Route = createFileRoute("/_authed/operations/inventory")({
   staticData: {
-    nav: { iconKey: "Box", label: "Inventario", order: 1, section: "Operaciones" },
+    nav: { iconKey: "Box", label: "Inventario", order: 3, section: "Insumos" },
     permission: { action: "read", subject: "InventoryItem" },
     title: "Inventario",
   },

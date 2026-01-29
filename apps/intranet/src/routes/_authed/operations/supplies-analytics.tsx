@@ -12,8 +12,8 @@ export const Route = createFileRoute("/_authed/operations/supplies-analytics")({
     nav: {
       iconKey: "ChartLine",
       label: "Analytics Tratamientos",
-      order: 3,
-      section: "Calendario",
+      order: 1,
+      section: "Insumos",
     },
     permission: { action: "read", subject: "CalendarEvent" },
     title: "Analytics de Tratamientos Subcutáneos",

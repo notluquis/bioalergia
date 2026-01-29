@@ -9,7 +9,13 @@ export interface NavConfig {
   section: NavSection;
 }
 
-export type NavSection = "Calendario" | "Finanzas" | "Operaciones" | "Servicios" | "Sistema";
+export type NavSection =
+  | "Calendario"
+  | "Finanzas"
+  | "Insumos"
+  | "Operaciones"
+  | "Servicios"
+  | "Sistema";
 
 export interface RoutePermission {
   action: string;

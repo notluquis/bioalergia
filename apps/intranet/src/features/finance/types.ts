@@ -61,7 +61,7 @@ export interface IncomeItem {
   summary: string;
   category: string; // Derived e.g. "Subcutáneo", "Prick Test"
   amount: number;
-  originalEvent: Event;
+  originalEvent: Partial<Event>;
 }
 
 export interface IncomeCategoryGroup {
