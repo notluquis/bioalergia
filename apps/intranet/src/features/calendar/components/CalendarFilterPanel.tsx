@@ -158,6 +158,7 @@ export function CalendarFilterPanel({
                 inputWrapper: "bg-content1",
                 selectorButton: "bg-default-100 hover:bg-default-200 border border-default-200",
                 selectorIcon: "text-foreground-500",
+                calendarContent: "bg-content1",
               }}
               value={filters.from ? parseDate(filters.from) : undefined}
               onChange={(date: DateValue | null) =>
@@ -175,6 +176,7 @@ export function CalendarFilterPanel({
                 inputWrapper: "bg-content1",
                 selectorButton: "bg-default-100 hover:bg-default-200 border border-default-200",
                 selectorIcon: "text-foreground-500",
+                calendarContent: "bg-content1",
               }}
               value={filters.to ? parseDate(filters.to) : undefined}
               onChange={(date: DateValue | null) =>
