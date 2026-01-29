@@ -12,6 +12,7 @@ import { useToast } from "@/context/ToastContext";
 import { fetchPeople } from "@/features/people/api";
 import { inviteUser } from "@/features/users/api";
 import { getPersonFullName } from "@/lib/person";
+import { usePersonLinking } from "./hooks/usePersonLinking";
 
 interface AddUserFormState {
   email: string;
@@ -39,9 +40,20 @@ export default function AddUserPage() {
   const roles = rolesData ?? [];
 
   // Fetch people without users
-  const { data: peopleData, isLoading: isPeopleLoading } = useQuery({
+  const {
+    data: peopleData,
+    isLoading: isPeopleLoading,
+    error: peopleError,
+  } = useQuery({
     queryFn: fetchPeople,
     queryKey: ["people"],
+    retry: 1,
+  });
+
+  console.log("[AddUserPage]", {
+    isPeopleLoading,
+    hasPeopleData: !!peopleData,
+    peopleError,
   });
 
   // Filter people who don't have a user yet and exclude test users
@@ -104,30 +116,24 @@ export default function AddUserPage() {
     },
   });
 
-  const handleLinkPerson = (pid: number | undefined) => {
-    const person = availablePeople.find((p) => p.id === pid);
-
-    // Batch updates using setFieldValue for each field
-    // Logic: If linking (pid exists), clear manual fields and set email/position from person
-    // If unlinking (pid undefined), keep current values (or clear if desired, but keeping is safer UX)
-
-    if (person) {
-      form.setFieldValue("email", person.email ?? form.getFieldValue("email"));
-      form.setFieldValue("fatherName", "");
-      form.setFieldValue("linkToPerson", true);
-      form.setFieldValue("motherName", "");
-      form.setFieldValue("names", "");
-      form.setFieldValue("personId", pid);
-      form.setFieldValue("position", person.employee?.position ?? form.getFieldValue("position"));
-      form.setFieldValue("rut", "");
-    } else {
-      form.setFieldValue("linkToPerson", false);
-      form.setFieldValue("personId", undefined);
-    }
-  };
+  const { handleLinkPerson } = usePersonLinking(form, availablePeople);
 
   if (isPeopleLoading) {
     return <PageLoader />;
+  }
+
+  if (peopleError) {
+    console.error("[AddUserPage] Error:", peopleError);
+    return (
+      <div className="mx-auto max-w-2xl space-y-8">
+        <div className="surface-elevated rounded-3xl p-6 shadow-lg">
+          <p className="text-danger">Error al cargar datos: {String(peopleError)}</p>
+          <Button onClick={() => navigate({ to: "/settings/users" })} className="mt-4">
+            Volver
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
