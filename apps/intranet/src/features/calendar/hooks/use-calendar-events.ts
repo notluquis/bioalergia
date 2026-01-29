@@ -125,6 +125,8 @@ export function useCalendarEvents() {
   // Single source of truth for sync logs (shared across pages)
   const {
     data: syncLogsData = [],
+    error: syncLogsError,
+    isError: isErrorSyncLogs,
     isLoading: isLoadingSyncLogs,
     refetch: refetchSyncLogs,
   } = useQuery({
@@ -298,6 +300,7 @@ export function useCalendarEvents() {
     filters,
     hasRunningSyncFromOtherSource,
     isDirty,
+    isErrorSyncLogs,
     isLoadingSyncLogs,
     lastSyncInfo,
     loading,
@@ -306,6 +309,7 @@ export function useCalendarEvents() {
     summary,
     syncDurationMs,
     syncError,
+    syncLogsError,
     syncing,
     syncLogs,
     syncNow,
