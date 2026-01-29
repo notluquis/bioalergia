@@ -413,6 +413,7 @@ calendarRoutes.post("/events/classify", requireAuth, async (c) => {
     dosage: payload.dosage ?? null,
     treatmentStage: payload.treatmentStage ?? null,
     controlIncluded: payload.controlIncluded ?? null,
+    isDomicilio: payload.isDomicilio ?? null,
   });
 
   return reply(c, { status: "ok" });
@@ -743,6 +744,7 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
       amountExpected: true,
       amountPaid: true,
       controlIncluded: true,
+      isDomicilio: true,
     },
   });
 
@@ -766,6 +768,7 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
           amountExpected?: number;
           amountPaid?: number;
           controlIncluded?: boolean;
+          isDomicilio?: boolean;
         };
       };
       const updates: EventUpdate[] = [];
@@ -777,6 +780,7 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
         amountExpected: 0,
         amountPaid: 0,
         controlIncluded: 0,
+        isDomicilio: 0,
       };
 
       for (let i = 0; i < events.length; i++) {
@@ -785,8 +789,6 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
           summary: event.summary,
           description: event.description,
         });
-
-        const updateData: EventUpdate["data"] = {};
         if ((event.category === null || event.category === "") && metadata.category) {
           updateData.category = metadata.category;
           fieldCounts.category++;
@@ -814,6 +816,10 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
         if (metadata.controlIncluded && event.controlIncluded === false) {
           updateData.controlIncluded = true;
           fieldCounts.controlIncluded++;
+        }
+        if (metadata.isDomicilio && event.isDomicilio === false) {
+          updateData.isDomicilio = true;
+          fieldCounts.isDomicilio++;
         }
 
         if (Object.keys(updateData).length > 0) {
@@ -870,7 +876,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
 
   const { startJob, updateJobProgress, completeJob, failJob } = await import("../lib/jobQueue");
 
-      const events = await db.event.findMany({
+  const events = await db.event.findMany({
     select: {
       id: true,
       summary: true,
@@ -894,6 +900,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
           amountExpected: number | null;
           amountPaid: number | null;
           controlIncluded: boolean;
+          isDomicilio: boolean;
         };
       };
 
@@ -906,6 +913,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
         amountExpected: 0,
         amountPaid: 0,
         controlIncluded: 0,
+        isDomicilio: 0,
       };
 
       for (let i = 0; i < events.length; i++) {
@@ -923,6 +931,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
           amountExpected: metadata.amountExpected,
           amountPaid: metadata.amountPaid,
           controlIncluded: metadata.controlIncluded,
+          isDomicilio: metadata.isDomicilio,
         };
 
         if (metadata.category) fieldCounts.category++;
@@ -932,6 +941,7 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
         if (metadata.amountExpected !== null) fieldCounts.amountExpected++;
         if (metadata.amountPaid !== null) fieldCounts.amountPaid++;
         if (metadata.controlIncluded) fieldCounts.controlIncluded++;
+        if (metadata.isDomicilio) fieldCounts.isDomicilio++;
 
         updates.push({ id: event.id, data: updateData });
 

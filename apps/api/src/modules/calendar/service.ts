@@ -276,6 +276,7 @@ export class CalendarSyncService {
             dosage: metadata.dosage,
             treatmentStage: metadata.treatmentStage,
             controlIncluded: metadata.controlIncluded,
+            isDomicilio: metadata.isDomicilio,
           });
         }
       }

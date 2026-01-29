@@ -96,6 +96,7 @@ export type CalendarEventDetail = {
   dosage?: string | null;
   treatmentStage?: string | null;
   controlIncluded?: boolean | null;
+  isDomicilio?: boolean | null;
 };
 
 export type CalendarEventsByDate = {
@@ -574,6 +575,7 @@ export async function getCalendarEventsByDate(
     dosage: string | null;
     treatmentStage: string | null;
     controlIncluded: boolean | null;
+    isDomicilio: boolean | null;
   };
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy function needing refactor
@@ -619,6 +621,7 @@ export async function getCalendarEventsByDate(
       dosage: ev.dosage,
       treatmentStage: ev.treatmentStage,
       controlIncluded: ev.controlIncluded,
+      isDomicilio: ev.isDomicilio,
     };
 
     grouped[dateKey].events.push(detail);

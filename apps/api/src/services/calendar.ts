@@ -320,6 +320,7 @@ export async function updateCalendarEventClassification(
     dosage?: string | null;
     treatmentStage?: string | null;
     controlIncluded?: boolean | null;
+    isDomicilio?: boolean | null;
   },
 ) {
   // ... (function body of createCalendarEvent moved out)
@@ -346,7 +347,8 @@ export async function updateCalendarEventClassification(
       attended: data.attended,
       dosage: data.dosage,
       treatmentStage: data.treatmentStage,
-      controlIncluded: data.controlIncluded,
+      controlIncluded: data.controlIncluded ?? undefined,
+      isDomicilio: data.isDomicilio ?? undefined,
     },
   });
 }
@@ -385,7 +387,8 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
     hangoutLink: data.hangoutLink,
     category: data.category,
     amountPaid: data.amountPaid || 0,
-    controlIncluded: data.controlIncluded,
+    controlIncluded: data.controlIncluded ?? false,
+    isDomicilio: data.isDomicilio || false,
     lastSyncedAt: new Date(),
   };
 

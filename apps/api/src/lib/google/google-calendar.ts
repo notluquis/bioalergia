@@ -41,6 +41,7 @@ export type CalendarEventRecord = {
   dosage?: string | null;
   treatmentStage?: string | null;
   controlIncluded?: boolean | null;
+  isDomicilio?: boolean | null;
 };
 
 type CalendarRuntimeConfig = {
@@ -290,6 +291,7 @@ async function fetchCalendarEventsForId(
         dosage: metadata.dosage,
         treatmentStage: metadata.treatmentStage,
         controlIncluded: metadata.controlIncluded,
+        isDomicilio: metadata.isDomicilio,
       });
     }
 

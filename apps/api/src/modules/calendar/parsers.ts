@@ -44,6 +44,7 @@ export type ParsedCalendarMetadata = {
   dosage: string | null;
   treatmentStage: string | null;
   controlIncluded: boolean;
+  isDomicilio: boolean;
 };
 
 // ============================================================================
@@ -251,8 +252,14 @@ const MONEY_CONFIRMED_PATTERNS = [
   /\bse\s+llev[oó]\b/i,
 ];
 
-/** Patterns for domicilio (home visit) to mark as paid */
-const DOMICILIO_PATTERNS = [/\bdomicilio\b/i];
+/** Patterns for domicilio (home visit) to mark as paid and track home delivery */
+const DOMICILIO_PATTERNS = [
+  /\bdomicilio\b/i,
+  /\bse\s+la\s+llevo\b/i, // "se la llevo"
+  /\bse\s+la\s+llev[oó]\b/i, // "se la llevo" with accent variations
+  /\bse\s+lo\s+llevo\b/i, // "se lo llevo" (masculine variant)
+  /\bse\s+lo\s+llev[oó]\b/i,
+];
 
 /** Phone number patterns to exclude from amount parsing */
 const PHONE_PATTERNS = [
@@ -589,6 +596,7 @@ export function parseCalendarMetadata(input: {
   const dosage = extractDosage(summary, description);
   const treatmentStage = detectTreatmentStage(summary, description);
   const controlIncluded = matchesAny(`${summary} ${description}`, CONTROL_PATTERNS);
+  const isDomicilio = matchesAny(`${summary} ${description}`, DOMICILIO_PATTERNS);
 
   // Logic: Dosage and Treatment Stage only apply to "Tratamiento subcutáneo"
   const isSubcut = category === "Tratamiento subcutáneo";
@@ -644,6 +652,7 @@ export function parseCalendarMetadata(input: {
     dosage: finalDosage,
     treatmentStage: finalTreatmentStage,
     controlIncluded,
+    isDomicilio,
   };
 }
 

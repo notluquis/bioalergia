@@ -2718,6 +2718,12 @@ export class SchemaType implements SchemaDef {
                     attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("control_included") }] }],
                     default: false
                 },
+                isDomicilio: {
+                    name: "isDomicilio",
+                    type: "Boolean",
+                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_domicilio") }] }],
+                    default: false
+                },
                 rawEvent: {
                     name: "rawEvent",
                     type: "Json",

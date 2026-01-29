@@ -76,6 +76,7 @@ export const updateClassificationSchema = z.object({
   dosage: z.string().nullable().optional(),
   treatmentStage: z.string().nullable().optional(),
   controlIncluded: z.boolean().nullable().optional(),
+  isDomicilio: z.boolean().nullable().optional(),
 });
 
 // ==========================================
