@@ -91,3 +91,4 @@ junit.xml
 yarn.lock
 apps/api/assets/signatures/
 .vscode/*
+packages/db/zenstack/~schema.prisma
