@@ -79,7 +79,6 @@ export function useCalendarEvents() {
   const [appliedFilters, setAppliedFilters] = useState<CalendarFilters>(() => ({
     calendarIds: [],
     categories: [],
-    eventTypes: [],
     from: "",
     maxDays: 28,
     search: "",
@@ -175,7 +174,7 @@ export function useCalendarEvents() {
   };
 
   const availableCalendars = summary?.available.calendars ?? [];
-  const availableEventTypes = summary?.available.eventTypes ?? [];
+
   const availableCategories = summary?.available.categories ?? [];
 
   const syncMutation = useMutation({
@@ -294,7 +293,6 @@ export function useCalendarEvents() {
     applyFilters,
     availableCalendars,
     availableCategories,
-    availableEventTypes,
     daily,
     error,
     filters,

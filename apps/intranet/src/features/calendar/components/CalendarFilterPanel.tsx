@@ -14,7 +14,7 @@ import Input from "@/components/ui/Input";
 import { numberFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-import { NULL_CATEGORY_VALUE, NULL_EVENT_TYPE_VALUE } from "../constants";
+import { NULL_CATEGORY_VALUE } from "../constants";
 import { useCalendarSync } from "../hooks/useCalendarSync";
 import type { CalendarFilters } from "../types";
 import { MultiSelectFilter, type MultiSelectOption } from "./MultiSelectFilter";
@@ -25,8 +25,7 @@ export interface CalendarFilterPanelProps {
   layout?: "row" | "dropdown";
   /** Available categories for dropdown */
   availableCategories?: { category: null | string; total: number }[];
-  /** Available event types for dropdown */
-  availableEventTypes?: { eventType: null | string; total: number }[];
+
   /** Current filter state */
   filters: FilterPanelState;
   /** Whether filters have been modified */
@@ -51,27 +50,15 @@ export interface CalendarFilterPanelProps {
 }
 
 /** Filter state used by the filter panel - subset of CalendarFilters */
-export type FilterPanelState = Pick<
-  CalendarFilters,
-  "categories" | "eventTypes" | "from" | "search" | "to"
->;
+export type FilterPanelState = Pick<CalendarFilters, "categories" | "from" | "search" | "to">;
 
 function dateContainerClass(isDropdownLayout: boolean) {
   return cn(isDropdownLayout ? "sm:col-span-1" : "min-w-28 flex-1");
 }
 
-function eventTypeClass(isDropdownLayout: boolean) {
-  return cn(isDropdownLayout ? "sm:col-span-1" : "flex-1 min-w-44");
-}
-
-function categoryClass(
-  isDropdownLayout: boolean,
-  showDateRange: boolean,
-  hasEventTypes: boolean,
-  showSearch: boolean,
-) {
+function categoryClass(isDropdownLayout: boolean, showDateRange: boolean, showSearch: boolean) {
   if (!isDropdownLayout) return "flex-1 min-w-44";
-  if (showDateRange && !hasEventTypes && !showSearch) return "sm:col-span-2";
+  if (showDateRange && !showSearch) return "sm:col-span-2";
   return "sm:col-span-1";
 }
 
@@ -98,7 +85,7 @@ export function CalendarFilterPanel({
   formClassName,
   layout = "row",
   availableCategories = [],
-  availableEventTypes = [],
+
   filters,
   isDirty = true,
   loading = false,
@@ -111,13 +98,6 @@ export function CalendarFilterPanel({
   showSearch = false,
   variant = "card",
 }: Readonly<CalendarFilterPanelProps>) {
-  // Build event type options for MultiSelect
-  const eventTypeOptions: MultiSelectOption[] = availableEventTypes.map((entry) => {
-    const value = entry.eventType ?? NULL_EVENT_TYPE_VALUE;
-    const label = entry.eventType ?? "Sin tipo";
-    return { label: `${label} · ${numberFormatter.format(entry.total)}`, value };
-  });
-
   // Build category options for MultiSelect
   const categoryOptions: MultiSelectOption[] = availableCategories.map((entry) => {
     const value = entry.category ?? NULL_CATEGORY_VALUE;
@@ -135,7 +115,6 @@ export function CalendarFilterPanel({
     applyCount == null ? "Aplicar" : `Aplicar · ${numberFormatter.format(applyCount)}`;
 
   const isDropdownLayout = layout === "dropdown";
-  const hasEventTypes = availableEventTypes.length > 0;
   const hasCategories = availableCategories.length > 0;
   const form = (
     <form
@@ -189,23 +168,10 @@ export function CalendarFilterPanel({
         </>
       )}
 
-      {/* Event Types Filter */}
-      {hasEventTypes && (
-        <MultiSelectFilter
-          className={eventTypeClass(isDropdownLayout)}
-          density="compact"
-          label="Tipos de evento"
-          onChange={(values) => onFilterChange("eventTypes", values)}
-          options={eventTypeOptions}
-          placeholder="Todos"
-          selected={filters.eventTypes ?? []}
-        />
-      )}
-
       {/* Categories Filter */}
       {hasCategories && (
         <MultiSelectFilter
-          className={cn(categoryClass(isDropdownLayout, showDateRange, hasEventTypes, showSearch))}
+          className={cn(categoryClass(isDropdownLayout, showDateRange, showSearch))}
           density="compact"
           label="Clasificación"
           onChange={(values) => onFilterChange("categories", values)}

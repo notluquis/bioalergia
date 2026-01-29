@@ -18,7 +18,6 @@ export function filtersEqual(a: CalendarFilters, b: CalendarFilters) {
     a.from === b.from &&
     a.to === b.to &&
     arraysEqual(unique(a.calendarIds ?? []), unique(b.calendarIds ?? [])) &&
-    arraysEqual(unique(a.eventTypes ?? []), unique(b.eventTypes ?? [])) &&
     arraysEqual(unique(a.categories), unique(b.categories)) &&
     (a.search ?? "").trim() === (b.search ?? "").trim() &&
     a.maxDays === b.maxDays
@@ -30,7 +29,6 @@ export function normalizeFilters(filters: CalendarFilters): CalendarFilters {
     ...filters,
     calendarIds: unique(filters.calendarIds ?? []),
     categories: unique(filters.categories),
-    eventTypes: unique(filters.eventTypes ?? []),
     search: (filters.search ?? "").trim(),
   };
 }
@@ -61,7 +59,6 @@ export const computeDefaultFilters = (settings: {
   return {
     calendarIds: [],
     categories: [],
-    eventTypes: [],
     from: from.format("YYYY-MM-DD"),
     maxDays,
     search: "",

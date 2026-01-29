@@ -25,7 +25,6 @@ function CalendarDailyPage() {
     appliedFilters,
     applyFilters,
     availableCategories,
-    availableEventTypes,
     daily,
     filters,
     loading,
@@ -89,7 +88,6 @@ function CalendarDailyPage() {
             <CalendarFiltersPopover
               applyCount={daily?.totals.events}
               availableCategories={availableCategories}
-              availableEventTypes={availableEventTypes}
               className="shadow-lg"
               filters={filters}
               isOpen={filtersOpen}

@@ -29,7 +29,6 @@ function CalendarSchedulePage() {
     appliedFilters,
     applyFilters,
     availableCategories,
-    availableEventTypes,
     daily,
     filters,
     isDirty,
@@ -150,7 +149,6 @@ function CalendarSchedulePage() {
             <CalendarFiltersPopover
               applyCount={displayedWeekEvents.length}
               availableCategories={availableCategories}
-              availableEventTypes={availableEventTypes}
               className="shadow-lg"
               filters={filters}
               isDirty={isDirty}

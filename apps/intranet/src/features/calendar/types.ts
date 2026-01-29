@@ -48,7 +48,6 @@ export interface CalendarDaily {
   filters: {
     calendarIds: string[];
     categories: string[];
-    eventTypes: string[];
     from: string;
     maxDays: number;
     search?: string;
@@ -128,7 +127,6 @@ export interface CalendarEventDetail {
 export interface CalendarFilters {
   calendarIds?: string[];
   categories: string[];
-  eventTypes?: string[];
   from: string;
   maxDays: number;
   search?: string;
@@ -147,12 +145,10 @@ export interface CalendarSummary {
   available: {
     calendars: { calendarId: string; total: number }[];
     categories: { category: null | string; total: number }[];
-    eventTypes: { eventType: null | string; total: number }[];
   };
   filters: {
     calendarIds: string[];
     categories: string[];
-    eventTypes: string[];
     from: string;
     search?: string;
     to: string;

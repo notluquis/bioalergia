@@ -207,10 +207,6 @@ function buildQuery(filters: CalendarFilters, options?: { includeMaxDays?: boole
     query.calendarId = filters.calendarIds;
   }
 
-  if (filters.eventTypes?.length) {
-    query.eventType = filters.eventTypes;
-  }
-
   if (filters.categories.length > 0) {
     query.category = filters.categories;
   }

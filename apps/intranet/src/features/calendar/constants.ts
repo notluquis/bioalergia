@@ -3,9 +3,6 @@
  * These values are used for handling null/undefined filter values
  */
 
-/** Value used for null event types in filter dropdowns */
-export const NULL_EVENT_TYPE_VALUE = "__NULL__";
-
 /** Value used for null categories in filter dropdowns */
 export const NULL_CATEGORY_VALUE = "__NULL_CATEGORY__";
 
