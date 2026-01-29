@@ -136,6 +136,8 @@ pnpm lint:fix  # Uses Biome
 - Use native HTML date inputs (use HeroUI DateField)
 - Import from incorrect locale libraries (use @internationalized/date + dayjs)
 - Store concatenated strings like "0,5 ml" - use separate value/unit fields
+- Update backend without updating frontend types (or vice versa)
+- Change API response structure without updating frontend consumers
 
 ✅ **DO:**
 - Edit schema in `.zmodel` files
@@ -144,6 +146,48 @@ pnpm lint:fix  # Uses Biome
 - Use HeroUI components for all UI elements
 - Normalize decimal input (0,5 or 0.5 → 0.5 number)
 - Separate concerns: numeric value, unit, and display formatting
+
+## 🔄 Backend-Frontend Sync Strategy
+
+**When modifying types, schemas, or data models:**
+
+1. **Update Backend First**
+   - Modify schema in `/packages/db/zenstack/schema.zmodel`
+   - Update backend types in `apps/api/src/lib/`
+   - Update parsers/services in `apps/api/src/`
+   - **Build backend**: `cd apps/api && pnpm build`
+   - ✅ Catch errors early
+
+2. **Update Frontend Immediately**
+   - Update types in `/apps/intranet/src/features/*/types.ts`
+   - Update schemas in `/apps/intranet/src/features/*/schemas.ts`
+   - Update components/pages that use the data
+   - **Build frontend**: `cd apps/intranet && pnpm build`
+   - ✅ Catch type mismatches
+
+3. **Validate Both Layers**
+   - Use `grep_search` to find ALL usages before updating
+   - Never assume you've found all references
+   - Test in dev environment with real API
+
+**Example Pattern (dosage refactoring):**
+```
+1. Schema: dosage (String) → dosageValue (Float) + dosageUnit (String)
+   ↓
+2. Backend parsers: return {value, unit} instead of string
+   ↓
+3. Backend types: update CalendarEventRecord, ParsedCalendarMetadata
+   ↓
+4. Build backend: pnpm build
+   ↓
+5. Frontend types: update CalendarUnclassifiedEvent, ClassificationFormValues
+   ↓
+6. Frontend components: use dosageValue + dosageUnit instead of dosage
+   ↓
+7. Build frontend: pnpm build
+   ↓
+8. Sync API: POST /calendar/events/sync
+```
 
 ## 📊 Current Session Progress (Jan 29, 2026)
 

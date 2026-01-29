@@ -86,7 +86,8 @@ export interface CalendarEventClassificationPayload {
   calendarId: string;
   category?: null | string;
   controlIncluded?: boolean | null;
-  dosage?: null | string;
+  dosageValue?: null | number;
+  dosageUnit?: null | string;
   eventId: string;
   treatmentStage?: null | string;
 }
@@ -100,7 +101,8 @@ export interface CalendarEventDetail {
   colorId: null | string;
   controlIncluded?: boolean | null;
   description: null | string;
-  dosage?: null | string;
+  dosageValue?: null | number;
+  dosageUnit?: null | string;
   endDate: null | string;
   endDateTime: null | string;
   endTimeZone: null | string;
@@ -199,7 +201,8 @@ export interface CalendarUnclassifiedEvent {
   calendarId: string;
   category: null | string;
   description: null | string;
-  dosage: null | string;
+  dosageValue: null | number;
+  dosageUnit: null | string;
   endDate: null | string;
   endDateTime: null | string;
   eventId: string;
@@ -216,7 +219,8 @@ export interface ClassificationFormValues {
   amountPaid: string;
   attended: boolean;
   category: string;
-  dosage: string;
+  dosageValue: string;
+  dosageUnit: string;
   treatmentStage: string;
 }
 
@@ -241,7 +245,8 @@ export const calendarClassificationSchema = z.object({
     }),
   attended: z.boolean().optional().nullable(),
   category: z.string().max(120).optional().nullable(),
-  dosage: z.string().max(64).optional().nullable(),
+  dosageValue: z.coerce.number().optional().nullable(),
+  dosageUnit: z.string().max(20).optional().nullable(),
   treatmentStage: z.string().max(64).optional().nullable(),
 });
 

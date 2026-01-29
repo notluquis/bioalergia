@@ -7,7 +7,8 @@ export interface ParsedPayload {
   amountPaid: null | number;
   attended: boolean | null;
   category: null | string;
-  dosage: null | string;
+  dosageValue: null | number;
+  dosageUnit: null | string;
   treatmentStage: null | string;
 }
 
@@ -17,7 +18,8 @@ export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
     amountPaid: event.amountPaid == null ? "" : String(event.amountPaid),
     attended: event.attended ?? false,
     category: event.category ?? "",
-    dosage: event.dosage ?? "",
+    dosageValue: event.dosageValue != null ? String(event.dosageValue) : "",
+    dosageUnit: event.dosageUnit ?? "",
     treatmentStage: event.treatmentStage ?? "",
   };
 }
@@ -31,7 +33,13 @@ export function buildPayload(
   const amountExpected = parseAmountInput(entry.amountExpected) ?? event.amountExpected ?? null;
   const amountPaid = parseAmountInput(entry.amountPaid) ?? event.amountPaid ?? null;
   const attended = entry.attended;
-  const dosage = entry.dosage?.trim() ? entry.dosage.trim() : null;
+
+  // Parse dosageValue from string input
+  const dosageValue = entry.dosageValue?.trim()
+    ? Number.parseFloat(entry.dosageValue.trim())
+    : event.dosageValue;
+  const dosageUnit = entry.dosageUnit?.trim() || event.dosageUnit || null;
+
   const treatmentStage =
     resolvedCategory === "Tratamiento subcutáneo" && entry.treatmentStage?.trim()
       ? entry.treatmentStage.trim()
@@ -42,7 +50,8 @@ export function buildPayload(
     amountPaid,
     attended,
     category: resolvedCategory,
-    dosage,
+    dosageValue: dosageValue ?? null,
+    dosageUnit,
     treatmentStage,
   };
 }

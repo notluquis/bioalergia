@@ -8,7 +8,8 @@ export const classificationSchema = z.object({
   amountPaid: z.string().optional().nullable(),
   attended: z.boolean(),
   category: z.string().optional().nullable(),
-  dosage: z.string().optional().nullable(),
+  dosageValue: z.string().optional().nullable(),
+  dosageUnit: z.string().optional().nullable(),
   treatmentStage: z.string().optional().nullable(),
 });
 

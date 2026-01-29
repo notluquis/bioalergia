@@ -123,14 +123,14 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
               {event.treatmentStage}
             </Chip>
           )}
-          {isSubcutaneous && event.dosage && (
+          {isSubcutaneous && event.dosageValue != null && event.dosageUnit && (
             <Chip
               size="sm"
               variant="soft"
               color="accent"
               className="h-6 text-[10px] font-medium tracking-wide uppercase"
             >
-              {event.dosage}
+              {event.dosageValue} {event.dosageUnit}
             </Chip>
           )}
         </div>

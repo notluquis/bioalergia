@@ -80,7 +80,8 @@ function CalendarClassificationPage() {
         attended: params.payload.attended,
         calendarId: params.event.calendarId,
         category: params.payload.category,
-        dosage: params.payload.dosage,
+        dosageValue: params.payload.dosageValue,
+        dosageUnit: params.payload.dosageUnit,
         eventId: params.event.eventId,
         treatmentStage: params.payload.treatmentStage,
       });

@@ -22,7 +22,8 @@ export interface FieldCounts {
   amountPaid: number;
   attended: number;
   category: number;
-  dosage: number;
+  dosageValue: number;
+  dosageUnit: number;
   treatmentStage: number;
 }
 export interface MissingFieldFilters {
