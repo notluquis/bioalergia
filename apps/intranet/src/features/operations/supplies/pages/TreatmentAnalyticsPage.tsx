@@ -1,9 +1,18 @@
-import { Spinner } from "@heroui/react";
+import { Chip, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import { Calendar, DollarSign, Home, Package, RefreshCcw, Syringe } from "lucide-react";
+import {
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  DollarSign,
+  Home,
+  Package,
+  RefreshCcw,
+  Syringe,
+} from "lucide-react";
 import { useState } from "react";
 
 dayjs.locale("es");
@@ -76,6 +85,7 @@ export default function TreatmentAnalyticsPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const searchParams = Route.useSearch();
   const [period, setPeriod] = useState<"day" | "week" | "month">(searchParams.period || "week");
+  const [showRangePicker, setShowRangePicker] = useState(true);
 
   const filters: TreatmentAnalyticsFilters = {
     from: searchParams.from,
@@ -99,6 +109,10 @@ export default function TreatmentAnalyticsPage() {
     void navigate({
       search: { ...searchParams, from: range.from, to: range.to },
     });
+    // Colapsar el selector después de elegir un rango
+    if (hasValidDates) {
+      setShowRangePicker(false);
+    }
   };
 
   const handleRefresh = () => {
@@ -115,6 +129,12 @@ export default function TreatmentAnalyticsPage() {
     data && data.totals.events > 0 ? (data.totals.induccionCount / data.totals.events) * 100 : 0;
   const mantencionPercentage =
     data && data.totals.events > 0 ? (data.totals.mantencionCount / data.totals.events) * 100 : 0;
+  const unclassifiedStageCount =
+    (data?.totals.events || 0) -
+    (data?.totals.induccionCount || 0) -
+    (data?.totals.mantencionCount || 0);
+  const unclassifiedStagePercentage =
+    data && data.totals.events > 0 ? (unclassifiedStageCount / data.totals.events) * 100 : 0;
 
   if (isError) {
     return (
@@ -149,124 +169,186 @@ export default function TreatmentAnalyticsPage() {
 
       {/* Date Range Controls */}
       <Card>
-        <CardContent className="space-y-4 p-6">
-          {/* Custom Date Inputs */}
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <div className="flex flex-col gap-1 flex-1">
-              <label className="text-xs text-default-500" htmlFor="from-date">
-                Desde
-              </label>
-              <input
-                className="px-3 py-2 rounded-lg bg-default-100 text-sm border border-default-200"
-                id="from-date"
-                max={filters.to}
-                placeholder="Selecciona fecha inicial"
-                type="date"
-                value={filters.from || ""}
-                onChange={(e) => handleDateChange(e.target.value, filters.to || e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1 flex-1">
-              <label className="text-xs text-default-500" htmlFor="to-date">
-                Hasta
-              </label>
-              <input
-                className="px-3 py-2 rounded-lg bg-default-100 text-sm border border-default-200"
-                id="to-date"
-                min={filters.from}
-                placeholder="Selecciona fecha final"
-                type="date"
-                value={filters.to || ""}
-                onChange={(e) => handleDateChange(filters.from || e.target.value, e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Quick Range Selectors */}
-          <div className="space-y-3">
-            <p className="text-xs font-semibold text-default-600">Rangos rápidos:</p>
-
-            {/* Single Day */}
-            <div className="space-y-2">
-              <p className="text-xs text-default-500">Día específico</p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleQuickRange(getYesterday())}
-                >
-                  Ayer
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => handleQuickRange(getToday())}>
-                  Hoy
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleQuickRange(getTomorrow())}
-                >
-                  Mañana
-                </Button>
-              </div>
-            </div>
-
-            {/* Weeks */}
-            <div className="space-y-2">
-              <p className="text-xs text-default-500">Semana</p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleQuickRange(getLastWeek())}
-                >
-                  Semana pasada
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleQuickRange(getThisWeek())}
-                >
-                  Esta semana
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleQuickRange(getNextWeek())}
-                >
-                  Próxima semana
-                </Button>
-              </div>
-            </div>
-
-            {/* Months */}
-            <div className="space-y-2">
-              <p className="text-xs text-default-500">Mes</p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleQuickRange(getLastMonth())}
-                >
-                  Mes pasado
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleQuickRange(getThisMonth())}
-                >
-                  Este mes
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleQuickRange(getNextMonth())}
-                >
-                  Próximo mes
-                </Button>
-              </div>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              {hasValidDates ? (
+                <div className="flex items-center gap-3">
+                  <Chip size="sm" variant="soft" color="success">
+                    {dayjs(filters.from).format("DD MMM YYYY")} -{" "}
+                    {dayjs(filters.to).format("DD MMM YYYY")}
+                  </Chip>
+                  <button
+                    type="button"
+                    onClick={() => setShowRangePicker(!showRangePicker)}
+                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                  >
+                    {showRangePicker ? (
+                      <>
+                        <ChevronUp className="h-4 w-4" />
+                        Ocultar selector
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4" />
+                        Cambiar fechas
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm font-medium text-default-700">
+                  Selecciona un rango de fechas
+                </p>
+              )}
             </div>
           </div>
-        </CardContent>
+        </CardHeader>
+
+        {showRangePicker && (
+          <CardContent className="space-y-4 p-6 border-t border-divider">
+            {/* Custom Date Inputs */}
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+              <div className="flex flex-col gap-1.5 flex-1">
+                <label className="text-xs font-medium text-default-600" htmlFor="from-date">
+                  Desde
+                </label>
+                <input
+                  className="px-3 py-2.5 rounded-lg bg-content1 border-2 border-divider focus:border-primary focus:outline-none text-sm transition-colors text-foreground"
+                  id="from-date"
+                  max={filters.to}
+                  placeholder="Fecha inicial"
+                  type="date"
+                  value={filters.from || ""}
+                  onChange={(e) => handleDateChange(e.target.value, filters.to || e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5 flex-1">
+                <label className="text-xs font-medium text-default-600" htmlFor="to-date">
+                  Hasta
+                </label>
+                <input
+                  className="px-3 py-2.5 rounded-lg bg-content1 border-2 border-divider focus:border-primary focus:outline-none text-sm transition-colors text-foreground"
+                  id="to-date"
+                  min={filters.from}
+                  placeholder="Fecha final"
+                  type="date"
+                  value={filters.to || ""}
+                  onChange={(e) => handleDateChange(filters.from || e.target.value, e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Quick Range Selectors */}
+            <div className="space-y-4 pt-2">
+              <div className="border-t border-dashed border-default-200 pt-4">
+                <p className="text-xs font-semibold text-default-700 mb-3">Rangos rápidos</p>
+
+                {/* Single Day */}
+                <div className="space-y-2.5">
+                  <p className="text-xs text-default-500 font-medium">Día específico</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color="default"
+                      className="cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => handleQuickRange(getYesterday())}
+                    >
+                      Ayer
+                    </Chip>
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color="success"
+                      className="cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => handleQuickRange(getToday())}
+                    >
+                      Hoy
+                    </Chip>
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color="default"
+                      className="cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => handleQuickRange(getTomorrow())}
+                    >
+                      Mañana
+                    </Chip>
+                  </div>
+                </div>
+
+                {/* Weeks */}
+                <div className="space-y-2.5 mt-4">
+                  <p className="text-xs text-default-500 font-medium">Semana</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color="accent"
+                      className="cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => handleQuickRange(getLastWeek())}
+                    >
+                      Semana pasada
+                    </Chip>
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color="success"
+                      className="cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => handleQuickRange(getThisWeek())}
+                    >
+                      Esta semana
+                    </Chip>
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color="accent"
+                      className="cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => handleQuickRange(getNextWeek())}
+                    >
+                      Próxima semana
+                    </Chip>
+                  </div>
+                </div>
+
+                {/* Months */}
+                <div className="space-y-2.5 mt-4">
+                  <p className="text-xs text-default-500 font-medium">Mes</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color="warning"
+                      className="cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => handleQuickRange(getLastMonth())}
+                    >
+                      Mes pasado
+                    </Chip>
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color="success"
+                      className="cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => handleQuickRange(getThisMonth())}
+                    >
+                      Este mes
+                    </Chip>
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      color="warning"
+                      className="cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => handleQuickRange(getNextMonth())}
+                    >
+                      Próximo mes
+                    </Chip>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {!hasValidDates ? (
@@ -376,6 +458,18 @@ export default function TreatmentAnalyticsPage() {
                     style={{ width: `${mantencionPercentage}%` }}
                   />
                 </div>
+                <div className="flex justify-between items-center mt-3">
+                  <span className="text-sm">Sin clasificar</span>
+                  <span className="text-sm font-semibold">
+                    {unclassifiedStageCount} ({unclassifiedStagePercentage.toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="w-full bg-default-200 rounded-full h-2">
+                  <div
+                    className="bg-default-400 h-2 rounded-full transition-all"
+                    style={{ width: `${unclassifiedStagePercentage}%` }}
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -468,6 +562,7 @@ export default function TreatmentAnalyticsPage() {
                       <th className="text-right py-3 px-2 font-semibold">Domicilio</th>
                       <th className="text-right py-3 px-2 font-semibold">Inducción</th>
                       <th className="text-right py-3 px-2 font-semibold">Mantención</th>
+                      <th className="text-right py-3 px-2 font-semibold">Sin clasificar</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -481,6 +576,9 @@ export default function TreatmentAnalyticsPage() {
                           <td className="text-right py-3 px-2">{row.domicilioCount}</td>
                           <td className="text-right py-3 px-2">{row.induccionCount}</td>
                           <td className="text-right py-3 px-2">{row.mantencionCount}</td>
+                          <td className="text-right py-3 px-2">
+                            {row.events - row.induccionCount - row.mantencionCount}
+                          </td>
                         </tr>
                       ))}
                     {period === "week" &&
@@ -498,6 +596,9 @@ export default function TreatmentAnalyticsPage() {
                           <td className="text-right py-3 px-2">{row.domicilioCount}</td>
                           <td className="text-right py-3 px-2">{row.induccionCount}</td>
                           <td className="text-right py-3 px-2">{row.mantencionCount}</td>
+                          <td className="text-right py-3 px-2">
+                            {row.events - row.induccionCount - row.mantencionCount}
+                          </td>
                         </tr>
                       ))}
                     {period === "month" &&
@@ -515,6 +616,9 @@ export default function TreatmentAnalyticsPage() {
                           <td className="text-right py-3 px-2">{row.domicilioCount}</td>
                           <td className="text-right py-3 px-2">{row.induccionCount}</td>
                           <td className="text-right py-3 px-2">{row.mantencionCount}</td>
+                          <td className="text-right py-3 px-2">
+                            {row.events - row.induccionCount - row.mantencionCount}
+                          </td>
                         </tr>
                       ))}
                   </tbody>
