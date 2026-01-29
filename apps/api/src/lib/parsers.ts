@@ -231,6 +231,8 @@ const DOSAGE_PATTERNS = [
   /(\d+(?:[.,]\d+)?)\s*ml\b/i,
   /(\d+(?:[.,]\d+)?)\s*cc\b/i,
   /(\d+(?:[.,]\d+)?)\s*mg\b/i,
+  // Match: 0,2ml( - dosage with opening paren directly after (no space)
+  /(\d+[.,]\d+)\s*ml\s*\(/i,
 ];
 
 /** Pattern for S/C (sin costo) */
@@ -324,7 +326,12 @@ function matchesAny(text: string, patterns: RegExp[]): boolean {
 // ============================================================================
 
 function normalizeAmountRaw(raw: string): number | null {
-  const digits = raw.replace(/[^0-9]/g, "");
+  // Handle "mil" suffix (e.g. "30mil" → "30000")
+  const withMilExpanded = raw.replace(/(\d+)\s*mil(?:es)?\b/gi, (match, num) => {
+    return String(Number.parseInt(num, 10) * 1000);
+  });
+
+  const digits = withMilExpanded.replace(/[^0-9]/g, "");
   if (!digits) return null;
 
   // Skip phone numbers
@@ -364,8 +371,8 @@ function extractAmounts(summary: string, description: string) {
     if (expected != null && amountExpected == null) amountExpected = expected;
   }
 
-  // 2. Standard pattern: (amount)
-  const parenPattern = /\(([^)]+)\)/gi;
+  // 2. Standard pattern: (amount) including unclosed parenthesis like (30mil
+  const parenPattern = /\(([^)]*?)(?:\)|$)/gi;
   let match: RegExpExecArray | null;
   while ((match = parenPattern.exec(text)) !== null) {
     let content = match[1]; // Use 'let' so we can modify it
@@ -375,7 +382,11 @@ function extractAmounts(summary: string, description: string) {
     // Matches "21-11" or "21/11" (if surrounded by spaces or boundary)
     content = content.replace(DATE_PATTERN, "");
 
-    const amount = normalizeAmountRaw(content);
+    // Extract first numeric part (e.g. "30mil: francisco" → "30mil")
+    const numericPart = content.match(/^[\d\s,./]*(?:mil)*\b/);
+    const normalizedContent = numericPart ? numericPart[0] : content;
+
+    const amount = normalizeAmountRaw(normalizedContent);
     if (amount == null) continue;
     if (PAGADO_KEYWORD_PATTERN.test(content)) {
       amountPaid = amount;
@@ -386,6 +397,7 @@ function extractAmounts(summary: string, description: string) {
   }
 
   // 3. Fallback: typo like "acaros20)" or "acaros820)" (missing opening paren)
+  // Also handle "clustois0,2ml(30mil" where amount is after unit
   // For 3+ digits like "820)", extract last 2 digits (assuming first is typo)
   if (amountExpected == null) {
     // Match letter followed by digits followed by ) - extract last 2 digits
@@ -396,6 +408,14 @@ function extractAmounts(summary: string, description: string) {
       // Take last 2 digits only (common amounts are 20, 30, 50, 60)
       const lastTwo = digits.length >= 2 ? digits.slice(-2) : digits;
       const amount = normalizeAmountRaw(lastTwo);
+      if (amount != null && amountExpected == null) amountExpected = amount;
+    }
+
+    // Also match: ml(number pattern like "0,2ml(30mil"
+    const mlPattern = /ml\s*\((\d+\s*mil)/gi;
+    let mlMatch: RegExpExecArray | null;
+    while ((mlMatch = mlPattern.exec(text)) !== null) {
+      const amount = normalizeAmountRaw(mlMatch[1]);
       if (amount != null && amountExpected == null) amountExpected = amount;
     }
   }

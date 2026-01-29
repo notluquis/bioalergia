@@ -189,34 +189,30 @@ pnpm lint:fix  # Uses Biome
 8. Sync API: POST /calendar/events/sync
 ```
 
-## 📊 Current Session Progress (Jan 29, 2026)
+## � Current Session Progress (Jan 29, 2026)
 
 ### Completed ✅
-1. **UI Polish (Analytics Page)**
-   - Dark mode date inputs (HeroUI DateField)
-   - Responsive quick range grid layout
-   - Reduced spacing and narrower columns
-
-2. **Parser Standardization**
-   - Dosage number format normalization (0,5 vs 0.5)
-   - Centralized formatting functions
-   - Robust decimal handling
-
-3. **Database Migration**
+1. **Database Migration**
    - Schema updated: dosage → dosageValue + dosageUnit
    - Migration executed successfully (1202 rows data loss accepted)
    - Zenstack schema synchronized
 
-4. **API Build**
-   - Parser logic compiled and ready
-   - Backend integrations updated
-   - SQL queries simplified
+2. **Backend Parser Improvements**
+   - Enhanced dosage extraction: now captures "0,2ml(" (no space before paren)
+   - Amount parsing: recognizes "mil" suffix → auto-multiplies by 1000 (30mil → 30,000)
+   - Fixed patterns for malformed events: "0,2ml(30mil: francisco" correctly parses to dosage=0.2ml, amount=30,000
+
+3. **Type System Refactoring**
+   - Backend: `ParsedCalendarMetadata` uses `dosageValue` (number) + `dosageUnit` (string)
+   - API: Updated all endpoints (classify, reclassify, analytics)  
+   - Frontend: `CalendarUnclassifiedEvent`, `ClassificationFormValues` synchronized
+   - Both layers compile successfully ✓
 
 ### Pending 🔄
 1. **Calendar Event Re-sync**
    - Trigger: `POST /calendar/events/sync`
    - Result: Events populate new dosageValue/dosageUnit fields
-   - Status: Awaiting execution
+   - Status: Ready, awaiting execution
 
 2. **Analytics Validation**
    - Verify dosage totals are correct
