@@ -181,38 +181,31 @@ function CalendarHeatmapPage() {
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
   // Calculate preview count based on pending filters
-  const previewCount = useMemo(() => {
-    // If dates changed (dirty `from` or `to`), we can't accurately preview without refetching,
-    // so we return undefined (or fallback to summary.totals.events if we wanted, but undefined hides count which is safer)
-    // Actually, let's just assume we are filtering within the fetched range for categories?
-    // No, if date changes, the available categories counts might change too.
-    // But usually people toggle categories within the same date range.
+  // Calculate preview count based on pending filters
+  // React Compiler auto-memoizes this calculation
+  let previewCount: number | undefined;
 
-    // Key check: do the dates match what we fetched?
-    // If yes, we can filter `summary.available`
-    if (summary && filters.from === appliedFilters.from && filters.to === appliedFilters.to) {
-      // If categories selected, sum up their available counts
-      if (filters.categories.length > 0) {
-        const selected = new Set(filters.categories);
-        return summary.available.categories
-          .filter((c) => c.category && selected.has(c.category))
-          .reduce((sum, c) => sum + c.total, 0);
-      }
-
+  // Key check: do the dates match what we fetched?
+  // If yes, we can filter `summary.available`
+  if (summary && filters.from === appliedFilters.from && filters.to === appliedFilters.to) {
+    // If categories selected, sum up their available counts
+    if (filters.categories.length > 0) {
+      const selected = new Set(filters.categories);
+      previewCount = summary.available.categories
+        .filter((c) => c.category && selected.has(c.category))
+        .reduce((sum, c) => sum + c.total, 0);
+    } else {
       // If no categories selected (Show All)
       const totalAvailable = summary.available.categories.reduce((sum, c) => sum + c.total, 0);
 
       // If summary.totals.events says 0 but we have available counts, use the available sum
-      // This handles the case where "Show All" query might be incorrectly returning 0
-      // or if we just want to trust the metadata
       if (summary.totals.events === 0 && totalAvailable > 0) {
-        return totalAvailable;
+        previewCount = totalAvailable;
+      } else {
+        previewCount = summary.totals.events;
       }
-      return summary.totals.events;
     }
-
-    return undefined;
-  }, [summary, filters, appliedFilters]);
+  }
 
   return (
     <section className="space-y-3">
