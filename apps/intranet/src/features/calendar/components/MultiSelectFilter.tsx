@@ -65,6 +65,9 @@ export function MultiSelectFilter({
     }
   };
 
+  // React Aria collections require `id` or `key` property in the data object when using `items`
+  const itemsWithId = options.map((o) => ({ ...o, id: o.value }));
+
   return (
     <div className={className}>
       {label && (
@@ -91,16 +94,16 @@ export function MultiSelectFilter({
         <DropdownPopover>
           <ListBox
             aria-label={label}
-            items={options}
+            items={itemsWithId}
             selectedKeys={selectedKeys}
             selectionMode="multiple"
             onSelectionChange={handleSelectionChange}
-            className="max-h-60 w-(--radix-dropdown-menu-trigger-width) max-w-[min(90vw,320px)] overflow-y-auto"
+            className="max-h-60 w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(90vw,320px)] overflow-y-auto"
           >
-            {(option) => (
-              <ListBox.Item key={option.value} textValue={option.label.split(" · ")[0]}>
+            {(item) => (
+              <ListBox.Item key={item.id} textValue={item.label.split(" · ")[0]}>
                 <div className="flex items-center justify-between">
-                  <span>{option.label}</span>
+                  <span>{item.label}</span>
                   <ListBox.ItemIndicator>
                     {({ isSelected }) =>
                       isSelected ? <Check className="h-4 w-4 text-primary" /> : null
