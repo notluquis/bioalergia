@@ -27,7 +27,8 @@ import type { ComponentType } from "react";
 
 import type { NavConfig, NavSection, RoutePermission } from "@/types/navigation";
 
-// Generated file
+// Generated file - may cause import cycle warning but works correctly at runtime
+// biome-ignore lint/nursery/noImportCycles: routeTree is generated and needed for nav extraction
 import { routeTree } from "../routeTree.gen";
 
 // Reuse NavItem interface from original generator to stay compatible with Sidebar

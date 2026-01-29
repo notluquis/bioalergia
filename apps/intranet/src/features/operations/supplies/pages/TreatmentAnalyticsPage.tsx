@@ -2,8 +2,11 @@ import { Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
+import "dayjs/locale/es";
 import { Calendar, DollarSign, Home, Package, RefreshCcw, Syringe } from "lucide-react";
 import { useState } from "react";
+
+dayjs.locale("es");
 
 import Button from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
@@ -12,27 +15,89 @@ import type { TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { formatCurrency } from "@/lib/utils";
 import { Route } from "@/routes/_authed/operations/supplies-analytics";
 
+// Helper functions for quick date ranges
+const getToday = () => {
+  return { from: dayjs().format("YYYY-MM-DD"), to: dayjs().format("YYYY-MM-DD") };
+};
+
+const getYesterday = () => {
+  const yesterday = dayjs().subtract(1, "day");
+  return { from: yesterday.format("YYYY-MM-DD"), to: yesterday.format("YYYY-MM-DD") };
+};
+
+const getTomorrow = () => {
+  const tomorrow = dayjs().add(1, "day");
+  return { from: tomorrow.format("YYYY-MM-DD"), to: tomorrow.format("YYYY-MM-DD") };
+};
+
+const getThisWeek = () => {
+  return {
+    from: dayjs().startOf("week").format("YYYY-MM-DD"),
+    to: dayjs().endOf("week").format("YYYY-MM-DD"),
+  };
+};
+
+const getLastWeek = () => {
+  return {
+    from: dayjs().subtract(1, "week").startOf("week").format("YYYY-MM-DD"),
+    to: dayjs().subtract(1, "week").endOf("week").format("YYYY-MM-DD"),
+  };
+};
+
+const getNextWeek = () => {
+  return {
+    from: dayjs().add(1, "week").startOf("week").format("YYYY-MM-DD"),
+    to: dayjs().add(1, "week").endOf("week").format("YYYY-MM-DD"),
+  };
+};
+
+const getThisMonth = () => {
+  return {
+    from: dayjs().startOf("month").format("YYYY-MM-DD"),
+    to: dayjs().endOf("month").format("YYYY-MM-DD"),
+  };
+};
+
+const getLastMonth = () => {
+  return {
+    from: dayjs().subtract(1, "month").startOf("month").format("YYYY-MM-DD"),
+    to: dayjs().subtract(1, "month").endOf("month").format("YYYY-MM-DD"),
+  };
+};
+
+const getNextMonth = () => {
+  return {
+    from: dayjs().add(1, "month").startOf("month").format("YYYY-MM-DD"),
+    to: dayjs().add(1, "month").endOf("month").format("YYYY-MM-DD"),
+  };
+};
+
 export default function TreatmentAnalyticsPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const searchParams = Route.useSearch();
   const [period, setPeriod] = useState<"day" | "week" | "month">(searchParams.period || "week");
 
-  // Default to last 30 days if no dates provided
-  const defaultFrom = dayjs().subtract(30, "day").format("YYYY-MM-DD");
-  const defaultTo = dayjs().format("YYYY-MM-DD");
-
   const filters: TreatmentAnalyticsFilters = {
-    from: searchParams.from || defaultFrom,
-    to: searchParams.to || defaultTo,
+    from: searchParams.from,
+    to: searchParams.to,
   };
 
-  const { data, isLoading, isError, error, refetch } = useQuery(
-    calendarQueries.treatmentAnalytics(filters),
-  );
+  const hasValidDates = !!filters.from && !!filters.to;
+
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    ...calendarQueries.treatmentAnalytics(filters),
+    enabled: hasValidDates,
+  });
 
   const handleDateChange = (from: string, to: string) => {
     void navigate({
       search: { ...searchParams, from, to },
+    });
+  };
+
+  const handleQuickRange = (range: { from: string; to: string }) => {
+    void navigate({
+      search: { ...searchParams, from: range.from, to: range.to },
     });
   };
 
@@ -84,9 +149,10 @@ export default function TreatmentAnalyticsPage() {
 
       {/* Date Range Controls */}
       <Card>
-        <CardContent className="flex flex-col sm:flex-row gap-4 items-start sm:items-center p-6">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            <div className="flex flex-col gap-1">
+        <CardContent className="space-y-4 p-6">
+          {/* Custom Date Inputs */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-default-500" htmlFor="from-date">
                 Desde
               </label>
@@ -94,12 +160,13 @@ export default function TreatmentAnalyticsPage() {
                 className="px-3 py-2 rounded-lg bg-default-100 text-sm border border-default-200"
                 id="from-date"
                 max={filters.to}
+                placeholder="Selecciona fecha inicial"
                 type="date"
-                value={filters.from}
-                onChange={(e) => handleDateChange(e.target.value, filters.to || defaultTo)}
+                value={filters.from || ""}
+                onChange={(e) => handleDateChange(e.target.value, filters.to || e.target.value)}
               />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-default-500" htmlFor="to-date">
                 Hasta
               </label>
@@ -107,40 +174,116 @@ export default function TreatmentAnalyticsPage() {
                 className="px-3 py-2 rounded-lg bg-default-100 text-sm border border-default-200"
                 id="to-date"
                 min={filters.from}
+                placeholder="Selecciona fecha final"
                 type="date"
-                value={filters.to}
-                onChange={(e) => handleDateChange(filters.from || defaultFrom, e.target.value)}
+                value={filters.to || ""}
+                onChange={(e) => handleDateChange(filters.from || e.target.value, e.target.value)}
               />
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                const from = dayjs().subtract(7, "day").format("YYYY-MM-DD");
-                const to = dayjs().format("YYYY-MM-DD");
-                handleDateChange(from, to);
-              }}
-            >
-              Última semana
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                const from = dayjs().subtract(30, "day").format("YYYY-MM-DD");
-                const to = dayjs().format("YYYY-MM-DD");
-                handleDateChange(from, to);
-              }}
-            >
-              Último mes
-            </Button>
+
+          {/* Quick Range Selectors */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-default-600">Rangos rápidos:</p>
+
+            {/* Single Day */}
+            <div className="space-y-2">
+              <p className="text-xs text-default-500">Día específico</p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleQuickRange(getYesterday())}
+                >
+                  Ayer
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => handleQuickRange(getToday())}>
+                  Hoy
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleQuickRange(getTomorrow())}
+                >
+                  Mañana
+                </Button>
+              </div>
+            </div>
+
+            {/* Weeks */}
+            <div className="space-y-2">
+              <p className="text-xs text-default-500">Semana</p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleQuickRange(getLastWeek())}
+                >
+                  Semana pasada
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleQuickRange(getThisWeek())}
+                >
+                  Esta semana
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleQuickRange(getNextWeek())}
+                >
+                  Próxima semana
+                </Button>
+              </div>
+            </div>
+
+            {/* Months */}
+            <div className="space-y-2">
+              <p className="text-xs text-default-500">Mes</p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleQuickRange(getLastMonth())}
+                >
+                  Mes pasado
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleQuickRange(getThisMonth())}
+                >
+                  Este mes
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => handleQuickRange(getNextMonth())}
+                >
+                  Próximo mes
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {isLoading ? (
+      {!hasValidDates ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
+            <Calendar className="h-16 w-16 text-default-300" />
+            <div className="text-center">
+              <p className="text-lg font-semibold text-default-600">
+                Selecciona un rango de fechas
+              </p>
+              <p className="text-sm text-default-400 mt-1">
+                Elige las fechas o usa los rangos rápidos para ver las métricas
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
         <div className="flex justify-center items-center min-h-100">
           <Spinner size="lg" />
           <span className="ml-4">Cargando analytics...</span>

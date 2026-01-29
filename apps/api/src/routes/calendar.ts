@@ -730,7 +730,9 @@ calendarRoutes.post("/webhook", async (c) => {
 
     webhookSyncTimer = setTimeout(() => {
       if (lastWebhookChannelId) {
-        executeWebhookSync(lastWebhookChannelId);
+        executeWebhookSync(lastWebhookChannelId).catch((err) => {
+          console.error("[webhook] Error in debounced sync:", err);
+        });
       }
     }, WEBHOOK_DEBOUNCE_MS);
 
@@ -821,6 +823,7 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
 
       for (let i = 0; i < events.length; i++) {
         const event = events[i];
+        const updateData: EventUpdate["data"] = {};
         const metadata = parseCalendarMetadata({
           summary: event.summary,
           description: event.description,
