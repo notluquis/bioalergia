@@ -200,7 +200,7 @@ export default function UserManagementPage() {
   return (
     <div className={PAGE_CONTAINER}>
       {/* Security Overview Cards */}
-      {users && users.length > 0 && (
+      {users.length > 0 && (
         <div className="grid gap-4 md:grid-cols-3">
           <div className="card bg-background shadow-sm">
             <div className="card-body">
