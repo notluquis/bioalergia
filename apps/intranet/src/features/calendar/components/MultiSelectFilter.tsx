@@ -1,12 +1,12 @@
 import {
   Button,
   Dropdown,
-  DropdownItem,
-  DropdownMenu,
   DropdownPopover,
   DropdownTrigger,
+  ListBox,
+  type Selection,
 } from "@heroui/react";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 
 export interface MultiSelectOption {
   label: string;
@@ -35,7 +35,6 @@ export function MultiSelectFilter({
   const selectedKeys = new Set(selected);
   const isCompact = density === "compact";
 
-  // Derived display text logic
   const getDisplayText = () => {
     if (selected.length === 0) {
       return placeholder;
@@ -57,6 +56,14 @@ export function MultiSelectFilter({
   };
 
   const displayText = getDisplayText();
+
+  const handleSelectionChange = (keys: Selection) => {
+    if (keys === "all") {
+      onChange(options.map((o) => o.value));
+    } else {
+      onChange(Array.from(keys) as string[]);
+    }
+  };
 
   return (
     <div className={className}>
@@ -82,25 +89,26 @@ export function MultiSelectFilter({
           </Button>
         </DropdownTrigger>
         <DropdownPopover>
-          <DropdownMenu
+          <ListBox
             aria-label={label}
             selectedKeys={selectedKeys}
             selectionMode="multiple"
-            onSelectionChange={(keys) => {
-              if (keys === "all") {
-                onChange(options.map((o) => o.value));
-              } else {
-                onChange(Array.from(keys) as string[]);
-              }
-            }}
+            onSelectionChange={handleSelectionChange}
             className="max-h-60 w-[var(--radix-dropdown-menu-trigger-width)] max-w-[min(90vw,320px)] overflow-y-auto"
           >
             {options.map((option) => (
-              <DropdownItem key={option.value} textValue={option.label.split(" · ")[0]}>
-                {option.label}
-              </DropdownItem>
+              <ListBox.Item key={option.value} textValue={option.label.split(" · ")[0]}>
+                <div className="flex items-center justify-between">
+                  <span>{option.label}</span>
+                  <ListBox.ItemIndicator>
+                    {({ isSelected }) =>
+                      isSelected ? <Check className="h-4 w-4 text-primary" /> : null
+                    }
+                  </ListBox.ItemIndicator>
+                </div>
+              </ListBox.Item>
             ))}
-          </DropdownMenu>
+          </ListBox>
         </DropdownPopover>
       </Dropdown>
     </div>
