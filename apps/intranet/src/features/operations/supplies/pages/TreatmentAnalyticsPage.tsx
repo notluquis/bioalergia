@@ -107,7 +107,7 @@ export default function TreatmentAnalyticsPage() {
 
   const handleQuickRange = (range: { from: string; to: string }) => {
     void navigate({ search: { ...searchParams, from: range.from, to: range.to } });
-    if (hasValidDates) setShowRangePicker(false);
+    setShowRangePicker(false);
   };
 
   const handleRefresh = () => void refetch();
@@ -188,15 +188,15 @@ export default function TreatmentAnalyticsPage() {
         </CardHeader>
 
         {showRangePicker && (
-          <CardContent className="space-y-4 p-6 border-t border-divider">
+          <CardContent className="space-y-3 p-4 border-t border-divider">
             {/* Custom Date Inputs */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-end">
               <div className="flex flex-col gap-1.5 flex-1">
                 <label className="text-xs font-medium text-default-600" htmlFor="from-date">
                   Desde
                 </label>
                 <input
-                  className="px-3 py-2.5 rounded-lg bg-content1 border-2 border-divider focus:border-primary focus:outline-none text-sm transition-colors text-foreground"
+                  className="w-full px-3 py-2 rounded-lg bg-content1 border border-divider focus:border-primary focus:outline-none text-sm transition-colors text-foreground scheme-dark"
                   id="from-date"
                   max={filters.to}
                   placeholder="Fecha inicial"
@@ -210,7 +210,7 @@ export default function TreatmentAnalyticsPage() {
                   Hasta
                 </label>
                 <input
-                  className="px-3 py-2.5 rounded-lg bg-content1 border-2 border-divider focus:border-primary focus:outline-none text-sm transition-colors text-foreground"
+                  className="w-full px-3 py-2 rounded-lg bg-content1 border border-divider focus:border-primary focus:outline-none text-sm transition-colors text-foreground scheme-dark"
                   id="to-date"
                   min={filters.from}
                   placeholder="Fecha final"
@@ -222,13 +222,13 @@ export default function TreatmentAnalyticsPage() {
             </div>
 
             {/* Quick Range Selectors */}
-            <div className="space-y-4 pt-2">
-              <div className="border-t border-dashed border-default-200 pt-4">
-                <p className="text-xs font-semibold text-default-700 mb-3">Rangos rápidos</p>
+            <div className="space-y-2.5 pt-1">
+              <div className="border-t border-dashed border-default-200 pt-3">
+                <p className="text-xs font-semibold text-default-700 mb-2.5">Rangos rápidos</p>
 
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   <p className="text-xs text-default-500 font-medium">Día específico</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     <Chip
                       size="sm"
                       variant="soft"
@@ -241,7 +241,7 @@ export default function TreatmentAnalyticsPage() {
                     <Chip
                       size="sm"
                       variant="soft"
-                      color="success"
+                      color="default"
                       className="cursor-pointer hover:scale-105 transition-transform"
                       onClick={() => handleQuickRange(getToday())}
                     >
@@ -259,13 +259,13 @@ export default function TreatmentAnalyticsPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2.5 mt-4">
+                <div className="space-y-2 mt-2">
                   <p className="text-xs text-default-500 font-medium">Semana</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     <Chip
                       size="sm"
                       variant="soft"
-                      color="accent"
+                      color="default"
                       className="cursor-pointer hover:scale-105 transition-transform"
                       onClick={() => handleQuickRange(getLastWeek())}
                     >
@@ -274,7 +274,7 @@ export default function TreatmentAnalyticsPage() {
                     <Chip
                       size="sm"
                       variant="soft"
-                      color="success"
+                      color="default"
                       className="cursor-pointer hover:scale-105 transition-transform"
                       onClick={() => handleQuickRange(getThisWeek())}
                     >
@@ -283,7 +283,7 @@ export default function TreatmentAnalyticsPage() {
                     <Chip
                       size="sm"
                       variant="soft"
-                      color="accent"
+                      color="default"
                       className="cursor-pointer hover:scale-105 transition-transform"
                       onClick={() => handleQuickRange(getNextWeek())}
                     >
@@ -292,13 +292,13 @@ export default function TreatmentAnalyticsPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2.5 mt-4">
+                <div className="space-y-2 mt-2">
                   <p className="text-xs text-default-500 font-medium">Mes</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     <Chip
                       size="sm"
                       variant="soft"
-                      color="warning"
+                      color="default"
                       className="cursor-pointer hover:scale-105 transition-transform"
                       onClick={() => handleQuickRange(getLastMonth())}
                     >
@@ -307,7 +307,7 @@ export default function TreatmentAnalyticsPage() {
                     <Chip
                       size="sm"
                       variant="soft"
-                      color="success"
+                      color="default"
                       className="cursor-pointer hover:scale-105 transition-transform"
                       onClick={() => handleQuickRange(getThisMonth())}
                     >
@@ -316,7 +316,7 @@ export default function TreatmentAnalyticsPage() {
                     <Chip
                       size="sm"
                       variant="soft"
-                      color="warning"
+                      color="default"
                       className="cursor-pointer hover:scale-105 transition-transform"
                       onClick={() => handleQuickRange(getNextMonth())}
                     >
