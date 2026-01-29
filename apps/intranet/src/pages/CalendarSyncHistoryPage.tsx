@@ -5,6 +5,7 @@ import { Calendar as CalendarIcon, ChevronDown, Loader2, RefreshCw, Settings2 } 
 import { useState } from "react";
 
 import Button from "@/components/ui/Button";
+import { SectionError } from "@/components/ui/SectionError";
 import { ChangeDetailsViewer } from "@/features/calendar/components/ChangeDetailsViewer";
 import { StatusBadge } from "@/features/calendar/components/StatusBadge";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
@@ -18,6 +19,7 @@ export default function CalendarSyncHistoryPage() {
 
   const {
     hasRunningSyncFromOtherSource,
+    isErrorSyncLogs, // New
     isLoadingSyncLogs,
     lastSyncInfo,
     refetchSyncLogs: refetch,
@@ -104,6 +106,18 @@ export default function CalendarSyncHistoryPage() {
             );
           }
 
+          if (isErrorSyncLogs || syncError) {
+            return (
+              <SectionError
+                title="No se pudo cargar el historial"
+                message="El servidor tardó demasiado o hubo un problema de conexión."
+                error={syncError}
+                onRetry={() => refetch()}
+                className="border-none bg-transparent"
+              />
+            );
+          }
+
           if (syncLogs.length === 0) {
             return (
               <div className="text-default-400 flex h-64 items-center justify-center text-sm">
@@ -135,7 +149,7 @@ export default function CalendarSyncHistoryPage() {
                           </div>
                         </div>
 
-                        <div className="flex min-w-[160px] flex-1 flex-wrap items-center gap-2">
+                        <div className="flex min-w-40 flex-1 flex-wrap items-center gap-2">
                           <Chip size="sm" variant="secondary" className="font-mono text-xs">
                             {log.triggerSource}
                           </Chip>

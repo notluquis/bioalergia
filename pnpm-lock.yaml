@@ -172,7 +172,7 @@ importers:
         version: 5.0.1(@casl/ability@6.8.0)(react@19.2.4)
       '@finanzas/db':
         specifier: workspace:*
-        version: link:../../packages/db
+        version: file:packages/db
       '@fullcalendar/core':
         specifier: ^6.1.20
         version: 6.1.20
@@ -1663,6 +1663,9 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
+
+  '@finanzas/db@file:packages/db':
+    resolution: {directory: packages/db, type: directory}
 
   '@formatjs/ecma402-abstract@2.3.6':
     resolution: {integrity: sha512-HJnTFeRM2kVFVr5gr5kH1XP6K0JcJtE7Lzvtr3FS/so5f1kpsqqqxy5JF+FRaO6H2qmcMfAUIox7AJteieRtVw==}
@@ -8602,6 +8605,28 @@ snapshots:
   '@exodus/bytes@1.10.0(@noble/hashes@2.0.1)':
     optionalDependencies:
       '@noble/hashes': 2.0.1
+
+  '@finanzas/db@file:packages/db':
+    dependencies:
+      '@zenstackhq/orm': 3.2.1(pg@8.17.2)(zod@4.3.6)
+      '@zenstackhq/plugin-policy': 3.2.1(kysely@0.28.10)(pg@8.17.2)(zod@4.3.6)
+      '@zenstackhq/server': 3.2.1(hono@4.11.7)(pg@8.17.2)(zod@4.3.6)
+      hono: 4.11.7
+      kysely: 0.28.10
+      pg: 8.17.2
+      pg-types: 4.1.0
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - '@sveltejs/kit'
+      - better-sqlite3
+      - elysia
+      - express
+      - fastify
+      - fastify-plugin
+      - next
+      - nuxt
+      - pg-native
+      - sql.js
 
   '@formatjs/ecma402-abstract@2.3.6':
     dependencies:

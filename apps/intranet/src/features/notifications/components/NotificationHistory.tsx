@@ -1,21 +1,23 @@
 import { Popover, ScrollShadow } from "@heroui/react";
+import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { Bell, CheckCheck, Trash2, X } from "lucide-react";
 import { useState } from "react";
-
 import { Badge } from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-
 import {
+  clearAll,
+  markAllAsRead,
+  markAsRead,
   type NotificationItem as NotificationItemType,
-  useNotificationStore,
+  notificationStore,
+  removeNotification,
 } from "../store/use-notification-store";
 
 export function NotificationHistory() {
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, unreadCount, markAllAsRead, clearAll, removeNotification, markAsRead } =
-    useNotificationStore();
+  const { notifications, unreadCount } = useStore(notificationStore, (state) => state);
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -112,64 +114,65 @@ interface NotificationItemProps {
 
 function NotificationItem({ notification, onRead, onRemove }: Readonly<NotificationItemProps>) {
   return (
-    <li
-      className={cn(
-        "relative group flex gap-3 px-4 py-3 border-b border-default-100 last:border-0 hover:bg-default-50 transition-colors cursor-default",
-        !notification.read && "bg-primary-50/10",
-      )}
-      onMouseEnter={() => !notification.read && onRead(notification.id)}
-      role="article"
-    >
-      <div
+    <li className="border-b border-default-100 last:border-0 hover:bg-default-50 transition-colors">
+      <article
         className={cn(
-          "mt-1 h-2 w-2 rounded-full shrink-0",
-          notification.type === "error"
-            ? "bg-danger"
-            : notification.type === "success"
-              ? "bg-success"
-              : notification.type === "warning"
-                ? "bg-warning"
-                : "bg-primary",
+          "relative group flex gap-3 px-4 py-3 cursor-default",
+          !notification.read && "bg-primary-50/10",
         )}
-      />
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          {notification.title && (
-            <p
-              className={cn(
-                "text-xs font-semibold",
-                !notification.read ? "text-foreground" : "text-default-600",
-              )}
-            >
-              {notification.title}
-            </p>
-          )}
-          <span className="text-[10px] text-default-400 whitespace-nowrap shrink-0">
-            {dayjs(notification.timestamp).format("DD/MM HH:mm")}
-          </span>
-        </div>
-        <p
-          className={cn(
-            "text-xs leading-relaxed mt-0.5",
-            !notification.read ? "text-foreground-800" : "text-default-500",
-          )}
-        >
-          {notification.message}
-        </p>
-      </div>
-
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove(notification.id);
-        }}
-        className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-default-400 hover:text-danger rounded-full"
-        title="Eliminar notificación"
+        onMouseEnter={() => !notification.read && onRead(notification.id)}
       >
-        <X className="h-3 w-3" />
-      </button>
+        <div
+          className={cn(
+            "mt-1 h-2 w-2 rounded-full shrink-0",
+            notification.type === "error"
+              ? "bg-danger"
+              : notification.type === "success"
+                ? "bg-success"
+                : notification.type === "warning"
+                  ? "bg-warning"
+                  : "bg-primary",
+          )}
+        />
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            {notification.title && (
+              <p
+                className={cn(
+                  "text-xs font-semibold",
+                  !notification.read ? "text-foreground" : "text-default-600",
+                )}
+              >
+                {notification.title}
+              </p>
+            )}
+            <span className="text-[10px] text-default-400 whitespace-nowrap shrink-0">
+              {dayjs(notification.timestamp).format("DD/MM HH:mm")}
+            </span>
+          </div>
+          <p
+            className={cn(
+              "text-xs leading-relaxed mt-0.5",
+              !notification.read ? "text-foreground-800" : "text-default-500",
+            )}
+          >
+            {notification.message}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(notification.id);
+          }}
+          className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-default-400 hover:text-danger rounded-full"
+          title="Eliminar notificación"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </article>
     </li>
   );
 }

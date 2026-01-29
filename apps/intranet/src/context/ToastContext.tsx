@@ -19,11 +19,9 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-import { useNotificationStore } from "@/features/notifications/store/use-notification-store";
+import { addNotification } from "@/features/notifications/store/use-notification-store";
 
 export function useToast() {
-  const addNotification = useNotificationStore((state) => state.addNotification);
-
   const showToast = ({ duration, message, title, variant = "info" }: ToastOptions) => {
     // Add to persistent history
     addNotification({

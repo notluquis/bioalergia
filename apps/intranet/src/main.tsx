@@ -10,11 +10,12 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { AuthListener } from "@/features/auth/components/AuthListener";
 import { AppFallback } from "./components/features/AppFallback";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import { GlobalError } from "./components/ui/GlobalError";
 import PageLoader from "./components/ui/PageLoader";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { useAuth } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
 import { signalAppFallback } from "./lib/app-recovery";
@@ -141,18 +142,17 @@ ReactDOM.createRoot(document.querySelector("#root")!).render(
                 : "/api/model",
             }}
           >
-            <AuthProvider>
-              <SettingsProvider>
-                <ToastProvider>
-                  <AbilityProvider>
-                    <InnerApp />
-                    <React.Suspense fallback={null}>
-                      <ReactQueryDevtools initialIsOpen={false} />
-                    </React.Suspense>
-                  </AbilityProvider>
-                </ToastProvider>
-              </SettingsProvider>
-            </AuthProvider>
+            <AuthListener />
+            <SettingsProvider>
+              <ToastProvider>
+                <AbilityProvider>
+                  <InnerApp />
+                  <React.Suspense fallback={null}>
+                    <ReactQueryDevtools initialIsOpen={false} />
+                  </React.Suspense>
+                </AbilityProvider>
+              </ToastProvider>
+            </SettingsProvider>
           </QuerySettingsProvider>
         </QueryClientProvider>
       </ChunkErrorBoundary>
