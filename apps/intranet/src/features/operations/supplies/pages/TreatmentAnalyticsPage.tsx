@@ -106,18 +106,11 @@ export default function TreatmentAnalyticsPage() {
   };
 
   const handleQuickRange = (range: { from: string; to: string }) => {
-    void navigate({
-      search: { ...searchParams, from: range.from, to: range.to },
-    });
-    // Colapsar el selector después de elegir un rango
-    if (hasValidDates) {
-      setShowRangePicker(false);
-    }
+    void navigate({ search: { ...searchParams, from: range.from, to: range.to } });
+    if (hasValidDates) setShowRangePicker(false);
   };
 
-  const handleRefresh = () => {
-    void refetch();
-  };
+  const handleRefresh = () => void refetch();
 
   // Calculate metrics
   const totalRevenue = data?.totals.amountPaid || 0;
@@ -146,28 +139,7 @@ export default function TreatmentAnalyticsPage() {
   }
 
   return (
-    <section className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Analytics de Tratamientos</h1>
-          <p className="text-sm text-default-500 mt-1">
-            Métricas y análisis de tratamientos subcutáneos
-          </p>
-        </div>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={handleRefresh}
-          disabled={isLoading}
-          className="flex items-center gap-2"
-        >
-          <RefreshCcw className="h-4 w-4" />
-          Actualizar
-        </Button>
-      </div>
-
-      {/* Date Range Controls */}
+    <section className="space-y-4">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -186,15 +158,25 @@ export default function TreatmentAnalyticsPage() {
                     {showRangePicker ? (
                       <>
                         <ChevronUp className="h-4 w-4" />
-                        Ocultar selector
+                        Ocultar
                       </>
                     ) : (
                       <>
                         <ChevronDown className="h-4 w-4" />
-                        Cambiar fechas
+                        Cambiar
                       </>
                     )}
                   </button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleRefresh}
+                    disabled={isLoading}
+                    isIconOnly
+                    title="Actualizar datos"
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                  </Button>
                 </div>
               ) : (
                 <p className="text-sm font-medium text-default-700">
@@ -244,7 +226,6 @@ export default function TreatmentAnalyticsPage() {
               <div className="border-t border-dashed border-default-200 pt-4">
                 <p className="text-xs font-semibold text-default-700 mb-3">Rangos rápidos</p>
 
-                {/* Single Day */}
                 <div className="space-y-2.5">
                   <p className="text-xs text-default-500 font-medium">Día específico</p>
                   <div className="flex flex-wrap gap-2">
@@ -278,7 +259,6 @@ export default function TreatmentAnalyticsPage() {
                   </div>
                 </div>
 
-                {/* Weeks */}
                 <div className="space-y-2.5 mt-4">
                   <p className="text-xs text-default-500 font-medium">Semana</p>
                   <div className="flex flex-wrap gap-2">
@@ -312,7 +292,6 @@ export default function TreatmentAnalyticsPage() {
                   </div>
                 </div>
 
-                {/* Months */}
                 <div className="space-y-2.5 mt-4">
                   <p className="text-xs text-default-500 font-medium">Mes</p>
                   <div className="flex flex-wrap gap-2">
@@ -373,9 +352,9 @@ export default function TreatmentAnalyticsPage() {
       ) : (
         <>
           {/* KPI Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
             <Card>
-              <CardContent className="flex flex-row items-center gap-4 p-6">
+              <CardContent className="flex flex-row items-center gap-3 p-4">
                 <div className="p-3 rounded-lg bg-primary/10">
                   <Syringe className="h-6 w-6 text-primary" />
                 </div>
@@ -387,7 +366,7 @@ export default function TreatmentAnalyticsPage() {
             </Card>
 
             <Card>
-              <CardContent className="flex flex-row items-center gap-4 p-6">
+              <CardContent className="flex flex-row items-center gap-3 p-4">
                 <div className="p-3 rounded-lg bg-success/10">
                   <DollarSign className="h-6 w-6 text-success" />
                 </div>
@@ -402,7 +381,7 @@ export default function TreatmentAnalyticsPage() {
             </Card>
 
             <Card>
-              <CardContent className="flex flex-row items-center gap-4 p-6">
+              <CardContent className="flex flex-row items-center gap-3 p-4">
                 <div className="p-3 rounded-lg bg-warning/10">
                   <Package className="h-6 w-6 text-warning" />
                 </div>
@@ -414,7 +393,7 @@ export default function TreatmentAnalyticsPage() {
             </Card>
 
             <Card>
-              <CardContent className="flex flex-row items-center gap-4 p-6">
+              <CardContent className="flex flex-row items-center gap-3 p-4">
                 <div className="p-3 rounded-lg bg-secondary/10">
                   <Home className="h-6 w-6 text-secondary" />
                 </div>
@@ -428,12 +407,12 @@ export default function TreatmentAnalyticsPage() {
           </div>
 
           {/* Treatment Stage Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Card>
               <CardHeader>
-                <p className="text-sm font-semibold">Etapa de Tratamiento</p>
+                <p className="text-xs font-semibold">Etapa de Tratamiento</p>
               </CardHeader>
-              <CardContent className="gap-3">
+              <CardContent className="gap-2 p-5">
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Inducción</span>
                   <span className="text-sm font-semibold">
@@ -475,9 +454,9 @@ export default function TreatmentAnalyticsPage() {
 
             <Card>
               <CardHeader>
-                <p className="text-sm font-semibold">Ubicación de Entrega</p>
+                <p className="text-xs font-semibold">Ubicación de Entrega</p>
               </CardHeader>
-              <CardContent className="gap-3">
+              <CardContent className="gap-2 p-5">
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Domicilio</span>
                   <span className="text-sm font-semibold">
@@ -510,7 +489,7 @@ export default function TreatmentAnalyticsPage() {
           {/* Period Selector */}
           <Card>
             <CardHeader>
-              <div className="flex gap-2 border-b border-divider pb-2">
+              <div className="flex gap-1.5 border-b border-divider pb-2">
                 <button
                   type="button"
                   className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
