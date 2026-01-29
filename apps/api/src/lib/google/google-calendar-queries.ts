@@ -98,7 +98,8 @@ export type CalendarEventDetail = {
   amountExpected?: number | null;
   amountPaid?: number | null;
   attended?: boolean | null;
-  dosage?: string | null;
+  dosageValue?: number | null;
+  dosageUnit?: string | null;
   treatmentStage?: string | null;
   controlIncluded?: boolean | null;
   isDomicilio?: boolean | null;
@@ -530,7 +531,8 @@ export async function getCalendarEventsByDate(
       "e.amountExpected as amountExpected",
       "e.amountPaid as amountPaid",
       "e.attended",
-      "e.dosage",
+      "e.dosageValue as dosageValue",
+      "e.dosageUnit as dosageUnit",
       "e.treatmentStage as treatmentStage",
       "e.controlIncluded as controlIncluded",
       sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("eventDateString"), // helper for grouping: use raw SQL names
@@ -581,7 +583,8 @@ export async function getCalendarEventsByDate(
     amountExpected: number | string | null;
     amountPaid: number | string | null;
     attended: boolean | null;
-    dosage: string | null;
+    dosageValue: number | null;
+    dosageUnit: string | null;
     treatmentStage: string | null;
     controlIncluded: boolean | null;
     isDomicilio: boolean | null;
@@ -627,7 +630,8 @@ export async function getCalendarEventsByDate(
       amountExpected: Number(ev.amountExpected || 0),
       amountPaid: Number(ev.amountPaid || 0),
       attended: ev.attended,
-      dosage: ev.dosage,
+      dosageValue: ev.dosageValue,
+      dosageUnit: ev.dosageUnit,
       treatmentStage: ev.treatmentStage,
       controlIncluded: ev.controlIncluded,
       isDomicilio: ev.isDomicilio,
