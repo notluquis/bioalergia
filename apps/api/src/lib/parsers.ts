@@ -41,7 +41,8 @@ export type ParsedCalendarMetadata = {
   amountExpected: number | null;
   amountPaid: number | null;
   attended: boolean | null;
-  dosage: string | null;
+  dosageValue: number | null;
+  dosageUnit: string | null;
   treatmentStage: string | null;
   controlIncluded: boolean;
   isDomicilio: boolean;
@@ -513,7 +514,7 @@ function detectAttendance(summary: string, description: string): boolean | null 
   return matchesAny(text, ATTENDED_PATTERNS) ? true : null;
 }
 
-function extractDosage(summary: string, description: string): string | null {
+function extractDosage(summary: string, description: string): { value: number; unit: string } | null {
   const text = `${summary} ${description}`;
 
   // Try explicit dosage patterns (0.5 ml, 1 cc, etc.)
@@ -527,28 +528,30 @@ function extractDosage(summary: string, description: string): string | null {
       .trim()
       .toLowerCase();
 
-    if (!valueRaw) return match[0].trim();
+    if (!valueRaw) continue;
 
     const value = Number.parseFloat(valueRaw);
-    if (!Number.isFinite(value)) return `${match[1]} ${unit}`.trim();
+    if (!Number.isFinite(value)) continue;
 
-    const formatter = new Intl.NumberFormat("es-CL", {
-      minimumFractionDigits: value % 1 === 0 ? 0 : 1,
-      maximumFractionDigits: 2,
-    });
-    return `${formatter.format(value)} ${unit}`;
+    return { value, unit: unit || "ml" };
   }
 
   // Pattern for clustoid+dosage format without space: "clustoid0,3", "clustoid0,1"
   const clustoidDosageMatch = CLUSTOID_DOSAGE_PATTERN.exec(text);
   if (clustoidDosageMatch) {
-    return `${clustoidDosageMatch[1].replace(".", ",")} ml`;
+    const value = Number.parseFloat(clustoidDosageMatch[1].replace(",", "."));
+    if (Number.isFinite(value)) {
+      return { value, unit: "ml" };
+    }
   }
 
   // Fallback: standalone decimal (e.g. "0,5") implies "ml" in this context
   const decimalMatch = DECIMAL_STANDALONE_PATTERN.exec(text);
   if (decimalMatch) {
-    return `${decimalMatch[1].replace(".", ",")} ml`;
+    const value = Number.parseFloat(decimalMatch[1].replace(",", "."));
+    if (Number.isFinite(value)) {
+      return { value, unit: "ml" };
+    }
   }
 
   // NOTE: We do NOT assume a default dosage from patterns anymore.
@@ -600,7 +603,7 @@ export function parseCalendarMetadata(input: {
   let finalTreatmentStage = isSubcut ? treatmentStage : null;
   if (isSubcut && dosage && treatmentStage === null) {
     // Only apply ml-based rule if no explicit pattern matched
-    const dosageValue = parseDosageToMl(dosage);
+    const dosageValue = dosage.value;
     if (dosageValue !== null) {
       // Business rule: < 0.5 ml = Inducción, >= 0.5 ml = Mantención
       // This is a FALLBACK only - explicit patterns like "3era dosis" override this
@@ -613,7 +616,8 @@ export function parseCalendarMetadata(input: {
     amountExpected: amounts.amountExpected,
     amountPaid: amounts.amountPaid,
     attended,
-    dosage: isSubcut ? dosage : null,
+    dosageValue: isSubcut && dosage ? dosage.value : null,
+    dosageUnit: isSubcut && dosage ? dosage.unit : null,
     treatmentStage: finalTreatmentStage,
     controlIncluded,
     isDomicilio,

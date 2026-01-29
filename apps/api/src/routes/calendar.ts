@@ -367,7 +367,7 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
     category: query.missingCategory === "true",
     amountExpected: query.missingAmount === "true",
     attended: query.missingAttended === "true",
-    dosage: query.missingDosage === "true",
+    dosageValue: query.missingDosage === "true",
     treatmentStage: query.missingTreatmentStage === "true",
     filterMode: filterMode as "AND" | "OR",
   };
@@ -403,7 +403,8 @@ calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
       amountExpected: row.amountExpected ?? null,
       amountPaid: row.amountPaid ?? null,
       attended: row.attended ?? null,
-      dosage: row.dosage ?? null,
+      dosageValue: row.dosageValue ?? null,
+      dosageUnit: row.dosageUnit ?? null,
       treatmentStage: row.treatmentStage ?? null,
     })),
   });
@@ -446,7 +447,8 @@ calendarRoutes.post("/events/classify", requireAuth, async (c) => {
     amountExpected: payload.amountExpected ?? null,
     amountPaid: payload.amountPaid ?? null,
     attended: payload.attended ?? null,
-    dosage: payload.dosage ?? null,
+    dosageValue: payload.dosageValue ?? null,
+    dosageUnit: payload.dosageUnit ?? null,
     treatmentStage: payload.treatmentStage ?? null,
     controlIncluded: payload.controlIncluded ?? null,
     isDomicilio: payload.isDomicilio ?? null,
@@ -764,7 +766,7 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
       OR: [
         { category: null },
         { category: "" },
-        { dosage: null },
+        { dosageValue: null },
         { treatmentStage: null },
         { attended: null },
         { amountExpected: null },
@@ -776,7 +778,8 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
       summary: true,
       description: true,
       category: true,
-      dosage: true,
+      dosageValue: true,
+      dosageUnit: true,
       treatmentStage: true,
       attended: true,
       amountExpected: true,
@@ -933,7 +936,8 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
         id: number;
         data: {
           category: string | null;
-          dosage: string | null;
+          dosageValue: number | null;
+          dosageUnit: string | null;
           treatmentStage: string | null;
           attended: boolean | null;
           amountExpected: number | null;
@@ -946,7 +950,8 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
       const updates: EventUpdate[] = [];
       const fieldCounts = {
         category: 0,
-        dosage: 0,
+        dosageValue: 0,
+        dosageUnit: 0,
         treatmentStage: 0,
         attended: 0,
         amountExpected: 0,
@@ -964,7 +969,8 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
 
         const updateData: EventUpdate["data"] = {
           category: metadata.category,
-          dosage: metadata.dosage,
+          dosageValue: metadata.dosageValue,
+          dosageUnit: metadata.dosageUnit,
           treatmentStage: metadata.treatmentStage,
           attended: metadata.attended,
           amountExpected: metadata.amountExpected,
@@ -974,7 +980,8 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
         };
 
         if (metadata.category) fieldCounts.category++;
-        if (metadata.dosage) fieldCounts.dosage++;
+        if (metadata.dosageValue !== null) fieldCounts.dosageValue++;
+        if (metadata.dosageUnit) fieldCounts.dosageUnit++;
         if (metadata.treatmentStage) fieldCounts.treatmentStage++;
         if (metadata.attended !== null) fieldCounts.attended++;
         if (metadata.amountExpected !== null) fieldCounts.amountExpected++;

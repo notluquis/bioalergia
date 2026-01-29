@@ -176,7 +176,7 @@ type MissingFieldFilter = {
   amountExpected?: boolean;
   amountPaid?: boolean;
   attended?: boolean;
-  dosage?: boolean;
+  dosageValue?: boolean;
   treatmentStage?: boolean;
   /** Filter mode: AND requires all conditions, OR matches any (default: OR) */
   filterMode?: "AND" | "OR";
@@ -216,10 +216,10 @@ export async function listUnclassifiedCalendarEvents(
       conditions.push({ attended: null, startDateTime: { lte: new Date() } });
     }
     // For dosage: events that are "Tratamiento subcutáneo" but missing dosage
-    if (filters.dosage) {
+    if (filters.dosageValue) {
       conditions.push({
         category: "Tratamiento subcutáneo",
-        OR: [{ dosage: null }, { dosage: "" }],
+        dosageValue: null,
       });
     }
     // For treatmentStage: events that are "Tratamiento subcutáneo" but missing stage
@@ -317,7 +317,8 @@ export async function updateCalendarEventClassification(
     amountExpected?: number | null;
     amountPaid?: number | null;
     attended?: boolean | null;
-    dosage?: string | null;
+    dosageValue?: number | null;
+    dosageUnit?: string | null;
     treatmentStage?: string | null;
     controlIncluded?: boolean | null;
     isDomicilio?: boolean | null;
@@ -345,7 +346,8 @@ export async function updateCalendarEventClassification(
       amountExpected: data.amountExpected,
       amountPaid: data.amountPaid,
       attended: data.attended,
-      dosage: data.dosage,
+      dosageValue: data.dosageValue,
+      dosageUnit: data.dosageUnit,
       treatmentStage: data.treatmentStage,
       controlIncluded: data.controlIncluded ?? undefined,
       isDomicilio: data.isDomicilio ?? undefined,
@@ -387,6 +389,8 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
     hangoutLink: data.hangoutLink,
     category: data.category,
     amountPaid: data.amountPaid || 0,
+    dosageValue: data.dosageValue,
+    dosageUnit: data.dosageUnit,
     controlIncluded: data.controlIncluded ?? false,
     isDomicilio: data.isDomicilio || false,
     lastSyncedAt: new Date(),
