@@ -20,6 +20,8 @@ interface InputBaseProps {
   placeholder?: string; // Explicitly added to base props
   rightElement?: React.ReactNode;
   size?: "xs" | "sm" | "md" | "lg";
+  startContent?: React.ReactNode;
+  endContent?: React.ReactNode;
   type?: string;
 }
 

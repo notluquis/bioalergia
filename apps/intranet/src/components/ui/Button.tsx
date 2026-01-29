@@ -26,6 +26,9 @@ export interface ButtonProps
   title?: string;
   size?: "xs" | "sm" | "md" | "lg";
   as?: React.ElementType;
+  startContent?: React.ReactNode;
+  endContent?: React.ReactNode;
+  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger";
 }
 
 const mapVariantToHero = (

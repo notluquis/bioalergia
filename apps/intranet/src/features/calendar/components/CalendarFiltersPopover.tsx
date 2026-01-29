@@ -2,7 +2,6 @@ import { Popover } from "@heroui/react";
 import { Filter } from "lucide-react";
 
 import Button from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 
 import { CalendarFilterPanel, type CalendarFilterPanelProps } from "./CalendarFilterPanel";
 
@@ -26,14 +25,13 @@ export function CalendarFiltersPopover({
           <span className="hidden sm:inline">{isOpen ? "Cerrar" : "Filtros"}</span>
         </Button>
       </Popover.Trigger>
-      <Popover.Content className="z-50 max-h-[80svh] overflow-y-auto p-0" offset={8}>
-        <Popover.Dialog className="p-0">
-          <div className={panelWidthClassName}>
-            <Card className="rounded-xl border border-default-200/70 bg-content1/90 shadow-lg backdrop-blur">
-              <CalendarFilterPanel {...panelProps} variant="plain" />
-            </Card>
+      <Popover.Content className="w-80 p-0" offset={8}>
+        <div className="bg-content1 rounded-xl shadow-lg ring-1 ring-black/5">
+          <div className="border-default-100 flex items-center justify-between border-b px-4 py-3">
+            <h3 className="text-small font-semibold">Filtrar Vistas</h3>
           </div>
-        </Popover.Dialog>
+          <CalendarFilterPanel {...panelProps} variant="plain" />
+        </div>
       </Popover.Content>
     </Popover>
   );
