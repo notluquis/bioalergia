@@ -92,3 +92,9 @@ yarn.lock
 apps/api/assets/signatures/
 .vscode/*
 packages/db/zenstack/~schema.prisma
+
+# Local parser test files (ignored so local debugging tests don't get committed)
+apps/api/src/lib/parsers.test.ts
+apps/api/src/lib/parsers.case_test.ts
+# Generic pattern to ignore parser test variants
+**/src/lib/parsers*.test.ts

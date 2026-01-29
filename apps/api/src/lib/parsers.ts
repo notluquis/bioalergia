@@ -62,6 +62,7 @@ const SUBCUT_PATTERNS = [
   /cluxin/i, // Cluxin
   /oral[\s-]?tec/i, // ORAL-TEC
   /\bvacc?\b/i, // vac, vacc
+  /\b[áa]caros?\b/i, // ácaros / acaros (mite vaccine)
   /\bvac\.?\s*[aá]caros?\b/i, // "vac acaros", "vac. acaros", "confirmavac acaros"
   /vacuna/i, // VACUNA
   /\bsubcut[áa]ne[oa]/i, // subcutáneo
@@ -424,7 +425,7 @@ function extractAmounts(summary: string, description: string) {
   if (amountExpected == null) {
     // Note: this must match the robust SUBCUT_PATTERNS to catch typos like "clusitoid"
     const keywordPattern =
-      /(?:cl[au]s[i]?t[oau]?id[eo]?|cluxin|alxoid|oral[-\s]?tec|vacuna)\s+(\d{2,3})\b/gi;
+      /(?:cl[au]s[i]?t[oau]?id[eo]?|cluxin|alxoid|oral[-\s]?tec|vacuna|[aá]caros?)\s+(\d{2,3})\b/gi;
     let kwMatch: RegExpExecArray | null;
     while ((kwMatch = keywordPattern.exec(text)) !== null) {
       const amount = normalizeAmountRaw(kwMatch[1]);
