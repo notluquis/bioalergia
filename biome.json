@@ -31,7 +31,12 @@
       "complexity": {
         "recommended": true,
         "noExcessiveCognitiveComplexity": "warn",
-        "noExcessiveLinesPerFunction": "warn",
+        "noExcessiveLinesPerFunction": {
+          "level": "warn",
+          "options": {
+            "maxLines": 200
+          }
+        },
         "noExcessiveNestedTestSuites": "warn",
         "noUselessCatch": "error",
         "noUselessConstructor": "error",
