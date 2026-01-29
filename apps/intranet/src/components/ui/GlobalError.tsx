@@ -51,12 +51,7 @@ export class GlobalError extends Component<Props, State> {
     if (this.state.hasError) {
       const isDeployIssue = isDeployError(this.state.error);
 
-      // Si es error de deploy, mostrar UI mínima mientras recarga
-      if (isDeployIssue || this.state.isReloading) {
-        return <></>;
-      }
-
-      // Error genérico - mostrar UI completa
+      // Error genérico o de deploy - mostrar UI con opción de recarga
       return (
         <div className="bg-background flex min-h-screen flex-col items-center justify-center p-4 text-center">
           <div className="max-w-md space-y-6">
@@ -79,14 +74,17 @@ export class GlobalError extends Component<Props, State> {
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-foreground text-3xl font-bold">Algo salió mal</h1>
+              <h1 className="text-foreground text-3xl font-bold">
+                {isDeployIssue ? "Nueva versión disponible" : "Algo salió mal"}
+              </h1>
               <p className="text-default-500">
-                Ha ocurrido un error inesperado. Hemos registrado el problema y nuestro equipo lo
-                revisará.
+                {isDeployIssue
+                  ? "Hay una nueva versión de la aplicación. Por favor, recarga la página para actualizar."
+                  : "Ha ocurrido un error inesperado. Hemos registrado el problema y nuestro equipo lo revisará."}
               </p>
             </div>
 
-            {this.state.error && (
+            {!isDeployIssue && this.state.error && (
               <div className="bg-default-50 rounded-xl p-4 text-left">
                 <p className="text-danger font-mono text-xs break-all">
                   {this.state.error.toString()}
@@ -95,10 +93,18 @@ export class GlobalError extends Component<Props, State> {
             )}
 
             <div className="flex justify-center gap-4">
-              <Button onClick={() => this.handleAutoReload()}>Recargar página</Button>
-              <Button onClick={() => (globalThis.location.href = "/")} variant="secondary">
-                Ir al inicio
+              <Button
+                onClick={() => this.handleAutoReload()}
+                isLoading={this.state.isReloading}
+                variant="primary"
+              >
+                {this.state.isReloading ? "Recargando..." : "Recargar página"}
               </Button>
+              {!isDeployIssue && (
+                <Button onClick={() => (globalThis.location.href = "/")} variant="secondary">
+                  Ir al inicio
+                </Button>
+              )}
             </div>
           </div>
         </div>
