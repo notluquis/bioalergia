@@ -164,8 +164,12 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
 
   if (filters.categories && filters.categories.length > 0) {
     const hasNull =
-      filters.categories.includes("null") || filters.categories.includes("Uncategorized");
-    const validCategories = filters.categories.filter((c) => c !== "null" && c !== "Uncategorized");
+      filters.categories.includes("null") ||
+      filters.categories.includes("Uncategorized") ||
+      filters.categories.includes("__NULL_CATEGORY__");
+    const validCategories = filters.categories.filter(
+      (c) => c !== "null" && c !== "Uncategorized" && c !== "__NULL_CATEGORY__",
+    );
 
     if (hasNull && validCategories.length > 0) {
       // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
