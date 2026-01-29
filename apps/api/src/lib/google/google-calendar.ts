@@ -38,7 +38,8 @@ export type CalendarEventRecord = {
   amountExpected?: number | null;
   amountPaid?: number | null;
   attended?: boolean | null;
-  dosage?: string | null;
+  dosageValue?: number | null;
+  dosageUnit?: string | null;
   treatmentStage?: string | null;
   controlIncluded?: boolean | null;
   isDomicilio?: boolean | null;
@@ -288,7 +289,8 @@ async function fetchCalendarEventsForId(
         amountExpected,
         amountPaid,
         attended: metadata.attended,
-        dosage: metadata.dosage,
+        dosageValue: metadata.dosageValue,
+        dosageUnit: metadata.dosageUnit,
         treatmentStage: metadata.treatmentStage,
         controlIncluded: metadata.controlIncluded,
         isDomicilio: metadata.isDomicilio,

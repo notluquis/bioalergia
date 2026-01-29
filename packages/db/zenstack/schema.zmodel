@@ -723,7 +723,8 @@ model Event {
   amountExpected  Int?           @map("amount_expected")
   amountPaid      Int?           @map("amount_paid")
   attended        Boolean?
-  dosage          String?
+  dosageValue     Float?         @map("dosage_value")
+  dosageUnit      String?        @map("dosage_unit")
   treatmentStage  String?        @map("treatment_stage")
   controlIncluded Boolean        @default(false) @map("control_included")
   isDomicilio     Boolean        @default(false) @map("is_domicilio")

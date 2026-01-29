@@ -41,11 +41,41 @@ export type ParsedCalendarMetadata = {
   amountExpected: number | null;
   amountPaid: number | null;
   attended: boolean | null;
-  dosage: string | null;
+  dosageValue: number | null;
+  dosageUnit: string | null;
   treatmentStage: string | null;
   controlIncluded: boolean;
   isDomicilio: boolean;
 };
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Normalize a decimal number string that may contain either comma or dot as separator.
+ * Converts "0,5" or "0.5" to a JavaScript number (0.5).
+ * Returns null if the string cannot be parsed as a valid number.
+ */
+export function normalizeDecimalNumber(input: string): number | null {
+  if (!input) return null;
+  // Replace comma with dot for parsing
+  const normalized = input.replace(",", ".");
+  const value = Number.parseFloat(normalized);
+  return Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Format a number as a locale-aware string (uses es-CL for comma separator).
+ * For dosages, always uses at least 1 decimal place.
+ */
+export function formatDosageNumber(value: number): string {
+  const formatter = new Intl.NumberFormat("es-CL", {
+    minimumFractionDigits: value % 1 === 0 ? 1 : 1,
+    maximumFractionDigits: 2,
+  });
+  return formatter.format(value);
+}
 
 // ============================================================================
 // PATTERN DEFINITIONS (by category, ordered by priority)
@@ -519,7 +549,14 @@ function detectAttendance(summary: string, description: string): boolean | null 
   return matchesAny(text, ATTENDED_PATTERNS) ? true : null;
 }
 
-function extractDosage(summary: string, description: string): string | null {
+/**
+ * Extract dosage from text and return separated value and unit.
+ * Returns {value: number, unit: string} or null if not found.
+ */
+function extractDosage(
+  summary: string,
+  description: string,
+): { value: number; unit: string } | null {
   const text = `${summary} ${description}`;
 
   // Try explicit dosage patterns (0.5 ml, 1 cc, etc.)
@@ -527,34 +564,37 @@ function extractDosage(summary: string, description: string): string | null {
     const match = pattern.exec(text);
     if (!match) continue;
 
-    const valueRaw = match[1]?.replace(",", ".") ?? "";
+    const valueRaw = match[1] ?? "";
     const unit = match[0]
       .replace(match[1] ?? "", "")
       .trim()
       .toLowerCase();
 
-    if (!valueRaw) return match[0].trim();
+    if (!valueRaw) continue;
 
-    const value = Number.parseFloat(valueRaw);
-    if (!Number.isFinite(value)) return `${match[1]} ${unit}`.trim();
+    // Normalize decimal number (handles both 0.5 and 0,5)
+    const value = normalizeDecimalNumber(valueRaw);
+    if (value === null) continue;
 
-    const formatter = new Intl.NumberFormat("es-CL", {
-      minimumFractionDigits: value % 1 === 0 ? 0 : 1,
-      maximumFractionDigits: 2,
-    });
-    return `${formatter.format(value)} ${unit}`;
+    return { value, unit: unit || "ml" };
   }
 
   // Pattern for clustoid+dosage format without space: "clustoid0,3", "clustoid0,1"
   const clustoidDosageMatch = /clust(?:oid)?\s*(0[.,]\d+)/i.exec(text);
   if (clustoidDosageMatch) {
-    return `${clustoidDosageMatch[1].replace(".", ",")} ml`;
+    const value = normalizeDecimalNumber(clustoidDosageMatch[1]);
+    if (value !== null) {
+      return { value, unit: "ml" };
+    }
   }
 
   // Fallback: standalone decimal (e.g. "0,5") implies "ml" in this context
   const decimalMatch = /\b(0[.,]\d+)\b/.exec(text);
   if (decimalMatch) {
-    return `${decimalMatch[1].replace(".", ",")} ml`;
+    const value = normalizeDecimalNumber(decimalMatch[1]);
+    if (value !== null) {
+      return { value, unit: "ml" };
+    }
   }
 
   // NOTE: We do NOT assume a default dosage from patterns anymore.
@@ -582,7 +622,6 @@ function detectTreatmentStage(summary: string, description: string): string | nu
 // MAIN EXPORT
 // ============================================================================
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy parser logic
 export function parseCalendarMetadata(input: {
   summary?: string | null;
   description?: string | null;
@@ -593,7 +632,7 @@ export function parseCalendarMetadata(input: {
   const amounts = refineAmounts(rawAmounts, summary, description);
   const category = classifyCategory(summary, description);
   const attended = detectAttendance(summary, description);
-  const dosage = extractDosage(summary, description);
+  const dosageData = extractDosage(summary, description);
   const treatmentStage = detectTreatmentStage(summary, description);
   const controlIncluded = matchesAny(`${summary} ${description}`, CONTROL_PATTERNS);
   const isDomicilio = matchesAny(`${summary} ${description}`, DOMICILIO_PATTERNS);
@@ -605,41 +644,36 @@ export function parseCalendarMetadata(input: {
   // 1. Pattern-based detection takes priority (e.g., "3era dosis" = Inducción even if 0.5ml)
   // 2. Only use ml-based inference as fallback when no explicit pattern matched
   let finalTreatmentStage = isSubcut ? treatmentStage : null;
-  if (isSubcut && dosage && treatmentStage === null) {
+  if (isSubcut && dosageData && treatmentStage === null) {
     // Only apply ml-based rule if no explicit pattern matched
-    const dosageValue = parseDosageToMl(dosage);
-    if (dosageValue !== null) {
-      // Business rule: < 0.5 ml = Inducción, >= 0.5 ml = Mantención
-      // This is a FALLBACK only - explicit patterns like "3era dosis" override this
-      finalTreatmentStage = dosageValue < 0.5 ? "Inducción" : "Mantención";
-    }
+    const dosageValue = dosageData.value;
+    // Business rule: < 0.5 ml = Inducción, >= 0.5 ml = Mantención
+    // This is a FALLBACK only - explicit patterns like "3era dosis" override this
+    finalTreatmentStage = dosageValue < 0.5 ? "Inducción" : "Mantención";
   }
 
   // Infer dosage from treatment stage if not explicitly found
-  let finalDosage = dosage;
-  if (isSubcut && finalDosage === null && finalTreatmentStage !== null) {
+  let finalDosageValue = dosageData?.value || null;
+  let finalDosageUnit = dosageData?.unit || null;
+  if (isSubcut && finalDosageValue === null && finalTreatmentStage !== null) {
     if (finalTreatmentStage === "Mantención") {
       // Maintenance dose is always 0.5 ml
-      finalDosage = "0,5 ml";
+      finalDosageValue = 0.5;
+      finalDosageUnit = "ml";
     } else if (finalTreatmentStage === "Inducción") {
       // For induction, try to detect dose number (1st, 2nd, 3rd, etc.)
       const text = `${summary} ${description}`;
       const doseNumber = detectDoseNumber(text);
       if (doseNumber !== null) {
         // Dose progression: 1st=0.15ml, 2nd=0.3ml, 3rd/4th/5th=0.5ml
-        let doseValue: number;
         if (doseNumber === 1) {
-          doseValue = 0.15;
+          finalDosageValue = 0.15;
         } else if (doseNumber === 2) {
-          doseValue = 0.3;
+          finalDosageValue = 0.3;
         } else {
-          doseValue = 0.5; // 3rd, 4th, 5th doses
+          finalDosageValue = 0.5; // 3rd, 4th, 5th doses
         }
-        const formatter = new Intl.NumberFormat("es-CL", {
-          minimumFractionDigits: doseValue === 0.15 ? 2 : 1,
-          maximumFractionDigits: 2,
-        });
-        finalDosage = `${formatter.format(doseValue)} ml`;
+        finalDosageUnit = "ml";
       }
     }
   }
@@ -649,7 +683,8 @@ export function parseCalendarMetadata(input: {
     amountExpected: amounts.amountExpected,
     amountPaid: amounts.amountPaid,
     attended,
-    dosage: finalDosage,
+    dosageValue: isSubcut ? finalDosageValue : null,
+    dosageUnit: isSubcut ? finalDosageUnit : null,
     treatmentStage: finalTreatmentStage,
     controlIncluded,
     isDomicilio,
@@ -679,21 +714,4 @@ function detectDoseNumber(text: string): number | null {
   if (/quinta\s*dosis\b/i.test(text)) return 5;
 
   return null;
-}
-
-/**
- * Parse a dosage string like "0,3 ml" or "0.5 cc" into a numeric value in ml.
- * Returns null if parsing fails.
- */
-function parseDosageToMl(dosage: string): number | null {
-  // Extract numeric value and unit from strings like "0,3 ml", "0.5 cc", "1 mg"
-  const match = dosage.match(/^([\d.,]+)\s*(ml|cc|mg)?/i);
-  if (!match) return null;
-
-  const valueStr = match[1].replace(",", ".");
-  const value = Number.parseFloat(valueStr);
-  if (!Number.isFinite(value)) return null;
-
-  // For simplicity, treat cc as equivalent to ml. mg would need conversion but we assume ml for now.
-  return value;
 }

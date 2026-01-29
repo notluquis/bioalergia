@@ -729,16 +729,11 @@ export async function getTreatmentAnalytics(
     baseQuery = baseQuery.where("c.googleId", "in", filters.calendarIds);
   }
 
-  // SQL expression for extracting dosage as number
+  // SQL expression for extracting dosage value as number (in ml)
+  // Now simply sums the dosage_value column directly
   const dosageSql = sql<number>`
     COALESCE(
-      SUM(
-        CASE 
-          WHEN e.dosage IS NOT NULL AND e.dosage ~ '^[0-9.]+' 
-          THEN CAST(REGEXP_REPLACE(e.dosage, '[^0-9.]', '', 'g') AS NUMERIC)
-          ELSE 0
-        END
-      ),
+      SUM(CASE WHEN e.dosage_value IS NOT NULL THEN e.dosage_value ELSE 0 END),
       0
     )
   `;
