@@ -191,17 +191,9 @@ function CalendarHeatmapPage() {
     // If categories selected, sum up their available counts
     if (filters.categories.length > 0) {
       const selected = new Set(filters.categories);
-      // DEBUG: Inspect why matching fails
-      console.warn("[HeatmapDebug] Categories:", {
-        selected: [...selected],
-        available: summary.available.categories.map((c) => ({ cat: c.category, total: c.total })),
-      });
-
       previewCount = summary.available.categories
         .filter((c) => c.category && selected.has(c.category))
         .reduce((sum, c) => sum + c.total, 0);
-
-      console.warn("[HeatmapDebug] Result:", previewCount);
     } else {
       // If no categories selected (Show All)
       const totalAvailable = summary.available.categories.reduce((sum, c) => sum + c.total, 0);
