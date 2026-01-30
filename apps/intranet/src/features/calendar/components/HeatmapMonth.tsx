@@ -256,7 +256,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
             return (
               <Popover key={cell.key}>
                 <Popover.Trigger>{cellButton}</Popover.Trigger>
-                <Popover.Content className="z-50 max-w-[min(90vw,260px)] p-0" offset={8}>
+                <Popover.Content className="max-w-[min(90vw,260px)] p-0" offset={8}>
                   <Popover.Dialog className="p-0">{cellDetails}</Popover.Dialog>
                 </Popover.Content>
               </Popover>

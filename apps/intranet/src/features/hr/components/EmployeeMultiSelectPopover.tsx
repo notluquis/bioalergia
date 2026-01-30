@@ -73,7 +73,7 @@ export function EmployeeMultiSelectPopover({
         </Popover.Trigger>
       </div>
       <Popover.Content
-        className="border-default-200 bg-background z-50 max-h-[70svh] w-[min(92vw,420px)] overflow-hidden rounded-xl border p-0 shadow-xl"
+        className="border-default-200 bg-background max-h-[70svh] w-[min(92vw,420px)] overflow-hidden rounded-xl border p-0 shadow-xl"
         offset={8}
         placement="bottom"
       >
