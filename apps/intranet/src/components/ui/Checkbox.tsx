@@ -1,30 +1,51 @@
 /**
- * Checkbox Component - Native HTML with HeroUI-inspired styling
- *
- * Using native HTML checkbox for full API compatibility.
+ * Checkbox Component - Adapter for HeroUI Checkbox
  */
+import { Checkbox as HeroCheckbox } from "@heroui/react";
 import type React from "react";
 
 import { cn } from "@/lib/utils";
 
 interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: React.ReactNode;
+  onCheckedChange?: (checked: boolean) => void;
 }
 
-export default function Checkbox({ className, label, ...props }: Readonly<CheckboxProps>) {
+export default function Checkbox({
+  className,
+  label,
+  checked,
+  onChange,
+  onCheckedChange,
+  value,
+  ...props
+}: Readonly<CheckboxProps>) {
   return (
-    <label
-      className={cn(
-        "text-default-600 flex cursor-pointer items-center gap-3 text-xs font-medium",
-        className,
-      )}
+    // @ts-expect-error - HeroUI v3 beta typing mismatch with InputHTMLAttributes
+    <HeroCheckbox
+      className={cn("gap-3", className)}
+      isSelected={checked}
+      value={value as string}
+      // @ts-expect-error - HeroUI v3 beta typing issue: onChange receives boolean
+      onChange={(isSelected: boolean) => {
+        // Support both onCheckedChange (Shadcn-like) and onChange (Native-like)
+        onCheckedChange?.(isSelected);
+
+        // Mock native event for onChange if provided
+        if (onChange) {
+          const event = {
+            target: {
+              checked: isSelected,
+              type: "checkbox",
+            },
+            type: "change",
+          } as unknown as React.ChangeEvent<HTMLInputElement>;
+          onChange(event);
+        }
+      }}
+      {...props}
     >
-      <input
-        className="checkbox checkbox-primary checkbox-sm rounded-md"
-        type="checkbox"
-        {...props}
-      />
-      {label && <span>{label}</span>}
-    </label>
+      {label}
+    </HeroCheckbox>
   );
 }

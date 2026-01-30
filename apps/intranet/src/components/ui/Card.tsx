@@ -50,9 +50,7 @@ const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLPara
 );
 CardDescription.displayName = "CardDescription";
 
-// Card Content -> Maps to HeroCard.Content (based on examples) or Card.Body.
-// Examples show Card.Content, but generic HeroUI pattern is CardBody.
-// We'll trust the checked examples: Card.Content.
+// Card Content -> Maps to Card.Content (HeroUI v3)
 const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <HeroCard.Content className={cn("p-6 pt-0", className)} ref={ref} {...props} />
