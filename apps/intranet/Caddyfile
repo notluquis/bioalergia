@@ -35,7 +35,6 @@
 	handle /api/* {
 		reverse_proxy https://api.bioalergia.cl {
 			header_up Host {upstream_hostport}
-			header_up X-Forwarded-Host {host}
 			header_up X-Real-IP {remote_host}
 		}
 	}
@@ -75,7 +74,7 @@
 			request>headers>Sec-Fetch-Dest delete
 			request>headers>Sec-Fetch-Mode delete
 			request>headers>Sec-Fetch-Site delete
-			
+
 			# Cloudflare geolocation headers (not essential for debugging)
 			request>headers>Cf-Iplatitude delete
 			request>headers>Cf-Iplongitude delete
@@ -87,15 +86,15 @@
 			request>headers>Cf-Region-Code delete
 			request>headers>Cf-Timezone delete
 			request>headers>Cf-Visitor delete
-			
+
 			# Cloudflare certificate validation headers
 			request>headers>Cf-Cert-Presented delete
 			request>headers>Cf-Cert-Revoked delete
 			request>headers>Cf-Cert-Verified delete
-			
+
 			# Railway edge headers (X-Railway-Request-Id is kept in response)
 			request>headers>X-Railway-Edge delete
-			
+
 			# Response headers: remove CDN/proxy noise
 			resp_headers>Cf-Ray delete
 			resp_headers>Cf-Cache-Status delete
@@ -103,7 +102,7 @@
 			resp_headers>Report-To delete
 			resp_headers>Speculation-Rules delete
 			resp_headers>Server delete
-			
+
 			wrap json
 		}
 	}

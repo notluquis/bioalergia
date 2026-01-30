@@ -28,21 +28,23 @@ export function NotificationHistory() {
   return (
     <Popover isOpen={isOpen} onOpenChange={handleOpenChange}>
       <Popover.Trigger>
-        <div className="inline-block">
+        <div className="inline-block relative">
           <Button
             isIconOnly
             variant="ghost"
             aria-label="Notificaciones"
-            className="relative text-default-500 rounded-full hover:bg-default-100"
+            className="text-default-500 rounded-full hover:bg-default-100 relative"
           >
-            <Badge
-              content={unreadCount > 0 ? unreadCount.toString() : undefined}
-              variant="default"
-              size="sm"
-              className={unreadCount === 0 ? "hidden" : ""}
-            >
-              <Bell className="h-5 w-5" />
-            </Badge>
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <Badge
+                className="absolute -top-1 -right-1 h-5 min-w-5 px-1 flex items-center justify-center text-[10px] border-2 border-background"
+                size="sm"
+                variant="destructive"
+              >
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Badge>
+            )}
           </Button>
         </div>
       </Popover.Trigger>

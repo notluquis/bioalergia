@@ -4,6 +4,7 @@ import {
   Select as HeroSelect,
   type SelectProps as HeroSelectProps,
   Label,
+  ListBox,
   ListBoxItem,
   SelectIndicator,
   SelectTrigger,
@@ -65,7 +66,9 @@ function SelectBase<T extends object>({
       </SelectTrigger>
       {(description || helper) && <Description>{description || helper}</Description>}
       {errorMessage && <FieldError>{errorMessage}</FieldError>}
-      {children}
+      <HeroSelect.Popover>
+        <ListBox>{children}</ListBox>
+      </HeroSelect.Popover>
     </HeroSelect>
   );
 }
