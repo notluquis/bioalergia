@@ -12,8 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@heroui/react";
-import { type ReactNode, useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -77,7 +76,7 @@ function SelectBase<T extends object>({
 function SelectPopoverFixed({ children, className, ...props }: any) {
   return (
     <SelectPopover {...props} className={cn("max-h-[min(60vh,320px)] overflow-y-auto", className)}>
-      <SelectPortal>{children}</SelectPortal>
+      {children}
     </SelectPopover>
   );
 }
@@ -89,17 +88,6 @@ export const Select = Object.assign(SelectBase, {
   Trigger: SelectTrigger,
   Value: SelectValue,
 });
-
-function SelectPortal({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(() => typeof document !== "undefined");
-
-  useEffect(() => {
-    if (!mounted) setMounted(true);
-  }, [mounted]);
-
-  if (!mounted || typeof document === "undefined") return null;
-  return createPortal(children, document.body);
-}
 
 export interface SelectItemProps extends ListBoxItemProps {
   /**
