@@ -10,17 +10,12 @@ import { cn } from "@/lib/utils";
 
 export interface ButtonProps
   extends Omit<ComponentProps<typeof HeroButton>, "variant" | "isLoading" | "size"> {
-  // We maintain legacy variants for compatibility
+  // We maintain legacy variants for compatibility, but also allow native HeroUI variants
   variant?:
-    | "danger"
-    | "error"
-    | "ghost"
-    | "link"
-    | "outline"
-    | "primary"
-    | "secondary"
-    | "success"
-    | "tertiary";
+    | ComponentProps<typeof HeroButton>["variant"]
+    | "error" // Legacy: maps to danger
+    | "success" // Legacy: maps to primary + success class
+    | "link"; // Legacy: maps to ghost + underline
   isLoading?: boolean;
   disabled?: boolean;
   title?: string;
@@ -38,26 +33,24 @@ const mapVariantToHero = (
   className?: string;
 } => {
   switch (variant) {
-    case "danger":
     case "error":
       return { variant: "danger" };
     case "success":
-      // HeroUI v3 beta doesn't have a direct 'success' variant for buttons in this way,
-      // but we can use primary or a custom class if needed.
-      // For now, mapping to primary as a fallback or adding a semantic class.
-      return { variant: "primary", className: "bg-success text-success-foreground" };
-    case "secondary":
-      return { variant: "secondary" };
-    case "ghost":
-      return { variant: "ghost" };
+      // Legacy success mapping
+      return {
+        variant: "primary",
+        className: "bg-success text-success-foreground hover:bg-success/90",
+      };
     case "link":
       return { variant: "ghost", className: "underline underline-offset-4 text-primary" };
-    case "outline":
-      return { variant: "outline" };
-    case "tertiary":
-      return { variant: "tertiary" };
+    // Explicit mappings for other legacy-but-same names are not strictly needed if we pass through,
+    // but we keep them minimal.
+    // If it's a native variant (e.g. "danger-soft"), it falls to default.
     default:
-      return { variant: "primary" };
+      // Pass through as native variant.
+      // We cast because we know it must be a valid variant if it passed TS check (mostly),
+      // or it will just be passed to HeroUI which might ignore it.
+      return { variant: variant as ComponentProps<typeof HeroButton>["variant"] };
   }
 };
 
