@@ -1,4 +1,4 @@
-import { useUpdateEmployee } from "@finanzas/db/hooks";
+import { schemaLite, useClientQueries } from "@finanzas/db";
 import { Switch } from "@heroui/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
@@ -16,6 +16,8 @@ import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 // ... existing imports
 
 export default function EmployeesPage() {
+  const client = useClientQueries(schemaLite);
+
   const { can } = useAuth();
   const canEdit = can("update", "Employee");
   const queryClient = useQueryClient();
@@ -40,7 +42,7 @@ export default function EmployeesPage() {
   }, [includeInactive]);
 
   // ... rest of mutation logic ...
-  const updateStatusMutation = useUpdateEmployee();
+  const updateStatusMutation = client.employee.useUpdate();
   const error = (() => {
     if (updateStatusMutation.error instanceof Error) return updateStatusMutation.error.message;
     return null;

@@ -1,4 +1,4 @@
-import { useFindManyReleaseTransaction } from "@finanzas/db/hooks";
+import { schemaLite, useClientQueries } from "@finanzas/db";
 import { Alert, Button, Card, Input, Label, TextField } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -9,6 +9,8 @@ import { today } from "@/lib/dates";
 import { getReleaseColumns } from "../components/ReleaseColumns";
 
 export default function ReleaseTransactionsPage() {
+  const client = useClientQueries(schemaLite);
+
   const [draftFilters, setDraftFilters] = useState({
     from: dayjs().startOf("month").format("YYYY-MM-DD"),
     reportDate: "",
@@ -22,7 +24,7 @@ export default function ReleaseTransactionsPage() {
   // Query Data
   // Query Data - Load all data within date range
   // DataTable handles pagination client-side automatically
-  const { data: rows, isLoading } = useFindManyReleaseTransaction({
+  const { data: rows, isLoading } = client.releaseTransaction.useFindMany({
     orderBy: { date: "desc" },
     where: {
       date: {

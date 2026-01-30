@@ -12,7 +12,11 @@ plugin policy {
   provider = '@zenstackhq/plugin-policy'
 }
 
-
+plugin hooks {
+  provider = '@zenstackhq/tanstack-query'
+  target = 'react'
+  output = "../src/zenstack/hooks"
+}
 
 plugin ts {
   provider = '@core/typescript'
@@ -21,12 +25,6 @@ plugin ts {
 }
 
 
-
-plugin hooks {
-  provider = '@zenstackhq/tanstack-query'
-  target = 'react'
-  output = "../src/zenstack/hooks"
-}
 
 // plugin prisma {
 //   provider = '@core/prisma'

@@ -1,5 +1,5 @@
 import type { Event } from "@finanzas/db";
-import { useFindManyEvent } from "@finanzas/db/hooks";
+import { schemaLite, useClientQueries } from "@finanzas/db";
 
 import { useMemo } from "react";
 import type { DateRange, FinancialSummary, IncomeCategoryGroup, IncomeItem } from "../types";
@@ -10,7 +10,9 @@ type EventForIncome = Pick<
 >;
 
 export function useFinancialSummary(dateRange: DateRange) {
-  const { data: events, isLoading } = useFindManyEvent({
+  const client = useClientQueries(schemaLite);
+
+  const { data: events, isLoading } = client.event.useFindMany({
     where: {
       AND: [
         { startDate: { gte: new Date(dateRange.from) } },

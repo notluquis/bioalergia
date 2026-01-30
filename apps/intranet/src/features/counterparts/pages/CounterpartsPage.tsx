@@ -1,4 +1,4 @@
-import { useFindManyCounterpart } from "@finanzas/db/hooks";
+import { schemaLite, useClientQueries } from "@finanzas/db";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Suspense, useState } from "react";
@@ -33,6 +33,8 @@ import { normalizeRut } from "@/lib/rut";
 import CounterpartDetailSection from "../components/CounterpartDetailSection";
 
 export default function CounterpartsPage() {
+  const client = useClientQueries(schemaLite);
+
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<null | number>(null);
@@ -62,7 +64,7 @@ export default function CounterpartsPage() {
   };
 
   // ZenStack hook for list query
-  const { data: counterpartsData, error: listError } = useFindManyCounterpart({
+  const { data: counterpartsData, error: listError } = client.counterpart.useFindMany({
     include: { person: true },
   });
 

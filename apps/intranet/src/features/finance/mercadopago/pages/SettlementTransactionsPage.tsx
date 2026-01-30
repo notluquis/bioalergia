@@ -1,4 +1,4 @@
-import { useFindManySettlementTransaction } from "@finanzas/db/hooks";
+import { schemaLite, useClientQueries } from "@finanzas/db";
 import { Alert, Button, Card, Input, Label, TextField } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -9,6 +9,8 @@ import { today } from "@/lib/dates";
 import { getSettlementColumns } from "../components/SettlementColumns";
 
 export default function SettlementTransactionsPage() {
+  const client = useClientQueries(schemaLite);
+
   const [draftFilters, setDraftFilters] = useState({
     from: dayjs().startOf("month").format("YYYY-MM-DD"),
     to: today(),
@@ -20,7 +22,7 @@ export default function SettlementTransactionsPage() {
 
   // Query Data - Load all data within date range
   // DataTable handles pagination client-side automatically
-  const { data: rows, isLoading } = useFindManySettlementTransaction({
+  const { data: rows, isLoading } = client.settlementTransaction.useFindMany({
     orderBy: { transactionDate: "desc" },
     where: {
       transactionDate: {

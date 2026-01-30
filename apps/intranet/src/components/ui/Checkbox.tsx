@@ -26,7 +26,6 @@ export default function Checkbox({
       className={cn("gap-3", className)}
       isSelected={checked}
       value={value as string}
-      // @ts-expect-error - HeroUI v3 beta typing issue: onChange receives boolean
       onChange={(isSelected: boolean) => {
         // Support both onCheckedChange (Shadcn-like) and onChange (Native-like)
         onCheckedChange?.(isSelected);

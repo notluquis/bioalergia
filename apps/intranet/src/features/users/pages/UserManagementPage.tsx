@@ -1,11 +1,4 @@
-import {
-  useCreateUserRoleAssignment,
-  useDeleteManyUserRoleAssignment,
-  useDeleteUser,
-  useFindManyRole,
-  useFindManyUser,
-  useUpdateUser,
-} from "@finanzas/db/hooks";
+import { schemaLite, useClientQueries } from "@finanzas/db";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -30,6 +23,8 @@ dayjs.extend(relativeTime);
 dayjs.locale("es");
 
 export default function UserManagementPage() {
+  const client = useClientQueries(schemaLite);
+
   const { can } = useAuth(); // Keep context mounted
   const { error, success } = useToast();
   const queryClient = useQueryClient();
@@ -39,7 +34,7 @@ export default function UserManagementPage() {
   const [selectedRole, setSelectedRole] = useState("");
 
   // ZenStack hooks for users
-  const { data: usersData, isLoading } = useFindManyUser({
+  const { data: usersData, isLoading } = client.user.useFindMany({
     include: { passkeys: true, person: true, roles: { include: { role: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -73,16 +68,16 @@ export default function UserManagementPage() {
   }, [usersData]);
 
   // ZenStack hooks for roles (for filter dropdown)
-  const { data: rolesData } = useFindManyRole({
+  const { data: rolesData } = client.role.useFindMany({
     orderBy: { name: "asc" },
   });
   const roles = rolesData ?? [];
 
   // Mutations
-  const updateUserMutation = useUpdateUser();
-  const deleteUserMutation = useDeleteUser();
-  const createRoleAssignment = useCreateUserRoleAssignment();
-  const deleteRoleAssignments = useDeleteManyUserRoleAssignment();
+  const updateUserMutation = client.user.useUpdate();
+  const deleteUserMutation = client.user.useDelete();
+  const createRoleAssignment = client.userRoleAssignment.useCreate();
+  const deleteRoleAssignments = client.userRoleAssignment.useDeleteMany();
 
   // Actions Handlers
   const actions = useMemo(

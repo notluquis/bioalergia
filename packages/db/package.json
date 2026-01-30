@@ -32,9 +32,9 @@
     }
   },
   "scripts": {
-    "build": "zen generate && pnpm fix-imports && tsc",
+    "build": "zen generate --lite && pnpm fix-imports && tsc",
     "fix-imports": "node scripts/fix-imports.mjs",
-    "generate": "zen generate",
+    "generate": "zen generate --lite",
     "zen:watch": "zen generate --watch",
     "db:push": "zen db push",
     "migrate:dev": "zen migrate dev",
@@ -45,9 +45,11 @@
     "lint:fix": "biome check --write ."
   },
   "dependencies": {
-    "@zenstackhq/orm": "3.3.0",
-    "@zenstackhq/plugin-policy": "^3.3.0",
+    "@zenstackhq/orm": "^3.3.0",
+    "@zenstackhq/plugin-policy": "^3.2.1",
+    "@zenstackhq/language": "^3.3.0",
     "@zenstackhq/server": "^3.3.0",
+    "@zenstackhq/tanstack-query": "^3.3.0",
     "hono": "^4.11.7",
     "kysely": "^0.28.10",
     "pg": "^8.17.2",
@@ -59,9 +61,8 @@
     "@types/node": "^25.1.0",
     "@types/pg": "^8.16.0",
     "@types/react": "^19.2.10",
-    "@zenstackhq/cli": "3.3.0",
+    "@zenstackhq/cli": "^3.3.0",
     "@zenstackhq/sdk": "^3.3.0",
-    "@zenstackhq/tanstack-query": "^3.3.0",
     "react": "^19.2.4",
     "ts-morph": "^27.0.2",
     "ts-pattern": "^5.9.0",

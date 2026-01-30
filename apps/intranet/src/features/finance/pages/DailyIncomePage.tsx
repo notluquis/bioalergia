@@ -1,5 +1,5 @@
 import type { Event } from "@finanzas/db";
-import { useFindManyEvent } from "@finanzas/db/hooks";
+import { schemaLite, useClientQueries } from "@finanzas/db";
 import { Alert, Card, Chip, Input, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -13,7 +13,9 @@ export function DailyIncomePage() {
   const [from, setFrom] = useState(dayjs().startOf("month").format("YYYY-MM-DD"));
   const [to, setTo] = useState(dayjs().endOf("month").format("YYYY-MM-DD"));
 
-  const { data: events, isLoading } = useFindManyEvent({
+  //  ZenStack v3.3.0 official pattern
+  const client = useClientQueries(schemaLite);
+  const { data: events, isLoading } = client.event.useFindMany({
     where: {
       AND: [{ startDate: { gte: new Date(from) } }, { startDate: { lte: new Date(to) } }],
     },

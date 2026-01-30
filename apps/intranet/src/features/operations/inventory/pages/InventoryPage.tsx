@@ -1,8 +1,4 @@
-import {
-  useCreateInventoryItem,
-  useCreateInventoryMovement,
-  useUpdateInventoryItem,
-} from "@finanzas/db/hooks";
+import { schemaLite, useClientQueries } from "@finanzas/db";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Lock, PlusCircle } from "lucide-react";
 import { useState } from "react";
@@ -21,6 +17,8 @@ import type { InventoryItem, InventoryMovement } from "@/features/inventory/type
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 
 export default function InventoryPage() {
+  const client = useClientQueries(schemaLite);
+
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const { error: toastError, success: toastSuccess } = useToast();
@@ -64,9 +62,9 @@ export default function InventoryPage() {
   }
 
   // ZenStack mutations for CRUD
-  const createItemMutation = useCreateInventoryItem();
-  const updateItemMutation = useUpdateInventoryItem();
-  const createMovementMutation = useCreateInventoryMovement();
+  const createItemMutation = client.inventoryItem.useCreate();
+  const updateItemMutation = client.inventoryItem.useUpdate();
+  const createMovementMutation = client.inventoryMovement.useCreate();
 
   const saving =
     createItemMutation.isPending ||

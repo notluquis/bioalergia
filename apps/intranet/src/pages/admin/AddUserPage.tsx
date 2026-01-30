@@ -1,4 +1,4 @@
-import { useFindManyRole } from "@finanzas/db/hooks";
+import { schemaLite, useClientQueries } from "@finanzas/db";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -33,8 +33,11 @@ export default function AddUserPage() {
   const queryClient = useQueryClient();
   const { error: toastError, success } = useToast();
 
+  // ZenStack v3.3.0 official pattern - no workaround needed
+  const client = useClientQueries(schemaLite);
+
   // Fetch available roles
-  const { data: rolesData, isLoading: isRolesLoading } = useFindManyRole({
+  const { data: rolesData, isLoading: isRolesLoading } = client.role.useFindMany({
     orderBy: { name: "asc" },
   });
   const roles = rolesData ?? [];

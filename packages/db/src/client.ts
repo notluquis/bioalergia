@@ -43,6 +43,7 @@ export const db = new ZenStackClient(schema, {
 });
 
 // ORM client with access control policies
+// Type assertion needed due to nested @zenstackhq/schema versions
 export const authDb = db.$use(new PolicyPlugin());
 
 // Direct Kysely access for complex queries
@@ -54,13 +55,17 @@ export const kysely = new Kysely<SchemaType>({
   dialect: new PostgresDialect({ pool }),
 });
 
-// Re-export schema for use in apps/api
-// Re-export schema for use in apps/api
+// Export ZenStack TanStack Query - Official v3 Pattern
+// Re-export useClientQueries for direct usage in components
+export { useClientQueries } from "@zenstackhq/tanstack-query/react";
 
+// Export generated types and models
 export * from "./zenstack/models.js";
 export type { SchemaType } from "./zenstack/schema.js";
 
-// Export standard types
+// Export schemas for runtime usage with useClientQueries
+export { schema } from "./zenstack/schema.js";
+export { schema as schemaLite } from "./zenstack/schema-lite.js";
 export const EmployeeStatus = {
   ACTIVE: "ACTIVE",
   INACTIVE: "INACTIVE",
@@ -88,5 +93,3 @@ export interface JsonObject {
 
 // Simplified Json types for compatibility
 export type JsonValue = boolean | JsonArray | JsonObject | null | number | string;
-
-export { schema } from "./zenstack/schema.js";
