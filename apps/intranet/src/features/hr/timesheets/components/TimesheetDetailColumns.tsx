@@ -4,9 +4,10 @@ import dayjs from "dayjs";
 import Button from "@/components/ui/Button";
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownPopover,
+  HeroDropdownMenu,
 } from "@/components/ui/DropdownMenu";
 import TimeInput from "@/components/ui/TimeInput";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -252,54 +253,56 @@ const ActionsCell = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger>
         <Button className="h-8 w-8 p-0" size="sm" variant="secondary">
           ⋯
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          onClick={() => {
-            meta.setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" });
-          }}
-        >
-          Ver comentario
-        </DropdownMenuItem>
-
-        {dirty && (
+      <DropdownPopover placement={"bottom-end" as any}>
+        <HeroDropdownMenu aria-label="Acciones de registro">
           <DropdownMenuItem
-            onClick={() => {
-              meta.onResetRow(index);
+            onPress={() => {
+              meta.setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" });
             }}
           >
-            Deshacer cambios
+            Ver comentario
           </DropdownMenuItem>
-        )}
 
-        <DropdownMenuItem
-          onClick={() => {
-            meta.setNotWorkedDays((prev) => {
-              const next = new Set(prev);
-              if (next.has(row.date)) next.delete(row.date);
-              else next.add(row.date);
-              return next;
-            });
-          }}
-        >
-          {isMarkedNotWorked ? "Marcar como trabajado" : "Día no trabajado"}
-        </DropdownMenuItem>
+          {dirty && (
+            <DropdownMenuItem
+              onPress={() => {
+                meta.onResetRow(index);
+              }}
+            >
+              Deshacer cambios
+            </DropdownMenuItem>
+          )}
 
-        {row.entryId && (
           <DropdownMenuItem
-            className="text-danger focus:text-danger"
-            onClick={() => {
-              meta.onRemoveEntry(row);
+            onPress={() => {
+              meta.setNotWorkedDays((prev) => {
+                const next = new Set(prev);
+                if (next.has(row.date)) next.delete(row.date);
+                else next.add(row.date);
+                return next;
+              });
             }}
           >
-            Eliminar registro
+            {isMarkedNotWorked ? "Marcar como trabajado" : "Día no trabajado"}
           </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
+
+          {row.entryId && (
+            <DropdownMenuItem
+              className="text-danger focus:text-danger"
+              onPress={() => {
+                meta.onRemoveEntry(row);
+              }}
+            >
+              Eliminar registro
+            </DropdownMenuItem>
+          )}
+        </HeroDropdownMenu>
+      </DropdownPopover>
     </DropdownMenu>
   );
 };

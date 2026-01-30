@@ -14,10 +14,11 @@ import {
 import Button from "@/components/ui/Button";
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownPopover,
+  HeroDropdownMenu,
 } from "@/components/ui/DropdownMenu";
 import { Tooltip } from "@/components/ui/Tooltip";
 import type { User } from "@/features/users/types";
@@ -162,79 +163,81 @@ export const getColumns = (actions: {
       const user = row.original;
       return (
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger>
             <Button isIconOnly size="sm" variant="ghost">
               <MoreVertical size={16} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem
-              onClick={() => {
-                actions.onEditRole(user);
-              }}
-            >
-              <UserCog className="mr-2 h-4 w-4" />
-              Editar rol
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                actions.onToggleMfa(user.id, user.mfaEnabled);
-              }}
-            >
-              <ShieldCheck className="mr-2 h-4 w-4" />
-              {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                actions.onResetPassword(user.id);
-              }}
-            >
-              <Key className="mr-2 h-4 w-4" />
-              Restablecer contraseña
-            </DropdownMenuItem>
-            {user.hasPasskey && (
+          <DropdownPopover placement={"bottom-end" as any}>
+            <HeroDropdownMenu aria-label="Acciones de usuario" className="w-56">
               <DropdownMenuItem
-                className="text-warning focus:text-warning"
-                onClick={() => {
-                  actions.onDeletePasskey(user.id);
+                onPress={() => {
+                  actions.onEditRole(user);
+                }}
+              >
+                <UserCog className="mr-2 h-4 w-4" />
+                Editar rol
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onPress={() => {
+                  actions.onToggleMfa(user.id, user.mfaEnabled);
+                }}
+              >
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                {user.mfaEnabled ? "Desactivar" : "Activar"} MFA
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onPress={() => {
+                  actions.onResetPassword(user.id);
+                }}
+              >
+                <Key className="mr-2 h-4 w-4" />
+                Restablecer contraseña
+              </DropdownMenuItem>
+              {user.hasPasskey && (
+                <DropdownMenuItem
+                  className="text-warning focus:text-warning"
+                  onPress={() => {
+                    actions.onDeletePasskey(user.id);
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar passkey
+                </DropdownMenuItem>
+              )}
+              {user.status === "SUSPENDED" ? (
+                <DropdownMenuItem
+                  className="text-success focus:text-success"
+                  onPress={() => {
+                    actions.onToggleStatus(user.id, user.status);
+                  }}
+                >
+                  <Shield className="mr-2 h-4 w-4" />
+                  Reactivar acceso
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  className="text-warning focus:text-warning"
+                  onPress={() => {
+                    actions.onToggleStatus(user.id, user.status);
+                  }}
+                >
+                  <Lock className="mr-2 h-4 w-4" />
+                  Suspender acceso
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-danger focus:text-danger"
+                onPress={() => {
+                  actions.onDeleteUser(user.id);
                 }}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Eliminar passkey
+                Eliminar usuario
               </DropdownMenuItem>
-            )}
-            {user.status === "SUSPENDED" ? (
-              <DropdownMenuItem
-                className="text-success focus:text-success"
-                onClick={() => {
-                  actions.onToggleStatus(user.id, user.status);
-                }}
-              >
-                <Shield className="mr-2 h-4 w-4" />
-                Reactivar acceso
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem
-                className="text-warning focus:text-warning"
-                onClick={() => {
-                  actions.onToggleStatus(user.id, user.status);
-                }}
-              >
-                <Lock className="mr-2 h-4 w-4" />
-                Suspender acceso
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-danger focus:text-danger"
-              onClick={() => {
-                actions.onDeleteUser(user.id);
-              }}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Eliminar usuario
-            </DropdownMenuItem>
-          </DropdownMenuContent>
+            </HeroDropdownMenu>
+          </DropdownPopover>
         </DropdownMenu>
       );
     },

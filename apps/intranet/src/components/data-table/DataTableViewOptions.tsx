@@ -5,9 +5,13 @@ import { useState } from "react";
 import Button from "@/components/ui/Button";
 import {
   DropdownMenu,
-  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuGroup,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownPopover,
+  HeroDropdownMenu,
 } from "@/components/ui/DropdownMenu";
 import Input from "@/components/ui/Input";
 
@@ -39,43 +43,45 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           Columnas
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="flex max-h-100 w-50 flex-col">
-        <DropdownMenuLabel>Alternar columnas</DropdownMenuLabel>
-        <div className="border-b px-2 py-2">
-          <Input
-            className="h-8"
-            onChange={(e) => {
-              setSearch(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              e.stopPropagation();
-            }} // Prevent closing on space
-            placeholder="Buscar..."
-            value={search}
-          />
-        </div>
-        <div className="flex-1 overflow-y-auto p-1">
-          {filteredColumns.map((column) => {
-            const label =
-              typeof column.columnDef.header === "string" ? column.columnDef.header : column.id;
-            return (
-              <DropdownMenu.CheckboxItem
-                className="capitalize"
-                checked={column.getIsVisible()}
-                key={column.id}
-                onCheckedChange={(checked) => {
-                  column.toggleVisibility(!!checked);
-                }}
-              >
-                {label}
-              </DropdownMenu.CheckboxItem>
-            );
-          })}
-          {filteredColumns.length === 0 && (
-            <div className="text-muted-foreground p-2 text-center text-sm">No encontrado</div>
-          )}
-        </div>
-      </DropdownMenuContent>
+      <DropdownPopover placement={"bottom-end" as any}>
+        <HeroDropdownMenu aria-label="Toggle columns" className="w-37.5">
+          <DropdownMenuLabel>Alternar columnas</DropdownMenuLabel>
+          <DropdownMenuGroup className="border-b px-2 py-2">
+            <Input
+              className="h-8"
+              onChange={(e) => {
+                setSearch(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+              }} // Prevent closing on space
+              placeholder="Buscar..."
+              value={search}
+            />
+          </DropdownMenuGroup>
+          <DropdownMenuGroup className="flex-1 overflow-y-auto p-1">
+            {filteredColumns.map((column) => {
+              const label =
+                typeof column.columnDef.header === "string" ? column.columnDef.header : column.id;
+              return (
+                <DropdownMenuCheckboxItem
+                  className="capitalize"
+                  checked={column.getIsVisible()}
+                  key={column.id}
+                  onCheckedChange={(checked) => column.toggleVisibility(!!checked)}
+                >
+                  {label}
+                </DropdownMenuCheckboxItem>
+              );
+            })}
+            {filteredColumns.length === 0 && (
+              <DropdownMenuItem isDisabled>
+                <div className="text-muted-foreground p-2 text-center text-sm">No encontrado</div>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuGroup>
+        </HeroDropdownMenu>
+      </DropdownPopover>
     </DropdownMenu>
   );
 }

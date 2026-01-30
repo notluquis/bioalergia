@@ -5,11 +5,12 @@ import { LogOut, User } from "lucide-react";
 import Backdrop from "@/components/ui/Backdrop";
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownPopover,
+  HeroDropdownMenu,
 } from "@/components/ui/DropdownMenu";
 
 import { useAuth } from "@/context/AuthContext";
@@ -139,7 +140,7 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
             )}
           >
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger>
                 <button
                   type="button"
                   className={cn(
@@ -165,29 +166,31 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56" side="top">
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm leading-none font-medium">{displayName}</p>
-                    <p className="text-default-500 text-xs leading-none">{user?.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link className="flex cursor-pointer items-center" to="/account">
-                    <User className="mr-2 size-4" />
-                    Mi Cuenta
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-danger focus:bg-danger/10 focus:text-danger cursor-pointer"
-                  onClick={() => logout()}
-                >
-                  <LogOut className="mr-2 size-4" />
-                  Cerrar sesión
-                </DropdownMenuItem>
-              </DropdownMenuContent>
+              <DropdownPopover placement={"top-start" as any}>
+                <HeroDropdownMenu aria-label="Menu de usuario" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm leading-none font-medium">{displayName}</p>
+                      <p className="text-default-500 text-xs leading-none">{user?.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <Link className="flex cursor-pointer items-center" to="/account">
+                      <User className="mr-2 size-4" />
+                      Mi Cuenta
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-danger focus:bg-danger/10 focus:text-danger cursor-pointer"
+                    onPress={() => logout()}
+                  >
+                    <LogOut className="mr-2 size-4" />
+                    Cerrar sesión
+                  </DropdownMenuItem>
+                </HeroDropdownMenu>
+              </DropdownPopover>
             </DropdownMenu>
           </div>
         </aside>
