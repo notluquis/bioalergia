@@ -209,14 +209,13 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
   return (
     <div
       className={cn(
-        "bg-content1 border-default-200 flex min-h-[520px] h-[min(100dvh-220px,800px)] flex-col overflow-hidden rounded-2xl border shadow-sm",
+        "bg-content1 border-default-200 flex min-h-130 h-[min(100svh-220px,800px)] flex-col overflow-hidden rounded-2xl border shadow-sm",
         loading && "pointer-events-none opacity-50 grayscale-[0.3]",
       )}
-      style={{ height: "min(100svh - 220px, 800px)" }}
       role="none"
     >
       <div className="muted-scrollbar flex-1 overflow-x-auto overscroll-x-contain touch-pan-x">
-        <div className="min-w-[1080px]">
+        <div className="min-w-270">
           {/* Header row */}
           {/* biome-ignore lint/a11y/useSemanticElements: grid layout */}
           <div
@@ -340,7 +339,7 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
                     const eventButton = (
                       <Button
                         className={cn(
-                          "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden break-words rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-shadow hover:z-10 hover:shadow-md",
+                          "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden text-wrap rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-shadow hover:z-10 hover:shadow-md",
                           getCategoryClass(event.category),
                           // Display modes
                           displayMode === "minimal" &&

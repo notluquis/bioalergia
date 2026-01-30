@@ -1,7 +1,8 @@
-import { Alert, Button, Card, Input, Label, ListBox, Select, TextField } from "@heroui/react";
+import { Alert, Button, Card, Input, Label, TextField } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
 import { DailyBalancesPanel } from "@/features/finance/balances/components/DailyBalancesPanel";
@@ -80,6 +81,7 @@ export default function DailyBalances() {
                 </TextField>
                 <Select
                   className="w-full"
+                  label="Mes rápido"
                   selectedKey={quickRange}
                   onSelectionChange={(key) => {
                     const value = key as string;
@@ -90,22 +92,14 @@ export default function DailyBalances() {
                     setTo(match.to);
                   }}
                 >
-                  <Label>Mes rápido</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      <ListBox.Item id="custom" textValue="Personalizado">
-                        Personalizado
-                      </ListBox.Item>
-                      {quickMonths.map((month) => (
-                        <ListBox.Item key={month.value} id={month.value} textValue={month.label}>
-                          {month.label}
-                        </ListBox.Item>
-                      ))}
-                    </ListBox>
-                  </Select.Popover>
+                  <SelectItem key="custom" textValue="Personalizado">
+                    Personalizado
+                  </SelectItem>
+                  {quickMonths.map((month) => (
+                    <SelectItem key={month.value} textValue={month.label}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
                 </Select>
                 <div className="flex items-end">
                   <Button
