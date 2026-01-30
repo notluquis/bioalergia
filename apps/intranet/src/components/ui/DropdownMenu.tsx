@@ -7,8 +7,6 @@ import {
   DropdownMenu as HeroDropdownMenu,
 } from "@heroui/react";
 import type { ComponentProps, ReactNode } from "react";
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 // Adapter: Radix Trigger -> HeroUI Trigger
@@ -52,32 +50,22 @@ const DropdownMenuContentFixed = ({
   }
 
   return (
-    <DropdownMenuPortal>
-      <DropdownPopover
-        offset={sideOffset}
-        placement={resolvedPlacement as any}
-        // isNonModal prevents the popover from triggering global modal/backdrop behaviors
-        // which was causing the "behind the blur" issue.
-        {...({ isNonModal: true } as any)}
-      >
-        <HeroDropdownMenu aria-label="Menu" className={className} {...props}>
-          {children}
-        </HeroDropdownMenu>
-      </DropdownPopover>
-    </DropdownMenuPortal>
+    <DropdownPopover
+      offset={sideOffset}
+      placement={resolvedPlacement as any}
+      // isNonModal prevents the popover from triggering global modal/backdrop behaviors
+      // which was causing the "behind the blur" issue.
+      {...({ isNonModal: true } as any)}
+    >
+      <HeroDropdownMenu aria-label="Menu" className={className} {...props}>
+        {children}
+      </HeroDropdownMenu>
+    </DropdownPopover>
   );
 };
 
 // Adapter: Radix Group -> DropdownSection
 const DropdownMenuGroup = DropdownSection;
-
-const DropdownMenuPortal = ({ children }: { children: ReactNode }) => {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  if (!mounted) return null;
-  return createPortal(children, document.body);
-};
 
 // Adapter: Radix Item -> HeroUI Item
 const DropdownMenuItem = ({
@@ -155,7 +143,6 @@ const DropdownMenuRoot = Object.assign(DropdownRoot, {
   Group: DropdownMenuGroup,
   Item: DropdownMenuItem,
   Label: DropdownMenuLabel,
-  Portal: DropdownMenuPortal,
   Separator: DropdownMenuSeparator,
   Trigger: DropdownMenuTrigger,
 });
@@ -172,8 +159,6 @@ export {
   DropdownMenuItem,
   /** @deprecated Use DropdownMenu namespace */
   DropdownMenuLabel,
-  /** @deprecated Use DropdownMenu namespace */
-  DropdownMenuPortal,
   /** @deprecated Use DropdownMenu namespace */
   DropdownMenuSeparator,
   /** @deprecated Use DropdownMenu namespace */
