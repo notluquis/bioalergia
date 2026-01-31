@@ -18,7 +18,7 @@ const medicalCertificateSearchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_authed/certificates/medical")({
-  validateSearch: (search) => medicalCertificateSearchSchema.parse(search),
+  validateSearch: medicalCertificateSearchSchema,
   staticData: {
     nav: { iconKey: "FileText", label: "Certificados Médicos", order: 1, section: "Operaciones" },
     permission: { action: "create", subject: "MedicalCertificate" },
