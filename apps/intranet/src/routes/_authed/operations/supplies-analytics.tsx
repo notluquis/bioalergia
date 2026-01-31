@@ -1,11 +1,25 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
+import { z } from "zod";
 
 import PageLoader from "@/components/ui/PageLoader";
 
 const TreatmentAnalyticsPage = lazy(
   () => import("@/features/operations/supplies/pages/TreatmentAnalyticsPage"),
 );
+
+const analyticsSearchSchema = z.object({
+  from: z.string().optional(),
+  to: z.string().optional(),
+  period: z.enum(["day", "week", "month"]).default("week").optional(),
+  calendarId: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((val) => {
+      if (!val) return undefined;
+      return Array.isArray(val) ? val : [val];
+    }),
+});
 
 export const Route = createFileRoute("/_authed/operations/supplies-analytics")({
   staticData: {
@@ -25,13 +39,7 @@ export const Route = createFileRoute("/_authed/operations/supplies-analytics")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      from: search.from as string | undefined,
-      to: search.to as string | undefined,
-      period: (search.period as "day" | "week" | "month" | undefined) || "week",
-    };
-  },
+  validateSearch: analyticsSearchSchema,
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <TreatmentAnalyticsPage />
