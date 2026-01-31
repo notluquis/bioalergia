@@ -32,6 +32,8 @@ import {
 
 dayjs.locale("es");
 
+import type { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/data-table/DataTable";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { formatCurrency } from "@/lib/utils";
@@ -183,6 +185,7 @@ export default function TreatmentAnalyticsPage() {
             pieDataLocation={pieDataLocation}
             period={period}
           />
+          <AnalyticsDetailTable data={trendData || []} period={period} />
         </>
       )}
     </div>
@@ -578,3 +581,76 @@ const CustomTooltip = ({
   }
   return null;
 };
+
+function AnalyticsDetailTable({
+  data,
+  period,
+}: {
+  // biome-ignore lint/suspicious/noExplicitAny: loose chart data types
+  data: any[];
+  period: "day" | "week" | "month";
+}) {
+  // biome-ignore lint/suspicious/noExplicitAny: loose typing for dynamic table
+  const columns: ColumnDef<any>[] = [
+    {
+      accessorKey: period === "day" ? "date" : "label",
+      header: "Periodo",
+      cell: ({ row }) => {
+        const val = row.getValue(period === "day" ? "date" : "label") as string;
+        if (period === "day") return dayjs(val).format("dddd DD MMM");
+        return val;
+      },
+      enableSorting: false,
+    },
+    {
+      accessorKey: "events",
+      header: "Tratamientos",
+      cell: ({ row }) => <span className="font-medium">{row.getValue("events")}</span>,
+    },
+    {
+      accessorKey: "amountPaid",
+      header: "Ingresos",
+      cell: ({ row }) => formatCurrency(row.getValue("amountPaid")),
+    },
+    {
+      accessorKey: "dosageMl",
+      header: "Consumo",
+      cell: ({ row }) => {
+        const val = row.getValue("dosageMl") as number;
+        return val ? `${val.toFixed(1)} ml` : "-";
+      },
+    },
+    {
+      accessorKey: "domicilioCount",
+      header: "Domicilio",
+      cell: ({ row }) => {
+        const val = row.getValue("domicilioCount") as number;
+        return val > 0 ? (
+          <div className="flex items-center gap-1.5 text-secondary">
+            <Home className="w-3.5 h-3.5" />
+            <span>{val}</span>
+          </div>
+        ) : (
+          "-"
+        );
+      },
+    },
+  ];
+
+  return (
+    <Card className="shadow-sm border-default-200">
+      <Card.Header className="pb-2">
+        <h3 className="text-base font-semibold text-foreground">Detalle del Periodo</h3>
+      </Card.Header>
+      <Card.Content>
+        <DataTable
+          columns={columns}
+          data={data}
+          enablePagination={true}
+          enableToolbar={false}
+          pageSizeOptions={[5, 10, 20]}
+        />
+      </Card.Content>
+    </Card>
+  );
+}
