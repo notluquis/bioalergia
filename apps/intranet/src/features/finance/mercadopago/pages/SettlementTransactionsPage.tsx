@@ -1,5 +1,6 @@
-import { schemaLite, useClientQueries } from "@finanzas/db";
+import { schemaLite } from "@finanzas/db";
 import { Alert, Button, Card, Input, Label, TextField } from "@heroui/react";
+import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";

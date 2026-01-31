@@ -1,5 +1,6 @@
-import { schemaLite, useClientQueries } from "@finanzas/db";
+import { schemaLite } from "@finanzas/db";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import { Suspense, useState } from "react";
 import Button from "@/components/ui/Button";

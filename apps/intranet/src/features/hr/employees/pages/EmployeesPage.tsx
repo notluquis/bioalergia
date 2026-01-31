@@ -1,7 +1,8 @@
-import { schemaLite, useClientQueries } from "@finanzas/db";
+import { schemaLite } from "@finanzas/db";
 import { Switch } from "@heroui/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";
+import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { ChevronUp, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";

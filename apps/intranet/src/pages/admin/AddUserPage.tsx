@@ -1,7 +1,8 @@
-import { schemaLite, useClientQueries } from "@finanzas/db";
+import { schemaLite } from "@finanzas/db";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Shield, UserPlus, Users } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";

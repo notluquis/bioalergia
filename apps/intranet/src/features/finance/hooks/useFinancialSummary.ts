@@ -1,5 +1,6 @@
 import type { Event } from "@finanzas/db";
-import { schemaLite, useClientQueries } from "@finanzas/db";
+import { schemaLite } from "@finanzas/db";
+import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 
 import { useMemo } from "react";
 import type { DateRange, FinancialSummary, IncomeCategoryGroup, IncomeItem } from "../types";

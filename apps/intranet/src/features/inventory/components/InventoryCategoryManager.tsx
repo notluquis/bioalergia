@@ -1,4 +1,5 @@
-import { schemaLite, useClientQueries } from "@finanzas/db";
+import { schemaLite } from "@finanzas/db";
+import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
 

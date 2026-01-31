@@ -57,7 +57,8 @@ export const kysely = new Kysely<SchemaType>({
 
 // Export ZenStack TanStack Query - Official v3 Pattern
 // Re-export useClientQueries for direct usage in components
-export { useClientQueries } from "@zenstackhq/tanstack-query/react";
+// MOVED TO @finanzas/db/react to avoid polluting Node.js runtime
+// export { useClientQueries } from "@zenstackhq/tanstack-query/react";
 
 // Export generated types and models
 export * from "./zenstack/models.js";
