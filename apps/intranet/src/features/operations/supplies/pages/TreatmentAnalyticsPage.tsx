@@ -1,11 +1,21 @@
-import { Chip, DateField, DateInputGroup, Label, Spinner } from "@heroui/react";
+import {
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Chip,
+  DateField,
+  DateInputGroup,
+  Label,
+  Spinner,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import {
-  Calendar,
+  Calendar as CalendarIcon,
   ChevronDown,
   ChevronUp,
   DollarSign,
@@ -14,83 +24,74 @@ import {
   RefreshCcw,
   Syringe,
 } from "lucide-react";
+import type React from "react";
 import { useState } from "react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 dayjs.locale("es");
 
-import Button from "@/components/ui/Button";
-import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { formatCurrency } from "@/lib/utils";
 import { Route } from "@/routes/_authed/operations/supplies-analytics";
 
-// Helper functions for quick date ranges
-const getToday = () => {
-  return { from: dayjs().format("YYYY-MM-DD"), to: dayjs().format("YYYY-MM-DD") };
+// --- Constants & Config ---
+
+const COLORS = {
+  primary: "#006FEE",
+  secondary: "#9353d3",
+  success: "#17c964",
+  warning: "#f5a524",
+  danger: "#f31260",
+  default: "#71717a",
+  grid: "#e4e4e7",
+  text: "#52525b",
 };
 
-const getYesterday = () => {
-  const yesterday = dayjs().subtract(1, "day");
-  return { from: yesterday.format("YYYY-MM-DD"), to: yesterday.format("YYYY-MM-DD") };
-};
+const PIE_COLORS_STAGE = [COLORS.primary, COLORS.secondary, COLORS.default];
+const PIE_COLORS_LOCATION = [COLORS.secondary, COLORS.primary];
 
-const getTomorrow = () => {
-  const tomorrow = dayjs().add(1, "day");
-  return { from: tomorrow.format("YYYY-MM-DD"), to: tomorrow.format("YYYY-MM-DD") };
-};
+// --- Quick Ranges Helpers ---
+const getThisWeek = () => ({
+  from: dayjs().startOf("week").format("YYYY-MM-DD"),
+  to: dayjs().endOf("week").format("YYYY-MM-DD"),
+});
+const getLastWeek = () => ({
+  from: dayjs().subtract(1, "week").startOf("week").format("YYYY-MM-DD"),
+  to: dayjs().subtract(1, "week").endOf("week").format("YYYY-MM-DD"),
+});
+const getThisMonth = () => ({
+  from: dayjs().startOf("month").format("YYYY-MM-DD"),
+  to: dayjs().endOf("month").format("YYYY-MM-DD"),
+});
+const getLastMonth = () => ({
+  from: dayjs().subtract(1, "month").startOf("month").format("YYYY-MM-DD"),
+  to: dayjs().subtract(1, "month").endOf("month").format("YYYY-MM-DD"),
+});
 
-const getThisWeek = () => {
-  return {
-    from: dayjs().startOf("week").format("YYYY-MM-DD"),
-    to: dayjs().endOf("week").format("YYYY-MM-DD"),
-  };
-};
-
-const getLastWeek = () => {
-  return {
-    from: dayjs().subtract(1, "week").startOf("week").format("YYYY-MM-DD"),
-    to: dayjs().subtract(1, "week").endOf("week").format("YYYY-MM-DD"),
-  };
-};
-
-const getNextWeek = () => {
-  return {
-    from: dayjs().add(1, "week").startOf("week").format("YYYY-MM-DD"),
-    to: dayjs().add(1, "week").endOf("week").format("YYYY-MM-DD"),
-  };
-};
-
-const getThisMonth = () => {
-  return {
-    from: dayjs().startOf("month").format("YYYY-MM-DD"),
-    to: dayjs().endOf("month").format("YYYY-MM-DD"),
-  };
-};
-
-const getLastMonth = () => {
-  return {
-    from: dayjs().subtract(1, "month").startOf("month").format("YYYY-MM-DD"),
-    to: dayjs().subtract(1, "month").endOf("month").format("YYYY-MM-DD"),
-  };
-};
-
-const getNextMonth = () => {
-  return {
-    from: dayjs().add(1, "month").startOf("month").format("YYYY-MM-DD"),
-    to: dayjs().add(1, "month").endOf("month").format("YYYY-MM-DD"),
-  };
-};
+// --- Main Page Component ---
 
 export default function TreatmentAnalyticsPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const searchParams = Route.useSearch();
   const [period, setPeriod] = useState<"day" | "week" | "month">(searchParams.period || "week");
-  const [showRangePicker, setShowRangePicker] = useState(true);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const filters: TreatmentAnalyticsFilters = {
-    from: searchParams.from,
-    to: searchParams.to,
+    from: searchParams.from || getThisMonth().from,
+    to: searchParams.to || getThisMonth().to,
   };
 
   const hasValidDates = !!filters.from && !!filters.to;
@@ -101,535 +102,491 @@ export default function TreatmentAnalyticsPage() {
   });
 
   const handleDateChange = (from: string, to: string) => {
-    void navigate({
-      search: { ...searchParams, from, to },
-    });
+    void navigate({ search: { ...searchParams, from, to } });
   };
 
   const handleQuickRange = (range: { from: string; to: string }) => {
     void navigate({ search: { ...searchParams, from: range.from, to: range.to } });
-    setShowRangePicker(false);
+    setIsFilterOpen(false);
   };
 
   const handleRefresh = () => void refetch();
 
-  // Calculate metrics
-  const totalRevenue = data?.totals.amountPaid || 0;
-  const totalExpected = data?.totals.amountExpected || 0;
-  const revenuePercentage = totalExpected > 0 ? (totalRevenue / totalExpected) * 100 : 0;
-  const domicilioPercentage =
-    data && data.totals.events > 0 ? (data.totals.domicilioCount / data.totals.events) * 100 : 0;
-  const induccionPercentage =
-    data && data.totals.events > 0 ? (data.totals.induccionCount / data.totals.events) * 100 : 0;
-  const mantencionPercentage =
-    data && data.totals.events > 0 ? (data.totals.mantencionCount / data.totals.events) * 100 : 0;
-  const unclassifiedStageCount =
-    (data?.totals.events || 0) -
-    (data?.totals.induccionCount || 0) -
-    (data?.totals.mantencionCount || 0);
-  const unclassifiedStagePercentage =
-    data && data.totals.events > 0 ? (unclassifiedStageCount / data.totals.events) * 100 : 0;
-
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-100 gap-4">
-        <p className="text-danger">Error cargando analytics: {(error as Error).message}</p>
-        <Button onClick={handleRefresh}>Reintentar</Button>
+      <div className="flex flex-col items-center justify-center p-12 gap-4 text-danger">
+        <p>Error cargando analytics: {(error as Error).message}</p>
+        <Button onClick={handleRefresh} color="danger" variant="flat">
+          Reintentar
+        </Button>
       </div>
     );
   }
 
+  // Calculate Data
+  const totalRevenue = data?.totals.amountPaid || 0;
+  const totalTreatmentCount = data?.totals.events || 0;
+  const totalMl = data?.totals.dosageMl || 0;
+  const domicilioCount = data?.totals.domicilioCount || 0;
+  const clinicCount = totalTreatmentCount - domicilioCount;
+
+  const induccionCount = data?.totals.induccionCount || 0;
+  const mantencionCount = data?.totals.mantencionCount || 0;
+  const unclassifiedCount = totalTreatmentCount - induccionCount - mantencionCount;
+
+  const trendData =
+    period === "day"
+      ? data?.byDate
+      : period === "week"
+        ? data?.byWeek.map((d) => ({ ...d, label: `S${d.isoWeek}` }))
+        : data?.byMonth.map((d) => ({
+            ...d,
+            label: dayjs(`${d.year}-${d.month}-01`).format("MMM"),
+          }));
+
+  const pieDataStage = [
+    { name: "Inducción", value: induccionCount },
+    { name: "Mantención", value: mantencionCount },
+    { name: unclassifiedCount > 0 ? "Sin Clasif." : "", value: unclassifiedCount },
+  ].filter((d) => d.value > 0);
+
+  const pieDataLocation = [
+    { name: "Domicilio", value: domicilioCount },
+    { name: "Clínica", value: clinicCount },
+  ].filter((d) => d.value > 0);
+
   return (
-    <section className="space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              {hasValidDates ? (
-                <div className="flex items-center gap-3">
-                  <Chip size="sm" variant="soft" color="success">
-                    {dayjs(filters.from).format("DD MMM YYYY")} -{" "}
-                    {dayjs(filters.to).format("DD MMM YYYY")}
-                  </Chip>
-                  <button
-                    type="button"
-                    onClick={() => setShowRangePicker(!showRangePicker)}
-                    className="text-sm text-primary hover:underline flex items-center gap-1"
-                  >
-                    {showRangePicker ? (
-                      <>
-                        <ChevronUp className="h-4 w-4" />
-                        Ocultar
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-4 w-4" />
-                        Cambiar
-                      </>
-                    )}
-                  </button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={handleRefresh}
-                    disabled={isLoading}
-                    isIconOnly
-                    title="Actualizar datos"
-                  >
-                    <RefreshCcw className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-sm font-medium text-default-700">
-                  Selecciona un rango de fechas
-                </p>
-              )}
-            </div>
-          </div>
-        </CardHeader>
+    <div className="space-y-6 max-w-400 mx-auto pb-10">
+      <AnalyticsHeader
+        filters={filters}
+        period={period}
+        isFilterOpen={isFilterOpen}
+        isLoading={isLoading}
+        onToggleFilter={() => setIsFilterOpen(!isFilterOpen)}
+        onSetPeriod={setPeriod}
+        onRefresh={handleRefresh}
+      />
 
-        {showRangePicker && (
-          <CardContent className="space-y-3 p-4 border-t border-divider">
-            {/* Custom Date Inputs */}
-            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-end">
-              <div className="flex-1">
-                <DateField
-                  value={filters.from ? parseDate(filters.from) : null}
-                  onChange={(date) => {
-                    if (date) {
-                      handleDateChange(date.toString(), filters.to || date.toString());
-                    }
-                  }}
-                  className="w-full"
-                >
-                  <Label>Desde</Label>
-                  <DateInputGroup>
-                    <DateInputGroup.Input>
-                      {(segment) => <DateInputGroup.Segment segment={segment} />}
-                    </DateInputGroup.Input>
-                  </DateInputGroup>
-                </DateField>
-              </div>
-              <div className="flex-1">
-                <DateField
-                  value={filters.to ? parseDate(filters.to) : null}
-                  onChange={(date) => {
-                    if (date) {
-                      handleDateChange(filters.from || date.toString(), date.toString());
-                    }
-                  }}
-                  className="w-full"
-                >
-                  <Label>Hasta</Label>
-                  <DateInputGroup>
-                    <DateInputGroup.Input>
-                      {(segment) => <DateInputGroup.Segment segment={segment} />}
-                    </DateInputGroup.Input>
-                  </DateInputGroup>
-                </DateField>
-              </div>
-            </div>
+      {isFilterOpen && (
+        <AnalyticsFilters
+          filters={filters}
+          onDateChange={handleDateChange}
+          onQuickRange={handleQuickRange}
+        />
+      )}
 
-            {/* Quick Range Selectors */}
-            <div className="pt-1">
-              <div className="border-t border-dashed border-default-200 pt-3">
-                <p className="text-xs font-semibold text-default-700 mb-2.5">Rangos rápidos</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {/* Día específico */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                    <p className="text-xs text-default-500 font-medium whitespace-nowrap">Día:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color="default"
-                        className="cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleQuickRange(getYesterday())}
-                      >
-                        Ayer
-                      </Chip>
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color="default"
-                        className="cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleQuickRange(getToday())}
-                      >
-                        Hoy
-                      </Chip>
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color="default"
-                        className="cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleQuickRange(getTomorrow())}
-                      >
-                        Mañana
-                      </Chip>
-                    </div>
-                  </div>
-
-                  {/* Semana */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                    <p className="text-xs text-default-500 font-medium whitespace-nowrap">
-                      Semana:
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color="default"
-                        className="cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleQuickRange(getLastWeek())}
-                      >
-                        Pasada
-                      </Chip>
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color="default"
-                        className="cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleQuickRange(getThisWeek())}
-                      >
-                        Actual
-                      </Chip>
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color="default"
-                        className="cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleQuickRange(getNextWeek())}
-                      >
-                        Próxima
-                      </Chip>
-                    </div>
-                  </div>
-
-                  {/* Mes */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                    <p className="text-xs text-default-500 font-medium whitespace-nowrap">Mes:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color="default"
-                        className="cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleQuickRange(getLastMonth())}
-                      >
-                        Pasado
-                      </Chip>
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color="default"
-                        className="cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleQuickRange(getThisMonth())}
-                      >
-                        Actual
-                      </Chip>
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color="default"
-                        className="cursor-pointer hover:scale-105 transition-transform"
-                        onClick={() => handleQuickRange(getNextMonth())}
-                      >
-                        Próximo
-                      </Chip>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        )}
-      </Card>
-
-      {!hasValidDates ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
-            <Calendar className="h-16 w-16 text-default-300" />
-            <div className="text-center">
-              <p className="text-lg font-semibold text-default-600">
-                Selecciona un rango de fechas
-              </p>
-              <p className="text-sm text-default-400 mt-1">
-                Elige las fechas o usa los rangos rápidos para ver las métricas
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : isLoading ? (
-        <div className="flex justify-center items-center min-h-100">
-          <Spinner size="lg" />
-          <span className="ml-4">Cargando analytics...</span>
+      {isLoading && !data ? (
+        <div className="h-64 flex items-center justify-center">
+          <Spinner size="lg" color="current" className="text-default-300" />
         </div>
       ) : (
         <>
-          {/* KPI Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-            <Card>
-              <CardContent className="flex flex-row items-center gap-3 p-4">
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <Syringe className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-default-500">Total Tratamientos</p>
-                  <p className="text-2xl font-bold">{data?.totals.events || 0}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="flex flex-row items-center gap-3 p-4">
-                <div className="p-3 rounded-lg bg-success/10">
-                  <DollarSign className="h-6 w-6 text-success" />
-                </div>
-                <div>
-                  <p className="text-sm text-default-500">$ Cobrado</p>
-                  <p className="text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
-                  <p className="text-xs text-default-400">
-                    {revenuePercentage.toFixed(1)}% de esperado
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="flex flex-row items-center gap-3 p-4">
-                <div className="p-3 rounded-lg bg-warning/10">
-                  <Package className="h-6 w-6 text-warning" />
-                </div>
-                <div>
-                  <p className="text-sm text-default-500">ml Consumidos</p>
-                  <p className="text-2xl font-bold">{data?.totals.dosageMl.toFixed(1) || 0}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="flex flex-row items-center gap-3 p-4">
-                <div className="p-3 rounded-lg bg-secondary/10">
-                  <Home className="h-6 w-6 text-secondary" />
-                </div>
-                <div>
-                  <p className="text-sm text-default-500">Domicilio</p>
-                  <p className="text-2xl font-bold">{data?.totals.domicilioCount || 0}</p>
-                  <p className="text-xs text-default-400">{domicilioPercentage.toFixed(1)}%</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Treatment Stage Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Card>
-              <CardHeader>
-                <p className="text-xs font-semibold">Etapa de Tratamiento</p>
-              </CardHeader>
-              <CardContent className="gap-2 p-5">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Inducción</span>
-                  <span className="text-sm font-semibold">
-                    {data?.totals.induccionCount || 0} ({induccionPercentage.toFixed(1)}%)
-                  </span>
-                </div>
-                <div className="w-full bg-default-200 rounded-full h-2">
-                  <div
-                    className="bg-primary h-2 rounded-full transition-all"
-                    style={{ width: `${induccionPercentage}%` }}
-                  />
-                </div>
-                <div className="flex justify-between items-center mt-3">
-                  <span className="text-sm">Mantención</span>
-                  <span className="text-sm font-semibold">
-                    {data?.totals.mantencionCount || 0} ({mantencionPercentage.toFixed(1)}%)
-                  </span>
-                </div>
-                <div className="w-full bg-default-200 rounded-full h-2">
-                  <div
-                    className="bg-secondary h-2 rounded-full transition-all"
-                    style={{ width: `${mantencionPercentage}%` }}
-                  />
-                </div>
-                <div className="flex justify-between items-center mt-3">
-                  <span className="text-sm">Sin clasificar</span>
-                  <span className="text-sm font-semibold">
-                    {unclassifiedStageCount} ({unclassifiedStagePercentage.toFixed(1)}%)
-                  </span>
-                </div>
-                <div className="w-full bg-default-200 rounded-full h-2">
-                  <div
-                    className="bg-default-400 h-2 rounded-full transition-all"
-                    style={{ width: `${unclassifiedStagePercentage}%` }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <p className="text-xs font-semibold">Ubicación de Entrega</p>
-              </CardHeader>
-              <CardContent className="gap-2 p-5">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Domicilio</span>
-                  <span className="text-sm font-semibold">
-                    {data?.totals.domicilioCount || 0} ({domicilioPercentage.toFixed(1)}%)
-                  </span>
-                </div>
-                <div className="w-full bg-default-200 rounded-full h-2">
-                  <div
-                    className="bg-secondary h-2 rounded-full transition-all"
-                    style={{ width: `${domicilioPercentage}%` }}
-                  />
-                </div>
-                <div className="flex justify-between items-center mt-3">
-                  <span className="text-sm">Clínica</span>
-                  <span className="text-sm font-semibold">
-                    {(data?.totals.events || 0) - (data?.totals.domicilioCount || 0)} (
-                    {(100 - domicilioPercentage).toFixed(1)}%)
-                  </span>
-                </div>
-                <div className="w-full bg-default-200 rounded-full h-2">
-                  <div
-                    className="bg-primary h-2 rounded-full transition-all"
-                    style={{ width: `${100 - domicilioPercentage}%` }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Period Selector */}
-          <Card>
-            <CardHeader>
-              <div className="flex gap-1.5 border-b border-divider pb-2">
-                <button
-                  type="button"
-                  className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                    period === "day"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-default-100 hover:bg-default-200"
-                  }`}
-                  onClick={() => setPeriod("day")}
-                >
-                  Por Día
-                </button>
-                <button
-                  type="button"
-                  className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                    period === "week"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-default-100 hover:bg-default-200"
-                  }`}
-                  onClick={() => setPeriod("week")}
-                >
-                  Por Semana
-                </button>
-                <button
-                  type="button"
-                  className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                    period === "month"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-default-100 hover:bg-default-200"
-                  }`}
-                  onClick={() => setPeriod("month")}
-                >
-                  Por Mes
-                </button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-divider">
-                      <th className="text-left py-3 px-2 font-semibold">
-                        {period === "day" && "Fecha"}
-                        {period === "week" && "Semana"}
-                        {period === "month" && "Mes"}
-                      </th>
-                      <th className="text-right py-3 px-2 font-semibold">Tratamientos</th>
-                      <th className="text-right py-3 px-2 font-semibold">$ Cobrado</th>
-                      <th className="text-right py-3 px-2 font-semibold">ml</th>
-                      <th className="text-right py-3 px-2 font-semibold">Domicilio</th>
-                      <th className="text-right py-3 px-2 font-semibold">Inducción</th>
-                      <th className="text-right py-3 px-2 font-semibold">Mantención</th>
-                      <th className="text-right py-3 px-2 font-semibold">Sin clasificar</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {period === "day" &&
-                      data?.byDate.map((row) => (
-                        <tr key={row.date} className="border-b border-divider hover:bg-default-50">
-                          <td className="py-3 px-2">{dayjs(row.date).format("DD MMM YYYY")}</td>
-                          <td className="text-right py-3 px-2">{row.events}</td>
-                          <td className="text-right py-3 px-2">{formatCurrency(row.amountPaid)}</td>
-                          <td className="text-right py-3 px-2">{row.dosageMl.toFixed(1)}</td>
-                          <td className="text-right py-3 px-2">{row.domicilioCount}</td>
-                          <td className="text-right py-3 px-2">{row.induccionCount}</td>
-                          <td className="text-right py-3 px-2">{row.mantencionCount}</td>
-                          <td className="text-right py-3 px-2">
-                            {row.events - row.induccionCount - row.mantencionCount}
-                          </td>
-                        </tr>
-                      ))}
-                    {period === "week" &&
-                      data?.byWeek.map((row) => (
-                        <tr
-                          key={`${row.isoYear}-${row.isoWeek}`}
-                          className="border-b border-divider hover:bg-default-50"
-                        >
-                          <td className="py-3 px-2">
-                            Semana {row.isoWeek}, {row.isoYear}
-                          </td>
-                          <td className="text-right py-3 px-2">{row.events}</td>
-                          <td className="text-right py-3 px-2">{formatCurrency(row.amountPaid)}</td>
-                          <td className="text-right py-3 px-2">{row.dosageMl.toFixed(1)}</td>
-                          <td className="text-right py-3 px-2">{row.domicilioCount}</td>
-                          <td className="text-right py-3 px-2">{row.induccionCount}</td>
-                          <td className="text-right py-3 px-2">{row.mantencionCount}</td>
-                          <td className="text-right py-3 px-2">
-                            {row.events - row.induccionCount - row.mantencionCount}
-                          </td>
-                        </tr>
-                      ))}
-                    {period === "month" &&
-                      data?.byMonth.map((row) => (
-                        <tr
-                          key={`${row.year}-${row.month}`}
-                          className="border-b border-divider hover:bg-default-50"
-                        >
-                          <td className="py-3 px-2">
-                            {dayjs(`${row.year}-${row.month}-01`).format("MMMM YYYY")}
-                          </td>
-                          <td className="text-right py-3 px-2">{row.events}</td>
-                          <td className="text-right py-3 px-2">{formatCurrency(row.amountPaid)}</td>
-                          <td className="text-right py-3 px-2">{row.dosageMl.toFixed(1)}</td>
-                          <td className="text-right py-3 px-2">{row.domicilioCount}</td>
-                          <td className="text-right py-3 px-2">{row.induccionCount}</td>
-                          <td className="text-right py-3 px-2">{row.mantencionCount}</td>
-                          <td className="text-right py-3 px-2">
-                            {row.events - row.induccionCount - row.mantencionCount}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-              {((period === "day" && data?.byDate.length === 0) ||
-                (period === "week" && data?.byWeek.length === 0) ||
-                (period === "month" && data?.byMonth.length === 0)) && (
-                <div className="text-center py-8 text-default-500">
-                  <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No hay datos para el período seleccionado</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <AnalyticsKpiGrid
+            totalTreatmentCount={totalTreatmentCount}
+            totalRevenue={totalRevenue}
+            totalMl={totalMl}
+            domicilioCount={domicilioCount}
+          />
+          <AnalyticsCharts
+            trendData={trendData}
+            pieDataStage={pieDataStage}
+            pieDataLocation={pieDataLocation}
+            period={period}
+          />
         </>
       )}
-    </section>
+    </div>
   );
 }
+
+// --- Sub Components ---
+
+function AnalyticsHeader({
+  filters,
+  period,
+  isFilterOpen,
+  isLoading,
+  onToggleFilter,
+  onSetPeriod,
+  onRefresh,
+}: {
+  filters: TreatmentAnalyticsFilters;
+  period: "day" | "week" | "month";
+  isFilterOpen: boolean;
+  isLoading: boolean;
+  onToggleFilter: () => void;
+  onSetPeriod: (p: "day" | "week" | "month") => void;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
+        <p className="text-sm text-default-500">Rendimiento de tratamientos e insumos</p>
+      </div>
+
+      <div className="flex items-center gap-2 bg-default-50 p-1.5 rounded-xl border border-default-100">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onToggleFilter}
+          className="text-default-600 gap-2"
+        >
+          <CalendarIcon className="w-4 h-4" />
+          <span className="font-medium text-xs">
+            {filters.from ? dayjs(filters.from).format("DD MMM") : ""} -{" "}
+            {filters.to ? dayjs(filters.to).format("DD MMM") : ""}
+          </span>
+          {isFilterOpen ? (
+            <ChevronUp className="w-3 h-3 text-default-400" />
+          ) : (
+            <ChevronDown className="w-3 h-3 text-default-400" />
+          )}
+        </Button>
+
+        <div className="h-4 w-px bg-default-200 mx-1" />
+
+        <div className="flex gap-1">
+          {(["day", "week", "month"] as const).map((p) => (
+            <button
+              type="button"
+              key={p}
+              onClick={() => onSetPeriod(p)}
+              className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${
+                period === p
+                  ? "bg-white text-foreground shadow-sm ring-1 ring-default-200"
+                  : "text-default-500 hover:text-foreground hover:bg-default-200/50"
+              }`}
+            >
+              {p === "day" ? "Día" : p === "week" ? "Semana" : "Mes"}
+            </button>
+          ))}
+        </div>
+
+        <Button
+          size="sm"
+          isIconOnly
+          variant="ghost"
+          onClick={onRefresh}
+          disabled={isLoading}
+          className="text-default-400 hover:text-primary"
+        >
+          <RefreshCcw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsFilters({
+  filters,
+  onDateChange,
+  onQuickRange,
+}: {
+  filters: TreatmentAnalyticsFilters;
+  onDateChange: (from: string, to: string) => void;
+  onQuickRange: (range: { from: string; to: string }) => void;
+}) {
+  return (
+    <Card className="shadow-sm border-default-200 bg-default-50/50">
+      <CardBody className="p-4 grid grid-cols-1 lg:grid-cols-[1fr,auto] gap-6">
+        <div className="flex gap-4 items-end">
+          <div className="max-w-37.5">
+            <Label className="text-xs mb-1.5 ml-1 text-default-500">Desde</Label>
+            <DateField
+              value={filters.from ? parseDate(filters.from) : null}
+              onChange={(d) => d && onDateChange(d.toString(), filters.to || d.toString())}
+            >
+              <DateInputGroup className="bg-white border-default-200 text-sm">
+                <DateInputGroup.Input>
+                  {(segment) => <DateInputGroup.Segment segment={segment} />}
+                </DateInputGroup.Input>
+              </DateInputGroup>
+            </DateField>
+          </div>
+          <div className="max-w-37.5">
+            <Label className="text-xs mb-1.5 ml-1 text-default-500">Hasta</Label>
+            <DateField
+              value={filters.to ? parseDate(filters.to) : null}
+              onChange={(d) => d && onDateChange(filters.from || d.toString(), d.toString())}
+            >
+              <DateInputGroup className="bg-white border-default-200 text-sm">
+                <DateInputGroup.Input>
+                  {(segment) => <DateInputGroup.Segment segment={segment} />}
+                </DateInputGroup.Input>
+              </DateInputGroup>
+            </DateField>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 items-end">
+          {[
+            { label: "Esta Semana", fn: getThisWeek },
+            { label: "Semana Pasada", fn: getLastWeek },
+            { label: "Este Mes", fn: getThisMonth },
+            { label: "Mes Pasado", fn: getLastMonth },
+          ].map((item) => (
+            <Chip
+              key={item.label}
+              variant="soft"
+              className="cursor-pointer hover:bg-default-200 transition-colors"
+              onClick={() => onQuickRange(item.fn())}
+            >
+              {item.label}
+            </Chip>
+          ))}
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+function AnalyticsKpiGrid({
+  totalTreatmentCount,
+  totalRevenue,
+  totalMl,
+  domicilioCount,
+}: {
+  totalTreatmentCount: number;
+  totalRevenue: number;
+  totalMl: number;
+  domicilioCount: number;
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <KpiCard title="Tratamientos" value={totalTreatmentCount} icon={Syringe} color="primary" />
+      <KpiCard
+        title="Ingresos"
+        value={formatCurrency(totalRevenue)}
+        icon={DollarSign}
+        color="success"
+        caption="Generados en el periodo"
+      />
+      <KpiCard
+        title="Consumo (ml)"
+        value={totalMl.toFixed(1)}
+        icon={Package}
+        color="warning"
+        caption="Volumen total"
+      />
+      <KpiCard
+        title="Domicilio"
+        value={`${domicilioCount}`}
+        icon={Home}
+        color="secondary"
+        caption={`${((domicilioCount / (totalTreatmentCount || 1)) * 100).toFixed(1)}% del total`}
+      />
+    </div>
+  );
+}
+
+function AnalyticsCharts({
+  trendData,
+  pieDataStage,
+  pieDataLocation,
+  period,
+}: {
+  // biome-ignore lint/suspicious/noExplicitAny: loose chart data types
+  trendData: any[] | undefined;
+  // biome-ignore lint/suspicious/noExplicitAny: loose chart data types
+  pieDataStage: any[];
+  // biome-ignore lint/suspicious/noExplicitAny: loose chart data types
+  pieDataLocation: any[];
+  period: "day" | "week" | "month";
+}) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-4">
+      {/* Trend Chart */}
+      <Card className="shadow-sm border-default-200">
+        <CardHeader className="pb-2">
+          <h3 className="text-base font-semibold text-foreground">Tendencia de Actividad</h3>
+        </CardHeader>
+        <CardBody className="h-87.5">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.1} />
+                  <stop offset="95%" stopColor={COLORS.success} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.1} />
+                  <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.grid} />
+              <XAxis
+                dataKey={period === "day" ? "date" : "label"}
+                stroke={COLORS.default}
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(val) => (period === "day" ? dayjs(val).format("D MMM") : val)}
+              />
+              <YAxis
+                yAxisId="left"
+                stroke={COLORS.default}
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(val) => `$${val / 1000}k`}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                stroke={COLORS.default}
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              <Area
+                yAxisId="left"
+                type="monotone"
+                dataKey="amountPaid"
+                name="Ingresos ($)"
+                stroke={COLORS.success}
+                fillOpacity={1}
+                fill="url(#colorRevenue)"
+                strokeWidth={2}
+              />
+              <Area
+                yAxisId="right"
+                type="monotone"
+                dataKey="events"
+                name="Tratamientos"
+                stroke={COLORS.primary}
+                fillOpacity={1}
+                fill="url(#colorVolume)"
+                strokeWidth={2}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </CardBody>
+      </Card>
+
+      {/* Distribution Charts */}
+      <div className="grid grid-cols-1 gap-4">
+        <PieChartCard title="Por Etapa" data={pieDataStage} colors={PIE_COLORS_STAGE} />
+        <PieChartCard title="Por Ubicación" data={pieDataLocation} colors={PIE_COLORS_LOCATION} />
+      </div>
+    </div>
+  );
+}
+
+function PieChartCard({
+  title,
+  data,
+  colors,
+}: {
+  title: string;
+  // biome-ignore lint/suspicious/noExplicitAny: loose chart data types
+  data: any[];
+  colors: string[];
+}) {
+  return (
+    <Card className="shadow-sm border-default-200 flex-1">
+      <CardHeader className="pb-0">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      </CardHeader>
+      <CardBody className="h-40">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={45}
+              outerRadius={60}
+              paddingAngle={5}
+              dataKey="value"
+            >
+              {data.map((entry, index) => (
+                <Cell key={entry.name} fill={colors[index % colors.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend
+              verticalAlign="middle"
+              align="right"
+              layout="vertical"
+              iconType="circle"
+              wrapperStyle={{ fontSize: "11px" }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </CardBody>
+    </Card>
+  );
+}
+
+function KpiCard({
+  title,
+  value,
+  icon: Icon,
+  color,
+  caption,
+}: {
+  title: string;
+  value: string | number;
+  icon: React.ElementType;
+  color: "primary" | "secondary" | "success" | "warning";
+  caption?: string;
+}) {
+  const bgClasses = {
+    primary: "bg-primary/10 text-primary",
+    secondary: "bg-secondary/10 text-secondary",
+    success: "bg-success/10 text-success",
+    warning: "bg-warning/10 text-warning",
+  };
+
+  return (
+    <Card className="shadow-sm border-default-200">
+      <CardBody className="p-5 flex flex-row items-start justify-between">
+        <div>
+          <p className="text-sm font-medium text-default-500 mb-1">{title}</p>
+          <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
+          {caption && <p className="text-xs text-default-400 mt-1">{caption}</p>}
+        </div>
+        <div className={`p-2.5 rounded-xl ${bgClasses[color]}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  // biome-ignore lint/suspicious/noExplicitAny: Recharts payload is loosely typed
+  payload?: any[];
+  label?: string;
+}) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-content1 border border-default-200 p-3 rounded-lg shadow-lg text-xs">
+        <p className="font-semibold text-foreground mb-2">
+          {dayjs(label).isValid() ? dayjs(label).format("DD MMM YYYY") : label}
+        </p>
+        <div className="space-y-1">
+          {/* biome-ignore lint/suspicious/noExplicitAny: Recharts payload is loosely typed */}
+          {payload.map((p: any) => (
+            <div key={p.name} className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+              <span className="text-default-500 capitalize">{p.name}:</span>
+              <span className="font-medium text-foreground">
+                {p.name.includes("Ingresos") ? formatCurrency(p.value) : p.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
