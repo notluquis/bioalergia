@@ -279,7 +279,7 @@ function AnalyticsFilters({
 }) {
   return (
     <Card className="shadow-sm border-default-200 bg-default-50/50">
-      <Card.Content className="p-4 grid grid-cols-1 lg:grid-cols-[1fr,auto] gap-6">
+      <Card.Content className="p-3 grid grid-cols-1 lg:grid-cols-[1fr,auto] gap-4">
         <div className="flex gap-4 items-end">
           <div className="max-w-37.5">
             <Label className="text-xs mb-1.5 ml-1 text-default-500">Desde</Label>
@@ -533,14 +533,14 @@ function KpiCard({
 
   return (
     <Card className="shadow-sm border-default-200">
-      <Card.Content className="p-5 flex flex-row items-start justify-between">
+      <Card.Content className="p-3 flex flex-row items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-default-500 mb-1">{title}</p>
+          <p className="text-sm font-medium text-default-500">{title}</p>
           <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
-          {caption && <p className="text-xs text-default-400 mt-1">{caption}</p>}
+          {caption && <p className="text-xs text-default-400 mt-0.5">{caption}</p>}
         </div>
-        <div className={`p-2.5 rounded-xl ${bgClasses[color]}`}>
-          <Icon className="w-5 h-5" />
+        <div className={`p-2 rounded-lg ${bgClasses[color]}`}>
+          <Icon className="w-4 h-4" />
         </div>
       </Card.Content>
     </Card>
