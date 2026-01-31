@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authed/operations/supplies-analytics")({
       section: "Insumos",
     },
     permission: { action: "read", subject: "CalendarEvent" },
-    title: "Analytics de Tratamientos Subcutáneos",
+    title: "Analytics",
   },
   beforeLoad: ({ context }) => {
     if (!context.auth.can("read", "CalendarEvent")) {

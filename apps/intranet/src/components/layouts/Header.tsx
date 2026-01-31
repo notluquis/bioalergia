@@ -92,32 +92,34 @@ export default function Header() {
   };
 
   return (
-    <header className="scroll-header-animation sticky top-0 z-30 flex items-center justify-between rounded-3xl px-6 py-1 transition-all duration-300">
+    <header className="scroll-header-animation sticky top-0 z-30 flex items-center justify-between rounded-3xl px-6 py-3 transition-all duration-300">
       <div className="flex flex-col gap-0.5">
-        {(crumbs.length > 1 || (crumbs.length === 1 && crumbs[0]?.label !== pageTitle)) && (
-          <Breadcrumbs className="text-default-500/60">
+        <div className="flex items-center gap-3">
+          <Breadcrumbs className="font-medium">
+            {crumbs.length === 0 && <Breadcrumbs.Item>Inicio</Breadcrumbs.Item>}
             {crumbs.map((crumb, i) => {
-              const isCurrent = i === crumbs.length - 1;
+              const isLast = i === crumbs.length - 1;
+
               return (
                 <Breadcrumbs.Item key={crumb.to || i}>
-                  {isCurrent || !crumb.to ? (
-                    crumb.label
-                  ) : (
+                  {!isLast && crumb.to ? (
                     <Link to={crumb.to} className="hover:text-foreground transition-colors">
                       {crumb.label}
                     </Link>
+                  ) : (
+                    crumb.label
                   )}
                 </Breadcrumbs.Item>
               );
             })}
+            {crumbs.length > 0 && crumbs[crumbs.length - 1]?.label !== pageTitle && (
+              <Breadcrumbs.Item>{pageTitle}</Breadcrumbs.Item>
+            )}
           </Breadcrumbs>
-        )}
-        <div className="flex items-center gap-3">
-          <h1 className="text-foreground text-2xl font-bold tracking-tight">{pageTitle}</h1>
+
           {isNavigating && (
             <span className="text-primary flex items-center gap-1 text-xs font-semibold">
               <Loader2 className="h-3 w-3 animate-spin" />
-              Cargando...
             </span>
           )}
         </div>

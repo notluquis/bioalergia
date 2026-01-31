@@ -1,13 +1,4 @@
-import {
-  Breadcrumbs,
-  Button,
-  Card,
-  Chip,
-  DateField,
-  DateInputGroup,
-  Label,
-  Spinner,
-} from "@heroui/react";
+import { Button, Card, Chip, DateField, DateInputGroup, Label, Spinner } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -219,10 +210,8 @@ function AnalyticsHeader({
 }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <Breadcrumbs>
-        <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
-        <Breadcrumbs.Item>Analytics</Breadcrumbs.Item>
-      </Breadcrumbs>
+      {/* Title handled globally by Header Breadcrumbs */}
+      <div />
 
       <div className="flex items-center gap-2 bg-default-50 p-1.5 rounded-xl border border-default-100">
         <Button
