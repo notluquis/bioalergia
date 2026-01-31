@@ -39,7 +39,16 @@
 		}
 	}
 
-	# SPA routing: try files, fallback to index.html
+	# Static assets: Return 404 if not found (prevents MIME type errors for missing JS chunks)
+	# This handles cases where old HTML references deleted Vite chunks
+	@static_assets path_regexp \.(js|mjs|css|map|json|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$
+	
+	handle @static_assets {
+		file_server
+		# If file doesn't exist, Caddy returns 404 automatically (no fallback to index.html)
+	}
+
+	# SPA routing: All other paths fallback to index.html (client-side navigation)
 	handle {
 		try_files {path} /index.html
 		file_server
