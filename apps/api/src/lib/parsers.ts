@@ -277,7 +277,6 @@ const DECIMAL_STANDALONE_PATTERN = /\b(0[.,]\d+)\b/; // Standalone decimal like 
 const HALF_ML_PATTERN = /0[.,]5(\s*ml)?\b/i; // 0.5 ml indicator for maintenance
 
 /** Dosage parsing pattern */
-const DOSAGE_VALUE_PATTERN = /^([\d.,]+)\s*(ml|cc|mg)?/i; // Extract value and unit from dosage string
 
 // ============================================================================
 // VALIDATION & SCHEMAS
@@ -535,7 +534,10 @@ function detectAttendance(summary: string, description: string): boolean | null 
   return matchesAny(text, ATTENDED_PATTERNS) ? true : null;
 }
 
-function extractDosage(summary: string, description: string): { value: number; unit: string } | null {
+function extractDosage(
+  summary: string,
+  description: string,
+): { value: number; unit: string } | null {
   const text = `${summary} ${description}`;
 
   // Try explicit dosage patterns (0.5 ml, 1 cc, etc.)
@@ -643,21 +645,4 @@ export function parseCalendarMetadata(input: {
     controlIncluded,
     isDomicilio,
   };
-}
-
-/**
- * Parse a dosage string like "0,3 ml" or "0.5 cc" into a numeric value in ml.
- * Returns null if parsing fails.
- */
-function parseDosageToMl(dosage: string): number | null {
-  // Extract numeric value and unit from strings like "0,3 ml", "0.5 cc", "1 mg"
-  const match = dosage.match(DOSAGE_VALUE_PATTERN);
-  if (!match) return null;
-
-  const valueStr = match[1].replace(",", ".");
-  const value = Number.parseFloat(valueStr);
-  if (!Number.isFinite(value)) return null;
-
-  // For simplicity, treat cc as equivalent to ml. mg would need conversion but we assume ml for now.
-  return value;
 }

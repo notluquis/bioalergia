@@ -141,7 +141,7 @@ calendarRoutes.get("/events/summary", requireAuth, async (c: Context) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const { filters, applied } = await buildFilters(c.req.query());
+  const { filters, applied } = await buildFilters(c.req.queries());
   const aggregates = await getCalendarAggregates(filters);
   return reply(c, {
     status: "ok",
@@ -803,7 +803,8 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
         id: number;
         data: {
           category?: string;
-          dosage?: string;
+          dosageValue?: number;
+          dosageUnit?: string;
           treatmentStage?: string;
           attended?: boolean;
           amountExpected?: number;
@@ -835,8 +836,12 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
           updateData.category = metadata.category;
           fieldCounts.category++;
         }
-        if (event.dosage === null && metadata.dosage) {
-          updateData.dosage = metadata.dosage;
+        if (
+          (event.dosageValue === null || event.dosageUnit === null) &&
+          metadata.dosageValue !== null
+        ) {
+          updateData.dosageValue = metadata.dosageValue;
+          updateData.dosageUnit = metadata.dosageUnit ?? "ml";
           fieldCounts.dosage++;
         }
         if (event.treatmentStage === null && metadata.treatmentStage) {
