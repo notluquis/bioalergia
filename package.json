@@ -5,6 +5,7 @@
     "node": ">=25.3.0",
     "pnpm": ">=10.28.0"
   },
+  "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev": "pnpm -r --if-present dev",
     "build": "pnpm -r --if-present build",
