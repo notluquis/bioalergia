@@ -389,7 +389,7 @@ function AnalyticsCharts({
         <Card.Header className="pb-2">
           <h3 className="text-base font-semibold text-foreground">Tendencia de Actividad</h3>
         </Card.Header>
-        <Card.Content className="h-87.5">
+        <Card.Content className="h-60">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>
@@ -478,15 +478,15 @@ function PieChartCard({
       <Card.Header className="pb-0">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       </Card.Header>
-      <Card.Content className="h-40">
+      <Card.Content className="h-32">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
               cy="50%"
-              innerRadius={45}
-              outerRadius={60}
+              innerRadius={35}
+              outerRadius={50}
               paddingAngle={5}
               dataKey="value"
             >
