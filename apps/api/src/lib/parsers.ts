@@ -327,7 +327,7 @@ function matchesAny(text: string, patterns: RegExp[]): boolean {
 
 function normalizeAmountRaw(raw: string): number | null {
   // Handle "mil" suffix (e.g. "30mil" → "30000")
-  const withMilExpanded = raw.replace(/(\d+)\s*mil(?:es)?\b/gi, (match, num) => {
+  const withMilExpanded = raw.replace(/(\d+)\s*mil(?:es)?\b/gi, (_, num) => {
     return String(Number.parseInt(num, 10) * 1000);
   });
 
@@ -383,7 +383,7 @@ function extractAmounts(summary: string, description: string) {
     content = content.replace(DATE_PATTERN, "");
 
     // Extract first numeric part (e.g. "30mil: francisco" → "30mil")
-    const numericPart = content.match(/^[\d\s,./]*(?:mil)*\b/);
+    const numericPart = content.match(AMOUNT_START_PATTERN);
     const normalizedContent = numericPart ? numericPart[0] : content;
 
     const amount = normalizeAmountRaw(normalizedContent);
@@ -534,13 +534,11 @@ function detectAttendance(summary: string, description: string): boolean | null 
   return matchesAny(text, ATTENDED_PATTERNS) ? true : null;
 }
 
-function extractDosage(
-  summary: string,
-  description: string,
-): { value: number; unit: string } | null {
-  const text = `${summary} ${description}`;
+// Helper pattern extracted to top-level
+const AMOUNT_START_PATTERN = /^[\d\s,./]*(?:mil)*\b/;
 
-  // Try explicit dosage patterns (0.5 ml, 1 cc, etc.)
+/** Parse explicit dosage like "0.5 ml" */
+function parseExplicitDosage(text: string): { value: number; unit: string } | null {
   for (const pattern of DOSAGE_PATTERNS) {
     const match = pattern.exec(text);
     if (!match) continue;
@@ -554,12 +552,24 @@ function extractDosage(
     if (!valueRaw) continue;
 
     const value = Number.parseFloat(valueRaw);
-    if (!Number.isFinite(value)) continue;
-
-    return { value, unit: unit || "ml" };
+    if (Number.isFinite(value)) {
+      return { value, unit: unit || "ml" };
+    }
   }
+  return null;
+}
 
-  // Pattern for clustoid+dosage format without space: "clustoid0,3", "clustoid0,1"
+function extractDosage(
+  summary: string,
+  description: string,
+): { value: number; unit: string } | null {
+  const text = `${summary} ${description}`;
+
+  // 1. Try explicit dosage patterns (0.5 ml, 1 cc, etc.)
+  const explicit = parseExplicitDosage(text);
+  if (explicit) return explicit;
+
+  // 2. Pattern for clustoid+dosage format without space: "clustoid0,3", "clustoid0,1"
   const clustoidDosageMatch = CLUSTOID_DOSAGE_PATTERN.exec(text);
   if (clustoidDosageMatch) {
     const value = Number.parseFloat(clustoidDosageMatch[1].replace(",", "."));
@@ -568,7 +578,7 @@ function extractDosage(
     }
   }
 
-  // Fallback: standalone decimal (e.g. "0,5") implies "ml" in this context
+  // 3. Fallback: standalone decimal (e.g. "0,5") implies "ml" in this context
   const decimalMatch = DECIMAL_STANDALONE_PATTERN.exec(text);
   if (decimalMatch) {
     const value = Number.parseFloat(decimalMatch[1].replace(",", "."));
