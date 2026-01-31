@@ -10,15 +10,24 @@ import Clock from "../features/Clock";
 import Button from "../ui/Button";
 import ThemeToggle from "../ui/ThemeToggle";
 
-// Helper: Extract label from match context
-const getMatchLabel = (match: { context: Record<string, unknown> }): string => {
+// Helper: Extract label from match data
+const getMatchLabel = (match: {
+  context: Record<string, unknown>;
+  staticData?: Record<string, unknown>;
+}): string => {
+  // 1. Try static data (preferred for declarative titles)
+  if (match.staticData) {
+    if (typeof match.staticData.breadcrumb === "string") return match.staticData.breadcrumb;
+    if (typeof match.staticData.title === "string") return match.staticData.title;
+    // Handle optional function in staticData if defined that way (less common in TanStack Router but possible)
+    if (typeof match.staticData.breadcrumb === "function") return match.staticData.breadcrumb({});
+  }
+
+  // 2. Fallback to context functions (legacy or dynamic)
   const { getBreadcrumb, getTitle } = match.context;
-  if (typeof getBreadcrumb === "function") {
-    return getBreadcrumb();
-  }
-  if (typeof getTitle === "function") {
-    return getTitle();
-  }
+  if (typeof getBreadcrumb === "function") return (getBreadcrumb as () => string)();
+  if (typeof getTitle === "function") return (getTitle as () => string)();
+
   return "";
 };
 
@@ -26,11 +35,14 @@ const getMatchLabel = (match: { context: Record<string, unknown> }): string => {
 const buildCrumbs = (
   matches: Array<{
     context: Record<string, unknown>;
+    staticData?: Record<string, unknown>;
     pathname: string;
   }>,
 ) => {
   const activeMatches = matches.filter(
     (match) =>
+      match.staticData?.title ||
+      match.staticData?.breadcrumb ||
       typeof match.context?.getTitle === "function" ||
       typeof match.context?.getBreadcrumb === "function",
   );
@@ -45,19 +57,21 @@ const buildCrumbs = (
 
 // Helper: Extract page title from last match or crumbs
 const getPageTitle = (
-  matches: Array<{ context: Record<string, unknown> }>,
+  matches: Array<{
+    context: Record<string, unknown>;
+    staticData?: Record<string, unknown>;
+  }>,
   crumbsList: Array<{ label: string }>,
 ) => {
   const activeMatches = matches.filter(
     (match) =>
+      match.staticData?.title ||
+      match.staticData?.breadcrumb ||
       typeof match.context?.getTitle === "function" ||
       typeof match.context?.getBreadcrumb === "function",
   );
   const lastMatch = activeMatches[activeMatches.length - 1];
 
-  if (lastMatch && typeof lastMatch.context?.getTitle === "function") {
-    return (lastMatch.context.getTitle as () => string)();
-  }
   if (lastMatch) {
     return getMatchLabel(lastMatch);
   }
@@ -77,10 +91,17 @@ export default function Header() {
 
   const { crumbs, pageTitle } = React.useMemo(() => {
     const crumbsList = buildCrumbs(
-      matches as unknown as Array<{ context: Record<string, unknown>; pathname: string }>,
+      matches as unknown as Array<{
+        context: Record<string, unknown>;
+        staticData?: Record<string, unknown>;
+        pathname: string;
+      }>,
     );
     const titleText = getPageTitle(
-      matches as unknown as Array<{ context: Record<string, unknown> }>,
+      matches as unknown as Array<{
+        context: Record<string, unknown>;
+        staticData?: Record<string, unknown>;
+      }>,
       crumbsList,
     );
     return { crumbs: crumbsList, pageTitle: titleText };
