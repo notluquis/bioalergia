@@ -168,7 +168,7 @@ calendarRoutes.get("/events/treatment-analytics", requireAuth, async (c: Context
   const filters: TreatmentAnalyticsFilters = {
     from: query.from?.[0], // Take first value
     to: query.to?.[0],
-    calendarIds: query.calendarIds, // Already string[]
+    calendarIds: query.calendarId, // Match frontend parameter name (singular)
   };
 
   // Set default date range if not provided (last 30 days)

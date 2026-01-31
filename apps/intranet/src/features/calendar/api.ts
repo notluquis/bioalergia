@@ -184,8 +184,12 @@ export async function fetchTreatmentAnalytics(
   const params = new URLSearchParams();
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
+  // Use singular 'calendarId' to match backend expectation
   if (filters.calendarIds?.length) {
-    params.set("calendarIds", filters.calendarIds.join(","));
+    // Send as multiple calendarId params (backend expects singular param name)
+    for (const id of filters.calendarIds) {
+      params.append("calendarId", id);
+    }
   }
 
   const response = await apiClient.get<{
