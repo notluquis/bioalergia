@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.13",
-    "turbo": "^2.8.0"
+    "turbo": "^2.8.1"
   },
   "dependencies": {
     "isomorphic-dompurify": "^2.35.0",
