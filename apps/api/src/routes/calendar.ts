@@ -164,11 +164,11 @@ calendarRoutes.get("/events/treatment-analytics", requireAuth, async (c: Context
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const query = c.req.query();
+  const query = c.req.queries();
   const filters: TreatmentAnalyticsFilters = {
-    from: query.from,
-    to: query.to,
-    calendarIds: query.calendarIds ? query.calendarIds.split(",") : undefined,
+    from: query.from?.[0], // Take first value
+    to: query.to?.[0],
+    calendarIds: query.calendarIds, // Already string[]
   };
 
   // Set default date range if not provided (last 30 days)
@@ -200,7 +200,7 @@ calendarRoutes.get("/events/daily", requireAuth, async (c: Context) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const { filters, applied, maxDays } = await buildFilters(c.req.query());
+  const { filters, applied, maxDays } = await buildFilters(c.req.queries());
   const events = await getCalendarEventsByDate(filters, { maxDays });
   return reply(c, {
     status: "ok",
