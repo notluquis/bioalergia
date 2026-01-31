@@ -3,5 +3,15 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "apps/intranet/Dockerfile"
+  },
+  "deploy": {
+    "watchPatterns": [
+      "apps/intranet/**",
+      "packages/db/**",
+      "package.json",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      "turbo.json"
+    ]
   }
 }
