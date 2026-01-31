@@ -1,4 +1,13 @@
-import { Button, Card, Chip, DateField, DateInputGroup, Label, Spinner } from "@heroui/react";
+import {
+  Breadcrumbs,
+  Button,
+  Card,
+  Chip,
+  DateField,
+  DateInputGroup,
+  Label,
+  Spinner,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -210,10 +219,10 @@ function AnalyticsHeader({
 }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
-        <p className="text-sm text-default-500">Rendimiento de tratamientos e insumos</p>
-      </div>
+      <Breadcrumbs>
+        <Breadcrumbs.Item href="/">Inicio</Breadcrumbs.Item>
+        <Breadcrumbs.Item>Analytics</Breadcrumbs.Item>
+      </Breadcrumbs>
 
       <div className="flex items-center gap-2 bg-default-50 p-1.5 rounded-xl border border-default-100">
         <Button
