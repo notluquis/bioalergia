@@ -1,14 +1,4 @@
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  DateField,
-  DateInputGroup,
-  Label,
-  Spinner,
-} from "@heroui/react";
+import { Button, Card, Chip, DateField, DateInputGroup, Label, Spinner } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -116,7 +106,7 @@ export default function TreatmentAnalyticsPage() {
     return (
       <div className="flex flex-col items-center justify-center p-12 gap-4 text-danger">
         <p>Error cargando analytics: {(error as Error).message}</p>
-        <Button onClick={handleRefresh} color="danger" variant="flat">
+        <Button onClick={handleRefresh} variant="ghost" className="text-danger">
           Reintentar
         </Button>
       </div>
@@ -268,7 +258,7 @@ function AnalyticsHeader({
           isIconOnly
           variant="ghost"
           onClick={onRefresh}
-          disabled={isLoading}
+          isDisabled={isLoading}
           className="text-default-400 hover:text-primary"
         >
           <RefreshCcw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
@@ -289,7 +279,7 @@ function AnalyticsFilters({
 }) {
   return (
     <Card className="shadow-sm border-default-200 bg-default-50/50">
-      <CardBody className="p-4 grid grid-cols-1 lg:grid-cols-[1fr,auto] gap-6">
+      <Card.Content className="p-4 grid grid-cols-1 lg:grid-cols-[1fr,auto] gap-6">
         <div className="flex gap-4 items-end">
           <div className="max-w-37.5">
             <Label className="text-xs mb-1.5 ml-1 text-default-500">Desde</Label>
@@ -336,7 +326,7 @@ function AnalyticsFilters({
             </Chip>
           ))}
         </div>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }
@@ -398,10 +388,10 @@ function AnalyticsCharts({
     <div className="grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-4">
       {/* Trend Chart */}
       <Card className="shadow-sm border-default-200">
-        <CardHeader className="pb-2">
+        <Card.Header className="pb-2">
           <h3 className="text-base font-semibold text-foreground">Tendencia de Actividad</h3>
-        </CardHeader>
-        <CardBody className="h-87.5">
+        </Card.Header>
+        <Card.Content className="h-87.5">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>
@@ -463,7 +453,7 @@ function AnalyticsCharts({
               />
             </AreaChart>
           </ResponsiveContainer>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       {/* Distribution Charts */}
@@ -487,10 +477,10 @@ function PieChartCard({
 }) {
   return (
     <Card className="shadow-sm border-default-200 flex-1">
-      <CardHeader className="pb-0">
+      <Card.Header className="pb-0">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      </CardHeader>
-      <CardBody className="h-40">
+      </Card.Header>
+      <Card.Content className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -516,7 +506,7 @@ function PieChartCard({
             />
           </PieChart>
         </ResponsiveContainer>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }
@@ -543,7 +533,7 @@ function KpiCard({
 
   return (
     <Card className="shadow-sm border-default-200">
-      <CardBody className="p-5 flex flex-row items-start justify-between">
+      <Card.Content className="p-5 flex flex-row items-start justify-between">
         <div>
           <p className="text-sm font-medium text-default-500 mb-1">{title}</p>
           <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
@@ -552,7 +542,7 @@ function KpiCard({
         <div className={`p-2.5 rounded-xl ${bgClasses[color]}`}>
           <Icon className="w-5 h-5" />
         </div>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 }
