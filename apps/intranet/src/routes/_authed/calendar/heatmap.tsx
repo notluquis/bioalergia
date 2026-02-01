@@ -10,6 +10,7 @@ const CalendarHeatmapPage = lazy(() => import("@/pages/CalendarHeatmapPage"));
 const heatmapSearchSchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
+  maxDays: z.number().optional(),
   category: z
     .union([z.string(), z.array(z.string())])
     .optional()

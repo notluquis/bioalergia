@@ -1,49 +1,16 @@
-import { Popover } from "@heroui/react";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import clsx from "clsx";
 import dayjs from "dayjs";
-import { Filter } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import Button from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { fetchCalendarSummary } from "@/features/calendar/api";
-import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
+import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import HeatmapMonth from "@/features/calendar/components/HeatmapMonth";
-import type { CalendarFilters, CalendarSummary } from "@/features/calendar/types";
+import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
+import type { CalendarSummary } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { Route } from "@/routes/_authed/calendar/heatmap";
 import "dayjs/locale/es";
 
 dayjs.locale("es");
-
-interface HeatmapFilters {
-  categories: string[];
-  from: string;
-  to: string;
-}
-
-const createInitialFilters = (): HeatmapFilters => {
-  const start = dayjs().startOf("month").subtract(1, "month");
-  const end = dayjs().endOf("month").add(1, "month");
-  return {
-    categories: [],
-    from: start.format("YYYY-MM-DD"),
-    to: end.format("YYYY-MM-DD"),
-  };
-};
-
-function arraysEqual(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false;
-  const sortedA = [...a].sort((x, y) => x.localeCompare(y));
-  const sortedB = [...b].sort((x, y) => x.localeCompare(y));
-  return sortedA.every((value, index) => value === sortedB[index]);
-}
-
-function filtersEqual(a: HeatmapFilters, b: HeatmapFilters): boolean {
-  return a.from === b.from && a.to === b.to && arraysEqual(a.categories, b.categories);
-}
 
 interface HeatmapDayData {
   amountExpected: number;
@@ -102,56 +69,38 @@ function CalendarHeatmapPage() {
   const { t } = useTranslation();
   const tc = (key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options);
 
-  const defaults = useMemo(() => createInitialFilters(), []);
+  const { appliedFilters, availableCategories, defaults, loading, summary } = useCalendarEvents();
 
-  const activeFilters = useMemo(
-    () => ({
-      categories: searchParams.category ?? defaults.categories,
-      from: searchParams.from ?? defaults.from,
-      to: searchParams.to ?? defaults.to,
-    }),
-    [searchParams, defaults],
-  );
-
-  const [filters, setFilters] = useState<HeatmapFilters>(activeFilters);
+  // Local state for filter draft
+  const [draftFilters, setDraftFilters] = useState(appliedFilters);
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
   // Sync draft with active filters when popover is closed
   React.useEffect(() => {
     if (!filtersOpen) {
-      setFilters(activeFilters);
+      setDraftFilters(appliedFilters);
     }
-  }, [activeFilters, filtersOpen]);
+  }, [appliedFilters, filtersOpen]);
 
-  const { data: summary } = useSuspenseQuery({
-    queryFn: () => {
-      const apiFilters: CalendarFilters = { ...activeFilters, maxDays: 366 };
-      return fetchCalendarSummary(apiFilters);
-    },
-    queryKey: ["calendar-heatmap", activeFilters],
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const isDirty = useMemo(() => !filtersEqual(filters, activeFilters), [filters, activeFilters]);
+  const isDirty = useMemo(
+    () => JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters),
+    [draftFilters, appliedFilters],
+  );
 
   const { heatmapMaxValue, heatmapMonths, statsByDate } = useMemo(() => {
-    return processHeatmapData(summary, activeFilters.from, activeFilters.to);
-  }, [summary, activeFilters]);
+    return processHeatmapData(summary, appliedFilters.from, appliedFilters.to);
+  }, [summary, appliedFilters]);
 
   const previewCount = useMemo(() => {
-    if (!summary || filters.from !== activeFilters.from || filters.to !== activeFilters.to)
-      return summary?.totals.events;
-    if (filters.categories.length > 0) {
-      const selected = new Set(filters.categories);
+    if (!summary) return 0;
+    if (draftFilters.categories.length > 0) {
+      const selected = new Set(draftFilters.categories);
       return summary.available.categories
         .filter((c) => c.category && selected.has(c.category))
         .reduce((sum, c) => sum + c.total, 0);
     }
-    const totalAvailable = summary.available.categories.reduce((sum, c) => sum + c.total, 0);
-    return summary.totals.events === 0 && totalAvailable > 0
-      ? totalAvailable
-      : summary.totals.events;
-  }, [summary, filters, activeFilters]);
+    return summary.totals.events;
+  }, [summary, draftFilters.categories]);
 
   const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
   const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
@@ -165,74 +114,42 @@ function CalendarHeatmapPage() {
             {rangeStartLabel} - {rangeEndLabel}
           </span>
         </div>
-        <Popover isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
-          <Popover.Trigger>
-            <Button
-              className={clsx(
-                "rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide",
-                filtersOpen && "bg-default-50",
-              )}
-              size="sm"
-              variant="outline"
-            >
-              <Filter className="h-4 w-4" />
-              Filtros
-            </Button>
-          </Popover.Trigger>
-          <Popover.Content className="z-50 max-h-[80svh] overflow-y-auto p-0" offset={8}>
-            <Popover.Dialog className="p-0">
-              <div className="w-[min(92vw,520px)]">
-                <Card className="rounded-xl border border-default-200/70 bg-content1/90 shadow-lg backdrop-blur">
-                  <CalendarFilterPanel
-                    availableCategories={summary?.available.categories ?? []}
-                    filters={{
-                      categories: filters.categories,
-                      from: filters.from,
-                      search: "",
-                      to: filters.to,
-                    }}
-                    formClassName="p-3"
-                    isDirty={isDirty}
-                    loading={false}
-                    applyCount={previewCount ?? summary?.totals.events}
-                    layout="dropdown"
-                    onApply={() => {
-                      void navigate({
-                        search: {
-                          ...filters,
-                          category: filters.categories.length > 0 ? filters.categories : undefined,
-                        },
-                      });
-                      setFiltersOpen(false);
-                    }}
-                    onFilterChange={(key, value) => {
-                      if (key === "categories")
-                        setFilters((prev) => ({ ...prev, categories: value as string[] }));
-                      else if (key === "from")
-                        setFilters((prev) => ({ ...prev, from: String(value ?? "") }));
-                      else if (key === "to")
-                        setFilters((prev) => ({ ...prev, to: String(value ?? "") }));
-                    }}
-                    onReset={() => {
-                      void navigate({
-                        search: (prev) => ({
-                          ...prev,
-                          from: undefined,
-                          to: undefined,
-                          category: undefined,
-                        }),
-                      });
-                    }}
-                    showDateRange
-                    showSearch={false}
-                    showSync={false}
-                    variant="plain"
-                  />
-                </Card>
-              </div>
-            </Popover.Dialog>
-          </Popover.Content>
-        </Popover>
+        <CalendarFiltersPopover
+          applyCount={previewCount}
+          availableCategories={availableCategories}
+          filters={draftFilters}
+          isDirty={isDirty}
+          isOpen={filtersOpen}
+          layout="dropdown"
+          loading={loading}
+          onApply={() => {
+            void navigate({
+              search: {
+                ...searchParams,
+                from: draftFilters.from,
+                to: draftFilters.to,
+                category: draftFilters.categories.length > 0 ? draftFilters.categories : undefined,
+              },
+            });
+            setFiltersOpen(false);
+          }}
+          onFilterChange={(key, value) => {
+            setDraftFilters((prev) => ({ ...prev, [key]: value }));
+          }}
+          onOpenChange={setFiltersOpen}
+          onReset={() => {
+            setDraftFilters(defaults);
+            void navigate({
+              search: (prev) => ({
+                ...prev,
+                from: undefined,
+                to: undefined,
+                category: undefined,
+              }),
+            });
+          }}
+          showDateRange
+        />
       </header>
 
       <section className="space-y-2">

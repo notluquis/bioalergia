@@ -10,7 +10,6 @@ import React, { type FormEvent } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { cn } from "@/lib/utils";
 import { NULL_CATEGORY_VALUE } from "../constants";
 import type { CalendarFilters } from "../types";
@@ -184,25 +183,17 @@ export function CalendarFilterPanel({
       className={cn("flex flex-wrap items-end gap-3 p-3", formClassName, className)}
       onSubmit={handleSubmit}
     >
-      <Select
-        className="min-w-48"
+      <MultiSelectFilter
+        className="min-w-64"
         label="Clasificación"
-        size="sm"
-        // @ts-expect-error
-        selectionMode="multiple"
-        selectedKeys={new Set(filters.categories)}
-        // biome-ignore lint/suspicious/noExplicitAny: Select selection mode type inference
-        onSelectionChange={(keys: any) => {
-          if (keys === "all") return;
-          onFilterChange("categories", Array.from(keys).map(String));
-        }}
-      >
-        {availableCategories.map((c) => (
-          <SelectItem key={c.category ?? NULL_CATEGORY_VALUE}>
-            {c.category ?? "Sin clasificación"}
-          </SelectItem>
-        ))}
-      </Select>
+        density="compact"
+        options={availableCategories.map((c) => ({
+          value: c.category ?? NULL_CATEGORY_VALUE,
+          label: c.category ?? "Sin clasificación",
+        }))}
+        selected={filters.categories}
+        onChange={(values) => onFilterChange("categories", values)}
+      />
 
       <Button type="submit" size="sm" color="primary">
         Actualizar
