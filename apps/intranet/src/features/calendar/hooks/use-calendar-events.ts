@@ -268,7 +268,9 @@ export function useCalendarEvents() {
     sync();
   };
 
-  const currentSelectedDate = dayjs(search.date ?? effectiveApplied.from ?? today()).toDate();
+  // Display date defaults to today (unless explicitly set via URL param)
+  // This is separate from the data range (from/to) which buffers -2 weeks for performance
+  const currentSelectedDate = dayjs(search.date ?? today()).toDate();
   const availableCalendars = summary?.available.calendars ?? [];
   const availableCategories = summary?.available.categories ?? [];
 
