@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import Checkbox from "@/components/ui/Checkbox";
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
 import type { FormValues } from "../schemas";
@@ -83,21 +84,18 @@ export function ClassificationRow({
         <div className="text-foreground grid gap-4 text-xs md:grid-cols-6">
           <form.Field name={`entries[${index}].category`}>
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
-              <Input
-                as="select"
+              <Select
                 label="Clasificación"
-                onChange={(e) => {
-                  field.handleChange(e.target.value);
+                onChange={(key) => {
+                  field.handleChange(key as string);
                 }}
                 value={field.state.value ?? ""}
               >
-                <option value="">Sin clasificación</option>
+                <SelectItem key="">Sin clasificación</SelectItem>
                 {categoryChoices.map((option: string) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
+                  <SelectItem key={option}>{option}</SelectItem>
                 ))}
-              </Input>
+              </Select>
             )}
           </form.Field>
 
@@ -147,21 +145,18 @@ export function ClassificationRow({
           {isSubcutaneous && (
             <form.Field name={`entries[${index}].treatmentStage`}>
               {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
-                <Input
-                  as="select"
+                <Select
                   label="Etapa tratamiento"
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
+                  onChange={(key) => {
+                    field.handleChange(key as string);
                   }}
                   value={field.state.value ?? ""}
                 >
-                  <option value="">Sin etapa</option>
+                  <SelectItem key="">Sin etapa</SelectItem>
                   {treatmentStageChoices.map((option: string) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
+                    <SelectItem key={option}>{option}</SelectItem>
                   ))}
-                </Input>
+                </Select>
               )}
             </form.Field>
           )}

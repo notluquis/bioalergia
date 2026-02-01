@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 
 import { getInventoryCategories } from "../api";
 import type { InventoryCategory, InventoryItem } from "../types";
@@ -49,24 +50,21 @@ export default function InventoryItemForm({
           type="text"
           value={form.name ?? ""}
         />
-        <Input
-          as="select"
+        <Select
           label="Categoría"
-          onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
+          onChange={(key) => {
             setForm({
               ...form,
-              category_id: event.target.value ? Number(event.target.value) : null,
+              category_id: key ? Number(key) : null,
             });
           }}
           value={form.category_id == null ? "" : String(form.category_id)}
         >
-          <option value="">Sin categoría</option>
+          <SelectItem key="">Sin categoría</SelectItem>
           {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
+            <SelectItem key={String(cat.id)}>{cat.name}</SelectItem>
           ))}
-        </Input>
+        </Select>
       </div>
       <Input
         as="textarea"

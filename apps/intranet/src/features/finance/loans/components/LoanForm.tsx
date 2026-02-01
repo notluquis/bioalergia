@@ -5,6 +5,7 @@ import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { today } from "@/lib/dates";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
@@ -111,21 +112,19 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="borrowerType">
           {(field) => (
             <div>
-              <Input
-                as="select"
-                label="Tipo"
+              <Select
+                errorMessage={field.state.meta.errors.join(", ")}
+                isInvalid={field.state.meta.errors.length > 0}
+                label="Tipo de Deudor"
                 onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(e.target.value as "COMPANY" | "PERSON");
+                onChange={(key) => {
+                  field.handleChange(key as "COMPANY" | "PERSON");
                 }}
                 value={field.state.value}
               >
-                <option value="PERSON">Persona natural</option>
-                <option value="COMPANY">Empresa</option>
-              </Input>
-              {field.state.meta.errors.length > 0 && (
-                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
-              )}
+                <SelectItem key="PERSON">Persona</SelectItem>
+                <SelectItem key="COMPANY">Empresa</SelectItem>
+              </Select>
             </div>
           )}
         </form.Field>
@@ -177,21 +176,19 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="interestType">
           {(field) => (
             <div>
-              <Input
-                as="select"
-                label="Tipo interés"
+              <Select
+                errorMessage={field.state.meta.errors.join(", ")}
+                isInvalid={field.state.meta.errors.length > 0}
+                label="Tipo de Interés"
                 onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(e.target.value as "COMPOUND" | "SIMPLE");
+                onChange={(key) => {
+                  field.handleChange(key as "COMPOUND" | "SIMPLE");
                 }}
                 value={field.state.value}
               >
-                <option value="SIMPLE">Simple</option>
-                <option value="COMPOUND">Compuesto</option>
-              </Input>
-              {field.state.meta.errors.length > 0 && (
-                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
-              )}
+                <SelectItem key="SIMPLE">Simple</SelectItem>
+                <SelectItem key="COMPOUND">Compuesto</SelectItem>
+              </Select>
             </div>
           )}
         </form.Field>
@@ -199,22 +196,20 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="frequency">
           {(field) => (
             <div>
-              <Input
-                as="select"
+              <Select
+                errorMessage={field.state.meta.errors.join(", ")}
+                isInvalid={field.state.meta.errors.length > 0}
                 label="Frecuencia de Pago"
                 onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(e.target.value as "BIWEEKLY" | "MONTHLY" | "WEEKLY");
+                onChange={(key) => {
+                  field.handleChange(key as "BIWEEKLY" | "MONTHLY" | "WEEKLY");
                 }}
                 value={field.state.value}
               >
-                <option value="WEEKLY">Semanal</option>
-                <option value="BIWEEKLY">Quincenal</option>
-                <option value="MONTHLY">Mensual</option>
-              </Input>
-              {field.state.meta.errors.length > 0 && (
-                <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
-              )}
+                <SelectItem key="WEEKLY">Semanal</SelectItem>
+                <SelectItem key="BIWEEKLY">Quincenal</SelectItem>
+                <SelectItem key="MONTHLY">Mensual</SelectItem>
+              </Select>
             </div>
           )}
         </form.Field>

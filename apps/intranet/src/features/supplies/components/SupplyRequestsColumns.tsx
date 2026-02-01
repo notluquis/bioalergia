@@ -1,7 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import type { ChangeEvent } from "react";
-
-import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 
 import type { SupplyRequest } from "../types";
 
@@ -79,20 +77,20 @@ export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
       if (!meta.isAdmin) return null;
 
       return (
-        <Input
-          as="select"
-          className="bg-background border-default-200 mt-1 block w-full rounded-md py-2 pr-10 pl-3 text-base focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-          onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-            meta.onStatusChange(row.original.id, event.target.value as SupplyRequest["status"]);
+        <Select
+          className="min-w-35"
+          onChange={(key) => {
+            // eslint-disable-next-line n/no-callback-literal
+            meta.onStatusChange(row.original.id, key as SupplyRequest["status"]);
           }}
           value={row.original.status}
         >
-          <option value="pending">Pendiente</option>
-          <option value="ordered">Pedido</option>
-          <option value="in_transit">En tránsito</option>
-          <option value="delivered">Entregado</option>
-          <option value="rejected">Rechazado</option>
-        </Input>
+          <SelectItem key="pending">Pendiente</SelectItem>
+          <SelectItem key="ordered">Pedido</SelectItem>
+          <SelectItem key="in_transit">En tránsito</SelectItem>
+          <SelectItem key="delivered">Entregado</SelectItem>
+          <SelectItem key="rejected">Rechazado</SelectItem>
+        </Select>
       );
     },
     header: "Acciones",

@@ -2,6 +2,7 @@ import { CreditCard } from "lucide-react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 
 interface FinancialStepProps {
   profile: {
@@ -50,19 +51,16 @@ export function FinancialStep({
           value={profile.bankName}
         />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Input
-            as="select"
+          <Select
             label="Tipo de cuenta"
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-              onProfileChange("bankAccountType", e.target.value)
-            }
+            onChange={(key) => onProfileChange("bankAccountType", key as string)}
             value={profile.bankAccountType}
           >
-            <option value="">Seleccionar...</option>
-            <option value="Corriente">Cuenta corriente</option>
-            <option value="Vista">Cuenta vista / RUT</option>
-            <option value="Ahorro">Cuenta de ahorro</option>
-          </Input>
+            <SelectItem key="">Seleccionar...</SelectItem>
+            <SelectItem key="Corriente">Cuenta corriente</SelectItem>
+            <SelectItem key="Vista">Cuenta vista / RUT</SelectItem>
+            <SelectItem key="Ahorro">Cuenta de ahorro</SelectItem>
+          </Select>
           <Input
             label="Número de cuenta"
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>

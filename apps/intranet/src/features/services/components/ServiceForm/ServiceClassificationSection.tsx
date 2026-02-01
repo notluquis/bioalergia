@@ -1,6 +1,4 @@
-import type { ChangeEvent } from "react";
-
-import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type {
@@ -58,62 +56,50 @@ export function ServiceClassificationSection({
 }: ServiceClassificationSectionProps) {
   return (
     <section className={GRID_2_COL_MD}>
-      <Input
-        as="select"
+      <Select
         label="Tipo"
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-          onChange("serviceType", event.target.value as ServiceType);
+        onChange={(key) => {
+          onChange("serviceType", key as ServiceType);
         }}
         value={serviceType ?? "BUSINESS"}
       >
         {SERVICE_TYPE_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
+          <SelectItem key={option.value}>{option.label}</SelectItem>
         ))}
-      </Input>
-      <Input
-        as="select"
+      </Select>
+      <Select
         label="Propiedad"
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-          onChange("ownership", event.target.value as ServiceOwnership);
+        onChange={(key) => {
+          onChange("ownership", key as ServiceOwnership);
         }}
         value={ownership ?? "COMPANY"}
       >
         {OWNERSHIP_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
+          <SelectItem key={option.value}>{option.label}</SelectItem>
         ))}
-      </Input>
-      <Input
-        as="select"
+      </Select>
+      <Select
         label="Naturaleza"
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-          onChange("obligationType", event.target.value as ServiceObligationType);
+        onChange={(key) => {
+          onChange("obligationType", key as ServiceObligationType);
         }}
         value={obligationType ?? "SERVICE"}
       >
         {OBLIGATION_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
+          <SelectItem key={option.value}>{option.label}</SelectItem>
         ))}
-      </Input>
-      <Input
-        as="select"
+      </Select>
+      <Select
         label="Recurrencia"
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-          onChange("recurrenceType", event.target.value as ServiceRecurrenceType);
+        onChange={(key) => {
+          onChange("recurrenceType", key as ServiceRecurrenceType);
         }}
         value={recurrenceType ?? "RECURRING"}
       >
         {RECURRENCE_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
+          <SelectItem key={option.value}>{option.label}</SelectItem>
         ))}
-      </Input>
+      </Select>
     </section>
   );
 }

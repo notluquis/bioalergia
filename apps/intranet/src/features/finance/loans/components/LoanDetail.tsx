@@ -5,6 +5,7 @@ import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { Select, SelectItem } from "@/components/ui/Select";
 
 import type { LoanSchedule, LoanSummary, RegenerateSchedulePayload } from "../types";
 
@@ -205,21 +206,20 @@ export function LoanDetail({
             type="number"
             value={regenerateForm.interestRate ?? loan.interest_rate}
           />
-          <Input
-            as="select"
+          <Select
             label="Frecuencia"
-            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+            onChange={(key) => {
               setRegenerateForm((prev) => ({
                 ...prev,
-                frequency: event.target.value as RegenerateSchedulePayload["frequency"],
+                frequency: key as RegenerateSchedulePayload["frequency"],
               }));
             }}
             value={regenerateForm.frequency ?? loan.frequency}
           >
-            <option value="WEEKLY">Semanal</option>
-            <option value="BIWEEKLY">Quincenal</option>
-            <option value="MONTHLY">Mensual</option>
-          </Input>
+            <SelectItem key="WEEKLY">Semanal</SelectItem>
+            <SelectItem key="BIWEEKLY">Quincenal</SelectItem>
+            <SelectItem key="MONTHLY">Mensual</SelectItem>
+          </Select>
           {regenerateError && (
             <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
               {regenerateError}

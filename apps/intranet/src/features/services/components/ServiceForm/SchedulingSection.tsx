@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
 
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { ServiceFrequency, ServiceRecurrenceType } from "../../types";
@@ -37,20 +38,17 @@ export function SchedulingSection({
 }: SchedulingSectionProps) {
   return (
     <section className={GRID_2_COL_MD}>
-      <Input
-        as="select"
+      <Select
         label="Frecuencia"
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => {
-          onChange("frequency", event.target.value as ServiceFrequency);
+        onChange={(key) => {
+          onChange("frequency", key as ServiceFrequency);
         }}
         value={frequency ?? "MONTHLY"}
       >
         {FREQUENCY_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
+          <SelectItem key={option.value}>{option.label}</SelectItem>
         ))}
-      </Input>
+      </Select>
       <Input
         label="Fecha de inicio"
         onChange={(event: ChangeEvent<HTMLInputElement>) => {

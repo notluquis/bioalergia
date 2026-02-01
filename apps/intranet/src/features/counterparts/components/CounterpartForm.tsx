@@ -6,6 +6,7 @@ import { z } from "zod";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { formatRut, validateRut } from "@/lib/rut";
 import { GRID_2_COL_MD } from "@/lib/styles";
 import type { CounterpartCategory, PersonType } from "@/types/schema";
@@ -175,18 +176,17 @@ export default function CounterpartForm({
           <form.Field name="personType">
             {(field) => (
               <div>
-                <Input
-                  as="select"
+                <Select
                   label="Tipo de persona"
                   onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value as PersonType);
+                  onChange={(key) => {
+                    field.handleChange(key as PersonType);
                   }}
                   value={field.state.value}
                 >
-                  <option value="NATURAL">Persona natural</option>
-                  <option value="JURIDICAL">Empresa</option>
-                </Input>
+                  <SelectItem key="NATURAL">Persona natural</SelectItem>
+                  <SelectItem key="JURIDICAL">Empresa</SelectItem>
+                </Select>
                 {field.state.meta.errors.length > 0 && (
                   <p className="text-danger mt-1 text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
@@ -199,21 +199,18 @@ export default function CounterpartForm({
           <form.Field name="category">
             {(field) => (
               <div>
-                <Input
-                  as="select"
+                <Select
                   label="Clasificación"
                   onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value as CounterpartCategory);
+                  onChange={(key) => {
+                    field.handleChange(key as CounterpartCategory);
                   }}
                   value={field.state.value}
                 >
                   {CATEGORY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
+                    <SelectItem key={option.value}>{option.label}</SelectItem>
                   ))}
-                </Input>
+                </Select>
                 {field.state.meta.errors.length > 0 && (
                   <p className="text-danger mt-1 text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { Select, SelectItem } from "@/components/ui/Select";
 
 import { personalFinanceApi } from "../api";
 import { personalFinanceKeys } from "../queries";
@@ -150,20 +151,20 @@ export function CreateCreditForm() {
             <form.Field name="currency">
               {(field) => (
                 <div>
-                  <Input
-                    as="select"
-                    error={field.state.meta.errors.join(", ")}
+                  <Select
+                    errorMessage={field.state.meta.errors.join(", ")}
+                    isInvalid={field.state.meta.errors.length > 0}
                     label="Moneda"
                     onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value as "CLP" | "UF" | "USD");
+                    onChange={(keys) => {
+                      field.handleChange(keys as "CLP" | "UF" | "USD");
                     }}
                     value={field.state.value}
                   >
-                    <option value="CLP">CLP</option>
-                    <option value="UF">UF</option>
-                    <option value="USD">USD</option>
-                  </Input>
+                    <SelectItem key="CLP">CLP</SelectItem>
+                    <SelectItem key="UF">UF</SelectItem>
+                    <SelectItem key="USD">USD</SelectItem>
+                  </Select>
                 </div>
               )}
             </form.Field>
