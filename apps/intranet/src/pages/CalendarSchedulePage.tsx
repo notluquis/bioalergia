@@ -2,6 +2,7 @@ import { ButtonGroup, Chip, Surface } from "@heroui/react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import React from "react";
 import Button from "@/components/ui/Button";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
@@ -31,16 +32,19 @@ function CalendarSchedulePage() {
 
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
-  const {
-    availableCategories,
-    daily,
-    filters,
-    isDirty,
-    loading,
-    resetFilters,
-    summary,
-    updateFilters,
-  } = useCalendarEvents();
+  const { appliedFilters, availableCategories, daily, defaults, loading, summary } =
+    useCalendarEvents();
+
+  // Local state for filter draft (not applicable until the user clicks Apply)
+  const [draftFilters, setDraftFilters] = React.useState(appliedFilters);
+
+  // Sync draft with applied filters only when popover is closed or on initial load
+  // To ensure the draft starts from the current view when opened
+  React.useEffect(() => {
+    if (!filtersOpen) {
+      setDraftFilters(appliedFilters);
+    }
+  }, [appliedFilters, filtersOpen]);
 
   // Purely derived state from the URL (Source of Truth)
   const actualWeekStart = getActualWeekStart();
@@ -140,8 +144,8 @@ function CalendarSchedulePage() {
               applyCount={displayedWeekEvents.length}
               availableCategories={availableCategories}
               className="shadow-lg"
-              filters={filters}
-              isDirty={isDirty}
+              filters={draftFilters}
+              isDirty={JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters)}
               isOpen={filtersOpen}
               layout="dropdown"
               loading={loading}
@@ -149,17 +153,21 @@ function CalendarSchedulePage() {
                 void navigate({
                   search: {
                     ...search,
-                    calendarId: filters.calendarIds?.length ? filters.calendarIds : undefined,
-                    category: filters.categories?.length ? filters.categories : undefined,
-                    search: filters.search || undefined,
+                    calendarId: draftFilters.calendarIds?.length
+                      ? draftFilters.calendarIds
+                      : undefined,
+                    category: draftFilters.categories?.length ? draftFilters.categories : undefined,
+                    search: draftFilters.search || undefined,
                   },
                 });
                 setFiltersOpen(false);
               }}
-              onFilterChange={updateFilters}
+              onFilterChange={(key, value) => {
+                setDraftFilters((prev) => ({ ...prev, [key]: value }));
+              }}
               onOpenChange={setFiltersOpen}
               onReset={() => {
-                resetFilters();
+                setDraftFilters(defaults);
                 void navigate({
                   search: (prev) => ({
                     ...prev,

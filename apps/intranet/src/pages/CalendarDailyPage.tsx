@@ -12,22 +12,25 @@ import { Route } from "@/routes/_authed/calendar/daily";
 
 import "dayjs/locale/es";
 import dayjs from "dayjs";
+import { useEffect, useState } from "react";
 
 function CalendarDailyPage() {
   const navigate = Route.useNavigate();
+  const searchParams = Route.useSearch();
 
-  const {
-    // appliedFilters unused in daily list now
-    availableCategories,
-    currentSelectedDate,
-    daily,
-    filters,
-    loading,
-    resetFilters,
-    updateFilters,
-  } = useCalendarEvents();
+  const { appliedFilters, availableCategories, currentSelectedDate, daily, defaults, loading } =
+    useCalendarEvents();
 
+  // Local state for filter draft
+  const [draftFilters, setDraftFilters] = useState(appliedFilters);
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
+
+  // Sync draft with applied filters when popover is closed
+  useEffect(() => {
+    if (!filtersOpen) {
+      setDraftFilters(appliedFilters);
+    }
+  }, [appliedFilters, filtersOpen]);
 
   // Get data for selected Day
   const selectedDayEntry = daily?.days.find((d) => d.date === currentSelectedDate);
@@ -54,28 +57,37 @@ function CalendarDailyPage() {
               applyCount={daily?.totals.events}
               availableCategories={availableCategories}
               className="shadow-lg"
-              filters={filters}
+              filters={draftFilters}
               isOpen={filtersOpen}
               layout="dropdown"
               loading={loading}
               onApply={() => {
-                // UPDATE URL instead of direct apply
                 void navigate({
                   search: {
-                    ...filters,
-                    date: currentSelectedDate,
-                    // Ensure arrays are preserved or undefined if empty
-                    calendarId: filters.calendarIds?.length ? filters.calendarIds : undefined,
-                    category: filters.categories?.length ? filters.categories : undefined,
+                    ...searchParams,
+                    calendarId: draftFilters.calendarIds?.length
+                      ? draftFilters.calendarIds
+                      : undefined,
+                    category: draftFilters.categories?.length ? draftFilters.categories : undefined,
+                    search: draftFilters.search || undefined,
                   },
                 });
                 setFiltersOpen(false);
               }}
-              onFilterChange={updateFilters}
+              onFilterChange={(key, value) => {
+                setDraftFilters((prev) => ({ ...prev, [key]: value }));
+              }}
               onOpenChange={setFiltersOpen}
               onReset={() => {
-                resetFilters(); // Resets store
-                void navigate({ search: {} }); // Resets URL
+                setDraftFilters(defaults);
+                void navigate({
+                  search: (prev: any) => ({
+                    ...prev,
+                    calendarId: undefined,
+                    category: undefined,
+                    search: undefined,
+                  }),
+                });
               }}
               panelWidthClassName="w-[min(92vw,480px)]"
             />

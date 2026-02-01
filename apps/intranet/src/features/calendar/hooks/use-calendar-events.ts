@@ -1,12 +1,10 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
-import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { today } from "@/lib/dates";
-import { calendarFilterStore, updateFilters } from "@/store/calendarFilters";
 import {
   fetchCalendarDaily,
   fetchCalendarSummary,
@@ -21,7 +19,7 @@ import type {
   CalendarSyncLog,
   CalendarSyncStep,
 } from "../types";
-import { computeDefaultFilters, filtersEqual, normalizeFilters } from "../utils/filters";
+import { computeDefaultFilters, normalizeFilters } from "../utils/filters";
 
 type SyncProgressEntry = CalendarSyncStep & { status: SyncProgressStatus };
 
@@ -222,31 +220,6 @@ export function useCalendarEvents() {
   const { settings } = useSettings();
   const queryClient = useQueryClient();
   const search = useSearch({ strict: false }) as CalendarSearchParams;
-  const filters = useStore(calendarFilterStore, (state) => state);
-
-  // Sync store with URL on mount or URL change (if store is not dirty or on initial load)
-  useEffect(() => {
-    const effective = deriveEffectiveFilters(search, filters);
-    const draft = calendarFilterStore.state;
-
-    // Only update if changes are detected to avoid infinite loops or unnecessary renders
-    if (
-      effective.calendarIds?.join(",") !== draft.calendarIds?.join(",") ||
-      effective.categories?.join(",") !== draft.categories?.join(",") ||
-      effective.search !== draft.search ||
-      effective.from !== draft.from ||
-      effective.to !== draft.to
-    ) {
-      updateFilters({
-        calendarIds: effective.calendarIds,
-        categories: effective.categories,
-        search: effective.search,
-        from: effective.from,
-        to: effective.to,
-        maxDays: effective.maxDays,
-      });
-    }
-  }, [search, filters]);
 
   const computeDefaults = () =>
     computeDefaultFilters({
@@ -255,8 +228,9 @@ export function useCalendarEvents() {
       calendarSyncStart: settings.calendarSyncStart,
     });
 
-  // Derived effective filters (Source of Truth: URL > State > Defaults)
-  const effectiveApplied = deriveEffectiveFilters(search, filters);
+  // Derived effective filters (Source of Truth: URL > Defaults)
+  const defaults = computeDefaults();
+  const effectiveApplied = deriveEffectiveFilters(search, defaults);
 
   const normalizedApplied = normalizeFilters(effectiveApplied);
   const shouldFetch = Boolean(normalizedApplied.from && normalizedApplied.to);
@@ -295,33 +269,6 @@ export function useCalendarEvents() {
   const loading = summaryQuery.isLoading || dailyQuery.isLoading;
   const error = summaryQuery.error || dailyQuery.error;
 
-  const normalizedDraft = normalizeFilters(filters);
-  const isDirty = !filtersEqual(normalizedDraft, normalizedApplied);
-
-  const handleUpdateFilters = <K extends keyof CalendarFilters>(
-    key: K,
-    value: CalendarFilters[K],
-  ) => {
-    updateFilters({ [key]: value } as Partial<CalendarFilters>);
-  };
-
-  const applyFilters = () => {
-    // applyFilters now doesn't need to update state, as the URL change triggers re-fetch
-    // However, we might still want to normalize the store state
-    const draft = normalizeFilters(calendarFilterStore.state);
-    const fromDate = dayjs(draft.from);
-    const toDate = dayjs(draft.to);
-    const spanDays =
-      fromDate.isValid() && toDate.isValid() ? Math.max(1, toDate.diff(fromDate, "day") + 1) : 1;
-    const resolvedMaxDays = Math.min(Math.max(spanDays, draft.maxDays, 1), 365);
-    updateFilters({ maxDays: resolvedMaxDays });
-  };
-
-  const handleResetFilters = () => {
-    const defaults = computeDefaults();
-    updateFilters(defaults);
-  };
-
   const { lastSyncInfo, sync, syncDurationMs, syncError, syncProgress, syncing } =
     useCalendarSync(queryClient);
 
@@ -335,20 +282,16 @@ export function useCalendarEvents() {
 
   return {
     appliedFilters: normalizedApplied,
-    applyFilters,
     availableCalendars,
     availableCategories,
     daily,
     error,
-    filters,
     hasRunningSyncFromOtherSource,
-    isDirty,
     isErrorSyncLogs,
     isLoadingSyncLogs,
     lastSyncInfo,
     loading,
     refetchSyncLogs,
-    resetFilters: handleResetFilters,
     summary,
     syncDurationMs,
     syncError,
@@ -358,6 +301,6 @@ export function useCalendarEvents() {
     currentSelectedDate,
     syncNow,
     syncProgress,
-    updateFilters: handleUpdateFilters,
+    defaults,
   };
 }
