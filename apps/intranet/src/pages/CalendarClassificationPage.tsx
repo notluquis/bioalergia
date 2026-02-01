@@ -13,6 +13,7 @@ import {
   ClassificationEmptyState,
   ClassificationFilters,
   ClassificationPagination,
+  ClassificationRow,
   ClassificationStats,
   ClassificationToolbar,
 } from "@/features/calendar/components";
