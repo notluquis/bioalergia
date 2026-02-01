@@ -1,7 +1,7 @@
 import { apiClient } from "@/lib/api-client";
 
 export interface DailyBalancePayload {
-  balanceDate: string;
+  date: string;
   comentarios: string;
   consultasMonto: number;
   controlesMonto: number;
@@ -20,7 +20,7 @@ export interface DailyBalancePayload {
 // Result from GET /api/daily-production-balances
 // Result from GET /api/daily-production-balances
 export interface ProductionBalanceApiItem {
-  balanceDate: string; // was date
+  date: string;
   changeReason: null | string;
   // total?
   comentarios: null | string;

@@ -47,11 +47,8 @@ export function useDailyBalanceForm() {
 
   const weekQuery = useSuspenseQuery(productionBalanceKeys.week(startOfWeek, endOfWeek));
 
-  // Find item by balanceDate (formatted as YYYY-MM-DD or comparison)
-  // ZenStack likely returns full ISO string "2024-01-01T00:00:00.000Z"
-  // So we must compare prefix or use dayjs
-  const selectedDayItem =
-    weekQuery.data.find((item) => item.balanceDate.startsWith(selectedDate)) || null;
+  // Find item by date (YYYY-MM-DD)
+  const selectedDayItem = weekQuery.data.find((item) => item.date === selectedDate) || null;
 
   // Load data when query succeeds (if day changes or we just loaded data)
   useEffect(() => {
@@ -85,9 +82,8 @@ export function useDailyBalanceForm() {
           item.ingresoTransferencias +
           item.ingresoEfectivo +
           item.otrosAbonos;
-        const dateKey = item.balanceDate.split("T")[0];
-        if (dateKey) {
-          entries[dateKey] = calculatedTotal;
+        if (item.date) {
+          entries[item.date] = calculatedTotal;
         }
       }
     }
@@ -102,7 +98,7 @@ export function useDailyBalanceForm() {
     mutationFn: async (data: DailyBalanceFormData) => {
       // transform to schema format
       const payload = {
-        balanceDate: new Date(selectedDate).toISOString(),
+        date: selectedDate,
         comentarios: data.nota,
         consultasMonto: data.consultas,
         controlesMonto: data.controles,
