@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { MoneyInput } from "@/components/ui/MoneyInput";
+import { BudgetSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -43,7 +44,9 @@ function NewBudgetPage() {
 
   const mutation = useMutation({
     mutationFn: async (data: BudgetForm) => {
-      return await apiClient.post(`/api/patients/${id}/budgets`, data);
+      return await apiClient.post(`/api/patients/${id}/budgets`, data, {
+        responseSchema: BudgetSchema,
+      });
     },
     onSuccess: () => {
       toast.success("Presupuesto creado exitosamente");

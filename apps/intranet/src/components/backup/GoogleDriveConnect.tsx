@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Key, Loader2, LogOut, ShieldCheck } from "lucide-react";
 import { Suspense, useEffect } from "react";
+import { z } from "zod";
 
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
@@ -18,6 +19,23 @@ interface GoogleStatus {
   source: "db" | "env" | "none";
   valid: boolean;
 }
+
+const GoogleStatusSchema = z.object({
+  configured: z.boolean(),
+  error: z.string().optional(),
+  errorCode: z.enum(["invalid_grant", "token_expired", "token_revoked", "unknown"]).optional(),
+  source: z.enum(["db", "env", "none"]),
+  valid: z.boolean(),
+});
+
+const AuthUrlResponseSchema = z.object({
+  url: z.string().url(),
+});
+
+const DisconnectResponseSchema = z.looseObject({
+  status: z.string().optional(),
+  message: z.string().optional(),
+});
 
 // Error message mapping for user-friendly display
 const ERROR_MESSAGES: Record<string, string> = {
@@ -79,7 +97,9 @@ function GoogleDriveConnect() {
   // Status Query
   const { data: status } = useSuspenseQuery({
     queryFn: async () => {
-      return apiClient.get<GoogleStatus>("/api/integrations/google/status");
+      return apiClient.get<GoogleStatus>("/api/integrations/google/status", {
+        responseSchema: GoogleStatusSchema,
+      });
     },
     queryKey: ["google-status"],
   });
@@ -87,7 +107,9 @@ function GoogleDriveConnect() {
   // Get Auth URL and redirect (no modal needed!)
   const connectMutation = useMutation({
     mutationFn: async () => {
-      return apiClient.get<AuthUrlResponse>("/api/integrations/google/url");
+      return apiClient.get<AuthUrlResponse>("/api/integrations/google/url", {
+        responseSchema: AuthUrlResponseSchema,
+      });
     },
     onError: (e) => {
       showError(e.message);
@@ -102,7 +124,9 @@ function GoogleDriveConnect() {
   // Disconnect Mutation
   const disconnectMutation = useMutation({
     mutationFn: async () => {
-      return apiClient.delete("/api/integrations/google/disconnect");
+      return apiClient.delete("/api/integrations/google/disconnect", {
+        responseSchema: DisconnectResponseSchema,
+      });
     },
     onError: (e) => {
       showError(e.message);

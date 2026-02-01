@@ -9,6 +9,7 @@ import { z } from "zod";
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
+import { ConsultationSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -38,7 +39,9 @@ function NewConsultationPage() {
 
   const mutation = useMutation({
     mutationFn: async (data: ConsultationForm) => {
-      return await apiClient.post(`/api/patients/${id}/consultations`, data);
+      return await apiClient.post(`/api/patients/${id}/consultations`, data, {
+        responseSchema: ConsultationSchema,
+      });
     },
     onSuccess: () => {
       toast.success("Consulta registrada exitosamente");

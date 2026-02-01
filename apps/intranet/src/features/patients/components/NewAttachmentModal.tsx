@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { Select, SelectItem } from "@/components/ui/Select";
+import { AttachmentSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 
 interface NewAttachmentModalProps {
@@ -38,6 +39,7 @@ export default function NewAttachmentModal({
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        responseSchema: AttachmentSchema,
       });
     },
     onSuccess: () => {

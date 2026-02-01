@@ -101,12 +101,24 @@ const kyInstance = ky.create({
   timeout: 30_000,
 });
 
+type ResponseType = "blob" | "json" | "text";
+
 interface RequestOptions extends Omit<RequestInit, "body"> {
-  body?: object;
+  body?: FormData | object;
   query?: Record<string, unknown>;
-  responseType?: "blob" | "json" | "text";
+  responseType?: ResponseType;
   retry?: number;
+  responseSchema?: z.ZodTypeAny;
 }
+
+type JsonRequestOptions = Omit<RequestOptions, "responseType" | "responseSchema"> & {
+  responseType?: "json";
+  responseSchema: z.ZodTypeAny;
+};
+
+type NonJsonRequestOptions = Omit<RequestOptions, "responseSchema"> & {
+  responseType: "blob" | "text";
+};
 
 async function request<T>(method: string, url: string, options?: RequestOptions): Promise<T> {
   const { body, query, responseType = "json", retry, ...fetchOptions } = options ?? {};
@@ -141,7 +153,15 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
 
     // responseType === 'json' (default)
     // kyInstance already has parseJson configured for superjson
-    return await res.json<T>();
+    const data = await res.json<unknown>();
+    if (options?.responseSchema) {
+      const parsed = options.responseSchema.safeParse(data);
+      if (!parsed.success) {
+        throw new ApiError("Respuesta inválida del servidor", 500, parsed.error.issues);
+      }
+      return parsed.data as T;
+    }
+    return data as T;
   } catch (error) {
     if (error instanceof HTTPError) {
       throw await handleKyError(error);
@@ -151,12 +171,15 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
 }
 
 export const apiClient = {
-  delete: <T>(url: string, options?: RequestOptions) => request<T>("DELETE", url, options),
-  get: <T>(url: string, options?: RequestOptions) => request<T>("GET", url, options),
-  post: <T>(url: string, body: object, options?: RequestOptions) =>
+  delete: <T>(url: string, options: JsonRequestOptions) => request<T>("DELETE", url, options),
+  get: <T>(url: string, options: JsonRequestOptions) => request<T>("GET", url, options),
+  post: <T>(url: string, body: FormData | object, options: JsonRequestOptions) =>
     request<T>("POST", url, { ...options, body }),
-  put: <T>(url: string, body: object, options?: RequestOptions) =>
+  put: <T>(url: string, body: FormData | object, options: JsonRequestOptions) =>
     request<T>("PUT", url, { ...options, body }),
+  getRaw: <T>(url: string, options: NonJsonRequestOptions) => request<T>("GET", url, options),
+  postRaw: <T>(url: string, body: FormData | object, options: NonJsonRequestOptions) =>
+    request<T>("POST", url, { ...options, body }),
 };
 
 // Upload Files - simplified with Ky

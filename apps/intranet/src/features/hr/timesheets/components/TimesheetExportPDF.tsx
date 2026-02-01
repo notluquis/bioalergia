@@ -532,7 +532,7 @@ async function loadLogoAsPng(url: string): Promise<null | string> {
     if (isUrl) {
       try {
         const proxyUrl = `/api/assets/proxy-image?url=${encodeURIComponent(url)}`;
-        blob = await apiClient.get<Blob>(proxyUrl, { responseType: "blob" });
+        blob = await apiClient.getRaw<Blob>(proxyUrl, { responseType: "blob" });
       } catch {
         blob = null;
       }
@@ -540,7 +540,7 @@ async function loadLogoAsPng(url: string): Promise<null | string> {
 
     if (!blob) {
       try {
-        blob = await apiClient.get<Blob>(url, { responseType: "blob" });
+        blob = await apiClient.getRaw<Blob>(url, { responseType: "blob" });
       } catch {
         blob = null;
       }

@@ -22,6 +22,7 @@ import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
 import NewAttachmentModal from "@/features/patients/components/NewAttachmentModal";
+import { PatientDetailSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 
 interface Person {
@@ -112,7 +113,9 @@ export const Route = createFileRoute("/_authed/patients/$id/")({
     return await queryClient.ensureQueryData({
       queryKey: ["patient", id],
       queryFn: async () => {
-        return await apiClient.get<Patient>(`/api/patients/${id}`);
+        return await apiClient.get<Patient>(`/api/patients/${id}`, {
+          responseSchema: PatientDetailSchema,
+        });
       },
     });
   },
@@ -127,7 +130,9 @@ function PatientDetailsPage() {
   const { data: patient, isLoading } = useQuery({
     queryKey: ["patient", id],
     queryFn: async () => {
-      return await apiClient.get<Patient>(`/api/patients/${id}`);
+      return await apiClient.get<Patient>(`/api/patients/${id}`, {
+        responseSchema: PatientDetailSchema,
+      });
     },
   });
 

@@ -47,7 +47,7 @@ export interface LoanSchedule {
   loan_id: number;
   paid_amount: null | number;
   paid_date: null | string;
-  status: "OVERDUE" | "PAID" | "PARTIAL" | "PENDING";
+  status: "OVERDUE" | "PAID" | "PARTIAL" | "PENDING" | "SKIPPED";
   transaction?: null | {
     amount: null | number;
     description: null | string;

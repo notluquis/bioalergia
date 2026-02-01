@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { Select, SelectItem } from "@/components/ui/Select";
+import { PatientBudgetListSchema, PatientPaymentSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
@@ -48,16 +49,22 @@ function NewPaymentPage() {
   const { data: budgets } = useQuery({
     queryKey: ["patient-budgets", id],
     queryFn: async () => {
-      return await apiClient.get<Budget[]>(`/api/patients/${id}/budgets`);
+      return await apiClient.get<Budget[]>(`/api/patients/${id}/budgets`, {
+        responseSchema: PatientBudgetListSchema,
+      });
     },
   });
 
   const mutation = useMutation({
     mutationFn: async (data: PaymentForm) => {
-      return await apiClient.post(`/api/patients/${id}/payments`, {
-        ...data,
-        budgetId: data.budgetId ? Number(data.budgetId) : undefined,
-      });
+      return await apiClient.post(
+        `/api/patients/${id}/payments`,
+        {
+          ...data,
+          budgetId: data.budgetId ? Number(data.budgetId) : undefined,
+        },
+        { responseSchema: PatientPaymentSchema },
+      );
     },
     onSuccess: () => {
       toast.success("Pago registrado exitosamente");

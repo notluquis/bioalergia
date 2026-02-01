@@ -5,7 +5,17 @@
  */
 
 import { apiClient } from "@/lib/api-client";
-
+import {
+  BookingResponseSchema,
+  DoctoraliaBookingsResponseSchema,
+  DoctoraliaDoctorsResponseSchema,
+  DoctoraliaFacilitiesResponseSchema,
+  DoctoraliaSlotsResponseSchema,
+  DoctoraliaStatusResponseSchema,
+  DoctoraliaSyncLogsResponseSchema,
+  DoctoraliaSyncResponseSchema,
+  StatusOkSchema,
+} from "./schemas";
 import type {
   BookSlotPayload,
   DoctoraliaBooking,
@@ -37,6 +47,7 @@ export async function bookDoctoraliaSlot(
   const response = await apiClient.post<{ booking: DoctoraliaBooking; status: "ok" }>(
     `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/slots/${encodeURIComponent(slotStart)}/book`,
     { json: payload },
+    { responseSchema: BookingResponseSchema },
   );
 
   if (response.status !== "ok") {
@@ -59,7 +70,7 @@ export async function cancelDoctoraliaBooking(
 ): Promise<void> {
   const baseUrl = `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/bookings/${bookingId}`;
   const url = reason ? `${baseUrl}?reason=${encodeURIComponent(reason)}` : baseUrl;
-  await apiClient.delete(url);
+  await apiClient.delete(url, { responseSchema: StatusOkSchema });
 }
 
 // ============================================================
@@ -73,7 +84,7 @@ export async function fetchDoctoraliaBookings(query: DoctoraliaBookingQuery): Pr
   const { addressId, doctorId, end, facilityId, start } = query;
   const response = await apiClient.get<DoctoraliaBookingsResponse>(
     `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/bookings`,
-    { query: { end, start } },
+    { query: { end, start }, responseSchema: DoctoraliaBookingsResponseSchema },
   );
 
   if (response.status !== "ok") {
@@ -93,6 +104,7 @@ export async function fetchDoctoraliaBookings(query: DoctoraliaBookingQuery): Pr
 export async function fetchDoctoraliaDoctors(facilityId: number): Promise<DoctoraliaDoctor[]> {
   const response = await apiClient.get<DoctoraliaDoctorsResponse>(
     `/api/doctoralia/facilities/${facilityId}/doctors`,
+    { responseSchema: DoctoraliaDoctorsResponseSchema },
   );
 
   if (response.status !== "ok") {
@@ -107,7 +119,9 @@ export async function fetchDoctoraliaDoctors(facilityId: number): Promise<Doctor
 // ============================================================
 
 export async function fetchDoctoraliaFacilities(): Promise<DoctoraliaFacility[]> {
-  const response = await apiClient.get<DoctoraliaFacilitiesResponse>("/api/doctoralia/facilities");
+  const response = await apiClient.get<DoctoraliaFacilitiesResponse>("/api/doctoralia/facilities", {
+    responseSchema: DoctoraliaFacilitiesResponseSchema,
+  });
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener las instalaciones");
@@ -120,7 +134,7 @@ export async function fetchDoctoraliaSlots(query: DoctoraliaSlotQuery): Promise<
   const { addressId, doctorId, end, facilityId, start } = query;
   const response = await apiClient.get<DoctoraliaSlotsResponse>(
     `/api/doctoralia/facilities/${facilityId}/doctors/${doctorId}/addresses/${addressId}/slots`,
-    { query: { end, start } },
+    { query: { end, start }, responseSchema: DoctoraliaSlotsResponseSchema },
   );
 
   if (response.status !== "ok") {
@@ -134,7 +148,9 @@ export async function fetchDoctoraliaStatus(): Promise<{
   configured: boolean;
   domain: string;
 }> {
-  const response = await apiClient.get<DoctoraliaStatusResponse>("/api/doctoralia/status");
+  const response = await apiClient.get<DoctoraliaStatusResponse>("/api/doctoralia/status", {
+    responseSchema: DoctoraliaStatusResponseSchema,
+  });
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener el estado de Doctoralia");
@@ -151,7 +167,9 @@ export async function fetchDoctoraliaStatus(): Promise<{
 // ============================================================
 
 export async function fetchDoctoraliaSyncLogs(): Promise<DoctoraliaSyncLog[]> {
-  const response = await apiClient.get<DoctoraliaSyncLogsResponse>("/api/doctoralia/sync/logs");
+  const response = await apiClient.get<DoctoraliaSyncLogsResponse>("/api/doctoralia/sync/logs", {
+    responseSchema: DoctoraliaSyncLogsResponseSchema,
+  });
 
   if (response.status !== "ok") {
     throw new Error("No se pudo obtener los logs de sincronización");
@@ -165,7 +183,7 @@ export async function triggerDoctoraliaSync(): Promise<{ logId: number }> {
     logId: number;
     message: string;
     status: "accepted";
-  }>("/api/doctoralia/sync", {});
+  }>("/api/doctoralia/sync", {}, { responseSchema: DoctoraliaSyncResponseSchema });
 
   if (response.status !== "accepted") {
     throw new Error("No se pudo iniciar la sincronización");

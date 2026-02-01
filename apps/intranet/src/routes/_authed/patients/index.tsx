@@ -9,6 +9,7 @@ import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
 import { CardContent } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
+import { PatientListSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER_RELAXED, TITLE_LG } from "@/lib/styles";
 
@@ -47,7 +48,9 @@ function PatientsListPage() {
   const { data: patients, isLoading } = useQuery({
     queryKey: ["patients", search],
     queryFn: async () => {
-      return await apiClient.get<Patient[]>(`/api/patients?q=${encodeURIComponent(search)}`);
+      return await apiClient.get<Patient[]>(`/api/patients?q=${encodeURIComponent(search)}`, {
+        responseSchema: PatientListSchema,
+      });
     },
   });
 

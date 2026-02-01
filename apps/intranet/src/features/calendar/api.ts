@@ -1,5 +1,16 @@
 import { apiClient } from "@/lib/api-client";
-
+import {
+  CalendarDailyResponseSchema,
+  CalendarSummaryResponseSchema,
+  CalendarSyncLogsResponseSchema,
+  CalendarSyncResponseSchema,
+  CalendarsResponseSchema,
+  ClassificationOptionsSchema,
+  ReclassifyJobResponseSchema,
+  StatusOkSchema,
+  TreatmentAnalyticsResponseSchema,
+  UnclassifiedEventsResponseSchema,
+} from "./schemas";
 import type {
   CalendarDaily,
   CalendarData,
@@ -67,12 +78,15 @@ interface CalendarSyncResponse {
 export async function classifyCalendarEvent(
   payload: CalendarEventClassificationPayload,
 ): Promise<void> {
-  await apiClient.post<{ status: "ok" }>("/api/calendar/events/classify", payload);
+  await apiClient.post<{ status: "ok" }>("/api/calendar/events/classify", payload, {
+    responseSchema: StatusOkSchema,
+  });
 }
 
 export async function fetchCalendarDaily(filters: CalendarFilters): Promise<CalendarDaily> {
   const response = await apiClient.get<CalendarDailyResponse>("/api/calendar/events/daily", {
     query: buildQuery(filters, { includeMaxDays: true }),
+    responseSchema: CalendarDailyResponseSchema,
   });
 
   return {
@@ -83,13 +97,16 @@ export async function fetchCalendarDaily(filters: CalendarFilters): Promise<Cale
 }
 
 export async function fetchCalendars(): Promise<CalendarData[]> {
-  const response = await apiClient.get<{ calendars: CalendarData[] }>("/api/calendar/calendars");
+  const response = await apiClient.get<{ calendars: CalendarData[] }>("/api/calendar/calendars", {
+    responseSchema: CalendarsResponseSchema,
+  });
   return response.calendars;
 }
 
 export async function fetchCalendarSummary(filters: CalendarFilters): Promise<CalendarSummary> {
   const response = await apiClient.get<CalendarSummaryResponse>("/api/calendar/events/summary", {
     query: buildQuery(filters),
+    responseSchema: CalendarSummaryResponseSchema,
   });
 
   return {
@@ -103,6 +120,7 @@ export async function fetchCalendarSummary(filters: CalendarFilters): Promise<Ca
 export async function fetchCalendarSyncLogs(limit = 50): Promise<CalendarSyncLog[]> {
   const response = await apiClient.get<{ logs: CalendarSyncLog[]; status: "ok" }>(
     `/api/calendar/events/sync/logs?limit=${limit}`,
+    { responseSchema: CalendarSyncLogsResponseSchema },
   );
 
   return response.logs;
@@ -113,7 +131,7 @@ export async function fetchClassificationOptions(): Promise<ClassificationOption
     categories: readonly string[];
     status: "ok";
     treatmentStages: readonly string[];
-  }>("/api/calendar/classification-options");
+  }>("/api/calendar/classification-options", { responseSchema: ClassificationOptionsSchema });
 
   return {
     categories: response.categories,
@@ -140,7 +158,9 @@ export async function fetchUnclassifiedCalendarEvents(
     events: CalendarUnclassifiedEvent[];
     status: "ok";
     totalCount: number;
-  }>(`/api/calendar/events/unclassified?${params.toString()}`);
+  }>(`/api/calendar/events/unclassified?${params.toString()}`, {
+    responseSchema: UnclassifiedEventsResponseSchema,
+  });
 
   return { events: response.events, totalCount: response.totalCount };
 }
@@ -151,7 +171,7 @@ export async function reclassifyAllCalendarEvents(): Promise<ReclassifyJobRespon
     jobId: string;
     status: "accepted";
     totalEvents: number;
-  }>("/api/calendar/events/reclassify-all", {});
+  }>("/api/calendar/events/reclassify-all", {}, { responseSchema: ReclassifyJobResponseSchema });
 
   return {
     jobId: response.jobId,
@@ -165,7 +185,7 @@ export async function reclassifyCalendarEvents(): Promise<ReclassifyJobResponse>
     jobId: string;
     status: "accepted";
     totalEvents: number;
-  }>("/api/calendar/events/reclassify", {});
+  }>("/api/calendar/events/reclassify", {}, { responseSchema: ReclassifyJobResponseSchema });
 
   return {
     jobId: response.jobId,
@@ -174,7 +194,11 @@ export async function reclassifyCalendarEvents(): Promise<ReclassifyJobResponse>
 }
 
 export async function syncCalendarEvents(): Promise<CalendarSyncResponse> {
-  const response = await apiClient.post<CalendarSyncResponse>("/api/calendar/events/sync", {});
+  const response = await apiClient.post<CalendarSyncResponse>(
+    "/api/calendar/events/sync",
+    {},
+    { responseSchema: CalendarSyncResponseSchema },
+  );
   return response;
 }
 
@@ -196,7 +220,9 @@ export async function fetchTreatmentAnalytics(
     data: TreatmentAnalytics;
     filters: TreatmentAnalyticsFilters;
     status: "ok";
-  }>(`/api/calendar/events/treatment-analytics?${params.toString()}`);
+  }>(`/api/calendar/events/treatment-analytics?${params.toString()}`, {
+    responseSchema: TreatmentAnalyticsResponseSchema,
+  });
 
   return response.data;
 }

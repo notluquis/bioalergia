@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 
 import type {
@@ -6,6 +7,50 @@ import type {
   TimesheetSummaryResponse,
   TimesheetUpsertEntry,
 } from "./types";
+
+const BulkUpsertResponseSchema = z.object({
+  inserted: z.number(),
+  message: z.string().optional(),
+  removed: z.number(),
+  status: z.string(),
+});
+
+const StatusResponseSchema = z.object({
+  message: z.string().optional(),
+  status: z.string(),
+});
+
+const TimesheetDetailResponseSchema = z.object({
+  entries: z.array(z.unknown()),
+  from: z.string(),
+  message: z.string().optional(),
+  status: z.string(),
+  to: z.string(),
+});
+
+const TimesheetMonthsResponseSchema = z.object({
+  months: z.array(z.string()),
+  monthsWithData: z.array(z.string()),
+  status: z.string(),
+});
+
+const TimesheetSummaryResponseSchema = z.looseObject({
+  message: z.string().optional(),
+  status: z.string(),
+});
+
+const PrepareEmailResponseSchema = z.object({
+  emlBase64: z.string(),
+  filename: z.string(),
+  message: z.string().optional(),
+  status: z.string(),
+});
+
+const TimesheetEntryResponseSchema = z.object({
+  entry: z.unknown(),
+  message: z.string().optional(),
+  status: z.string(),
+});
 
 export async function bulkUpsertTimesheets(
   employeeId: number,
@@ -17,11 +62,15 @@ export async function bulkUpsertTimesheets(
     message?: string;
     removed: number;
     status: string;
-  }>("/api/timesheets/bulk", {
-    employee_id: employeeId,
-    entries,
-    remove_ids: removeIds.length > 0 ? removeIds : undefined,
-  });
+  }>(
+    "/api/timesheets/bulk",
+    {
+      employee_id: employeeId,
+      entries,
+      remove_ids: removeIds.length > 0 ? removeIds : undefined,
+    },
+    { responseSchema: BulkUpsertResponseSchema },
+  );
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al procesar registros");
@@ -32,6 +81,7 @@ export async function bulkUpsertTimesheets(
 export async function deleteTimesheet(id: number) {
   const data = await apiClient.delete<{ message?: string; status: string }>(
     `/api/timesheets/${id}`,
+    { responseSchema: StatusResponseSchema },
   );
 
   if (data.status !== "ok") {
@@ -40,7 +90,7 @@ export async function deleteTimesheet(id: number) {
 }
 
 export async function fetchImageBlob(url: string) {
-  return apiClient.get<Blob>(url, { responseType: "blob" });
+  return apiClient.getRaw<Blob>(url, { responseType: "blob" });
 }
 
 export async function fetchTimesheetDetail(employeeId: number, month: string) {
@@ -50,7 +100,10 @@ export async function fetchTimesheetDetail(employeeId: number, month: string) {
     message?: string;
     status: string;
     to: string;
-  }>(`/api/timesheets/${employeeId}/detail`, { query: { month } });
+  }>(`/api/timesheets/${employeeId}/detail`, {
+    query: { month },
+    responseSchema: TimesheetDetailResponseSchema,
+  });
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al cargar detalle");
@@ -61,6 +114,7 @@ export async function fetchTimesheetDetail(employeeId: number, month: string) {
 export async function fetchTimesheetMonths() {
   const data = await apiClient.get<{ months: string[]; monthsWithData: string[]; status: string }>(
     "/api/timesheets/months",
+    { responseSchema: TimesheetMonthsResponseSchema },
   );
   if (data.status !== "ok") {
     throw new Error("No se pudieron cargar los meses");
@@ -77,7 +131,7 @@ export async function fetchTimesheetSummary(month: string, employeeId?: null | n
 
   const data = await apiClient.get<TimesheetSummaryResponse & { message?: string; status: string }>(
     "/api/timesheets/summary",
-    { query },
+    { query, responseSchema: TimesheetSummaryResponseSchema },
   );
 
   if (data.status !== "ok") {
@@ -110,7 +164,7 @@ export async function prepareTimesheetEmail(payload: {
     filename: string;
     message?: string;
     status: string;
-  }>("/api/timesheets/prepare-email", payload);
+  }>("/api/timesheets/prepare-email", payload, { responseSchema: PrepareEmailResponseSchema });
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al preparar el email");
@@ -123,6 +177,7 @@ export async function updateTimesheet(id: number, payload: Partial<TimesheetPayl
   const data = await apiClient.put<{ entry: TimesheetEntry; message?: string; status: string }>(
     `/api/timesheets/${id}`,
     payload,
+    { responseSchema: TimesheetEntryResponseSchema },
   );
 
   if (data.status !== "ok") {
@@ -135,6 +190,7 @@ export async function upsertTimesheet(payload: TimesheetPayload) {
   const data = await apiClient.post<{ entry: TimesheetEntry; message?: string; status: string }>(
     "/api/timesheets",
     payload,
+    { responseSchema: TimesheetEntryResponseSchema },
   );
 
   if (data.status !== "ok") {

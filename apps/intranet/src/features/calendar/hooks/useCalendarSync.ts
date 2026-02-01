@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiClient } from "../../../lib/api-client";
+import { CalendarSyncResponseSchema } from "../schemas";
 
 export function useCalendarSync() {
   const queryClient = useQueryClient();
@@ -8,7 +9,11 @@ export function useCalendarSync() {
   const mutation = useMutation({
     mutationFn: async () => {
       // Pass empty object as body
-      const response = await apiClient.post<{ message: string }>("/api/calendar/events/sync", {});
+      const response = await apiClient.post<{
+        logId: number;
+        message: string;
+        status: "accepted";
+      }>("/api/calendar/events/sync", {}, { responseSchema: CalendarSyncResponseSchema });
       return response;
     },
     // biome-ignore lint/suspicious/noExplicitAny: react query

@@ -21,7 +21,12 @@ app.get("/", async (c) => {
   }
 
   const report = await getBalancesReport(parsed.data.from, parsed.data.to);
-  return reply(c, report);
+  return reply(c, {
+    status: "ok",
+    from: parsed.data.from,
+    to: parsed.data.to,
+    ...report,
+  });
 });
 
 app.post("/", async (c) => {

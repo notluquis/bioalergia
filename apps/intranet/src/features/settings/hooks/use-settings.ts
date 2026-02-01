@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
 import { APP_CONFIG } from "@/config/app";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { apiClient } from "@/lib/api-client";
@@ -35,6 +36,21 @@ export const DEFAULT_SETTINGS: AppSettings = {
   ...APP_CONFIG.defaults,
 };
 
+const InternalSettingsResponseSchema = z.looseObject({
+  internal: z
+    .object({
+      envUpsertChunkSize: z.string().optional(),
+      upsertChunkSize: z.union([z.number(), z.string()]).optional(),
+    })
+    .optional(),
+});
+
+const UpdateSettingsResponseSchema = z.looseObject({
+  message: z.string().optional(),
+  settings: z.unknown().optional(),
+  status: z.string(),
+});
+
 export function useSettings() {
   const { user, hasRole } = useAuth();
   const queryClient = useQueryClient();
@@ -50,7 +66,9 @@ export function useSettings() {
           upsertChunkSize?: number | string;
         };
       }
-      const payload = await apiClient.get<InternalSettingsResponse>("/api/settings/internal");
+      const payload = await apiClient.get<InternalSettingsResponse>("/api/settings/internal", {
+        responseSchema: InternalSettingsResponseSchema,
+      });
       return { ...DEFAULT_SETTINGS, ...payload };
     },
     queryKey: ["settings", user?.id],
@@ -63,7 +81,7 @@ export function useSettings() {
       message?: string;
       settings?: AppSettings;
       status: string;
-    }>("/api/settings/internal", next);
+    }>("/api/settings/internal", next, { responseSchema: UpdateSettingsResponseSchema });
 
     if (payload.status !== "ok" || !payload.settings) {
       logger.warn("[settings] update:error", { message: payload.message });

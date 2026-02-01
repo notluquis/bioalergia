@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 import type { Counterpart, Person } from "@/types/schema";
 
@@ -23,13 +24,26 @@ export interface PersonWithExtras extends Person {
   hasUser?: boolean;
 }
 
+const PeopleListResponseSchema = z.object({
+  people: z.array(z.unknown()),
+  status: z.string(),
+});
+
+const PersonDetailResponseSchema = z.object({
+  person: z.unknown(),
+});
+
 export async function fetchPeople(): Promise<PersonWithExtras[]> {
-  const res = await apiClient.get<PeopleListResponse>("/api/people");
+  const res = await apiClient.get<PeopleListResponse>("/api/people", {
+    responseSchema: PeopleListResponseSchema,
+  });
   return res.people;
 }
 
 export async function fetchPerson(id: number | string): Promise<PersonWithExtras> {
-  const res = await apiClient.get<PersonDetailResponse>(`/api/people/${id}`);
+  const res = await apiClient.get<PersonDetailResponse>(`/api/people/${id}`, {
+    responseSchema: PersonDetailResponseSchema,
+  });
   return res.person;
 }
 

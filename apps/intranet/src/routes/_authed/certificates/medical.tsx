@@ -50,7 +50,7 @@ function MedicalCertificatePage() {
 
   const generateMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      return await apiClient.post<Blob>("certificates/medical", data, {
+      return await apiClient.postRaw<Blob>("certificates/medical", data, {
         responseType: "blob",
       });
     },

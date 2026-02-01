@@ -1,6 +1,17 @@
+import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 
 import type { ParticipantInsightResponse, ParticipantLeaderboardResponse } from "./types";
+
+const ParticipantInsightResponseSchema = z.looseObject({
+  message: z.string().optional(),
+  status: z.string(),
+});
+
+const ParticipantLeaderboardResponseSchema = z.looseObject({
+  message: z.string().optional(),
+  status: z.string(),
+});
 
 export async function fetchParticipantInsight(
   participantId: string,
@@ -8,7 +19,10 @@ export async function fetchParticipantInsight(
 ): Promise<ParticipantInsightResponse> {
   const data = await apiClient.get<
     ParticipantInsightResponse & { message?: string; status: string }
-  >(`/api/transactions/participants/${encodeURIComponent(participantId)}`, { query: params });
+  >(`/api/transactions/participants/${encodeURIComponent(participantId)}`, {
+    query: params,
+    responseSchema: ParticipantInsightResponseSchema,
+  });
 
   if (data.status !== "ok") {
     throw new Error(data.message || "No se pudo obtener la información del participante");
@@ -24,7 +38,10 @@ export async function fetchParticipantLeaderboard(params?: {
 }): Promise<ParticipantLeaderboardResponse> {
   const data = await apiClient.get<
     ParticipantLeaderboardResponse & { message?: string; status: string }
-  >("/api/transactions/participants", { query: params });
+  >("/api/transactions/participants", {
+    query: params,
+    responseSchema: ParticipantLeaderboardResponseSchema,
+  });
 
   if (data.status !== "ok") {
     throw new Error(data.message || "No se pudo obtener la información del participante");

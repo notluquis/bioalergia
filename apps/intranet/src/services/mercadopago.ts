@@ -3,6 +3,7 @@
  * Reports list, create, and download functionality only
  */
 
+import { z } from "zod";
 import type { MpReportType } from "../../shared/mercadopago";
 import { apiClient } from "../lib/api-client";
 
@@ -69,6 +70,56 @@ interface ProcessReportResponse {
   status: string;
 }
 
+const MPReportSchema = z.looseObject({
+  begin_date: z.string(),
+  created_from: z.enum(["manual", "schedule"]),
+  date_created: z.string().optional(),
+  end_date: z.string(),
+  file_name: z.string().optional(),
+  id: z.number(),
+  status: z.string().optional(),
+});
+
+const MPReportListResponseSchema = z.object({
+  reports: z.array(MPReportSchema),
+  status: z.string().optional(),
+  total: z.number(),
+});
+
+const MpSyncLogSchema = z.object({
+  changeDetails: z.record(z.string(), z.unknown()).nullable().optional(),
+  errorMessage: z.string().nullable().optional(),
+  excluded: z.number().nullable().optional(),
+  finishedAt: z.string().nullable().optional(),
+  id: z.number(),
+  inserted: z.number().nullable().optional(),
+  skipped: z.number().nullable().optional(),
+  startedAt: z.string(),
+  status: z.enum(["RUNNING", "SUCCESS", "ERROR"]),
+  triggerLabel: z.string().nullable().optional(),
+  triggerSource: z.string(),
+  updated: z.number().nullable().optional(),
+});
+
+const MpSyncLogsResponseSchema = z.object({
+  logs: z.array(MpSyncLogSchema),
+  status: z.string().optional(),
+  total: z.number(),
+});
+
+const ProcessReportResponseSchema = z.object({
+  message: z.string(),
+  stats: z.object({
+    duplicateRows: z.number(),
+    errors: z.array(z.string()),
+    insertedRows: z.number(),
+    skippedRows: z.number(),
+    totalRows: z.number(),
+    validRows: z.number(),
+  }),
+  status: z.string(),
+});
+
 function getBaseUrl(type: MpReportType = "release") {
   return type === "release" ? "/api/mercadopago" : "/api/mercadopago/settlement";
 }
@@ -80,10 +131,14 @@ export const MPService = {
     type: MpReportType = "release",
   ): Promise<MPReport> => {
     const baseUrl = getBaseUrl(type);
-    return apiClient.post<MPReport>(`${baseUrl}/reports`, {
-      begin_date: beginDate,
-      end_date: endDate,
-    });
+    return apiClient.post<MPReport>(
+      `${baseUrl}/reports`,
+      {
+        begin_date: beginDate,
+        end_date: endDate,
+      },
+      { responseSchema: MPReportSchema },
+    );
   },
 
   /**
@@ -159,7 +214,7 @@ export const MPService = {
 
   downloadReport: async (fileName: string, type: MpReportType = "release"): Promise<Blob> => {
     const baseUrl = getBaseUrl(type);
-    return apiClient.get<Blob>(`${baseUrl}/reports/download/${encodeURIComponent(fileName)}`, {
+    return apiClient.getRaw<Blob>(`${baseUrl}/reports/download/${encodeURIComponent(fileName)}`, {
       responseType: "blob",
     });
   },
@@ -174,6 +229,7 @@ export const MPService = {
     if (params?.offset != null) query.set("offset", String(params.offset));
     const response = await apiClient.get<{ reports: MPReport[]; total: number; status: string }>(
       `${baseUrl}/reports?${query.toString()}`,
+      { responseSchema: MPReportListResponseSchema },
     );
     return { reports: response.reports ?? [], total: response.total ?? 0 };
   },
@@ -189,15 +245,20 @@ export const MPService = {
     if (params?.offset != null) query.set("offset", String(params.offset));
     const response = await apiClient.get<{ logs: MpSyncLog[]; status: string; total: number }>(
       `/api/mercadopago/sync/logs?${query.toString()}`,
+      { responseSchema: MpSyncLogsResponseSchema },
     );
     return { logs: response.logs ?? [], total: response.total ?? 0 };
   },
 
   processReport: async (fileName: string, type: MpReportType): Promise<ImportStats> => {
-    const data = await apiClient.post<ProcessReportResponse>("/api/mercadopago/process-report", {
-      fileName,
-      reportType: type,
-    });
+    const data = await apiClient.post<ProcessReportResponse>(
+      "/api/mercadopago/process-report",
+      {
+        fileName,
+        reportType: type,
+      },
+      { responseSchema: ProcessReportResponseSchema },
+    );
     return data.stats;
   },
 };

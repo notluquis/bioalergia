@@ -1,5 +1,6 @@
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { z } from "zod";
 
 import { apiClient } from "@/lib/api-client";
 
@@ -21,6 +22,22 @@ interface UseJobProgressOptions {
   pollInterval?: number;
 }
 
+const JobStateSchema = z.object({
+  error: z.string().nullable(),
+  id: z.string(),
+  message: z.string(),
+  progress: z.number(),
+  result: z.unknown(),
+  status: z.enum(["completed", "failed", "pending", "running"]),
+  total: z.number(),
+  type: z.string(),
+});
+
+const JobStatusResponseSchema = z.object({
+  job: JobStateSchema,
+  status: z.string(),
+});
+
 /**
  * Hook to track background job progress via polling.
  * Automatically stops polling when job completes or fails.
@@ -35,6 +52,7 @@ export function useJobProgress(jobId: null | string, options: UseJobProgressOpti
       if (!jobId) return null;
       const response = await apiClient.get<{ job: JobState; status: string }>(
         `/api/calendar/events/job/${jobId}`,
+        { responseSchema: JobStatusResponseSchema },
       );
       if (response.status !== "ok") {
         throw new Error("Failed to fetch job status");

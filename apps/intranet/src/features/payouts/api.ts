@@ -1,5 +1,6 @@
 import type { ReleaseTransaction } from "@finanzas/db/models";
 
+import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 
 interface FetchReleaseTransactionsParams {
@@ -20,6 +21,15 @@ interface FetchReleaseTransactionsResponse {
   totalPages: number;
 }
 
+const FetchReleaseTransactionsResponseSchema = z.object({
+  data: z.array(z.unknown()),
+  page: z.number(),
+  pageSize: z.number(),
+  status: z.literal("ok"),
+  total: z.number(),
+  totalPages: z.number(),
+});
+
 export async function fetchReleaseTransactions(
   params: FetchReleaseTransactionsParams,
 ): Promise<FetchReleaseTransactionsResponse> {
@@ -33,5 +43,6 @@ export async function fetchReleaseTransactions(
 
   return apiClient.get<FetchReleaseTransactionsResponse>(
     `api/release-transactions?${searchParams.toString()}`,
+    { responseSchema: FetchReleaseTransactionsResponseSchema },
   );
 }

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 
 import type {
@@ -8,14 +9,33 @@ import type {
   MonthlyExpenseStatsRow,
 } from "./types";
 
+const ExpenseDetailResponseSchema = z.object({
+  expense: z.unknown(),
+  status: z.literal("ok"),
+});
+
+const ExpensesResponseSchema = z.object({
+  expenses: z.array(z.unknown()),
+  status: z.literal("ok"),
+});
+
+const ExpenseStatsResponseSchema = z.object({
+  stats: z.array(z.unknown()),
+  status: z.literal("ok"),
+});
+
 export async function createMonthlyExpense(payload: CreateMonthlyExpensePayload) {
-  return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>("/api/expenses", payload);
+  return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>("/api/expenses", payload, {
+    responseSchema: ExpenseDetailResponseSchema,
+  });
 }
 
 export async function fetchMonthlyExpenseDetail(
   publicId: string,
 ): Promise<{ expense: MonthlyExpenseDetail; status: "ok" }> {
-  return apiClient.get(`/api/expenses/${publicId}`);
+  return apiClient.get(`/api/expenses/${publicId}`, {
+    responseSchema: ExpenseDetailResponseSchema,
+  });
 }
 
 export async function fetchMonthlyExpenses(params?: {
@@ -24,7 +44,7 @@ export async function fetchMonthlyExpenses(params?: {
   status?: string;
   to?: string;
 }): Promise<{ expenses: MonthlyExpense[]; status: "ok" }> {
-  return apiClient.get("/api/expenses", { query: params });
+  return apiClient.get("/api/expenses", { query: params, responseSchema: ExpensesResponseSchema });
 }
 
 export async function fetchMonthlyExpenseStats(params?: {
@@ -33,7 +53,10 @@ export async function fetchMonthlyExpenseStats(params?: {
   groupBy?: "day" | "month" | "quarter" | "week" | "year";
   to?: string;
 }): Promise<{ stats: MonthlyExpenseStatsRow[]; status: "ok" }> {
-  return apiClient.get("/api/expenses/stats", { query: params });
+  return apiClient.get("/api/expenses/stats", {
+    query: params,
+    responseSchema: ExpenseStatsResponseSchema,
+  });
 }
 
 export async function linkMonthlyExpenseTransaction(
@@ -43,6 +66,7 @@ export async function linkMonthlyExpenseTransaction(
   return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>(
     `/api/expenses/${publicId}/link`,
     payload,
+    { responseSchema: ExpenseDetailResponseSchema },
   );
 }
 
@@ -52,6 +76,7 @@ export async function unlinkMonthlyExpenseTransaction(publicId: string, transact
     {
       transactionId,
     },
+    { responseSchema: ExpenseDetailResponseSchema },
   );
 }
 
@@ -59,5 +84,6 @@ export async function updateMonthlyExpense(publicId: string, payload: CreateMont
   return apiClient.put<{ expense: MonthlyExpenseDetail; status: "ok" }>(
     `/api/expenses/${publicId}`,
     payload,
+    { responseSchema: ExpenseDetailResponseSchema },
   );
 }

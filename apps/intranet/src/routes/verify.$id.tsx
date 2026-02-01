@@ -2,8 +2,32 @@ import { Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
+import { z } from "zod";
 
 import { apiClient } from "@/lib/api-client";
+
+const VerifyCertificateSchema = z.union([
+  z.looseObject({
+    valid: z.literal(true),
+    diagnosis: z.string(),
+    doctor: z.object({
+      name: z.string(),
+      specialty: z.string().optional(),
+    }),
+    issuedAt: z.string(),
+    patient: z.object({
+      name: z.string(),
+    }),
+    purpose: z.string(),
+    restDays: z.number().optional(),
+    restEndDate: z.string().optional(),
+    restStartDate: z.string().optional(),
+  }),
+  z.looseObject({
+    valid: z.literal(false),
+    error: z.string().optional(),
+  }),
+]);
 
 export const Route = createFileRoute("/verify/$id")({
   component: VerifyCertificatePage,
@@ -15,7 +39,9 @@ function VerifyCertificatePage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["verify-certificate", id],
     queryFn: async () => {
-      const data = await apiClient.get<any>(`certificates/verify/${id}`);
+      const data = await apiClient.get<any>(`certificates/verify/${id}`, {
+        responseSchema: VerifyCertificateSchema,
+      });
       return data;
     },
   });

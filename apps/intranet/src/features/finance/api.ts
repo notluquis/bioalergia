@@ -1,6 +1,11 @@
 import { apiClient } from "@/lib/api-client";
 
 import type { ListResponse as ReleaseListResponse } from "./releases/types";
+import {
+  ReleaseTransactionsResponseSchema,
+  SettlementTransactionsResponseSchema,
+  TransactionsResponseSchema,
+} from "./schemas";
 import type { ListResponse as SettlementListResponse } from "./settlements/types";
 import type { Transaction } from "./types";
 
@@ -28,6 +33,7 @@ export interface FetchTransactionsParams {
 
 export interface TransactionsResponse {
   data: Transaction[];
+  hasAmounts?: boolean;
   page?: number;
   pageSize?: number;
   status: "error" | "ok";
@@ -39,14 +45,21 @@ export async function fetchReleaseTransactions(page: number, pageSize: number, s
   const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
   if (search) params.set("search", search);
 
-  return apiClient.get<ReleaseListResponse>(`/api/release-transactions?${params.toString()}`);
+  return apiClient.get<ReleaseListResponse>(`/api/release-transactions?${params.toString()}`, {
+    responseSchema: ReleaseTransactionsResponseSchema,
+  });
 }
 
 export async function fetchSettlementTransactions(page: number, pageSize: number, search?: string) {
   const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
   if (search) params.set("search", search);
 
-  return apiClient.get<SettlementListResponse>(`/api/settlement-transactions?${params.toString()}`);
+  return apiClient.get<SettlementListResponse>(
+    `/api/settlement-transactions?${params.toString()}`,
+    {
+      responseSchema: SettlementTransactionsResponseSchema,
+    },
+  );
 }
 
 export async function fetchTransactions({
@@ -73,6 +86,8 @@ export async function fetchTransactions({
   // API supports: from, to, origin, destination, paymentMethod, transactionType, status, search, includeAmounts
   // Not all frontend filters might be supported by backend, but we map common ones.
 
-  const res = await apiClient.get<TransactionsResponse>(`/api/transactions?${params.toString()}`);
+  const res = await apiClient.get<TransactionsResponse>(`/api/transactions?${params.toString()}`, {
+    responseSchema: TransactionsResponseSchema,
+  });
   return res;
 }

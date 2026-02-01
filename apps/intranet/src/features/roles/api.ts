@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { z } from "zod";
 import { fetchEmployees } from "@/features/hr/employees/api";
 import { apiClient } from "@/lib/api-client";
 import type { Permission, Role } from "@/types/roles";
@@ -63,17 +64,34 @@ interface UpdateRolePermissionsParams {
   roleId: number;
 }
 
+const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
+const PermissionsResponseSchema = z.object({
+  permissions: z.array(z.unknown()),
+  status: z.string(),
+});
+const RolesResponseSchema = z.object({
+  roles: z.array(z.unknown()),
+  status: z.string(),
+});
+const RoleUsersResponseSchema = z.object({
+  users: z.array(z.unknown()),
+});
+const RoleMappingsResponseSchema = z.object({
+  data: z.array(z.unknown()),
+});
+
 export async function createRole(data: RoleFormData) {
-  return apiClient.post("/api/roles", data);
+  return apiClient.post("/api/roles", data, { responseSchema: StatusResponseSchema });
 }
 
 export async function deleteRole(id: number) {
-  return apiClient.delete(`/api/roles/${id}`);
+  return apiClient.delete(`/api/roles/${id}`, { responseSchema: StatusResponseSchema });
 }
 
 export async function fetchPermissions() {
   const res = await apiClient.get<{ permissions: Permission[]; status: string }>(
     "/api/roles/permissions",
+    { responseSchema: PermissionsResponseSchema },
   );
   return res.permissions;
 }
@@ -81,41 +99,59 @@ export async function fetchPermissions() {
 // --- CRUD & Users ---
 
 export async function fetchRoles() {
-  const res = await apiClient.get<{ roles: Role[]; status: string }>("/api/roles");
+  const res = await apiClient.get<{ roles: Role[]; status: string }>("/api/roles", {
+    responseSchema: RolesResponseSchema,
+  });
   return res.roles;
 }
 
 export async function fetchRoleUsers(roleId: number) {
-  const res = await apiClient.get<{ users: RoleUser[] }>(`/api/roles/${roleId}/users`);
+  const res = await apiClient.get<{ users: RoleUser[] }>(`/api/roles/${roleId}/users`, {
+    responseSchema: RoleUsersResponseSchema,
+  });
   return res.users;
 }
 
 export async function getRoleMappings(): Promise<RoleMapping[]> {
-  const res = await apiClient.get<{ data: RoleMapping[] }>("/api/roles/mappings");
+  const res = await apiClient.get<{ data: RoleMapping[] }>("/api/roles/mappings", {
+    responseSchema: RoleMappingsResponseSchema,
+  });
   return res.data;
 }
 
 export async function reassignRoleUsers({ roleId, targetRoleId }: ReassignParams) {
-  return apiClient.post(`/api/roles/${roleId}/reassign`, {
-    targetRoleId,
-  });
+  return apiClient.post(
+    `/api/roles/${roleId}/reassign`,
+    {
+      targetRoleId,
+    },
+    { responseSchema: StatusResponseSchema },
+  );
 }
 
 export async function saveRoleMapping(mapping: RoleMapping): Promise<void> {
-  await apiClient.post("/api/roles/mappings", mapping);
+  await apiClient.post("/api/roles/mappings", mapping, { responseSchema: StatusResponseSchema });
 }
 
 export async function syncPermissions() {
-  return apiClient.post("/api/roles/permissions/sync", {});
+  return apiClient.post(
+    "/api/roles/permissions/sync",
+    {},
+    { responseSchema: StatusResponseSchema },
+  );
 }
 
 export async function updateRole(id: number, data: RoleFormData) {
-  return apiClient.put(`/api/roles/${id}`, data);
+  return apiClient.put(`/api/roles/${id}`, data, { responseSchema: StatusResponseSchema });
 }
 
 export async function updateRolePermissions({
   permissionIds,
   roleId,
 }: UpdateRolePermissionsParams) {
-  return apiClient.post(`/api/roles/${roleId}/permissions`, { permissionIds });
+  return apiClient.post(
+    `/api/roles/${roleId}/permissions`,
+    { permissionIds },
+    { responseSchema: StatusResponseSchema },
+  );
 }

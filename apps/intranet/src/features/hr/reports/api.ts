@@ -1,6 +1,33 @@
+import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 
 import type { TimesheetEntry } from "../timesheets/types";
+
+const EmployeeTimesheetsResponseSchema = z.object({
+  entries: z.array(z.unknown()),
+  from: z.string(),
+  message: z.string().optional(),
+  status: z.literal("ok"),
+  to: z.string(),
+});
+
+const GlobalTimesheetsResponseSchema = z.object({
+  entries: z.array(z.unknown()),
+  message: z.string().optional(),
+  status: z.literal("ok"),
+});
+
+const MultiMonthTimesheetsResponseSchema = z.object({
+  data: z.record(
+    z.string(),
+    z.object({
+      entries: z.array(z.unknown()),
+      month: z.string(),
+    }),
+  ),
+  message: z.string().optional(),
+  status: z.literal("ok"),
+});
 
 export async function fetchEmployeeTimesheets(
   employeeId: number,
@@ -18,6 +45,7 @@ export async function fetchEmployeeTimesheets(
       endDate,
       startDate,
     },
+    responseSchema: EmployeeTimesheetsResponseSchema,
   });
 
   if (data.status !== "ok") {
@@ -37,6 +65,7 @@ export async function fetchGlobalTimesheetRange(startDate: string, endDate: stri
       from: startDate,
       to: endDate,
     },
+    responseSchema: GlobalTimesheetsResponseSchema,
   });
 
   if (data.status !== "ok") {
@@ -61,6 +90,7 @@ export async function fetchMultiMonthTimesheets(
       endMonth,
       startMonth,
     },
+    responseSchema: MultiMonthTimesheetsResponseSchema,
   });
 
   if (data.status !== "ok") {

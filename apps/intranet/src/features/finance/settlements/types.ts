@@ -4,6 +4,7 @@ export interface ListResponse {
   data: SettlementTransaction[];
   page: number;
   pageSize: number;
+  status: "ok";
   total: number;
   totalPages: number;
 }

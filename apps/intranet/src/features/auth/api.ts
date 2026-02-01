@@ -1,6 +1,12 @@
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 
 import { apiClient } from "@/lib/api-client";
+import {
+  MfaSetupResponseSchema,
+  PasskeyLoginOptionsResponseSchema,
+  PasskeyRegistrationOptionsResponseSchema,
+  StatusResponseSchema,
+} from "./schemas";
 
 export interface MfaEnableParams {
   secret?: string;
@@ -32,39 +38,61 @@ export interface PasskeyVerifyParams {
 }
 
 export async function disableMfa() {
-  return apiClient.post<{ status: string }>("/api/auth/mfa/disable", {});
+  return apiClient.post<{ status: string }>(
+    "/api/auth/mfa/disable",
+    {},
+    { responseSchema: StatusResponseSchema },
+  );
 }
 
 export async function enableMfa({ secret, token, userId }: MfaEnableParams) {
-  return apiClient.post<{ message?: string; status: string }>("/api/auth/mfa/enable", {
-    secret,
-    token,
-    userId,
-  });
+  return apiClient.post<{ message?: string; status: string }>(
+    "/api/auth/mfa/enable",
+    {
+      secret,
+      token,
+      userId,
+    },
+    { responseSchema: StatusResponseSchema },
+  );
 }
 
 // --- Passkey Registration ---
 
 export async function fetchPasskeyLoginOptions() {
-  return apiClient.get<PasskeyLoginOptions>("/api/auth/passkey/login/options");
+  return apiClient.get<PasskeyLoginOptions>("/api/auth/passkey/login/options", {
+    responseSchema: PasskeyLoginOptionsResponseSchema,
+  });
 }
 
 export async function fetchPasskeyRegistrationOptions() {
-  return apiClient.get<PasskeyOptionsResponse>("/api/auth/passkey/register/options");
+  return apiClient.get<PasskeyOptionsResponse>("/api/auth/passkey/register/options", {
+    responseSchema: PasskeyRegistrationOptionsResponseSchema,
+  });
 }
 
 export async function removePasskey() {
   // Use delete method if the API supports it, component used delete
-  return apiClient.delete<{ message?: string; status: string }>("/api/auth/passkey/remove");
+  return apiClient.delete<{ message?: string; status: string }>("/api/auth/passkey/remove", {
+    responseSchema: StatusResponseSchema,
+  });
 }
 
 export async function setupMfa() {
-  return apiClient.post<MfaSetupResponse>("/api/auth/mfa/setup", {});
+  return apiClient.post<MfaSetupResponse>(
+    "/api/auth/mfa/setup",
+    {},
+    { responseSchema: MfaSetupResponseSchema },
+  );
 }
 
 export async function verifyPasskeyRegistration({ body, challenge }: PasskeyVerifyParams) {
-  return apiClient.post<{ message?: string; status: string }>("/api/auth/passkey/register/verify", {
-    body,
-    challenge,
-  });
+  return apiClient.post<{ message?: string; status: string }>(
+    "/api/auth/passkey/register/verify",
+    {
+      body,
+      challenge,
+    },
+    { responseSchema: StatusResponseSchema },
+  );
 }

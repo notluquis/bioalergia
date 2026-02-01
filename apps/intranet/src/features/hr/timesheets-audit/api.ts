@@ -2,6 +2,7 @@
  * API client for timesheet audit features
  */
 
+import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 
 import type { TimesheetEntryWithEmployee } from "./types";
@@ -27,6 +28,7 @@ export async function fetchMultiEmployeeTimesheets(
 
   const response = await apiClient.get<{ entries: TimesheetEntryWithEmployee[] }>(
     `/api/timesheets/multi-detail?${params.toString()}`,
+    { responseSchema: z.object({ entries: z.array(z.unknown()) }) },
   );
 
   return response.entries || [];

@@ -4,7 +4,7 @@ export interface ListResponse {
   data: ReleaseTransaction[];
   page: number;
   pageSize: number;
-  status: string;
+  status: "ok";
   total: number;
   totalPages: number;
 }

@@ -3,6 +3,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Save, User, UserPlus, X } from "lucide-react";
+import { z } from "zod";
 import Button from "@/components/ui/Button";
 import { CardContent } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/_authed/patients/new")({
 });
 
 const BLOOD_TYPES = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
+const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
 
 interface PatientFormState {
   rut: string;
@@ -42,7 +44,9 @@ function AddPatientPage() {
 
   const createPatientMutation = useMutation({
     mutationFn: async (payload: PatientFormState) => {
-      return await apiClient.post("/api/patients", payload);
+      return await apiClient.post("/api/patients", payload, {
+        responseSchema: StatusResponseSchema,
+      });
     },
     onError: (err) => {
       toastError(err instanceof Error ? err.message : "Error al registrar paciente");

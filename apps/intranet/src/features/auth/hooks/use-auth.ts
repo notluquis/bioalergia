@@ -5,6 +5,12 @@ import { ApiError, apiClient } from "@/lib/api-client";
 import { ability, updateAbility } from "@/lib/authz/ability";
 import { logger } from "@/lib/logger";
 import type { Role } from "@/types/roles";
+import {
+  AuthSessionResponseSchema,
+  LoginMfaResponseSchema,
+  LoginResponseSchema,
+  StatusResponseSchema,
+} from "../schemas";
 import { authStore, setImpersonatedRole } from "./../store/auth-store";
 import type { AuthSessionData, AuthUser, LoginResult } from "../types";
 
@@ -21,7 +27,7 @@ export function useAuth() {
           permissionVersion?: number;
           status: string;
           user?: AuthUser;
-        }>("/api/auth/me/session");
+        }>("/api/auth/me/session", { responseSchema: AuthSessionResponseSchema });
 
         if (payload.status === "ok" && payload.user) {
           // Note: ability update is handled in AuthListener
@@ -64,7 +70,7 @@ export function useAuth() {
       status: string;
       user?: AuthUser;
       userId: number;
-    }>("/api/auth/login", { email, password });
+    }>("/api/auth/login", { email, password }, { responseSchema: LoginResponseSchema });
 
     if (payload.status === "mfa_required") {
       logger.info("[auth] login:mfa_required", { userId: payload.userId });
@@ -88,6 +94,7 @@ export function useAuth() {
         token,
         userId,
       },
+      { responseSchema: LoginMfaResponseSchema },
     );
 
     if (payload.status !== "ok" || !payload.user) {
@@ -103,6 +110,7 @@ export function useAuth() {
     const payload = await apiClient.post<{ message?: string; status: string; user?: AuthUser }>(
       "/api/auth/passkey/login/verify",
       { body: authResponse, challenge },
+      { responseSchema: LoginMfaResponseSchema },
     );
 
     if (payload.status !== "ok" || !payload.user) {
@@ -117,7 +125,7 @@ export function useAuth() {
     logger.info("[auth] logout:start");
     try {
       setImpersonatedRole(null);
-      await apiClient.post("/api/auth/logout", {});
+      await apiClient.post("/api/auth/logout", {}, { responseSchema: StatusResponseSchema });
     } catch (error) {
       logger.error("[auth] logout:error", error);
     } finally {

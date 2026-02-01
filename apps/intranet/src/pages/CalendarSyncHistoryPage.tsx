@@ -130,8 +130,8 @@ export default function CalendarSyncHistoryPage() {
             <Accordion className="divide-default-100 divide-y" variant="surface">
               {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: row rendering logic */}
               {syncLogs.map((log) => {
-                const duration = log.endedAt
-                  ? dayjs(log.endedAt).diff(dayjs(log.startedAt), "s")
+                const duration = log.finishedAt
+                  ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s")
                   : null;
 
                 return (

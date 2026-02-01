@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 
 import type {
@@ -8,6 +9,29 @@ import type {
   CounterpartPersonType,
   CounterpartSummary,
 } from "./types";
+
+const AccountsResponseSchema = z.object({
+  accounts: z.array(z.unknown()),
+});
+
+const CounterpartResponseSchema = z.object({
+  accounts: z.array(z.unknown()),
+  counterpart: z.unknown(),
+});
+
+const SuggestionsResponseSchema = z.object({
+  suggestions: z.array(z.unknown()),
+});
+
+const CounterpartsResponseSchema = z.object({
+  counterparts: z.array(z.unknown()),
+});
+
+const SummaryResponseSchema = z.object({
+  summary: z.unknown(),
+});
+
+const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
 
 export interface CounterpartUpsertPayload {
   category: CounterpartCategory;
@@ -36,6 +60,7 @@ export async function addCounterpartAccount(
   const data = await apiClient.post<{ accounts: CounterpartAccount[] }>(
     `/api/counterparts/${counterpartId}/accounts`,
     payload,
+    { responseSchema: AccountsResponseSchema },
   );
   return data.accounts;
 }
@@ -44,6 +69,7 @@ export async function attachCounterpartRut(counterpartId: number, rut: string) {
   const data = await apiClient.post<{ accounts: CounterpartAccount[] }>(
     `/api/counterparts/${counterpartId}/attach-rut`,
     { rut },
+    { responseSchema: AccountsResponseSchema },
   );
   return data.accounts;
 }
@@ -52,6 +78,7 @@ export async function createCounterpart(payload: CounterpartUpsertPayload) {
   return await apiClient.post<{ accounts: CounterpartAccount[]; counterpart: Counterpart }>(
     "/api/counterparts",
     payload,
+    { responseSchema: CounterpartResponseSchema },
   );
 }
 
@@ -61,6 +88,7 @@ export async function fetchAccountSuggestions(query: string, limit = 10) {
   params.set("limit", String(limit));
   const data = await apiClient.get<{ suggestions: CounterpartAccountSuggestion[] }>(
     `/api/counterparts/suggestions?${params.toString()}`,
+    { responseSchema: SuggestionsResponseSchema },
   );
   return data.suggestions;
 }
@@ -68,11 +96,14 @@ export async function fetchAccountSuggestions(query: string, limit = 10) {
 export async function fetchCounterpart(id: number) {
   return await apiClient.get<{ accounts: CounterpartAccount[]; counterpart: Counterpart }>(
     `/api/counterparts/${id}`,
+    { responseSchema: CounterpartResponseSchema },
   );
 }
 
 export async function fetchCounterparts() {
-  const data = await apiClient.get<{ counterparts: Counterpart[] }>("/api/counterparts");
+  const data = await apiClient.get<{ counterparts: Counterpart[] }>("/api/counterparts", {
+    responseSchema: CounterpartsResponseSchema,
+  });
   return data.counterparts;
 }
 
@@ -86,6 +117,7 @@ export async function fetchCounterpartSummary(
   const queryString = search.size > 0 ? `?${search.toString()}` : "";
   const data = await apiClient.get<{ summary: CounterpartSummary }>(
     `/api/counterparts/${counterpartId}/summary${queryString}`,
+    { responseSchema: SummaryResponseSchema },
   );
   return data.summary;
 }
@@ -94,6 +126,7 @@ export async function updateCounterpart(id: number, payload: Partial<Counterpart
   return await apiClient.put<{ accounts: CounterpartAccount[]; counterpart: Counterpart }>(
     `/api/counterparts/${id}`,
     payload,
+    { responseSchema: CounterpartResponseSchema },
   );
 }
 
@@ -106,5 +139,7 @@ export async function updateCounterpartAccount(
     holder: null | string;
   }>,
 ) {
-  await apiClient.put(`/api/counterparts/accounts/${accountId}`, payload);
+  await apiClient.put(`/api/counterparts/accounts/${accountId}`, payload, {
+    responseSchema: StatusResponseSchema,
+  });
 }
