@@ -1,10 +1,16 @@
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { isOAuthConfigured } from "../lib/google/google-core";
 import { getCurrentJobs, getJobHistory, getLogs, startBackup } from "../services/backups";
 import { getBackupTables, listBackups } from "../services/drive";
 import { reply } from "../utils/reply";
+
+const restoreSchema = z.object({
+  tables: z.array(z.string()).optional(),
+});
 
 const app = new Hono();
 
@@ -140,7 +146,7 @@ app.get("/history", async (c) => {
 });
 
 // Restore from backup
-app.post("/:fileId/restore", async (c) => {
+app.post("/:fileId/restore", zValidator("json", restoreSchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
@@ -157,8 +163,7 @@ app.post("/:fileId/restore", async (c) => {
   }
 
   const fileId = c.req.param("fileId");
-  const body = await c.req.json().catch(() => ({}));
-  const tables = body.tables as string[] | undefined;
+  const { tables } = c.req.valid("json");
 
   try {
     // TODO: Implement restore logic
@@ -207,15 +212,13 @@ app.get("/progress", async (c) => {
     while (true) {
       const activeJobs = getCurrentJobs();
 
-      if (activeJobs.length > 0) {
-        for (const job of activeJobs) {
-          await stream.writeSSE({
-            data: JSON.stringify({
-              type: job.type, // 'backup' or 'restore'
-              job,
-            }),
-          });
-        }
+      for (const job of activeJobs) {
+        await stream.writeSSE({
+          data: JSON.stringify({
+            type: job.type, // 'backup' or 'restore'
+            job,
+          }),
+        });
       }
 
       await stream.sleep(1000); // Poll every second for smooth UI

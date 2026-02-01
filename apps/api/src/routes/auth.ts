@@ -47,17 +47,43 @@ async function issueToken(session: AuthSession): Promise<string> {
   );
 }
 
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
+
+// ... existing imports ...
+
+// ============================================================
+// SCHEMAS
+// ============================================================
+
+const loginSchema = z.object({
+  email: z.string().email("Email inválido"),
+  password: z.string().min(1, "Contraseña requerida"),
+});
+
+const mfaLoginSchema = z.object({
+  userId: z.number().int(),
+  token: z.string().min(6, "Token inválido"),
+});
+
+const mfaEnableSchema = z.object({
+  token: z.string().min(6, "Token inválido"),
+});
+
+// PASSKEY SCHEMAS
+// Note: Passkey bodies are complex JSONs from simplewebauthn, we can be slightly looser or use their types if possible,
+// for now we validate structure existance
+const passkeyResponseSchema = z.object({
+  body: z.record(z.unknown()),
+  challenge: z.string().min(1),
+});
+
 // ============================================================
 // LOGIN
 // ============================================================
 
-authRoutes.post("/login", async (c) => {
-  const body = await c.req.json<{ email: string; password: string }>();
-  const { email, password } = body;
-
-  if (!email || !password) {
-    return c.json({ status: "error", message: "Email y contrase?a requeridos" }, 400);
-  }
+authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
+  const { email, password } = c.req.valid("json");
 
   // Find user with ZenStack
   const user = await db.user.findUnique({
@@ -132,13 +158,8 @@ authRoutes.post("/login", async (c) => {
 // MFA LOGIN
 // ============================================================
 
-authRoutes.post("/login/mfa", async (c) => {
-  const body = await c.req.json<{ userId: number; token: string }>();
-  const { userId, token: mfaToken } = body;
-
-  if (!userId || !mfaToken) {
-    return c.json({ status: "error", message: "userId y token requeridos" }, 400);
-  }
+authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
+  const { userId, token: mfaToken } = c.req.valid("json");
 
   const user = await db.user.findUnique({
     where: { id: userId },
@@ -157,7 +178,7 @@ authRoutes.post("/login/mfa", async (c) => {
   const isValid = await verifyMfaToken(mfaToken, user.mfaSecret);
 
   if (!isValid) {
-    return c.json({ status: "error", message: "C?digo incorrecto" }, 401);
+    return c.json({ status: "error", message: "Código incorrecto" }, 401);
   }
 
   const roles = user.roles.map((r) => r.role.name);
@@ -270,7 +291,7 @@ authRoutes.post("/mfa/setup", async (c) => {
   }
 });
 
-authRoutes.post("/mfa/enable", async (c) => {
+authRoutes.post("/mfa/enable", zValidator("json", mfaEnableSchema), async (c) => {
   const token = getCookie(c, COOKIE_NAME);
   if (!token) {
     return c.json({ status: "error", message: "No autorizado" }, 401);
@@ -280,7 +301,7 @@ authRoutes.post("/mfa/enable", async (c) => {
     const decoded = await verifyToken(token);
     const userId = Number(decoded.sub);
 
-    const body = await c.req.json<{ token: string }>();
+    const { token: mfaToken } = c.req.valid("json");
 
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user?.mfaSecret) {
@@ -288,10 +309,10 @@ authRoutes.post("/mfa/enable", async (c) => {
     }
 
     const { verifyMfaToken } = await import("../services/mfa.js");
-    const isValid = await verifyMfaToken(body.token, user.mfaSecret);
+    const isValid = await verifyMfaToken(mfaToken, user.mfaSecret);
 
     if (!isValid) {
-      return c.json({ status: "error", message: "C?digo incorrecto" }, 400);
+      return c.json({ status: "error", message: "Código incorrecto" }, 400);
     }
 
     await db.user.update({
@@ -301,7 +322,7 @@ authRoutes.post("/mfa/enable", async (c) => {
 
     return c.json({ status: "ok" });
   } catch {
-    return c.json({ status: "error", message: "Token inv?lido" }, 401);
+    return c.json({ status: "error", message: "Token inválido" }, 401);
   }
 });
 
@@ -386,24 +407,23 @@ authRoutes.get("/passkey/login/options", async (c) => {
 });
 
 // PASSKEY LOGIN VERIFY
-authRoutes.post("/passkey/login/verify", async (c) => {
+authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema), async (c) => {
   try {
     const { verifyAuthenticationResponse } = await import("@simplewebauthn/server");
-    const body = await c.req.json();
-    const { body: authResponse, challenge } = body;
-
-    if (!authResponse || !challenge) {
-      return c.json({ status: "error", message: "Datos incompletos" }, 400);
-    }
+    const { body: authResponse, challenge } = c.req.valid("json");
 
     // Verify challenge exists
     const storedChallenge = getChallenge(`login:${challenge}`);
     if (!storedChallenge) {
-      return c.json({ status: "error", message: "Challenge inv?lido o expirado" }, 400);
+      return c.json({ status: "error", message: "Challenge inválido o expirado" }, 400);
     }
 
     // Find passkey by credential ID
-    const credentialID = authResponse.id;
+    // Note: authResponse is typed as unknown in schema, but we cast it or use it assuming structure matches simplewebauthn expectations
+    // We need to access id safely.
+    const responseBody = authResponse as any; // Safe cast for now as library validates
+    const credentialID = responseBody.id;
+
     const passkey = await db.passkey.findUnique({
       where: { credentialId: credentialID },
       include: {
@@ -423,7 +443,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
 
     // Verify the authentication response
     const verification = await verifyAuthenticationResponse({
-      response: authResponse,
+      response: responseBody,
       expectedChallenge: challenge,
       expectedOrigin: ORIGIN,
       expectedRPID: RP_ID,
@@ -436,7 +456,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     });
 
     if (!verification.verified) {
-      return c.json({ status: "error", message: "Verificaci?n fallida" }, 401);
+      return c.json({ status: "error", message: "Verificación fallida" }, 401);
     }
 
     // Update counter
@@ -470,7 +490,7 @@ authRoutes.post("/passkey/login/verify", async (c) => {
     });
   } catch (error) {
     console.error("[passkey] login verify error:", error);
-    return c.json({ status: "error", message: "Error de verificaci?n" }, 500);
+    return c.json({ status: "error", message: "Error de verificación" }, 500);
   }
 });
 
@@ -522,67 +542,71 @@ authRoutes.get("/passkey/register/options", async (c) => {
 });
 
 // PASSKEY REGISTER VERIFY
-authRoutes.post("/passkey/register/verify", async (c) => {
-  const sessionToken = getCookie(c, COOKIE_NAME);
-  if (!sessionToken) {
-    return c.json({ status: "error", message: "No autorizado" }, 401);
-  }
-
-  try {
-    const { verifyRegistrationResponse } = await import("@simplewebauthn/server");
-    const decoded = await verifyToken(sessionToken);
-    const userId = Number(decoded.sub);
-
-    const body = await c.req.json();
-    const { body: regResponse, challenge } = body;
-
-    if (!regResponse || !challenge) {
-      return c.json({ status: "error", message: "Datos incompletos" }, 400);
+authRoutes.post(
+  "/passkey/register/verify",
+  zValidator("json", passkeyResponseSchema),
+  async (c) => {
+    const sessionToken = getCookie(c, COOKIE_NAME);
+    if (!sessionToken) {
+      return c.json({ status: "error", message: "No autorizado" }, 401);
     }
 
-    // Verify challenge
-    const storedChallenge = getChallenge(`register:${challenge}`);
-    if (!storedChallenge || storedChallenge.userId !== userId) {
-      return c.json({ status: "error", message: "Challenge inv?lido" }, 400);
+    try {
+      const { verifyRegistrationResponse } = await import("@simplewebauthn/server");
+      const decoded = await verifyToken(sessionToken);
+      const userId = Number(decoded.sub);
+
+      const { body: regResponse, challenge } = c.req.valid("json");
+
+      // Verify challenge
+      const storedChallenge = getChallenge(`register:${challenge}`);
+      if (!storedChallenge || storedChallenge.userId !== userId) {
+        return c.json({ status: "error", message: "Challenge inválido" }, 400);
+      }
+
+      // Note: regResponse is typed as unknown by Zod, but simplewebauthn expects a specific structure.
+      // We cast it to `any` for library compatibility, as the library itself performs validation.
+      const responseBody = regResponse as any;
+
+      const verification = await verifyRegistrationResponse({
+        response: responseBody,
+        expectedChallenge: challenge,
+        expectedOrigin: ORIGIN,
+        expectedRPID: RP_ID,
+      });
+
+      if (!verification.verified || !verification.registrationInfo) {
+        return c.json({ status: "error", message: "Verificación fallida" }, 400);
+      }
+
+      const { credential, credentialDeviceType, credentialBackedUp } =
+        verification.registrationInfo;
+
+      // Save credential to Passkey table
+      await db.passkey.create({
+        data: {
+          userId,
+          credentialId: credential.id,
+          publicKey: Buffer.from(credential.publicKey),
+          counter: BigInt(credential.counter),
+          transports: responseBody.response.transports || undefined,
+          webAuthnUserID: String(userId),
+          deviceType: credentialDeviceType,
+          backedUp: credentialBackedUp,
+          friendlyName: `Passkey (${new Date().toLocaleDateString()})`,
+        },
+      });
+
+      return c.json({
+        status: "ok",
+        message: "Passkey registrado exitosamente",
+      });
+    } catch (error) {
+      console.error("[passkey] register verify error:", error);
+      return c.json({ status: "error", message: "Error de verificación" }, 500);
     }
-
-    const verification = await verifyRegistrationResponse({
-      response: regResponse,
-      expectedChallenge: challenge,
-      expectedOrigin: ORIGIN,
-      expectedRPID: RP_ID,
-    });
-
-    if (!verification.verified || !verification.registrationInfo) {
-      return c.json({ status: "error", message: "Verificaci?n fallida" }, 400);
-    }
-
-    const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
-
-    // Save credential to Passkey table
-    await db.passkey.create({
-      data: {
-        userId,
-        credentialId: credential.id,
-        publicKey: Buffer.from(credential.publicKey),
-        counter: BigInt(credential.counter),
-        transports: regResponse.response.transports || undefined,
-        webAuthnUserID: String(userId),
-        deviceType: credentialDeviceType,
-        backedUp: credentialBackedUp,
-        friendlyName: `Passkey (${new Date().toLocaleDateString()})`,
-      },
-    });
-
-    return c.json({
-      status: "ok",
-      message: "Passkey registrado exitosamente",
-    });
-  } catch (error) {
-    console.error("[passkey] register verify error:", error);
-    return c.json({ status: "error", message: "Error de verificaci?n" }, 500);
-  }
-});
+  },
+);
 
 // PASSKEY REMOVE
 authRoutes.delete("/passkey/remove", async (c) => {
