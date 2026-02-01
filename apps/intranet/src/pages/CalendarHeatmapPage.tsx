@@ -3,14 +3,14 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import dayjs from "dayjs";
 import { Filter } from "lucide-react";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { fetchCalendarSummary } from "@/features/calendar/api";
 import { CalendarFilterPanel } from "@/features/calendar/components/CalendarFilterPanel";
 import HeatmapMonth from "@/features/calendar/components/HeatmapMonth";
-import type { CalendarFilters } from "@/features/calendar/types";
+import type { CalendarFilters, CalendarSummary } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { Route } from "@/routes/_authed/calendar/heatmap";
@@ -53,7 +53,7 @@ interface HeatmapDayData {
 }
 
 function processHeatmapData(
-  summary: any,
+  summary: CalendarSummary | null | undefined,
   from: string,
   to: string,
 ): {
@@ -90,7 +90,7 @@ function processHeatmapData(
     if (heatmapMonths.length > 36) break; // Safety
   }
 
-  const totals = summary?.aggregates?.byDate.map((d: any) => d.total) ?? [];
+  const totals = summary?.aggregates?.byDate.map((d) => d.total) ?? [];
   const heatmapMaxValue = totals.length > 0 ? Math.max(...totals) : 10;
 
   return { heatmapMaxValue, heatmapMonths, statsByDate: stats };
@@ -106,7 +106,7 @@ function CalendarHeatmapPage() {
 
   const activeFilters = useMemo(
     () => ({
-      categories: searchParams.categories ?? defaults.categories,
+      categories: searchParams.category ?? defaults.categories,
       from: searchParams.from ?? defaults.from,
       to: searchParams.to ?? defaults.to,
     }),
@@ -114,6 +114,14 @@ function CalendarHeatmapPage() {
   );
 
   const [filters, setFilters] = useState<HeatmapFilters>(activeFilters);
+  const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
+
+  // Sync draft with active filters when popover is closed
+  React.useEffect(() => {
+    if (!filtersOpen) {
+      setFilters(activeFilters);
+    }
+  }, [activeFilters, filtersOpen]);
 
   const { data: summary } = useSuspenseQuery({
     queryFn: () => {
@@ -147,7 +155,6 @@ function CalendarHeatmapPage() {
 
   const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
   const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
-  const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
   return (
     <section className="space-y-3">
@@ -193,8 +200,7 @@ function CalendarHeatmapPage() {
                       void navigate({
                         search: {
                           ...filters,
-                          categories:
-                            filters.categories.length > 0 ? filters.categories : undefined,
+                          category: filters.categories.length > 0 ? filters.categories : undefined,
                         },
                       });
                       setFiltersOpen(false);
@@ -213,7 +219,7 @@ function CalendarHeatmapPage() {
                           ...prev,
                           from: undefined,
                           to: undefined,
-                          categories: undefined,
+                          category: undefined,
                         }),
                       });
                     }}
