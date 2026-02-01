@@ -1,7 +1,7 @@
 import { Popover } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import dayjs, { type Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { Filter } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -45,6 +45,57 @@ function filtersEqual(a: HeatmapFilters, b: HeatmapFilters): boolean {
   return a.from === b.from && a.to === b.to && arraysEqual(a.categories, b.categories);
 }
 
+interface HeatmapDayData {
+  amountExpected: number;
+  amountPaid: number;
+  total: number;
+  typeCounts: Record<string, number>;
+}
+
+function processHeatmapData(
+  summary: any,
+  from: string,
+  to: string,
+): {
+  heatmapMaxValue: number;
+  heatmapMonths: dayjs.Dayjs[];
+  statsByDate: Map<string, HeatmapDayData>;
+} {
+  const stats = new Map<string, HeatmapDayData>();
+  for (const entry of summary?.aggregates?.byDate ?? []) {
+    const key = String(entry.date).slice(0, 10);
+    stats.set(key, {
+      amountExpected: entry.amountExpected ?? 0,
+      amountPaid: entry.amountPaid ?? 0,
+      total: entry.total,
+      typeCounts: {},
+    });
+  }
+
+  const start = dayjs(from).isValid()
+    ? dayjs(from).startOf("month")
+    : dayjs().startOf("month").subtract(1, "month");
+
+  let end = dayjs(to).isValid()
+    ? dayjs(to).startOf("month")
+    : dayjs().startOf("month").add(1, "month");
+
+  if (end.isBefore(start)) end = start.add(2, "month");
+
+  const heatmapMonths: dayjs.Dayjs[] = [];
+  let current = start;
+  while (current.isBefore(end) || current.isSame(end, "month")) {
+    heatmapMonths.push(current);
+    current = current.add(1, "month");
+    if (heatmapMonths.length > 36) break; // Safety
+  }
+
+  const totals = summary?.aggregates?.byDate.map((d: any) => d.total) ?? [];
+  const heatmapMaxValue = totals.length > 0 ? Math.max(...totals) : 10;
+
+  return { heatmapMaxValue, heatmapMonths, statsByDate: stats };
+}
+
 function CalendarHeatmapPage() {
   const navigate = Route.useNavigate();
   const searchParams = Route.useSearch();
@@ -76,44 +127,7 @@ function CalendarHeatmapPage() {
   const isDirty = useMemo(() => !filtersEqual(filters, activeFilters), [filters, activeFilters]);
 
   const { heatmapMaxValue, heatmapMonths, statsByDate } = useMemo(() => {
-    const stats = new Map<string, any>();
-    for (const entry of summary?.aggregates?.byDate ?? []) {
-      const key = String(entry.date).slice(0, 10);
-      stats.set(key, {
-        amountExpected: entry.amountExpected ?? 0,
-        amountPaid: entry.amountPaid ?? 0,
-        total: entry.total,
-        typeCounts: {},
-      });
-    }
-
-    const sourceFrom = summary?.filters.from || activeFilters.from;
-    const sourceTo = summary?.filters.to || activeFilters.to;
-    const start = dayjs(sourceFrom).isValid()
-      ? dayjs(sourceFrom).startOf("month")
-      : dayjs().startOf("month").subtract(1, "month");
-    let end = dayjs(sourceTo).isValid()
-      ? dayjs(sourceTo).startOf("month")
-      : dayjs().startOf("month").add(1, "month");
-    if (end.isBefore(start)) end = start.add(2, "month");
-
-    const months: Dayjs[] = [];
-    let cursor = start.clone();
-    let guard = 0;
-    while ((cursor.isBefore(end) || cursor.isSame(end)) && ++guard <= 18) {
-      months.push(cursor);
-      cursor = cursor.add(1, "month");
-    }
-
-    let max = summary?.totals.maxEventCount ?? 0;
-    if (!max && summary) {
-      const monthKeys = new Set(months.map((m) => m.format("YYYY-MM")));
-      for (const entry of summary.aggregates.byDate) {
-        if (monthKeys.has(String(entry.date).slice(0, 7))) max = Math.max(max, entry.total);
-      }
-    }
-
-    return { heatmapMaxValue: max, heatmapMonths: months, statsByDate: stats };
+    return processHeatmapData(summary, activeFilters.from, activeFilters.to);
   }, [summary, activeFilters]);
 
   const previewCount = useMemo(() => {
@@ -194,7 +208,14 @@ function CalendarHeatmapPage() {
                         setFilters((prev) => ({ ...prev, to: String(value ?? "") }));
                     }}
                     onReset={() => {
-                      void navigate({ search: {} });
+                      void navigate({
+                        search: (prev) => ({
+                          ...prev,
+                          from: undefined,
+                          to: undefined,
+                          categories: undefined,
+                        }),
+                      });
                     }}
                     showDateRange
                     showSearch={false}

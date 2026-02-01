@@ -1,6 +1,3 @@
-import dayjs from "dayjs";
-import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { Filter } from "lucide-react";
 
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
@@ -14,10 +11,7 @@ import { useDisclosure } from "@/hooks/use-disclosure";
 import { Route } from "@/routes/_authed/calendar/daily";
 
 import "dayjs/locale/es";
-
-dayjs.locale("es");
-dayjs.extend(isSameOrBefore);
-dayjs.extend(isSameOrAfter);
+import dayjs from "dayjs";
 
 function CalendarDailyPage() {
   const navigate = Route.useNavigate();
@@ -36,7 +30,7 @@ function CalendarDailyPage() {
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
   // Get data for selected Day
-  const selectedDayEntry = daily?.days.find((d: any) => d.date === currentSelectedDate);
+  const selectedDayEntry = daily?.days.find((d) => d.date === currentSelectedDate);
 
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
 
@@ -123,7 +117,7 @@ function CalendarDailyPage() {
 
           return (
             <>
-              {selectedDayEntry.events.map((event: any) => (
+              {selectedDayEntry.events.map((event) => (
                 <DailyEventCard event={event} key={event.eventId} />
               ))}
 

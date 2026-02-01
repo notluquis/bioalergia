@@ -127,7 +127,7 @@ export default function CalendarSyncHistoryPage() {
           }
 
           return (
-            <Accordion className="divide-base-200 divide-y" variant="surface">
+            <Accordion className="divide-default-100 divide-y" variant="surface">
               {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: row rendering logic */}
               {syncLogs.map((log) => {
                 const duration = log.endedAt
@@ -175,7 +175,7 @@ export default function CalendarSyncHistoryPage() {
                           )}
                           {log.updated > 0 && (
                             <span
-                              className="bg-info/10 text-info rounded px-1.5 py-0.5"
+                              className="bg-primary/10 text-primary rounded px-1.5 py-0.5"
                               title="Actualizados"
                             >
                               ~{log.updated}
@@ -242,7 +242,9 @@ export default function CalendarSyncHistoryPage() {
                               </div>
                               <div>
                                 <span className="text-default-500 block text-xs">Actualizados</span>
-                                <span className="text-info text-lg font-bold">{log.updated}</span>
+                                <span className="text-primary text-lg font-bold">
+                                  {log.updated}
+                                </span>
                               </div>
                               <div>
                                 <span className="text-default-500 block text-xs">Excluidos</span>

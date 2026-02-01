@@ -23,6 +23,15 @@ interface WeekGridProps {
   weekStart: string; // YYYY-MM-DD of Monday
 }
 
+interface DayInfo {
+  dayName: string;
+  dayNumber: string;
+  fullDayName: string;
+  isoDate: string;
+  isToday: boolean;
+  key: string;
+}
+
 // Generate hours from startHour to endHour
 function generateHours(startHour: number, endHour: number): number[] {
   const hours: number[] = [];
@@ -192,8 +201,6 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
 
   const hours = generateHours(startHour, endHour);
   const eventsByDay = groupEventsByDay(events, monday);
-
-  // Generate day headers
   const days = Array.from({ length: 6 }, (_, i) => {
     const date = monday.add(i, "day");
     return {
@@ -216,253 +223,22 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
     >
       <div className="muted-scrollbar flex-1 overflow-x-auto overscroll-x-contain touch-pan-x">
         <div className="min-w-270">
-          {/* Header row */}
-          {/* biome-ignore lint/a11y/useSemanticElements: grid layout */}
-          <div
-            className="border-default-200 bg-content2/60 grid grid-cols-[52px_repeat(6,1fr)] border-b backdrop-blur-md"
-            role="row"
-            tabIndex={0}
-          >
-            <div className="border-default-200 border-r" />
-            {days.map((day) => (
-              // biome-ignore lint/a11y/useSemanticElements: grid layout
-              <div
-                aria-current={day.isToday ? "date" : undefined}
-                className={cn(
-                  "border-default-200 flex flex-col items-center justify-center gap-1 border-r px-1 py-3 text-center last:border-r-0 sm:py-4",
-                  day.isToday && "bg-primary/20 border-t-4 border-primary relative",
-                )}
-                key={day.key}
-                role="columnheader"
-                tabIndex={0}
-              >
-                <abbr
-                  className="text-foreground-400 text-[0.65rem] font-bold uppercase tracking-wider"
-                  title={day.fullDayName}
-                >
-                  {day.dayName}
-                </abbr>
-                <time
-                  className={cn(
-                    "text-foreground text-xl font-extrabold leading-none sm:text-2xl",
-                    day.isToday &&
-                      "bg-primary text-primary-foreground grid size-10 place-items-center rounded-full text-xl font-black shadow-lg shadow-primary/40",
-                  )}
-                  dateTime={day.isoDate}
-                >
-                  {day.dayNumber}
-                </time>
-              </div>
-            ))}
-          </div>
+          <WeekGridHeader days={days} />
 
-          {/* Time grid body */}
           <div className="muted-scrollbar grid min-h-100 grid-cols-[52px_repeat(6,1fr)] overflow-y-auto overscroll-y-contain touch-pan-y">
-            {/* Time axis */}
-            <div className="border-default-200 bg-content2/40 border-r">
-              {hours.map((hour) => (
-                <div
-                  className="border-default-100 flex h-13 items-start justify-end border-b pr-2"
-                  key={hour}
-                >
-                  <span className="text-foreground-500 -translate-y-1/2 text-[0.7rem] font-medium tabular-nums">
-                    {String(hour).padStart(2, "0")}:00
-                  </span>
-                </div>
-              ))}
-            </div>
+            <TimeAxis hours={hours} />
 
-            {/* Day columns */}
             {days.map((day) => (
-              <div
-                className={cn(
-                  "border-default-100 relative min-h-full overflow-hidden border-r last:border-r-0",
-                  day.isToday && "bg-primary/5",
-                )}
+              <DayColumn
+                day={day}
+                endHour={endHour}
+                events={eventsByDay[day.key] ?? []}
+                hours={hours}
                 key={day.key}
-              >
-                {/* Hour grid lines */}
-                {hours.map((hour) => (
-                  <div className="border-default-200/50 h-13 border-b" key={hour} />
-                ))}
-
-                {/* Events */}
-                <div className="absolute inset-0 z-5 isolate overflow-visible px-0.5">
-                  {}
-                  {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy rendering */}
-                  {calculateEventLayout(eventsByDay[day.key] ?? []).map((event) => {
-                    const position = getEventPosition(event, startHour, endHour);
-                    if (!position) return null;
-
-                    // Calculate duration to determine display mode
-                    const start = event.startDateTime ? dayjs(event.startDateTime) : null;
-                    const end = event.endDateTime ? dayjs(event.endDateTime) : null;
-                    const durationMinutes = start && end ? end.diff(start, "minute") : 30;
-
-                    // Display mode based on duration (prioritize showing TITLE, time is secondary)
-                    type DisplayMode = "compact" | "detailed" | "minimal" | "normal";
-                    let displayMode: DisplayMode;
-                    if (durationMinutes < 20) {
-                      displayMode = "minimal";
-                    } else if (durationMinutes < 45) {
-                      displayMode = "compact";
-                    } else if (durationMinutes < 90) {
-                      displayMode = "normal";
-                    } else {
-                      displayMode = "detailed";
-                    }
-
-                    // Build tooltip text (always complete info)
-                    const timeStr = start ? start.format("HH:mm") : "";
-                    const endTimeStr = end ? end.format("HH:mm") : "";
-                    const amountStr =
-                      event.amountExpected == null
-                        ? ""
-                        : currencyFormatter.format(event.amountExpected);
-                    const controlFlag = event.controlIncluded === true;
-                    const tooltipLines = [
-                      event.summary ?? "(Sin título)",
-                      `${timeStr} - ${endTimeStr}`,
-                      amountStr,
-                      controlFlag ? "Control" : "",
-                    ].filter(Boolean);
-
-                    // Title - prioritize this over time for readability
-                    const title = event.summary?.trim() ?? "(Sin título)";
-
-                    // Calculate width and left based on column layout
-                    const padding = event.totalColumns > 1 ? 2 : 3; // pixels on each side
-                    const totalWidth = 100; // percentage
-                    const columnWidth = totalWidth / event.totalColumns;
-                    const leftPos = event.column * columnWidth;
-
-                    const eventButton = (
-                      <Button
-                        className={cn(
-                          "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden text-wrap rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-shadow hover:z-10 hover:shadow-md",
-                          getCategoryClass(event.category),
-                          // Display modes
-                          displayMode === "minimal" &&
-                            "items-center justify-center px-[0.3rem] py-[0.1rem]",
-                          displayMode === "compact" && "px-[0.35rem] py-[0.15rem]",
-                          displayMode === "normal" && "px-[0.4rem] py-[0.2rem]",
-                          displayMode === "detailed" && "px-[0.45rem] py-1",
-                        )}
-                        key={event.eventId}
-                        onPress={() => onEventClick?.(event)}
-                        size="sm"
-                        style={{
-                          height: position.height,
-                          left: `calc(${leftPos}% + ${padding}px)`,
-                          top: position.top,
-                          width: `calc(${columnWidth}% - ${padding * 2}px)`,
-                        }}
-                        variant="ghost"
-                      >
-                        {(() => {
-                          switch (displayMode) {
-                            case "compact":
-                            case "minimal":
-                            case "normal": {
-                              return (
-                                <span className="flex min-w-0 items-center gap-[0.3rem] overflow-hidden">
-                                  <span
-                                    className={cn(
-                                      "shrink-0 font-bold tabular-nums opacity-75",
-                                      displayMode === "minimal" && "hidden",
-                                      displayMode === "compact" && "text-[0.55rem]",
-                                      displayMode === "normal" && "text-[0.6rem]",
-                                    )}
-                                  >
-                                    {timeStr}
-                                  </span>
-                                  <span
-                                    className={cn(
-                                      "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight",
-                                      displayMode === "minimal" &&
-                                        "line-clamp-1 whitespace-nowrap text-[0.55rem]",
-                                      displayMode === "compact" && "text-[0.55rem]",
-                                      displayMode === "normal" && "line-clamp-2 text-[0.6rem]",
-                                    )}
-                                  >
-                                    {title}
-                                  </span>
-                                  {controlFlag && displayMode !== "minimal" && (
-                                    <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
-                                      Ctrl
-                                    </span>
-                                  )}
-                                </span>
-                              );
-                            }
-                            default: {
-                              return (
-                                <>
-                                  <span className="flex min-w-0 items-center gap-[0.3rem] overflow-hidden">
-                                    <span className="shrink-0 text-[0.65rem] font-bold tabular-nums opacity-75">
-                                      {timeStr}
-                                    </span>
-                                    <span className="line-clamp-2 text-[0.65rem] font-semibold leading-tight">
-                                      {title}
-                                    </span>
-                                    {controlFlag && (
-                                      <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
-                                        Ctrl
-                                      </span>
-                                    )}
-                                  </span>
-                                  {event.amountExpected != null && (
-                                    <span className="text-success-600 mt-auto overflow-hidden text-ellipsis whitespace-nowrap text-[0.6rem] font-bold">
-                                      {currencyFormatter.format(event.amountExpected)}
-                                    </span>
-                                  )}
-                                </>
-                              );
-                            }
-                          }
-                        })()}
-                      </Button>
-                    );
-
-                    if (tooltipLines.length === 0) {
-                      return eventButton;
-                    }
-
-                    const [heading, ...details] = tooltipLines;
-
-                    return (
-                      <Tooltip
-                        classNames={{ content: "bg-content1 text-foreground border-default-200" }}
-                        content={
-                          <div className="space-y-1 text-xs">
-                            {heading && (
-                              <p className="text-foreground font-semibold" key={`${heading}-t`}>
-                                {heading}
-                              </p>
-                            )}
-                            {details.map((line) => (
-                              <p className="text-default-600" key={line}>
-                                {line}
-                              </p>
-                            ))}
-                          </div>
-                        }
-                        delay={0}
-                        isDisabled={tooltipTrigger === "focus"}
-                        key={event.eventId}
-                        placement="top"
-                        showArrow
-                        trigger={tooltipTrigger}
-                      >
-                        {eventButton}
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-
-                {/* Now indicator */}
-                {day.isToday && <NowIndicator endHour={endHour} startHour={startHour} />}
-              </div>
+                onEventClick={onEventClick}
+                startHour={startHour}
+                tooltipTrigger={tooltipTrigger}
+              />
             ))}
           </div>
         </div>
@@ -471,99 +247,310 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
   );
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy layout logic
+// --- Sub-components ---
+
+function WeekGridHeader({ days }: { days: DayInfo[] }) {
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: grid layout
+    <div
+      className="border-default-200 bg-content2/60 grid grid-cols-[52px_repeat(6,1fr)] border-b backdrop-blur-md"
+      role="row"
+      tabIndex={0}
+    >
+      <div className="border-default-200 border-r" />
+      {days.map((day) => (
+        // biome-ignore lint/a11y/useSemanticElements: grid layout
+        <div
+          aria-current={day.isToday ? "date" : undefined}
+          className={cn(
+            "border-default-200 flex flex-col items-center justify-center gap-1 border-r px-1 py-3 text-center last:border-r-0 sm:py-4",
+            day.isToday && "bg-primary/20 border-t-4 border-primary relative",
+          )}
+          key={day.key}
+          role="columnheader"
+          tabIndex={0}
+        >
+          <abbr
+            className="text-foreground-400 text-[0.65rem] font-bold uppercase tracking-wider"
+            title={day.fullDayName}
+          >
+            {day.dayName}
+          </abbr>
+          <time
+            className={cn(
+              "text-foreground text-xl font-extrabold leading-none sm:text-2xl",
+              day.isToday &&
+                "bg-primary text-primary-foreground grid size-10 place-items-center rounded-full text-xl font-black shadow-lg shadow-primary/40",
+            )}
+            dateTime={day.isoDate}
+          >
+            {day.dayNumber}
+          </time>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TimeAxis({ hours }: { hours: number[] }) {
+  return (
+    <div className="border-default-200 bg-content2/40 border-r">
+      {hours.map((hour) => (
+        <div
+          className="border-default-100 flex h-13 items-start justify-end border-b pr-2"
+          key={hour}
+        >
+          <span className="text-foreground-500 -translate-y-1/2 text-[0.7rem] font-medium tabular-nums">
+            {String(hour).padStart(2, "0")}:00
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface DayColumnProps {
+  day: DayInfo;
+  endHour: number;
+  events: CalendarEventDetail[];
+  hours: number[];
+  onEventClick?: (event: CalendarEventDetail) => void;
+  startHour: number;
+  tooltipTrigger: "hover" | "focus";
+}
+
+function DayColumn({
+  day,
+  endHour,
+  events,
+  hours,
+  onEventClick,
+  startHour,
+  tooltipTrigger,
+}: DayColumnProps) {
+  return (
+    <div
+      className={cn(
+        "border-default-100 relative min-h-full overflow-hidden border-r last:border-r-0",
+        day.isToday && "bg-primary/5",
+      )}
+    >
+      {/* Hour grid lines */}
+      {hours.map((hour) => (
+        <div className="border-default-200/50 h-13 border-b" key={hour} />
+      ))}
+
+      {/* Events */}
+      <div className="absolute inset-0 z-5 isolate overflow-visible px-0.5">
+        {calculateEventLayout(events).map((event) => (
+          <EventItem
+            endHour={endHour}
+            event={event}
+            key={event.eventId}
+            onEventClick={onEventClick}
+            startHour={startHour}
+            tooltipTrigger={tooltipTrigger}
+          />
+        ))}
+      </div>
+
+      {/* Now indicator */}
+      {day.isToday && <NowIndicator endHour={endHour} startHour={startHour} />}
+    </div>
+  );
+}
+
+interface EventItemProps {
+  endHour: number;
+  event: EventWithLayout;
+  onEventClick?: (event: CalendarEventDetail) => void;
+  startHour: number;
+  tooltipTrigger: "hover" | "focus";
+}
+
+function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: EventItemProps) {
+  const position = getEventPosition(event, startHour, endHour);
+  if (!position) return null;
+
+  // Calculate duration to determine display mode
+  const start = event.startDateTime ? dayjs(event.startDateTime) : null;
+  const end = event.endDateTime ? dayjs(event.endDateTime) : null;
+  const durationMinutes = start && end ? end.diff(start, "minute") : 30;
+
+  // Display mode
+  let displayMode: "compact" | "detailed" | "minimal" | "normal";
+  if (durationMinutes < 20) displayMode = "minimal";
+  else if (durationMinutes < 45) displayMode = "compact";
+  else if (durationMinutes < 90) displayMode = "normal";
+  else displayMode = "detailed";
+
+  const timeStr = start ? start.format("HH:mm") : "";
+  const endTimeStr = end ? end.format("HH:mm") : "";
+  const amountStr =
+    event.amountExpected == null ? "" : currencyFormatter.format(event.amountExpected);
+  const controlFlag = event.controlIncluded === true;
+  const title = event.summary?.trim() ?? "(Sin título)";
+
+  const padding = event.totalColumns > 1 ? 2 : 3;
+  const columnWidth = 100 / event.totalColumns;
+  const leftPos = event.column * columnWidth;
+
+  const eventButton = (
+    <Button
+      className={cn(
+        "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden text-wrap rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-shadow hover:z-10 hover:shadow-md",
+        getCategoryClass(event.category),
+        displayMode === "minimal" && "items-center justify-center px-[0.3rem] py-[0.1rem]",
+        displayMode === "compact" && "px-[0.35rem] py-[0.15rem]",
+        displayMode === "normal" && "px-[0.4rem] py-[0.2rem]",
+        displayMode === "detailed" && "px-[0.45rem] py-1",
+      )}
+      onPress={() => onEventClick?.(event)}
+      size="sm"
+      style={{
+        height: position.height,
+        left: `calc(${leftPos}% + ${padding}px)`,
+        top: position.top,
+        width: `calc(${columnWidth}% - ${padding * 2}px)`,
+      }}
+      variant="ghost"
+    >
+      <span className="flex min-w-0 items-center gap-[0.3rem] overflow-hidden">
+        <span
+          className={cn(
+            "shrink-0 font-bold tabular-nums opacity-75",
+            displayMode === "minimal" && "hidden",
+            (displayMode === "compact" || displayMode === "normal") && "text-[0.6rem]",
+            displayMode === "detailed" && "text-[0.65rem]",
+          )}
+        >
+          {timeStr}
+        </span>
+        <span
+          className={cn(
+            "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap font-semibold leading-tight",
+            displayMode === "minimal" && "line-clamp-1 text-[0.55rem]",
+            displayMode === "compact" && "text-[0.55rem]",
+            displayMode === "normal" && "line-clamp-2 text-[0.6rem]",
+            displayMode === "detailed" && "line-clamp-2 text-[0.65rem]",
+          )}
+        >
+          {title}
+        </span>
+        {controlFlag && displayMode !== "minimal" && (
+          <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
+            Ctrl
+          </span>
+        )}
+      </span>
+      {displayMode === "detailed" && event.amountExpected != null && (
+        <span className="text-success-600 mt-auto overflow-hidden text-ellipsis whitespace-nowrap text-[0.6rem] font-bold">
+          {currencyFormatter.format(event.amountExpected)}
+        </span>
+      )}
+    </Button>
+  );
+
+  return (
+    <Tooltip
+      classNames={{ content: "bg-content1 text-foreground border-default-200" }}
+      content={
+        <div className="space-y-1 text-xs">
+          <p className="text-foreground font-semibold">{title}</p>
+          <p className="text-default-600">
+            {timeStr} - {endTimeStr}
+          </p>
+          {amountStr && <p className="text-default-600">{amountStr}</p>}
+          {controlFlag && <p className="text-default-600">Control</p>}
+        </div>
+      }
+      delay={0}
+      isDisabled={tooltipTrigger === "focus"}
+      placement="top"
+      showArrow
+      trigger={tooltipTrigger}
+    >
+      {eventButton}
+    </Tooltip>
+  );
+}
+
+// --- Layout Utilities ---
+
+function getEventTimes(event: CalendarEventDetail) {
+  const start = dayjs(event.startDateTime).valueOf();
+  let end: number;
+
+  if (event.endDateTime) {
+    const endDt = dayjs(event.endDateTime);
+    const startDt = dayjs(event.startDateTime);
+    // Handle midnight crossing
+    if (endDt.isBefore(startDt) || endDt.isSame(startDt)) {
+      end = startDt.add(1, "day").startOf("day").valueOf();
+    } else {
+      end = endDt.valueOf();
+    }
+  } else {
+    end = start + 30 * 60 * 1000;
+  }
+
+  return { end, start };
+}
+
+function eventsOverlap(a: CalendarEventDetail, b: CalendarEventDetail): boolean {
+  const { end: endA, start: startA } = getEventTimes(a);
+  const { end: endB, start: startB } = getEventTimes(b);
+  return startA < endB && endA > startB;
+}
+
 function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] {
   if (events.length === 0) return [];
 
-  // Helper to get event times in ms
-  const getStartMs = (event: CalendarEventDetail): number => {
-    return dayjs(event.startDateTime).valueOf();
-  };
-
-  const getEndMs = (event: CalendarEventDetail): number => {
-    if (event.endDateTime) {
-      const end = dayjs(event.endDateTime);
-      const start = dayjs(event.startDateTime);
-      // Handle midnight crossing
-      if (end.isBefore(start) || end.isSame(start)) {
-        return start.add(1, "day").startOf("day").valueOf();
-      }
-      return end.valueOf();
-    }
-    return dayjs(event.startDateTime).valueOf() + 30 * 60 * 1000;
-  };
-
-  // Check if two events overlap
-  const eventsOverlap = (a: CalendarEventDetail, b: CalendarEventDetail): boolean => {
-    const startA = getStartMs(a);
-    const endA = getEndMs(a);
-    const startB = getStartMs(b);
-    const endB = getEndMs(b);
-    return startA < endB && endA > startB;
-  };
-
   // Sort by start time, then by duration (longer first)
   const sorted = [...events].toSorted((a, b) => {
-    const startDiff = getStartMs(a) - getStartMs(b);
+    const { start: startA, end: endA } = getEventTimes(a);
+    const { start: startB, end: endB } = getEventTimes(b);
+    const startDiff = startA - startB;
     if (startDiff !== 0) return startDiff;
-    return getEndMs(b) - getStartMs(b) - (getEndMs(a) - getStartMs(a));
+    return endB - startB - (endA - startA);
   });
 
   // Group events into overlapping clusters
   const clusters: CalendarEventDetail[][] = [];
-
   for (const event of sorted) {
-    // Find a cluster this event overlaps with
-    let addedToCluster = false;
-
+    let added = false;
     for (const cluster of clusters) {
-      // Check if event overlaps with ANY event in this cluster
       if (cluster.some((e) => eventsOverlap(e, event))) {
         cluster.push(event);
-        addedToCluster = true;
+        added = true;
         break;
       }
     }
-
-    if (!addedToCluster) {
-      // Start a new cluster
-      clusters.push([event]);
-    }
+    if (!added) clusters.push([event]);
   }
 
-  // Process each cluster independently
   const result: EventWithLayout[] = [];
-
   for (const cluster of clusters) {
     // Sort cluster by start time
-    cluster.sort((a, b) => getStartMs(a) - getStartMs(b));
+    cluster.sort((a, b) => getEventTimes(a).start - getEventTimes(b).start);
 
-    // Assign columns within this cluster
-    const columns: number[] = []; // end times per column
+    const columns: number[] = [];
     const clusterEvents: { column: number; event: CalendarEventDetail }[] = [];
 
     for (const event of cluster) {
-      const start = getStartMs(event);
-      const end = getEndMs(event);
+      const { start, end } = getEventTimes(event);
+      let colIndex = columns.findIndex((colEnd) => start >= colEnd);
 
-      // Find first available column
-      let columnIndex = columns.findIndex((colEnd) => start >= colEnd);
-
-      if (columnIndex === -1) {
-        columnIndex = columns.length;
+      if (colIndex === -1) {
+        colIndex = columns.length;
         columns.push(end);
       } else {
-        columns[columnIndex] = end; // eslint-disable-line security/detect-object-injection
+        columns[colIndex] = end; // eslint-disable-line security/detect-object-injection
       }
-
-      clusterEvents.push({ column: columnIndex, event });
+      clusterEvents.push({ column: colIndex, event });
     }
 
-    // Total columns for THIS cluster (capped at MAX)
     const totalColumns = Math.min(columns.length, MAX_COLUMNS);
-
-    // Add to result with cluster-specific column count
     for (const { column, event } of clusterEvents) {
       result.push({
         ...event,
