@@ -14,13 +14,17 @@ import ThemeToggle from "../ui/ThemeToggle";
 const getMatchLabel = (match: {
   context: Record<string, unknown>;
   staticData?: Record<string, unknown>;
+  loaderData?: unknown;
 }): string => {
   // 1. Try static data (preferred for declarative titles)
   if (match.staticData) {
     if (typeof match.staticData.breadcrumb === "string") return match.staticData.breadcrumb;
     if (typeof match.staticData.title === "string") return match.staticData.title;
     // Handle optional function in staticData if defined that way (less common in TanStack Router but possible)
-    if (typeof match.staticData.breadcrumb === "function") return match.staticData.breadcrumb({});
+    if (typeof match.staticData.breadcrumb === "function") {
+      // biome-ignore lint/suspicious/noExplicitAny: Generic breadcrumb handler
+      return (match.staticData.breadcrumb as any)(match.loaderData);
+    }
   }
 
   // 2. Fallback to context functions (legacy or dynamic)
@@ -36,6 +40,7 @@ const buildCrumbs = (
   matches: Array<{
     context: Record<string, unknown>;
     staticData?: Record<string, unknown>;
+    loaderData?: unknown;
     pathname: string;
   }>,
 ) => {
@@ -60,6 +65,7 @@ const getPageTitle = (
   matches: Array<{
     context: Record<string, unknown>;
     staticData?: Record<string, unknown>;
+    loaderData?: unknown;
   }>,
   crumbsList: Array<{ label: string }>,
 ) => {
@@ -90,20 +96,15 @@ export default function Header() {
   const isNavigating = routerStatus === "pending";
 
   const { crumbs, pageTitle } = React.useMemo(() => {
-    const crumbsList = buildCrumbs(
-      matches as unknown as Array<{
-        context: Record<string, unknown>;
-        staticData?: Record<string, unknown>;
-        pathname: string;
-      }>,
-    );
-    const titleText = getPageTitle(
-      matches as unknown as Array<{
-        context: Record<string, unknown>;
-        staticData?: Record<string, unknown>;
-      }>,
-      crumbsList,
-    );
+    const castMatches = matches as unknown as Array<{
+      context: Record<string, unknown>;
+      staticData?: Record<string, unknown>;
+      loaderData?: unknown;
+      pathname: string;
+    }>;
+
+    const crumbsList = buildCrumbs(castMatches);
+    const titleText = getPageTitle(castMatches, crumbsList);
     return { crumbs: crumbsList, pageTitle: titleText };
   }, [matches]);
 
