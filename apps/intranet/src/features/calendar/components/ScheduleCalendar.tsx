@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
@@ -20,14 +19,7 @@ export function ScheduleCalendar({
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventDetail | null>(null);
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
-  // Default to current week's Monday; if it's Sunday, show the upcoming week.
-  const effectiveWeekStart =
-    weekStart ??
-    (() => {
-      const today = dayjs();
-      const base = today.day() === 0 ? today.add(1, "day") : today;
-      return base.isoWeekday(1).format("YYYY-MM-DD");
-    })();
+  const effectiveWeekStart = weekStart!; // Parent ensures this via URL defaults
 
   // Auto-scroll to detail panel when event is selected
   useEffect(() => {

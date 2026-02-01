@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import PageLoader from "@/components/ui/PageLoader";
 import { calendarQueries } from "@/features/calendar/queries";
-import { computeDefaultFilters } from "@/features/calendar/utils/filters";
+import { computeDefaultFilters, getScheduleDefaultRange } from "@/features/calendar/utils/filters";
 
 const CalendarSchedulePage = lazy(() => import("@/pages/CalendarSchedulePage"));
 
@@ -47,7 +47,18 @@ export const Route = createFileRoute("/_authed/calendar/schedule")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  validateSearch: calendarSearchSchema,
+  validateSearch: (search: Record<string, unknown>) => {
+    const parsed = calendarSearchSchema.parse(search);
+    if (!parsed.from || !parsed.to) {
+      const defaults = getScheduleDefaultRange();
+      return {
+        ...parsed,
+        from: parsed.from ?? defaults.from,
+        to: parsed.to ?? defaults.to,
+      };
+    }
+    return parsed;
+  },
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <CalendarSchedulePage />

@@ -1,10 +1,7 @@
 import { Button, ButtonGroup, Chip } from "@heroui/react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
@@ -15,12 +12,16 @@ import { Route } from "@/routes/_authed/calendar/schedule";
 import "dayjs/locale/es";
 
 dayjs.extend(isoWeek);
-dayjs.extend(isSameOrBefore);
-dayjs.extend(isSameOrAfter);
-
 dayjs.locale("es");
 
 const DATE_FORMAT = "YYYY-MM-DD";
+
+// Logic moved to validateSearch in route, but we still use it for comparison logic
+const getActualWeekStart = () => {
+  const today = dayjs();
+  const base = today.day() === 0 ? today.add(1, "day") : today;
+  return base.isoWeekday(1);
+};
 
 function CalendarSchedulePage() {
   const navigate = Route.useNavigate();
@@ -39,37 +40,21 @@ function CalendarSchedulePage() {
     updateFilters,
   } = useCalendarEvents();
 
-  // The displayed week start is derived from the URL's 'from' filter.
-  // If not present, we fall back to the current week's Monday.
-  const getCurrentWeekStart = () => {
-    const today = dayjs();
-    const base = today.day() === 0 ? today.add(1, "day") : today;
-    return base.isoWeekday(1).format(DATE_FORMAT);
-  };
+  // Purely derived state from the URL (Source of Truth)
+  const actualWeekStart = getActualWeekStart();
+  const currentWeekStartStr = search.from ?? actualWeekStart.format(DATE_FORMAT);
+  const currentDisplayed = dayjs(currentWeekStartStr);
 
-  const displayedWeekStart = search.from ?? getCurrentWeekStart();
-  const currentDisplayed = dayjs(displayedWeekStart);
-
-  const allEvents = daily?.days.flatMap((day) => day.events) ?? [];
-  const displayedWeekEnd = dayjs(displayedWeekStart).add(6, "day").endOf("day");
-
-  const displayedWeekEvents = allEvents.filter((event) => {
-    const start = event.startDateTime ?? event.startDate;
-    if (!start) return false;
-    const eventDate = dayjs(start);
-    return (
-      eventDate.isSameOrAfter(dayjs(displayedWeekStart).startOf("day")) &&
-      eventDate.isSameOrBefore(displayedWeekEnd)
-    );
-  });
+  // The hook already filters events by the 'from'/'to' range in the URL.
+  // No need to re-filter on the client.
+  const displayedWeekEvents = daily?.days.flatMap((day) => day.events) ?? [];
 
   // Navigation helpers
   const rangeLabel = currentDisplayed.isValid()
     ? `${currentDisplayed.format("D MMM")} - ${currentDisplayed.add(5, "day").format("D MMM YYYY")}`
     : "Seleccionar rango";
 
-  const isCurrentWeek = currentDisplayed.isSame(dayjs(getCurrentWeekStart()), "day");
-  const actualWeekStart = dayjs().isoWeekday(1);
+  const isCurrentWeek = currentDisplayed.isSame(actualWeekStart, "day");
   const isNextWeek = currentDisplayed.isSame(actualWeekStart.add(1, "week"), "day");
 
   const updateWeek = (newStart: string) => {
@@ -94,7 +79,7 @@ function CalendarSchedulePage() {
   };
 
   const goToThisWeek = () => {
-    updateWeek(getCurrentWeekStart());
+    updateWeek(actualWeekStart.format(DATE_FORMAT));
   };
 
   return (
@@ -135,7 +120,7 @@ function CalendarSchedulePage() {
           <div className="flex items-center gap-3">
             {summary && (
               <span className="text-default-400 text-xs">
-                {numberFormatter.format(displayedWeekEvents.length)} eventos
+                {numberFormatter.format(summary.totals.events)} eventos
               </span>
             )}
             <CalendarFiltersPopover
@@ -163,10 +148,12 @@ function CalendarSchedulePage() {
               onReset={() => {
                 resetFilters();
                 void navigate({
-                  search: {
-                    from: search.from,
-                    to: search.to,
-                  },
+                  search: (prev) => ({
+                    ...prev,
+                    calendarId: undefined,
+                    category: undefined,
+                    search: undefined,
+                  }),
                 });
               }}
               showSearch
@@ -186,7 +173,11 @@ function CalendarSchedulePage() {
 
       {/* Calendar - Main Content */}
       <div className="mt-3">
-        <ScheduleCalendar events={allEvents} loading={loading} weekStart={displayedWeekStart} />
+        <ScheduleCalendar
+          events={displayedWeekEvents}
+          loading={loading}
+          weekStart={currentWeekStartStr}
+        />
       </div>
     </section>
   );

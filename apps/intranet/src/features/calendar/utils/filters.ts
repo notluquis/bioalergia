@@ -65,3 +65,14 @@ export const computeDefaultFilters = (settings: {
     to: toCandidate.format("YYYY-MM-DD"),
   };
 };
+
+export function getScheduleDefaultRange() {
+  const now = dayjs();
+  // If it's Sunday, jump to the next week's Monday
+  const base = now.day() === 0 ? now.add(1, "day") : now;
+  const start = base.isoWeekday(1);
+  return {
+    from: start.format("YYYY-MM-DD"),
+    to: start.add(5, "day").format("YYYY-MM-DD"),
+  };
+}
