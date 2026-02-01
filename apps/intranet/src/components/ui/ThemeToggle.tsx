@@ -1,60 +1,13 @@
 import { Moon, Sun } from "lucide-react";
-import React from "react";
 import Button from "@/components/ui/Button";
-
-const THEME_KEY = "bioalergia:theme";
-type Theme = "dark" | "light" | "system";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = React.useState<Theme>(() => {
-    try {
-      const raw = localStorage.getItem(THEME_KEY);
-      return (raw as null | Theme) ?? "system";
-    } catch {
-      return "system";
-    }
-  });
+  const { toggleTheme, isDark, resolvedTheme } = useTheme();
 
-  // sync with system when in 'system' mode
-  React.useEffect(() => {
-    const handle = () => {
-      if (theme !== "system") return;
-      applyTheme(getPreferredThemeFromSystem());
-    };
-    const mql = globalThis.matchMedia("(prefers-color-scheme: dark)");
-    mql.addEventListener("change", handle);
-    return () => {
-      mql.removeEventListener("change", handle);
-    };
-  }, [theme]);
-
-  // apply theme on mount / change
-  React.useEffect(() => {
-    const resolved: "dark" | "light" = theme === "system" ? getPreferredThemeFromSystem() : theme;
-    applyTheme(resolved);
-    try {
-      if (theme === "system") localStorage.removeItem(THEME_KEY);
-      else localStorage.setItem(THEME_KEY, theme);
-    } catch {
-      // ignore
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    if (theme === "light") setTheme("dark");
-    else if (theme === "dark") setTheme("light");
-    else setTheme(getPreferredThemeFromSystem() === "dark" ? "light" : "dark");
-  };
-
-  const resolvedTheme: "dark" | "light" =
-    theme === "system" ? getPreferredThemeFromSystem() : theme;
-  const isDark = resolvedTheme === "dark";
   const icon = isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />;
-  const getLabel = () => {
-    if (resolvedTheme === "dark") return "Cambiar a modo claro";
-    return "Cambiar a modo oscuro";
-  };
-  const label = getLabel();
+
+  const label = resolvedTheme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
 
   return (
     <Button
@@ -79,20 +32,4 @@ export default function ThemeToggle() {
       </span>
     </Button>
   );
-}
-
-function applyTheme(theme: "dark" | "light") {
-  const html = document.documentElement;
-  // Apply both DaisyUI data-theme and Tailwind dark class for full compatibility
-  if (theme === "dark") {
-    html.dataset.theme = "bioalergia-dark";
-    html.classList.add("dark");
-  } else {
-    html.dataset.theme = "bioalergia";
-    html.classList.remove("dark");
-  }
-}
-
-function getPreferredThemeFromSystem(): "dark" | "light" {
-  return globalThis.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }

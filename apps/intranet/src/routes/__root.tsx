@@ -1,5 +1,6 @@
+import { RouterProvider } from "@heroui/react";
 import type { QueryClient } from "@tanstack/react-query";
-import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
 import type { AuthContextType } from "@/context/AuthContext";
@@ -23,8 +24,7 @@ declare module "@tanstack/react-router" {
     permission?: RoutePermission;
     title?: string;
     hideFromNav?: boolean;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    breadcrumb?: string | ((data: any) => string);
+    breadcrumb?: string | ((data: unknown) => string);
   }
 }
 
@@ -39,12 +39,16 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootComponent() {
+  const navigate = useNavigate();
+  // Adapter for HeroUI/React Aria (expects (path: string) => void)
+  const handleNavigate = (path: string) => navigate({ to: path });
+
   return (
-    <>
+    <RouterProvider navigate={handleNavigate}>
       <Outlet />
       <Suspense>
         <TanStackRouterDevtools position="bottom-right" />
       </Suspense>
-    </>
+    </RouterProvider>
   );
 }
