@@ -133,6 +133,7 @@ export interface CalendarEventDetail {
   eventType: null | string;
   eventUpdatedAt: null | string;
   hangoutLink: null | string;
+  isDomicilio?: boolean | null;
   location: null | string;
   rawEvent: unknown;
   startDate: null | string;

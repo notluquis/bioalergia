@@ -41,6 +41,7 @@ export const CalendarEventDetailSchema = z.strictObject({
   eventType: z.string().nullable(),
   eventUpdatedAt: z.string().nullable(),
   hangoutLink: z.string().nullable(),
+  isDomicilio: z.boolean().nullable().optional(),
   location: z.string().nullable(),
   rawEvent: z.unknown(),
   startDate: z.string().nullable(),
@@ -154,6 +155,12 @@ export const CalendarSummaryResponseSchema = z.strictObject({
     calendars: z.array(
       z.strictObject({
         calendarId: z.string(),
+        total: z.number(),
+      }),
+    ),
+    eventTypes: z.array(
+      z.strictObject({
+        eventType: z.string().nullable(),
         total: z.number(),
       }),
     ),
