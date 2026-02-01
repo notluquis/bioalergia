@@ -6,15 +6,15 @@
 import { DateField, DateInputGroup } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { RotateCcw, Search } from "lucide-react";
-import type { FormEvent } from "react";
+import React, { type FormEvent } from "react";
 
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { cn } from "@/lib/utils";
-
 import { NULL_CATEGORY_VALUE } from "../constants";
 import type { CalendarFilters } from "../types";
+import { MultiSelectFilter } from "./MultiSelectFilter";
 
 export interface CalendarFilterPanelProps {
   className?: string;
@@ -70,7 +70,17 @@ export function CalendarFilterPanel({
     onApply();
   };
 
-  const applyLabel = applyCount == null ? "Aplicar filtros" : `Aplicar filtros ${applyCount}`;
+  // Calculate preview count based on current selection
+  const liveApplyCount = React.useMemo(() => {
+    if (!filters.categories.length) return applyCount;
+    const selectedSet = new Set(filters.categories);
+    return availableCategories
+      .filter((c) => selectedSet.has(c.category ?? NULL_CATEGORY_VALUE))
+      .reduce((sum, c) => sum + c.total, 0);
+  }, [filters.categories, availableCategories, applyCount]);
+
+  const applyLabel =
+    liveApplyCount == null ? "Aplicar filtros" : `Aplicar filtros ${liveApplyCount}`;
 
   const isDropdownLayout = layout === "dropdown";
 
@@ -80,41 +90,17 @@ export function CalendarFilterPanel({
       <form onSubmit={handleSubmit} className={cn("p-4 space-y-5", formClassName, className)}>
         {/* Categories Select */}
         <div className="space-y-1.5">
-          <Select
+          <MultiSelectFilter
             label="Clasificación"
             placeholder="Todas"
-            // @ts-expect-error
-            selectionMode="multiple"
-            selectedKeys={new Set(filters.categories)}
-            // biome-ignore lint/suspicious/noExplicitAny: Select selection mode type inference
-            onSelectionChange={(keys: any) => {
-              if (keys === "all") {
-                const allValues = availableCategories.map((c) => c.category ?? NULL_CATEGORY_VALUE);
-                onFilterChange("categories", allValues);
-              } else {
-                const values = Array.from(keys).map(String);
-                onFilterChange("categories", values);
-              }
-            }}
-            classNames={{
-              trigger:
-                "bg-default-100/50 hover:bg-default-100 border border-default-200 min-h-[44px] rounded-xl",
-              popoverContent: "bg-content1 border border-default-200 shadow-xl",
-            }}
-          >
-            {availableCategories.map((entry) => {
-              const value = entry.category ?? NULL_CATEGORY_VALUE;
-              const label = entry.category ?? "Sin clasificación";
-              return (
-                <SelectItem key={value} textValue={label}>
-                  <div className="flex justify-between items-center w-full">
-                    <span>{label}</span>
-                    <span className="text-tiny text-default-400">{entry.total}</span>
-                  </div>
-                </SelectItem>
-              );
-            })}
-          </Select>
+            density="comfortable"
+            options={availableCategories.map((entry) => ({
+              value: entry.category ?? NULL_CATEGORY_VALUE,
+              label: entry.category ?? "Sin clasificación",
+            }))}
+            selected={filters.categories}
+            onChange={(values) => onFilterChange("categories", values)}
+          />
         </div>
 
         {/* Search Input */}
