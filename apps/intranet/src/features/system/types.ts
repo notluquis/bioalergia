@@ -7,5 +7,5 @@ export interface HealthResponse {
     };
   };
   status: "degraded" | "error" | "ok";
-  timestamp: string;
+  timestamp: Date;
 }

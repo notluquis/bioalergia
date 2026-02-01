@@ -2,7 +2,7 @@ import { db } from "@finanzas/db";
 import dayjs from "dayjs";
 
 export interface DailyBalanceRecord {
-  date: string;
+  date: Date;
   totalIn: number;
   totalOut: number;
   netChange: number;
@@ -16,7 +16,7 @@ export interface DailyBalanceRecord {
 export interface BalancesApiResponse {
   days: DailyBalanceRecord[];
   previous: {
-    date: string;
+    date: Date;
     balance: number;
   } | null;
 }
@@ -86,7 +86,7 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
     const difference = recordedBalance !== null ? recordedBalance - expectedBalance : null;
 
     days.push({
-      date: dateStr,
+      date: current.toDate(),
       totalIn,
       totalOut,
       netChange,
@@ -110,7 +110,7 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
     days,
     previous: previous
       ? {
-          date: dayjs(previous.date).format("YYYY-MM-DD"),
+          date: previous.date,
           balance: Number(previous.amount),
         }
       : null,

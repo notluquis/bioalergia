@@ -25,6 +25,7 @@ import {
   isRowDirty,
   parseDuration,
 } from "@/features/hr/timesheets/utils";
+import { formatISO } from "@/lib/dates";
 
 import type { Employee } from "../../employees/types";
 
@@ -146,7 +147,7 @@ export default function TimesheetEditor({
         summary: {
           net: summaryRow.net,
           overtimeMinutes: summaryRow.overtimeMinutes,
-          payDate: summaryRow.payDate,
+          payDate: formatISO(summaryRow.payDate),
           retention: summaryRow.retention,
           retention_rate: (summaryRow as unknown as Record<string, unknown>).retention_rate as
             | null
@@ -286,13 +287,15 @@ export default function TimesheetEditor({
       return entryId ? { removeId: entryId } : {};
     }
 
+    const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
+
     return {
       entry: {
         comment,
-        end_time: salida ? dayjs(`${row.date} ${salida}`).toISOString() : null,
+        end_time: salida ? dayjs(`${dateKey} ${salida}`).toISOString() : null,
         extra_amount: 0,
         overtime_minutes: overtime,
-        start_time: entrada ? dayjs(`${row.date} ${entrada}`).toISOString() : null,
+        start_time: entrada ? dayjs(`${dateKey} ${entrada}`).toISOString() : null,
         work_date: row.date,
       },
     };

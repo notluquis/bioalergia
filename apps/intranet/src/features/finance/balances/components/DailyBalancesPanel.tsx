@@ -13,8 +13,8 @@ interface Props {
   drafts: Record<string, BalanceDraft>;
   error: null | string;
   loading: boolean;
-  onDraftChange: (date: string, patch: Partial<BalanceDraft>) => void;
-  onSave: (date: string) => void;
+  onDraftChange: (date: Date, patch: Partial<BalanceDraft>) => void;
+  onSave: (date: Date) => void;
   report: BalancesApiResponse | null;
   saving: Record<string, boolean>;
 }

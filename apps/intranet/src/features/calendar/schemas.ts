@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+const zDate = z.coerce.date();
+const zDateNullable = zDate.nullable();
+const zDateNullableOptional = zDateNullable.optional();
+
 // Note: CATEGORY_CHOICES and TREATMENT_STAGE_CHOICES are fetched from
 // /api/calendar/classification-options (single source of truth in parsers.ts)
 
@@ -31,21 +35,21 @@ export const CalendarEventDetailSchema = z.strictObject({
   description: z.string().nullable(),
   dosageValue: z.number().nullable().optional(),
   dosageUnit: z.string().nullable().optional(),
-  endDate: z.string().nullable(),
-  endDateTime: z.string().nullable(),
+  endDate: zDateNullable,
+  endDateTime: zDateNullable,
   endTimeZone: z.string().nullable(),
-  eventCreatedAt: z.string().nullable(),
-  eventDate: z.string(),
-  eventDateTime: z.string().nullable(),
+  eventCreatedAt: zDateNullable,
+  eventDate: zDate,
+  eventDateTime: zDateNullable,
   eventId: z.string(),
   eventType: z.string().nullable(),
-  eventUpdatedAt: z.string().nullable(),
+  eventUpdatedAt: zDateNullable,
   hangoutLink: z.string().nullable(),
   isDomicilio: z.boolean().nullable().optional(),
   location: z.string().nullable(),
   rawEvent: z.unknown(),
-  startDate: z.string().nullable(),
-  startDateTime: z.string().nullable(),
+  startDate: zDateNullable,
+  startDateTime: zDateNullable,
   startTimeZone: z.string().nullable(),
   status: z.string().nullable(),
   summary: z.string().nullable(),
@@ -57,7 +61,7 @@ export const CalendarEventDetailSchema = z.strictObject({
 export const CalendarDayEventsSchema = z.strictObject({
   amountExpected: z.number(),
   amountPaid: z.number(),
-  date: z.string(),
+  date: zDate,
   events: z.array(CalendarEventDetailSchema),
   total: z.number(),
 });
@@ -87,12 +91,12 @@ export const CalendarDailyResponseSchema = z.strictObject({
 });
 
 export const CalendarDataSchema = z.strictObject({
-  createdAt: z.string(),
+  createdAt: zDate,
   eventCount: z.number(),
   googleId: z.string(),
   id: z.number(),
   name: z.string(),
-  updatedAt: z.string(),
+  updatedAt: zDate,
 });
 
 export const CalendarsResponseSchema = z.strictObject({
@@ -102,7 +106,7 @@ export const CalendarsResponseSchema = z.strictObject({
 const CalendarAggregateByDateSchema = z.strictObject({
   amountExpected: z.number(),
   amountPaid: z.number(),
-  date: z.string(),
+  date: zDate,
   total: z.number(),
 });
 
@@ -137,7 +141,7 @@ const CalendarAggregateByYearSchema = z.strictObject({
 });
 
 const CalendarAggregateByDateTypeSchema = z.strictObject({
-  date: z.string(),
+  date: zDate,
   eventType: z.string().nullable(),
   total: z.number(),
 });
@@ -206,12 +210,12 @@ export const CalendarSyncLogSchema = z.strictObject({
     .optional(),
   errorMessage: z.string().nullable(),
   excluded: z.number(),
-  fetchedAt: z.string().nullable().optional(),
-  finishedAt: z.string().nullable().optional(),
+  fetchedAt: zDateNullableOptional,
+  finishedAt: zDateNullableOptional,
   id: z.number(),
   inserted: z.number(),
   skipped: z.number(),
-  startedAt: z.string(),
+  startedAt: zDate,
   status: z.enum(["ERROR", "RUNNING", "SUCCESS"]),
   triggerLabel: z.string().nullable(),
   triggerSource: z.string(),
@@ -247,12 +251,12 @@ export const CalendarUnclassifiedEventSchema = z.strictObject({
   description: z.string().nullable(),
   dosageValue: z.number().nullable(),
   dosageUnit: z.string().nullable(),
-  endDate: z.string().nullable(),
-  endDateTime: z.string().nullable(),
+  endDate: zDateNullable,
+  endDateTime: zDateNullable,
   eventId: z.string(),
   eventType: z.string().nullable(),
-  startDate: z.string().nullable(),
-  startDateTime: z.string().nullable(),
+  startDate: zDateNullable,
+  startDateTime: zDateNullable,
   status: z.string().nullable(),
   summary: z.string().nullable(),
   treatmentStage: z.string().nullable(),

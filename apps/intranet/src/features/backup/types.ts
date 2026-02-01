@@ -1,5 +1,5 @@
 export interface BackupFile {
-  createdTime: string;
+  createdTime: Date;
   id: string;
   name: string;
   size: string;
@@ -7,7 +7,7 @@ export interface BackupFile {
 }
 
 export interface BackupJob {
-  completedAt?: string;
+  completedAt?: Date;
   currentStep: string;
   error?: string;
   id: string;
@@ -19,19 +19,19 @@ export interface BackupJob {
     sizeBytes: number;
     tables: string[];
   };
-  startedAt: string;
+  startedAt: Date;
   status: "completed" | "failed" | "pending" | "running";
   type: "full" | "scheduled";
 }
 
 export interface RestoreJob {
   backupFileId: string;
-  completedAt?: string;
+  completedAt?: Date;
   currentStep: string;
   error?: string;
   id: string;
   progress: number;
-  startedAt: string;
+  startedAt: Date;
   status: "completed" | "failed" | "pending" | "running";
   tables?: string[];
 }

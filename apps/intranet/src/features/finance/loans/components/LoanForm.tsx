@@ -1,4 +1,5 @@
 import { useForm, useStore } from "@tanstack/react-form";
+import dayjs from "dayjs";
 import { z } from "zod";
 
 import Alert from "@/components/ui/Alert";
@@ -6,7 +7,6 @@ import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import Input from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
-import { today } from "@/lib/dates";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { CreateLoanPayload } from "../types";
@@ -23,7 +23,7 @@ const loanFormSchema = z.object({
   interestType: z.enum(["SIMPLE", "COMPOUND"]),
   notes: z.string().optional(),
   principalAmount: z.number().positive("El monto principal debe ser mayor a 0"),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+  startDate: z.date(),
   title: z.string().trim().min(1, "El título es requerido"),
   totalInstallments: z.number().int().min(1, "Debe tener al menos 1 cuota"),
 });
@@ -46,7 +46,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
       interestType: "SIMPLE" as const,
       notes: "",
       principalAmount: 0,
-      startDate: today(),
+      startDate: dayjs().toDate(),
       title: "",
       totalInstallments: 10,
     } as LoanFormData,
@@ -243,11 +243,11 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 label="Fecha de Inicio"
                 onBlur={field.handleBlur}
                 onChange={(e) => {
-                  field.handleChange(e.target.value);
+                  field.handleChange(dayjs(e.target.value).toDate());
                 }}
                 required
                 type="date"
-                value={field.state.value}
+                value={dayjs(field.state.value).format("YYYY-MM-DD")}
               />
               {field.state.meta.errors.length > 0 && (
                 <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>

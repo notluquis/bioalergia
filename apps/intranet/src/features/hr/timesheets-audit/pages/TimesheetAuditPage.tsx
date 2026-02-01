@@ -36,8 +36,6 @@ const TimesheetAuditCalendar = lazy(
 dayjs.extend(isoWeek);
 dayjs.locale("es");
 
-const DATE_ISO_FORMAT = "YYYY-MM-DD";
-
 type QuickRange =
   | "custom"
   | "last-month"
@@ -47,12 +45,12 @@ type QuickRange =
   | "two-months-ago";
 
 interface WeekDefinition {
-  end: string;
+  end: Date;
   key: string;
   label: string;
   month: string;
   number: number;
-  start: string;
+  start: Date;
 }
 
 const QUICK_RANGES: { id: QuickRange; label: string }[] = [
@@ -544,12 +542,12 @@ function buildWeeksForMonth(month: string): WeekDefinition[] {
       const clampedStart = weekStart.isBefore(monthStart) ? monthStart : weekStart;
       const clampedEnd = weekEnd.isAfter(monthEnd) ? monthEnd : weekEnd;
       weeks.push({
-        end: clampedEnd.format(DATE_ISO_FORMAT),
+        end: clampedEnd.toDate(),
         key: `${month}:${weekNumber}`,
         label: `S${weekNumber} (${clampedStart.format("D")} - ${clampedEnd.format("D MMM")})`,
         month,
         number: weekNumber,
-        start: clampedStart.format(DATE_ISO_FORMAT),
+        start: clampedStart.toDate(),
       });
       seen.add(weekNumber);
     }
@@ -559,37 +557,37 @@ function buildWeeksForMonth(month: string): WeekDefinition[] {
   return weeks;
 }
 
-function getQuickRangeValues(range: QuickRange): null | { end: string; start: string } {
+function getQuickRangeValues(range: QuickRange): null | { end: Date; start: Date } {
   const today = dayjs();
   switch (range) {
     case "last-month": {
       return {
-        end: monthsAgoEnd(1),
-        start: monthsAgoStart(1),
+        end: dayjs(monthsAgoEnd(1)).toDate(),
+        start: dayjs(monthsAgoStart(1)).toDate(),
       };
     }
     case "last-week": {
       return {
-        end: today.subtract(1, "week").endOf("isoWeek").format(DATE_ISO_FORMAT),
-        start: today.subtract(1, "week").startOf("isoWeek").format(DATE_ISO_FORMAT),
+        end: today.subtract(1, "week").endOf("isoWeek").toDate(),
+        start: today.subtract(1, "week").startOf("isoWeek").toDate(),
       };
     }
     case "this-month": {
       return {
-        end: endOfMonth(),
-        start: startOfMonth(),
+        end: dayjs(endOfMonth()).toDate(),
+        start: dayjs(startOfMonth()).toDate(),
       };
     }
     case "this-week": {
       return {
-        end: today.endOf("isoWeek").format(DATE_ISO_FORMAT),
-        start: today.startOf("isoWeek").format(DATE_ISO_FORMAT),
+        end: today.endOf("isoWeek").toDate(),
+        start: today.startOf("isoWeek").toDate(),
       };
     }
     case "two-months-ago": {
       return {
-        end: monthsAgoEnd(2),
-        start: monthsAgoStart(2),
+        end: dayjs(monthsAgoEnd(2)).toDate(),
+        start: dayjs(monthsAgoStart(2)).toDate(),
       };
     }
     default: {

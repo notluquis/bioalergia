@@ -9,12 +9,12 @@ import { cn } from "@/lib/utils";
 
 interface DayNavigationProps {
   className?: string;
-  onSelect: (date: string) => void;
+  onSelect: (date: Date) => void;
   /** Optional slot for content to render on the right side of the header */
   rightSlot?: ReactNode;
   /** Optional list of allowed weekdays (dayjs day indices: 0=Sun ... 6=Sat) */
   allowedWeekdays?: number[];
-  selectedDate: string;
+  selectedDate: Date;
 }
 
 export function DayNavigation({
@@ -65,20 +65,20 @@ export function DayNavigation({
   const days = Array.from({ length: 9 }, (_, i) => current.add(i - 4, "day")).filter(isAllowed);
 
   const handlePrev = () => {
-    onSelect(findAdjacentAllowed(current, -1).format("YYYY-MM-DD"));
+    onSelect(findAdjacentAllowed(current, -1).toDate());
   };
   const handleNext = () => {
-    onSelect(findAdjacentAllowed(current, 1).format("YYYY-MM-DD"));
+    onSelect(findAdjacentAllowed(current, 1).toDate());
   };
   const handleToday = () => {
-    onSelect(normalizeToAllowed(today).format("YYYY-MM-DD"));
+    onSelect(normalizeToAllowed(today).toDate());
   };
 
   useEffect(() => {
     if (!isAllowed(current)) {
       const normalized = normalizeToAllowed(current);
       if (!normalized.isSame(current, "day")) {
-        onSelect(normalized.format("YYYY-MM-DD"));
+        onSelect(normalized.toDate());
       }
     }
   }, [current, isAllowed, normalizeToAllowed, onSelect]);
@@ -126,7 +126,7 @@ export function DayNavigation({
                 )}
                 key={date.toString()}
                 onPress={() => {
-                  onSelect(date.format("YYYY-MM-DD"));
+                  onSelect(date.toDate());
                 }}
                 size="sm"
                 variant="ghost"

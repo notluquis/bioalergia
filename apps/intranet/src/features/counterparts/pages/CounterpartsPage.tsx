@@ -86,8 +86,7 @@ export default function CounterpartsPage() {
     ).person;
     return {
       category: row.category as Counterpart["category"],
-      created_at:
-        (row as { createdAt?: Date }).createdAt?.toISOString() ?? new Date().toISOString(),
+      created_at: (row as { createdAt?: Date }).createdAt ?? new Date(),
       email: person?.email ?? null,
       employeeId: null,
       id: row.id,
@@ -99,8 +98,7 @@ export default function CounterpartsPage() {
       notes: row.notes ?? null,
       personType: (person?.personType ?? "NATURAL") as Counterpart["personType"],
       rut: person?.rut ?? null,
-      updated_at:
-        (row as { updatedAt?: Date }).updatedAt?.toISOString() ?? new Date().toISOString(),
+      updated_at: (row as { updatedAt?: Date }).updatedAt ?? new Date(),
     };
   });
 

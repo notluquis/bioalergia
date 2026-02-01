@@ -251,7 +251,7 @@ export default function ServicesOverviewContent() {
               }}
               required
               type="date"
-              value={paymentForm.paidDate}
+              value={dayjs(paymentForm.paidDate).format("YYYY-MM-DD")}
             />
             <Input
               as="textarea"

@@ -48,7 +48,10 @@ export function useDailyBalanceForm() {
   const weekQuery = useSuspenseQuery(productionBalanceKeys.week(startOfWeek, endOfWeek));
 
   // Find item by date (YYYY-MM-DD)
-  const selectedDayItem = weekQuery.data.find((item) => item.date === selectedDate) || null;
+  const selectedDayItem =
+    weekQuery.data.find(
+      (item) => dayjs(item.date).format(DATE_FORMAT) === dayjs(selectedDate).format(DATE_FORMAT),
+    ) || null;
 
   // Load data when query succeeds (if day changes or we just loaded data)
   useEffect(() => {
@@ -83,7 +86,8 @@ export function useDailyBalanceForm() {
           item.ingresoEfectivo +
           item.otrosAbonos;
         if (item.date) {
-          entries[item.date] = calculatedTotal;
+          const dateKey = dayjs(item.date).format(DATE_FORMAT);
+          entries[dateKey] = calculatedTotal;
         }
       }
     }
@@ -98,7 +102,7 @@ export function useDailyBalanceForm() {
     mutationFn: async (data: DailyBalanceFormData) => {
       // transform to schema format
       const payload = {
-        date: selectedDate,
+        date: dayjs(selectedDate).format(DATE_FORMAT),
         comentarios: data.nota,
         consultasMonto: data.consultas,
         controlesMonto: data.controles,
@@ -184,21 +188,21 @@ export function useDailyBalanceForm() {
 
   // Navigation
   const goToPrevWeek = useCallback(() => {
-    const prev = dayjs(selectedDate).subtract(7, "day").format(DATE_FORMAT);
+    const prev = dayjs(selectedDate).subtract(7, "day").toDate();
     setSelectedDate(prev);
   }, [selectedDate, setSelectedDate]);
 
   const goToNextWeek = useCallback(() => {
-    const next = dayjs(selectedDate).add(7, "day").format(DATE_FORMAT);
+    const next = dayjs(selectedDate).add(7, "day").toDate();
     setSelectedDate(next);
   }, [selectedDate, setSelectedDate]);
 
   const goToToday = useCallback(() => {
-    setSelectedDate(dayjs().format(DATE_FORMAT));
+    setSelectedDate(dayjs().toDate());
   }, [setSelectedDate]);
 
   const selectDate = useCallback(
-    (date: string) => {
+    (date: Date) => {
       setSelectedDate(date);
     },
     [setSelectedDate],

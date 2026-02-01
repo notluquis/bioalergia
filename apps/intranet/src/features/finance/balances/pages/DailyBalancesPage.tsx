@@ -43,7 +43,8 @@ export default function DailyBalances() {
   useEffect(() => {
     const nextDrafts: Record<string, BalanceDraft> = {};
     for (const day of report.days) {
-      nextDrafts[day.date] = {
+      const dateKey = dayjs(day.date).format("YYYY-MM-DD");
+      nextDrafts[dateKey] = {
         note: day.note ?? "",
         value: day.recordedBalance == null ? "" : formatBalanceInput(day.recordedBalance),
       };

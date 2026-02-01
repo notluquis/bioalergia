@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 
 import Input from "@/components/ui/Input";
@@ -9,7 +10,7 @@ import type { ServiceFormState } from "../ServiceForm";
 interface EmissionSectionProps {
   emissionDay?: null | number;
   emissionEndDay?: null | number;
-  emissionExactDate?: null | string;
+  emissionExactDate?: null | Date;
   emissionMode?: ServiceEmissionMode;
   emissionStartDay?: null | number;
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
@@ -93,10 +94,13 @@ export function EmissionSection({
         <Input
           label="Fecha emisión"
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            onChange("emissionExactDate", event.target.value || null);
+            onChange(
+              "emissionExactDate",
+              event.target.value ? dayjs(event.target.value).toDate() : null,
+            );
           }}
           type="date"
-          value={emissionExactDate ?? ""}
+          value={emissionExactDate ? dayjs(emissionExactDate).format("YYYY-MM-DD") : ""}
         />
       )}
     </section>

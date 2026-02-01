@@ -26,8 +26,8 @@ export interface TimesheetTableMeta {
   canEdit: boolean;
   initialRows: BulkRow[];
   notWorkedDays: Set<string>;
-  onCloseOvertime: (date: string) => void;
-  onOpenOvertime: (date: string) => void;
+  onCloseOvertime: (date: Date) => void;
+  onOpenOvertime: (date: Date) => void;
   onRemoveEntry: (row: BulkRow) => void;
   onResetRow: (index: number) => void;
   onRowChange: (
@@ -37,15 +37,16 @@ export interface TimesheetTableMeta {
   ) => void;
   onSalidaBlur: (index: number) => void;
   openOvertimeEditors: Set<string>;
-  setCommentPreview: (data: null | { date: string; text: string }) => void;
+  setCommentPreview: (data: null | { date: Date; text: string }) => void;
   setNotWorkedDays: (cb: (prev: Set<string>) => Set<string>) => void;
 }
 
 const DateCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => {
+  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
   const dayIdx = dayjs(row.date).day();
   const labels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
   const isSun = dayIdx === 0;
-  const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
+  const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
 
   return (
     <div className={`flex items-center gap-2 ${isMarkedNotWorked ? "opacity-60" : ""}`}>
@@ -74,9 +75,10 @@ const InputCell = ({
   meta: TimesheetTableMeta;
   row: BulkRow;
 }) => {
+  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
   const isSunday = dayjs(row.date).day() === 0;
   const canEditRow = meta.canEdit && !isSunday;
-  const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
+  const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
 
   return (
     <div className={isMarkedNotWorked ? "pointer-events-none opacity-60" : ""}>
@@ -95,9 +97,10 @@ const InputCell = ({
 };
 
 const WorkedCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => {
+  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
   const mins = calculateWorkedMinutes(row.entrada, row.salida);
   const duration = minutesToDuration(mins);
-  const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
+  const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
 
   return (
     <div className={`text-foreground tabular-nums ${isMarkedNotWorked ? "opacity-60" : ""}`}>
@@ -115,10 +118,11 @@ const OvertimeCell = ({
   meta: TimesheetTableMeta;
   row: BulkRow;
 }) => {
+  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
   const isSunday = dayjs(row.date).day() === 0;
   const canEditRow = meta.canEdit && !isSunday;
-  const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
-  const isOvertimeOpen = meta.openOvertimeEditors.has(row.date);
+  const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
+  const isOvertimeOpen = meta.openOvertimeEditors.has(dateKey);
 
   if (isMarkedNotWorked) return <span className="opacity-60">—</span>;
 
@@ -130,7 +134,7 @@ const OvertimeCell = ({
             aria-label="Agregar horas extra"
             className="border-default-200 bg-default-50 text-primary hover:bg-default-50 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
             onClick={() => {
-              meta.onOpenOvertime(row.date);
+              if (row.date) meta.onOpenOvertime(row.date);
             }}
             size="sm"
             type="button"
@@ -151,7 +155,7 @@ const OvertimeCell = ({
       onChange={(value) => {
         meta.onRowChange(index, "overtime", value);
         if (!value.trim()) {
-          meta.onCloseOvertime(row.date);
+          if (row.date) meta.onCloseOvertime(row.date);
         }
       }}
       placeholder="HH:MM"
@@ -172,7 +176,8 @@ const StatusCell = ({
   const initial = meta.initialRows[index];
   const dirty = isRowDirty(row, initial);
   const status = computeStatus(row, dirty);
-  const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
+  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
+  const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
 
   // Warning Logic
   const mins = calculateWorkedMinutes(row.entrada, row.salida);
@@ -247,7 +252,8 @@ const ActionsCell = ({
   const canEditRow = meta.canEdit && !isSunday;
   const initial = meta.initialRows[index];
   const dirty = isRowDirty(row, initial);
-  const isMarkedNotWorked = meta.notWorkedDays.has(row.date);
+  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
+  const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
 
   if (!canEditRow) return <span className="text-default-400 text-xs">—</span>;
 
@@ -262,7 +268,9 @@ const ActionsCell = ({
         <HeroDropdownMenu aria-label="Acciones de registro">
           <DropdownMenuItem
             onPress={() => {
-              meta.setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" });
+              if (row.date) {
+                meta.setCommentPreview({ date: row.date, text: row.comment || "(Sin comentario)" });
+              }
             }}
           >
             Ver comentario
@@ -282,8 +290,9 @@ const ActionsCell = ({
             onPress={() => {
               meta.setNotWorkedDays((prev) => {
                 const next = new Set(prev);
-                if (next.has(row.date)) next.delete(row.date);
-                else next.add(row.date);
+                if (!dateKey) return next;
+                if (next.has(dateKey)) next.delete(dateKey);
+                else next.add(dateKey);
                 return next;
               });
             }}

@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 
 import Input from "@/components/ui/Input";
@@ -14,7 +15,7 @@ interface SchedulingSectionProps {
   monthsToGenerate?: number;
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
   recurrenceType?: ServiceRecurrenceType;
-  startDate?: string;
+  startDate?: Date;
 }
 
 const FREQUENCY_OPTIONS: { label: string; value: ServiceFrequency }[] = [
@@ -52,11 +53,11 @@ export function SchedulingSection({
       <Input
         label="Fecha de inicio"
         onChange={(event: ChangeEvent<HTMLInputElement>) => {
-          onChange("startDate", event.target.value);
+          onChange("startDate", dayjs(event.target.value).toDate());
         }}
         required
         type="date"
-        value={startDate ?? ""}
+        value={startDate ? dayjs(startDate).format("YYYY-MM-DD") : ""}
       />
       <Input
         disabled={recurrenceType === "ONE_OFF" || frequency === "ONCE"}

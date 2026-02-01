@@ -10,7 +10,7 @@ import { formatDateFull } from "../utils";
 
 interface TopBarProps {
   canFinalize: boolean;
-  date: string;
+  date: Date;
   isSaving: boolean;
   onFinalize: () => void;
   onSave: () => void;

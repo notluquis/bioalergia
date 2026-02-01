@@ -11,7 +11,7 @@ export type StructuredSupplies = Record<string, Record<string, string[]>>;
 export interface SupplyRequest {
   admin_notes?: string;
   brand?: string;
-  created_at: string;
+  created_at: Date;
   id: number;
   model?: string;
   notes?: string;

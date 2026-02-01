@@ -12,8 +12,8 @@ import { formatBalanceInput } from "../utils";
 
 export interface BalanceTableMeta {
   drafts: Record<string, BalanceDraft>;
-  onDraftChange: (date: string, patch: Partial<BalanceDraft>) => void;
-  onSave: (date: string) => void;
+  onDraftChange: (date: Date, patch: Partial<BalanceDraft>) => void;
+  onSave: (date: Date) => void;
   saving: Record<string, boolean>;
 }
 
@@ -22,12 +22,15 @@ const formatDifference = (diff: null | number) => {
   return diff >= 0 ? fmtCLP(diff) : `-${fmtCLP(Math.abs(diff))}`;
 };
 
+const getDateKey = (date: Date) => dayjs(date).format("YYYY-MM-DD");
+
 // Custom Cell for the "Registrado" Input
 // biome-ignore lint/suspicious/noExplicitAny: tanstack generic
 const RecordedBalanceCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;
-  const draft = meta.drafts[day.date] ?? { note: "", value: "" };
+  const dateKey = getDateKey(day.date);
+  const draft = meta.drafts[dateKey] ?? { note: "", value: "" };
 
   return (
     <Input
@@ -48,7 +51,8 @@ const RecordedBalanceCell = ({ row, table }: { row: Row<DailyBalanceDay>; table:
 const NoteCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;
-  const draft = meta.drafts[day.date] ?? { note: "", value: "" };
+  const dateKey = getDateKey(day.date);
+  const draft = meta.drafts[dateKey] ?? { note: "", value: "" };
 
   return (
     <Input
@@ -69,10 +73,11 @@ const NoteCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => 
 const ActionsCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;
-  const draft = meta.drafts[day.date] ?? { note: "", value: "" };
+  const dateKey = getDateKey(day.date);
+  const draft = meta.drafts[dateKey] ?? { note: "", value: "" };
   const defaultValue = day.recordedBalance == null ? "" : formatBalanceInput(day.recordedBalance);
   const defaultNote = day.note ?? "";
-  const isSaving = Boolean(meta.saving[day.date]);
+  const isSaving = Boolean(meta.saving[dateKey]);
   const isDirty = draft.value !== defaultValue || draft.note !== defaultNote;
   const hasValue = draft.value.trim().length > 0 || defaultValue.trim().length > 0;
   const canSave = isDirty && hasValue && !isSaving;

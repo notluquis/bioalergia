@@ -441,7 +441,7 @@ function BackupTablesList({
 }: {
   backupId: string;
   canRestore: boolean;
-  createdTime: string;
+  createdTime: Date;
   isRestoring: boolean;
   onRestore: (tables: string[]) => void;
 }) {

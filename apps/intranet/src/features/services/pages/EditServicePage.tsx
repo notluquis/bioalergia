@@ -42,7 +42,7 @@ export default function ServiceEditPage() {
 
   const handleRegenerate = async (
     serviceId: string,
-    payload?: { months?: number; startDate?: string },
+    payload?: { months?: number; startDate?: Date },
   ) => {
     try {
       const updated = await regenerateServiceSchedules(serviceId, payload ?? {});

@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
@@ -20,12 +21,13 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<null | string>(null);
 
-  const handleDraftChange = (date: string, patch: Partial<BalanceDraft>) => {
+  const handleDraftChange = (date: Date, patch: Partial<BalanceDraft>) => {
+    const dateKey = dayjs(date).format("YYYY-MM-DD");
     setDrafts((prev) => {
-      const previous = prev[date] ?? { note: "", value: "" };
+      const previous = prev[dateKey] ?? { note: "", value: "" };
       return {
         ...prev,
-        [date]: {
+        [dateKey]: {
           note: patch.note ?? previous.note,
           value: patch.value ?? previous.value,
         },
@@ -33,9 +35,10 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
     });
   };
 
-  const handleSave = async (date: string) => {
+  const handleSave = async (date: Date) => {
     if (!canEdit) return;
-    const draft = drafts[date];
+    const dateKey = dayjs(date).format("YYYY-MM-DD");
+    const draft = drafts[dateKey];
     if (!draft) return;
 
     const parsedValue = parseBalanceInput(draft.value);
@@ -44,12 +47,12 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
       return;
     }
 
-    setSaving((prev) => ({ ...prev, [date]: true }));
+    setSaving((prev) => ({ ...prev, [dateKey]: true }));
     setError(null);
     try {
-      await saveBalance(date, parsedValue, draft.note);
+      await saveBalance(dateKey, parsedValue, draft.note);
       await loadBalances();
-      logger.info("[balances] save:success", { balance: parsedValue, date });
+      logger.info("[balances] save:success", { balance: parsedValue, date: dateKey });
     } catch (error_) {
       const message =
         error_ instanceof Error ? error_.message : "No se pudo guardar el saldo diario";
@@ -57,7 +60,7 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
       showError(message);
       logger.error("[balances] save:error", message);
     } finally {
-      setSaving((prev) => ({ ...prev, [date]: false }));
+      setSaving((prev) => ({ ...prev, [dateKey]: false }));
     }
   };
 

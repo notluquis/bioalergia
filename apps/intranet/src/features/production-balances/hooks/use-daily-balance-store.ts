@@ -40,7 +40,7 @@ export interface DailyBalanceState {
   // Original data (to detect changes)
   originalData: DailyBalanceFormData;
   // Current selected date
-  selectedDate: string;
+  selectedDate: Date;
   // Week data for navigation
   weekData: null | WeekData;
 }
@@ -53,7 +53,7 @@ export const dailyBalanceStore = new Store<DailyBalanceState>({
   isSaving: false,
   lastSaved: null,
   originalData: { ...defaultFormData },
-  selectedDate: dayjs().format("YYYY-MM-DD"),
+  selectedDate: dayjs().toDate(),
   weekData: null,
 });
 
@@ -62,7 +62,7 @@ import "dayjs/locale/es";
 // Set locale globally to ensure weeks start on Monday
 dayjs.locale("es");
 
-export function generateWeekData(centerDate: string, entries: Record<string, number>): WeekData {
+export function generateWeekData(centerDate: Date, entries: Record<string, number>): WeekData {
   const center = dayjs(centerDate);
   const startOfWeek = center.startOf("week"); // Sunday
   const endOfWeek = center.endOf("week");
@@ -75,11 +75,11 @@ export function generateWeekData(centerDate: string, entries: Record<string, num
     const total = entries[dateStr] ?? 0;
 
     days.push({
-      date: dateStr,
-      dayName: getDayAbbrev(dateStr),
+      date: d.toDate(),
+      dayName: getDayAbbrev(d.toDate()),
       dayNumber: d.date(),
-      isSelected: dateStr === centerDate,
-      isToday: dateStr === dayjs().format("YYYY-MM-DD"),
+      isSelected: d.isSame(center, "day"),
+      isToday: d.isSame(dayjs(), "day"),
       status: total > 0 ? "balanced" : "empty",
       total,
     });
@@ -100,7 +100,7 @@ function computeStatus(data: DailyBalanceFormData, summary: BalanceSummary): Day
 }
 
 // 3. Standalone Actions
-export const setSelectedDate = (date: string) => {
+export const setSelectedDate = (date: Date) => {
   dailyBalanceStore.setState((s) => ({ ...s, selectedDate: date }));
 };
 

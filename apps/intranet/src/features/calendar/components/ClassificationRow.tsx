@@ -214,7 +214,7 @@ function formatEventDate(event: CalendarUnclassifiedEvent) {
   }
   if (event.startDate) {
     const start = dayjs(event.startDate);
-    if (event.endDate && event.endDate !== event.startDate) {
+    if (event.endDate && !dayjs(event.endDate).isSame(start, "day")) {
       const end = dayjs(event.endDate);
       return `${start.format("DD MMM YYYY")} – ${end.format("DD MMM YYYY")}`;
     }

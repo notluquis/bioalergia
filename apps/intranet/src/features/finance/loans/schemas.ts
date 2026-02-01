@@ -3,7 +3,7 @@ import { z } from "zod";
 export const LoanSummarySchema = z.strictObject({
   borrower_name: z.string(),
   borrower_type: z.enum(["COMPANY", "PERSON"]),
-  created_at: z.string(),
+  created_at: z.coerce.date(),
   frequency: z.enum(["BIWEEKLY", "MONTHLY", "WEEKLY"]),
   id: z.number(),
   interest_rate: z.number(),
@@ -14,25 +14,25 @@ export const LoanSummarySchema = z.strictObject({
   principal_amount: z.number(),
   public_id: z.string(),
   remaining_amount: z.number(),
-  start_date: z.string(),
+  start_date: z.coerce.date(),
   status: z.enum(["ACTIVE", "COMPLETED", "DEFAULTED"]),
   title: z.string(),
   total_expected: z.number(),
   total_installments: z.number(),
   total_paid: z.number(),
-  updated_at: z.string(),
+  updated_at: z.coerce.date(),
 });
 
 const LoanScheduleTransactionSchema = z.strictObject({
   amount: z.number().nullable(),
   description: z.string().nullable(),
   id: z.number(),
-  timestamp: z.string(),
+  timestamp: z.coerce.date(),
 });
 
 export const LoanScheduleSchema = z.strictObject({
-  created_at: z.string(),
-  due_date: z.string(),
+  created_at: z.coerce.date(),
+  due_date: z.coerce.date(),
   expected_amount: z.number(),
   expected_interest: z.number(),
   expected_principal: z.number(),
@@ -40,11 +40,11 @@ export const LoanScheduleSchema = z.strictObject({
   installment_number: z.number(),
   loan_id: z.number(),
   paid_amount: z.number().nullable(),
-  paid_date: z.string().nullable(),
+  paid_date: z.coerce.date().nullable(),
   status: z.enum(["OVERDUE", "PAID", "PARTIAL", "PENDING", "SKIPPED"]),
   transaction: z.union([LoanScheduleTransactionSchema, z.null()]).optional(),
   transaction_id: z.number().nullable(),
-  updated_at: z.string(),
+  updated_at: z.coerce.date(),
 });
 
 export const LoanDetailResponseSchema = z.strictObject({

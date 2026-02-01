@@ -20,10 +20,10 @@ export interface ImportStats {
 }
 
 export interface MPReport {
-  begin_date: string;
+  begin_date: Date;
   created_from: "manual" | "schedule";
-  date_created?: string;
-  end_date: string;
+  date_created?: Date;
+  end_date: Date;
   file_name?: string;
   id: number;
   status?: string;
@@ -38,11 +38,11 @@ export interface MpSyncLog {
   changeDetails?: MpSyncChangeDetails | null;
   errorMessage?: string | null;
   excluded?: number | null;
-  finishedAt?: string | null;
+  finishedAt?: Date | null;
   id: number;
   inserted?: number | null;
   skipped?: number | null;
-  startedAt: string;
+  startedAt: Date;
   status: "RUNNING" | "SUCCESS" | "ERROR";
   triggerLabel?: string | null;
   triggerSource: string;
@@ -71,10 +71,10 @@ interface ProcessReportResponse {
 }
 
 const MPReportSchema = z.looseObject({
-  begin_date: z.string(),
+  begin_date: z.coerce.date(),
   created_from: z.enum(["manual", "schedule"]),
-  date_created: z.string().optional(),
-  end_date: z.string(),
+  date_created: z.coerce.date().optional(),
+  end_date: z.coerce.date(),
   file_name: z.string().optional(),
   id: z.number(),
   status: z.string().optional(),
@@ -90,11 +90,11 @@ const MpSyncLogSchema = z.object({
   changeDetails: z.record(z.string(), z.unknown()).nullable().optional(),
   errorMessage: z.string().nullable().optional(),
   excluded: z.number().nullable().optional(),
-  finishedAt: z.string().nullable().optional(),
+  finishedAt: z.coerce.date().nullable().optional(),
   id: z.number(),
   inserted: z.number().nullable().optional(),
   skipped: z.number().nullable().optional(),
-  startedAt: z.string(),
+  startedAt: z.coerce.date(),
   status: z.enum(["RUNNING", "SUCCESS", "ERROR"]),
   triggerLabel: z.string().nullable().optional(),
   triggerSource: z.string(),
@@ -126,16 +126,16 @@ function getBaseUrl(type: MpReportType = "release") {
 
 export const MPService = {
   createReport: async (
-    beginDate: string,
-    endDate: string,
+    beginDate: Date,
+    endDate: Date,
     type: MpReportType = "release",
   ): Promise<MPReport> => {
     const baseUrl = getBaseUrl(type);
     return apiClient.post<MPReport>(
       `${baseUrl}/reports`,
       {
-        begin_date: beginDate,
-        end_date: endDate,
+        begin_date: beginDate.toISOString(),
+        end_date: endDate.toISOString(),
       },
       { responseSchema: MPReportSchema },
     );
@@ -146,8 +146,8 @@ export const MPService = {
    * Returns array of created reports and calls onProgress for each
    */
   createReportBulk: async (
-    beginDate: string,
-    endDate: string,
+    beginDate: Date,
+    endDate: Date,
     type: MpReportType,
     onProgress?: (current: number, total: number) => void,
   ): Promise<MPReport[]> => {
@@ -204,7 +204,7 @@ export const MPService = {
         `[MP Service] Creating chunk ${index}/${chunks.length}: ${beginStr} to ${endStr}`,
       );
 
-      const report = await MPService.createReport(beginStr, endStr, type);
+      const report = await MPService.createReport(beginDate, endDate, type);
       reports.push(report);
     }
 

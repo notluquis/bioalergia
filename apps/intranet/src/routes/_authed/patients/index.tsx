@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authed/patients/")({
 interface Patient {
   id: number;
   personId: number;
-  birthDate: string;
+  birthDate: Date;
   bloodType?: string;
   notes?: string;
   person: {

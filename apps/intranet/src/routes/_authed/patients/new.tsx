@@ -2,6 +2,7 @@ import { Card } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import { Save, User, UserPlus, X } from "lucide-react";
 import { z } from "zod";
 import Button from "@/components/ui/Button";
@@ -10,6 +11,7 @@ import Input from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
+import { formatISO } from "@/lib/dates";
 import { formatRut, validateRut } from "@/lib/rut";
 import { TITLE_LG } from "@/lib/styles";
 
@@ -32,10 +34,12 @@ interface PatientFormState {
   email: string;
   phone: string;
   address: string;
-  birthDate: string;
+  birthDate: Date;
   bloodType: string;
   notes: string;
 }
+
+type PatientPayload = Omit<PatientFormState, "birthDate"> & { birthDate: string };
 
 function AddPatientPage() {
   const navigate = useNavigate();
@@ -43,7 +47,7 @@ function AddPatientPage() {
   const { error: toastError, success } = useToast();
 
   const createPatientMutation = useMutation({
-    mutationFn: async (payload: PatientFormState) => {
+    mutationFn: async (payload: PatientPayload) => {
       return await apiClient.post("/api/patients", payload, {
         responseSchema: StatusResponseSchema,
       });
@@ -67,7 +71,7 @@ function AddPatientPage() {
       email: "",
       phone: "",
       address: "",
-      birthDate: "",
+      birthDate: dayjs().toDate(),
       bloodType: "",
       notes: "",
     } as PatientFormState,
@@ -76,7 +80,10 @@ function AddPatientPage() {
         toastError("El RUT ingresado no es válido");
         return;
       }
-      await createPatientMutation.mutateAsync(value);
+      await createPatientMutation.mutateAsync({
+        ...value,
+        birthDate: formatISO(value.birthDate),
+      });
     },
   });
 
@@ -171,8 +178,8 @@ function AddPatientPage() {
                     <Input
                       label="Fecha de Nacimiento"
                       type="date"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
+                      value={dayjs(field.state.value).format("YYYY-MM-DD")}
+                      onChange={(e) => field.handleChange(dayjs(e.target.value).toDate())}
                       required
                     />
                   )}

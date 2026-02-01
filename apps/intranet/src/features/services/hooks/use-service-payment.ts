@@ -18,15 +18,15 @@ export function useServicePayment() {
   // Suggested Transactions
   const scheduleId = paymentSchedule?.id;
   const expectedAmount = paymentSchedule?.expected_amount;
-  const dueDateStr = paymentSchedule?.due_date;
+  const dueDate = paymentSchedule?.due_date;
 
   const { data: suggestedTransactions } = useSuspenseQuery({
     queryFn: async () => {
       if (!scheduleId || expectedAmount == null) return [];
       const tolerance = Math.max(100, Math.round(expectedAmount * 0.01));
-      const dueDate = dueDateStr ? dayjs(dueDateStr) : dayjs();
-      const from = dueDate.clone().subtract(45, "day").format("YYYY-MM-DD");
-      const to = dueDate.clone().add(45, "day").format("YYYY-MM-DD");
+      const dueDateValue = dueDate ? dayjs(dueDate) : dayjs();
+      const from = dueDateValue.clone().subtract(45, "day").format("YYYY-MM-DD");
+      const to = dueDateValue.clone().add(45, "day").format("YYYY-MM-DD");
 
       const payload = await fetchTransactions({
         filters: {
@@ -57,7 +57,7 @@ export function useServicePayment() {
         )
         .slice(0, 8);
     },
-    queryKey: ["payment-suggestions", scheduleId, expectedAmount, dueDateStr],
+    queryKey: ["payment-suggestions", scheduleId, expectedAmount, dueDate],
   });
 
   // Pay Mutation
@@ -94,9 +94,7 @@ export function useServicePayment() {
     if (!tx.transactionAmount) return;
     servicesActions.updatePaymentForm({
       paidAmount: String(tx.transactionAmount),
-      paidDate: tx.transactionDate
-        ? dayjs(tx.transactionDate).format("YYYY-MM-DD")
-        : paymentForm.paidDate,
+      paidDate: tx.transactionDate ?? paymentForm.paidDate,
       transactionId: String(tx.id),
     });
   };
@@ -104,7 +102,12 @@ export function useServicePayment() {
   return {
     applySuggestedTransaction,
     closePaymentModal: servicesActions.closePaymentModal,
-    handlePaymentFieldChange: (key: keyof typeof paymentForm, value: string) => {
+    handlePaymentFieldChange: (key: keyof typeof paymentForm, value: string | Date) => {
+      if (key === "paidDate") {
+        const dateValue = value instanceof Date ? value : dayjs(value).toDate();
+        servicesActions.updatePaymentForm({ paidDate: dateValue });
+        return;
+      }
       servicesActions.updatePaymentForm({ [key]: value });
     },
 

@@ -343,10 +343,13 @@ export function ServiceDetail({
           <Input
             label="Nueva fecha de inicio"
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }));
+              setRegenerateForm((prev) => ({
+                ...prev,
+                startDate: event.target.value ? dayjs(event.target.value).toDate() : undefined,
+              }));
             }}
             type="date"
-            value={regenerateForm.startDate ?? service.start_date}
+            value={dayjs(regenerateForm.startDate ?? service.start_date).format("YYYY-MM-DD")}
           />
           <Input
             label="Monto base"

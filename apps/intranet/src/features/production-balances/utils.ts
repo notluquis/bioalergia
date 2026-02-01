@@ -47,8 +47,7 @@ export function calculateSummary(data: {
  * Format date for large display
  * E.g. "2026-01-10" → "Sáb 10 Ene 2026"
  */
-export function formatDateFull(dateStr: string): string {
-  const date = new Date(`${dateStr}T12:00:00`); // Avoid timezone issues
+export function formatDateFull(date: Date): string {
   return date.toLocaleDateString("es-CL", {
     day: "numeric",
     month: "short",
@@ -74,8 +73,7 @@ export function formatSaveTime(date: Date): string {
 /**
  * Get day abbreviation for week strip
  */
-export function getDayAbbrev(dateStr: string): string {
-  const date = new Date(`${dateStr}T12:00:00`);
+export function getDayAbbrev(date: Date): string {
   const day = date.getDay();
   // getDay() always returns 0-6, so this is safe
   // biome-ignore lint/style/noNonNullAssertion: safe index

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Alert from "@/components/ui/Alert";
@@ -22,7 +23,6 @@ import type {
   LoanSchedule,
   RegenerateSchedulePayload,
 } from "@/features/finance/loans/types";
-import { today } from "@/lib/dates";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
 export default function LoansPage() {
@@ -39,7 +39,7 @@ export default function LoansPage() {
   const [paymentSchedule, setPaymentSchedule] = useState<LoanSchedule | null>(null);
   const [paymentForm, setPaymentForm] = useState({
     paidAmount: "",
-    paidDate: today(),
+    paidDate: dayjs().toDate(),
     transactionId: "",
   });
   const [paymentError, setPaymentError] = useState<null | string>(null);
@@ -117,7 +117,7 @@ export default function LoansPage() {
         schedule.paid_amount == null
           ? String(schedule.expected_amount)
           : String(schedule.paid_amount),
-      paidDate: schedule.paid_date ?? today(),
+      paidDate: schedule.paid_date ?? dayjs().toDate(),
       transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
     });
     setPaymentError(null);
@@ -268,11 +268,14 @@ export default function LoansPage() {
             <Input
               label="Fecha de pago"
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                setPaymentForm((prev) => ({ ...prev, paidDate: event.target.value }));
+                setPaymentForm((prev) => ({
+                  ...prev,
+                  paidDate: dayjs(event.target.value).toDate(),
+                }));
               }}
               required
               type="date"
-              value={paymentForm.paidDate}
+              value={dayjs(paymentForm.paidDate).format("YYYY-MM-DD")}
             />
             {paymentError && (
               <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">

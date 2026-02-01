@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
-import { parseOrThrow, zDateString, zStatusOk } from "@/lib/api-validate";
+import { parseOrThrow, zStatusOk } from "@/lib/api-validate";
 
 export interface DailyBalancePayload {
   date: string;
@@ -22,13 +22,13 @@ export interface DailyBalancePayload {
 // Result from GET /api/daily-production-balances
 // Result from GET /api/daily-production-balances
 export interface ProductionBalanceApiItem {
-  date: string;
+  date: Date;
   changeReason: null | string;
   // total?
   comentarios: null | string;
   consultasMonto: number; // was consultas
   controlesMonto: number; // was controles
-  createdAt: string;
+  createdAt: Date;
   createdByEmail: null | string; // This likely comes from "include: { user: true }" ??? Or maybe not sent?
   // subtotalIngresos? Maybe calculated on backend or frontend? Keep if unsure but backend might not send it.
   gastosDiarios: number;
@@ -42,16 +42,16 @@ export interface ProductionBalanceApiItem {
   roxairMonto: number; // was roxair
   status: string; // "PENDING", "COMPLETED", etc.
   testsMonto: number; // was tests
-  updatedAt: string;
+  updatedAt: Date;
   updatedByEmail: null | string;
   vacunasMonto: number; // was vacunas
 }
 
 interface ApiListResponse<T> {
-  from: string;
+  from: Date;
   items: T[];
   status: "ok";
-  to: string;
+  to: Date;
 }
 
 interface ApiSuccessResponse<T> {
@@ -65,9 +65,9 @@ const ProductionBalanceApiItemSchema = z.strictObject({
   comentarios: z.string().nullable(),
   consultasMonto: z.number(),
   controlesMonto: z.number(),
-  createdAt: z.string(),
+  createdAt: z.coerce.date(),
   createdByEmail: z.string().nullable(),
-  date: zDateString,
+  date: z.coerce.date(),
   gastosDiarios: z.number(),
   id: z.number(),
   ingresoEfectivo: z.number(),
@@ -78,16 +78,16 @@ const ProductionBalanceApiItemSchema = z.strictObject({
   roxairMonto: z.number(),
   status: z.string(),
   testsMonto: z.number(),
-  updatedAt: z.string(),
+  updatedAt: z.coerce.date(),
   updatedByEmail: z.string().nullable(),
   vacunasMonto: z.number(),
 });
 
 const ApiListResponseSchema = z.strictObject({
-  from: zDateString,
+  from: z.coerce.date(),
   items: z.array(ProductionBalanceApiItemSchema),
   status: zStatusOk.shape.status,
-  to: zDateString,
+  to: z.coerce.date(),
 });
 
 const ApiSuccessResponseSchema = z.strictObject({

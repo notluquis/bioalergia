@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 
 import Button from "@/components/ui/Button";
-import { today } from "@/lib/dates";
 import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import type { CounterpartAccount } from "../../counterparts/types";
 import type { CreateServicePayload } from "../types";
@@ -16,7 +16,7 @@ import {
 } from "./ServiceForm/index";
 
 export type ServiceFormState = CreateServicePayload & {
-  emissionExactDate?: null | string;
+  emissionExactDate?: null | Date;
 };
 
 interface ServiceFormProps {
@@ -51,7 +51,7 @@ const INITIAL_STATE: ServiceFormState = {
   ownership: "COMPANY",
   recurrenceType: "RECURRING",
   serviceType: "BUSINESS",
-  startDate: today(),
+  startDate: dayjs().toDate(),
 };
 
 export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: ServiceFormProps) {

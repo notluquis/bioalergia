@@ -37,8 +37,8 @@ export interface BalanceSummary {
 export interface DailyBalanceEntry {
   consultas: number;
   controles: number;
-  createdAt?: string;
-  date: string;
+  createdAt?: Date;
+  date: Date;
   efectivo: number;
   gastos: number;
   id?: number;
@@ -50,14 +50,14 @@ export interface DailyBalanceEntry {
   tarjeta: number;
   tests: number;
   transferencia: number;
-  updatedAt?: string;
+  updatedAt?: Date;
   vacunas: number;
 }
 
 export type DailyBalanceFormData = z.infer<typeof DailyBalanceFormSchema>;
 
 export interface DayCell {
-  date: string;
+  date: Date;
   dayName: string; // "L", "M", "X", "J", "V", "S", "D"
   dayNumber: number;
   isSelected: boolean;

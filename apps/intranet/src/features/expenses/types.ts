@@ -1,7 +1,7 @@
 export interface CreateMonthlyExpensePayload {
   amountExpected: number;
   category?: null | string;
-  expenseDate: string;
+  expenseDate: Date;
   name: string;
   notes?: null | string;
   serviceId?: null | number;
@@ -19,8 +19,8 @@ export interface MonthlyExpense {
   amountApplied: number;
   amountExpected: number;
   category: null | string;
-  createdAt: string;
-  expenseDate: string;
+  createdAt: Date;
+  expenseDate: Date;
   name: string;
   notes: null | string;
   publicId: string;
@@ -29,7 +29,7 @@ export interface MonthlyExpense {
   status: "CLOSED" | "OPEN";
   tags: string[];
   transactionCount: number;
-  updatedAt: string;
+  updatedAt: Date;
 }
 
 export type MonthlyExpenseDetail = MonthlyExpense & {
@@ -37,7 +37,7 @@ export type MonthlyExpenseDetail = MonthlyExpense & {
     amount: number;
     description: null | string;
     direction: string;
-    timestamp: string;
+    timestamp: Date;
     transactionId: number;
   }[];
 };

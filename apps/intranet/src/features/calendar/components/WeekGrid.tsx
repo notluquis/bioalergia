@@ -87,7 +87,9 @@ function groupEventsByDay(events: CalendarEventDetail[], weekStart: dayjs.Dayjs)
   for (const event of events) {
     const eventDate = event.startDateTime
       ? dayjs(event.startDateTime).format("YYYY-MM-DD")
-      : event.startDate;
+      : event.startDate
+        ? dayjs(event.startDate).format("YYYY-MM-DD")
+        : null;
 
     // eslint-disable-next-line security/detect-object-injection -- eventDate is YYYY-MM-DD format, safe access
     if (eventDate && days[eventDate]) {

@@ -1,14 +1,14 @@
 export interface TimesheetEntry {
   comment: null | string;
-  created_at: string;
+  created_at: Date;
   employee_id: number;
   end_time: null | string;
   extra_amount: number;
   id: number;
   overtime_minutes: number;
   start_time: null | string;
-  updated_at: string;
-  work_date: string;
+  updated_at: Date;
+  work_date: Date;
   worked_minutes: number;
 }
 
@@ -19,15 +19,15 @@ export interface TimesheetPayload {
   extra_amount?: number;
   overtime_minutes?: number;
   start_time?: null | string;
-  work_date: string;
+  work_date: Date;
   worked_minutes: number;
 }
 
 export interface TimesheetSummaryResponse {
   employees: TimesheetSummaryRow[];
-  from: string;
+  from: Date;
   month: string;
-  to: string;
+  to: Date;
   totals: {
     extraAmount: number;
     hours: string;
@@ -49,7 +49,7 @@ export interface TimesheetSummaryRow {
   overtimeFormatted: string;
   overtimeMinutes: number;
   overtimeRate: number;
-  payDate: string;
+  payDate: Date;
   retention: number;
   retentionRate: number;
   role: string;
@@ -63,12 +63,12 @@ export interface TimesheetUpsertEntry {
   extra_amount: number;
   overtime_minutes: number;
   start_time: null | string;
-  work_date: string;
+  work_date: Date;
 }
 
 export const EMPTY_BULK_ROW = {
   comment: "",
-  date: "",
+  date: new Date(),
   entrada: "", // Hora de entrada (ej: "09:00")
   entryId: null as null | number,
   overtime: "", // Horas extra (ej: "02:00")

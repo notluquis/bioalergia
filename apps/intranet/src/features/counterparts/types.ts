@@ -20,7 +20,7 @@ export interface AccountTransactionsState {
 
 export interface Counterpart {
   category: CounterpartCategory;
-  created_at: string;
+  created_at: Date;
   email: null | string;
   employeeId: null | number;
   id: number;
@@ -28,7 +28,7 @@ export interface Counterpart {
   notes: null | string;
   personType: CounterpartPersonType;
   rut: null | string;
-  updated_at: string;
+  updated_at: Date;
 }
 
 export interface CounterpartAccount {
@@ -37,7 +37,7 @@ export interface CounterpartAccount {
   bank_name: null | string;
   concept: null | string;
   counterpart_id: number;
-  created_at: string;
+  created_at: Date;
   holder: null | string;
   id: number;
   metadata: CounterpartAccountMetadata | null;
@@ -45,7 +45,7 @@ export interface CounterpartAccount {
     movements: number;
     totalAmount: number;
   };
-  updated_at: string;
+  updated_at: Date;
 }
 
 export interface CounterpartAccountMetadata {

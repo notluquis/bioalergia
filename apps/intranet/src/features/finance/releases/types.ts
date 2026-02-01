@@ -15,7 +15,7 @@ export interface ReleaseTransaction {
   cardInitialNumber: null | string;
   couponAmount: DecimalValue;
   currency: null | string;
-  date: string;
+  date: Date;
   description: null | string;
   effectiveCouponAmount: DecimalValue;
   externalPosId: null | string;
@@ -61,7 +61,7 @@ export interface ReleaseTransaction {
   taxDetail: null | string;
   taxesAmount: DecimalValue;
   taxesDisaggregated: unknown;
-  transactionApprovalDate: null | string;
+  transactionApprovalDate: null | Date;
   transactionIntentId: null | string;
 }
 

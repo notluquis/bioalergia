@@ -13,6 +13,7 @@ import { MoneyInput } from "@/components/ui/MoneyInput";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { PatientBudgetListSchema, PatientPaymentSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
+import { formatISO } from "@/lib/dates";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
 export const Route = createFileRoute("/_authed/patients/$id/new-payment")({
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/_authed/patients/$id/new-payment")({
 const paymentSchema = z.object({
   budgetId: z.string().optional(),
   amount: z.number().positive("Monto debe ser mayor a 0"),
-  paymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+  paymentDate: z.coerce.date(),
   paymentMethod: z.enum(["Transferencia", "Efectivo", "Tarjeta", "Otro"]),
   reference: z.string().optional(),
   notes: z.string().optional(),
@@ -62,6 +63,7 @@ function NewPaymentPage() {
         {
           ...data,
           budgetId: data.budgetId ? Number(data.budgetId) : undefined,
+          paymentDate: formatISO(data.paymentDate),
         },
         { responseSchema: PatientPaymentSchema },
       );
@@ -82,7 +84,7 @@ function NewPaymentPage() {
     defaultValues: {
       budgetId: "",
       amount: 0,
-      paymentDate: dayjs().format("YYYY-MM-DD"),
+      paymentDate: dayjs().toDate(),
       paymentMethod: "Transferencia",
       reference: "",
       notes: "",
@@ -124,8 +126,8 @@ function NewPaymentPage() {
                 <Input
                   type="date"
                   label="Fecha de Pago"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  value={dayjs(field.state.value).format("YYYY-MM-DD")}
+                  onChange={(e) => field.handleChange(dayjs(e.target.value).toDate())}
                   onBlur={field.handleBlur}
                   error={field.state.meta.errors.join(", ")}
                 />

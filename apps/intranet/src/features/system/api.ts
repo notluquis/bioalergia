@@ -12,7 +12,7 @@ const HealthResponseSchema = z.object({
     }),
   }),
   status: z.enum(["degraded", "error", "ok"]),
-  timestamp: z.string(),
+  timestamp: z.coerce.date(),
 });
 
 export async function fetchSystemHealth(signal?: AbortSignal): Promise<HealthResponse> {

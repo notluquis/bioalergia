@@ -2,7 +2,7 @@
 export function mapTransaction(row: any) {
   return {
     id: Number(row.id),
-    transactionDate: row.transactionDate.toISOString(),
+    transactionDate: row.transactionDate,
     description: row.description,
     transactionType: row.transactionType,
     transactionAmount: row.transactionAmount != null ? Number(row.transactionAmount) : null,

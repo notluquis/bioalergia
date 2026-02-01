@@ -1,12 +1,12 @@
 export interface Counterpart {
   accounts?: CounterpartAccount[];
   category: CounterpartCategory;
-  createdAt: string;
+  createdAt: Date;
   id: number;
   notes?: null | string;
   person?: Person;
   personId: number;
-  updatedAt: string;
+  updatedAt: Date;
 }
 export interface CounterpartAccount {
   accountNumber: string;
@@ -30,18 +30,18 @@ export interface Employee {
   bankAccountType?: null | string;
   bankName?: null | string;
   baseSalary: number;
-  createdAt: string;
+  createdAt: Date;
   department?: null | string;
-  endDate?: null | string;
+  endDate?: null | Date;
   hourlyRate?: null | number;
   id: number;
   person?: Person;
   personId: number;
   position: string;
   salaryType: EmployeeSalaryType;
-  startDate: string;
+  startDate: Date;
   status: EmployeeStatus;
-  updatedAt: string;
+  updatedAt: Date;
 }
 export type EmployeeSalaryType = "FIXED" | "HOURLY";
 export type EmployeeStatus = "ACTIVE" | "INACTIVE" | "TERMINATED";
@@ -50,7 +50,7 @@ export type LoanStatus = "ACTIVE" | "COMPLETED" | "DEFAULTED";
 export interface Person {
   address?: null | string;
   counterpart?: Counterpart | null;
-  createdAt: string;
+  createdAt: Date;
   email?: null | string;
   employee?: Employee | null;
   fatherName?: null | string;
@@ -60,7 +60,7 @@ export interface Person {
   personType: PersonType;
   phone?: null | string;
   rut: string;
-  updatedAt: string;
+  updatedAt: Date;
   // Relations
   user?: null | User;
 }
@@ -90,7 +90,7 @@ export type ServiceType =
 export type TransactionDirection = "IN" | "NEUTRO" | "OUT";
 
 export interface User {
-  createdAt: string;
+  createdAt: Date;
   email: string;
   id: number;
   mfaEnabled: boolean;
@@ -98,7 +98,7 @@ export interface User {
   personId: number;
   role: string;
   status: UserStatus;
-  updatedAt: string;
+  updatedAt: Date;
 }
 
 export type UserStatus = "ACTIVE" | "PENDING_SETUP" | "SUSPENDED";

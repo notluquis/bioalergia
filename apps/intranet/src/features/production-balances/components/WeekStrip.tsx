@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import Button from "@/components/ui/Button";
@@ -8,12 +9,12 @@ import { cn } from "@/lib/utils";
 import type { DayCell, WeekData } from "../types";
 
 interface WeekStripProps {
-  currentDate: string;
+  currentDate: Date;
   isCollapsed?: boolean;
   onGoToToday: () => void;
   onNextWeek: () => void;
   onPrevWeek: () => void;
-  onSelectDate: (date: string) => void;
+  onSelectDate: (date: Date) => void;
   weekData: null | WeekData;
 }
 
@@ -29,10 +30,7 @@ export function WeekStrip({
   onSelectDate,
   weekData,
 }: WeekStripProps) {
-  const today = useMemo(() => {
-    const d = new Date();
-    return d.toISOString().split("T")[0];
-  }, []);
+  const today = useMemo(() => new Date(), []);
 
   if (isCollapsed) {
     return (
@@ -78,9 +76,9 @@ export function WeekStrip({
         {weekData?.days.map((day) => (
           <DayCellButton
             day={day}
-            isSelected={day.date === currentDate}
-            isToday={day.date === today}
-            key={day.date}
+            isSelected={dayjs(day.date).isSame(currentDate, "day")}
+            isToday={dayjs(day.date).isSame(today, "day")}
+            key={day.date.toISOString()}
             onClick={() => {
               onSelectDate(day.date);
             }}

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
+import { formatISO } from "@/lib/dates";
 
 import type {
   TimesheetEntry,
@@ -20,12 +21,26 @@ const StatusResponseSchema = z.object({
   status: z.string(),
 });
 
+const TimesheetEntrySchema = z.looseObject({
+  comment: z.string().nullable(),
+  created_at: z.coerce.date(),
+  employee_id: z.number(),
+  end_time: z.string().nullable(),
+  extra_amount: z.number(),
+  id: z.number(),
+  overtime_minutes: z.number(),
+  start_time: z.string().nullable(),
+  updated_at: z.coerce.date(),
+  work_date: z.coerce.date(),
+  worked_minutes: z.number(),
+});
+
 const TimesheetDetailResponseSchema = z.object({
-  entries: z.array(z.unknown()),
-  from: z.string(),
+  entries: z.array(TimesheetEntrySchema),
+  from: z.coerce.date(),
   message: z.string().optional(),
   status: z.string(),
-  to: z.string(),
+  to: z.coerce.date(),
 });
 
 const TimesheetMonthsResponseSchema = z.object({
@@ -35,8 +50,43 @@ const TimesheetMonthsResponseSchema = z.object({
 });
 
 const TimesheetSummaryResponseSchema = z.looseObject({
+  employees: z
+    .array(
+      z.object({
+        email: z.string().nullable(),
+        employeeId: z.number(),
+        extraAmount: z.number(),
+        fullName: z.string(),
+        hourlyRate: z.number(),
+        hoursFormatted: z.string(),
+        net: z.number(),
+        overtimeFormatted: z.string(),
+        overtimeMinutes: z.number(),
+        overtimeRate: z.number(),
+        payDate: z.coerce.date(),
+        retention: z.number(),
+        retentionRate: z.number(),
+        role: z.string(),
+        subtotal: z.number(),
+        workedMinutes: z.number(),
+      }),
+    )
+    .default([]),
+  from: z.coerce.date().optional(),
   message: z.string().optional(),
+  month: z.string().optional(),
   status: z.string(),
+  to: z.coerce.date().optional(),
+  totals: z
+    .object({
+      extraAmount: z.number(),
+      hours: z.string(),
+      net: z.number(),
+      overtime: z.string(),
+      retention: z.number(),
+      subtotal: z.number(),
+    })
+    .optional(),
 });
 
 const PrepareEmailResponseSchema = z.object({
@@ -57,6 +107,10 @@ export async function bulkUpsertTimesheets(
   entries: TimesheetUpsertEntry[] = [],
   removeIds: number[] = [],
 ) {
+  const serializedEntries = entries.map((entry) => ({
+    ...entry,
+    work_date: formatISO(entry.work_date),
+  }));
   const data = await apiClient.post<{
     inserted: number;
     message?: string;
@@ -66,7 +120,7 @@ export async function bulkUpsertTimesheets(
     "/api/timesheets/bulk",
     {
       employee_id: employeeId,
-      entries,
+      entries: serializedEntries,
       remove_ids: removeIds.length > 0 ? removeIds : undefined,
     },
     { responseSchema: BulkUpsertResponseSchema },
@@ -174,9 +228,12 @@ export async function prepareTimesheetEmail(payload: {
 }
 
 export async function updateTimesheet(id: number, payload: Partial<TimesheetPayload>) {
+  const requestPayload = payload.work_date
+    ? { ...payload, work_date: formatISO(payload.work_date) }
+    : payload;
   const data = await apiClient.put<{ entry: TimesheetEntry; message?: string; status: string }>(
     `/api/timesheets/${id}`,
-    payload,
+    requestPayload,
     { responseSchema: TimesheetEntryResponseSchema },
   );
 
@@ -187,9 +244,10 @@ export async function updateTimesheet(id: number, payload: Partial<TimesheetPayl
 }
 
 export async function upsertTimesheet(payload: TimesheetPayload) {
+  const requestPayload = { ...payload, work_date: formatISO(payload.work_date) };
   const data = await apiClient.post<{ entry: TimesheetEntry; message?: string; status: string }>(
     "/api/timesheets",
-    payload,
+    requestPayload,
     { responseSchema: TimesheetEntryResponseSchema },
   );
 

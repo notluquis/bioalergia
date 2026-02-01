@@ -1,5 +1,5 @@
 export interface User {
-  createdAt: string;
+  createdAt: Date;
   email: string;
   hasPasskey: boolean;
   id: number;

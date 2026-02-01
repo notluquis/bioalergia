@@ -22,16 +22,16 @@ export const DoctoraliaPatientSchema = z.strictObject({
 });
 
 export const DoctoraliaBookingSchema = z.strictObject({
-  bookedAt: z.string(),
+  bookedAt: z.coerce.date(),
   bookedBy: z.string(),
-  canceledAt: z.string().optional(),
+  canceledAt: z.coerce.date().optional(),
   canceledBy: z.string().optional(),
   comment: z.string().optional(),
   duration: z.number(),
-  endAt: z.string(),
+  endAt: z.coerce.date(),
   id: z.string(),
   patient: DoctoraliaPatientSchema.optional(),
-  startAt: z.string(),
+  startAt: z.coerce.date(),
   status: z.enum(["booked", "canceled"]),
 });
 
@@ -46,16 +46,16 @@ export const DoctoraliaDoctorSchema = z.strictObject({
 });
 
 export const DoctoraliaFacilitySchema = z.strictObject({
-  createdAt: z.string(),
+  createdAt: z.coerce.date(),
   doctorCount: z.number(),
   externalId: z.string(),
   id: z.number(),
   name: z.string(),
-  updatedAt: z.string(),
+  updatedAt: z.coerce.date(),
 });
 
 export const DoctoraliaSlotSchema = z.strictObject({
-  end: z.string().optional(),
+  end: z.coerce.date().optional(),
   services: z
     .array(
       z.strictObject({
@@ -64,7 +64,7 @@ export const DoctoraliaSlotSchema = z.strictObject({
       }),
     )
     .optional(),
-  start: z.string(),
+  start: z.coerce.date(),
 });
 
 export const DoctoraliaBookingsResponseSchema = z.strictObject({
@@ -102,12 +102,12 @@ export const DoctoraliaStatusResponseSchema = z.strictObject({
 export const DoctoraliaSyncLogSchema = z.strictObject({
   bookingsSynced: z.number(),
   doctorsSynced: z.number(),
-  endedAt: z.string().nullable(),
+  endedAt: z.coerce.date().nullable(),
   errorMessage: z.string().nullable(),
   facilitiesSynced: z.number(),
   id: z.number(),
   slotsSynced: z.number(),
-  startedAt: z.string(),
+  startedAt: z.coerce.date(),
   status: z.string(),
   triggerSource: z.string().nullable(),
   triggerUserId: z.number().nullable(),

@@ -22,16 +22,16 @@ export interface DoctoraliaAddress {
 }
 
 export interface DoctoraliaBooking {
-  bookedAt: string;
+  bookedAt: Date;
   bookedBy: string;
-  canceledAt?: string;
+  canceledAt?: Date;
   canceledBy?: string;
   comment?: string;
   duration: number;
-  endAt: string;
+  endAt: Date;
   id: string;
   patient?: DoctoraliaPatient;
-  startAt: string;
+  startAt: Date;
   status: "booked" | "canceled";
 }
 
@@ -67,12 +67,12 @@ export interface DoctoraliaFacilitiesResponse {
 }
 
 export interface DoctoraliaFacility {
-  createdAt: string;
+  createdAt: Date;
   doctorCount: number;
   externalId: string;
   id: number;
   name: string;
-  updatedAt: string;
+  updatedAt: Date;
 }
 
 // ============================================================
@@ -90,9 +90,9 @@ export interface DoctoraliaPatient {
 }
 
 export interface DoctoraliaSlot {
-  end?: string;
+  end?: Date;
   services?: { id: string; name: string }[];
-  start: string;
+  start: Date;
 }
 
 export interface DoctoraliaSlotsResponse {
@@ -109,12 +109,12 @@ export interface DoctoraliaStatusResponse {
 export interface DoctoraliaSyncLog {
   bookingsSynced: number;
   doctorsSynced: number;
-  endedAt: null | string;
+  endedAt: null | Date;
   errorMessage: null | string;
   facilitiesSynced: number;
   id: number;
   slotsSynced: number;
-  startedAt: string;
+  startedAt: Date;
   status: string;
   triggerSource: null | string;
   triggerUserId: null | number;

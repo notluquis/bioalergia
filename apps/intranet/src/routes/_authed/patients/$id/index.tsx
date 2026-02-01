@@ -37,7 +37,7 @@ interface Person {
 
 interface Consultation {
   id: number;
-  date: string;
+  date: Date;
   reason: string;
   diagnosis?: string;
   treatment?: string;
@@ -46,7 +46,7 @@ interface Consultation {
 
 interface MedicalCertificate {
   id: string;
-  issuedAt: string;
+  issuedAt: Date;
   diagnosis: string;
 }
 
@@ -66,14 +66,14 @@ interface Budget {
   finalAmount: number;
   status: string;
   notes?: string;
-  updatedAt: string;
+  updatedAt: Date;
   items: BudgetItem[];
 }
 
 interface PatientPayment {
   id: number;
   amount: number;
-  paymentDate: string;
+  paymentDate: Date;
   paymentMethod: string;
   reference?: string;
   notes?: string;
@@ -83,17 +83,17 @@ interface PatientAttachment {
   id: number;
   name: string;
   type: string;
-  uploadedAt: string;
+  uploadedAt: Date;
   driveFileId: string;
 }
 
 interface Patient {
   id: number;
   personId: number;
-  birthDate: string;
+  birthDate: Date;
   bloodType?: string;
   notes?: string;
-  createdAt: string;
+  createdAt: Date;
   person: Person;
   consultations: Consultation[];
   medicalCertificates: MedicalCertificate[];

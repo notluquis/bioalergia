@@ -373,7 +373,7 @@ function drawDetailTable({
     colKeys.map((key): string => {
       switch (key) {
         case "date": {
-          return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : row.date;
+          return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : "-";
         }
         case "entrada": {
           return row.entrada || "-";

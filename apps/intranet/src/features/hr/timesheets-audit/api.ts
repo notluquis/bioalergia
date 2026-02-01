@@ -28,7 +28,24 @@ export async function fetchMultiEmployeeTimesheets(
 
   const response = await apiClient.get<{ entries: TimesheetEntryWithEmployee[] }>(
     `/api/timesheets/multi-detail?${params.toString()}`,
-    { responseSchema: z.object({ entries: z.array(z.unknown()) }) },
+    {
+      responseSchema: z.object({
+        entries: z.array(
+          z.looseObject({
+            comment: z.string().nullable(),
+            employee_id: z.number(),
+            employee_name: z.string(),
+            employee_role: z.string().nullable(),
+            end_time: z.string(),
+            id: z.number(),
+            overtime_minutes: z.number(),
+            start_time: z.string(),
+            work_date: z.coerce.date(),
+            worked_minutes: z.number(),
+          }),
+        ),
+      }),
+    },
   );
 
   return response.entries || [];

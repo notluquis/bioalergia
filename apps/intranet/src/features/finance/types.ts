@@ -43,7 +43,7 @@ export interface Transaction {
   sourceId: null | string;
   status: null | string;
   transactionAmount: null | number;
-  transactionDate: string;
+  transactionDate: Date;
   transactionType: string;
 }
 

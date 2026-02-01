@@ -2,13 +2,14 @@
  * Hook for managing timesheet audit state and data fetching
  */
 import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { useMemo } from "react";
 import { fetchMultiEmployeeTimesheets } from "../api";
 import type { TimesheetEntryWithEmployee } from "../types";
 
 export interface AuditDateRange {
-  end: string;
-  start: string;
+  end: Date;
+  start: Date;
 }
 
 interface UseTimesheetAuditOptions {
@@ -18,7 +19,7 @@ interface UseTimesheetAuditOptions {
 
 export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOptions) {
   const sortedRanges = useMemo(
-    () => ranges.toSorted((a, b) => a.start.localeCompare(b.start)),
+    () => ranges.toSorted((a, b) => a.start.getTime() - b.start.getTime()),
     [ranges],
   );
   const firstDay = sortedRanges[0]?.start;
@@ -34,7 +35,11 @@ export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOpti
     enabled: shouldFetch,
     queryFn: async () => {
       // biome-ignore lint/style/noNonNullAssertion: checked by shouldFetch
-      const data = await fetchMultiEmployeeTimesheets(employeeIds, firstDay!, lastDay!);
+      const data = await fetchMultiEmployeeTimesheets(
+        employeeIds,
+        dayjs(firstDay!).format("YYYY-MM-DD"),
+        dayjs(lastDay!).format("YYYY-MM-DD"),
+      );
       return filterAuditEntries(data, sortedRanges);
     },
     queryKey: ["timesheet-audit", employeeIds, firstDay, lastDay, sortedRanges],
@@ -47,6 +52,7 @@ function filterAuditEntries(data: TimesheetEntryWithEmployee[], ranges: AuditDat
   return data.filter((entry) => ranges.some((range) => isWithinRange(entry.work_date, range)));
 }
 
-function isWithinRange(date: string, range: AuditDateRange) {
-  return date >= range.start && date <= range.end;
+function isWithinRange(date: Date, range: AuditDateRange) {
+  const value = date.getTime();
+  return value >= range.start.getTime() && value <= range.end.getTime();
 }

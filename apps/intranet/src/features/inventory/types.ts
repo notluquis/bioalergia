@@ -26,7 +26,7 @@ export interface AllergyInventoryProvider {
 }
 
 export interface InventoryCategory {
-  created_at?: string;
+  created_at?: Date;
   id: number;
   name: string;
 }
@@ -35,9 +35,11 @@ export interface InventoryItem {
   category_id: null | number;
   category_name?: string;
   current_stock: number;
+  created_at?: Date;
   description: null | string;
   id: number;
   name: string;
+  updated_at?: Date;
 }
 
 export interface InventoryMovement {

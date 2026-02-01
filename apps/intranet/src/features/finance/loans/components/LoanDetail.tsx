@@ -191,10 +191,13 @@ export function LoanDetail({
           <Input
             label="Nueva fecha de inicio"
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setRegenerateForm((prev) => ({ ...prev, startDate: event.target.value }));
+              setRegenerateForm((prev) => ({
+                ...prev,
+                startDate: dayjs(event.target.value).toDate(),
+              }));
             }}
             type="date"
-            value={regenerateForm.startDate ?? loan.start_date}
+            value={dayjs(regenerateForm.startDate ?? loan.start_date).format("YYYY-MM-DD")}
           />
           <Input
             label="Tasa de interés (%)"

@@ -3,16 +3,30 @@ import { apiClient } from "@/lib/api-client";
 
 import type { TimesheetEntry } from "../timesheets/types";
 
+const TimesheetEntrySchema = z.looseObject({
+  comment: z.string().nullable(),
+  created_at: z.coerce.date(),
+  employee_id: z.number(),
+  end_time: z.string().nullable(),
+  extra_amount: z.number(),
+  id: z.number(),
+  overtime_minutes: z.number(),
+  start_time: z.string().nullable(),
+  updated_at: z.coerce.date(),
+  work_date: z.coerce.date(),
+  worked_minutes: z.number(),
+});
+
 const EmployeeTimesheetsResponseSchema = z.object({
-  entries: z.array(z.unknown()),
-  from: z.string(),
+  entries: z.array(TimesheetEntrySchema),
+  from: z.coerce.date(),
   message: z.string().optional(),
   status: z.literal("ok"),
-  to: z.string(),
+  to: z.coerce.date(),
 });
 
 const GlobalTimesheetsResponseSchema = z.object({
-  entries: z.array(z.unknown()),
+  entries: z.array(TimesheetEntrySchema),
   message: z.string().optional(),
   status: z.literal("ok"),
 });
@@ -21,7 +35,7 @@ const MultiMonthTimesheetsResponseSchema = z.object({
   data: z.record(
     z.string(),
     z.object({
-      entries: z.array(z.unknown()),
+      entries: z.array(TimesheetEntrySchema),
       month: z.string(),
     }),
   ),

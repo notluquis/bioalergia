@@ -31,7 +31,7 @@ function mapResponse(p: any) {
 
   return {
     id: p.id,
-    date: dayjs(p.balanceDate).format("YYYY-MM-DD"),
+    date: p.balanceDate,
     ingresoTarjetas: p.ingresoTarjetas,
     ingresoTransferencias: p.ingresoTransferencias,
     ingresoEfectivo: p.ingresoEfectivo,
@@ -79,14 +79,14 @@ app.get("/", async (c) => {
   }
 
   const today = dayjs();
-  const toDate = parsed.data.to ?? today.format("YYYY-MM-DD");
-  const fromDate = parsed.data.from ?? today.subtract(30, "day").format("YYYY-MM-DD");
+  const toDateStr = parsed.data.to ?? today.format("YYYY-MM-DD");
+  const fromDateStr = parsed.data.from ?? today.subtract(30, "day").format("YYYY-MM-DD");
 
-  const items = await listProductionBalances(fromDate, toDate);
+  const items = await listProductionBalances(fromDateStr, toDateStr);
   return reply(c, {
     status: "ok",
-    from: fromDate,
-    to: toDate,
+    from: dayjs(fromDateStr).toDate(),
+    to: dayjs(toDateStr).toDate(),
     items: items.map(mapResponse),
   });
 });

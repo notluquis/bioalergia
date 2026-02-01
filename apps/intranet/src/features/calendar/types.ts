@@ -23,7 +23,7 @@ export type CalendarSearchParams = z.infer<typeof calendarSearchSchema>;
 export interface CalendarAggregateByDate {
   amountExpected: number;
   amountPaid: number;
-  date: string;
+  date: Date;
   total: number;
 }
 
@@ -58,7 +58,7 @@ export interface CalendarAggregateByYear {
 }
 
 export interface CalendarAggregateByDateType {
-  date: string;
+  date: Date;
   eventType: null | string;
   total: number;
 }
@@ -83,18 +83,18 @@ export interface CalendarDaily {
 }
 
 export interface CalendarData {
-  createdAt: string;
+  createdAt: Date;
   eventCount: number;
   googleId: string;
   id: number;
   name: string;
-  updatedAt: string;
+  updatedAt: Date;
 }
 
 export interface CalendarDayEvents {
   amountExpected: number;
   amountPaid: number;
-  date: string;
+  date: Date;
   events: CalendarEventDetail[];
   total: number;
 }
@@ -123,21 +123,21 @@ export interface CalendarEventDetail {
   description: null | string;
   dosageValue?: null | number;
   dosageUnit?: null | string;
-  endDate: null | string;
-  endDateTime: null | string;
+  endDate: null | Date;
+  endDateTime: null | Date;
   endTimeZone: null | string;
-  eventCreatedAt: null | string;
-  eventDate: string;
-  eventDateTime: null | string;
+  eventCreatedAt: null | Date;
+  eventDate: Date;
+  eventDateTime: null | Date;
   eventId: string;
   eventType: null | string;
-  eventUpdatedAt: null | string;
+  eventUpdatedAt: null | Date;
   hangoutLink: null | string;
   isDomicilio?: boolean | null;
   location: null | string;
   rawEvent: unknown;
-  startDate: null | string;
-  startDateTime: null | string;
+  startDate: null | Date;
+  startDateTime: null | Date;
   startTimeZone: null | string;
   status: null | string;
   summary: null | string;
@@ -194,12 +194,12 @@ export interface CalendarSyncLog {
   };
   errorMessage: null | string;
   excluded: number;
-  fetchedAt?: null | string;
-  finishedAt?: null | string;
+  fetchedAt?: Date | null;
+  finishedAt?: Date | null;
   id: number;
   inserted: number;
   skipped: number;
-  startedAt: string;
+  startedAt: Date;
   status: "ERROR" | "RUNNING" | "SUCCESS";
   triggerLabel: null | string;
   triggerSource: string;
@@ -223,12 +223,12 @@ export interface CalendarUnclassifiedEvent {
   description: null | string;
   dosageValue: null | number;
   dosageUnit: null | string;
-  endDate: null | string;
-  endDateTime: null | string;
+  endDate: null | Date;
+  endDateTime: null | Date;
   eventId: string;
   eventType: null | string;
-  startDate: null | string;
-  startDateTime: null | string;
+  startDate: null | Date;
+  startDateTime: null | Date;
   status: null | string;
   summary: null | string;
   treatmentStage: null | string;

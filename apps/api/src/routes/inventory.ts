@@ -91,7 +91,7 @@ inventoryRoutes.get("/categories", cacheControl(300), async (c) => {
     data: categories.map((c) => ({
       id: c.id,
       name: c.name,
-      created_at: c.createdAt.toISOString(),
+      created_at: c.createdAt,
     })),
   });
 });
@@ -120,7 +120,7 @@ inventoryRoutes.post("/categories", async (c) => {
       data: {
         id: category.id,
         name: category.name,
-        created_at: category.createdAt.toISOString(),
+        created_at: category.createdAt,
       },
     },
     201,
@@ -160,8 +160,8 @@ inventoryRoutes.get("/items", async (c) => {
       name: i.name,
       description: i.description,
       current_stock: i.currentStock,
-      created_at: i.createdAt.toISOString(),
-      updated_at: i.updatedAt.toISOString(),
+      created_at: i.createdAt,
+      updated_at: i.updatedAt,
       category_name: i.category_name,
     })),
   });
@@ -191,14 +191,14 @@ inventoryRoutes.post("/items", async (c) => {
         id: item.id,
         categoryId: item.categoryId,
         name: item.name,
-        description: item.description,
-        currentStock: item.currentStock,
-        created_at: item.createdAt.toISOString(),
-        updated_at: item.updatedAt.toISOString(),
-        category_name: item.category?.name,
-      },
+      description: item.description,
+      currentStock: item.currentStock,
+      created_at: item.createdAt,
+      updated_at: item.updatedAt,
+      category_name: item.category?.name,
     },
-    201,
+  },
+  201,
   );
 });
 
@@ -227,8 +227,8 @@ inventoryRoutes.put("/items/:id", async (c) => {
       name: item.name,
       description: item.description,
       currentStock: item.currentStock,
-      created_at: item.createdAt.toISOString(),
-      updated_at: item.updatedAt.toISOString(),
+      created_at: item.createdAt,
+      updated_at: item.updatedAt,
       category_name: item.category?.name,
     },
   });

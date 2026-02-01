@@ -22,13 +22,13 @@ export interface SettlementTransaction {
   franchise: null | string;
   id: number;
   installments: null | number;
-  invoicingPeriod: null | string;
+  invoicingPeriod: null | Date;
   isReleased: boolean | null;
   issuerName: null | string;
   lastFourDigits: null | string;
   metadata: unknown;
   mkpFeeAmount: null | number;
-  moneyReleaseDate: null | string;
+  moneyReleaseDate: null | Date;
   operationTags: unknown;
   orderId: JsonId | null;
   orderMp: null | string;
@@ -47,7 +47,7 @@ export interface SettlementTransaction {
   saleDetail: null | string;
   sellerAmount: null | number;
   settlementCurrency: null | string;
-  settlementDate: null | string;
+  settlementDate: null | Date;
   settlementNetAmount: null | number;
   shipmentMode: null | string;
   shippingFeeAmount: null | number;
@@ -65,7 +65,7 @@ export interface SettlementTransaction {
   totalCouponAmount: null | number;
   transactionAmount: null | number;
   transactionCurrency: null | string;
-  transactionDate: string;
+  transactionDate: Date;
   transactionIntentId: null | string;
   transactionType: null | string;
   userId: null | string;

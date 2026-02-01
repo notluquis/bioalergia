@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
+import { formatISO } from "@/lib/dates";
 
 import type {
   CreateServicePayload,
@@ -17,8 +18,43 @@ const ServiceScheduleResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+type CreateServicePayloadRequest = Omit<CreateServicePayload, "emissionExactDate" | "startDate"> & {
+  emissionExactDate?: null | string;
+  startDate: string;
+};
+
+type RegenerateServicePayloadRequest = Omit<RegenerateServicePayload, "startDate"> & {
+  startDate?: string;
+};
+
+type ServicePaymentPayloadRequest = Omit<ServicePaymentPayload, "paidDate"> & { paidDate: string };
+
+function serializeServicePayload(payload: CreateServicePayload): CreateServicePayloadRequest {
+  return {
+    ...payload,
+    emissionExactDate: payload.emissionExactDate ? formatISO(payload.emissionExactDate) : null,
+    startDate: formatISO(payload.startDate),
+  };
+}
+
+function serializeRegeneratePayload(
+  payload: RegenerateServicePayload,
+): RegenerateServicePayloadRequest {
+  return {
+    ...payload,
+    startDate: payload.startDate ? formatISO(payload.startDate) : undefined,
+  };
+}
+
+function serializePaymentPayload(payload: ServicePaymentPayload): ServicePaymentPayloadRequest {
+  return {
+    ...payload,
+    paidDate: formatISO(payload.paidDate),
+  };
+}
+
 export async function createService(payload: CreateServicePayload): Promise<ServiceDetailResponse> {
-  return apiClient.post<ServiceDetailResponse>("/api/services", payload, {
+  return apiClient.post<ServiceDetailResponse>("/api/services", serializeServicePayload(payload), {
     responseSchema: ServiceDetailResponseSchema,
   });
 }
@@ -44,9 +80,13 @@ export async function regenerateServiceSchedules(
   publicId: string,
   payload: RegenerateServicePayload,
 ): Promise<ServiceDetailResponse> {
-  return apiClient.post<ServiceDetailResponse>(`/api/services/${publicId}/schedules`, payload, {
-    responseSchema: ServiceDetailResponseSchema,
-  });
+  return apiClient.post<ServiceDetailResponse>(
+    `/api/services/${publicId}/schedules`,
+    serializeRegeneratePayload(payload),
+    {
+      responseSchema: ServiceDetailResponseSchema,
+    },
+  );
 }
 
 export async function registerServicePayment(
@@ -55,7 +95,7 @@ export async function registerServicePayment(
 ): Promise<{ schedule: ServiceSchedule; status: "ok" }> {
   return apiClient.post<{ schedule: ServiceSchedule; status: "ok" }>(
     `/api/services/schedules/${scheduleId}/pay`,
-    payload,
+    serializePaymentPayload(payload),
     { responseSchema: ServiceScheduleResponseSchema },
   );
 }
@@ -74,7 +114,11 @@ export async function updateService(
   publicId: string,
   payload: CreateServicePayload,
 ): Promise<ServiceDetailResponse> {
-  return apiClient.put<ServiceDetailResponse>(`/api/services/${publicId}`, payload, {
-    responseSchema: ServiceDetailResponseSchema,
-  });
+  return apiClient.put<ServiceDetailResponse>(
+    `/api/services/${publicId}`,
+    serializeServicePayload(payload),
+    {
+      responseSchema: ServiceDetailResponseSchema,
+    },
+  );
 }

@@ -5,15 +5,18 @@ import type { BulkRow, TimesheetEntry, TimesheetSummaryRow } from "./types";
 export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow[] {
   const base = dayjs(`${month}-01`);
   const days = base.daysInMonth();
-  const entryMap = new Map(entries.map((entry) => [entry.work_date, entry]));
+  const entryMap = new Map(
+    entries.map((entry) => [dayjs(entry.work_date).format("YYYY-MM-DD"), entry]),
+  );
   const rows: BulkRow[] = [];
   for (let day = 1; day <= days; day += 1) {
-    const date = base.date(day).format("YYYY-MM-DD");
-    const entry = entryMap.get(date);
+    const dateValue = base.date(day).toDate();
+    const dateKey = dayjs(dateValue).format("YYYY-MM-DD");
+    const entry = entryMap.get(dateKey);
     const extraMinutes = entry?.overtime_minutes || 0;
     rows.push({
       comment: entry?.comment ?? "",
-      date,
+      date: dateValue,
       entrada: entry?.start_time ?? "",
       entryId: entry?.id ?? null,
       overtime: extraMinutes ? minutesToDuration(extraMinutes) : "",
@@ -66,9 +69,10 @@ export function computeStatus(row: BulkRow, dirty: boolean): string {
   return "No trabajado";
 }
 
-export function formatDateLabel(value: string): string {
+export function formatDateLabel(value: Date | string | null): string {
+  if (!value) return "—";
   const date = dayjs(value);
-  return date.isValid() ? date.format("DD-MM-YYYY") : value || "—";
+  return date.isValid() ? date.format("DD-MM-YYYY") : String(value);
 }
 
 export function formatExtraHours(row: TimesheetSummaryRow): string {

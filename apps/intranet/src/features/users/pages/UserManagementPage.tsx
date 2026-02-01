@@ -50,7 +50,7 @@ export default function UserManagementPage() {
       .filter((u) => !u.email?.includes("test") && !u.email?.includes("debug"))
       .map(
         (u: RawUser): User => ({
-          createdAt: u.createdAt?.toISOString() ?? new Date().toISOString(),
+          createdAt: u.createdAt ?? new Date(),
           email: u.email,
           hasPasskey: ((u as { passkeys?: unknown[] }).passkeys ?? []).length > 0,
           id: u.id,

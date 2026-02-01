@@ -35,7 +35,7 @@ export type PayInstallmentInput = z.infer<typeof payInstallmentSchema>;
 // Domain Types (ZenStack models + extensions)
 export interface PersonalCredit {
   bankName: string;
-  createdAt: string;
+  createdAt: Date;
   creditNumber: string;
   currency: string;
   description?: null | string;
@@ -44,27 +44,27 @@ export interface PersonalCredit {
   institution?: null | string;
   interestRate?: null | number;
   nextPaymentAmount?: null | number;
-  nextPaymentDate?: null | string;
+  nextPaymentDate?: null | Date;
   // Calculated/extended fields
   remainingAmount?: number;
-  startDate: string; // ISO Date
+  startDate: Date; // ISO Date
 
   status: "ACTIVE" | "PAID" | "REFINANCED";
   totalAmount: number; // Decimal in DB, number in JS (usually handled by serializer)
   totalInstallments: number;
-  updatedAt: string;
+  updatedAt: Date;
 }
 
 export interface PersonalCreditInstallment {
   amount: number;
   capitalAmount?: null | number;
   creditId: number;
-  dueDate: string;
+  dueDate: Date;
   id: number;
   installmentNumber: number;
   interestAmount?: null | number;
   otherCharges?: null | number;
   paidAmount?: null | number;
-  paidAt?: null | string;
+  paidAt?: null | Date;
   status: "PAID" | "PENDING";
 }

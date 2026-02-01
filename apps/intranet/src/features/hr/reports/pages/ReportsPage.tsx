@@ -42,7 +42,7 @@ const DATE_FORMAT = "YYYY-MM-DD";
 interface RawTimesheetEntry {
   employee_id: number;
   overtime_minutes: number;
-  work_date: string;
+  work_date: Date;
   worked_minutes: number;
 }
 
@@ -561,7 +561,7 @@ function processRawEntries(
     data.totalOvertimeMinutes += entry.overtime_minutes;
 
     // Daily
-    const dateKey = entry.work_date;
+    const dateKey = dayjs(entry.work_date).format(DATE_FORMAT);
     const currentDaily = data.dailyBreakdown[dateKey] ?? 0;
     Object.assign(data.dailyBreakdown, { [dateKey]: currentDaily + entry.worked_minutes });
 

@@ -1,5 +1,5 @@
+import dayjs from "dayjs";
 import Button from "@/components/ui/Button";
-import { today } from "@/lib/dates";
 
 import type { CreateServicePayload } from "../types";
 
@@ -15,7 +15,7 @@ interface ServiceTemplateGalleryProps {
   onApply: (template: ServiceTemplate) => void;
 }
 
-const TODAY = today();
+const TODAY = dayjs().toDate();
 
 export const SERVICE_TEMPLATES: ServiceTemplate[] = [
   {

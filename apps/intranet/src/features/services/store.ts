@@ -1,6 +1,5 @@
 import { Store } from "@tanstack/store";
-
-import { today } from "@/lib/dates";
+import dayjs from "dayjs";
 
 import type { ServiceSchedule, ServicesFilterState, ServiceTemplate } from "./types";
 
@@ -14,7 +13,7 @@ interface ServicesState {
   paymentForm: {
     note: string;
     paidAmount: string;
-    paidDate: string;
+    paidDate: Date;
     transactionId: string;
   };
   // Payment Modal
@@ -35,7 +34,7 @@ export const initialServicesState: ServicesState = {
   paymentForm: {
     note: "",
     paidAmount: "",
-    paidDate: today(),
+    paidDate: dayjs().toDate(),
     transactionId: "",
   },
   paymentSchedule: null,
@@ -80,7 +79,7 @@ export const servicesActions = {
           schedule.paid_amount == null
             ? String(schedule.effective_amount)
             : String(schedule.paid_amount),
-        paidDate: schedule.paid_date ?? today(),
+        paidDate: schedule.paid_date ?? dayjs().toDate(),
         transactionId: schedule.transaction?.id ? String(schedule.transaction.id) : "",
       },
       paymentSchedule: schedule,

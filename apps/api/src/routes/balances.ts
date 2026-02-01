@@ -23,8 +23,8 @@ app.get("/", async (c) => {
   const report = await getBalancesReport(parsed.data.from, parsed.data.to);
   return reply(c, {
     status: "ok",
-    from: parsed.data.from,
-    to: parsed.data.to,
+    from: new Date(parsed.data.from),
+    to: new Date(parsed.data.to),
     ...report,
   });
 });

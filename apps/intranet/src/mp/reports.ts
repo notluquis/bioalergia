@@ -6,7 +6,7 @@ export interface Movement {
   direction: "IN" | "NEUTRO" | "OUT";
   from?: string;
   referenceId?: string;
-  timestamp: string;
+  timestamp: Date;
   to?: string;
   transactionId?: string;
 }

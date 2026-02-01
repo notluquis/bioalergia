@@ -182,7 +182,8 @@ export default function EmailPreviewModal({
                 {/* Fecha de pago */}
                 <div className="rounded-lg border border-amber-500 bg-amber-100 p-3 text-center text-sm">
                   <strong className="text-amber-800">
-                    📅 Fecha de pago estimada: {summary.payDate}
+                    📅 Fecha de pago estimada:{" "}
+                    {summary.payDate ? dayjs(summary.payDate).format("DD-MM-YYYY") : "—"}
                   </strong>
                 </div>
 

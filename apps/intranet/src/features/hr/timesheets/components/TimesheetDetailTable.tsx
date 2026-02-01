@@ -1,4 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import dayjs from "dayjs";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import Button from "@/components/ui/Button";
@@ -52,7 +53,7 @@ export default function TimesheetDetailTable({
   const canEdit = can("update", "Timesheet");
 
   const [openOvertimeEditors, setOpenOvertimeEditors] = useState<Set<string>>(new Set());
-  const [commentPreview, setCommentPreview] = useState<null | { date: string; text: string }>(null);
+  const [commentPreview, setCommentPreview] = useState<null | { date: Date; text: string }>(null);
   const [notWorkedDays, setNotWorkedDays] = useState<Set<string>>(new Set());
 
   const columns = getTimesheetDetailColumns();
@@ -62,16 +63,18 @@ export default function TimesheetDetailTable({
     initialRows,
     notWorkedDays,
     onCloseOvertime: (date) => {
+      const dateKey = dayjs(date).format("YYYY-MM-DD");
       setOpenOvertimeEditors((prev) => {
         const next = new Set(prev);
-        next.delete(date);
+        next.delete(dateKey);
         return next;
       });
     },
     onOpenOvertime: (date) => {
+      const dateKey = dayjs(date).format("YYYY-MM-DD");
       setOpenOvertimeEditors((prev) => {
         const next = new Set(prev);
-        next.add(date);
+        next.add(dateKey);
         return next;
       });
     },

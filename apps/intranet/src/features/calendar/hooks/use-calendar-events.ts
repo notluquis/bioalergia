@@ -84,7 +84,7 @@ function useCalendarSync(queryClient: ReturnType<typeof useQueryClient>) {
   const [syncing, setSyncing] = useState(false);
   const [lastSyncInfo, setLastSyncInfo] = useState<null | {
     excluded: number;
-    fetchedAt: string;
+    fetchedAt: Date;
     inserted: number;
     logId?: number;
     skipped: number;
@@ -128,7 +128,7 @@ function useCalendarSync(queryClient: ReturnType<typeof useQueryClient>) {
           );
           setLastSyncInfo({
             excluded: currentLog.excluded,
-            fetchedAt: currentLog.fetchedAt ?? new Date().toISOString(),
+            fetchedAt: currentLog.fetchedAt ?? new Date(),
             inserted: currentLog.inserted,
             logId: currentLog.id,
             skipped: currentLog.skipped,
@@ -268,7 +268,7 @@ export function useCalendarEvents() {
     sync();
   };
 
-  const currentSelectedDate = search.date ?? effectiveApplied.from ?? today();
+  const currentSelectedDate = dayjs(search.date ?? effectiveApplied.from ?? today()).toDate();
   const availableCalendars = summary?.available.calendars ?? [];
   const availableCategories = summary?.available.categories ?? [];
 

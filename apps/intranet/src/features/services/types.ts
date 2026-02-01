@@ -9,7 +9,7 @@ export interface CreateServicePayload {
   dueDay?: null | number;
   emissionDay?: null | number;
   emissionEndDay?: null | number;
-  emissionExactDate?: null | string;
+  emissionExactDate?: null | Date;
   emissionMode?: ServiceEmissionMode;
   emissionStartDay?: null | number;
   frequency: ServiceFrequency;
@@ -23,7 +23,7 @@ export interface CreateServicePayload {
   ownership?: ServiceOwnership;
   recurrenceType?: ServiceRecurrenceType;
   serviceType: ServiceType;
-  startDate: string;
+  startDate: Date;
 }
 
 export interface RegenerateServicePayload {
@@ -32,7 +32,7 @@ export interface RegenerateServicePayload {
   emissionDay?: null | number;
   frequency?: ServiceFrequency;
   months?: number;
-  startDate?: string;
+  startDate?: Date;
 }
 
 export type ServiceAmountIndexation = "NONE" | "UF";
@@ -64,15 +64,15 @@ export type ServiceOwnership = "COMPANY" | "MIXED" | "OWNER" | "THIRD_PARTY";
 export interface ServicePaymentPayload {
   note?: null | string;
   paidAmount: number;
-  paidDate: string;
+  paidDate: Date;
   transactionId: number;
 }
 
 export type ServiceRecurrenceType = "ONE_OFF" | "RECURRING";
 
 export interface ServiceSchedule {
-  created_at: string;
-  due_date: string;
+  created_at: Date;
+  due_date: Date;
   effective_amount: number;
   expected_amount: number;
   id: number;
@@ -80,19 +80,19 @@ export interface ServiceSchedule {
   note: null | string;
   overdue_days: number;
   paid_amount: null | number;
-  paid_date: null | string;
-  period_end: string;
-  period_start: string;
+  paid_date: null | Date;
+  period_end: Date;
+  period_start: Date;
   service_id: number;
   status: "PAID" | "PARTIAL" | "PENDING" | "SKIPPED";
   transaction?: null | {
     amount: null | number;
     description: null | string;
     id: number;
-    timestamp: string;
+    timestamp: Date;
   };
   transaction_id: null | number;
-  updated_at: string;
+  updated_at: Date;
 }
 
 export interface ServicesFilterState {
@@ -111,13 +111,13 @@ export interface ServiceSummary {
   counterpart_account_type: null | string;
   counterpart_id: null | number;
   counterpart_name: null | string;
-  created_at: string;
+  created_at: Date;
   default_amount: number;
   detail: null | string;
   due_day: null | number;
   emission_day: null | number;
   emission_end_day: null | number;
-  emission_exact_date: null | string;
+  emission_exact_date: null | Date;
   emission_mode: ServiceEmissionMode;
   emission_start_day: null | number;
   frequency: ServiceFrequency;
@@ -135,11 +135,11 @@ export interface ServiceSummary {
   public_id: string;
   recurrence_type: ServiceRecurrenceType;
   service_type: ServiceType;
-  start_date: string;
+  start_date: Date;
   status: "ACTIVE" | "ARCHIVED" | "INACTIVE";
   total_expected: number;
   total_paid: number;
-  updated_at: string;
+  updated_at: Date;
 }
 
 export interface ServiceTemplate {

@@ -1,5 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
@@ -12,10 +13,10 @@ import { MPService, type MpReportType } from "@/services/mercadopago";
 
 const schema = z
   .object({
-    begin_date: z.string().min(1, "Fecha de inicio requerida"),
-    end_date: z.string().min(1, "Fecha de fin requerida"),
+    begin_date: z.coerce.date(),
+    end_date: z.coerce.date(),
   })
-  .refine((data) => new Date(data.begin_date) <= new Date(data.end_date), {
+  .refine((data) => data.begin_date.getTime() <= data.end_date.getTime(), {
     message: "La fecha de inicio debe ser anterior a la de fin",
     path: ["end_date"],
   });
@@ -56,8 +57,8 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
 
   const form = useForm({
     defaultValues: {
-      begin_date: "",
-      end_date: "",
+      begin_date: dayjs().subtract(7, "day").toDate(),
+      end_date: dayjs().toDate(),
     } as FormData,
     onSubmit: async ({ value }) => {
       console.log("[MP Generate] Form onSubmit triggered:", value);
@@ -102,10 +103,10 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
               label="Fecha Inicio"
               onBlur={field.handleBlur}
               onChange={(e) => {
-                field.handleChange(e.target.value);
+                field.handleChange(dayjs(e.target.value).toDate());
               }}
               type="date"
-              value={field.state.value}
+              value={dayjs(field.state.value).format("YYYY-MM-DD")}
             />
           )}
         </form.Field>
@@ -117,10 +118,10 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
               label="Fecha Fin"
               onBlur={field.handleBlur}
               onChange={(e) => {
-                field.handleChange(e.target.value);
+                field.handleChange(dayjs(e.target.value).toDate());
               }}
               type="date"
-              value={field.state.value}
+              value={dayjs(field.state.value).format("YYYY-MM-DD")}
             />
           )}
         </form.Field>

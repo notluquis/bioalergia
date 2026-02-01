@@ -33,7 +33,9 @@ function CalendarDailyPage() {
   }, [appliedFilters, filtersOpen]);
 
   // Get data for selected Day
-  const selectedDayEntry = daily?.days.find((d) => d.date === currentSelectedDate);
+  const selectedDayEntry = daily?.days.find(
+    (d) => dayjs(d.date).format("YYYY-MM-DD") === dayjs(currentSelectedDate).format("YYYY-MM-DD"),
+  );
 
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
 
@@ -42,11 +44,11 @@ function CalendarDailyPage() {
       {/* Header with Navigation */}
       <header className="space-y-2.5">
         <DayNavigation
-          onSelect={(newDate: string) => {
+          onSelect={(newDate: Date) => {
             void navigate({
               search: (prev) => ({
                 ...prev,
-                date: newDate,
+                date: dayjs(newDate).format("YYYY-MM-DD"),
                 // Optional: reset from/to to force hook to re-buffer if we implement that
               }),
             });

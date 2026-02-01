@@ -7,7 +7,7 @@ import "dayjs/locale/es";
 
 interface LastSyncInfo {
   excluded: number;
-  fetchedAt: string;
+  fetchedAt: Date;
   inserted: number;
   logId?: number;
   skipped: number;

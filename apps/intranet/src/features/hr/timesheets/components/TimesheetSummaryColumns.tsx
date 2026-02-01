@@ -85,8 +85,8 @@ export const getTimesheetSummaryColumns = (): ColumnDef<TimesheetSummaryRow>[] =
   {
     accessorKey: "payDate",
     cell: ({ getValue }) => {
-      const val = getValue() as null | string;
-      return val && dayjs(val).isValid() ? dayjs(val).format("DD-MM-YYYY") : val || "—";
+      const val = getValue() as null | Date;
+      return val && dayjs(val).isValid() ? dayjs(val).format("DD-MM-YYYY") : "—";
     },
     header: "Fecha pago",
   },

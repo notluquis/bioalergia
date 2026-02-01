@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
+import { formatISO } from "@/lib/dates";
 
 import type {
   CreateMonthlyExpensePayload,
@@ -25,9 +26,14 @@ const ExpenseStatsResponseSchema = z.object({
 });
 
 export async function createMonthlyExpense(payload: CreateMonthlyExpensePayload) {
-  return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>("/api/expenses", payload, {
-    responseSchema: ExpenseDetailResponseSchema,
-  });
+  const requestPayload = { ...payload, expenseDate: formatISO(payload.expenseDate) };
+  return apiClient.post<{ expense: MonthlyExpenseDetail; status: "ok" }>(
+    "/api/expenses",
+    requestPayload,
+    {
+      responseSchema: ExpenseDetailResponseSchema,
+    },
+  );
 }
 
 export async function fetchMonthlyExpenseDetail(
@@ -81,9 +87,10 @@ export async function unlinkMonthlyExpenseTransaction(publicId: string, transact
 }
 
 export async function updateMonthlyExpense(publicId: string, payload: CreateMonthlyExpensePayload) {
+  const requestPayload = { ...payload, expenseDate: formatISO(payload.expenseDate) };
   return apiClient.put<{ expense: MonthlyExpenseDetail; status: "ok" }>(
     `/api/expenses/${publicId}`,
-    payload,
+    requestPayload,
     { responseSchema: ExpenseDetailResponseSchema },
   );
 }

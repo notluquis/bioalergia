@@ -147,7 +147,10 @@ function MismatchSummary({ mismatchDays }: Readonly<{ mismatchDays: MismatchDay[
       </p>
       <ul className="text-foreground space-y-1">
         {mismatchDays.slice(0, 5).map((day) => (
-          <li className="flex flex-wrap items-center gap-2" key={day.date}>
+          <li
+            className="flex flex-wrap items-center gap-2"
+            key={dayjs(day.date).format("YYYY-MM-DD")}
+          >
             <span className="text-foreground font-medium">
               {dayjs(day.date).format("DD-MM-YYYY")}
             </span>
