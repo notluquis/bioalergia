@@ -11,6 +11,7 @@ import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { numberFormatter } from "@/lib/format";
+import { Route } from "@/routes/_authed/calendar/schedule";
 
 import "dayjs/locale/es";
 
@@ -23,6 +24,9 @@ dayjs.locale("es");
 const DATE_FORMAT = "YYYY-MM-DD";
 
 function CalendarSchedulePage() {
+  const navigate = Route.useNavigate();
+  const searchParams = Route.useSearch();
+
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
   const {
@@ -37,6 +41,16 @@ function CalendarSchedulePage() {
     summary,
     updateFilters,
   } = useCalendarEvents();
+
+  // URL -> Hook State Sync
+  useEffect(() => {
+    if (searchParams.from) updateFilters("from", searchParams.from);
+    if (searchParams.to) updateFilters("to", searchParams.to);
+    if (searchParams.calendarId) updateFilters("calendarIds", searchParams.calendarId);
+    if (searchParams.category) updateFilters("categories", searchParams.category);
+
+    applyFilters();
+  }, [searchParams, updateFilters, applyFilters]);
 
   // Separate state for which week is displayed (independent from data filter range)
   const getCurrentWeekStart = () => {
@@ -156,12 +170,22 @@ function CalendarSchedulePage() {
               layout="dropdown"
               loading={loading}
               onApply={() => {
-                applyFilters();
+                // UPDATE URL instead of direct apply
+                void navigate({
+                  search: {
+                    ...filters,
+                    calendarId: filters.calendarIds?.length ? filters.calendarIds : undefined,
+                    category: filters.categories?.length ? filters.categories : undefined,
+                  },
+                });
                 setFiltersOpen(false);
               }}
               onFilterChange={updateFilters}
               onOpenChange={setFiltersOpen}
-              onReset={resetFilters}
+              onReset={() => {
+                resetFilters();
+                void navigate({ search: {} });
+              }}
               showSearch
             />
           </div>

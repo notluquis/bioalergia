@@ -13,6 +13,7 @@ import { DayNavigation } from "@/features/calendar/components/DayNavigation";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { today } from "@/lib/dates";
+import { Route } from "@/routes/_authed/calendar/daily";
 
 import "dayjs/locale/es";
 
@@ -21,6 +22,9 @@ dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 
 function CalendarDailyPage() {
+  const navigate = Route.useNavigate();
+  const searchParams = Route.useSearch();
+
   const {
     appliedFilters,
     applyFilters,
@@ -32,6 +36,19 @@ function CalendarDailyPage() {
     updateFilters,
   } = useCalendarEvents();
 
+  // URL -> Hook State Sync
+  // When URL changes (from navigation or initial load), update the store and trigger fetch
+  useEffect(() => {
+    // 1. Update draft store (Mapping URL params to Store keys)
+    if (searchParams.from) updateFilters("from", searchParams.from);
+    if (searchParams.to) updateFilters("to", searchParams.to);
+    if (searchParams.calendarId) updateFilters("calendarIds", searchParams.calendarId);
+    if (searchParams.category) updateFilters("categories", searchParams.category);
+
+    // 2. Trigger fetch (internal hook state)
+    applyFilters();
+  }, [searchParams, updateFilters, applyFilters]);
+
   const [selectedDate, setSelectedDate] = useState(() => today());
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
@@ -39,6 +56,7 @@ function CalendarDailyPage() {
   // Load ±2 weeks around the selected date initially, extend when navigating outside
   useEffect(() => {
     const current = dayjs(selectedDate);
+    // Use appliedFilters (which should match URL/Store after sync)
     const currentFrom = dayjs(appliedFilters.from);
     const currentTo = dayjs(appliedFilters.to);
 
@@ -62,11 +80,20 @@ function CalendarDailyPage() {
 
       updateFilters("from", newFrom);
       updateFilters("to", newTo);
+      // NOTE: We rely on the Auto-apply effect (or URL sync if we updated URL)
+      // But here we are updating STORE.
+      // If we update Store, we should probably update URL too?
+      // Actually, this logic is for "Infinite Scroll" pattern of data loading.
+      // If we change 'from'/'to' here, it's implicit filtering.
+      // Ideally we should navigate, but that might change URL visibly.
+      // For now, let's trust the existing mechanism which updates filters then applies.
     }
   }, [selectedDate, appliedFilters.from, appliedFilters.to, updateFilters]);
 
   // Auto-apply filters when date range changes in the draft filters due to navigation
   useEffect(() => {
+    // This effect seems to handle the above logic's consequence:
+    // If updateFilters changed 'from'/'to', we apply them.
     if (filters.from !== appliedFilters.from || filters.to !== appliedFilters.to) {
       applyFilters();
     }
@@ -94,12 +121,23 @@ function CalendarDailyPage() {
               layout="dropdown"
               loading={loading}
               onApply={() => {
-                applyFilters();
+                // UPDATE URL instead of direct apply
+                void navigate({
+                  search: {
+                    ...filters,
+                    // Ensure arrays are preserved or undefined if empty
+                    calendarId: filters.calendarIds?.length ? filters.calendarIds : undefined,
+                    category: filters.categories?.length ? filters.categories : undefined,
+                  },
+                });
                 setFiltersOpen(false);
               }}
               onFilterChange={updateFilters}
               onOpenChange={setFiltersOpen}
-              onReset={resetFilters}
+              onReset={() => {
+                resetFilters(); // Resets store
+                void navigate({ search: {} }); // Resets URL
+              }}
               panelWidthClassName="w-[min(92vw,480px)]"
             />
           }

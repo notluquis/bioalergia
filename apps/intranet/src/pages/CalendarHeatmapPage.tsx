@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
 import { Filter } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import Button from "@/components/ui/Button";
@@ -14,6 +14,7 @@ import HeatmapMonth from "@/features/calendar/components/HeatmapMonth";
 import type { CalendarFilters } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
+import { Route } from "@/routes/_authed/calendar/heatmap";
 
 import "dayjs/locale/es";
 
@@ -43,153 +44,145 @@ function arraysEqual(a: string[], b: string[]): boolean {
 }
 
 function CalendarHeatmapPage() {
-  // React Compiler auto-memoizes function calls in useState initializer
-  const [filters, setFilters] = useState<HeatmapFilters>(() => createInitialFilters());
-  const [appliedFilters, setAppliedFilters] = useState<HeatmapFilters>(() =>
-    createInitialFilters(),
-  );
+  const navigate = Route.useNavigate();
+  const searchParams = Route.useSearch();
+
+  // Create defaults once (constant reference logic)
+  const defaults = createInitialFilters();
+
+  // 1. Source of Truth: URL Params with fallback to defaults
+  const activeFilters = {
+    categories: searchParams.categories ?? defaults.categories,
+    from: searchParams.from ?? defaults.from,
+    to: searchParams.to ?? defaults.to,
+  };
+
+  // 2. Local Form State (initialized from activeFilters)
+  const [filters, setFilters] = useState<HeatmapFilters>(activeFilters);
+
+  // Sync local state when URL params change (e.g. Browser Back/Forward)
+  useEffect(() => {
+    setFilters(activeFilters);
+  }, [searchParams]);
 
   const { t } = useTranslation();
-  // React Compiler auto-stabilizes helper functions
   const tc = (key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options);
 
   const { data: summary } = useSuspenseQuery({
     queryFn: () => {
       const apiFilters: CalendarFilters = {
-        ...appliedFilters,
+        ...activeFilters,
         maxDays: 366,
       };
       return fetchCalendarSummary(apiFilters);
     },
-    queryKey: ["calendar-heatmap", appliedFilters],
-    staleTime: 5 * 60 * 1000, // 5 minutes (balance between performance and freshness from webhooks)
-    gcTime: 15 * 60 * 1000, // Keep in memory for 15 minutes
-    // refetchOnWindowFocus: true (default) - important since data updates via Google webhooks
+    queryKey: ["calendar-heatmap", activeFilters],
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 
-  // NOTE: We no longer sync server filters back to UI to avoid overwriting user changes.
-  // The user's `filters` state is the source of truth for the form.
-  // `appliedFilters` drives the query, and changes when user clicks "Apply".
+  const isDirty = !filtersEqual(filters, activeFilters);
 
-  // React Compiler auto-memoizes comparison functions
-  const isDirty = !filtersEqual(filters, appliedFilters);
-
-  // KEEP useMemo: Heavy Map operation iterating over all events
-  const statsByDate = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        amountExpected: number;
-        amountPaid: number;
-        total: number;
-        typeCounts: Record<string, number>;
-      }
-    >();
-    const typeCountsByDate = new Map<string, Record<string, number>>();
-
-    // Then, merge with byDate data
-    for (const entry of summary?.aggregates?.byDate ?? []) {
-      // Server now returns dates as "YYYY-MM-DD" strings via TO_CHAR in SQL
-      const key = String(entry.date).slice(0, 10);
-      map.set(key, {
-        amountExpected: entry.amountExpected ?? 0,
-        amountPaid: entry.amountPaid ?? 0,
-        total: entry.total,
-        typeCounts: typeCountsByDate.get(key) ?? {},
-      });
+  // --- Logic: Stats By Date ---
+  const statsByDate = new Map<
+    string,
+    {
+      amountExpected: number;
+      amountPaid: number;
+      total: number;
+      typeCounts: Record<string, number>;
     }
-    return map;
-  }, [summary?.aggregates?.byDate]);
+  >();
+  const typeCountsByDate = new Map<string, Record<string, number>>();
 
-  // KEEP useMemo: Complex date range calculation with while loop
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: date calculation logic
-  const heatmapMonths = useMemo(() => {
-    const sourceFrom = summary?.filters.from || filters.from;
-    const sourceTo = summary?.filters.to || filters.to;
+  for (const entry of summary?.aggregates?.byDate ?? []) {
+    const key = String(entry.date).slice(0, 10);
+    statsByDate.set(key, {
+      amountExpected: entry.amountExpected ?? 0,
+      amountPaid: entry.amountPaid ?? 0,
+      total: entry.total,
+      typeCounts: typeCountsByDate.get(key) ?? {},
+    });
+  }
 
-    let start = sourceFrom
-      ? dayjs(sourceFrom).startOf("month")
-      : dayjs().startOf("month").subtract(1, "month");
-    let end = sourceTo
-      ? dayjs(sourceTo).startOf("month")
-      : dayjs().startOf("month").add(1, "month");
+  // --- Logic: Heatmap Months ---
+  // Using activeFilters (URL) as source of truth for display
+  const sourceFrom = summary?.filters.from || activeFilters.from;
+  const sourceTo = summary?.filters.to || activeFilters.to;
 
-    if (!start.isValid()) {
-      start = dayjs().startOf("month").subtract(1, "month");
-    }
-    if (!end.isValid() || end.isBefore(start)) {
-      end = start.add(2, "month");
-    }
+  let start = sourceFrom
+    ? dayjs(sourceFrom).startOf("month")
+    : dayjs().startOf("month").subtract(1, "month");
+  let end = sourceTo ? dayjs(sourceTo).startOf("month") : dayjs().startOf("month").add(1, "month");
 
-    const months: Dayjs[] = [];
-    let cursor = start.clone();
-    let guard = 0;
-    while (cursor.isBefore(end) || cursor.isSame(end)) {
-      months.push(cursor);
-      cursor = cursor.add(1, "month");
-      guard += 1;
-      if (guard > 18) break;
-    }
-    return months;
-  }, [summary?.filters.from, summary?.filters.to, filters.from, filters.to]);
+  if (!start.isValid()) {
+    start = dayjs().startOf("month").subtract(1, "month");
+  }
+  if (!end.isValid() || end.isBefore(start)) {
+    end = start.add(2, "month");
+  }
 
-  // KEEP useMemo: Set creation from mapped array
-  const heatmapMonthKeys = useMemo(
-    () => new Set(heatmapMonths.map((month) => month.format("YYYY-MM"))),
-    [heatmapMonths],
-  );
+  const heatmapMonths: Dayjs[] = [];
+  let cursor = start.clone();
+  let guard = 0;
+  while (cursor.isBefore(end) || cursor.isSame(end)) {
+    heatmapMonths.push(cursor);
+    cursor = cursor.add(1, "month");
+    guard += 1;
+    if (guard > 18) break;
+  }
 
-  // Use server-provided maxEventCount (or fallback to client-side calculation)
-  const heatmapMaxValue =
-    summary.totals.maxEventCount ??
-    (() => {
-      if (!summary) return 0;
-      let max = 0;
+  // --- Logic: Max Value ---
+  const heatmapMonthKeys = new Set(heatmapMonths.map((month) => month.format("YYYY-MM")));
+  let max = 0;
+  if (summary) {
+    if (summary.totals.maxEventCount !== undefined && summary.totals.maxEventCount !== null) {
+      max = summary.totals.maxEventCount;
+    } else {
       for (const entry of summary.aggregates.byDate) {
         const monthKey = String(entry.date).slice(0, 7);
         if (heatmapMonthKeys.has(monthKey)) {
           max = Math.max(max, entry.total);
         }
       }
-      return max;
-    })();
+    }
+  }
+  const heatmapMaxValue = max;
 
+  // --- Helpers ---
   const handleApply = () => {
-    setAppliedFilters(filters);
+    void navigate({
+      search: {
+        ...filters,
+        // Strip empty array to keep URL clean (optional, but good practice)
+        categories: filters.categories.length > 0 ? filters.categories : undefined,
+      },
+    });
   };
 
   const handleReset = () => {
-    const defaults = createInitialFilters();
-    setFilters(defaults);
-    setAppliedFilters(defaults);
+    void navigate({ search: {} });
   };
 
-  // With Suspense, we are "busy" only if a transition is happening, but here we just suspend.
   const busy = false;
   const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
   const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
 
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
-  // Calculate preview count based on pending filters
-  // Calculate preview count based on pending filters
-  // React Compiler auto-memoizes this calculation
+  // --- Logic: Preview Count ---
   let previewCount: number | undefined;
 
-  // Key check: do the dates match what we fetched?
-  // If yes, we can filter `summary.available`
-  if (summary && filters.from === appliedFilters.from && filters.to === appliedFilters.to) {
-    // If categories selected, sum up their available counts
+  // Key check: do the dates in form match what we fetched (active)?
+  // If yes, we can use fetched data to preview filtering
+  if (summary && filters.from === activeFilters.from && filters.to === activeFilters.to) {
     if (filters.categories.length > 0) {
       const selected = new Set(filters.categories);
       previewCount = summary.available.categories
         .filter((c) => c.category && selected.has(c.category))
         .reduce((sum, c) => sum + c.total, 0);
     } else {
-      // If no categories selected (Show All)
       const totalAvailable = summary.available.categories.reduce((sum, c) => sum + c.total, 0);
-
-      // If summary.totals.events says 0 but we have available counts, use the available sum
       if (summary.totals.events === 0 && totalAvailable > 0) {
         previewCount = totalAvailable;
       } else {
