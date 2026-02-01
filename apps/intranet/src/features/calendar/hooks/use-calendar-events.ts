@@ -2,7 +2,7 @@ import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/reac
 import { useSearch } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { today } from "@/lib/dates";
@@ -223,6 +223,30 @@ export function useCalendarEvents() {
   const queryClient = useQueryClient();
   const search = useSearch({ strict: false }) as CalendarSearchParams;
   const filters = useStore(calendarFilterStore, (state) => state);
+
+  // Sync store with URL on mount or URL change (if store is not dirty or on initial load)
+  useEffect(() => {
+    const effective = deriveEffectiveFilters(search, filters);
+    const draft = calendarFilterStore.state;
+
+    // Only update if changes are detected to avoid infinite loops or unnecessary renders
+    if (
+      effective.calendarIds?.join(",") !== draft.calendarIds?.join(",") ||
+      effective.categories?.join(",") !== draft.categories?.join(",") ||
+      effective.search !== draft.search ||
+      effective.from !== draft.from ||
+      effective.to !== draft.to
+    ) {
+      updateFilters({
+        calendarIds: effective.calendarIds,
+        categories: effective.categories,
+        search: effective.search,
+        from: effective.from,
+        to: effective.to,
+        maxDays: effective.maxDays,
+      });
+    }
+  }, [search, filters]);
 
   const computeDefaults = () =>
     computeDefaultFilters({
