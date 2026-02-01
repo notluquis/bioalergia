@@ -8,6 +8,13 @@ import checker from "vite-plugin-checker";
 import { VitePWA } from "vite-plugin-pwa";
 import { configDefaults } from "vitest/config";
 
+// Regex Constants (Top-level scope for performance)
+const REGEX_API_FALLBACK = /^\/api/;
+const REGEX_SHARE_TARGET_FALLBACK = /^\/share-target/;
+const REGEX_ASSETS_JS_CSS = /\.(?:js|css)$/;
+const REGEX_ASSETS_IMAGES = /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/;
+const REGEX_ASSETS_FONTS = /\.(?:woff|woff2|ttf|otf|eot)$/;
+
 // Bundle Analysis:
 // Use Vite's built-in analysis with: pnpm exec vite build --mode analyze
 // Or inspect build output size in terminal during build
@@ -45,7 +52,7 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         // No precaching - we use runtime caching only
         globPatterns: [],
-        navigateFallbackDenylist: [/^\/api/, /^\/share-target/],
+        navigateFallbackDenylist: [REGEX_API_FALLBACK, REGEX_SHARE_TARGET_FALLBACK],
         // Runtime caching strategies
         runtimeCaching: [
           {
@@ -61,7 +68,7 @@ export default defineConfig(({ mode }) => ({
           {
             // JS/CSS assets - NetworkFirst to ensure fresh after deploys
             // Falls back to cache when offline
-            urlPattern: /\.(?:js|css)$/,
+            urlPattern: REGEX_ASSETS_JS_CSS,
             handler: "NetworkFirst",
             options: {
               cacheName: "assets-cache",
@@ -70,7 +77,7 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
+            urlPattern: REGEX_ASSETS_IMAGES,
             handler: "CacheFirst",
             options: {
               cacheName: "images-cache",
@@ -79,7 +86,7 @@ export default defineConfig(({ mode }) => ({
           },
           {
             // Fonts - CacheFirst (rarely change)
-            urlPattern: /\.(?:woff|woff2|ttf|otf|eot)$/,
+            urlPattern: REGEX_ASSETS_FONTS,
             handler: "CacheFirst",
             options: {
               cacheName: "fonts-cache",
@@ -224,10 +231,6 @@ export default defineConfig(({ mode }) => ({
         secure: true,
       },
     },
-  },
-  experimental: {
-    // Enable Rolldown when stable (Rust-based bundler, faster than Rollup)
-    // rolldown: true,
   },
   test: {
     environment: "jsdom",
