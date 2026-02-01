@@ -1,4 +1,5 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import { lazy, Suspense } from "react";
 import { z } from "zod";
 
@@ -19,7 +20,19 @@ const heatmapSearchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_authed/calendar/heatmap")({
-  validateSearch: heatmapSearchSchema,
+  validateSearch: (search: Record<string, unknown>) => {
+    const parsed = heatmapSearchSchema.parse(search);
+    if (!parsed.from || !parsed.to) {
+      const startOfYear = dayjs().startOf("year").format("YYYY-MM-DD");
+      const endOfYear = dayjs().endOf("year").format("YYYY-MM-DD");
+      return {
+        ...parsed,
+        from: parsed.from ?? startOfYear,
+        to: parsed.to ?? endOfYear,
+      };
+    }
+    return parsed;
+  },
   staticData: {
     nav: { iconKey: "LayoutDashboard", label: "Mapa de Calor", order: 3, section: "Calendario" },
     permission: { action: "read", subject: "CalendarHeatmap" },

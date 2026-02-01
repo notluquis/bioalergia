@@ -1,4 +1,7 @@
 import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
+
+dayjs.extend(isoWeek);
 
 import type { CalendarFilters } from "../types";
 

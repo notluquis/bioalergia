@@ -3,7 +3,7 @@
  * Redesigned to match "Filtrar Vistas" spec using HeroUI v3
  */
 
-import { DatePicker } from "@heroui/date-picker";
+import { DateField, DateInputGroup } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { RotateCcw, Search } from "lucide-react";
 import type { FormEvent } from "react";
@@ -138,22 +138,30 @@ export function CalendarFilterPanel({
               Rango de Fechas
             </span>
             <div className="flex gap-2">
-              <DatePicker
+              <DateField
                 className="flex-1"
                 aria-label="Desde"
                 value={filters.from ? parseDate(filters.from) : undefined}
                 onChange={(d) => onFilterChange("from", d?.toString() ?? "")}
-                label="Desde"
-                labelPlacement="inside"
-              />
-              <DatePicker
+              >
+                <DateInputGroup>
+                  <DateInputGroup.Input>
+                    {(segment) => <DateInputGroup.Segment segment={segment} />}
+                  </DateInputGroup.Input>
+                </DateInputGroup>
+              </DateField>
+              <DateField
                 className="flex-1"
                 aria-label="Hasta"
                 value={filters.to ? parseDate(filters.to) : undefined}
                 onChange={(d) => onFilterChange("to", d?.toString() ?? "")}
-                label="Hasta"
-                labelPlacement="inside"
-              />
+              >
+                <DateInputGroup>
+                  <DateInputGroup.Input>
+                    {(segment) => <DateInputGroup.Segment segment={segment} />}
+                  </DateInputGroup.Input>
+                </DateInputGroup>
+              </DateField>
             </div>
           </div>
         )}

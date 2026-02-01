@@ -41,7 +41,13 @@ export const Route = createFileRoute("/_authed/calendar/classify")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  validateSearch: classifySearchSchema,
+  validateSearch: (search: Record<string, unknown>) => {
+    const parsed = classifySearchSchema.parse(search);
+    return {
+      ...parsed,
+      page: parsed.page ?? 0,
+    };
+  },
   loaderDeps: ({ search }) => search,
   component: () => (
     <Suspense fallback={<PageLoader />}>

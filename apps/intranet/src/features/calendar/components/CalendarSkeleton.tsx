@@ -1,29 +1,31 @@
+import { Skeleton } from "@heroui/react";
+
 interface CalendarSkeletonProps {
   days?: number;
 }
 
 export function CalendarSkeleton({ days = 3 }: Readonly<CalendarSkeletonProps>) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {Array.from({ length: days }).map((_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: skeleton items
-        <div className="animate-pulse space-y-2" key={i}>
+        <div className="space-y-3" key={i}>
           {/* Day Header Skeleton */}
-          <div className="bg-default-200 h-4 w-24 rounded"></div>
+          <Skeleton className="h-4 w-32 rounded-lg" />
 
           {/* Card Skeleton */}
-          <div className="border-default-200 bg-content1 rounded-2xl border p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="bg-default-200 h-5 w-48 rounded"></div>
+          <div className="border-default-200 bg-content1 rounded-2xl border p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <Skeleton className="h-6 w-64 rounded-lg" />
               <div className="flex gap-2">
-                <div className="bg-default-100 h-4 w-20 rounded"></div>
-                <div className="bg-default-100 h-4 w-20 rounded"></div>
+                <Skeleton className="h-5 w-24 rounded-lg" />
+                <Skeleton className="h-5 w-24 rounded-lg" />
               </div>
             </div>
             {/* Event rows */}
-            <div className="mt-4 space-y-3">
-              <div className="bg-default-100/50 h-24 rounded-xl"></div>
-              <div className="bg-default-100/50 h-24 rounded-xl"></div>
+            <div className="space-y-4">
+              <Skeleton className="h-28 rounded-2xl" />
+              <Skeleton className="h-28 rounded-2xl" />
             </div>
           </div>
         </div>

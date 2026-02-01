@@ -13,6 +13,7 @@ import ReactDOM from "react-dom/client";
 import { ZodError } from "zod";
 import { AuthListener } from "@/features/auth/components/AuthListener";
 import { AppFallback } from "./components/features/AppFallback";
+import Button from "./components/ui/Button";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
 import { GlobalError } from "./components/ui/GlobalError";
 import PageLoader from "./components/ui/PageLoader";
@@ -25,20 +26,23 @@ import { createLogger } from "./lib/logger";
 import { initPerformanceMonitoring } from "./lib/performance";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
+// Initialize global dayjs configuration
+import "@/lib/dayjs";
+
 import "./index.css";
 import "./i18n";
 
 // Create namespaced logger for chunk errors
 const log = createLogger("ChunkRecovery");
 
+// Regex for chunk load errors
+const CHUNK_ERROR_REGEX =
+  /Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i;
+
 // Global error handler for chunk load failures (runs before React mounts)
 globalThis.addEventListener("error", (event) => {
   const message = event.message;
-  if (
-    /Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(
-      message,
-    )
-  ) {
+  if (CHUNK_ERROR_REGEX.test(message)) {
     log.warn("Chunk load error detected. Awaiting user recovery action.");
     signalAppFallback("chunk");
   }
@@ -46,11 +50,7 @@ globalThis.addEventListener("error", (event) => {
 
 globalThis.addEventListener("unhandledrejection", (event) => {
   const message = event.reason?.message ?? String(event.reason);
-  if (
-    /Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed/i.test(
-      message,
-    )
-  ) {
+  if (CHUNK_ERROR_REGEX.test(message)) {
     event.preventDefault();
     log.warn("Chunk load rejection detected. Awaiting user recovery action.");
     signalAppFallback("chunk");
@@ -121,19 +121,29 @@ const router = createRouter({
   // Integrate with React Query for cache invalidation on navigation
   defaultPreloadStaleTime: 0,
   defaultErrorComponent: ({ error }) => {
-    // Log the error immediately when the component renders
+    // Log the error immediately
     React.useEffect(() => {
       logGlobalError(error, "Router");
     }, [error]);
 
-    // Or simpler: Render a basic fallback and let GlobalError above handle "Global" crashes.
-    // TanStack Router catches errors in loaders/components.
-    // If we define defaultErrorComponent, WE are responsible for the UI.
-    // Let's use a minimal wrapper that delegates to GlobalError logic if possible, or just re-throws?
-    // Re-throwing inside a component will trigger the parent ErrorBoundary (GlobalError).
-    // so:
-    // throw error;
-    // BUT we want to log it first.
+    return (
+      <div className="p-8 flex flex-col items-center justify-center min-h-[40vh] gap-4">
+        <div className="bg-danger/10 text-danger p-6 rounded-2xl max-w-lg text-center border border-danger-soft-hover">
+          <h2 className="text-xl font-bold mb-2">Error de Navegación</h2>
+          <p className="text-sm opacity-90">
+            {error instanceof Error ? error.message : "Un error inesperado ha ocurrido."}
+          </p>
+          <Button
+            className="mt-6"
+            color="danger"
+            variant="ghost"
+            onPress={() => window.location.reload()}
+          >
+            Recargar Página
+          </Button>
+        </div>
+      </div>
+    );
   },
   routeTree,
 });

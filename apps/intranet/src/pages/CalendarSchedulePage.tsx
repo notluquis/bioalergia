@@ -1,8 +1,10 @@
-import { Button, ButtonGroup, Chip } from "@heroui/react";
+import { ButtonGroup, Chip, Surface } from "@heroui/react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Button from "@/components/ui/Button";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
+import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
 import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { useDisclosure } from "@/hooks/use-disclosure";
@@ -91,18 +93,29 @@ function CalendarSchedulePage() {
           {/* Left: Week Navigation */}
           <div className="flex flex-wrap items-center gap-3">
             <ButtonGroup size="sm" variant="tertiary">
-              <Button aria-label="Semana anterior" isIconOnly onPress={goToPreviousWeek}>
+              <Button
+                aria-label="Semana anterior"
+                isIconOnly
+                onPress={goToPreviousWeek}
+                variant="ghost"
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
                 className="text-[11px] font-medium uppercase tracking-wide"
                 isDisabled={isCurrentWeek}
                 onPress={goToThisWeek}
+                variant="tertiary"
               >
                 <span className="hidden sm:inline">Semana actual</span>
                 <span className="sm:hidden">Actual</span>
               </Button>
-              <Button aria-label="Semana siguiente" isIconOnly onPress={goToNextWeek}>
+              <Button
+                aria-label="Semana siguiente"
+                isIconOnly
+                onPress={goToNextWeek}
+                variant="ghost"
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </ButtonGroup>
@@ -172,13 +185,22 @@ function CalendarSchedulePage() {
       </header>
 
       {/* Calendar - Main Content */}
-      <div className="mt-3">
-        <ScheduleCalendar
-          events={displayedWeekEvents}
-          loading={loading}
-          weekStart={currentWeekStartStr}
-        />
-      </div>
+      <Surface
+        className="mt-3 overflow-hidden rounded-3xl border border-default-100 shadow-sm"
+        variant="default"
+      >
+        {loading && !displayedWeekEvents.length ? (
+          <div className="p-6">
+            <CalendarSkeleton days={6} />
+          </div>
+        ) : (
+          <ScheduleCalendar
+            events={displayedWeekEvents}
+            loading={loading}
+            weekStart={currentWeekStartStr}
+          />
+        )}
+      </Surface>
     </section>
   );
 }
