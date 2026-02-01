@@ -18,7 +18,8 @@ export const Route = createFileRoute("/_authed/services/$id/edit")({
     return await queryClient.ensureQueryData(serviceQueries.detail(id));
   },
   staticData: {
-    breadcrumb: (data: { name?: string }) => `Editar ${data?.name || "Servicio"}`,
+    // biome-ignore lint/suspicious/noExplicitAny: Router static data compatibility
+    breadcrumb: (data: any) => `Editar ${data?.name || "Servicio"}`,
   },
   component: () => (
     <Suspense fallback={<PageLoader />}>

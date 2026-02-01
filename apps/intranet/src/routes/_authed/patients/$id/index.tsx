@@ -104,7 +104,8 @@ interface Patient {
 export const Route = createFileRoute("/_authed/patients/$id/")({
   staticData: {
     permission: { action: "read", subject: "Patient" },
-    breadcrumb: (data: Patient) =>
+    // biome-ignore lint/suspicious/noExplicitAny: Router static data compatibility
+    breadcrumb: (data: any) =>
       `${data?.person?.names} ${data?.person?.fatherName}`.trim() || "Paciente",
   },
   loader: async ({ context: { queryClient }, params: { id } }) => {

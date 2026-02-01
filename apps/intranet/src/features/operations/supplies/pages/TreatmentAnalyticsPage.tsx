@@ -75,6 +75,7 @@ const getLastMonth = () => ({
 
 // --- Main Page Component ---
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Component logic is centralized for analytics
 export default function TreatmentAnalyticsPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const searchParams = Route.useSearch();
@@ -92,9 +93,9 @@ export default function TreatmentAnalyticsPage() {
   console.group("📊 Analytics Page Filters Debug");
   console.log("1. Raw Search Params:", searchParams);
   console.log("2. Active Filters:", filters);
-  // biome-ignore lint/suspicious/noExplicitAny: Debugging
   console.log(
     "3. API Query Config:",
+    // biome-ignore lint/suspicious/noExplicitAny: Debugging
     (calendarQueries.treatmentAnalytics(filters) as any).queryKey,
   );
   console.groupEnd();
