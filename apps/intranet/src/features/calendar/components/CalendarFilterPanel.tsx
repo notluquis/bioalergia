@@ -97,8 +97,9 @@ export function CalendarFilterPanel({
               }
             }}
             classNames={{
-              trigger: "bg-default-100 hover:bg-default-200 border border-default-200 min-h-[40px]",
-              popoverContent: "bg-content1 border border-default-200",
+              trigger:
+                "bg-default-100/50 hover:bg-default-100 border border-default-200 min-h-[44px] rounded-xl",
+              popoverContent: "bg-content1 border border-default-200 shadow-xl",
             }}
           >
             {availableCategories.map((entry) => {
@@ -125,8 +126,8 @@ export function CalendarFilterPanel({
               value={filters.search ?? ""}
               onChange={(e) => onFilterChange("search", e.target.value)}
               startContent={<Search className="text-default-400" size={18} />}
-              containerClassName="h-[40px]"
-              className="bg-default-100 hover:bg-default-200 border-default-200"
+              containerClassName="h-[44px] rounded-xl"
+              className="bg-default-100/50 hover:bg-default-100 border-default-200"
             />
           </div>
         )}
@@ -173,7 +174,7 @@ export function CalendarFilterPanel({
             variant="ghost"
             size="sm"
             onClick={onReset}
-            className="text-default-500 hover:text-foreground px-3 font-medium h-9"
+            className="text-default-400 hover:text-foreground px-3 font-medium h-10 rounded-xl"
             startContent={<RotateCcw size={14} />}
           >
             Limpiar
@@ -181,8 +182,8 @@ export function CalendarFilterPanel({
 
           <Button
             type="submit"
-            color="primary"
-            className="font-medium bg-blue-600 text-white h-9 px-4 rounded-lg text-sm"
+            variant="primary"
+            className="font-semibold h-10 px-6 rounded-xl shadow-md shadow-primary/20"
           >
             {applyLabel}
           </Button>

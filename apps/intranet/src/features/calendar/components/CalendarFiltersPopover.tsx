@@ -20,9 +20,14 @@ export function CalendarFiltersPopover({
   return (
     <Popover isOpen={isOpen} onOpenChange={onOpenChange}>
       <Popover.Trigger>
-        <Button className="gap-1.5" size="sm" variant={isOpen ? "secondary" : "ghost"}>
+        <Button
+          className="gap-2"
+          size="sm"
+          variant={isOpen ? "secondary" : "ghost"}
+          color={isOpen ? "primary" : "default"}
+        >
           <Filter className="h-4 w-4" />
-          <span className="hidden sm:inline">{isOpen ? "Cerrar" : "Filtros"}</span>
+          <span className="hidden sm:inline">Filtros</span>
         </Button>
       </Popover.Trigger>
       <Popover.Content className="w-80 p-0" offset={8}>

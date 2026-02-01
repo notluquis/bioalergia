@@ -1,9 +1,10 @@
-import { Button, ButtonGroup } from "@heroui/react";
+import { ButtonGroup } from "@heroui/react";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo } from "react";
 
+import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 interface DayNavigationProps {
@@ -90,11 +91,14 @@ export function DayNavigation({
         {/* Right side: optional slot + navigation buttons */}
         <div className="flex items-center gap-2">
           {rightSlot}
-          <ButtonGroup size="sm" variant="tertiary">
+          <ButtonGroup className="shadow-sm" size="sm" variant="tertiary">
             <Button aria-label="Día anterior" isIconOnly onPress={handlePrev}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button className="text-xs font-semibold uppercase" onPress={handleToday}>
+            <Button
+              className="text-[11px] font-semibold uppercase tracking-wide"
+              onPress={handleToday}
+            >
               Hoy
             </Button>
             <Button aria-label="Día siguiente" isIconOnly onPress={handleNext}>

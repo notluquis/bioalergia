@@ -27,7 +27,7 @@ export interface ButtonProps
 }
 
 const mapVariantToHero = (
-  variant: ButtonProps["variant"] = "primary",
+  variant: ButtonProps["variant"],
 ): {
   variant: ComponentProps<typeof HeroButton>["variant"];
   className?: string;
@@ -61,16 +61,7 @@ const mapSizeToHero = (size: string | undefined): "sm" | "md" | "lg" | undefined
 
 const FinalButton = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    {
-      className,
-      variant = "primary",
-      size = "md",
-      fullWidth,
-      isLoading,
-      isDisabled,
-      children,
-      ...props
-    },
+    { className, variant, size = "md", fullWidth, isLoading, isDisabled, children, ...props },
     ref,
   ) => {
     const { variant: heroVariant, className: variantClassName } = mapVariantToHero(variant);
