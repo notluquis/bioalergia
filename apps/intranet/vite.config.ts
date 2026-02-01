@@ -1,7 +1,7 @@
 import { fileURLToPath, URL } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import checker from "vite-plugin-checker";
@@ -15,7 +15,7 @@ import { configDefaults } from "vitest/config";
 export default defineConfig(({ mode }) => ({
   plugins: [
     // TanStack Router - File-Based Routing (MUST be first)
-    TanStackRouterVite({
+    tanstackRouter({
       target: "react",
       autoCodeSplitting: true,
       routesDirectory: "./src/routes",
@@ -209,7 +209,7 @@ export default defineConfig(({ mode }) => ({
       "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
       "~": fileURLToPath(new URL(".", import.meta.url)),
 
-      "@finanzas/db": fileURLToPath(new URL("../../packages/db/dist/client", import.meta.url)),
+      // @finanzas/db alias removed to allow subpath exports (schema-lite) to work correctly
     },
   },
   server: {

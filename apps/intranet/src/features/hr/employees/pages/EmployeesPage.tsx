@@ -1,4 +1,4 @@
-import { schemaLite } from "@finanzas/db";
+import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { Switch } from "@heroui/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { PaginationState } from "@tanstack/react-table";

@@ -1,4 +1,4 @@
-import { schemaLite } from "@finanzas/db";
+import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";

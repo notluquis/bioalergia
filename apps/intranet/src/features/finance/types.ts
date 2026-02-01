@@ -51,7 +51,7 @@ export interface Transaction {
 // Financial Dashboard Types (Frontend-First)
 // ==========================================
 
-import type { Event } from "@finanzas/db";
+import type { Event } from "@finanzas/db/models";
 
 export type FinancialPeriod = "day" | "week" | "month";
 

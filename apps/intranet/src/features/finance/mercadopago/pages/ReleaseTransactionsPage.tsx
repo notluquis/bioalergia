@@ -1,4 +1,4 @@
-import { schemaLite } from "@finanzas/db";
+import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { Alert, Button, Card, Input, Label, TextField } from "@heroui/react";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";

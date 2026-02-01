@@ -1,5 +1,5 @@
-import type { Event } from "@finanzas/db";
-import { schemaLite } from "@finanzas/db";
+import type { Event } from "@finanzas/db/models";
+import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { Alert, Card, Chip, Input, Spinner } from "@heroui/react";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";

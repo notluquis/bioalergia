@@ -1,5 +1,5 @@
 import type { Event } from "@finanzas/db";
-import { schemaLite } from "@finanzas/db";
+import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 
 import { useMemo } from "react";

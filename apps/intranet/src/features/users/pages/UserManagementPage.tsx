@@ -1,4 +1,4 @@
-import { schemaLite } from "@finanzas/db";
+import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";

@@ -1,4 +1,4 @@
-import { schemaLite } from "@finanzas/db";
+import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Lock, PlusCircle } from "lucide-react";
