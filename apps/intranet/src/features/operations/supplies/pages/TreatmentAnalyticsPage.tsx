@@ -85,6 +85,7 @@ export default function TreatmentAnalyticsPage() {
   const filters: TreatmentAnalyticsFilters = {
     from: searchParams.from || getThisMonth().from,
     to: searchParams.to || getThisMonth().to,
+    calendarIds: searchParams.calendarId,
   };
 
   const hasValidDates = !!filters.from && !!filters.to;
