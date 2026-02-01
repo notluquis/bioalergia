@@ -4,7 +4,6 @@ import isoWeek from "dayjs/plugin/isoWeek";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
@@ -25,12 +24,11 @@ const DATE_FORMAT = "YYYY-MM-DD";
 
 function CalendarSchedulePage() {
   const navigate = Route.useNavigate();
+  const search = Route.useSearch();
 
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
   const {
-    appliedFilters,
-    applyFilters,
     availableCategories,
     daily,
     filters,
@@ -41,17 +39,20 @@ function CalendarSchedulePage() {
     updateFilters,
   } = useCalendarEvents();
 
-  // Separate state for which week is displayed (independent from data filter range)
+  // The displayed week start is derived from the URL's 'from' filter.
+  // If not present, we fall back to the current week's Monday.
   const getCurrentWeekStart = () => {
     const today = dayjs();
     const base = today.day() === 0 ? today.add(1, "day") : today;
     return base.isoWeekday(1).format(DATE_FORMAT);
   };
 
-  const [displayedWeekStart, setDisplayedWeekStart] = useState(getCurrentWeekStart);
+  const displayedWeekStart = search.from ?? getCurrentWeekStart();
+  const currentDisplayed = dayjs(displayedWeekStart);
 
   const allEvents = daily?.days.flatMap((day) => day.events) ?? [];
   const displayedWeekEnd = dayjs(displayedWeekStart).add(6, "day").endOf("day");
+
   const displayedWeekEvents = allEvents.filter((event) => {
     const start = event.startDateTime ?? event.startDate;
     if (!start) return false;
@@ -63,50 +64,38 @@ function CalendarSchedulePage() {
   });
 
   // Navigation helpers
-  const currentDisplayed = dayjs(displayedWeekStart);
   const rangeLabel = currentDisplayed.isValid()
     ? `${currentDisplayed.format("D MMM")} - ${currentDisplayed.add(5, "day").format("D MMM YYYY")}`
     : "Seleccionar rango";
+
   const isCurrentWeek = currentDisplayed.isSame(dayjs(getCurrentWeekStart()), "day");
   const actualWeekStart = dayjs().isoWeekday(1);
   const isNextWeek = currentDisplayed.isSame(actualWeekStart.add(1, "week"), "day");
 
+  const updateWeek = (newStart: string) => {
+    const start = dayjs(newStart);
+    const end = start.add(6, "day");
+
+    void navigate({
+      search: {
+        ...search,
+        from: start.format(DATE_FORMAT),
+        to: end.format(DATE_FORMAT),
+      },
+    });
+  };
+
   const goToPreviousWeek = () => {
-    setDisplayedWeekStart(currentDisplayed.subtract(1, "week").format(DATE_FORMAT));
+    updateWeek(currentDisplayed.subtract(1, "week").format(DATE_FORMAT));
   };
 
   const goToNextWeek = () => {
-    setDisplayedWeekStart(currentDisplayed.add(1, "week").format(DATE_FORMAT));
+    updateWeek(currentDisplayed.add(1, "week").format(DATE_FORMAT));
   };
 
   const goToThisWeek = () => {
-    setDisplayedWeekStart(getCurrentWeekStart());
+    updateWeek(getCurrentWeekStart());
   };
-
-  // On-demand loading: extend date range when navigating to weeks outside current range
-  useEffect(() => {
-    const weekStart = dayjs(displayedWeekStart);
-    const weekEnd = weekStart.add(6, "day");
-    const currentFrom = dayjs(appliedFilters.from);
-    const currentTo = dayjs(appliedFilters.to);
-
-    // Check if displayed week is outside currently loaded range
-    const needsExtension = weekStart.isBefore(currentFrom) || weekEnd.isAfter(currentTo);
-
-    if (needsExtension) {
-      // Extend range to include displayed week with buffer
-      const newFrom = weekStart.isBefore(currentFrom)
-        ? weekStart.subtract(1, "week").format(DATE_FORMAT)
-        : appliedFilters.from;
-      const newTo = weekEnd.isAfter(currentTo)
-        ? weekEnd.add(2, "week").format(DATE_FORMAT)
-        : appliedFilters.to;
-
-      updateFilters("from", newFrom);
-      updateFilters("to", newTo);
-      applyFilters();
-    }
-  }, [displayedWeekStart, appliedFilters.from, appliedFilters.to, updateFilters, applyFilters]);
 
   return (
     <section className="space-y-4">
@@ -159,12 +148,12 @@ function CalendarSchedulePage() {
               layout="dropdown"
               loading={loading}
               onApply={() => {
-                // UPDATE URL instead of direct apply
                 void navigate({
                   search: {
-                    ...filters,
+                    ...search,
                     calendarId: filters.calendarIds?.length ? filters.calendarIds : undefined,
                     category: filters.categories?.length ? filters.categories : undefined,
+                    search: filters.search || undefined,
                   },
                 });
                 setFiltersOpen(false);
@@ -173,7 +162,12 @@ function CalendarSchedulePage() {
               onOpenChange={setFiltersOpen}
               onReset={() => {
                 resetFilters();
-                void navigate({ search: {} });
+                void navigate({
+                  search: {
+                    from: search.from,
+                    to: search.to,
+                  },
+                });
               }}
               showSearch
             />
