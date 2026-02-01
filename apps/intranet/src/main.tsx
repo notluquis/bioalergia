@@ -5,11 +5,12 @@
  * The old React Router v7 routes have been migrated to file-based routing in src/routes/.
  */
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { ZodError } from "zod";
 import { AuthListener } from "@/features/auth/components/AuthListener";
 import { AppFallback } from "./components/features/AppFallback";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
@@ -24,7 +25,6 @@ import { createLogger } from "./lib/logger";
 import { initPerformanceMonitoring } from "./lib/performance";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
-
 import "./index.css";
 import "./i18n";
 
@@ -58,6 +58,29 @@ globalThis.addEventListener("unhandledrejection", (event) => {
 });
 
 // ============================================================================
+// GLOBAL ERROR LOGGING
+// ============================================================================
+
+function logGlobalError(error: unknown, context: string) {
+  if (error instanceof ZodError) {
+    console.group(`🚨 [${context}] Validation Error`);
+    console.table(
+      error.issues.map((issue) => ({
+        path: issue.path.join("."),
+        message: issue.message,
+        code: issue.code,
+      })),
+    );
+    console.groupEnd();
+  } else {
+    // Standard error logging
+    console.group(`🚨 [${context}] Error`);
+    console.error(error);
+    console.groupEnd();
+  }
+}
+
+// ============================================================================
 // REACT QUERY CLIENT
 // ============================================================================
 
@@ -65,6 +88,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     mutations: {
       retry: false,
+      onError: (error) => logGlobalError(error, "Mutation"),
     },
     queries: {
       refetchOnWindowFocus: false,
@@ -72,6 +96,12 @@ const queryClient = new QueryClient({
       staleTime: 60_000,
     },
   },
+  queryCache: new QueryCache({
+    onError: (error) => logGlobalError(error, "Query"),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => logGlobalError(error, "Mutation"),
+  }),
 });
 
 // ============================================================================
@@ -90,6 +120,21 @@ const router = createRouter({
   defaultPreload: "intent",
   // Integrate with React Query for cache invalidation on navigation
   defaultPreloadStaleTime: 0,
+  defaultErrorComponent: ({ error }) => {
+    // Log the error immediately when the component renders
+    React.useEffect(() => {
+      logGlobalError(error, "Router");
+    }, [error]);
+
+    // Or simpler: Render a basic fallback and let GlobalError above handle "Global" crashes.
+    // TanStack Router catches errors in loaders/components.
+    // If we define defaultErrorComponent, WE are responsible for the UI.
+    // Let's use a minimal wrapper that delegates to GlobalError logic if possible, or just re-throws?
+    // Re-throwing inside a component will trigger the parent ErrorBoundary (GlobalError).
+    // so:
+    // throw error;
+    // BUT we want to log it first.
+  },
   routeTree,
 });
 

@@ -224,9 +224,6 @@ importers:
       '@tanstack/store':
         specifier: ^0.8.0
         version: 0.8.0
-      '@tanstack/zod-adapter':
-        specifier: ^1.157.18
-        version: 1.157.18(@tanstack/react-router@1.157.18(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(zod@4.3.6)
       '@zenstackhq/server':
         specifier: 3.3.0
         version: 3.3.0(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.11.7)(mysql2@3.16.2)(pg@8.18.0)(zod@4.3.6)
@@ -3367,13 +3364,6 @@ packages:
   '@tanstack/virtual-file-routes@1.154.7':
     resolution: {integrity: sha512-cHHDnewHozgjpI+MIVp9tcib6lYEQK5MyUr0ChHpHFGBl8Xei55rohFK0I0ve/GKoHeioaK42Smd8OixPp6CTg==}
     engines: {node: '>=12'}
-
-  '@tanstack/zod-adapter@1.157.18':
-    resolution: {integrity: sha512-QrwRC6OUHTUFnp9zaBWrpQRTmueJK+3sRITJPOgyjzd2zPL8k5LXQQ0sNwx+oonOtfkj4afOkmUaeuyJi4KlFw==}
-    engines: {node: '>=12'}
-    peerDependencies:
-      '@tanstack/react-router': '>=1.43.2'
-      zod: ^3.23.8
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -8677,9 +8667,9 @@ snapshots:
   '@finanzas/db@file:packages/db(@tanstack/react-query@5.90.20(react@19.2.4))(better-sqlite3@12.6.2)(express@5.2.1)(mysql2@3.16.2)':
     dependencies:
       '@zenstackhq/language': 3.3.1
-      '@zenstackhq/orm': 3.3.0(better-sqlite3@12.6.2)(mysql2@3.16.2)(pg@8.18.0)(zod@4.3.6)
+      '@zenstackhq/orm': 3.3.1(better-sqlite3@12.6.2)(mysql2@3.16.2)(pg@8.18.0)(zod@4.3.6)
       '@zenstackhq/plugin-policy': 3.3.1(better-sqlite3@12.6.2)(kysely@0.28.11)(mysql2@3.16.2)(pg@8.18.0)(zod@4.3.6)
-      '@zenstackhq/server': 3.3.0(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.11.7)(mysql2@3.16.2)(pg@8.18.0)(zod@4.3.6)
+      '@zenstackhq/server': 3.3.1(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.11.7)(mysql2@3.16.2)(pg@8.18.0)(zod@4.3.6)
       '@zenstackhq/tanstack-query': 3.3.1(@tanstack/react-query@5.90.20(react@19.2.4))
       hono: 4.11.7
       kysely: 0.28.11
@@ -11000,11 +10990,6 @@ snapshots:
   '@tanstack/virtual-core@3.13.18': {}
 
   '@tanstack/virtual-file-routes@1.154.7': {}
-
-  '@tanstack/zod-adapter@1.157.18(@tanstack/react-router@1.157.18(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(zod@4.3.6)':
-    dependencies:
-      '@tanstack/react-router': 1.157.18(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      zod: 4.3.6
 
   '@testing-library/dom@10.4.1':
     dependencies:
