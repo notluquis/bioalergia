@@ -11,6 +11,24 @@ interface ErrorData {
   message?: string;
 }
 
+function formatZodIssues(issues: z.ZodIssue[]): string {
+  return issues
+    .map((issue) => {
+      const path = issue.path.length ? issue.path.join(".") : "root";
+      if (issue.code === "invalid_type") {
+        const expected =
+          "expected" in issue && typeof issue.expected === "string" ? issue.expected : undefined;
+        const received =
+          "received" in issue && typeof issue.received === "string" ? issue.received : undefined;
+        if (expected && received) {
+          return `${path}: expected ${expected}, received ${received}`;
+        }
+      }
+      return issue.message ? `${path}: ${issue.message}` : `${path}: ${issue.code}`;
+    })
+    .join(" | ");
+}
+
 export class ApiError extends Error {
   details?: unknown;
   status: number;
@@ -157,7 +175,18 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
     if (options?.responseSchema) {
       const parsed = options.responseSchema.safeParse(data);
       if (!parsed.success) {
-        throw new ApiError("Respuesta inválida del servidor", 500, parsed.error.issues);
+        const details = parsed.error.issues;
+        const pretty = z.prettifyError(parsed.error);
+        const issueSummary = formatZodIssues(details);
+        throw new ApiError(
+          pretty
+            ? `Respuesta inválida del servidor:\n${pretty}`
+            : issueSummary
+              ? `Respuesta inválida del servidor: ${issueSummary}`
+              : "Respuesta inválida del servidor",
+          500,
+          details,
+        );
       }
       return parsed.data as T;
     }
