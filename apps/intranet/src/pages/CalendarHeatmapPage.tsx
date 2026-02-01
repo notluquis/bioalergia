@@ -3,9 +3,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import dayjs, { type Dayjs } from "dayjs";
 import { Filter } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { fetchCalendarSummary } from "@/features/calendar/api";
@@ -15,7 +14,6 @@ import type { CalendarFilters } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { Route } from "@/routes/_authed/calendar/heatmap";
-
 import "dayjs/locale/es";
 
 dayjs.locale("es");
@@ -38,158 +36,104 @@ const createInitialFilters = (): HeatmapFilters => {
 
 function arraysEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
-  const sortedA = a.toSorted((x, y) => x.localeCompare(y));
-  const sortedB = b.toSorted((x, y) => x.localeCompare(y));
+  const sortedA = [...a].sort((x, y) => x.localeCompare(y));
+  const sortedB = [...b].sort((x, y) => x.localeCompare(y));
   return sortedA.every((value, index) => value === sortedB[index]);
+}
+
+function filtersEqual(a: HeatmapFilters, b: HeatmapFilters): boolean {
+  return a.from === b.from && a.to === b.to && arraysEqual(a.categories, b.categories);
 }
 
 function CalendarHeatmapPage() {
   const navigate = Route.useNavigate();
   const searchParams = Route.useSearch();
-
-  // Create defaults once (constant reference logic)
-  const defaults = createInitialFilters();
-
-  // 1. Source of Truth: URL Params with fallback to defaults
-  const activeFilters = {
-    categories: searchParams.categories ?? defaults.categories,
-    from: searchParams.from ?? defaults.from,
-    to: searchParams.to ?? defaults.to,
-  };
-
-  // 2. Local Form State (initialized from activeFilters)
-  const [filters, setFilters] = useState<HeatmapFilters>(activeFilters);
-
-  // Sync local state when URL params change (e.g. Browser Back/Forward)
-  useEffect(() => {
-    setFilters(activeFilters);
-  }, [searchParams]);
-
   const { t } = useTranslation();
   const tc = (key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options);
 
+  const defaults = useMemo(() => createInitialFilters(), []);
+
+  const activeFilters = useMemo(
+    () => ({
+      categories: searchParams.categories ?? defaults.categories,
+      from: searchParams.from ?? defaults.from,
+      to: searchParams.to ?? defaults.to,
+    }),
+    [searchParams, defaults],
+  );
+
+  const [filters, setFilters] = useState<HeatmapFilters>(activeFilters);
+
   const { data: summary } = useSuspenseQuery({
     queryFn: () => {
-      const apiFilters: CalendarFilters = {
-        ...activeFilters,
-        maxDays: 366,
-      };
+      const apiFilters: CalendarFilters = { ...activeFilters, maxDays: 366 };
       return fetchCalendarSummary(apiFilters);
     },
     queryKey: ["calendar-heatmap", activeFilters],
     staleTime: 5 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
   });
 
-  const isDirty = !filtersEqual(filters, activeFilters);
+  const isDirty = useMemo(() => !filtersEqual(filters, activeFilters), [filters, activeFilters]);
 
-  // --- Logic: Stats By Date ---
-  const statsByDate = new Map<
-    string,
-    {
-      amountExpected: number;
-      amountPaid: number;
-      total: number;
-      typeCounts: Record<string, number>;
+  const { heatmapMaxValue, heatmapMonths, statsByDate } = useMemo(() => {
+    const stats = new Map<string, any>();
+    for (const entry of summary?.aggregates?.byDate ?? []) {
+      const key = String(entry.date).slice(0, 10);
+      stats.set(key, {
+        amountExpected: entry.amountExpected ?? 0,
+        amountPaid: entry.amountPaid ?? 0,
+        total: entry.total,
+        typeCounts: {},
+      });
     }
-  >();
-  const typeCountsByDate = new Map<string, Record<string, number>>();
 
-  for (const entry of summary?.aggregates?.byDate ?? []) {
-    const key = String(entry.date).slice(0, 10);
-    statsByDate.set(key, {
-      amountExpected: entry.amountExpected ?? 0,
-      amountPaid: entry.amountPaid ?? 0,
-      total: entry.total,
-      typeCounts: typeCountsByDate.get(key) ?? {},
-    });
-  }
+    const sourceFrom = summary?.filters.from || activeFilters.from;
+    const sourceTo = summary?.filters.to || activeFilters.to;
+    const start = dayjs(sourceFrom).isValid()
+      ? dayjs(sourceFrom).startOf("month")
+      : dayjs().startOf("month").subtract(1, "month");
+    let end = dayjs(sourceTo).isValid()
+      ? dayjs(sourceTo).startOf("month")
+      : dayjs().startOf("month").add(1, "month");
+    if (end.isBefore(start)) end = start.add(2, "month");
 
-  // --- Logic: Heatmap Months ---
-  // Using activeFilters (URL) as source of truth for display
-  const sourceFrom = summary?.filters.from || activeFilters.from;
-  const sourceTo = summary?.filters.to || activeFilters.to;
+    const months: Dayjs[] = [];
+    let cursor = start.clone();
+    let guard = 0;
+    while ((cursor.isBefore(end) || cursor.isSame(end)) && ++guard <= 18) {
+      months.push(cursor);
+      cursor = cursor.add(1, "month");
+    }
 
-  let start = sourceFrom
-    ? dayjs(sourceFrom).startOf("month")
-    : dayjs().startOf("month").subtract(1, "month");
-  let end = sourceTo ? dayjs(sourceTo).startOf("month") : dayjs().startOf("month").add(1, "month");
-
-  if (!start.isValid()) {
-    start = dayjs().startOf("month").subtract(1, "month");
-  }
-  if (!end.isValid() || end.isBefore(start)) {
-    end = start.add(2, "month");
-  }
-
-  const heatmapMonths: Dayjs[] = [];
-  let cursor = start.clone();
-  let guard = 0;
-  while (cursor.isBefore(end) || cursor.isSame(end)) {
-    heatmapMonths.push(cursor);
-    cursor = cursor.add(1, "month");
-    guard += 1;
-    if (guard > 18) break;
-  }
-
-  // --- Logic: Max Value ---
-  const heatmapMonthKeys = new Set(heatmapMonths.map((month) => month.format("YYYY-MM")));
-  let max = 0;
-  if (summary) {
-    if (summary.totals.maxEventCount !== undefined && summary.totals.maxEventCount !== null) {
-      max = summary.totals.maxEventCount;
-    } else {
+    let max = summary?.totals.maxEventCount ?? 0;
+    if (!max && summary) {
+      const monthKeys = new Set(months.map((m) => m.format("YYYY-MM")));
       for (const entry of summary.aggregates.byDate) {
-        const monthKey = String(entry.date).slice(0, 7);
-        if (heatmapMonthKeys.has(monthKey)) {
-          max = Math.max(max, entry.total);
-        }
+        if (monthKeys.has(String(entry.date).slice(0, 7))) max = Math.max(max, entry.total);
       }
     }
-  }
-  const heatmapMaxValue = max;
 
-  // --- Helpers ---
-  const handleApply = () => {
-    void navigate({
-      search: {
-        ...filters,
-        // Strip empty array to keep URL clean (optional, but good practice)
-        categories: filters.categories.length > 0 ? filters.categories : undefined,
-      },
-    });
-  };
+    return { heatmapMaxValue: max, heatmapMonths: months, statsByDate: stats };
+  }, [summary, activeFilters]);
 
-  const handleReset = () => {
-    void navigate({ search: {} });
-  };
-
-  const busy = false;
-  const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
-  const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
-
-  const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
-
-  // --- Logic: Preview Count ---
-  let previewCount: number | undefined;
-
-  // Key check: do the dates in form match what we fetched (active)?
-  // If yes, we can use fetched data to preview filtering
-  if (summary && filters.from === activeFilters.from && filters.to === activeFilters.to) {
+  const previewCount = useMemo(() => {
+    if (!summary || filters.from !== activeFilters.from || filters.to !== activeFilters.to)
+      return summary?.totals.events;
     if (filters.categories.length > 0) {
       const selected = new Set(filters.categories);
-      previewCount = summary.available.categories
+      return summary.available.categories
         .filter((c) => c.category && selected.has(c.category))
         .reduce((sum, c) => sum + c.total, 0);
-    } else {
-      const totalAvailable = summary.available.categories.reduce((sum, c) => sum + c.total, 0);
-      if (summary.totals.events === 0 && totalAvailable > 0) {
-        previewCount = totalAvailable;
-      } else {
-        previewCount = summary.totals.events;
-      }
     }
-  }
+    const totalAvailable = summary.available.categories.reduce((sum, c) => sum + c.total, 0);
+    return summary.totals.events === 0 && totalAvailable > 0
+      ? totalAvailable
+      : summary.totals.events;
+  }, [summary, filters, activeFilters]);
+
+  const rangeStartLabel = heatmapMonths[0]?.format("MMM YYYY") ?? "—";
+  const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
+  const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
   return (
     <section className="space-y-3">
@@ -200,7 +144,6 @@ function CalendarHeatmapPage() {
             {rangeStartLabel} - {rangeEndLabel}
           </span>
         </div>
-
         <Popover isOpen={filtersOpen} onOpenChange={setFiltersOpen}>
           <Popover.Trigger>
             <Button
@@ -229,27 +172,30 @@ function CalendarHeatmapPage() {
                     }}
                     formClassName="p-3"
                     isDirty={isDirty}
-                    loading={busy}
+                    loading={false}
                     applyCount={previewCount ?? summary?.totals.events}
                     layout="dropdown"
                     onApply={() => {
-                      handleApply();
+                      void navigate({
+                        search: {
+                          ...filters,
+                          categories:
+                            filters.categories.length > 0 ? filters.categories : undefined,
+                        },
+                      });
                       setFiltersOpen(false);
                     }}
                     onFilterChange={(key, value) => {
-                      if (key === "categories") {
+                      if (key === "categories")
                         setFilters((prev) => ({ ...prev, categories: value as string[] }));
-                        return;
-                      }
-                      if (key === "from") {
+                      else if (key === "from")
                         setFilters((prev) => ({ ...prev, from: String(value ?? "") }));
-                        return;
-                      }
-                      if (key === "to") {
+                      else if (key === "to")
                         setFilters((prev) => ({ ...prev, to: String(value ?? "") }));
-                      }
                     }}
-                    onReset={handleReset}
+                    onReset={() => {
+                      void navigate({ search: {} });
+                    }}
                     showDateRange
                     showSearch={false}
                     showSync={false}
@@ -268,13 +214,9 @@ function CalendarHeatmapPage() {
             {tc("heatmapSection")}
           </h2>
           <span className="text-default-500 text-xs">
-            {tc("heatmapRange", {
-              end: rangeEndLabel,
-              start: rangeStartLabel,
-            })}
+            {tc("heatmapRange", { end: rangeEndLabel, start: rangeStartLabel })}
           </span>
         </div>
-
         <div className="grid items-start gap-4 lg:grid-cols-3">
           {heatmapMonths.map((month) => (
             <HeatmapMonth
@@ -285,20 +227,18 @@ function CalendarHeatmapPage() {
             />
           ))}
         </div>
-        <p className="text-default-500 text-xs">
-          {tc("heatmapTotals", {
-            events: numberFormatter.format(summary.totals.events),
-            expected: currencyFormatter.format(summary.totals.amountExpected),
-            paid: currencyFormatter.format(summary.totals.amountPaid),
-          })}
-        </p>
+        {summary && (
+          <p className="text-default-500 text-xs">
+            {tc("heatmapTotals", {
+              events: numberFormatter.format(summary.totals.events),
+              expected: currencyFormatter.format(summary.totals.amountExpected),
+              paid: currencyFormatter.format(summary.totals.amountPaid),
+            })}
+          </p>
+        )}
       </section>
     </section>
   );
-}
-
-function filtersEqual(a: HeatmapFilters, b: HeatmapFilters): boolean {
-  return a.from === b.from && a.to === b.to && arraysEqual(a.categories, b.categories);
 }
 
 export default CalendarHeatmapPage;

@@ -8,11 +8,14 @@ import { computeDefaultFilters } from "@/features/calendar/utils/filters";
 
 const CalendarDailyPage = lazy(() => import("@/pages/CalendarDailyPage"));
 
+import type { CalendarFilters } from "@/features/calendar/types";
+
 const routeApi = getRouteApi("/_authed/calendar/daily");
 
 const calendarSearchSchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
+  date: z.string().optional(),
   search: z.string().optional(),
   maxDays: z.number().optional(),
   calendarId: z
@@ -44,16 +47,26 @@ export const Route = createFileRoute("/_authed/calendar/daily")({
     }
   },
   validateSearch: calendarSearchSchema,
+  loaderDeps: ({ search }) => search,
   component: () => (
     <Suspense fallback={<PageLoader />}>
       <CalendarDailyPage />
     </Suspense>
   ),
-  loader: async ({ context }) => {
+  loader: async ({ context, deps: search }) => {
     const defaults = computeDefaultFilters({});
+    const filters: CalendarFilters = {
+      calendarIds: search.calendarId ?? [],
+      categories: search.category ?? [],
+      from: search.from ?? (search.date ? search.date : defaults.from),
+      maxDays: search.maxDays ?? defaults.maxDays,
+      search: search.search ?? "",
+      to: search.to ?? (search.date ? search.date : defaults.to),
+    };
+
     await Promise.all([
-      context.queryClient.ensureQueryData(calendarQueries.summary(defaults)),
-      context.queryClient.ensureQueryData(calendarQueries.daily(defaults)),
+      context.queryClient.ensureQueryData(calendarQueries.summary(filters)),
+      context.queryClient.ensureQueryData(calendarQueries.daily(filters)),
     ]);
   },
 });

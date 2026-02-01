@@ -25,7 +25,6 @@ const DATE_FORMAT = "YYYY-MM-DD";
 
 function CalendarSchedulePage() {
   const navigate = Route.useNavigate();
-  const searchParams = Route.useSearch();
 
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
@@ -41,16 +40,6 @@ function CalendarSchedulePage() {
     summary,
     updateFilters,
   } = useCalendarEvents();
-
-  // URL -> Hook State Sync
-  useEffect(() => {
-    if (searchParams.from) updateFilters("from", searchParams.from);
-    if (searchParams.to) updateFilters("to", searchParams.to);
-    if (searchParams.calendarId) updateFilters("calendarIds", searchParams.calendarId);
-    if (searchParams.category) updateFilters("categories", searchParams.category);
-
-    applyFilters();
-  }, [searchParams, updateFilters, applyFilters]);
 
   // Separate state for which week is displayed (independent from data filter range)
   const getCurrentWeekStart = () => {

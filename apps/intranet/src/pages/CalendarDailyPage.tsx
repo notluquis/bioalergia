@@ -2,7 +2,6 @@ import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import { Filter } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
@@ -12,7 +11,6 @@ import { DailyStatsCards } from "@/features/calendar/components/DailyStatsCards"
 import { DayNavigation } from "@/features/calendar/components/DayNavigation";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { useDisclosure } from "@/hooks/use-disclosure";
-import { today } from "@/lib/dates";
 import { Route } from "@/routes/_authed/calendar/daily";
 
 import "dayjs/locale/es";
@@ -23,12 +21,11 @@ dayjs.extend(isSameOrAfter);
 
 function CalendarDailyPage() {
   const navigate = Route.useNavigate();
-  const searchParams = Route.useSearch();
 
   const {
-    appliedFilters,
-    applyFilters,
+    // appliedFilters unused in daily list now
     availableCategories,
+    currentSelectedDate,
     daily,
     filters,
     loading,
@@ -36,71 +33,10 @@ function CalendarDailyPage() {
     updateFilters,
   } = useCalendarEvents();
 
-  // URL -> Hook State Sync
-  // When URL changes (from navigation or initial load), update the store and trigger fetch
-  useEffect(() => {
-    // 1. Update draft store (Mapping URL params to Store keys)
-    if (searchParams.from) updateFilters("from", searchParams.from);
-    if (searchParams.to) updateFilters("to", searchParams.to);
-    if (searchParams.calendarId) updateFilters("calendarIds", searchParams.calendarId);
-    if (searchParams.category) updateFilters("categories", searchParams.category);
-
-    // 2. Trigger fetch (internal hook state)
-    applyFilters();
-  }, [searchParams, updateFilters, applyFilters]);
-
-  const [selectedDate, setSelectedDate] = useState(() => today());
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
-  // Sync selectedDate filter range to ensure data is loaded
-  // Load ±2 weeks around the selected date initially, extend when navigating outside
-  useEffect(() => {
-    const current = dayjs(selectedDate);
-    // Use appliedFilters (which should match URL/Store after sync)
-    const currentFrom = dayjs(appliedFilters.from);
-    const currentTo = dayjs(appliedFilters.to);
-
-    // Check if current date is within loaded range
-    const isWithinRange = current.isSameOrAfter(currentFrom) && current.isSameOrBefore(currentTo);
-
-    if (!isWithinRange) {
-      // Extend range to include the new date with ±2 weeks buffer
-      const twoWeeksBack = current.subtract(2, "week").format("YYYY-MM-DD");
-      const twoWeeksForward = current.add(2, "week").format("YYYY-MM-DD");
-
-      // Extend the range rather than replacing (to keep already loaded data context)
-      const newFrom =
-        currentFrom.isValid() && currentFrom.isBefore(twoWeeksBack)
-          ? appliedFilters.from
-          : twoWeeksBack;
-      const newTo =
-        currentTo.isValid() && currentTo.isAfter(twoWeeksForward)
-          ? appliedFilters.to
-          : twoWeeksForward;
-
-      updateFilters("from", newFrom);
-      updateFilters("to", newTo);
-      // NOTE: We rely on the Auto-apply effect (or URL sync if we updated URL)
-      // But here we are updating STORE.
-      // If we update Store, we should probably update URL too?
-      // Actually, this logic is for "Infinite Scroll" pattern of data loading.
-      // If we change 'from'/'to' here, it's implicit filtering.
-      // Ideally we should navigate, but that might change URL visibly.
-      // For now, let's trust the existing mechanism which updates filters then applies.
-    }
-  }, [selectedDate, appliedFilters.from, appliedFilters.to, updateFilters]);
-
-  // Auto-apply filters when date range changes in the draft filters due to navigation
-  useEffect(() => {
-    // This effect seems to handle the above logic's consequence:
-    // If updateFilters changed 'from'/'to', we apply them.
-    if (filters.from !== appliedFilters.from || filters.to !== appliedFilters.to) {
-      applyFilters();
-    }
-  }, [filters.from, filters.to, appliedFilters.from, appliedFilters.to, applyFilters]);
-
   // Get data for selected Day
-  const selectedDayEntry = daily?.days.find((d) => d.date === selectedDate);
+  const selectedDayEntry = daily?.days.find((d: any) => d.date === currentSelectedDate);
 
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
 
@@ -109,7 +45,15 @@ function CalendarDailyPage() {
       {/* Header with Navigation */}
       <header className="space-y-2.5">
         <DayNavigation
-          onSelect={setSelectedDate}
+          onSelect={(newDate: string) => {
+            void navigate({
+              search: (prev) => ({
+                ...prev,
+                date: newDate,
+                // Optional: reset from/to to force hook to re-buffer if we implement that
+              }),
+            });
+          }}
           allowedWeekdays={[1, 2, 3, 4, 5, 6]}
           rightSlot={
             <CalendarFiltersPopover
@@ -125,6 +69,7 @@ function CalendarDailyPage() {
                 void navigate({
                   search: {
                     ...filters,
+                    date: currentSelectedDate,
                     // Ensure arrays are preserved or undefined if empty
                     calendarId: filters.calendarIds?.length ? filters.calendarIds : undefined,
                     category: filters.categories?.length ? filters.categories : undefined,
@@ -141,7 +86,7 @@ function CalendarDailyPage() {
               panelWidthClassName="w-[min(92vw,480px)]"
             />
           }
-          selectedDate={selectedDate}
+          selectedDate={currentSelectedDate}
         />
       </header>
 
@@ -170,7 +115,7 @@ function CalendarDailyPage() {
                 </div>
                 <h3 className="text-default-600 font-semibold">Sin eventos</h3>
                 <p className="text-default-400 mt-1 max-w-xs text-sm">
-                  No hay eventos para el {dayjs(selectedDate).format("DD [de] MMMM")}.
+                  No hay eventos para el {dayjs(currentSelectedDate).format("DD [de] MMMM")}.
                 </p>
               </div>
             );
@@ -178,14 +123,14 @@ function CalendarDailyPage() {
 
           return (
             <>
-              {selectedDayEntry.events.map((event) => (
+              {selectedDayEntry.events.map((event: any) => (
                 <DailyEventCard event={event} key={event.eventId} />
               ))}
 
               {/* Footer */}
               <div className="text-default-300 flex justify-center pt-2 text-xs">
                 {selectedDayEntry.total} evento{selectedDayEntry.total === 1 ? "" : "s"} ·{" "}
-                {dayjs(selectedDate).format("dddd, D [de] MMMM")}
+                {dayjs(currentSelectedDate).format("dddd, D [de] MMMM")}
               </div>
             </>
           );
