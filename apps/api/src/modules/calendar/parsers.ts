@@ -298,6 +298,27 @@ const PHONE_PATTERNS = [
   /^56\d{9}$/, // 56XXXXXXXXX
 ];
 
+/** Patterns for dose number detection (Hoisted) */
+const DOSE_1_PATTERNS = [
+  /\b1[º°]?(?:era|ra|er)?\s*dosis\b/i,
+  /\bprim(?:er)?a?\s*dosis\b/i,
+  /\bpr[im]+[er]*a\s*dosis\b/i,
+];
+const DOSE_2_TO_5_PATTERN = /\b([2-5])[º°]?(?:da|ra|ta|va|a)?\s*dosis\b/i;
+const DOSE_TEXT_PATTERNS = [
+  { value: 2, pattern: /segunda\s*dosis\b/i },
+  { value: 3, pattern: /tercera\s*dosis\b/i },
+  { value: 4, pattern: /cuarta\s*dosis\b/i },
+  { value: 5, pattern: /quinta\s*dosis\b/i },
+];
+
+/** Specific patterns for extractDosage (Hoisted) */
+const CLUSTOID_DOSAGE_PATTERN = /clust(?:oid)?\s*(0[.,]\d+)/i;
+const DECIMAL_DOSAGE_FALLBACK = /\b(0[.,]\d+)\b/;
+
+/** Fallback pattern for maintenance stage */
+const MAINTENANCE_FALLBACK_PATTERN = /0[.,]5(\s*ml)?\b/i;
+
 // ============================================================================
 // VALIDATION & SCHEMAS
 // ============================================================================
@@ -580,7 +601,7 @@ function extractDosage(
   }
 
   // Pattern for clustoid+dosage format without space: "clustoid0,3", "clustoid0,1"
-  const clustoidDosageMatch = /clust(?:oid)?\s*(0[.,]\d+)/i.exec(text);
+  const clustoidDosageMatch = CLUSTOID_DOSAGE_PATTERN.exec(text);
   if (clustoidDosageMatch) {
     const value = normalizeDecimalNumber(clustoidDosageMatch[1]);
     if (value !== null) {
@@ -589,7 +610,7 @@ function extractDosage(
   }
 
   // Fallback: standalone decimal (e.g. "0,5") implies "ml" in this context
-  const decimalMatch = /\b(0[.,]\d+)\b/.exec(text);
+  const decimalMatch = DECIMAL_DOSAGE_FALLBACK.exec(text);
   if (decimalMatch) {
     const value = normalizeDecimalNumber(decimalMatch[1]);
     if (value !== null) {
@@ -611,7 +632,7 @@ function detectTreatmentStage(summary: string, description: string): string | nu
   }
 
   // Maintenance keywords or 0.5 (with or without ml) = Mantención
-  if (matchesAny(text, MAINTENANCE_PATTERNS) || /0[.,]5(\s*ml)?\b/i.test(text)) {
+  if (matchesAny(text, MAINTENANCE_PATTERNS) || MAINTENANCE_FALLBACK_PATTERN.test(text)) {
     return "Mantención";
   }
 
@@ -640,6 +661,38 @@ export function parseCalendarMetadata(input: {
   // Logic: Dosage and Treatment Stage only apply to "Tratamiento subcutáneo"
   const isSubcut = category === "Tratamiento subcutáneo";
 
+  const { finalDosageValue, finalDosageUnit, finalTreatmentStage } = inferFinalDosage(
+    isSubcut,
+    dosageData,
+    treatmentStage,
+    summary,
+    description,
+  );
+
+  return {
+    category,
+    amountExpected: amounts.amountExpected,
+    amountPaid: amounts.amountPaid,
+    attended,
+    dosageValue: finalDosageValue,
+    dosageUnit: finalDosageUnit,
+    treatmentStage: finalTreatmentStage,
+    controlIncluded,
+    isDomicilio,
+  };
+}
+
+/**
+ * Helper to infer final dosage and treatment stage logic.
+ * Reduces cognitive complexity of main parser.
+ */
+function inferFinalDosage(
+  isSubcut: boolean,
+  dosageData: { value: number; unit: string } | null,
+  treatmentStage: string | null,
+  summary: string | null | undefined,
+  description: string | null | undefined,
+) {
   // Determine treatment stage:
   // 1. Pattern-based detection takes priority (e.g., "3era dosis" = Inducción even if 0.5ml)
   // 2. Only use ml-based inference as fallback when no explicit pattern matched
@@ -655,6 +708,7 @@ export function parseCalendarMetadata(input: {
   // Infer dosage from treatment stage if not explicitly found
   let finalDosageValue = dosageData?.value || null;
   let finalDosageUnit = dosageData?.unit || null;
+
   if (isSubcut && finalDosageValue === null && finalTreatmentStage !== null) {
     if (finalTreatmentStage === "Mantención") {
       // Maintenance dose is always 0.5 ml
@@ -662,7 +716,7 @@ export function parseCalendarMetadata(input: {
       finalDosageUnit = "ml";
     } else if (finalTreatmentStage === "Inducción") {
       // For induction, try to detect dose number (1st, 2nd, 3rd, etc.)
-      const text = `${summary} ${description}`;
+      const text = `${summary ?? ""} ${description ?? ""}`;
       const doseNumber = detectDoseNumber(text);
       if (doseNumber !== null) {
         // Dose progression: 1st=0.15ml, 2nd=0.3ml, 3rd/4th/5th=0.5ml
@@ -678,17 +732,7 @@ export function parseCalendarMetadata(input: {
     }
   }
 
-  return {
-    category,
-    amountExpected: amounts.amountExpected,
-    amountPaid: amounts.amountPaid,
-    attended,
-    dosageValue: isSubcut ? finalDosageValue : null,
-    dosageUnit: isSubcut ? finalDosageUnit : null,
-    treatmentStage: finalTreatmentStage,
-    controlIncluded,
-    isDomicilio,
-  };
+  return { finalDosageValue, finalDosageUnit, finalTreatmentStage };
 }
 
 /**
@@ -697,21 +741,18 @@ export function parseCalendarMetadata(input: {
  */
 function detectDoseNumber(text: string): number | null {
   // 1st dose patterns
-  if (/\b1[º°]?(?:era|ra|er)?\s*dosis\b/i.test(text)) return 1;
-  if (/\bprim(?:er)?a?\s*dosis\b/i.test(text)) return 1;
-  if (/\bpr[im]+[er]*a\s*dosis\b/i.test(text)) return 1;
+  if (matchesAny(text, DOSE_1_PATTERNS)) return 1;
 
   // 2nd-5th dose patterns (numeric)
-  const numericMatch = /\b([2-5])[º°]?(?:da|ra|ta|va|a)?\s*dosis\b/i.exec(text);
+  const numericMatch = DOSE_2_TO_5_PATTERN.exec(text);
   if (numericMatch) {
     return Number.parseInt(numericMatch[1], 10);
   }
 
   // Text variants
-  if (/segunda\s*dosis\b/i.test(text)) return 2;
-  if (/tercera\s*dosis\b/i.test(text)) return 3;
-  if (/cuarta\s*dosis\b/i.test(text)) return 4;
-  if (/quinta\s*dosis\b/i.test(text)) return 5;
+  for (const { value, pattern } of DOSE_TEXT_PATTERNS) {
+    if (pattern.test(text)) return value;
+  }
 
   return null;
 }

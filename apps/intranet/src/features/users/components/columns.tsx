@@ -168,7 +168,7 @@ export const getColumns = (actions: {
               <MoreVertical size={16} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownPopover placement={"bottom-end" as any}>
+          <DropdownPopover placement="bottom end">
             <HeroDropdownMenu aria-label="Acciones de usuario" className="w-56">
               <DropdownMenuItem
                 onPress={() => {

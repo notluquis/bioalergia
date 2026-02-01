@@ -127,10 +127,12 @@ export async function listEmployees(options?: {
 }
 
 export async function getEmployeeById(id: number) {
-  return await db.employee.findUnique({
+  const employee = await db.employee.findUnique({
     where: { id },
     include: { person: true },
   });
+  if (!employee) throw new Error(`Employee with ID ${id} not found`);
+  return employee;
 }
 
 export async function findEmployeeByEmail(email: string) {

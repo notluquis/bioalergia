@@ -19,7 +19,7 @@ export async function getCounterpartById(id: number) {
     },
   });
 
-  if (!counterpart) return null;
+  if (!counterpart) throw new Error(`Counterpart with ID ${id} not found`);
 
   return {
     counterpart,

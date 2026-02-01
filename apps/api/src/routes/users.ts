@@ -5,7 +5,9 @@
  */
 
 import { db } from "@finanzas/db";
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { z } from "zod";
 import { hasPermission } from "../auth";
 import { hashPassword } from "../lib/crypto";
 import { verifyToken } from "../lib/paseto";
@@ -36,27 +38,77 @@ async function getAuth(c: { req: { header: (name: string) => string | undefined 
 }
 
 // ============================================================
+// SCHEMAS
+// ============================================================
+
+const listUsersQuerySchema = z.object({
+  includeTest: z.enum(["true", "false"]).optional(),
+});
+
+const inviteUserSchema = z.object({
+  email: z.string().email("Email inválido"),
+  role: z.string().min(1, "Rol requerido"),
+  position: z.string().min(1, "Cargo requerido"),
+  mfaEnforced: z.boolean().optional().default(true),
+  personId: z.number().int().optional(),
+  names: z.string().optional(),
+  fatherName: z.string().optional(),
+  motherName: z.string().optional(),
+  rut: z.string().optional(),
+});
+
+const setupUserSchema = z.object({
+  names: z.string().min(1),
+  fatherName: z.string().optional(),
+  motherName: z.string().optional(),
+  rut: z.string().min(1),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  bankName: z.string().optional(),
+  bankAccountType: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+});
+
+const idParamSchema = z.object({
+  id: z.string().regex(/^\d+$/, "ID debe ser numérico").transform(Number),
+});
+
+const updateStatusSchema = z.object({
+  status: z.enum(["ACTIVE", "SUSPENDED"]),
+});
+
+const updateRoleSchema = z.object({
+  role: z.string().min(1, "Rol requerido"),
+});
+
+const toggleMfaSchema = z.object({
+  enabled: z.boolean(),
+});
+
+// ============================================================
 // LIST USERS
 // ============================================================
 
 // LIST USERS
-userRoutes.get("/", async (c) => {
+userRoutes.get("/", zValidator("query", listUsersQuerySchema), async (c) => {
   const auth = await getAuth(c);
   if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canRead = await hasPermission(auth.userId, "read", "User");
   if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const includeTest = c.req.query("includeTest") === "true";
+  const { includeTest } = c.req.valid("query");
 
   const users = await db.user.findMany({
-    where: includeTest
-      ? undefined
-      : {
-          NOT: {
-            OR: [{ email: { contains: "test" } }, { email: { contains: "debug" } }],
+    where:
+      includeTest === "true"
+        ? undefined
+        : {
+            NOT: {
+              OR: [{ email: { contains: "test" } }, { email: { contains: "debug" } }],
+            },
           },
-        },
     include: {
       person: true,
       roles: { include: { role: true } },
@@ -121,39 +173,15 @@ userRoutes.get("/profile", async (c) => {
 // INVITE USER
 // ============================================================
 
-userRoutes.post("/invite", async (c) => {
+userRoutes.post("/invite", zValidator("json", inviteUserSchema), async (c) => {
   const auth = await getAuth(c);
   if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canCreate = await hasPermission(auth.userId, "create", "User");
   if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const body = await c.req.json<{
-    email: string;
-    role: string;
-    position: string;
-    mfaEnforced?: boolean;
-    personId?: number;
-    names?: string;
-    fatherName?: string;
-    motherName?: string;
-    rut?: string;
-  }>();
-  const {
-    email,
-    role,
-    position,
-    mfaEnforced = true,
-    personId,
-    names,
-    fatherName,
-    motherName,
-    rut,
-  } = body;
-
-  if (!email || !role || !position) {
-    return reply(c, { status: "error", message: "Campos requeridos: email, role, position" }, 400);
-  }
+  const { email, role, position, mfaEnforced, personId, names, fatherName, motherName, rut } =
+    c.req.valid("json");
 
   // Check if user exists
   const existing = await db.user.findUnique({ where: { email } });
@@ -217,22 +245,11 @@ userRoutes.post("/invite", async (c) => {
 // USER SETUP (ONBOARDING)
 // ============================================================
 
-userRoutes.post("/setup", async (c) => {
+userRoutes.post("/setup", zValidator("json", setupUserSchema), async (c) => {
   const auth = await getAuth(c);
   if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const body = await c.req.json<{
-    names: string;
-    fatherName?: string;
-    motherName?: string;
-    rut: string;
-    phone?: string;
-    address?: string;
-    bankName?: string;
-    bankAccountType?: string;
-    bankAccountNumber?: string;
-    password: string;
-  }>();
+  const body = c.req.valid("json");
 
   const user = await db.user.findUnique({
     where: { id: auth.userId },
@@ -288,15 +305,14 @@ userRoutes.post("/setup", async (c) => {
 // RESET PASSWORD (ADMIN)
 // ============================================================
 
-userRoutes.post("/:id/reset-password", async (c) => {
+userRoutes.post("/:id/reset-password", zValidator("param", idParamSchema), async (c) => {
   const auth = await getAuth(c);
   if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canUpdate = await hasPermission(auth.userId, "update", "User");
   if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const targetUserId = Number(c.req.param("id"));
-  if (Number.isNaN(targetUserId)) return reply(c, { status: "error", message: "ID inválido" }, 400);
+  const { id: targetUserId } = c.req.valid("param");
 
   const crypto = await import("node:crypto");
   const tempPassword = crypto.randomBytes(12).toString("hex");
@@ -320,74 +336,80 @@ userRoutes.post("/:id/reset-password", async (c) => {
 // UPDATE STATUS
 // ============================================================
 
-userRoutes.put("/:id/status", async (c) => {
-  const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+userRoutes.put(
+  "/:id/status",
+  zValidator("param", idParamSchema),
+  zValidator("json", updateStatusSchema),
+  async (c) => {
+    const auth = await getAuth(c);
+    if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canUpdate = await hasPermission(auth.userId, "update", "User");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    const canUpdate = await hasPermission(auth.userId, "update", "User");
+    if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const targetUserId = Number(c.req.param("id"));
-  const { status } = await c.req.json<{ status: string }>();
+    const { id: targetUserId } = c.req.valid("param");
+    const { status } = c.req.valid("json");
 
-  if (!["ACTIVE", "SUSPENDED"].includes(status)) {
-    return reply(c, { status: "error", message: "Estado inválido" }, 400);
-  }
+    if (targetUserId === auth.userId) {
+      return reply(c, { status: "error", message: "No puedes suspender tu propia cuenta" }, 400);
+    }
 
-  if (targetUserId === auth.userId) {
-    return reply(c, { status: "error", message: "No puedes suspender tu propia cuenta" }, 400);
-  }
+    await db.user.update({
+      where: { id: targetUserId },
+      data: { status },
+    });
 
-  await db.user.update({
-    where: { id: targetUserId },
-    data: { status: status as "ACTIVE" | "SUSPENDED" },
-  });
-
-  console.log("[User] Status updated by", auth.email, ":", targetUserId, "->", status);
-  return reply(c, { status: "ok" });
-});
+    console.log("[User] Status updated by", auth.email, ":", targetUserId, "->", status);
+    return reply(c, { status: "ok" });
+  },
+);
 
 // ============================================================
 // UPDATE ROLE
 // ============================================================
 
-userRoutes.put("/:id/role", async (c) => {
-  const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+userRoutes.put(
+  "/:id/role",
+  zValidator("param", idParamSchema),
+  zValidator("json", updateRoleSchema),
+  async (c) => {
+    const auth = await getAuth(c);
+    if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canUpdate = await hasPermission(auth.userId, "update", "User");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    const canUpdate = await hasPermission(auth.userId, "update", "User");
+    if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const targetUserId = Number(c.req.param("id"));
-  const { role } = await c.req.json<{ role: string }>();
+    const { id: targetUserId } = c.req.valid("param");
+    const { role } = c.req.valid("json");
 
-  // Remove existing roles
-  await db.userRoleAssignment.deleteMany({ where: { userId: targetUserId } });
+    // Remove existing roles
+    await db.userRoleAssignment.deleteMany({ where: { userId: targetUserId } });
 
-  // Assign new role
-  const roleRecord = await db.role.findUnique({ where: { name: role } });
-  if (roleRecord) {
-    await db.userRoleAssignment.create({
-      data: { userId: targetUserId, roleId: roleRecord.id },
-    });
-  }
+    // Assign new role
+    const roleRecord = await db.role.findUnique({ where: { name: role } });
+    if (roleRecord) {
+      await db.userRoleAssignment.create({
+        data: { userId: targetUserId, roleId: roleRecord.id },
+      });
+    }
 
-  console.log("[User] Role updated by", auth.email, ":", targetUserId, "->", role);
-  return reply(c, { status: "ok" });
-});
+    console.log("[User] Role updated by", auth.email, ":", targetUserId, "->", role);
+    return reply(c, { status: "ok" });
+  },
+);
 
 // ============================================================
 // DELETE USER
 // ============================================================
 
-userRoutes.delete("/:id", async (c) => {
+userRoutes.delete("/:id", zValidator("param", idParamSchema), async (c) => {
   const auth = await getAuth(c);
   if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canDelete = await hasPermission(auth.userId, "delete", "User");
   if (!canDelete) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const targetUserId = Number(c.req.param("id"));
+  const { id: targetUserId } = c.req.valid("param");
 
   if (targetUserId === auth.userId) {
     return reply(c, { status: "error", message: "No puedes eliminar tu propia cuenta" }, 400);
@@ -403,37 +425,42 @@ userRoutes.delete("/:id", async (c) => {
 // MFA TOGGLE (ADMIN)
 // ============================================================
 
-userRoutes.post("/:id/mfa/toggle", async (c) => {
-  const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+userRoutes.post(
+  "/:id/mfa/toggle",
+  zValidator("param", idParamSchema),
+  zValidator("json", toggleMfaSchema),
+  async (c) => {
+    const auth = await getAuth(c);
+    if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canUpdate = await hasPermission(auth.userId, "update", "User");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    const canUpdate = await hasPermission(auth.userId, "update", "User");
+    if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const targetUserId = Number(c.req.param("id"));
-  const { enabled } = await c.req.json<{ enabled: boolean }>();
+    const { id: targetUserId } = c.req.valid("param");
+    const { enabled } = c.req.valid("json");
 
-  await db.user.update({
-    where: { id: targetUserId },
-    data: { mfaEnabled: enabled },
-  });
+    await db.user.update({
+      where: { id: targetUserId },
+      data: { mfaEnabled: enabled },
+    });
 
-  console.log("[User] MFA toggled by", auth.email, ":", targetUserId, "->", enabled);
-  return reply(c, { status: "ok", mfaEnabled: enabled });
-});
+    console.log("[User] MFA toggled by", auth.email, ":", targetUserId, "->", enabled);
+    return reply(c, { status: "ok", mfaEnabled: enabled });
+  },
+);
 
 // ============================================================
 // DELETE MFA (ADMIN RESET)
 // ============================================================
 
-userRoutes.delete("/:id/mfa", async (c) => {
+userRoutes.delete("/:id/mfa", zValidator("param", idParamSchema), async (c) => {
   const auth = await getAuth(c);
   if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canUpdate = await hasPermission(auth.userId, "update", "User");
   if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const targetUserId = Number(c.req.param("id"));
+  const { id: targetUserId } = c.req.valid("param");
 
   await db.user.update({
     where: { id: targetUserId },
@@ -448,14 +475,14 @@ userRoutes.delete("/:id/mfa", async (c) => {
 // DELETE PASSKEY (ADMIN)
 // ============================================================
 
-userRoutes.delete("/:id/passkey", async (c) => {
+userRoutes.delete("/:id/passkey", zValidator("param", idParamSchema), async (c) => {
   const auth = await getAuth(c);
   if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canUpdate = await hasPermission(auth.userId, "update", "User");
   if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const targetUserId = Number(c.req.param("id"));
+  const { id: targetUserId } = c.req.valid("param");
 
   await db.user.update({
     where: { id: targetUserId },

@@ -83,11 +83,7 @@ function AddPatientPage() {
           <h1 className={TITLE_LG}>Registrar Nuevo Paciente</h1>
           <p className="text-default-500 text-sm">Crea un perfil clínico para un nuevo paciente</p>
         </div>
-        <Button
-          variant="ghost"
-          onClick={() => navigate({ to: "/patients" as any })}
-          className="gap-2"
-        >
+        <Button variant="ghost" onClick={() => navigate({ to: "/patients" })} className="gap-2">
           <X size={18} />
           Cancelar
         </Button>
@@ -265,11 +261,7 @@ function AddPatientPage() {
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => navigate({ to: "/patients" as never })}
-          >
+          <Button type="button" variant="ghost" onClick={() => navigate({ to: "/patients" })}>
             Cancelar
           </Button>
           <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>

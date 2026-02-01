@@ -14,8 +14,7 @@ import type { Permission, Role } from "@/types/roles";
 import { BulkToggleCell } from "./BulkToggleCell";
 
 export interface MatrixItem {
-  // biome-ignore lint/suspicious/noExplicitAny: generic icon component
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   permissionIds: number[];
   relatedPermissions: Permission[];
@@ -110,7 +109,7 @@ export function PermissionsMatrixTable({
                       <ChevronDown className="h-3 w-3" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownPopover placement={"bottom-end" as any}>
+                  <DropdownPopover placement="bottom end">
                     <HeroDropdownMenu aria-label="Opciones de rol">
                       <DropdownMenuItem
                         onPress={() => {

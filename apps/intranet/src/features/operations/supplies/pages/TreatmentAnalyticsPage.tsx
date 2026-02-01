@@ -1,20 +1,16 @@
-import { Button, Card, Chip, DateField, DateInputGroup, Label, Spinner } from "@heroui/react";
-import { parseDate } from "@internationalized/date";
+import { Button, Card, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import {
   Calendar as CalendarIcon,
-  ChevronDown,
-  ChevronUp,
   DollarSign,
   Home,
   Package,
   RefreshCcw,
   Syringe,
 } from "lucide-react";
-import type React from "react";
 import { useState } from "react";
 import {
   Area,
@@ -60,10 +56,7 @@ const getThisWeek = () => ({
   from: dayjs().startOf("week").format("YYYY-MM-DD"),
   to: dayjs().endOf("week").format("YYYY-MM-DD"),
 });
-const getLastWeek = () => ({
-  from: dayjs().subtract(1, "week").startOf("week").format("YYYY-MM-DD"),
-  to: dayjs().subtract(1, "week").endOf("week").format("YYYY-MM-DD"),
-});
+
 const getThisMonth = () => ({
   from: dayjs().startOf("month").format("YYYY-MM-DD"),
   to: dayjs().endOf("month").format("YYYY-MM-DD"),
@@ -72,6 +65,28 @@ const getLastMonth = () => ({
   from: dayjs().subtract(1, "month").startOf("month").format("YYYY-MM-DD"),
   to: dayjs().subtract(1, "month").endOf("month").format("YYYY-MM-DD"),
 });
+
+// --- Types ---
+
+interface AnalyticsTrendPoint {
+  date?: string;
+  label?: string;
+  year?: number;
+  month?: number;
+  isoWeek?: number;
+  amountPaid: number;
+  events: number;
+  dosageMl: number;
+  induccionCount?: number;
+  mantencionCount?: number;
+  domicilioCount?: number;
+}
+
+interface PieChartData {
+  name: string;
+  value: number;
+  color?: string;
+}
 
 // --- Main Page Component ---
 
@@ -94,14 +109,10 @@ export default function TreatmentAnalyticsPage() {
   console.group("📊 Analytics Page Filters Debug");
   console.log("1. Raw Search Params:", searchParams);
   console.log("2. Active Filters:", filters);
-  console.log(
-    "3. API Query Config:",
-    // biome-ignore lint/suspicious/noExplicitAny: Debugging
-    (calendarQueries.treatmentAnalytics(filters) as any).queryKey,
-  );
+  console.log("3. API Query Config:", calendarQueries.treatmentAnalytics(filters).queryKey);
   console.groupEnd();
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     ...calendarQueries.treatmentAnalytics(filters),
     enabled: hasValidDates,
   });
@@ -111,22 +122,12 @@ export default function TreatmentAnalyticsPage() {
   };
 
   const handleQuickRange = (range: { from: string; to: string }) => {
-    void navigate({ search: { ...searchParams, from: range.from, to: range.to } });
-    setIsFilterOpen(false);
+    void navigate({ search: { ...searchParams, ...range } });
   };
 
-  const handleRefresh = () => void refetch();
-
-  if (isError) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 gap-4 text-danger">
-        <p>Error cargando analytics: {(error as Error).message}</p>
-        <Button onClick={handleRefresh} variant="ghost" className="text-danger">
-          Reintentar
-        </Button>
-      </div>
-    );
-  }
+  const handleRefresh = async () => {
+    await refetch();
+  };
 
   // Calculate Data
   const totalRevenue = data?.totals.amountPaid || 0;
@@ -139,7 +140,7 @@ export default function TreatmentAnalyticsPage() {
   const mantencionCount = data?.totals.mantencionCount || 0;
   const unclassifiedCount = totalTreatmentCount - induccionCount - mantencionCount;
 
-  const trendData =
+  const trendData: AnalyticsTrendPoint[] | undefined =
     period === "day"
       ? data?.byDate
       : period === "week"
@@ -149,13 +150,13 @@ export default function TreatmentAnalyticsPage() {
             label: dayjs(`${d.year}-${d.month}-01`).format("MMM"),
           }));
 
-  const pieDataStage = [
+  const pieDataStage: PieChartData[] = [
     { name: "Inducción", value: induccionCount },
     { name: "Mantención", value: mantencionCount },
     { name: unclassifiedCount > 0 ? "Sin Clasif." : "", value: unclassifiedCount },
   ].filter((d) => d.value > 0);
 
-  const pieDataLocation = [
+  const pieDataLocation: PieChartData[] = [
     { name: "Domicilio", value: domicilioCount },
     { name: "Clínica", value: clinicCount },
   ].filter((d) => d.value > 0);
@@ -163,7 +164,6 @@ export default function TreatmentAnalyticsPage() {
   return (
     <div className="space-y-6 max-w-400 mx-auto pb-10">
       <AnalyticsHeader
-        filters={filters}
         period={period}
         isFilterOpen={isFilterOpen}
         isLoading={isLoading}
@@ -205,197 +205,15 @@ export default function TreatmentAnalyticsPage() {
   );
 }
 
-// --- Sub Components ---
-
-function AnalyticsHeader({
-  filters,
-  period,
-  isFilterOpen,
-  isLoading,
-  onToggleFilter,
-  onSetPeriod,
-  onRefresh,
-}: {
-  filters: TreatmentAnalyticsFilters;
-  period: "day" | "week" | "month";
-  isFilterOpen: boolean;
-  isLoading: boolean;
-  onToggleFilter: () => void;
-  onSetPeriod: (p: "day" | "week" | "month") => void;
-  onRefresh: () => void;
-}) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      {/* Title handled globally by Header Breadcrumbs */}
-      <div />
-
-      <div className="flex items-center gap-2 bg-default-50 p-1.5 rounded-xl border border-default-100">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onToggleFilter}
-          className="text-default-600 gap-2"
-        >
-          <CalendarIcon className="w-4 h-4" />
-          <span className="font-medium text-xs">
-            {filters.from ? dayjs(filters.from).format("DD MMM") : ""} -{" "}
-            {filters.to ? dayjs(filters.to).format("DD MMM") : ""}
-          </span>
-          {isFilterOpen ? (
-            <ChevronUp className="w-3 h-3 text-default-400" />
-          ) : (
-            <ChevronDown className="w-3 h-3 text-default-400" />
-          )}
-        </Button>
-
-        <div className="h-4 w-px bg-default-200 mx-1" />
-
-        <div className="flex gap-1">
-          {(["day", "week", "month"] as const).map((p) => (
-            <button
-              type="button"
-              key={p}
-              onClick={() => onSetPeriod(p)}
-              className={`px-3 py-1 text-xs font-medium rounded-lg transition-all ${
-                period === p
-                  ? "bg-white text-foreground shadow-sm ring-1 ring-default-200"
-                  : "text-default-500 hover:text-foreground hover:bg-default-200/50"
-              }`}
-            >
-              {p === "day" ? "Día" : p === "week" ? "Semana" : "Mes"}
-            </button>
-          ))}
-        </div>
-
-        <Button
-          size="sm"
-          isIconOnly
-          variant="ghost"
-          onClick={onRefresh}
-          isDisabled={isLoading}
-          className="text-default-400 hover:text-primary"
-        >
-          <RefreshCcw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function AnalyticsFilters({
-  filters,
-  onDateChange,
-  onQuickRange,
-}: {
-  filters: TreatmentAnalyticsFilters;
-  onDateChange: (from: string, to: string) => void;
-  onQuickRange: (range: { from: string; to: string }) => void;
-}) {
-  return (
-    <Card className="shadow-sm border-default-200 bg-default-50/50">
-      <Card.Content className="p-3 grid grid-cols-1 lg:grid-cols-[1fr,auto] gap-4">
-        <div className="flex gap-4 items-end">
-          <div className="max-w-37.5">
-            <Label className="text-xs mb-1.5 ml-1 text-default-500">Desde</Label>
-            <DateField
-              value={filters.from ? parseDate(filters.from) : null}
-              onChange={(d) => d && onDateChange(d.toString(), filters.to || d.toString())}
-            >
-              <DateInputGroup className="bg-white border-default-200 text-sm">
-                <DateInputGroup.Input>
-                  {(segment) => <DateInputGroup.Segment segment={segment} />}
-                </DateInputGroup.Input>
-              </DateInputGroup>
-            </DateField>
-          </div>
-          <div className="max-w-37.5">
-            <Label className="text-xs mb-1.5 ml-1 text-default-500">Hasta</Label>
-            <DateField
-              value={filters.to ? parseDate(filters.to) : null}
-              onChange={(d) => d && onDateChange(filters.from || d.toString(), d.toString())}
-            >
-              <DateInputGroup className="bg-white border-default-200 text-sm">
-                <DateInputGroup.Input>
-                  {(segment) => <DateInputGroup.Segment segment={segment} />}
-                </DateInputGroup.Input>
-              </DateInputGroup>
-            </DateField>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 items-end">
-          {[
-            { label: "Esta Semana", fn: getThisWeek },
-            { label: "Semana Pasada", fn: getLastWeek },
-            { label: "Este Mes", fn: getThisMonth },
-            { label: "Mes Pasado", fn: getLastMonth },
-          ].map((item) => (
-            <Chip
-              key={item.label}
-              variant="soft"
-              className="cursor-pointer hover:bg-default-200 transition-colors"
-              onClick={() => onQuickRange(item.fn())}
-            >
-              {item.label}
-            </Chip>
-          ))}
-        </div>
-      </Card.Content>
-    </Card>
-  );
-}
-
-function AnalyticsKpiGrid({
-  totalTreatmentCount,
-  totalRevenue,
-  totalMl,
-  domicilioCount,
-}: {
-  totalTreatmentCount: number;
-  totalRevenue: number;
-  totalMl: number;
-  domicilioCount: number;
-}) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <KpiCard title="Tratamientos" value={totalTreatmentCount} icon={Syringe} color="primary" />
-      <KpiCard
-        title="Ingresos"
-        value={formatCurrency(totalRevenue)}
-        icon={DollarSign}
-        color="success"
-        caption="Generados en el periodo"
-      />
-      <KpiCard
-        title="Consumo (ml)"
-        value={totalMl.toFixed(1)}
-        icon={Package}
-        color="warning"
-        caption="Volumen total"
-      />
-      <KpiCard
-        title="Domicilio"
-        value={`${domicilioCount}`}
-        icon={Home}
-        color="secondary"
-        caption={`${((domicilioCount / (totalTreatmentCount || 1)) * 100).toFixed(1)}% del total`}
-      />
-    </div>
-  );
-}
-
 function AnalyticsCharts({
   trendData,
   pieDataStage,
   pieDataLocation,
   period,
 }: {
-  // biome-ignore lint/suspicious/noExplicitAny: loose chart data types
-  trendData: any[] | undefined;
-  // biome-ignore lint/suspicious/noExplicitAny: loose chart data types
-  pieDataStage: any[];
-  // biome-ignore lint/suspicious/noExplicitAny: loose chart data types
-  pieDataLocation: any[];
+  trendData: AnalyticsTrendPoint[] | undefined;
+  pieDataStage: PieChartData[];
+  pieDataLocation: PieChartData[];
   period: "day" | "week" | "month";
 }) {
   return (
@@ -485,8 +303,7 @@ function PieChartCard({
   colors,
 }: {
   title: string;
-  // biome-ignore lint/suspicious/noExplicitAny: loose chart data types
-  data: any[];
+  data: PieChartData[];
   colors: string[];
 }) {
   return (
@@ -525,49 +342,14 @@ function PieChartCard({
   );
 }
 
-function KpiCard({
-  title,
-  value,
-  icon: Icon,
-  color,
-  caption,
-}: {
-  title: string;
-  value: string | number;
-  icon: React.ElementType;
-  color: "primary" | "secondary" | "success" | "warning";
-  caption?: string;
-}) {
-  const bgClasses = {
-    primary: "bg-primary/10 text-primary",
-    secondary: "bg-secondary/10 text-secondary",
-    success: "bg-success/10 text-success",
-    warning: "bg-warning/10 text-warning",
-  };
-
-  return (
-    <Card className="shadow-sm border-default-200">
-      <Card.Content className="p-3 flex flex-row items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-default-500">{title}</p>
-          <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
-          {caption && <p className="text-xs text-default-400 mt-0.5">{caption}</p>}
-        </div>
-        <div className={`p-2 rounded-lg ${bgClasses[color]}`}>
-          <Icon className="w-4 h-4" />
-        </div>
-      </Card.Content>
-    </Card>
-  );
-}
-
 const CustomTooltip = ({
   active,
   payload,
   label,
 }: {
   active?: boolean;
-  // biome-ignore lint/suspicious/noExplicitAny: Recharts payload is loosely typed
+  // payload is complicated in Recharts, but we can type strictly what we expect
+  // biome-ignore lint/suspicious/noExplicitAny: Recharts payload is loosely typed library-side
   payload?: any[];
   label?: string;
 }) => {
@@ -599,17 +381,16 @@ function AnalyticsDetailTable({
   data,
   period,
 }: {
-  // biome-ignore lint/suspicious/noExplicitAny: loose chart data types
-  data: any[];
+  data: AnalyticsTrendPoint[];
   period: "day" | "week" | "month";
 }) {
-  // biome-ignore lint/suspicious/noExplicitAny: loose typing for dynamic table
-  const columns: ColumnDef<any>[] = [
+  const columns: ColumnDef<AnalyticsTrendPoint>[] = [
     {
       accessorKey: period === "day" ? "date" : "label",
       header: "Periodo",
       cell: ({ row }) => {
-        const val = row.getValue(period === "day" ? "date" : "label") as string;
+        // Safe access as we defined interface
+        const val = (period === "day" ? row.original.date : row.original.label) || "";
         if (period === "day") return dayjs(val).format("dddd DD MMM");
         return val;
       },
@@ -618,18 +399,18 @@ function AnalyticsDetailTable({
     {
       accessorKey: "events",
       header: "Tratamientos",
-      cell: ({ row }) => <span className="font-medium">{row.getValue("events")}</span>,
+      cell: ({ row }) => <span className="font-medium">{row.original.events}</span>,
     },
     {
       accessorKey: "amountPaid",
       header: "Ingresos",
-      cell: ({ row }) => formatCurrency(row.getValue("amountPaid")),
+      cell: ({ row }) => formatCurrency(row.original.amountPaid),
     },
     {
       accessorKey: "dosageMl",
       header: "Consumo",
       cell: ({ row }) => {
-        const val = row.getValue("dosageMl") as number;
+        const val = row.original.dosageMl;
         return val ? `${val.toFixed(1)} ml` : "-";
       },
     },
@@ -637,7 +418,7 @@ function AnalyticsDetailTable({
       accessorKey: "domicilioCount",
       header: "Domicilio",
       cell: ({ row }) => {
-        const val = row.getValue("domicilioCount") as number;
+        const val = row.original.domicilioCount || 0;
         return val > 0 ? (
           <div className="flex items-center gap-1.5 text-secondary">
             <Home className="w-3.5 h-3.5" />
@@ -663,6 +444,189 @@ function AnalyticsDetailTable({
           enableToolbar={false}
           pageSizeOptions={[5, 10, 20]}
         />
+      </Card.Content>
+    </Card>
+  );
+}
+
+// --- Sub Components ---
+
+function AnalyticsHeader({
+  period,
+  isFilterOpen,
+  isLoading,
+  onToggleFilter,
+  onSetPeriod,
+  onRefresh,
+}: {
+  period: "day" | "week" | "month";
+  isFilterOpen: boolean;
+  isLoading: boolean;
+  onToggleFilter: () => void;
+  onSetPeriod: (p: "day" | "week" | "month") => void;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          Análisis de Tratamientos
+          {isLoading && <Spinner size="sm" color="current" />}
+        </h1>
+        <p className="text-small text-default-500">
+          Visualiza el rendimiento operativo y financiero
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="bg-default-100 rounded-lg p-1 flex items-center">
+          {(["day", "week", "month"] as const).map((p) => (
+            <button
+              type="button"
+              key={p}
+              onClick={() => onSetPeriod(p)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                period === p
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-default-500 hover:text-foreground"
+              }`}
+            >
+              {p === "day" ? "Día" : p === "week" ? "Semana" : "Mes"}
+            </button>
+          ))}
+        </div>
+        <Button
+          isIconOnly
+          variant="ghost"
+          size="sm"
+          onPress={onToggleFilter}
+          className={isFilterOpen ? "bg-primary/10 text-primary" : ""}
+        >
+          <CalendarIcon className="w-4 h-4" />
+        </Button>
+        <Button isIconOnly variant="ghost" size="sm" onPress={onRefresh}>
+          <RefreshCcw className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsFilters({
+  filters,
+  onDateChange,
+  onQuickRange,
+}: {
+  filters: TreatmentAnalyticsFilters;
+  onDateChange: (from: string, to: string) => void;
+  onQuickRange: (range: { from: string; to: string }) => void;
+}) {
+  return (
+    <Card className="bg-content2/50 border-default-100">
+      <Card.Content className="p-4 flex flex-col sm:flex-row gap-4 items-end">
+        <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-default-500">Desde</label>
+            <input
+              type="date"
+              className="bg-default-100 rounded-md px-3 py-2 text-sm text-foreground"
+              value={filters.from || ""}
+              onChange={(e) => onDateChange(e.target.value, filters.to || "")}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-default-500">Hasta</label>
+            <input
+              type="date"
+              className="bg-default-100 rounded-md px-3 py-2 text-sm text-foreground"
+              value={filters.to || ""}
+              onChange={(e) => onDateChange(filters.from || "", e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="ghost" onPress={() => onQuickRange(getThisWeek())}>
+            Esta Semana
+          </Button>
+          <Button size="sm" variant="ghost" onPress={() => onQuickRange(getLastMonth())}>
+            Mes Pasado
+          </Button>
+          <Button size="sm" variant="ghost" onPress={() => onQuickRange(getThisMonth())}>
+            Este Mes
+          </Button>
+        </div>
+      </Card.Content>
+    </Card>
+  );
+}
+
+function AnalyticsKpiGrid({
+  totalTreatmentCount,
+  totalRevenue,
+  totalMl,
+  domicilioCount,
+}: {
+  totalTreatmentCount: number;
+  totalRevenue: number;
+  totalMl: number;
+  domicilioCount: number;
+}) {
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <KpiCard
+        title="Tratamientos"
+        value={totalTreatmentCount}
+        icon={Syringe}
+        trend="Total periodo"
+      />
+      <KpiCard
+        title="Ingresos"
+        value={formatCurrency(totalRevenue)}
+        icon={DollarSign}
+        trend="Facturado"
+        color="success"
+      />
+      <KpiCard
+        title="Consumo (ml)"
+        value={totalMl.toFixed(1)}
+        icon={Package}
+        trend="Total ml"
+        color="warning"
+      />
+      <KpiCard
+        title="Domicilios"
+        value={domicilioCount}
+        icon={Home}
+        trend={`${((domicilioCount / (totalTreatmentCount || 1)) * 100).toFixed(0)}% del total`}
+        color="secondary"
+      />
+    </div>
+  );
+}
+
+function KpiCard({
+  title,
+  value,
+  icon: Icon,
+  trend,
+  color = "primary",
+}: {
+  title: string;
+  value: string | number;
+  icon: any;
+  trend: string;
+  color?: "primary" | "success" | "warning" | "secondary";
+}) {
+  return (
+    <Card className="shadow-sm border-default-200">
+      <Card.Content className="p-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs text-default-500 font-medium uppercase">{title}</p>
+          <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
+          <p className="text-xs text-default-400 mt-1">{trend}</p>
+        </div>
+        <div className={`p-2 rounded-lg bg-${color}/10 text-${color}`}>
+          <Icon className="w-5 h-5" />
+        </div>
       </Card.Content>
     </Card>
   );

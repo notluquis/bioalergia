@@ -1,12 +1,7 @@
-/**
- * Doctoralia API Routes
- *
- * Hono routes for Doctoralia integration.
- * Follows the pattern in routes/calendar.ts
- */
-
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { zValidator } from "@hono/zod-validator";
 import { type Context, Hono } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth.js";
 import * as doctoraliaClient from "../lib/doctoralia/doctoralia-client.js";
 import { isDoctoraliaConfigured } from "../lib/doctoralia/doctoralia-core.js";
@@ -28,6 +23,43 @@ type DoctoraliaWebhookPayload = {
     break?: { id?: unknown };
   };
 };
+
+// ============================================================
+// SCHEMAS
+// ============================================================
+
+const facilityParamSchema = z.object({
+  facilityId: z.string().regex(/^\d+$/).transform(Number),
+});
+
+const slotsParamSchema = z.object({
+  facilityId: z.string(),
+  doctorId: z.string(),
+  addressId: z.string(),
+});
+
+const slotsQuerySchema = z.object({
+  start: z.string(),
+  end: z.string(),
+});
+
+const bookSlotParamSchema = z.object({
+  facilityId: z.string(),
+  doctorId: z.string(),
+  addressId: z.string(),
+  slotStart: z.string(),
+});
+
+const cancelBookingParamSchema = z.object({
+  facilityId: z.string(),
+  doctorId: z.string(),
+  addressId: z.string(),
+  bookingId: z.string(),
+});
+
+const cancelBookingBodySchema = z.object({
+  reason: z.string().optional(),
+});
 
 // ============================================================
 // MIDDLEWARE
@@ -88,23 +120,25 @@ doctoraliaRoutes.get("/facilities", requireAuth, async (c) => {
 // DOCTORS (from DB cache)
 // ============================================================
 
-doctoraliaRoutes.get("/facilities/:facilityId/doctors", requireAuth, async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+doctoraliaRoutes.get(
+  "/facilities/:facilityId/doctors",
+  requireAuth,
+  zValidator("param", facilityParamSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canRead = await hasPermission(user.id, "read", "DoctoraliaDoctor");
-  if (!canRead) {
-    return reply(c, { status: "error", message: "Sin permisos" }, 403);
-  }
+    const canRead = await hasPermission(user.id, "read", "DoctoraliaDoctor");
+    if (!canRead) {
+      return reply(c, { status: "error", message: "Sin permisos" }, 403);
+    }
 
-  const facilityId = Number(c.req.param("facilityId"));
-  if (Number.isNaN(facilityId)) {
-    return reply(c, { status: "error", message: "facilityId inválido" }, 400);
-  }
+    const { facilityId } = c.req.valid("param");
 
-  const doctors = await getDoctoraliaDoctorsWithAddresses(facilityId);
-  return reply(c, { status: "ok", doctors });
-});
+    const doctors = await getDoctoraliaDoctorsWithAddresses(facilityId);
+    return reply(c, { status: "ok", doctors });
+  },
+);
 
 // ============================================================
 // SLOTS (from API)
@@ -113,13 +147,11 @@ doctoraliaRoutes.get("/facilities/:facilityId/doctors", requireAuth, async (c) =
 doctoraliaRoutes.get(
   "/facilities/:facilityId/doctors/:doctorId/addresses/:addressId/slots",
   requireAuth,
+  zValidator("param", slotsParamSchema),
+  zValidator("query", slotsQuerySchema),
   async (c) => {
-    const { facilityId, doctorId, addressId } = c.req.param();
-    const { start, end } = c.req.query();
-
-    if (!start || !end) {
-      return reply(c, { status: "error", message: "start y end son requeridos" }, 400);
-    }
+    const { facilityId, doctorId, addressId } = c.req.valid("param");
+    const { start, end } = c.req.valid("query");
 
     try {
       const data = await doctoraliaClient.getSlots(facilityId, doctorId, addressId, start, end);
@@ -138,13 +170,11 @@ doctoraliaRoutes.get(
 doctoraliaRoutes.get(
   "/facilities/:facilityId/doctors/:doctorId/addresses/:addressId/bookings",
   requireAuth,
+  zValidator("param", slotsParamSchema),
+  zValidator("query", slotsQuerySchema),
   async (c) => {
-    const { facilityId, doctorId, addressId } = c.req.param();
-    const { start, end } = c.req.query();
-
-    if (!start || !end) {
-      return reply(c, { status: "error", message: "start y end son requeridos" }, 400);
-    }
+    const { facilityId, doctorId, addressId } = c.req.valid("param");
+    const { start, end } = c.req.valid("query");
 
     try {
       const data = await doctoraliaClient.getBookings(facilityId, doctorId, addressId, start, end, {
@@ -174,6 +204,7 @@ doctoraliaRoutes.get(
 doctoraliaRoutes.post(
   "/facilities/:facilityId/doctors/:doctorId/addresses/:addressId/slots/:slotStart/book",
   requireAuth,
+  zValidator("param", bookSlotParamSchema),
   async (c) => {
     const user = await getSessionUser(c);
     if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
@@ -183,8 +214,8 @@ doctoraliaRoutes.post(
       return reply(c, { status: "error", message: "Sin permisos" }, 403);
     }
 
-    const { facilityId, doctorId, addressId, slotStart } = c.req.param();
-    const body = await c.req.json();
+    const { facilityId, doctorId, addressId, slotStart } = c.req.valid("param");
+    const body = await c.req.json(); // Book slot body structure varies, keep loose or define strict if known
 
     try {
       const booking = await doctoraliaClient.bookSlot(
@@ -209,6 +240,8 @@ doctoraliaRoutes.post(
 doctoraliaRoutes.delete(
   "/facilities/:facilityId/doctors/:doctorId/addresses/:addressId/bookings/:bookingId",
   requireAuth,
+  zValidator("param", cancelBookingParamSchema),
+  zValidator("json", cancelBookingBodySchema),
   async (c) => {
     const user = await getSessionUser(c);
     if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
@@ -218,17 +251,11 @@ doctoraliaRoutes.delete(
       return reply(c, { status: "error", message: "Sin permisos" }, 403);
     }
 
-    const { facilityId, doctorId, addressId, bookingId } = c.req.param();
-    const body = await c.req.json().catch(() => ({}));
+    const { facilityId, doctorId, addressId, bookingId } = c.req.valid("param");
+    const body = c.req.valid("json");
 
     try {
-      await doctoraliaClient.cancelBooking(
-        facilityId,
-        doctorId,
-        addressId,
-        bookingId,
-        body?.reason,
-      );
+      await doctoraliaClient.cancelBooking(facilityId, doctorId, addressId, bookingId, body.reason);
       return reply(c, { status: "ok" }, 204);
     } catch (error) {
       console.error("[Doctoralia] cancelBooking error:", error);

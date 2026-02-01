@@ -1,35 +1,54 @@
 import { db } from "@finanzas/db";
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { reply } from "../utils/reply";
 
 const app = new Hono();
 
+// ============================================================
+// SCHEMAS
+// ============================================================
+
+const listPeopleQuerySchema = z.object({
+  includeTest: z.enum(["true", "false"]).optional(),
+});
+
+const peopleParamSchema = z.object({
+  id: z.string().regex(/^\d+$/, "ID debe ser numérico").transform(Number),
+});
+
+// ============================================================
+// ROUTES
+// ============================================================
+
 // GET / - List all people
-app.get("/", async (c) => {
+app.get("/", zValidator("query", listPeopleQuerySchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Person");
   if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const includeTest = c.req.query("includeTest") === "true";
+  const { includeTest } = c.req.valid("query");
 
   try {
     const people = await db.person.findMany({
-      where: includeTest
-        ? undefined
-        : {
-            NOT: {
-              OR: [
-                { names: { contains: "Test", mode: "insensitive" } },
-                { names: { contains: "test" } },
-                { rut: { startsWith: "11111111" } },
-                { rut: { startsWith: "TEMP-" } },
-                { email: { contains: "test", mode: "insensitive" } },
-              ],
+      where:
+        includeTest === "true"
+          ? undefined
+          : {
+              NOT: {
+                OR: [
+                  { names: { contains: "Test", mode: "insensitive" } },
+                  { names: { contains: "test" } },
+                  { rut: { startsWith: "11111111" } },
+                  { rut: { startsWith: "TEMP-" } },
+                  { email: { contains: "test", mode: "insensitive" } },
+                ],
+              },
             },
-          },
       orderBy: { names: "asc" },
       include: {
         counterpart: true,
@@ -53,17 +72,14 @@ app.get("/", async (c) => {
 });
 
 // GET /:id - Get person by ID
-app.get("/:id", async (c) => {
+app.get("/:id", zValidator("param", peopleParamSchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Person");
   if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const id = Number(c.req.param("id"));
-  if (!Number.isFinite(id)) {
-    return reply(c, { status: "error", message: "ID inválido" }, 400);
-  }
+  const { id } = c.req.valid("param");
 
   try {
     const person = await db.person.findUnique({

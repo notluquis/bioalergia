@@ -1,4 +1,6 @@
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { transactionsQuerySchema } from "../lib/financial-schemas";
 import { mapTransaction } from "../lib/mappers";
@@ -7,7 +9,40 @@ import { reply } from "../utils/reply";
 
 const app = new Hono();
 
-app.get("/", async (c) => {
+// ============================================================
+// SCHEMAS
+// ============================================================
+
+// Extend the shared schema to include the API-specific flag
+const listTransactionsSchema = transactionsQuerySchema.extend({
+  includeTest: z.enum(["true", "false"]).optional(),
+});
+
+const participantLeaderboardSchema = z.object({
+  from: z.string().optional(),
+  to: z.string().optional(),
+  limit: z.string().regex(/^\d+$/).transform(Number).optional(),
+});
+
+const participantInsightParamsSchema = z.object({
+  id: z.string(),
+});
+
+const participantInsightQuerySchema = z.object({
+  from: z.string().optional(),
+  to: z.string().optional(),
+});
+
+const statsQuerySchema = z.object({
+  from: z.string(),
+  to: z.string(),
+});
+
+// ============================================================
+// ROUTES
+// ============================================================
+
+app.get("/", zValidator("query", listTransactionsSchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
@@ -18,40 +53,40 @@ app.get("/", async (c) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const query = c.req.query();
-  const parsed = transactionsQuerySchema.safeParse(query);
+  const {
+    limit: rawLimit,
+    includeAmounts: includeAmountsRaw,
+    includeTotal: includeTotalRaw,
+    page: rawPage,
+    pageSize: rawPageSize,
+    from,
+    to,
+    description,
+    sourceId,
+    externalReference,
+    transactionType,
+    status,
+    search,
+    includeTest,
+  } = c.req.valid("query");
 
-  if (!parsed.success) {
-    return reply(
-      c,
-      {
-        status: "error",
-        message: "Filtros inválidos",
-        issues: parsed.error.issues,
-      },
-      400,
-    );
-  }
-
-  const limit = Math.min(parsed.data.limit || 100, 2000);
-  const includeAmounts = parsed.data.includeAmounts === "true";
-  const includeTotal = parsed.data.includeTotal !== "false";
-  const page = parsed.data.page ?? 1;
-  const pageSize = parsed.data.pageSize ?? limit;
+  const limit = Math.min(rawLimit || 100, 2000);
+  const includeAmounts = includeAmountsRaw === "true";
+  const includeTotal = includeTotalRaw !== "false";
+  const page = rawPage ?? 1;
+  const pageSize = rawPageSize ?? limit;
   const offset = (page - 1) * pageSize;
 
-  const includeTestData = c.req.query("includeTest") === "true";
-
   const filters: TransactionFilters = {
-    from: parsed.data.from ? new Date(parsed.data.from) : undefined,
-    to: parsed.data.to ? new Date(parsed.data.to) : undefined,
-    description: parsed.data.description,
-    sourceId: parsed.data.sourceId,
-    externalReference: parsed.data.externalReference,
-    transactionType: parsed.data.transactionType,
-    status: parsed.data.status,
-    search: parsed.data.search,
-    includeTest: includeTestData,
+    from: from ? new Date(from) : undefined,
+    to: to ? new Date(to) : undefined,
+    description,
+    sourceId,
+    externalReference,
+    transactionType,
+    status,
+    search,
+    includeTest: includeTest === "true",
   };
 
   const { total, transactions } = await listTransactions(filters, pageSize, offset, includeTotal);
@@ -67,7 +102,7 @@ app.get("/", async (c) => {
   });
 });
 
-app.get("/participants", async (c) => {
+app.get("/participants", zValidator("query", participantLeaderboardSchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
@@ -78,14 +113,13 @@ app.get("/participants", async (c) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const query = c.req.query();
-  const from = query.from ? new Date(query.from) : undefined;
-  const to = query.to ? new Date(query.to) : undefined;
-  const limit = query.limit ? Number(query.limit) : undefined;
+  const { from, to, limit } = c.req.valid("query");
+  const fromDate = from ? new Date(from) : undefined;
+  const toDate = to ? new Date(to) : undefined;
 
   const { getParticipantLeaderboard } = await import("../services/transactions");
   try {
-    const result = await getParticipantLeaderboard({ from, to, limit });
+    const result = await getParticipantLeaderboard({ from: fromDate, to: toDate, limit });
     return reply(c, result);
   } catch (err) {
     console.error("Error fetching participant leaderboard:", err);
@@ -93,34 +127,39 @@ app.get("/participants", async (c) => {
   }
 });
 
-app.get("/participants/:id", async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+app.get(
+  "/participants/:id",
+  zValidator("param", participantInsightParamsSchema),
+  zValidator("query", participantInsightQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
-  const canRead = await hasPermission(user.id, "read", "Transaction");
-  const canReadList = await hasPermission(user.id, "read", "TransactionList");
+    const canRead = await hasPermission(user.id, "read", "Transaction");
+    const canReadList = await hasPermission(user.id, "read", "TransactionList");
 
-  if (!canRead && !canReadList) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
+    if (!canRead && !canReadList) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
 
-  const id = c.req.param("id");
-  const query = c.req.query();
-  const from = query.from ? new Date(query.from) : undefined;
-  const to = query.to ? new Date(query.to) : undefined;
+    const { id } = c.req.valid("param");
+    const { from, to } = c.req.valid("query");
+    const fromDate = from ? new Date(from) : undefined;
+    const toDate = to ? new Date(to) : undefined;
 
-  const { getParticipantInsight } = await import("../services/transactions");
+    const { getParticipantInsight } = await import("../services/transactions");
 
-  try {
-    const result = await getParticipantInsight(id, { from, to });
-    return reply(c, result);
-  } catch (err) {
-    console.error("Error fetching participant insight:", err);
-    return reply(c, { status: "error", message: "Error interno" }, 500);
-  }
-});
+    try {
+      const result = await getParticipantInsight(id, { from: fromDate, to: toDate });
+      return reply(c, result);
+    } catch (err) {
+      console.error("Error fetching participant insight:", err);
+      return reply(c, { status: "error", message: "Error interno" }, 500);
+    }
+  },
+);
 
-app.get("/stats", async (c) => {
+app.get("/stats", zValidator("query", statsQuerySchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
@@ -131,18 +170,14 @@ app.get("/stats", async (c) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const query = c.req.query();
-  const from = query.from ? new Date(query.from) : undefined;
-  const to = query.to ? new Date(query.to) : undefined;
-
-  if (!from || !to) {
-    return reply(c, { status: "error", message: "Fechas requeridas" }, 400);
-  }
+  const { from, to } = c.req.valid("query");
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
 
   const { getTransactionStats } = await import("../services/transactions");
 
   try {
-    const result = await getTransactionStats({ from, to });
+    const result = await getTransactionStats({ from: fromDate, to: toDate });
     return reply(c, result);
   } catch (err) {
     console.error("Error fetching stats:", err);

@@ -1,23 +1,134 @@
+import { zValidator } from "@hono/zod-validator";
 import dayjs from "dayjs";
 import { Hono } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
+import { getEmployeeById } from "../services/employees";
 import {
   buildMonthlySummary,
   deleteTimesheetEntry,
   listTimesheetEntries,
   normalizeTimesheetPayload,
+  type TimesheetEntry,
   type UpsertTimesheetPayload,
   updateTimesheetEntry,
   upsertTimesheetEntry,
-  type TimesheetEntry,
 } from "../services/timesheets";
 import { reply } from "../utils/reply";
-import { getEmployeeById } from "../services/employees";
 
 const app = new Hono();
 
+// ============================================================
+// SCHEMAS
+// ============================================================
+
+const monthQuerySchema = z.object({
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/, "Formato YYYY-MM inválido")
+    .optional(),
+  employeeId: z.string().regex(/^\d+$/).transform(Number).optional(),
+});
+
+const rangeQuerySchema = z.object({
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+});
+
+// Reuse existing logic defaults
+const defaultRangeQuery = (query: { from?: string; to?: string }) => ({
+  from: query.from || dayjs().startOf("month").format("YYYY-MM-DD"),
+  to: query.to || dayjs().endOf("month").format("YYYY-MM-DD"),
+});
+
+const multiMonthQuerySchema = z.object({
+  employeeIds: z.string().optional(),
+  startMonth: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
+  endMonth: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
+});
+
+const multiDetailQuerySchema = z.object({
+  employeeIds: z.string().optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+});
+
+const employeeIdParamSchema = z.object({
+  employeeId: z.string().regex(/^\d+$/, "ID debe ser numérico").transform(Number),
+});
+
+const idParamSchema = z.object({
+  id: z.string().regex(/^\d+$/, "ID debe ser numérico").transform(Number),
+});
+
+const rangeParamQuerySchema = z.object({
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+});
+
+const detailMonthQuerySchema = z.object({
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
+});
+
+const bulkBodySchema = z.object({
+  employee_id: z.number(),
+  entries: z.array(z.any()).default([]), // Using any for entries as partial validation happens in normalize
+  remove_ids: z.array(z.union([z.string(), z.number()])).default([]),
+});
+
+const emailBodySchema = z.object({
+  employeeId: z.number(),
+  month: z.string(),
+  monthLabel: z.string(),
+  pdfBase64: z.string(),
+  employeeName: z.string(),
+  employeeEmail: z.string().email(),
+  summary: z.object({
+    role: z.string(),
+    subtotal: z.number(),
+    retention: z.number(),
+    net: z.number(),
+    payDate: z.string(),
+    workedMinutes: z.number().optional(),
+    overtimeMinutes: z.number().optional(),
+    retentionRate: z.number().optional(),
+    retention_rate: z.number().optional(),
+  }),
+});
+
+// ============================================================
+// ROUTES
+// ============================================================
+
 // GET /summary - Get monthly summary for all employees or filtered
-app.get("/summary", async (c) => {
+app.get("/summary", zValidator("query", monthQuerySchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
@@ -31,9 +142,7 @@ app.get("/summary", async (c) => {
   }
 
   try {
-    const query = c.req.query();
-    const month = query.month || dayjs().format("YYYY-MM");
-    const employeeId = query.employeeId ? Number(query.employeeId) : undefined;
+    const { month = dayjs().format("YYYY-MM"), employeeId } = c.req.valid("query");
 
     // Parse month to get date range
     const from = dayjs(month).startOf("month").format("YYYY-MM-DD");
@@ -55,7 +164,7 @@ app.get("/summary", async (c) => {
 });
 
 // GET / - List all timesheets (Global Range for Reports)
-app.get("/", async (c) => {
+app.get("/", zValidator("query", rangeQuerySchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
@@ -69,41 +178,8 @@ app.get("/", async (c) => {
   }
 
   try {
-    const query = c.req.query();
-    const from = query.from || dayjs().startOf("month").format("YYYY-MM-DD");
-    const to = query.to || dayjs().endOf("month").format("YYYY-MM-DD");
-
+    const { from, to } = defaultRangeQuery(c.req.valid("query"));
     const entries = await listTimesheetEntries({ from, to });
-
-    return reply(c, { status: "ok", entries });
-  } catch (error) {
-    console.error("[timesheets] list error:", error);
-    return reply(c, { status: "error", message: "Error al listar registros" }, 500);
-  }
-});
-
-// Explicit match for empty path to handle /api/timesheets without trailing slash strictness
-app.get("", async (c) => {
-  // Reuse the logic from "/"
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
-
-  const canRead = await hasPermission(user.id, "read", "Timesheet");
-  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
-  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
-  const canReadReport = await hasPermission(user.id, "read", "Report");
-
-  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
-
-  try {
-    const query = c.req.query();
-    const from = query.from || dayjs().startOf("month").format("YYYY-MM-DD");
-    const to = query.to || dayjs().endOf("month").format("YYYY-MM-DD");
-
-    const entries = await listTimesheetEntries({ from, to });
-
     return reply(c, { status: "ok", entries });
   } catch (error) {
     console.error("[timesheets] list error:", error);
@@ -133,7 +209,6 @@ app.get("/months", async (c) => {
       months.push(today.subtract(i, "month").format("YYYY-MM"));
     }
 
-    // TODO: Query DB to find which months actually have data
     const monthsWithData: string[] = [];
 
     return reply(c, {
@@ -148,7 +223,7 @@ app.get("/months", async (c) => {
 });
 
 // GET /multi-month - Get timesheets for multiple employees across multiple months
-app.get("/multi-month", async (c) => {
+app.get("/multi-month", zValidator("query", multiMonthQuerySchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
@@ -162,13 +237,13 @@ app.get("/multi-month", async (c) => {
   }
 
   try {
-    const query = c.req.query();
-    const employeeIds = query.employeeIds?.split(",").map(Number) || [];
-    const startMonth = query.startMonth || dayjs().format("YYYY-MM");
-    const endMonth = query.endMonth || startMonth;
+    const { employeeIds: rawIds, startMonth, endMonth } = c.req.valid("query");
+    const employeeIds = rawIds?.split(",").map(Number) || [];
+    const start = startMonth || dayjs().format("YYYY-MM");
+    const end = endMonth || start;
 
-    const from = dayjs(startMonth).startOf("month").format("YYYY-MM-DD");
-    const to = dayjs(endMonth).endOf("month").format("YYYY-MM-DD");
+    const from = dayjs(start).startOf("month").format("YYYY-MM-DD");
+    const to = dayjs(end).endOf("month").format("YYYY-MM-DD");
 
     // Get entries for all requested employees
     const data: Record<
@@ -185,7 +260,7 @@ app.get("/multi-month", async (c) => {
         from,
         to,
       });
-      data[String(employeeId)] = { month: startMonth, entries };
+      data[String(employeeId)] = { month: start, entries };
     }
 
     return reply(c, { status: "ok", data });
@@ -196,7 +271,7 @@ app.get("/multi-month", async (c) => {
 });
 
 // GET /multi-detail - Get timesheet entries for multiple employees in a date range
-app.get("/multi-detail", async (c) => {
+app.get("/multi-detail", zValidator("query", multiDetailQuerySchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
@@ -210,12 +285,10 @@ app.get("/multi-detail", async (c) => {
   }
 
   try {
-    const query = c.req.query();
-    const employeeIds = query.employeeIds?.split(",").map(Number) || [];
-    const from = query.from || dayjs().startOf("month").format("YYYY-MM-DD");
-    const to = query.to || dayjs().endOf("month").format("YYYY-MM-DD");
+    const { employeeIds: rawIds, from: rawFrom, to: rawTo } = c.req.valid("query");
+    const employeeIds = rawIds?.split(",").map(Number) || [];
+    const { from, to } = defaultRangeQuery({ from: rawFrom, to: rawTo });
 
-    // Collect entries for all employees
     const allEntries: Array<
       Awaited<ReturnType<typeof listTimesheetEntries>>[number] & {
         full_name?: string;
@@ -252,90 +325,93 @@ app.get("/multi-detail", async (c) => {
 });
 
 // GET /:employeeId/range - Get timesheet entries for an employee in a date range
-app.get("/:employeeId/range", async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+app.get(
+  "/:employeeId/range",
+  zValidator("param", employeeIdParamSchema),
+  zValidator("query", rangeParamQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
-  const canRead = await hasPermission(user.id, "read", "Timesheet");
-  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
-  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
-  const canReadReport = await hasPermission(user.id, "read", "Report");
+    const canRead = await hasPermission(user.id, "read", "Timesheet");
+    const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+    const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+    const canReadReport = await hasPermission(user.id, "read", "Report");
 
-  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
-
-  try {
-    const employeeId = Number(c.req.param("employeeId"));
-    if (!Number.isFinite(employeeId)) {
-      return reply(c, { status: "error", message: "ID inválido" }, 400);
+    if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
     }
 
-    const query = c.req.query();
-    const startDate = query.startDate || dayjs().startOf("month").format("YYYY-MM-DD");
-    const endDate = query.endDate || dayjs().endOf("month").format("YYYY-MM-DD");
+    try {
+      const { employeeId } = c.req.valid("param");
+      const { startDate: rawStart, endDate: rawEnd } = c.req.valid("query");
 
-    const entries = await listTimesheetEntries({
-      employee_id: employeeId,
-      from: startDate,
-      to: endDate,
-    });
+      const startDate = rawStart || dayjs().startOf("month").format("YYYY-MM-DD");
+      const endDate = rawEnd || dayjs().endOf("month").format("YYYY-MM-DD");
 
-    return reply(c, {
-      status: "ok",
-      entries,
-      from: startDate,
-      to: endDate,
-    });
-  } catch (error) {
-    console.error("[timesheets] range error:", error);
-    return reply(c, { status: "error", message: "Error al cargar rango" }, 500);
-  }
-});
+      const entries = await listTimesheetEntries({
+        employee_id: employeeId,
+        from: startDate,
+        to: endDate,
+      });
+
+      return reply(c, {
+        status: "ok",
+        entries,
+        from: startDate,
+        to: endDate,
+      });
+    } catch (error) {
+      console.error("[timesheets] range error:", error);
+      return reply(c, { status: "error", message: "Error al cargar rango" }, 500);
+    }
+  },
+);
 
 // GET /:employeeId/detail - Get detailed timesheet entries for an employee
-app.get("/:employeeId/detail", async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+app.get(
+  "/:employeeId/detail",
+  zValidator("param", employeeIdParamSchema),
+  zValidator("query", detailMonthQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
-  const canRead = await hasPermission(user.id, "read", "Timesheet");
-  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
-  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
-  const canReadReport = await hasPermission(user.id, "read", "Report");
+    const canRead = await hasPermission(user.id, "read", "Timesheet");
+    const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+    const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+    const canReadReport = await hasPermission(user.id, "read", "Report");
 
-  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
-
-  try {
-    const employeeId = Number(c.req.param("employeeId"));
-    if (!Number.isFinite(employeeId)) {
-      return reply(c, { status: "error", message: "ID inválido" }, 400);
+    if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
     }
 
-    const query = c.req.query();
-    const month = query.month || dayjs().format("YYYY-MM");
+    try {
+      const { employeeId } = c.req.valid("param");
+      const { month: rawMonth } = c.req.valid("query");
+      const month = rawMonth || dayjs().format("YYYY-MM");
 
-    const from = dayjs(month).startOf("month").format("YYYY-MM-DD");
-    const to = dayjs(month).endOf("month").format("YYYY-MM-DD");
+      const from = dayjs(month).startOf("month").format("YYYY-MM-DD");
+      const to = dayjs(month).endOf("month").format("YYYY-MM-DD");
 
-    const entries = await listTimesheetEntries({
-      employee_id: employeeId,
-      from,
-      to,
-    });
+      const entries = await listTimesheetEntries({
+        employee_id: employeeId,
+        from,
+        to,
+      });
 
-    return reply(c, {
-      status: "ok",
-      entries,
-      from,
-      to,
-    });
-  } catch (error) {
-    console.error("[timesheets] detail error:", error);
-    return reply(c, { status: "error", message: "Error al cargar detalle" }, 500);
-  }
-});
+      return reply(c, {
+        status: "ok",
+        entries,
+        from,
+        to,
+      });
+    } catch (error) {
+      console.error("[timesheets] detail error:", error);
+      return reply(c, { status: "error", message: "Error al cargar detalle" }, 500);
+    }
+  },
+);
 
 // POST / - Create or update timesheet entry
 app.post("/", async (c) => {
@@ -358,7 +434,7 @@ app.post("/", async (c) => {
 });
 
 // POST /bulk - Bulk upsert timesheet entries
-app.post("/bulk", async (c) => {
+app.post("/bulk", zValidator("json", bulkBodySchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
@@ -366,8 +442,7 @@ app.post("/bulk", async (c) => {
   if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
   try {
-    const body = await c.req.json();
-    const { employee_id, entries = [], remove_ids = [] } = body;
+    const { employee_id, entries, remove_ids } = c.req.valid("json");
 
     let inserted = 0;
     let removed = 0;
@@ -397,20 +472,17 @@ app.post("/bulk", async (c) => {
 });
 
 // PUT /:id - Update timesheet entry
-app.put("/:id", async (c) => {
+app.put("/:id", zValidator("param", idParamSchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canUpdate = await hasPermission(user.id, "update", "Timesheet");
   if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const id = Number(c.req.param("id"));
-  if (!Number.isFinite(id)) {
-    return reply(c, { status: "error", message: "ID inválido" }, 400);
-  }
+  const { id } = c.req.valid("param");
 
   try {
-    const body = await c.req.json();
+    const body = await c.req.json(); // Use partial schema or explicit validation if strictly required, simplified for PUT
     const entry = await updateTimesheetEntry(id, body);
     return reply(c, { status: "ok", entry });
   } catch (error) {
@@ -421,17 +493,14 @@ app.put("/:id", async (c) => {
 });
 
 // DELETE /:id - Delete timesheet entry
-app.delete("/:id", async (c) => {
+app.delete("/:id", zValidator("param", idParamSchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
   const canDelete = await hasPermission(user.id, "delete", "Timesheet");
   if (!canDelete) return reply(c, { status: "error", message: "Forbidden" }, 403);
 
-  const id = Number(c.req.param("id"));
-  if (!Number.isFinite(id)) {
-    return reply(c, { status: "error", message: "ID inválido" }, 400);
-  }
+  const { id } = c.req.valid("param");
 
   try {
     await deleteTimesheetEntry(id);
@@ -444,7 +513,7 @@ app.delete("/:id", async (c) => {
 });
 
 // POST /prepare-email - Prepare email with PDF attachment
-app.post("/prepare-email", async (c) => {
+app.post("/prepare-email", zValidator("json", emailBodySchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
 
@@ -458,8 +527,8 @@ app.post("/prepare-email", async (c) => {
   }
 
   try {
-    const body = await c.req.json();
-    const { employeeId, month, monthLabel, pdfBase64, employeeName, employeeEmail, summary } = body;
+    const { employeeId, month, monthLabel, pdfBase64, employeeName, employeeEmail, summary } =
+      c.req.valid("json");
 
     // Convert PDF to .eml format for download
     const filename = `liquidacion_${month}_${employeeId}.eml`;
@@ -481,8 +550,10 @@ app.post("/prepare-email", async (c) => {
     };
 
     // Get retention rate
-    // biome-ignore lint/style/noNonNullAssertion: legacy logic
-    const summaryYear = month ? parseInt(month.split("-")[0]!, 10) : new Date().getFullYear();
+    // Get retention rate
+    const summaryYear = month
+      ? Number.parseInt(month.split("-")[0] ?? "2024", 10)
+      : new Date().getFullYear();
     const employeeRate = summary.retentionRate || summary.retention_rate || null;
     const effectiveRate = employeeRate ?? (summaryYear >= 2024 ? 0.1275 : 0.1);
     const retentionPercent = `${(effectiveRate * 100).toFixed(2)}%`;

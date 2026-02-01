@@ -162,7 +162,7 @@ export async function cleanupOldBackups(
 /**
  * Gets metadata for a specific file.
  */
-export async function getBackupInfo(fileId: string): Promise<BackupFile | null> {
+export async function getBackupInfo(fileId: string): Promise<BackupFile> {
   try {
     const drive = await getDriveClient();
 
@@ -184,7 +184,7 @@ export async function getBackupInfo(fileId: string): Promise<BackupFile | null> 
     };
   } catch (error) {
     if (error instanceof GoogleApiError && error.code === 404) {
-      return null;
+      throw new Error(`Backup file with ID ${fileId} not found`);
     }
     throw parseGoogleError(error);
   }
@@ -329,11 +329,11 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
 
 /**
  * Gets granular stats (hash, count) from backup metadata.
- * Returns null if metadata is missing or legacy backup.
+ * Throws error if metadata is missing or invalid.
  */
 export async function getBackupStats(
   fileId: string,
-): Promise<Record<string, { count: number; hash: string }> | null> {
+): Promise<Record<string, { count: number; hash: string }>> {
   try {
     const drive = await getDriveClient();
     const metadata = await drive.files.get({
@@ -352,9 +352,9 @@ export async function getBackupStats(
         // Ignore JSON error
       }
     }
-    return null;
+    throw new Error(`No stats found in metadata for file ${fileId}`);
   } catch (error) {
     console.warn(`[Drive] Failed to get stats for ${fileId}`, error);
-    return null;
+    throw parseGoogleError(error);
   }
 }

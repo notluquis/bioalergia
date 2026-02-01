@@ -57,17 +57,26 @@ export interface ListTimesheetOptions {
 /**
  * Convert time string (HH:MM or HH:MM:SS) to minutes since midnight.
  */
-function timeToMinutes(time: string): number | null {
-  if (!time) return null;
+/**
+ * Convert time string (HH:MM or HH:MM:SS) to minutes since midnight.
+ */
+function timeToMinutes(time: string): number {
+  if (!time) throw new Error("Time string is required");
   const d = dayjs(time);
   if (d.isValid() && (time.includes("T") || time.includes("-"))) {
     return d.hour() * 60 + d.minute();
   }
-  if (!/^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/.test(time)) return null;
+  if (!/^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/.test(time)) {
+    throw new Error(`Invalid time format: ${time}. Expected HH:MM or HH:MM:SS`);
+  }
   const parts = time.split(":").map(Number);
   const [hours, minutes] = parts;
-  if (hours === undefined || minutes === undefined) return null;
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) return null;
+  if (hours === undefined || minutes === undefined) {
+    throw new Error(`Invalid time components: ${time}`);
+  }
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) {
+    throw new Error(`Time out of range: ${time}`);
+  }
   return hours * 60 + minutes;
 }
 
@@ -98,10 +107,10 @@ function normalizeTimeString(time: string): string | null {
 
   const [, hours, minutes, seconds = "00"] = match;
   // biome-ignore lint/style/noNonNullAssertion: regex match guarantee
-  const h = parseInt(hours!, 10);
+  const h = Number.parseInt(hours!, 10);
   // biome-ignore lint/style/noNonNullAssertion: regex match guarantee
-  const m = parseInt(minutes!, 10);
-  const s = parseInt(seconds, 10);
+  const m = Number.parseInt(minutes!, 10);
+  const s = Number.parseInt(seconds, 10);
 
   // Validate ranges
   if (h < 0 || h > 23 || m < 0 || m >= 60 || s < 0 || s >= 60) return null;
@@ -115,11 +124,8 @@ function normalizeTimeString(time: string): string | null {
  * Uses reference date (work_date) and America/Santiago timezone
  * ZenStack/Prisma extracts only TIME component for PostgreSQL TIME columns
  */
-function timeStringToDate(
-  time: string | null | undefined,
-  referenceDate: Date = new Date(),
-): Date | null {
-  if (!time) return null;
+function timeStringToDate(time: string | null | undefined, referenceDate: Date = new Date()): Date {
+  if (!time) throw new Error("Time string is required for date conversion");
 
   // Format reference date as YYYY-MM-DD in Santiago timezone
   const refDateStr = dayjs(referenceDate).tz(TIMEZONE).format("YYYY-MM-DD");
@@ -146,14 +152,14 @@ function timeStringToDate(
       seconds < 0 ||
       seconds >= 60
     ) {
-      return null;
+      throw new Error(`Invalid time components in: ${time}`);
     }
     // Build datetime string in Santiago timezone: "YYYY-MM-DD HH:mm:ss"
     const timeStr = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
     return dayjs.tz(`${refDateStr} ${timeStr}`, TIMEZONE).toDate();
   }
 
-  return null;
+  throw new Error(`Unable to parse time string: ${time}`);
 }
 
 /**
@@ -565,7 +571,7 @@ export function buildEmployeeSummary(
   }
 
   // Get year from period start (format: YYYY-MM-DD)
-  const periodYear = parseInt(data.periodStart.split("-")[0], 10);
+  const periodYear = Number.parseInt(data.periodStart.split("-")[0], 10);
   const retentionRate = getEffectiveRetentionRate(Number(employee.retentionRate ?? 0), periodYear);
   const payDate = computePayDate(employee.position, data.periodStart);
 
