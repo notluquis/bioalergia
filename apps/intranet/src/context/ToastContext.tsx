@@ -22,6 +22,12 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
 import { addNotification } from "@/features/notifications/store/use-notification-store";
 
 export function useToast() {
+  const formatMessage = (value: unknown, fallback: string) => {
+    if (typeof value === "string") return value;
+    if (value instanceof Error) return value.message;
+    return fallback;
+  };
+
   const showToast = ({ duration, message, title, variant = "info" }: ToastOptions) => {
     // Add to persistent history
     addNotification({
@@ -48,8 +54,8 @@ export function useToast() {
     showToast({ message, title, variant: "success" });
   };
 
-  const error = (message: string, title = "Error") => {
-    showToast({ message, title, variant: "error" });
+  const error = (message: unknown, title = "Error") => {
+    showToast({ message: formatMessage(message, title), title, variant: "error" });
   };
 
   const info = (message: string, title = "Información") => {

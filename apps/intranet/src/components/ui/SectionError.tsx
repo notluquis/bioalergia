@@ -40,7 +40,9 @@ export function SectionError({
 
       {errorMessage && (
         <div className="mb-6 w-full max-w-md overflow-hidden rounded-lg bg-default-50 p-2 text-left">
-          <code className="block font-mono text-xs text-danger break-all">{errorMessage}</code>
+          <code className="block font-mono text-xs text-danger break-all whitespace-pre-wrap">
+            {errorMessage}
+          </code>
         </div>
       )}
 

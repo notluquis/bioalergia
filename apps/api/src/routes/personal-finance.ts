@@ -1,5 +1,5 @@
 import { authDb } from "@finanzas/db";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../lib/zod-validator";
 import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { z } from "zod";

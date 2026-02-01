@@ -12,6 +12,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { ZodError } from "zod";
 import { AuthListener } from "@/features/auth/components/AuthListener";
+import { ApiError } from "@/lib/api-client";
 import { AppFallback } from "./components/features/AppFallback";
 import Button from "./components/ui/Button";
 import { ChunkErrorBoundary } from "./components/ui/ChunkErrorBoundary";
@@ -72,6 +73,11 @@ function logGlobalError(error: unknown, context: string) {
       })),
     );
     console.groupEnd();
+  } else if (error instanceof ApiError && error.details) {
+    console.group(`🚨 [${context}] ApiError`);
+    console.error(error.message);
+    console.log("details:", error.details);
+    console.groupEnd();
   } else {
     // Standard error logging
     console.group(`🚨 [${context}] Error`);
@@ -130,7 +136,7 @@ const router = createRouter({
       <div className="p-8 flex flex-col items-center justify-center min-h-[40vh] gap-4">
         <div className="bg-danger/10 text-danger p-6 rounded-2xl max-w-lg text-center border border-danger-soft-hover">
           <h2 className="text-xl font-bold mb-2">Error de Navegación</h2>
-          <p className="text-sm opacity-90">
+          <p className="text-sm opacity-90 whitespace-pre-wrap">
             {error instanceof Error ? error.message : "Un error inesperado ha ocurrido."}
           </p>
           <Button

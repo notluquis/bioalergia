@@ -47,7 +47,7 @@ async function issueToken(session: AuthSession): Promise<string> {
   );
 }
 
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../lib/zod-validator";
 import { z } from "zod";
 
 // ... existing imports ...

@@ -1,5 +1,5 @@
 import { db } from "@finanzas/db";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../lib/zod-validator";
 import dayjs from "dayjs";
 import { type Context, Hono } from "hono";
 import { z } from "zod";

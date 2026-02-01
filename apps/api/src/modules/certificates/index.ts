@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../../lib/zod-validator";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";

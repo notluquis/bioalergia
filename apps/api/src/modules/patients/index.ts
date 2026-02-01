@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import crypto from "node:crypto";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../../lib/zod-validator";
 import { db } from "@finanzas/db";
 import { createPatientSchema, updatePatientSchema, createConsultationSchema, createBudgetSchema, createPaymentSchema } from "./patients.schema.js";
 import { getSessionUser } from "../../auth.js";

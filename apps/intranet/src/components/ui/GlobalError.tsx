@@ -86,7 +86,7 @@ export class GlobalError extends Component<Props, State> {
 
             {!isDeployIssue && this.state.error && (
               <div className="bg-default-50 rounded-xl p-4 text-left">
-                <p className="text-danger font-mono text-xs break-all">
+                <p className="text-danger font-mono text-xs break-all whitespace-pre-wrap">
                   {this.state.error.toString()}
                 </p>
               </div>
