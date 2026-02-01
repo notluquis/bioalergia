@@ -64,6 +64,7 @@ export const CalendarDayEventsSchema = z.strictObject({
 export const CalendarFiltersSchema = z.strictObject({
   calendarIds: z.array(z.string()),
   categories: z.array(z.string()),
+  eventTypes: z.array(z.string()).optional(),
   from: z.string(),
   maxDays: z.number(),
   search: z.string().optional(),
@@ -166,6 +167,7 @@ export const CalendarSummaryResponseSchema = z.strictObject({
   filters: z.strictObject({
     calendarIds: z.array(z.string()),
     categories: z.array(z.string()),
+    eventTypes: z.array(z.string()).optional(),
     from: z.string(),
     search: z.string().optional(),
     to: z.string(),
