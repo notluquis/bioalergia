@@ -81,7 +81,7 @@ function CalendarDailyPage() {
               onReset={() => {
                 setDraftFilters(defaults);
                 void navigate({
-                  search: (prev: any) => ({
+                  search: (prev: Record<string, unknown>) => ({
                     ...prev,
                     calendarId: undefined,
                     category: undefined,
