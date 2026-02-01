@@ -1,5 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { getRouteApi } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Alert from "@/components/ui/Alert";
@@ -27,7 +28,8 @@ import {
   type ParsedPayload,
 } from "@/features/calendar/utils/classification";
 import { useJobProgress } from "@/hooks/use-job-progress";
-import { Route } from "@/routes/_authed/calendar/classify";
+
+const routeApi = getRouteApi("/_authed/calendar/classify");
 import "dayjs/locale/es";
 
 const EMPTY_EVENTS: CalendarUnclassifiedEvent[] = [];
@@ -35,8 +37,8 @@ const PAGE_SIZE = 50;
 
 function CalendarClassificationPage() {
   const queryClient = useQueryClient();
-  const navigate = Route.useNavigate();
-  const search = Route.useSearch();
+  const navigate = routeApi.useNavigate();
+  const search = routeApi.useSearch();
 
   const page = search.page ?? 0;
   const filters: MissingFieldFilters = {

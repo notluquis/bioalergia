@@ -1,5 +1,5 @@
+import { getRouteApi } from "@tanstack/react-router";
 import { Filter } from "lucide-react";
-
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
 import { DailyEventCard } from "@/features/calendar/components/DailyEventCard";
@@ -8,15 +8,15 @@ import { DailyStatsCards } from "@/features/calendar/components/DailyStatsCards"
 import { DayNavigation } from "@/features/calendar/components/DayNavigation";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { useDisclosure } from "@/hooks/use-disclosure";
-import { Route } from "@/routes/_authed/calendar/daily";
 
+const routeApi = getRouteApi("/_authed/calendar/daily");
 import "dayjs/locale/es";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 
 function CalendarDailyPage() {
-  const navigate = Route.useNavigate();
-  const searchParams = Route.useSearch();
+  const navigate = routeApi.useNavigate();
+  const search = routeApi.useSearch();
 
   const { appliedFilters, availableCategories, currentSelectedDate, daily, defaults, loading } =
     useCalendarEvents();
@@ -64,11 +64,11 @@ function CalendarDailyPage() {
               onApply={() => {
                 void navigate({
                   search: {
-                    ...searchParams,
+                    ...search,
                     calendarId: draftFilters.calendarIds?.length
                       ? draftFilters.calendarIds
                       : undefined,
-                    category: draftFilters.categories?.length ? draftFilters.categories : undefined,
+                    category: draftFilters.categories,
                     search: draftFilters.search || undefined,
                   },
                 });
@@ -84,7 +84,7 @@ function CalendarDailyPage() {
                   search: (prev: Record<string, unknown>) => ({
                     ...prev,
                     calendarId: undefined,
-                    category: undefined,
+                    category: [],
                     search: undefined,
                   }),
                 });

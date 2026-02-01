@@ -12,29 +12,20 @@ import {
   syncCalendarEvents,
 } from "../api";
 import { calendarSyncQueries } from "../queries";
-import type {
-  CalendarDaily,
-  CalendarFilters,
-  CalendarSummary,
-  CalendarSyncLog,
-  CalendarSyncStep,
+import {
+  type CalendarDaily,
+  type CalendarFilters,
+  type CalendarSearchParams,
+  type CalendarSummary,
+  type CalendarSyncLog,
+  type CalendarSyncStep,
+  calendarSearchSchema,
 } from "../types";
 import { computeDefaultFilters, normalizeFilters } from "../utils/filters";
 
 type SyncProgressEntry = CalendarSyncStep & { status: SyncProgressStatus };
 
 type SyncProgressStatus = "completed" | "error" | "in_progress" | "pending";
-
-interface CalendarSearchParams {
-  from?: string;
-  to?: string;
-  date?: string;
-  search?: string;
-  maxDays?: number;
-  calendarId?: string[];
-  category?: string[];
-  page?: number;
-}
 
 const SYNC_STEPS_TEMPLATE: { id: CalendarSyncStep["id"]; label: string }[] = [
   { id: "fetch", label: "Consultando Google Calendar" },
@@ -74,7 +65,7 @@ function deriveEffectiveFilters(
 
   return {
     calendarIds: search.calendarId ?? filters.calendarIds,
-    categories: search.category ?? filters.categories,
+    categories: search.category.length > 0 ? search.category : filters.categories,
     from: routeFrom,
     maxDays: search.maxDays ?? filters.maxDays,
     search: search.search ?? filters.search,
@@ -219,7 +210,8 @@ function useCalendarSync(queryClient: ReturnType<typeof useQueryClient>) {
 export function useCalendarEvents() {
   const { settings } = useSettings();
   const queryClient = useQueryClient();
-  const search = useSearch({ strict: false }) as CalendarSearchParams;
+  const rawSearch = useSearch({ strict: false });
+  const search = calendarSearchSchema.parse(rawSearch);
 
   const computeDefaults = () =>
     computeDefaultFilters({

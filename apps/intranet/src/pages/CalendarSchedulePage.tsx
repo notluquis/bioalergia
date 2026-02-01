@@ -1,4 +1,5 @@
 import { ButtonGroup, Chip, Surface } from "@heroui/react";
+import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -10,8 +11,8 @@ import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { numberFormatter } from "@/lib/format";
-import { Route } from "@/routes/_authed/calendar/schedule";
 
+const routeApi = getRouteApi("/_authed/calendar/schedule");
 import "dayjs/locale/es";
 
 dayjs.extend(isoWeek);
@@ -27,8 +28,8 @@ const getActualWeekStart = () => {
 };
 
 function CalendarSchedulePage() {
-  const navigate = Route.useNavigate();
-  const search = Route.useSearch();
+  const navigate = routeApi.useNavigate();
+  const search = routeApi.useSearch();
 
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
@@ -156,7 +157,7 @@ function CalendarSchedulePage() {
                     calendarId: draftFilters.calendarIds?.length
                       ? draftFilters.calendarIds
                       : undefined,
-                    category: draftFilters.categories?.length ? draftFilters.categories : undefined,
+                    category: draftFilters.categories,
                     search: draftFilters.search || undefined,
                   },
                 });
@@ -172,7 +173,7 @@ function CalendarSchedulePage() {
                   search: (prev) => ({
                     ...prev,
                     calendarId: undefined,
-                    category: undefined,
+                    category: [],
                     search: undefined,
                   }),
                 });

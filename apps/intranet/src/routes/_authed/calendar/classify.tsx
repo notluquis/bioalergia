@@ -13,7 +13,7 @@ import type { MissingFieldFilters } from "@/features/calendar/api";
 const routeApi = getRouteApi("/_authed/calendar/classify");
 
 const classifySearchSchema = z.object({
-  page: z.number().optional(),
+  page: z.coerce.number().optional().catch(0),
   missingCategory: z.boolean().optional(),
   missingAmount: z.boolean().optional(),
   missingAttended: z.boolean().optional(),
@@ -29,6 +29,8 @@ const classifySearchSchema = z.object({
     }),
 });
 
+type ClassifySearchParams = z.infer<typeof classifySearchSchema>;
+
 export const Route = createFileRoute("/_authed/calendar/classify")({
   staticData: {
     nav: { iconKey: "ListChecks", label: "Clasificar", order: 4, section: "Calendario" },
@@ -41,13 +43,8 @@ export const Route = createFileRoute("/_authed/calendar/classify")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  validateSearch: (search: Record<string, unknown>) => {
-    const parsed = classifySearchSchema.parse(search);
-    return {
-      ...parsed,
-      page: parsed.page ?? 0,
-    };
-  },
+  validateSearch: (search: Record<string, unknown>): ClassifySearchParams =>
+    classifySearchSchema.parse(search),
   loaderDeps: ({ search }) => search,
   component: () => (
     <Suspense fallback={<PageLoader />}>

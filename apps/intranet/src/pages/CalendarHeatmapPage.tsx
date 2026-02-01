@@ -1,3 +1,4 @@
+import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,7 +8,8 @@ import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events
 import type { CalendarSummary } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
-import { Route } from "@/routes/_authed/calendar/heatmap";
+
+const routeApi = getRouteApi("/_authed/calendar/heatmap");
 import "dayjs/locale/es";
 
 dayjs.locale("es");
@@ -64,8 +66,8 @@ function processHeatmapData(
 }
 
 function CalendarHeatmapPage() {
-  const navigate = Route.useNavigate();
-  const searchParams = Route.useSearch();
+  const navigate = routeApi.useNavigate();
+  const search = routeApi.useSearch();
   const { t } = useTranslation();
   const tc = (key: string, options?: Record<string, unknown>) => t(`calendar.${key}`, options);
 
@@ -125,10 +127,10 @@ function CalendarHeatmapPage() {
           onApply={() => {
             void navigate({
               search: {
-                ...searchParams,
-                from: draftFilters.from,
-                to: draftFilters.to,
-                category: draftFilters.categories.length > 0 ? draftFilters.categories : undefined,
+                ...search,
+                calendarId: draftFilters.calendarIds?.length ? draftFilters.calendarIds : undefined,
+                category: draftFilters.categories,
+                search: draftFilters.search || undefined,
               },
             });
             setFiltersOpen(false);
@@ -144,7 +146,9 @@ function CalendarHeatmapPage() {
                 ...prev,
                 from: undefined,
                 to: undefined,
-                category: undefined,
+                calendarId: undefined,
+                category: [],
+                search: undefined,
               }),
             });
           }}

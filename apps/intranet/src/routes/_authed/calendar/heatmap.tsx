@@ -1,28 +1,15 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { lazy, Suspense } from "react";
-import { z } from "zod";
 
 import PageLoader from "@/components/ui/PageLoader";
+import { type CalendarSearchParams, calendarSearchSchema } from "@/features/calendar/types";
 
 const CalendarHeatmapPage = lazy(() => import("@/pages/CalendarHeatmapPage"));
 
-const heatmapSearchSchema = z.object({
-  from: z.string().optional(),
-  to: z.string().optional(),
-  maxDays: z.number().optional(),
-  category: z
-    .union([z.string(), z.array(z.string())])
-    .optional()
-    .transform((val) => {
-      if (!val) return undefined;
-      return Array.isArray(val) ? val : [val];
-    }),
-});
-
 export const Route = createFileRoute("/_authed/calendar/heatmap")({
-  validateSearch: (search: Record<string, unknown>) => {
-    const parsed = heatmapSearchSchema.parse(search);
+  validateSearch: (search: Record<string, unknown>): CalendarSearchParams => {
+    const parsed = calendarSearchSchema.parse(search);
     if (!parsed.from || !parsed.to) {
       const startOfYear = dayjs().startOf("year").format("YYYY-MM-DD");
       const endOfYear = dayjs().endOf("year").format("YYYY-MM-DD");

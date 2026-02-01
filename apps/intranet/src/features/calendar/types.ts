@@ -1,5 +1,25 @@
 import { z } from "zod";
 
+export const calendarSearchSchema = z.object({
+  from: z.string().optional().catch(undefined),
+  to: z.string().optional().catch(undefined),
+  date: z.string().optional().catch(undefined),
+  search: z.string().optional().catch(undefined),
+  maxDays: z.coerce.number().optional().catch(undefined),
+  calendarId: z.array(z.string()).optional().catch(undefined),
+  category: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((val) => {
+      if (!val) return [];
+      return Array.isArray(val) ? val : [val];
+    })
+    .catch([]),
+  page: z.coerce.number().optional().catch(undefined),
+});
+
+export type CalendarSearchParams = z.infer<typeof calendarSearchSchema>;
+
 export interface CalendarAggregateByDate {
   amountExpected: number;
   amountPaid: number;

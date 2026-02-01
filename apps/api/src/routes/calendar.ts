@@ -1,6 +1,8 @@
 import { db } from "@finanzas/db";
+import { zValidator } from "@hono/zod-validator";
 import dayjs from "dayjs";
 import { type Context, Hono } from "hono";
+import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { googleCalendarConfig } from "../config";
 // import { syncGoogleCalendarOnce } from "../lib/google/google-calendar"; // Deprecated
@@ -32,34 +34,32 @@ import { reply } from "../utils/reply";
 
 export const calendarRoutes = new Hono();
 
-// Helper to coerce array
-function ensureArray(value: string | string[] | undefined): string[] {
-  if (!value) return [];
-  if (Array.isArray(value)) return value;
-  return [value];
-}
+// Helper schemas
+const dateSchema = z
+  .string()
+  .optional()
+  .refine((val) => !val || dayjs(val).isValid(), { message: "Invalid date format" })
+  .transform((val) => (val ? dayjs(val).format("YYYY-MM-DD") : undefined));
 
-// Helper to normalize search
-function normalizeSearch(value: string | string[] | undefined): string | undefined {
-  if (!value) return undefined;
-  if (Array.isArray(value)) return value[0]?.trim() || undefined;
-  return value.trim() || undefined;
-}
+const arrayPreprocess = (val: unknown) => {
+  if (!val) return undefined;
+  if (Array.isArray(val)) return val;
+  return [val];
+};
 
-// Helper to normalize date
-function normalizeDate(value: string | string[] | undefined): string | undefined {
-  if (!value) return undefined;
-  const val = Array.isArray(value) ? value[0] : value;
-  if (!val || !dayjs(val).isValid()) return undefined;
-  return dayjs(val).format("YYYY-MM-DD");
-}
+const calendarQuerySchema = z.object({
+  from: dateSchema,
+  to: dateSchema,
+  calendarId: z.preprocess(arrayPreprocess, z.array(z.string()).optional()),
+  eventType: z.preprocess(arrayPreprocess, z.array(z.string()).optional()),
+  category: z.preprocess(arrayPreprocess, z.array(z.string()).optional()),
+  search: z.string().optional(),
+  maxDays: z.coerce.number().positive().int().optional(),
+});
 
-function coercePositiveInteger(value: unknown): number | undefined {
-  const num = Number(value);
-  return Number.isFinite(num) && num > 0 ? Math.floor(num) : undefined;
-}
+type CalendarQuery = z.infer<typeof calendarQuerySchema>;
 
-async function buildFilters(query: Record<string, string | string[] | undefined>) {
+async function buildFiltersFromValidQuery(query: CalendarQuery) {
   const settings = await loadSettings();
   const configStart =
     settings["calendar.syncStart"]?.trim() || googleCalendarConfig?.syncStartDate || "2000-01-01";
@@ -72,22 +72,21 @@ async function buildFilters(query: Record<string, string | string[] | undefined>
       : 365;
   const defaultEnd = dayjs().add(lookaheadDays, "day").format("YYYY-MM-DD");
 
-  const from = normalizeDate(query.from) ?? baseStart;
-  let to = normalizeDate(query.to) ?? defaultEnd;
+  const from = query.from ?? baseStart;
+  let to = query.to ?? defaultEnd;
 
   if (dayjs(from).isAfter(dayjs(to))) {
     to = from;
   }
 
-  const calendarIds = ensureArray(query.calendarId);
-  const eventTypes = ensureArray(query.eventType);
-  const categories = ensureArray(query.category);
-  const search = normalizeSearch(query.search);
+  const calendarIds = query.calendarId ?? [];
+  const eventTypes = query.eventType ?? [];
+  const categories = query.category ?? [];
+  const search = query.search?.trim() || undefined;
 
   const defaultMaxDays = Number(settings["calendar.dailyMaxDays"] ?? "31");
-  const maxDaysInput = coercePositiveInteger(query.maxDays);
   const maxDays =
-    maxDaysInput ??
+    query.maxDays ??
     (Number.isFinite(defaultMaxDays) && defaultMaxDays > 0
       ? Math.min(Math.floor(defaultMaxDays), 120)
       : 31);
@@ -129,89 +128,110 @@ const requireAuth = async (c: Context, next: any) => {
 // ============================================================
 // AGGREGATES
 // ============================================================
-calendarRoutes.get("/events/summary", requireAuth, async (c: Context) => {
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+calendarRoutes.get(
+  "/events/summary",
+  requireAuth,
+  zValidator("query", calendarQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
-  const canReadHeatmap = await hasPermission(user.id, "read", "CalendarHeatmap");
-  const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
+    const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
+    const canReadHeatmap = await hasPermission(user.id, "read", "CalendarHeatmap");
+    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
 
-  if (!canReadSchedule && !canReadHeatmap && !canReadEvents) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
+    if (!canReadSchedule && !canReadHeatmap && !canReadEvents) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
 
-  const { filters, applied } = await buildFilters(c.req.queries());
-  const aggregates = await getCalendarAggregates(filters);
-  return reply(c, {
-    status: "ok",
-    filters: applied,
-    totals: aggregates.totals,
-    aggregates: aggregates.aggregates,
-    available: aggregates.available,
-  });
-});
+    const { filters, applied } = await buildFiltersFromValidQuery(c.req.valid("query"));
+    const aggregates = await getCalendarAggregates(filters);
+    return reply(c, {
+      status: "ok",
+      filters: applied,
+      totals: aggregates.totals,
+      aggregates: aggregates.aggregates,
+      available: aggregates.available,
+    });
+  },
+);
 
 // ============================================================
 // TREATMENT ANALYTICS
 // ============================================================
-calendarRoutes.get("/events/treatment-analytics", requireAuth, async (c: Context) => {
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
-
-  const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
-  if (!canReadEvents) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
-
-  const query = c.req.queries();
-  const filters: TreatmentAnalyticsFilters = {
-    from: query.from?.[0], // Take first value
-    to: query.to?.[0],
-    calendarIds: query.calendarId, // Match frontend parameter name (singular)
-  };
-
-  // Set default date range if not provided (last 30 days)
-  if (!filters.from || !filters.to) {
-    const today = dayjs();
-    filters.from = filters.from || today.subtract(30, "day").format("YYYY-MM-DD");
-    filters.to = filters.to || today.format("YYYY-MM-DD");
-  }
-
-  const analytics = await getTreatmentAnalytics(filters);
-  return reply(c, {
-    status: "ok",
-    filters,
-    data: analytics,
-  });
+const analyticsQuerySchema = z.object({
+  from: dateSchema,
+  to: dateSchema,
+  calendarId: z.preprocess(arrayPreprocess, z.array(z.string()).optional()),
 });
+
+calendarRoutes.get(
+  "/events/treatment-analytics",
+  requireAuth,
+  zValidator("query", analyticsQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+
+    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
+    if (!canReadEvents) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    const query = c.req.valid("query");
+    const filters: TreatmentAnalyticsFilters = {
+      from: query.from,
+      to: query.to,
+      calendarIds: query.calendarId,
+    };
+
+    // Set default date range if not provided (last 30 days)
+    if (!filters.from || !filters.to) {
+      const today = dayjs();
+      filters.from = filters.from || today.subtract(30, "day").format("YYYY-MM-DD");
+      filters.to = filters.to || today.format("YYYY-MM-DD");
+    }
+
+    const analytics = await getTreatmentAnalytics(filters);
+    return reply(c, {
+      status: "ok",
+      filters,
+      data: analytics,
+    });
+  },
+);
 
 // ============================================================
 // DAILY EVENTS
 // ============================================================
-calendarRoutes.get("/events/daily", requireAuth, async (c: Context) => {
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+calendarRoutes.get(
+  "/events/daily",
+  requireAuth,
+  zValidator("query", calendarQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
-  const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
+    const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
+    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
 
-  if (!canReadDaily && !canReadEvents) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
+    if (!canReadDaily && !canReadEvents) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
 
-  const { filters, applied, maxDays } = await buildFilters(c.req.queries());
-  const events = await getCalendarEventsByDate(filters, { maxDays });
-  return reply(c, {
-    status: "ok",
-    filters: {
-      ...applied,
-      maxDays,
-    },
-    totals: events.totals,
-    days: events.days,
-  });
-});
+    const { filters, applied, maxDays } = await buildFiltersFromValidQuery(c.req.valid("query"));
+    const events = await getCalendarEventsByDate(filters, { maxDays });
+    return reply(c, {
+      status: "ok",
+      filters: {
+        ...applied,
+        maxDays,
+      },
+      totals: events.totals,
+      days: events.days,
+    });
+  },
+);
 
 // ============================================================
 // SYNC
@@ -228,7 +248,7 @@ calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  // Create log entry first
+  // Check perms
   const logId = await createCalendarSyncLogEntry({
     triggerSource: "manual",
     triggerUserId: user.id,
@@ -337,125 +357,136 @@ calendarRoutes.get("/classification-options", async (c: Context) => {
 // ============================================================
 // UNCLASSIFIED EVENTS
 // ============================================================
-calendarRoutes.get("/events/unclassified", requireAuth, async (c: Context) => {
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
-
-  const canUpdateEvents = await hasPermission(user.id, "update", "CalendarEvent");
-
-  if (!canUpdateEvents) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
-
-  const query = c.req.query();
-  const limitParam = query.limit;
-  const limitRaw = limitParam
-    ? Number.parseInt(String(Array.isArray(limitParam) ? limitParam[0] : limitParam), 10)
-    : 50;
-  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : 50;
-
-  const offsetParam = query.offset;
-  const offsetRaw = offsetParam
-    ? Number.parseInt(String(Array.isArray(offsetParam) ? offsetParam[0] : offsetParam), 10)
-    : 0;
-  const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
-
-  const filterModeParam = query.filterMode;
-  const filterMode = filterModeParam === "AND" ? "AND" : "OR";
-
-  const filters = {
-    category: query.missingCategory === "true",
-    amountExpected: query.missingAmount === "true",
-    attended: query.missingAttended === "true",
-    dosageValue: query.missingDosage === "true",
-    treatmentStage: query.missingTreatmentStage === "true",
-    filterMode: filterMode as "AND" | "OR",
-  };
-
-  const hasFilters = Object.values(filters)
-    .filter((v) => typeof v === "boolean")
-    .some(Boolean);
-
-  const { events: rows, totalCount } = await listUnclassifiedCalendarEvents(
-    limit,
-    offset,
-    hasFilters ? filters : undefined,
-  );
-
-  const filteredRows = rows.filter((row: UnclassifiedEvent) => !isIgnoredEvent(row.summary));
-
-  return reply(c, {
-    status: "ok",
-    totalCount,
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy mapping
-    events: filteredRows.map((row: UnclassifiedEvent) => ({
-      calendarId: row.calendar.googleId,
-      eventId: row.externalEventId,
-      status: row.eventStatus ?? null,
-      eventType: row.eventType ?? null,
-      summary: row.summary ?? null,
-      description: row.description ?? null,
-      startDate: row.startDate ? row.startDate.toISOString() : null,
-      startDateTime: row.startDateTime ? row.startDateTime.toISOString() : null,
-      endDate: row.endDate ? row.endDate.toISOString() : null,
-      endDateTime: row.endDateTime ? row.endDateTime.toISOString() : null,
-      category: row.category ?? null,
-      amountExpected: row.amountExpected ?? null,
-      amountPaid: row.amountPaid ?? null,
-      attended: row.attended ?? null,
-      dosageValue: row.dosageValue ?? null,
-      dosageUnit: row.dosageUnit ?? null,
-      treatmentStage: row.treatmentStage ?? null,
-    })),
-  });
+const unclassifiedQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+  filterMode: z.enum(["AND", "OR"]).default("OR"),
+  missingCategory: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
+  missingAmount: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
+  missingAttended: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
+  missingDosage: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
+  missingTreatmentStage: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
 });
 
-// ============================================================
-// CLASSIFY EVENT
-// ============================================================
-// ============================================================
-// CLASSIFY EVENT
-// ============================================================
-calendarRoutes.post("/events/classify", requireAuth, async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+calendarRoutes.get(
+  "/events/unclassified",
+  requireAuth,
+  zValidator("query", unclassifiedQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
-  const canClassify = await hasPermission(user.id, "update", "CalendarEvent");
+    const canUpdateEvents = await hasPermission(user.id, "update", "CalendarEvent");
+    if (!canUpdateEvents) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
 
-  if (!canClassify) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
+    const query = c.req.valid("query");
+    const { limit, offset, filterMode } = query;
 
-  const body = await c.req.json();
-  const parsed = updateClassificationSchema.safeParse(body);
-  if (!parsed.success) {
-    return reply(
-      c,
-      {
-        status: "error",
-        error: "Payload inválido",
-        details: parsed.error.flatten(),
-      },
-      400,
+    const filters = {
+      category: query.missingCategory,
+      amountExpected: query.missingAmount,
+      attended: query.missingAttended,
+      dosageValue: query.missingDosage,
+      treatmentStage: query.missingTreatmentStage,
+      filterMode,
+    };
+
+    const hasFilters = Object.values(filters)
+      .filter((v) => typeof v === "boolean")
+      .some(Boolean);
+
+    const { events: rows, totalCount } = await listUnclassifiedCalendarEvents(
+      limit,
+      offset,
+      hasFilters ? filters : undefined,
     );
-  }
 
-  const payload = parsed.data;
+    const filteredRows = rows.filter((row: UnclassifiedEvent) => !isIgnoredEvent(row.summary));
 
-  await updateCalendarEventClassification(payload.calendarId, payload.eventId, {
-    category: payload.category ?? null,
-    amountExpected: payload.amountExpected ?? null,
-    amountPaid: payload.amountPaid ?? null,
-    attended: payload.attended ?? null,
-    dosageValue: payload.dosageValue ?? null,
-    dosageUnit: payload.dosageUnit ?? null,
-    treatmentStage: payload.treatmentStage ?? null,
-    controlIncluded: payload.controlIncluded ?? null,
-    isDomicilio: payload.isDomicilio ?? null,
-  });
+    return reply(c, {
+      status: "ok",
+      totalCount,
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy mapping
+      events: filteredRows.map((row: UnclassifiedEvent) => ({
+        calendarId: row.calendar.googleId,
+        eventId: row.externalEventId,
+        status: row.eventStatus ?? null,
+        eventType: row.eventType ?? null,
+        summary: row.summary ?? null,
+        description: row.description ?? null,
+        startDate: row.startDate ? row.startDate.toISOString() : null,
+        startDateTime: row.startDateTime ? row.startDateTime.toISOString() : null,
+        endDate: row.endDate ? row.endDate.toISOString() : null,
+        endDateTime: row.endDateTime ? row.endDateTime.toISOString() : null,
+        category: row.category ?? null,
+        amountExpected: row.amountExpected ?? null,
+        amountPaid: row.amountPaid ?? null,
+        attended: row.attended ?? null,
+        dosageValue: row.dosageValue ?? null,
+        dosageUnit: row.dosageUnit ?? null,
+        treatmentStage: row.treatmentStage ?? null,
+      })),
+    });
+  },
+);
 
-  return reply(c, { status: "ok" });
-});
+// ============================================================
+// CLASSIFY EVENT
+// ============================================================
+// ============================================================
+// CLASSIFY EVENT
+// ============================================================
+// ============================================================
+// CLASSIFY EVENT
+// ============================================================
+calendarRoutes.post(
+  "/events/classify",
+  requireAuth,
+  zValidator("json", updateClassificationSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+
+    const canClassify = await hasPermission(user.id, "update", "CalendarEvent");
+
+    if (!canClassify) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    const payload = c.req.valid("json");
+
+    await updateCalendarEventClassification(payload.calendarId, payload.eventId, {
+      category: payload.category ?? null,
+      amountExpected: payload.amountExpected ?? null,
+      amountPaid: payload.amountPaid ?? null,
+      attended: payload.attended ?? null,
+      dosageValue: payload.dosageValue ?? null,
+      dosageUnit: payload.dosageUnit ?? null,
+      treatmentStage: payload.treatmentStage ?? null,
+      controlIncluded: payload.controlIncluded ?? null,
+      isDomicilio: payload.isDomicilio ?? null,
+    });
+
+    return reply(c, { status: "ok" });
+  },
+);
 
 // ============================================================
 // LIST CALENDARS
@@ -504,101 +535,99 @@ calendarRoutes.get("/calendars", async (c) => {
   });
 });
 
-// ============================================================
-// LIST EVENTS
-// ============================================================
-calendarRoutes.get("/calendars/:calendarId/events", requireAuth, async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
-
-  const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
-  const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
-  const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
-
-  if (!canReadSchedule && !canReadDaily && !canReadEvents) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
-
-  const calendarId = c.req.param("calendarId");
-  const query = c.req.query();
-
-  // Find calendar ID by googleId (which is what we use in URL usually)
-  // or id? Route parameter is :id, usually database ID or google ID?
-  // Let's assume googleId for compatibility with frontend?
-  // But wait, frontend passes ID.
-  // Code uses `db.calendar.findUnique({ where: { googleId: calendarId } })`.
-  const calendar = await db.calendar.findUnique({
-    where: { googleId: calendarId },
-  });
-
-  if (!calendar) {
-    return reply(c, { status: "error", message: "Calendar not found" }, 404);
-  }
-
-  const startParam = query.start;
-  const endParam = query.end;
-
-  if (!startParam || !endParam) {
-    return reply(c, { status: "error", message: "Missing start or end date" }, 400);
-  }
-
-  const start = new Date(startParam);
-  const end = new Date(endParam);
-
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return reply(c, { status: "error", message: "Invalid start or end date" }, 400);
-  }
-
-  const filterConditions: {
-    category?: string;
-    treatmentStage?: string;
-    attended?: boolean;
-  } = {};
-
-  if (query.category) {
-    filterConditions.category = query.category;
-  }
-  if (query.treatmentStage) {
-    filterConditions.treatmentStage = query.treatmentStage;
-  }
-  if (query.attended) {
-    filterConditions.attended = query.attended === "true";
-  }
-
-  // Fetch events from DB (internal copy)
-  // Support both all-day events (startDate) and timed events (startDateTime)
-  const events = await db.event.findMany({
-    where: {
-      calendarId: calendar.id,
-      OR: [
-        {
-          startDateTime: {
-            gte: start,
-            lte: end,
-          },
-        },
-        {
-          startDate: {
-            gte: start,
-            lte: end,
-          },
-        },
-      ],
-      ...filterConditions,
-    },
-    orderBy: [{ startDateTime: "asc" }, { startDate: "asc" }],
-  });
-
-  return reply(c, {
-    status: "ok",
-    events: events.map((e) => ({
-      ...e,
-      // Ensure strict typing for response
-      amountExpected: e.amountExpected || 0,
-      amountPaid: e.amountPaid || 0,
-    })),
-  });
+const listEventsSchema = z.object({
+  start: z
+    .string()
+    .refine((val) => !Number.isNaN(Date.parse(val)), { message: "Invalid start date" }),
+  end: z.string().refine((val) => !Number.isNaN(Date.parse(val)), { message: "Invalid end date" }),
+  category: z.string().optional(),
+  treatmentStage: z.string().optional(),
+  attended: z.enum(["true", "false"]).optional(),
 });
+
+calendarRoutes.get(
+  "/calendars/:calendarId/events",
+  requireAuth,
+  zValidator("query", listEventsSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+
+    const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
+    const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
+    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
+
+    if (!canReadSchedule && !canReadDaily && !canReadEvents) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
+
+    const calendarId = c.req.param("calendarId");
+    const query = c.req.valid("query");
+
+    // Find calendar ID by googleId (which is what we use in URL usually)
+    const calendar = await db.calendar.findUnique({
+      where: { googleId: calendarId },
+    });
+
+    if (!calendar) {
+      return reply(c, { status: "error", message: "Calendar not found" }, 404);
+    }
+
+    const start = new Date(query.start);
+    const end = new Date(query.end);
+    const attended = query.attended ? query.attended === "true" : undefined;
+
+    const filterConditions: {
+      category?: string;
+      treatmentStage?: string;
+      attended?: boolean;
+    } = {};
+
+    if (query.category) {
+      filterConditions.category = query.category;
+    }
+    if (query.treatmentStage) {
+      filterConditions.treatmentStage = query.treatmentStage;
+    }
+    if (attended !== undefined) {
+      filterConditions.attended = attended;
+    }
+
+    // Fetch events from DB (internal copy)
+    // Support both all-day events (startDate) and timed events (startDateTime)
+    const events = await db.event.findMany({
+      where: {
+        calendarId: calendar.id,
+        OR: [
+          {
+            startDateTime: {
+              gte: start,
+              lte: end,
+            },
+          },
+          {
+            startDate: {
+              gte: start,
+              lte: end,
+            },
+          },
+        ],
+        ...filterConditions,
+      },
+      orderBy: [{ startDateTime: "asc" }, { startDate: "asc" }],
+    });
+
+    return reply(c, {
+      status: "ok",
+      events: events.map((e) => ({
+        ...e,
+        // Ensure strict typing for response
+        amountExpected: e.amountExpected || 0,
+        amountPaid: e.amountPaid || 0,
+      })),
+    });
+  },
+);
 
 // ============================================================
 // WEBHOOK (No Auth)
