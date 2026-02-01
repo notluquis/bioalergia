@@ -648,7 +648,7 @@ export async function getCalendarEventsByDate(
   });
 
   return {
-    days: Object.values(grouped).sort((a, b) => b.date.localeCompare(a.date)),
+    days: Object.values(grouped).sort((a, b) => b.date.getTime() - a.date.getTime()),
     totals: {
       days: targetDates.length,
       events: totalEvents,
