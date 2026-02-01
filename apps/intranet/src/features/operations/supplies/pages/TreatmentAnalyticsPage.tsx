@@ -88,6 +88,17 @@ export default function TreatmentAnalyticsPage() {
 
   const hasValidDates = !!filters.from && !!filters.to;
 
+  // DEBUG: Filter Diagnostics (Requested by User)
+  console.group("📊 Analytics Page Filters Debug");
+  console.log("1. Raw Search Params:", searchParams);
+  console.log("2. Active Filters:", filters);
+  // biome-ignore lint/suspicious/noExplicitAny: Debugging
+  console.log(
+    "3. API Query Config:",
+    (calendarQueries.treatmentAnalytics(filters) as any).queryKey,
+  );
+  console.groupEnd();
+
   const { data, isLoading, isError, error, refetch } = useQuery({
     ...calendarQueries.treatmentAnalytics(filters),
     enabled: hasValidDates,
