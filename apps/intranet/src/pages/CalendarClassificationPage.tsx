@@ -121,7 +121,7 @@ function CalendarClassificationPage() {
 
   const [activeJobId, setActiveJobId] = useState<null | string>(null);
   const { isComplete, isFailed, job, progress } = useJobProgress(activeJobId, {
-    onComplete: (result: any) => {
+    onComplete: (result: unknown) => {
       const r = result as {
         fieldCounts?: Record<string, number>;
         message?: string;
