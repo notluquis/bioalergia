@@ -74,12 +74,12 @@ const mfaEnableSchema = z.object({
 // Note: Passkey bodies are complex JSONs from simplewebauthn, we can be slightly looser or use their types if possible,
 // for now we validate structure existence
 const passkeyVerifySchema = z.object({
-  body: z.record(z.unknown()),
+  body: z.record(z.string(), z.unknown()),
   challenge: z.string().min(1, "Challenge required"),
 });
 
 const passkeyResponseSchema = z.object({
-  body: z.record(z.unknown()),
+  body: z.record(z.string(), z.unknown()),
   challenge: z.string().min(1),
 });
 
