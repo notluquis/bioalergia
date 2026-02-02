@@ -193,8 +193,20 @@ export async function listUnclassifiedCalendarEvents(
   // Build conditions based on filters
   const conditions: Record<string, unknown>[] = [];
 
+  // Check if any field filters are actually selected (not just undefined)
+  const hasFieldFilters = filters
+    ? [
+        filters.category,
+        filters.amountExpected,
+        filters.amountPaid,
+        filters.attended,
+        filters.dosageValue,
+        filters.treatmentStage,
+      ].some(Boolean)
+    : false;
+
   // If no specific filters, default to show events missing ANY classifiable field
-  if (!filters || Object.keys(filters).filter((k) => k !== "filterMode").length === 0) {
+  if (!hasFieldFilters) {
     conditions.push(
       { category: null },
       { category: "" },
