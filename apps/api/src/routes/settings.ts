@@ -1,19 +1,18 @@
 import { db } from "@finanzas/db";
+import type { Context, Next } from "hono";
 import { Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { cacheControl } from "../lib/cache-control";
 import { reply } from "../utils/reply";
 
 export type Variables = {
-  // biome-ignore lint/suspicious/noExplicitAny: legacy typing
-  user: any;
+  user: Awaited<ReturnType<typeof getSessionUser>>;
 };
 
 export const settingsRoutes = new Hono<{ Variables: Variables }>();
 
 // Middleware to require auth
-// biome-ignore lint/suspicious/noExplicitAny: legacy middleware
-const requireAuth = async (c: any, next: any) => {
+const requireAuth = async (c: Context<{ Variables: Variables }>, next: Next) => {
   const user = await getSessionUser(c);
   if (!user) {
     return reply(c, { status: "error", message: "No autorizado" }, 401);

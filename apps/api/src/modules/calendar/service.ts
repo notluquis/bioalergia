@@ -125,10 +125,12 @@ export class CalendarSyncService {
 
     try {
       return await this.performSync(calendarId, currentSyncToken);
-      // biome-ignore lint/suspicious/noExplicitAny: catch error
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle 410 Gone: Sync token is invalid -> Clear token and retry full sync
-      if (error.code === 410 || error.message?.includes("410")) {
+      const errorCode =
+        error instanceof Object && "code" in error ? (error as Record<string, unknown>).code : null;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorCode === 410 || errorMessage?.includes("410")) {
         console.warn(
           `[CalendarSync] 410 Gone for ${calendarId}. Clearing syncToken and retrying full sync.`,
         );

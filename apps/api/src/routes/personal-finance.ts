@@ -1,5 +1,6 @@
 import { authDb } from "@finanzas/db";
 import { Decimal } from "decimal.js";
+import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -9,8 +10,7 @@ import { zValidator } from "../lib/zod-validator";
 export const personalFinanceRoutes = new Hono();
 
 // Middleware to get authenticated DB client
-// biome-ignore lint/suspicious/noExplicitAny: legacy middleware
-async function getAuthDb(c: any) {
+async function getAuthDb(c: Context) {
   const user = await getSessionUser(c);
   const authContext = createAuthContext(user);
   if (!authContext) throw new Error("Unauthorized");

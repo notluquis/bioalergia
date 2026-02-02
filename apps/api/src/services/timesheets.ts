@@ -377,12 +377,20 @@ export async function upsertTimesheetEntry(
       overtime_minutes: result.overtimeMinutes,
       comment: result.comment || "",
     };
-    // biome-ignore lint/suspicious/noExplicitAny: error handling
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode =
+      error instanceof Object && "code" in error
+        ? (error as Record<string, unknown>).code
+        : undefined;
+    const errorMeta =
+      error instanceof Object && "meta" in error
+        ? (error as Record<string, unknown>).meta
+        : undefined;
     console.error("[timesheets] upsert error details:", {
-      message: error.message,
-      code: error.code,
-      meta: error.meta,
+      message: errorMessage,
+      code: errorCode,
+      meta: errorMeta,
       payload: {
         ...payload,
         startTimeStr,
@@ -435,13 +443,21 @@ export async function updateTimesheetEntry(
     });
 
     return mapTimesheetEntry(entry);
-    // biome-ignore lint/suspicious/noExplicitAny: error handling
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode =
+      error instanceof Object && "code" in error
+        ? (error as Record<string, unknown>).code
+        : undefined;
+    const errorMeta =
+      error instanceof Object && "meta" in error
+        ? (error as Record<string, unknown>).meta
+        : undefined;
     console.error("[timesheets] update error details:", {
       id,
-      message: error.message,
-      code: error.code,
-      meta: error.meta,
+      message: errorMessage,
+      code: errorCode,
+      meta: errorMeta,
       updateData,
     });
     throw error;
