@@ -15,7 +15,7 @@ export const AuthSessionResponseSchema = z.strictObject({
   abilityRules: z.array(z.unknown()).nullable().optional(),
   permissionVersion: z.number().nullable().optional(),
   status: z.string(),
-  user: AuthUserSchema.optional(),
+  user: AuthUserSchema.nullable().optional(),
 });
 
 export const LoginResponseSchema = z.strictObject({
