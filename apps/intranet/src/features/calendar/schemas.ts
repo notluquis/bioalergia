@@ -189,16 +189,16 @@ export const CalendarSummaryResponseSchema = z.strictObject({
   }),
 });
 
-export const CalendarSyncLogSchema = z.strictObject({
+export const CalendarSyncLogSchema = z.object({
   changeDetails: z
-    .strictObject({
+    .object({
       excluded: z.array(z.string()).optional(),
       inserted: z.array(z.string()).optional(),
       updated: z
         .array(
           z.union([
             z.string(),
-            z.strictObject({
+            z.object({
               changes: z.array(z.string()),
               summary: z.string(),
             }),
@@ -223,20 +223,20 @@ export const CalendarSyncLogSchema = z.strictObject({
   updated: z.number(),
 });
 
-export const CalendarSyncLogsResponseSchema = z.strictObject({
+export const CalendarSyncLogsResponseSchema = z.object({
   logs: z.array(CalendarSyncLogSchema),
   status: z.literal("ok"),
 });
 
-export const StatusOkSchema = z.strictObject({ status: z.literal("ok") });
+export const StatusOkSchema = z.object({ status: z.literal("ok") });
 
-export const CalendarSyncResponseSchema = z.strictObject({
+export const CalendarSyncResponseSchema = z.object({
   logId: z.number(),
   message: z.string(),
   status: z.literal("accepted"),
 });
 
-export const ClassificationOptionsSchema = z.strictObject({
+export const ClassificationOptionsSchema = z.object({
   categories: z.array(z.string()),
   status: z.literal("ok"),
   treatmentStages: z.array(z.string()),
