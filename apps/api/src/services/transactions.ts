@@ -1,5 +1,46 @@
 import { db } from "@finanzas/db";
 
+// Types for raw SQL query results
+interface ParticipantRow {
+  participant: string;
+  displayName: string;
+  identificationNumber: string;
+  bankAccountHolder: string;
+  bankAccountNumber: string;
+  bankAccountType: string;
+  bankName: string;
+  withdrawId: string;
+  totalCount: number;
+  totalAmount: number;
+  outgoingCount: number;
+  outgoingAmount: number;
+  incomingCount: number;
+  incomingAmount: number;
+}
+
+interface MonthlyStatsRow {
+  month: string;
+  outgoingCount: number;
+  outgoingAmount: number;
+  incomingCount: number;
+  incomingAmount: number;
+}
+
+interface CounterpartRow {
+  counterpart: string;
+  counterpartId: string;
+  withdrawId: string;
+  bankAccountHolder: string;
+  bankName: string;
+  bankAccountNumber: string;
+  bankAccountType: string;
+  identificationNumber: string;
+  outgoingCount: number;
+  outgoingAmount: number;
+  incomingCount: number;
+  incomingAmount: number;
+}
+
 export type TransactionFilters = {
   from?: Date;
   to?: Date;
@@ -21,7 +62,7 @@ export async function listTransactions(
   offset = 0,
   includeTotal = true,
 ) {
-  // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic where clause construction
   const where: any = {};
 
   if (filters.from || filters.to) {
@@ -202,8 +243,7 @@ export async function getParticipantLeaderboard(params: {
 
   return {
     status: "ok",
-    // biome-ignore lint/suspicious/noExplicitAny: kysely raw result
-    participants: stats.map((s: any) => ({
+    participants: (stats as ParticipantRow[]).map((s) => ({
       participant: s.participant,
       displayName: s.displayName,
       identificationNumber: s.identificationNumber,
@@ -321,16 +361,14 @@ export async function getParticipantInsight(
   return {
     status: "ok",
     participant: participantId,
-    // biome-ignore lint/suspicious/noExplicitAny: kysely raw result
-    monthly: monthlyStats.map((s: any) => ({
+    monthly: (monthlyStats as MonthlyStatsRow[]).map((s) => ({
       month: s.month,
       outgoingCount: Number(s.outgoingCount),
       outgoingAmount: Number(s.outgoingAmount),
       incomingCount: Number(s.incomingCount),
       incomingAmount: Number(s.incomingAmount),
     })),
-    // biome-ignore lint/suspicious/noExplicitAny: kysely raw result
-    counterparts: counterparts.map((s: any) => ({
+    counterparts: (counterparts as CounterpartRow[]).map((s) => ({
       counterpart: s.bankAccountHolder || "Desconocido",
       counterpartId: s.identificationNumber,
       withdrawId: s.withdrawId,

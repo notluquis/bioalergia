@@ -306,3 +306,25 @@ export interface TreatmentAnalytics {
   byWeek: TreatmentAnalyticsByWeek[];
   totals: TreatmentAnalyticsPeriodData;
 }
+
+// Classification UI types
+export type ClassifySearchParams = {
+  calendarId?: string[];
+  filterMode?: "AND" | "OR";
+  missingAmount?: boolean;
+  missingAttended?: boolean;
+  missingCategory?: boolean;
+  missingDosage?: boolean;
+  missingTreatmentStage?: boolean;
+  page?: number;
+};
+
+export type OnNavigate = (
+  updater: (prev: ClassifySearchParams) => Partial<ClassifySearchParams>,
+) => void;
+
+export interface ReclassifyJob {
+  message: string;
+  progress: number;
+  total: number;
+}

@@ -59,6 +59,7 @@ const calendarQuerySchema = z.object({
 
 type CalendarQuery = z.infer<typeof calendarQuerySchema>;
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy filter building logic
 async function buildFiltersFromValidQuery(query: CalendarQuery) {
   const settings = await loadSettings();
   const configStart =
@@ -423,7 +424,6 @@ calendarRoutes.get(
     return reply(c, {
       status: "ok",
       totalCount,
-      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy mapping
       events: filteredRows.map((row: UnclassifiedEvent) => ({
         calendarId: row.calendar.googleId,
         eventId: row.externalEventId,

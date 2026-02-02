@@ -39,6 +39,7 @@ function VerifyCertificatePage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["verify-certificate", id],
     queryFn: async () => {
+      // biome-ignore lint/suspicious/noExplicitAny: apiClient.get generic constraint
       const data = await apiClient.get<any>(`certificates/verify/${id}`, {
         responseSchema: VerifyCertificateSchema,
       });

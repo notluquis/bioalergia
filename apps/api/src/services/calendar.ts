@@ -18,7 +18,7 @@ export async function cleanupStaleSyncLogs(forceAll = false) {
   const staleDate = new Date(Date.now() - STALE_TIMEOUT_MS);
 
   // Find logs that need cleanup
-  const where: any = {
+  const where: NonNullable<Parameters<typeof db.calendarSyncLog.findMany>[0]>["where"] = {
     status: "RUNNING",
   };
 
@@ -191,8 +191,7 @@ export async function listUnclassifiedCalendarEvents(
   const filterMode = filters?.filterMode || "OR";
 
   // Build conditions based on filters
-  // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
-  const conditions: any[] = [];
+  const conditions: Record<string, unknown>[] = [];
 
   // If no specific filters, default to show events missing ANY classifiable field
   if (!filters || Object.keys(filters).filter((k) => k !== "filterMode").length === 0) {
@@ -232,8 +231,7 @@ export async function listUnclassifiedCalendarEvents(
   }
 
   // Build where clause based on filter mode
-  // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
-  let whereClause: any = {};
+  let whereClause: Record<string, unknown> = {};
 
   // Optimize: Exclude ignored events at DB level to prevent empty pages
   // This mirrors IGNORE_PATTERNS from parsers.ts roughly

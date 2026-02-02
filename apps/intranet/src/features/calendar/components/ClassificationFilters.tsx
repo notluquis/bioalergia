@@ -3,7 +3,7 @@ import type { MissingFieldFilters } from "../api";
 
 interface ClassificationFiltersProps {
   filters: MissingFieldFilters;
-  // biome-ignore lint/suspicious/noExplicitAny: router navigate type
+  // biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate type is complex with search params mutations
   onNavigate: (search: any) => void;
 }
 
@@ -11,7 +11,7 @@ export function ClassificationFilters({ filters, onNavigate }: ClassificationFil
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
   const toggleFilter = (key: keyof MissingFieldFilters) => {
-    // biome-ignore lint/suspicious/noExplicitAny: router navigate function
+    // biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate requires complex types
     onNavigate((prev: any) => ({
       ...prev,
       [key]: !prev[key] || undefined,
@@ -71,7 +71,7 @@ export function ClassificationFilters({ filters, onNavigate }: ClassificationFil
               <Button
                 className="text-xs font-medium"
                 onClick={() => {
-                  // biome-ignore lint/suspicious/noExplicitAny: router navigate function
+                  // biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate requires complex types
                   onNavigate((prev: any) => ({
                     ...prev,
                     filterMode: undefined,
@@ -86,7 +86,7 @@ export function ClassificationFilters({ filters, onNavigate }: ClassificationFil
               <Button
                 className="text-xs font-medium"
                 onClick={() => {
-                  // biome-ignore lint/suspicious/noExplicitAny: router navigate function
+                  // biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate requires complex types
                   onNavigate((prev: any) => ({
                     ...prev,
                     filterMode: "AND",

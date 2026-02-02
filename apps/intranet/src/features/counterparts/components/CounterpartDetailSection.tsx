@@ -4,13 +4,13 @@ import { Lock } from "lucide-react";
 import Button from "@/components/ui/Button";
 import AssociatedAccounts from "@/features/counterparts/components/AssociatedAccounts";
 import { counterpartKeys } from "@/features/counterparts/queries";
+import type { Counterpart } from "@/features/counterparts/types";
 import { ServicesSurface } from "@/features/services/components/ServicesShell";
 
 interface CounterpartDetailSectionProps {
   canUpdate: boolean;
   counterpartId: number;
-  // biome-ignore lint/suspicious/noExplicitAny: legacy handler
-  onEdit: (counterpart: any) => void;
+  onEdit: (counterpart: Counterpart) => void;
   onSummaryRangeChange: (update: Partial<{ from: string; to: string }>) => void;
   summaryRange: { from: string; to: string };
 }

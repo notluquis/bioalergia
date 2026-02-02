@@ -1,13 +1,13 @@
 import Button from "@/components/ui/Button";
 
 interface ClassificationPaginationProps {
-  page: number;
-  totalPages: number;
-  totalCount: number;
-  pageSize: number;
   loading: boolean;
-  // biome-ignore lint/suspicious/noExplicitAny: router navigate type
+  // biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate type is complex with search params mutations
   onNavigate: (search: any) => void;
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
 }
 
 export function ClassificationPagination({
@@ -26,8 +26,10 @@ export function ClassificationPagination({
         className="disabled:opacity-30"
         isDisabled={page === 0 || loading}
         isIconOnly
-        // biome-ignore lint/suspicious/noExplicitAny: router navigate function
-        onClick={() => onNavigate((prev: any) => ({ ...prev, page: 0 }))}
+        onClick={() =>
+          // biome-ignore lint/suspicious/noExplicitAny: TanStack Router search param type
+          onNavigate((prev: any) => ({ ...prev, page: 0 }))
+        }
         size="sm"
         type="button"
         variant="ghost"
@@ -51,8 +53,10 @@ export function ClassificationPagination({
         className="disabled:opacity-30"
         isDisabled={page === 0 || loading}
         isIconOnly
-        // biome-ignore lint/suspicious/noExplicitAny: router navigate function
-        onClick={() => onNavigate((prev: any) => ({ ...prev, page: Math.max(0, page - 1) }))}
+        onClick={() =>
+          // biome-ignore lint/suspicious/noExplicitAny: TanStack Router search param type
+          onNavigate((prev: any) => ({ ...prev, page: Math.max(0, page - 1) }))
+        }
         size="sm"
         type="button"
         variant="ghost"
@@ -76,8 +80,10 @@ export function ClassificationPagination({
         className="disabled:opacity-30"
         isDisabled={(page + 1) * pageSize >= totalCount || loading}
         isIconOnly
-        // biome-ignore lint/suspicious/noExplicitAny: router navigate function
-        onClick={() => onNavigate((prev: any) => ({ ...prev, page: page + 1 }))}
+        onClick={() =>
+          // biome-ignore lint/suspicious/noExplicitAny: TanStack Router search param type
+          onNavigate((prev: any) => ({ ...prev, page: page + 1 }))
+        }
         size="sm"
         type="button"
         variant="ghost"
@@ -96,8 +102,10 @@ export function ClassificationPagination({
         className="disabled:opacity-30"
         isDisabled={(page + 1) * pageSize >= totalCount || loading}
         isIconOnly
-        // biome-ignore lint/suspicious/noExplicitAny: router navigate function
-        onClick={() => onNavigate((prev: any) => ({ ...prev, page: totalPages - 1 }))}
+        onClick={() =>
+          // biome-ignore lint/suspicious/noExplicitAny: TanStack Router search param type
+          onNavigate((prev: any) => ({ ...prev, page: totalPages - 1 }))
+        }
         size="sm"
         type="button"
         variant="ghost"

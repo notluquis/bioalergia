@@ -1,18 +1,18 @@
 import { RefreshCw } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
+import type { ReclassifyJob } from "../types";
 
 interface ClassificationToolbarProps {
-  loading: boolean;
-  onRefetch: () => void;
   isJobRunning: boolean;
-  progress: number;
-  // biome-ignore lint/suspicious/noExplicitAny: job result type
-  job: any;
+  job: ReclassifyJob | null;
+  loading: boolean;
   onReclassify: () => void;
   onReclassifyAll: () => void;
-  reclassifyPending: boolean;
+  onRefetch: () => void;
+  progress: number;
   reclassifyAllPending: boolean;
+  reclassifyPending: boolean;
 }
 
 export function ClassificationToolbar({

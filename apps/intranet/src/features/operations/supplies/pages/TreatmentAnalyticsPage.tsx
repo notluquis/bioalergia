@@ -2,6 +2,7 @@ import { Button, Card, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
+import type React from "react";
 import "dayjs/locale/es";
 import {
   Calendar as CalendarIcon,
@@ -33,6 +34,7 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { formatCurrency } from "@/lib/utils";
+// biome-ignore lint/nursery/noImportCycles: route import needed for search params
 import { Route } from "@/routes/_authed/operations/supplies-analytics";
 
 // --- Constants & Config ---
@@ -348,10 +350,13 @@ const CustomTooltip = ({
   label,
 }: {
   active?: boolean;
-  // payload is complicated in Recharts, but we can type strictly what we expect
-  // biome-ignore lint/suspicious/noExplicitAny: Recharts payload is loosely typed library-side
-  payload?: any[];
   label?: string;
+  // payload contains tooltip data for each series in the chart
+  payload?: Array<{
+    color: string;
+    name: string;
+    value: number;
+  }>;
 }) => {
   if (active && payload && payload.length) {
     return (
@@ -360,8 +365,7 @@ const CustomTooltip = ({
           {dayjs(label).isValid() ? dayjs(label).format("DD MMM YYYY") : label}
         </p>
         <div className="space-y-1">
-          {/* biome-ignore lint/suspicious/noExplicitAny: Recharts payload is loosely typed */}
-          {payload.map((p: any) => (
+          {payload.map((p) => (
             <div key={p.name} className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
               <span className="text-default-500 capitalize">{p.name}:</span>
@@ -525,8 +529,11 @@ function AnalyticsFilters({
       <Card.Content className="p-4 flex flex-col sm:flex-row gap-4 items-end">
         <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-default-500">Desde</label>
+            <label htmlFor="date-from" className="text-xs text-default-500">
+              Desde
+            </label>
             <input
+              id="date-from"
               type="date"
               className="bg-default-100 rounded-md px-3 py-2 text-sm text-foreground"
               value={filters.from || ""}
@@ -534,8 +541,11 @@ function AnalyticsFilters({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-default-500">Hasta</label>
+            <label htmlFor="date-to" className="text-xs text-default-500">
+              Hasta
+            </label>
             <input
+              id="date-to"
               type="date"
               className="bg-default-100 rounded-md px-3 py-2 text-sm text-foreground"
               value={filters.to || ""}
@@ -610,11 +620,11 @@ function KpiCard({
   trend,
   color = "primary",
 }: {
-  title: string;
-  value: string | number;
-  icon: any;
-  trend: string;
   color?: "primary" | "success" | "warning" | "secondary";
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  trend: string;
+  value: string | number;
 }) {
   return (
     <Card className="shadow-sm border-default-200">

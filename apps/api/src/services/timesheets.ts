@@ -9,6 +9,11 @@ dayjs.extend(timezone);
 
 const TIMEZONE = "America/Santiago";
 
+// Regex patterns for performance (top-level definition)
+const TIME_FORMAT_PATTERN = /^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/;
+const TIME_EXTRACT_PATTERN = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
+const TIME_ONLY_PATTERN = /^(\d{1,2}):(\d{2})/;
+
 import { roundCurrency } from "../lib/currency";
 import type { EmployeeTimesheet, EmployeeTimesheetUpdateInput } from "../lib/db-types";
 import { logEvent, logWarn } from "../lib/logger";
@@ -66,7 +71,7 @@ function timeToMinutes(time: string): number {
   if (d.isValid() && (time.includes("T") || time.includes("-"))) {
     return d.hour() * 60 + d.minute();
   }
-  if (!/^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/.test(time)) {
+  if (!TIME_FORMAT_PATTERN.test(time)) {
     throw new Error(`Invalid time format: ${time}. Expected HH:MM or HH:MM:SS`);
   }
   const parts = time.split(":").map(Number);
@@ -102,7 +107,7 @@ function normalizeTimeString(time: string): string | null {
   }
 
   // Match HH:MM or HH:MM:SS format
-  const match = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  const match = time.match(TIME_EXTRACT_PATTERN);
   if (!match) return null;
 
   const [, hours, minutes, seconds = "00"] = match;
@@ -139,7 +144,7 @@ function timeStringToDate(time: string | null | undefined, referenceDate: Date =
   }
 
   // Parse HH:MM or HH:MM:SS format
-  if (/^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/.test(time)) {
+  if (TIME_FORMAT_PATTERN.test(time)) {
     const parts = time.split(":").map(Number);
     const [hours, minutes, seconds = 0] = parts;
     if (
@@ -170,7 +175,7 @@ function dateToTimeString(date: Date | string | null): string | null {
 
   // If it's already a string in HH:MM or HH:MM:SS format, extract just HH:MM
   if (typeof date === "string") {
-    const match = date.match(/^(\d{1,2}):(\d{2})/);
+    const match = date.match(TIME_ONLY_PATTERN);
     if (match) {
       const [, hours, minutes] = match;
       // biome-ignore lint/style/noNonNullAssertion: regex match guarantee
@@ -295,6 +300,7 @@ export async function listTimesheetEntries(
   return entries.map(mapTimesheetEntry);
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy timesheet mutation logic
 export async function upsertTimesheetEntry(
   payload: UpsertTimesheetPayload,
 ): Promise<TimesheetEntry> {
@@ -653,7 +659,7 @@ export async function buildMonthlySummary(from: string, to: string, employeeId?:
     },
   });
 
-  const results: Array<ReturnType<typeof buildEmployeeSummary>> = [];
+  const results: ReturnType<typeof buildEmployeeSummary>[] = [];
   const totals = {
     workedMinutes: 0,
     overtimeMinutes: 0,

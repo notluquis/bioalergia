@@ -1,8 +1,11 @@
 import { authDb } from "@finanzas/db";
 import { Hono } from "hono";
 import { z } from "zod";
+
 import { getSessionUser, hasPermission } from "../auth";
 import { reply } from "../utils/reply";
+
+const NUMERIC_PATTERN = /^\d+$/;
 
 const app = new Hono();
 
@@ -56,7 +59,7 @@ app.get("/", async (c) => {
   }
 
   if (search) {
-    const isNumeric = /^\d+$/.test(search);
+    const isNumeric = NUMERIC_PATTERN.test(search);
     where.OR = [
       { externalReference: { contains: search, mode: "insensitive" } },
       { sourceId: { contains: search, mode: "insensitive" } },

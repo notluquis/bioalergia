@@ -3,21 +3,26 @@ import { toast } from "sonner";
 import { apiClient } from "../../../lib/api-client";
 import { CalendarSyncResponseSchema } from "../schemas";
 
+type SyncResponse = {
+  logId: number;
+  message: string;
+  status: "accepted";
+};
+
 export function useCalendarSync() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: async () => {
       // Pass empty object as body
-      const response = await apiClient.post<{
-        logId: number;
-        message: string;
-        status: "accepted";
-      }>("/api/calendar/events/sync", {}, { responseSchema: CalendarSyncResponseSchema });
+      const response = await apiClient.post<SyncResponse>(
+        "/api/calendar/events/sync",
+        {},
+        { responseSchema: CalendarSyncResponseSchema },
+      );
       return response;
     },
-    // biome-ignore lint/suspicious/noExplicitAny: react query
-    onSuccess: (data: any) => {
+    onSuccess: (data: SyncResponse) => {
       toast.success("Sincronización iniciada", {
         description: data.message || "La sincronización se está ejecutando en segundo plano.",
       });
@@ -27,8 +32,7 @@ export function useCalendarSync() {
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
       queryClient.invalidateQueries({ queryKey: ["calendar-sync-logs"] });
     },
-    // biome-ignore lint/suspicious/noExplicitAny: react query
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error("Error al sincronizar", {
         description: error.message || "Ocurrió un error inesperado.",
       });

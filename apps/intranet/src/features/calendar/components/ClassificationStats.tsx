@@ -3,11 +3,11 @@ import type { CalendarUnclassifiedEvent } from "../types";
 import { ClassificationTotals } from "./ClassificationTotals";
 
 interface ClassificationStatsProps {
+  events: CalendarUnclassifiedEvent[];
+  // biome-ignore lint/suspicious/noExplicitAny: TanStack Form FormApi has complex generic constraints
+  form: any;
   loading: boolean;
   totalCount: number;
-  events: CalendarUnclassifiedEvent[];
-  // biome-ignore lint/suspicious/noExplicitAny: complex generic type
-  form: any;
 }
 
 export function ClassificationStats({

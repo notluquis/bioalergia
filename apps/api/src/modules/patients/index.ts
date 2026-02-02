@@ -1,13 +1,19 @@
-import { Hono } from "hono";
 import crypto from "node:crypto";
-import { zValidator } from "../../lib/zod-validator";
-import { db } from "@finanzas/db";
-import { createPatientSchema, updatePatientSchema, createConsultationSchema, createBudgetSchema, createPaymentSchema } from "./patients.schema.js";
-import { getSessionUser } from "../../auth.js";
-import { uploadPatientAttachmentToDrive } from "../../services/patient-attachments-drive.js";
 import fs from "node:fs";
-import path from "node:path";
 import os from "node:os";
+import path from "node:path";
+import { db } from "@finanzas/db";
+import { Hono } from "hono";
+import { getSessionUser } from "../../auth.js";
+import { zValidator } from "../../lib/zod-validator";
+import { uploadPatientAttachmentToDrive } from "../../services/patient-attachments-drive.js";
+import {
+  createBudgetSchema,
+  createConsultationSchema,
+  createPatientSchema,
+  createPaymentSchema,
+  updatePatientSchema,
+} from "./patients.schema.js";
 
 type Variables = {
   // biome-ignore lint/suspicious/noExplicitAny: legacy typing
@@ -19,9 +25,10 @@ const patientsRoutes = new Hono<{ Variables: Variables }>();
 // GET / - List patients with search
 patientsRoutes.get("/", async (c) => {
   const { q } = c.req.query();
-  
+
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic where clause construction
   const where: any = {};
-  
+
   if (q) {
     where.person = {
       OR: [
@@ -55,7 +62,7 @@ patientsRoutes.get("/", async (c) => {
 // GET /:id - Get patient details
 patientsRoutes.get("/:id", async (c) => {
   const id = Number(c.req.param("id"));
-  
+
   if (Number.isNaN(id)) {
     return c.json({ error: "ID inválido" }, 400);
   }
@@ -228,41 +235,45 @@ patientsRoutes.put("/:id", zValidator("json", updatePatientSchema), async (c) =>
 });
 
 // POST /:id/consultations - Create consultation for patient
-patientsRoutes.post("/:id/consultations", zValidator("json", createConsultationSchema), async (c) => {
-  const patientId = Number(c.req.param("id"));
-  const input = c.req.valid("json");
+patientsRoutes.post(
+  "/:id/consultations",
+  zValidator("json", createConsultationSchema),
+  async (c) => {
+    const patientId = Number(c.req.param("id"));
+    const input = c.req.valid("json");
 
-  if (Number.isNaN(patientId)) {
-    return c.json({ error: "ID de paciente inválido" }, 400);
-  }
-
-  try {
-    const patient = await db.patient.findUnique({
-      where: { id: patientId },
-    });
-
-    if (!patient) {
-      return c.json({ error: "Paciente no encontrado" }, 404);
+    if (Number.isNaN(patientId)) {
+      return c.json({ error: "ID de paciente inválido" }, 400);
     }
 
-    const consultation = await db.consultation.create({
-      data: {
-        patientId,
-        date: new Date(input.date),
-        reason: input.reason,
-        diagnosis: input.diagnosis,
-        treatment: input.treatment,
-        notes: input.notes,
-        eventId: input.eventId,
-      },
-    });
+    try {
+      const patient = await db.patient.findUnique({
+        where: { id: patientId },
+      });
 
-    return c.json(consultation, 201);
-  } catch (error) {
-    console.error("Error creating consultation:", error);
-    return c.json({ error: "Error al registrar la consulta", details: String(error) }, 500);
-  }
-});
+      if (!patient) {
+        return c.json({ error: "Paciente no encontrado" }, 404);
+      }
+
+      const consultation = await db.consultation.create({
+        data: {
+          patientId,
+          date: new Date(input.date),
+          reason: input.reason,
+          diagnosis: input.diagnosis,
+          treatment: input.treatment,
+          notes: input.notes,
+          eventId: input.eventId,
+        },
+      });
+
+      return c.json(consultation, 201);
+    } catch (error) {
+      console.error("Error creating consultation:", error);
+      return c.json({ error: "Error al registrar la consulta", details: String(error) }, 500);
+    }
+  },
+);
 
 // POST /:id/budgets - Create budget for patient
 patientsRoutes.post("/:id/budgets", zValidator("json", createBudgetSchema), async (c) => {
@@ -270,22 +281,27 @@ patientsRoutes.post("/:id/budgets", zValidator("json", createBudgetSchema), asyn
   const input = c.req.valid("json");
 
   try {
-    const totalAmount = input.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+    const totalAmount = input.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
     const finalAmount = totalAmount - input.discount;
 
     const budget = await db.budget.create({
       data: {
         patientId,
         title: input.title,
+        // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
         totalAmount: totalAmount as any,
+        // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
         discount: input.discount as any,
+        // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
         finalAmount: finalAmount as any,
         notes: input.notes,
         items: {
-          create: input.items.map(item => ({
+          create: input.items.map((item) => ({
             description: item.description,
             quantity: item.quantity,
+            // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
             unitPrice: item.unitPrice as any,
+            // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
             totalPrice: (item.unitPrice * item.quantity) as any,
           })),
         },
@@ -325,6 +341,7 @@ patientsRoutes.post("/:id/payments", zValidator("json", createPaymentSchema), as
       data: {
         patientId,
         budgetId: input.budgetId,
+        // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
         amount: input.amount as any,
         paymentDate: new Date(input.paymentDate),
         paymentMethod: input.paymentMethod,
@@ -387,7 +404,7 @@ patientsRoutes.post("/:id/attachments", async (c) => {
         tempPath,
         name,
         file.type,
-        id
+        id,
       );
 
       // Save to DB
@@ -396,7 +413,8 @@ patientsRoutes.post("/:id/attachments", async (c) => {
         data: {
           patientId: Number(id),
           name: name,
-          type: type as any, // biome-ignore lint/suspicious/noExplicitAny: Type conversion for enum
+          // biome-ignore lint/suspicious/noExplicitAny: Type conversion for enum
+          type: type as any,
           driveFileId: fileId,
           mimeType: file.type,
           uploadedBy: user.id,

@@ -1,3 +1,4 @@
+import type { MongoAbility, RawRuleOf } from "@casl/ability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useCallback } from "react";
@@ -14,6 +15,13 @@ import {
 import { authStore, setImpersonatedRole } from "./../store/auth-store";
 import type { AuthSessionData, AuthUser, LoginResult } from "../types";
 
+type SessionPayload = {
+  abilityRules?: RawRuleOf<MongoAbility>[];
+  permissionVersion?: number;
+  status: string;
+  user?: AuthUser;
+};
+
 export function useAuth() {
   const queryClient = useQueryClient();
   const { impersonatedRole } = useStore(authStore, (state) => state);
@@ -22,12 +30,9 @@ export function useAuth() {
     gcTime: 10 * 60 * 1000, // 10 min cache
     queryFn: async (): Promise<AuthSessionData | null> => {
       try {
-        const payload = await apiClient.get<{
-          abilityRules?: any[];
-          permissionVersion?: number;
-          status: string;
-          user?: AuthUser;
-        }>("/api/auth/me/session", { responseSchema: AuthSessionResponseSchema });
+        const payload = await apiClient.get<SessionPayload>("/api/auth/me/session", {
+          responseSchema: AuthSessionResponseSchema,
+        });
 
         if (payload.status === "ok" && payload.user) {
           // Note: ability update is handled in AuthListener

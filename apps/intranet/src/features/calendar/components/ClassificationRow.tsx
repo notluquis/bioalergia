@@ -14,9 +14,7 @@ import { FormattedEventDescription } from "./FormattedEventDescription";
 interface ClassificationRowProps {
   categoryChoices: readonly string[];
   event: CalendarUnclassifiedEvent;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // biome-ignore lint/suspicious/noExplicitAny: complex form type
+  // biome-ignore lint/suspicious/noExplicitAny: TanStack Form FormApi has complex generic constraints
   form: any;
   index: number;
   isSaving: boolean;
@@ -38,14 +36,11 @@ export function ClassificationRow({
   const description = event.description?.trim();
 
   // Subscribe to category for conditional fields
-
-  /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, security/detect-object-injection */
   const category = useStore(
     form.store,
-    // biome-ignore lint/suspicious/noExplicitAny: complex form state
+    // biome-ignore lint/suspicious/noExplicitAny: TanStack Form store type is complex
     (state: any) => (state as { values: FormValues }).values.entries[index]?.category ?? "",
   );
-  /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, security/detect-object-injection */
   const isSubcutaneous = category === "Tratamiento subcutáneo";
 
   return (

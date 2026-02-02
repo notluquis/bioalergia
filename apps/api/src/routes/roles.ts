@@ -6,18 +6,16 @@ import {
   roleCreateSchema,
   roleUpdateSchema,
 } from "../lib/entity-schemas";
+import { logEvent } from "../lib/logger";
 import {
-  assignPermissionsToRole,
-  createRole,
   deleteRole,
   listPermissions,
   listRoles,
   syncPermissions,
   updateRole,
 } from "../services/roles";
-import { reply } from "../utils/reply";
-import { logEvent } from "../lib/logger";
 import { getSetting, updateSetting } from "../services/settings";
+import { reply } from "../utils/reply";
 
 const app = new Hono();
 

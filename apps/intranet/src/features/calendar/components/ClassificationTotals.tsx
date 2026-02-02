@@ -9,18 +9,15 @@ import type { FormValues } from "../schemas";
 
 interface ClassificationTotalsProps {
   events: CalendarUnclassifiedEvent[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // biome-ignore lint/suspicious/noExplicitAny: tanstack form
+  // biome-ignore lint/suspicious/noExplicitAny: TanStack Form FormApi has complex generic constraints
   form: any;
 }
 
 export function ClassificationTotals({ events, form }: Readonly<ClassificationTotalsProps>) {
   // Subscribe to entries values via TanStack Form's useStore
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
   const watchedEntries = useStore(
     form.store,
-    // biome-ignore lint/suspicious/noExplicitAny: zustand store access
+    // biome-ignore lint/suspicious/noExplicitAny: TanStack Form store type is complex
     (state: any) => (state as { values: FormValues }).values.entries,
   );
 
