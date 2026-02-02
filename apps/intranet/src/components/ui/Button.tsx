@@ -13,14 +13,7 @@ import { type ComponentProps, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 /** Valid HeroUI Button variants (as per HeroUI v3.0.0-beta) */
-const VALID_HEROUI_VARIANTS = [
-  "solid",
-  "bordered",
-  "flat",
-  "faded",
-  "shadow",
-  "ghost",
-] as const;
+const VALID_HEROUI_VARIANTS = ["solid", "bordered", "flat", "faded", "shadow", "ghost"] as const;
 
 /** Legacy or custom variants (mapped or passed through) */
 const KNOWN_CUSTOM_VARIANTS = [
@@ -39,8 +32,8 @@ const KNOWN_CUSTOM_VARIANTS = [
  */
 function isKnownVariant(variant: string): boolean {
   return (
-    VALID_HEROUI_VARIANTS.includes(variant as typeof VALID_HEROUI_VARIANTS[number]) ||
-    KNOWN_CUSTOM_VARIANTS.includes(variant as typeof KNOWN_CUSTOM_VARIANTS[number])
+    VALID_HEROUI_VARIANTS.includes(variant as (typeof VALID_HEROUI_VARIANTS)[number]) ||
+    KNOWN_CUSTOM_VARIANTS.includes(variant as (typeof KNOWN_CUSTOM_VARIANTS)[number])
   );
 }
 
