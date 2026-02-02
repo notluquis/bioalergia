@@ -51,6 +51,18 @@ const RestoreJobSchema = z.looseObject({
   tables: z.array(z.string()).optional(),
 });
 
+// Response wrappers for API calls
+const TriggerBackupResponseSchema = z.object({
+  status: z.literal("ok"),
+  message: z.string(),
+  job: BackupJobSchema,
+});
+
+const TriggerRestoreResponseSchema = z.object({
+  status: z.literal("ok"),
+  job: RestoreJobSchema,
+});
+
 export const fetchBackups = async (): Promise<BackupFile[]> => {
   const data = await apiClient.get<{ backups: BackupFile[] }>("/api/backups", {
     responseSchema: BackupsResponseSchema,
@@ -66,22 +78,22 @@ export const fetchTables = async (fileId: string): Promise<string[]> => {
 };
 
 export const triggerBackup = async (): Promise<{ job: BackupJob }> => {
-  const job = await apiClient.post<BackupJob>(
+  const response = await apiClient.post<{ status: string; message: string; job: BackupJob }>(
     "/api/backups",
     {},
-    { responseSchema: BackupJobSchema },
+    { responseSchema: TriggerBackupResponseSchema },
   );
-  return { job };
+  return { job: response.job };
 };
 
 export const triggerRestore = async (
   fileId: string,
   tables?: string[],
 ): Promise<{ job: RestoreJob }> => {
-  const job = await apiClient.post<RestoreJob>(
+  const response = await apiClient.post<{ status: string; job: RestoreJob }>(
     `/api/backups/${fileId}/restore`,
     { tables },
-    { responseSchema: RestoreJobSchema },
+    { responseSchema: TriggerRestoreResponseSchema },
   );
-  return { job };
+  return { job: response.job };
 };
