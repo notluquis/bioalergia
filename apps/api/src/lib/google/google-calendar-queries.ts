@@ -421,13 +421,13 @@ export async function getCalendarAggregates(
         amountPaid: Number(r.amountPaid),
       })),
       byDate: (byDate as unknown as DateRow[]).map((r: DateRow) => ({
-        date: dayjs(r.date).toDate(),
+        date: dayjs(r.date).format("YYYY-MM-DD"),
         total: Number(r.total),
         amountExpected: Number(r.amountExpected),
         amountPaid: Number(r.amountPaid),
       })),
       byDateType: (byDateType as unknown as DateTypeRow[]).map((r: DateTypeRow) => ({
-        date: dayjs(r.date).toDate(),
+        date: dayjs(r.date).format("YYYY-MM-DD"),
         eventType: r.eventType,
         total: Number(r.total),
       })),
