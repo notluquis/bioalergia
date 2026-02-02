@@ -86,13 +86,14 @@ export const triggerBackup = async (): Promise<BackupJob> => {
   return response.job;
 };
 
-export const triggerRestore = async (
-  fileId: string,
-  tables?: string[],
-): Promise<RestoreJob> => {
+export const triggerRestore = async (fileId: string, tables?: string[]): Promise<RestoreJob> => {
   const response = await apiClient.post<{
     status: "ok";
     job: RestoreJob;
-  }>(`/api/backups/${fileId}/restore`, { tables }, { responseSchema: TriggerRestoreResponseSchema });
+  }>(
+    `/api/backups/${fileId}/restore`,
+    { tables },
+    { responseSchema: TriggerRestoreResponseSchema },
+  );
   return response.job;
 };
