@@ -15,7 +15,9 @@ export interface ButtonProps
     | ComponentProps<typeof HeroButton>["variant"]
     | "error" // Legacy: maps to danger
     | "success" // Legacy: maps to primary + success class
-    | "link"; // Legacy: maps to ghost + underline
+    | "link" // Legacy: maps to ghost + underline
+    | "bordered" // HeroUI variant
+    | (string & {}); // Allow any string for flexibility
   isLoading?: boolean;
   disabled?: boolean;
   title?: string;
@@ -24,6 +26,7 @@ export interface ButtonProps
   startContent?: React.ReactNode;
   endContent?: React.ReactNode;
   color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger";
+  type?: "button" | "submit" | "reset";
 }
 
 const mapVariantToHero = (

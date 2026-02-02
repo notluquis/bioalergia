@@ -7,6 +7,14 @@ interface ClassificationFiltersProps {
   onNavigate: (search: any) => void;
 }
 
+const FILTER_BUTTONS = [
+  { key: "missingCategory" as const, label: "Sin categoría" },
+  { key: "missingAmount" as const, label: "Sin monto" },
+  { key: "missingAttended" as const, label: "Sin asistencia" },
+  { key: "missingDosage" as const, label: "Sin dosis" },
+  { key: "missingTreatmentStage" as const, label: "Sin etapa" },
+] as const;
+
 export function ClassificationFilters({ filters, onNavigate }: ClassificationFiltersProps) {
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
@@ -19,93 +27,69 @@ export function ClassificationFilters({ filters, onNavigate }: ClassificationFil
     }));
   };
 
+  const setFilterMode = (mode: "AND" | undefined) => {
+    // biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate requires complex types
+    onNavigate((prev: any) => ({
+      ...prev,
+      filterMode: mode,
+      page: 0,
+    }));
+  };
+
+  const clearFilters = () => {
+    onNavigate({ page: 0 });
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       <span className="text-default-400 text-xs font-medium tracking-wide uppercase">Filtrar:</span>
       <div className="flex flex-wrap gap-2">
-        <Button
-          className="text-xs font-medium"
-          onClick={() => toggleFilter("missingCategory")}
-          size="sm"
-          variant={filters.missingCategory ? "tertiary" : "ghost"}
-        >
-          Sin categoría
-        </Button>
-        <Button
-          className="text-xs font-medium"
-          onClick={() => toggleFilter("missingAmount")}
-          size="sm"
-          variant={filters.missingAmount ? "tertiary" : "ghost"}
-        >
-          Sin monto
-        </Button>
-        <Button
-          className="text-xs font-medium"
-          onClick={() => toggleFilter("missingAttended")}
-          size="sm"
-          variant={filters.missingAttended ? "tertiary" : "ghost"}
-        >
-          Sin asistencia
-        </Button>
-        <Button
-          className="text-xs font-medium"
-          onClick={() => toggleFilter("missingDosage")}
-          size="sm"
-          variant={filters.missingDosage ? "tertiary" : "ghost"}
-        >
-          Sin dosis
-        </Button>
-        <Button
-          className="text-xs font-medium"
-          onClick={() => toggleFilter("missingTreatmentStage")}
-          size="sm"
-          variant={filters.missingTreatmentStage ? "tertiary" : "ghost"}
-        >
-          Sin etapa
-        </Button>
+        {FILTER_BUTTONS.map(({ key, label }) => (
+          <Button
+            key={key}
+            className="text-xs font-medium"
+            color={filters[key] ? "primary" : "default"}
+            onClick={() => toggleFilter(key)}
+            size="sm"
+            type="button"
+            variant={filters[key] ? "bordered" : "ghost"}
+          >
+            {label}
+          </Button>
+        ))}
 
         {hasActiveFilters && (
           <>
             <div className="bg-default-200 h-4 w-px mx-1" />
-            <div className="flex overflow-hidden rounded-lg border border-default-200">
+            <div className="flex gap-2">
               <Button
                 className="text-xs font-medium"
-                onClick={() => {
-                  // biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate requires complex types
-                  onNavigate((prev: any) => ({
-                    ...prev,
-                    filterMode: undefined,
-                    page: 0,
-                  }));
-                }}
+                color={!filters.filterMode || filters.filterMode === "OR" ? "primary" : "default"}
+                onClick={() => setFilterMode(undefined)}
                 size="sm"
-                variant={!filters.filterMode || filters.filterMode === "OR" ? "tertiary" : "ghost"}
+                type="button"
+                variant={!filters.filterMode || filters.filterMode === "OR" ? "bordered" : "ghost"}
               >
                 Cualquiera
               </Button>
               <Button
                 className="text-xs font-medium"
-                onClick={() => {
-                  // biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate requires complex types
-                  onNavigate((prev: any) => ({
-                    ...prev,
-                    filterMode: "AND",
-                    page: 0,
-                  }));
-                }}
+                color={filters.filterMode === "AND" ? "primary" : "default"}
+                onClick={() => setFilterMode("AND")}
                 size="sm"
-                variant={filters.filterMode === "AND" ? "tertiary" : "ghost"}
+                type="button"
+                variant={filters.filterMode === "AND" ? "bordered" : "ghost"}
               >
                 Todos
               </Button>
             </div>
             <Button
               className="text-xs font-medium"
-              onClick={() => {
-                onNavigate({ page: 0 });
-              }}
+              color="danger"
+              onClick={clearFilters}
               size="sm"
-              variant="danger"
+              type="button"
+              variant="bordered"
             >
               Limpiar
             </Button>
