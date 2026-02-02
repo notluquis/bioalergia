@@ -19,25 +19,50 @@ export function ClassificationFilters({ filters, onNavigate }: ClassificationFil
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
   const toggleFilter = (key: keyof MissingFieldFilters) => {
-    // biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate requires complex types
-    onNavigate((prev: any) => ({
-      ...prev,
-      [key]: !prev[key] || undefined,
-      page: 0,
-    }));
+    onNavigate({
+      search: {
+        missingCategory:
+          key === "missingCategory" ? !filters.missingCategory : filters.missingCategory,
+        missingAmount: key === "missingAmount" ? !filters.missingAmount : filters.missingAmount,
+        missingAttended:
+          key === "missingAttended" ? !filters.missingAttended : filters.missingAttended,
+        missingDosage: key === "missingDosage" ? !filters.missingDosage : filters.missingDosage,
+        missingTreatmentStage:
+          key === "missingTreatmentStage"
+            ? !filters.missingTreatmentStage
+            : filters.missingTreatmentStage,
+        filterMode: filters.filterMode,
+        page: 0,
+      },
+    });
   };
 
   const setFilterMode = (mode: "AND" | undefined) => {
-    // biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate requires complex types
-    onNavigate((prev: any) => ({
-      ...prev,
-      filterMode: mode,
-      page: 0,
-    }));
+    onNavigate({
+      search: {
+        missingCategory: filters.missingCategory,
+        missingAmount: filters.missingAmount,
+        missingAttended: filters.missingAttended,
+        missingDosage: filters.missingDosage,
+        missingTreatmentStage: filters.missingTreatmentStage,
+        filterMode: mode,
+        page: 0,
+      },
+    });
   };
 
   const clearFilters = () => {
-    onNavigate({ page: 0 });
+    onNavigate({
+      search: {
+        missingCategory: undefined,
+        missingAmount: undefined,
+        missingAttended: undefined,
+        missingDosage: undefined,
+        missingTreatmentStage: undefined,
+        filterMode: undefined,
+        page: 0,
+      },
+    });
   };
 
   return (
