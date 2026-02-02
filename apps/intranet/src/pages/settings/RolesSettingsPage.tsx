@@ -455,7 +455,7 @@ function buildMatrixItem({
 function buildSubjectNavKeyMap(routeTreeData: unknown, allPermissions: Permission[]) {
   const mapping = new Map<string, Set<string>>();
 
-  // biome-ignore lint/suspicious/noExplicitAny: TanStack route tree is dynamic
+  // biome-ignore lint/suspicious/noExplicitAny: TanStack Router tree is dynamic with complex generics
   const walk = (route: any, activeNav?: NavConfig) => {
     const currentNav = (route.options?.staticData?.nav as NavConfig | undefined) ?? activeNav;
     const permission = route.options?.staticData?.permission as { subject?: string } | undefined;
@@ -469,11 +469,11 @@ function buildSubjectNavKeyMap(routeTreeData: unknown, allPermissions: Permissio
     }
 
     route.children?.forEach((child: unknown) => {
-      walk(child, currentNav);
+      walk(child as any, currentNav);
     });
   };
 
-  walk(routeTreeData);
+  walk(routeTreeData as any);
 
   return addInferredAliases(mapping, allPermissions);
 }

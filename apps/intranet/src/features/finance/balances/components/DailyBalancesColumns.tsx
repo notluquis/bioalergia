@@ -1,5 +1,5 @@
 import { Chip } from "@heroui/react";
-import type { ColumnDef, Row } from "@tanstack/react-table";
+import type { ColumnDef, Row, Table } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
 import Button from "@/components/ui/Button";
@@ -25,8 +25,13 @@ const formatDifference = (diff: null | number) => {
 const getDateKey = (date: Date) => dayjs(date).format("YYYY-MM-DD");
 
 // Custom Cell for the "Registrado" Input
-// biome-ignore lint/suspicious/noExplicitAny: tanstack generic
-const RecordedBalanceCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
+const RecordedBalanceCell = ({
+  row,
+  table,
+}: {
+  row: Row<DailyBalanceDay>;
+  table: Table<DailyBalanceDay>;
+}) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;
   const dateKey = getDateKey(day.date);
@@ -47,8 +52,7 @@ const RecordedBalanceCell = ({ row, table }: { row: Row<DailyBalanceDay>; table:
 };
 
 // Custom Cell for the "Nota" Textarea
-// biome-ignore lint/suspicious/noExplicitAny: tanstack generic
-const NoteCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
+const NoteCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: Table<DailyBalanceDay> }) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;
   const dateKey = getDateKey(day.date);
@@ -69,8 +73,13 @@ const NoteCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => 
 };
 
 // Custom Cell for Actions (Save Button)
-// biome-ignore lint/suspicious/noExplicitAny: tanstack generic
-const ActionsCell = ({ row, table }: { row: Row<DailyBalanceDay>; table: any }) => {
+const ActionsCell = ({
+  row,
+  table,
+}: {
+  row: Row<DailyBalanceDay>;
+  table: Table<DailyBalanceDay>;
+}) => {
   const meta = table.options.meta as BalanceTableMeta;
   const day = row.original;
   const dateKey = getDateKey(day.date);

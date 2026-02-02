@@ -127,9 +127,8 @@ export function generateNavSections(): NavSectionData[] {
   return sections;
 }
 
-// Any type needed because Route type is complex and generic
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-// biome-ignore lint/suspicious/noExplicitAny: generic route tree
+// Route tree structure is complex and varies by router implementation
+// biome-ignore lint/suspicious/noExplicitAny: TanStack Router route tree cannot be reasonably typed
 function extractNavItems(route: any): ExtractedNavItem[] {
   const items: ExtractedNavItem[] = [];
 
@@ -180,8 +179,7 @@ function extractNavItems(route: any): ExtractedNavItem[] {
 
   // Process children
   if (route.children) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    // biome-ignore lint/suspicious/noExplicitAny: generic route children
+    // biome-ignore lint/suspicious/noExplicitAny: TanStack Router children structure
     route.children.forEach((child: any) => {
       items.push(...extractNavItems(child));
     });

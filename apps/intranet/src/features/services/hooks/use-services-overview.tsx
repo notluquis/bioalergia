@@ -1,4 +1,4 @@
-import type { ServiceSchedule } from "../types";
+import type { CreateServicePayload, RegenerateServicePayload, ServiceSchedule } from "../types";
 
 import { useServiceDetails } from "./use-service-details";
 import { useServiceMutations } from "./use-service-mutations";
@@ -31,13 +31,11 @@ export function useServicesOverview() {
     await mutations.unlinkPayment(s.id);
   };
 
-  // biome-ignore lint/suspicious/noExplicitAny: passthrough
-  const handleCreateService = async (payload: any) => {
+  const handleCreateService = async (payload: CreateServicePayload) => {
     await mutations.createService(payload);
   };
 
-  // biome-ignore lint/suspicious/noExplicitAny: passthrough
-  const handleRegenerate = async (overrides: any) => {
+  const handleRegenerate = async (overrides: RegenerateServicePayload) => {
     if (!details.selectedService) return;
     await mutations.regenerateService(details.selectedService.public_id, overrides);
   };

@@ -7,7 +7,7 @@ import { logger } from "@/lib/logger";
 import { fetchServiceDetail } from "../api";
 import { serviceKeys } from "../queries";
 import { servicesActions, servicesStore } from "../store";
-import type { ServiceDetailResponse, ServiceListResponse } from "../types";
+import type { ServiceDetailResponse, ServiceListResponse, ServiceTemplate } from "../types";
 
 export function useServiceDetails(services: ServiceListResponse["services"]) {
   const { can } = useAuth();
@@ -76,8 +76,7 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
     selectedService: detail?.service ?? null,
     selectedTemplate,
     setSelectedId: servicesActions.setSelectedId,
-    // biome-ignore lint/suspicious/noExplicitAny: template is generic
-    setSelectedTemplate: (t: any) => {
+    setSelectedTemplate: (t: null | ServiceTemplate) => {
       servicesStore.setState((s) => ({ ...s, selectedTemplate: t }));
     },
     unifiedAgendaItems,
