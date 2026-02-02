@@ -9,10 +9,15 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 }
 
+// W3C Web Push API standard subscription keys
+type PushSubscriptionKeys = {
+  p256dh: string;
+  auth: string;
+};
+
 export async function subscribeToPush(
   userId: number,
-  // biome-ignore lint/suspicious/noExplicitAny: legacy push subscription
-  subscription: { endpoint: string; keys: any },
+  subscription: { endpoint: string; keys: PushSubscriptionKeys },
 ) {
   return await db.pushSubscription.upsert({
     where: { endpoint: subscription.endpoint },

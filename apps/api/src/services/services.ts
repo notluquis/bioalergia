@@ -1,4 +1,9 @@
+import type { ServiceCreateArgs, ServiceUpdateArgs } from "@finanzas/db";
 import { db } from "@finanzas/db";
+
+// Extract input types from Zenstack args
+type ServiceCreateInput = NonNullable<ServiceCreateArgs["data"]>;
+type ServiceUpdateInput = NonNullable<ServiceUpdateArgs["data"]>;
 
 export async function listServices() {
   return await db.service.findMany({
@@ -26,8 +31,7 @@ export async function getServiceById(id: number) {
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: dynamic payload
-export async function createService(data: any) {
+export async function createService(data: ServiceCreateInput) {
   return await db.service.create({
     data,
     include: {
@@ -40,8 +44,7 @@ export async function createService(data: any) {
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: dynamic payload
-export async function updateService(id: number, data: any) {
+export async function updateService(id: number, data: ServiceUpdateInput) {
   return await db.service.update({
     where: { id },
     data,

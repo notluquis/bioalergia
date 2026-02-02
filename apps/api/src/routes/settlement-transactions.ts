@@ -1,4 +1,5 @@
 import { authDb } from "@finanzas/db";
+import type { SettlementTransactionWhereInput } from "@finanzas/db/input";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -37,34 +38,44 @@ app.get("/", async (c) => {
   const { page, pageSize, from, to, paymentMethod, transactionType, search } = parsed.data;
   const offset = (page - 1) * pageSize;
 
-  // Build where clause
-  // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
-  const where: any = {};
+  // Build where clause using type-safe SettlementTransactionWhereInput
+  const whereConditions: SettlementTransactionWhereInput[] = [];
 
-  if (from) {
-    where.transactionDate = { ...where.transactionDate, gte: new Date(from) };
-  }
-
-  if (to) {
-    where.transactionDate = { ...where.transactionDate, lte: new Date(to) };
+  if (from || to) {
+    const dateFilter: Record<string, Date> = {};
+    if (from) dateFilter.gte = new Date(from);
+    if (to) dateFilter.lte = new Date(to);
+    whereConditions.push({ transactionDate: dateFilter });
   }
 
   if (paymentMethod) {
-    where.OR = [{ paymentMethod: paymentMethod }, { paymentMethodType: paymentMethod }];
+    whereConditions.push({
+      OR: [{ paymentMethod: paymentMethod }, { paymentMethodType: paymentMethod }],
+    });
   }
 
   if (transactionType) {
-    where.transactionType = transactionType;
+    whereConditions.push({ transactionType });
   }
 
   if (search) {
     const isNumeric = NUMERIC_PATTERN.test(search);
-    where.OR = [
-      { externalReference: { contains: search, mode: "insensitive" } },
-      { sourceId: { contains: search, mode: "insensitive" } },
-      ...(isNumeric ? [{ orderId: Number(search) }] : []),
-    ];
+    whereConditions.push({
+      OR: [
+        { externalReference: { contains: search, mode: "insensitive" } },
+        { sourceId: { contains: search, mode: "insensitive" } },
+        ...(isNumeric ? [{ orderId: Number(search) }] : []),
+      ],
+    });
   }
+
+  // Combine conditions with AND
+  const where: SettlementTransactionWhereInput =
+    whereConditions.length === 1
+      ? whereConditions[0]
+      : whereConditions.length > 1
+        ? { AND: whereConditions }
+        : {};
 
   // Create user-bound client for policy enforcement
   const userDb = authDb.$setAuth(user);

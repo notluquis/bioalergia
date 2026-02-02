@@ -1,4 +1,5 @@
 import { authDb } from "@finanzas/db";
+import type { ReleaseTransactionWhereInput } from "@finanzas/db/input";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -37,36 +38,43 @@ app.get("/", async (c) => {
   const { page, pageSize, from, to, paymentMethod, search, descriptions } = parsed.data;
   const offset = (page - 1) * pageSize;
 
-  // Build where clause
-  // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
-  const where: any = {};
+  // Build where clause using type-safe ReleaseTransactionWhereInput
+  const whereConditions: ReleaseTransactionWhereInput[] = [];
 
-  if (from) {
-    where.date = { ...where.date, gte: new Date(from) };
-  }
-
-  if (to) {
-    where.date = { ...where.date, lte: new Date(to) };
+  if (from || to) {
+    const dateFilter: Record<string, Date> = {};
+    if (from) dateFilter.gte = new Date(from);
+    if (to) dateFilter.lte = new Date(to);
+    whereConditions.push({ date: dateFilter });
   }
 
   if (paymentMethod) {
-    where.paymentMethod = paymentMethod;
+    whereConditions.push({ paymentMethod });
   }
 
   if (descriptions) {
     const list = descriptions.split(",").map((d) => d.trim());
-    where.description = { in: list };
+    whereConditions.push({ description: { in: list } });
   }
 
   if (search) {
     const isNumeric = NUMERIC_PATTERN.test(search);
-    where.OR = [
-      { externalReference: { contains: search, mode: "insensitive" } },
-      { sourceId: { contains: search, mode: "insensitive" } },
-      // If numeric, search in orderId too
-      ...(isNumeric ? [{ orderId: Number(search) }] : []),
-    ];
+    whereConditions.push({
+      OR: [
+        { externalReference: { contains: search, mode: "insensitive" } },
+        { sourceId: { contains: search, mode: "insensitive" } },
+        ...(isNumeric ? [{ orderId: Number(search) }] : []),
+      ],
+    });
   }
+
+  // Combine conditions with AND
+  const where: ReleaseTransactionWhereInput =
+    whereConditions.length === 1
+      ? whereConditions[0]
+      : whereConditions.length > 1
+        ? { AND: whereConditions }
+        : {};
 
   // Create user-bound client for policy enforcement
   const userDb = authDb.$setAuth(user);

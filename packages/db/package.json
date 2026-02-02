@@ -10,6 +10,11 @@
       "import": "./dist/client.js",
       "default": "./dist/client.js"
     },
+    "./input": {
+      "types": "./dist/zenstack/input.d.ts",
+      "import": "./dist/zenstack/input.js",
+      "default": "./dist/zenstack/input.js"
+    },
     "./schema": {
       "types": "./dist/zenstack/schema.d.ts",
       "import": "./dist/zenstack/schema.js",

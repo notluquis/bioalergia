@@ -10,16 +10,20 @@ type ExtractDataInput<T> = T extends { data: infer D } ? (D extends (infer U)[] 
 type SettlementTransactionInput = ExtractDataInput<SettlementManyArgs>;
 type ReleaseTransactionInput = ExtractDataInput<ReleaseManyArgs>;
 
+// Type for raw MercadoPago CSV rows
+type MercadoPagoRowRaw = Record<string, unknown>;
+
 // Helper parsers
 export function parseDate(val: string) {
   if (!val) return new Date();
   return new Date(val);
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy parser
-export function parseDecimal(val: string): any {
+export function parseDecimal(val: unknown): number | string {
   if (!val) return 0;
-  return val.replace(",", ".");
+  if (typeof val === "string") return val.replace(",", ".");
+  if (typeof val === "number") return val;
+  return 0;
 }
 
 export function parseBigInt(val: string): bigint | undefined {
@@ -31,24 +35,20 @@ export function parseBigInt(val: string): bigint | undefined {
   }
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy parser
-export function parseJson(val: any): any {
+export function parseJson(val: unknown): Record<string, unknown> | undefined {
   if (!val) return undefined;
   try {
-    if (typeof val === "string") return JSON.parse(val);
-    return val;
+    if (typeof val === "string") return JSON.parse(val) as Record<string, unknown>;
+    if (typeof val === "object" && val !== null) return val as Record<string, unknown>;
+    return undefined;
   } catch {
-    // If it fails to parse, it might be a weird string. Let's keep val but safely...
-    // Actually if it's not valid JSON, Prisma might choke.
-    // SAFE: return undefined if error.
     return undefined;
   }
 }
 
 // Mapper for Settlement Report
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy mapper
-// biome-ignore lint/suspicious/noExplicitAny: legacy mapper
-export function mapRowToSettlementTransaction(row: any): SettlementTransactionInput {
+export function mapRowToSettlementTransaction(row: MercadoPagoRowRaw): SettlementTransactionInput {
   return {
     sourceId: row.SOURCE_ID || "", // Empty = will be skipped as invalid
     transactionDate: parseDate(row.TRANSACTION_DATE),
@@ -73,7 +73,7 @@ export function mapRowToSettlementTransaction(row: any): SettlementTransactionIn
     financingFeeAmount: parseDecimal(row.FINANCING_FEE_AMOUNT),
     shippingFeeAmount: parseDecimal(row.SHIPPING_FEE_AMOUNT),
     taxesAmount: parseDecimal(row.TAXES_AMOUNT),
-    installments: parseInt(row.INSTALLMENTS || "0", 10) || null,
+    installments: Number.parseInt(row.INSTALLMENTS || "0", 10) || null,
     taxDetail: row.TAX_DETAIL || null,
     taxesDisaggregated: parseJson(row.TAXES_DISAGGREGATED) || undefined,
     description: row.DESCRIPTION || null,
@@ -113,8 +113,7 @@ export function mapRowToSettlementTransaction(row: any): SettlementTransactionIn
 
 // Mapper for Release Report
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy mapper
-// biome-ignore lint/suspicious/noExplicitAny: legacy mapper
-export function mapRowToReleaseTransaction(row: any): ReleaseTransactionInput {
+export function mapRowToReleaseTransaction(row: MercadoPagoRowRaw): ReleaseTransactionInput {
   return {
     sourceId: row.SOURCE_ID || "", // Empty = will be skipped as invalid
     date: parseDate(row.DATE),
@@ -130,7 +129,7 @@ export function mapRowToReleaseTransaction(row: any): ReleaseTransactionInput {
     shippingFeeAmount: parseDecimal(row.SHIPPING_FEE_AMOUNT),
     taxesAmount: parseDecimal(row.TAXES_AMOUNT),
     couponAmount: parseDecimal(row.COUPON_AMOUNT),
-    installments: parseInt(row.INSTALLMENTS || "0", 10) || null,
+    installments: Number.parseInt(row.INSTALLMENTS || "0", 10) || null,
     paymentMethod: row.PAYMENT_METHOD || null,
     taxDetail: row.TAX_DETAIL || null,
     taxAmountTelco: parseDecimal(row.TAX_AMOUNT_TELCO),

@@ -1,4 +1,9 @@
+import type { RoleCreateArgs, RoleUpdateArgs } from "@finanzas/db";
 import { db, schema } from "@finanzas/db";
+
+// Extract input types from Zenstack args
+type RoleCreateInput = NonNullable<RoleCreateArgs["data"]>;
+type RoleUpdateInput = NonNullable<RoleUpdateArgs["data"]>;
 
 export async function listRoles() {
   return await db.role.findMany({
@@ -13,8 +18,7 @@ export async function listRoles() {
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: dynamic payload
-export async function createRole(data: any) {
+export async function createRole(data: RoleCreateInput) {
   const existing = await db.role.findFirst({
     where: { name: { equals: data.name, mode: "insensitive" } },
   });
@@ -26,8 +30,7 @@ export async function createRole(data: any) {
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: dynamic payload
-export async function updateRole(id: number, data: any) {
+export async function updateRole(id: number, data: RoleUpdateInput) {
   if (data.name) {
     const existing = await db.role.findFirst({
       where: {
@@ -142,10 +145,10 @@ export async function syncPermissions() {
         } else {
           skipped++;
         }
-        // biome-ignore lint/suspicious/noExplicitAny: unknown error type
-      } catch (e: any) {
-        console.error(`[syncPermissions] Failed to sync ${action}:${subject}:`, e.message);
-        errors.push(`${action}:${subject} (${e.message})`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[syncPermissions] Failed to sync ${action}:${subject}:`, message);
+        errors.push(`${action}:${subject} (${message})`);
       }
     }
   }

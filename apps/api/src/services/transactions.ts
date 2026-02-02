@@ -1,4 +1,22 @@
 import { db } from "@finanzas/db";
+import type {
+  TransactionCreateArgs,
+  TransactionUpdateArgs,
+  TransactionWhereInput,
+} from "@finanzas/db/input";
+
+// Aggregate result interfaces for Kysely raw queries
+interface AggregateByMonth {
+  month: string | number;
+  in: number | string;
+  out: number | string;
+  net: number | string;
+}
+
+interface AggregateByType {
+  description: string;
+  total: number | string;
+}
 
 // Types for raw SQL query results
 interface ParticipantRow {
@@ -55,6 +73,10 @@ export type TransactionFilters = {
   includeTest?: boolean;
 };
 
+// Extract transaction input types from Zenstack args
+type TransactionCreateInput = NonNullable<TransactionCreateArgs["data"]>;
+type TransactionUpdateInput = NonNullable<TransactionUpdateArgs["data"]>;
+
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy filtering logic
 export async function listTransactions(
   filters: TransactionFilters,
@@ -62,8 +84,7 @@ export async function listTransactions(
   offset = 0,
   includeTotal = true,
 ) {
-  // biome-ignore lint/suspicious/noExplicitAny: dynamic where clause construction
-  const where: any = {};
+  const where: TransactionWhereInput = {};
 
   if (filters.from || filters.to) {
     where.transactionDate = {};
@@ -149,15 +170,13 @@ export async function getTransactionById(id: number) {
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: dynamic payload
-export async function createTransaction(data: any) {
+export async function createTransaction(data: TransactionCreateInput) {
   return await db.transaction.create({
     data,
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy batch op
-export async function createTransactionsBatch(data: any[]) {
+export async function createTransactionsBatch(data: TransactionCreateInput[]) {
   return await db.transaction.createMany({
     data,
     skipDuplicates: true,
@@ -284,8 +303,7 @@ export async function getParticipantInsight(
         "incomingAmount",
       ),
     ])
-    // biome-ignore lint/suspicious/noExplicitAny: Kysely expression builder type
-    .where((eb: any) =>
+    .where((eb) =>
       eb.or([
         sql<boolean>`metadata->>'recipient_rut' = ${participantId}`,
         sql<boolean>`metadata->>'rut' = ${participantId}`,
@@ -332,8 +350,7 @@ export async function getParticipantInsight(
         "incomingAmount",
       ),
     ])
-    // biome-ignore lint/suspicious/noExplicitAny: Kysely expression builder type
-    .where((eb: any) =>
+    .where((eb) =>
       eb.or([
         sql<boolean>`metadata->>'recipient_rut' = ${participantId}`,
         sql<boolean>`metadata->>'rut' = ${participantId}`,
@@ -425,8 +442,7 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
     .groupBy("transactionType")
     .execute();
 
-  // biome-ignore lint/suspicious/noExplicitAny: kysely raw result
-  const byTypeMapped = byType.map((t: any) => ({
+  const byTypeMapped = byType.map((t: AggregateByType) => ({
     description: t.description,
     direction: Number(t.total) > 0 ? "IN" : Number(t.total) < 0 ? "OUT" : "NEUTRO",
     total: Math.abs(Number(t.total)),
@@ -458,8 +474,7 @@ export async function getTransactionStats(params: { from: Date; to: Date }) {
 
   return {
     status: "ok",
-    // biome-ignore lint/suspicious/noExplicitAny: kysely raw result
-    monthly: monthly.map((m: any) => ({
+    monthly: monthly.map((m: AggregateByMonth) => ({
       month: m.month,
       in: Number(m.in),
       out: Number(m.out),

@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import type { User } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import { Hono } from "hono";
 import { zValidator } from "../../lib/zod-validator";
@@ -10,8 +11,7 @@ import { medicalCertificateSchema } from "./certificate.schema.js";
 import { generateMedicalCertificatePdf, generateQRCode, signPdf } from "./certificate.service.js";
 
 export type Variables = {
-  // biome-ignore lint/suspicious/noExplicitAny: legacy typing
-  user: any;
+  user: User;
 };
 
 const certificates = new Hono<{ Variables: Variables }>();

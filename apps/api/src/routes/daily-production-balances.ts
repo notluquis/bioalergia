@@ -1,3 +1,4 @@
+import type { DailyProductionBalance, User } from "@finanzas/db";
 import dayjs from "dayjs";
 import { Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
@@ -14,9 +15,13 @@ import { reply } from "../utils/reply";
 
 const app = new Hono();
 
+// Type for production balance response mapper - includes optional user relation
+type ProductionBalanceWithUser = DailyProductionBalance & {
+  user?: Pick<User, "email"> | null;
+};
+
 // Helper to map record for response (mimicking legacy mapProductionBalance)
-// biome-ignore lint/suspicious/noExplicitAny: legacy mapper
-function mapResponse(p: any) {
+function mapResponse(p: ProductionBalanceWithUser) {
   // Logic mostly in service via DB naming, but need to reconstruct some calculated fields if not in DB result
   // The service implementation returns DB objects.
   // We should apply transformation here if needed or modify service to do it.

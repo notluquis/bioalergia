@@ -1,4 +1,14 @@
+import type {
+  CounterpartAccountUpdateArgs,
+  CounterpartCreateArgs,
+  CounterpartUpdateArgs,
+} from "@finanzas/db";
 import { db, type Person } from "@finanzas/db";
+
+// Extract input types from Zenstack args
+type CounterpartCreateInput = NonNullable<CounterpartCreateArgs["data"]>;
+type CounterpartUpdateInput = NonNullable<CounterpartUpdateArgs["data"]>;
+type CounterpartAccountUpdateInput = NonNullable<CounterpartAccountUpdateArgs["data"]>;
 
 export async function listCounterparts() {
   return await db.counterpart.findMany({
@@ -27,8 +37,14 @@ export async function getCounterpartById(id: number) {
   };
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy payload
-export async function createCounterpart(data: any) {
+export async function createCounterpart(
+  data: CounterpartCreateInput & {
+    name?: string;
+    rut?: string;
+    email?: string;
+    personType?: string;
+  },
+) {
   // Use transaction to upsert Person and create Counterpart
   return await db.$transaction(async (tx) => {
     // Upsert Person by RUT if provided, otherwise create new
@@ -75,8 +91,15 @@ export async function createCounterpart(data: any) {
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy payload
-export async function updateCounterpart(id: number, data: any) {
+export async function updateCounterpart(
+  id: number,
+  data: CounterpartUpdateInput & {
+    name?: string;
+    rut?: string;
+    email?: string;
+    personType?: string;
+  },
+) {
   return await db.$transaction(async (tx) => {
     const counterpart = await tx.counterpart.findUnique({ where: { id } });
     if (!counterpart) throw new Error("Counterpart not found");
@@ -139,8 +162,10 @@ export async function upsertCounterpartAccount(
   }
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy payload
-export async function updateCounterpartAccount(accountId: number, payload: any) {
+export async function updateCounterpartAccount(
+  accountId: number,
+  payload: CounterpartAccountUpdateInput,
+) {
   return await db.counterpartAccount.update({
     where: { id: accountId },
     data: payload,

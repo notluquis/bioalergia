@@ -147,8 +147,7 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
           let skip = 0;
 
           while (true) {
-            // biome-ignore lint/suspicious/noExplicitAny: dynamic result type
-            const batch: any[] = await modelDelegate.findMany({
+            const batch: unknown[] = await modelDelegate.findMany({
               take: BATCH_SIZE,
               skip: skip,
             });
@@ -309,12 +308,22 @@ function calculateChecksum(filepath: string): Promise<string> {
 }
 
 // Simple managers for jobs/history
-// biome-ignore lint/suspicious/noExplicitAny: simple memory store
-const jobs: Record<string, any> = {};
-// biome-ignore lint/suspicious/noExplicitAny: simple memory store
-const history: any[] = [];
-// biome-ignore lint/suspicious/noExplicitAny: simple memory store
-const logs: any[] = [];
+interface BackupJob {
+  id: string;
+  type: string;
+  status: "running" | "uploading" | "completed" | "failed";
+  progress: number;
+  currentStep?: string;
+}
+
+interface BackupLogEntry {
+  timestamp: Date;
+  message: string;
+}
+
+const jobs: Record<string, BackupJob> = {};
+const history: BackupJob[] = [];
+const logs: BackupLogEntry[] = [];
 
 export function getLogs(limit: number) {
   return logs.slice(-limit);

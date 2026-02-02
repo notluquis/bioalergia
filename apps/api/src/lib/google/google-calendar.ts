@@ -74,6 +74,21 @@ export type SyncMetrics = {
   totalDurationMs: number;
 };
 
+// Google Calendar API request parameters for events.list()
+type GoogleCalendarListParams = {
+  calendarId: string;
+  pageToken?: string;
+  singleEvents: boolean;
+  showDeleted: boolean;
+  maxResults: number;
+  syncToken?: string;
+  timeMin?: string;
+  timeMax?: string;
+  timeZone?: string;
+  orderBy?: string;
+  updatedMin?: string;
+};
+
 let cachedClient: CalendarClient | null = null;
 
 function isEventExcluded(item: calendar_v3.Schema$Event, patterns: RegExp[]): boolean {
@@ -219,8 +234,7 @@ async function fetchCalendarEventsForId(
   let nextSyncToken: string | undefined;
 
   do {
-    // biome-ignore lint/suspicious/noExplicitAny: explicit type override needed for params
-    const requestParams: any = {
+    const requestParams: GoogleCalendarListParams = {
       calendarId,
       pageToken,
       singleEvents: true,

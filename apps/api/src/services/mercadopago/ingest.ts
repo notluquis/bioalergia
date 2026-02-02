@@ -70,8 +70,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
           stats.totalRows++;
 
           // Clean keys (trim whitespace)
-          // biome-ignore lint/suspicious/noExplicitAny: legacy csv parsing
-          const cleanRow: any = {};
+          const cleanRow: Record<string, string | undefined> = {};
           for (const key in row) {
             const cleanKey = key.trim();
             cleanRow[cleanKey] = row[key]?.trim?.() ?? row[key];
@@ -85,10 +84,9 @@ export async function processReportUrl(url: string, reportType: string): Promise
           }
 
           try {
-            const record =
-              reportType.toLowerCase().includes("settlement")
-                ? mapRowToSettlementTransaction(cleanRow)
-                : mapRowToReleaseTransaction(cleanRow);
+            const record = reportType.toLowerCase().includes("settlement")
+              ? mapRowToSettlementTransaction(cleanRow)
+              : mapRowToReleaseTransaction(cleanRow);
 
             if (!record.sourceId) {
               stats.skippedRows++;

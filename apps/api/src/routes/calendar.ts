@@ -1,6 +1,7 @@
+import type { Calendar, CalendarSyncLog } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
-import { type Context, Hono } from "hono";
+import { type Context, Hono, type Next } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { googleCalendarConfig } from "../config";
@@ -116,8 +117,7 @@ async function buildFiltersFromValidQuery(query: CalendarQuery) {
 }
 
 // Middleware to require auth
-// biome-ignore lint/suspicious/noExplicitAny: legacy middleware typing
-const requireAuth = async (c: Context, next: any) => {
+const requireAuth = async (c: Context, next: Next) => {
   const user = await getSessionUser(c);
   if (!user) {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
@@ -312,8 +312,7 @@ calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
   const logs = await listCalendarSyncLogs(50);
   return reply(c, {
     status: "ok",
-    // biome-ignore lint/suspicious/noExplicitAny: legacy log typing
-    logs: logs.map((log: any) => ({
+    logs: logs.map((log: CalendarSyncLog) => ({
       id: Number(log.id),
       triggerSource: log.triggerSource,
       triggerUserId: log.triggerUserId != null ? Number(log.triggerUserId) : null,
@@ -523,8 +522,7 @@ calendarRoutes.get("/calendars", async (c) => {
 
   return reply(c, {
     status: "ok",
-    // biome-ignore lint/suspicious/noExplicitAny: legacy calendar typing
-    calendars: calendars.map((cal: any) => ({
+    calendars: calendars.map((cal: CalendarWithCount) => ({
       id: cal.id,
       googleId: cal.googleId,
       name: cal.name ?? "Sin nombre",

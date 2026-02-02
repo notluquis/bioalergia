@@ -1,5 +1,21 @@
-// biome-ignore lint/suspicious/noExplicitAny: dynamic row input
-export function mapTransaction(row: any) {
+import type { Transaction } from "@finanzas/db";
+
+// Transaction mapper type - expects Transaction or transaction-like row
+type TransactionRow = Pick<
+  Transaction,
+  | "id"
+  | "transactionDate"
+  | "description"
+  | "transactionType"
+  | "transactionAmount"
+  | "status"
+  | "externalReference"
+  | "sourceId"
+  | "paymentMethod"
+  | "settlementNetAmount"
+>;
+
+export function mapTransaction(row: TransactionRow) {
   return {
     id: Number(row.id),
     transactionDate: row.transactionDate,

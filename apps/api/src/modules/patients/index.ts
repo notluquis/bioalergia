@@ -2,7 +2,9 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import type { User } from "@finanzas/db";
 import { db } from "@finanzas/db";
+import type { PatientWhereInput } from "@finanzas/db/input";
 import { Hono } from "hono";
 import { getSessionUser } from "../../auth.js";
 import { zValidator } from "../../lib/zod-validator";
@@ -16,8 +18,7 @@ import {
 } from "./patients.schema.js";
 
 type Variables = {
-  // biome-ignore lint/suspicious/noExplicitAny: legacy typing
-  user: any;
+  user: User;
 };
 
 const patientsRoutes = new Hono<{ Variables: Variables }>();
@@ -26,19 +27,19 @@ const patientsRoutes = new Hono<{ Variables: Variables }>();
 patientsRoutes.get("/", async (c) => {
   const { q } = c.req.query();
 
-  // biome-ignore lint/suspicious/noExplicitAny: dynamic where clause construction
-  const where: any = {};
-
-  if (q) {
-    where.person = {
-      OR: [
-        { names: { contains: q, mode: "insensitive" } },
-        { fatherName: { contains: q, mode: "insensitive" } },
-        { motherName: { contains: q, mode: "insensitive" } },
-        { rut: { contains: q, mode: "insensitive" } },
-      ],
-    };
-  }
+  // Build where clause using type-safe PatientWhereInput
+  const where: PatientWhereInput = q
+    ? {
+        person: {
+          OR: [
+            { names: { contains: q, mode: "insensitive" } },
+            { fatherName: { contains: q, mode: "insensitive" } },
+            { motherName: { contains: q, mode: "insensitive" } },
+            { rut: { contains: q, mode: "insensitive" } },
+          ],
+        },
+      }
+    : {};
 
   try {
     const patients = await db.patient.findMany({

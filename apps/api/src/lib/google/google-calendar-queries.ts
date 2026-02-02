@@ -125,8 +125,10 @@ export type CalendarEventsByDateResult = {
 
 // Helper: Apply filters to a Kysely query
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy query builder
-// biome-ignore lint/suspicious/noExplicitAny: legacy query builder
-function applyFilters(query: any, filters: CalendarEventFilters) {
+function applyFilters<T extends Record<string, unknown>>(
+  query: T,
+  filters: CalendarEventFilters,
+): T {
   let q = query;
 
   if (filters.from) {
@@ -173,8 +175,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
     );
 
     if (hasNull && validCategories.length > 0) {
-      // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
-      q = q.where((eb: any) =>
+      q = q.where((eb) =>
         eb.or([eb("e.category", "in", validCategories), eb("e.category", "is", null)]),
       );
     } else if (hasNull) {
@@ -186,8 +187,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
 
   if (filters.search) {
     const term = `%${filters.search}%`;
-    // biome-ignore lint/suspicious/noExplicitAny: legacy query builder
-    q = q.where((eb: any) =>
+    q = q.where((eb) =>
       eb.or([eb("e.summary", "ilike", term), eb("e.description", "ilike", term)]),
     );
   }
@@ -196,12 +196,7 @@ function applyFilters(query: any, filters: CalendarEventFilters) {
     // Cast date to string for comparison or strictly compare dates
     // "startDate" is Timestamp/Date.
     // Simplest is to cast to date
-    q = q.where(
-      // biome-ignore lint/suspicious/noExplicitAny: legacy code
-      sql<any>`DATE(coalesce(e.start_date_time, e.start_date))`,
-      "in",
-      filters.dates,
-    );
+    q = q.where(sql`DATE(coalesce(e.start_date_time, e.start_date))`, "in", filters.dates);
   }
 
   return q;
@@ -395,11 +390,16 @@ export async function getCalendarAggregates(
       maxEventCount,
     },
     aggregates: {
-      // biome-ignore lint/suspicious/noExplicitAny: legacy code
-      byYear: (byMonth as unknown as MonthRow[]).reduce((acc: any[], _curr: MonthRow) => {
-        // Flatten logic omitted, assuming byMonth covers needs or todo: implement proper byYear
-        return acc;
-      }, []),
+      byYear: (byMonth as unknown as MonthRow[]).reduce(
+        (
+          acc: Array<{ year: number; total: number; amountExpected: number; amountPaid: number }>,
+          _curr: MonthRow,
+        ) => {
+          // Flatten logic omitted, assuming byMonth covers needs or todo: implement proper byYear
+          return acc;
+        },
+        [],
+      ),
       byMonth: (byMonth as unknown as MonthRow[]).map((r: MonthRow) => ({
         year: Number(r.year),
         month: Number(r.month),

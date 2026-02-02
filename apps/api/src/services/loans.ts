@@ -1,4 +1,16 @@
+import type {
+  LoanCreateArgs,
+  LoanScheduleCreateArgs,
+  LoanScheduleUpdateArgs,
+  LoanUpdateArgs,
+} from "@finanzas/db";
 import { db } from "@finanzas/db";
+
+// Extract input types from Zenstack args
+type LoanCreateInput = NonNullable<LoanCreateArgs["data"]>;
+type LoanUpdateInput = NonNullable<LoanUpdateArgs["data"]>;
+type LoanScheduleCreateInput = NonNullable<LoanScheduleCreateArgs["data"]>;
+type LoanScheduleUpdateInput = NonNullable<LoanScheduleUpdateArgs["data"]>;
 
 export async function listLoans() {
   return await db.loan.findMany({
@@ -20,8 +32,7 @@ export async function getLoanById(id: number) {
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy payload
-export async function createLoan(data: any) {
+export async function createLoan(data: LoanCreateInput) {
   return await db.loan.create({
     data,
     include: {
@@ -30,8 +41,7 @@ export async function createLoan(data: any) {
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy payload
-export async function updateLoan(id: number, data: any) {
+export async function updateLoan(id: number, data: LoanUpdateInput) {
   return await db.loan.update({
     where: { id },
     data,
@@ -47,15 +57,13 @@ export async function deleteLoan(id: number) {
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy payload
-export async function createLoanSchedule(data: any) {
+export async function createLoanSchedule(data: LoanScheduleCreateInput) {
   return await db.loanSchedule.create({
     data,
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy payload
-export async function updateLoanSchedule(id: number, data: any) {
+export async function updateLoanSchedule(id: number, data: LoanScheduleUpdateInput) {
   return await db.loanSchedule.update({
     where: { id },
     data,

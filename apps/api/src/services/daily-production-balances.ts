@@ -1,5 +1,13 @@
+import type {
+  DailyProductionBalanceCreateArgs,
+  DailyProductionBalanceUpdateArgs,
+} from "@finanzas/db";
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
+
+// Extract input types from Zenstack args
+type DailyProductionBalanceCreateInput = NonNullable<DailyProductionBalanceCreateArgs["data"]>;
+type DailyProductionBalanceUpdateInput = NonNullable<DailyProductionBalanceUpdateArgs["data"]>;
 
 export async function listProductionBalances(from: string, to: string) {
   const fromDate = dayjs(from).startOf("day").toDate();
@@ -28,8 +36,10 @@ export async function getProductionBalanceById(id: number) {
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy payload
-export async function createProductionBalance(data: any, userId: number) {
+export async function createProductionBalance(
+  data: DailyProductionBalanceCreateInput,
+  userId: number,
+) {
   return await db.dailyProductionBalance.create({
     data: {
       ...data,
@@ -41,8 +51,7 @@ export async function createProductionBalance(data: any, userId: number) {
   });
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: legacy payload
-export async function updateProductionBalance(id: number, data: any) {
+export async function updateProductionBalance(id: number, data: DailyProductionBalanceUpdateInput) {
   return await db.dailyProductionBalance.update({
     where: { id },
     data,
