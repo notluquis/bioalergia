@@ -1,9 +1,5 @@
 import { db } from "@finanzas/db";
-import type {
-  TransactionCreateArgs,
-  TransactionUpdateArgs,
-  TransactionWhereInput,
-} from "@finanzas/db/input";
+import type { TransactionCreateArgs, TransactionWhereInput } from "@finanzas/db/input";
 
 // Aggregate result interfaces for Kysely raw queries
 interface AggregateByMonth {
@@ -75,7 +71,6 @@ export type TransactionFilters = {
 
 // Extract transaction input types from Zenstack args
 type TransactionCreateInput = NonNullable<TransactionCreateArgs["data"]>;
-type TransactionUpdateInput = NonNullable<TransactionUpdateArgs["data"]>;
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy filtering logic
 export async function listTransactions(
@@ -132,16 +127,20 @@ export async function listTransactions(
   // Exclude test data by default
   if (!filters.includeTest) {
     // Add to AND array to ensure it doesn't conflict with other filters
-    where.AND = where.AND || [];
-    where.AND.push({
-      NOT: {
-        OR: [
-          { description: { contains: "test", mode: "insensitive" } },
-          { sourceId: { contains: "test", mode: "insensitive" } },
-          { externalReference: { contains: "test", mode: "insensitive" } },
-        ],
-      },
-    });
+    if (!where.AND) {
+      where.AND = [];
+    }
+    if (Array.isArray(where.AND)) {
+      where.AND.push({
+        NOT: {
+          OR: [
+            { description: { contains: "test", mode: "insensitive" } },
+            { sourceId: { contains: "test", mode: "insensitive" } },
+            { externalReference: { contains: "test", mode: "insensitive" } },
+          ],
+        },
+      });
+    }
   }
 
   const transactionsPromise = db.transaction.findMany({

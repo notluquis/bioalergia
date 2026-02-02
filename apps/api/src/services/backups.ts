@@ -152,7 +152,7 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
               skip: skip,
             });
 
-            if (!Array.isArray(batch) || batch.length === 0) break;
+            if (batch.length === 0) break;
 
             for (const row of batch) {
               const jsonRow = JSON.stringify(row, (_, value) =>
@@ -289,10 +289,14 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
     try {
       if (writeStream && !writeStream.closed) writeStream.destroy();
       if (statSync(filepath)) unlinkSync(filepath);
-    } catch {}
+    } catch {
+      // Intentionally ignore cleanup errors
+    }
     try {
       if (statSync(jsonPath)) unlinkSync(jsonPath);
-    } catch {}
+    } catch {
+      // Intentionally ignore cleanup errors
+    }
     throw new Error(`Backup failed: ${error}`);
   }
 }

@@ -5,7 +5,6 @@ import { type Context, Hono, type Next } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { googleCalendarConfig } from "../config";
-// import { syncGoogleCalendarOnce } from "../lib/google/google-calendar"; // Deprecated
 import {
   type CalendarEventFilters,
   getCalendarAggregates,
