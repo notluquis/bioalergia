@@ -8,7 +8,7 @@ config({ path: path.resolve(process.cwd(), ".env") });
 config({ path: "../../../../.env" });
 
 function parseCurrency(str: string) {
-  return parseFloat(
+  return Number.parseFloat(
     str
       .replace(/[^\d,]/g, "")
       .replace(",", ".")
@@ -189,7 +189,7 @@ async function main() {
       await db.personalCreditInstallment.create({
         data: {
           creditId: bciCredit.id,
-          installmentNumber: parseInt(num, 10),
+          installmentNumber: Number.parseInt(num, 10),
           dueDate: parseDate(dateStr),
           // biome-ignore lint/suspicious/noExplicitAny: script data
           amount: amount as any,
@@ -233,7 +233,7 @@ async function main() {
       await db.personalCreditInstallment.create({
         data: {
           creditId: falaCredit.id,
-          installmentNumber: parseInt(num, 10),
+          installmentNumber: Number.parseInt(num, 10),
           dueDate: parseDate(dateStr),
           // biome-ignore lint/suspicious/noExplicitAny: script data
           amount: amount as any,

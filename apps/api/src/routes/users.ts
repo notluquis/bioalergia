@@ -5,13 +5,13 @@
  */
 
 import { db } from "@finanzas/db";
-import { zValidator } from "../lib/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 import { hasPermission } from "../auth";
 import { hashPassword } from "../lib/crypto";
 import { verifyToken } from "../lib/paseto";
 import { normalizeRut } from "../lib/rut";
+import { zValidator } from "../lib/zod-validator";
 import { reply } from "../utils/reply";
 
 const COOKIE_NAME = "finanzas_session";
@@ -178,7 +178,8 @@ userRoutes.post("/invite", zValidator("json", inviteUserSchema), async (c) => {
   if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
 
   const canCreate = await hasPermission(auth.userId, "create", "User");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate)
+    return reply(c, { status: "error", message: "No tienes permisos para crear usuarios" }, 403);
 
   const { email, role, position, mfaEnforced, personId, names, fatherName, motherName, rut } =
     c.req.valid("json");

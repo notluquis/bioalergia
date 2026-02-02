@@ -190,6 +190,9 @@ authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
   const token = await issueToken({ userId: user.id, email: user.email, roles });
   setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
+  const { getAbilityRulesForUser } = await import("../services/authz.js");
+  const abilityRules = await getAbilityRulesForUser(user.id);
+
   return c.json({
     status: "ok",
     user: {
@@ -200,6 +203,7 @@ authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
       status: user.status,
       mfaEnabled: user.mfaEnabled,
     },
+    abilityRules,
   });
 });
 
@@ -482,6 +486,11 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
     });
     setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
+    const { getAbilityRulesForUser: getAbilityRulesForUser2 } = await import(
+      "../services/authz.js"
+    );
+    const abilityRules = await getAbilityRulesForUser2(user.id);
+
     return c.json({
       status: "ok",
       user: {
@@ -492,6 +501,7 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
         status: user.status,
         mfaEnabled: user.mfaEnabled,
       },
+      abilityRules,
     });
   } catch (error) {
     console.error("[passkey] login verify error:", error);

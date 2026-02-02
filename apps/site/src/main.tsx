@@ -10,7 +10,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // Static site: Data doesn't change during session
-      staleTime: Infinity, // Never refetch unless explicitly invalidated
+      staleTime: Number.POSITIVE_INFINITY, // Never refetch unless explicitly invalidated
       gcTime: 1000 * 60 * 60, // Keep in cache for session duration (1 hour)
       retry: 1, // Only retry once for network failures
       refetchOnWindowFocus: false, // Don't refetch on tab focus

@@ -27,6 +27,7 @@ export const LoginResponseSchema = z.strictObject({
 });
 
 export const LoginMfaResponseSchema = z.strictObject({
+  abilityRules: z.array(z.unknown()).optional(),
   message: z.string().optional(),
   status: z.string(),
   user: AuthUserSchema.optional(),

@@ -5,7 +5,7 @@ export function normalizeRut(value: string | null | undefined): string | null {
   const body = cleaned.slice(0, -1);
   const dv = cleaned.slice(-1);
   if (!body || !/^[0-9]+$/.test(body)) return null;
-  return `${parseInt(body, 10)}-${dv}`;
+  return `${Number.parseInt(body, 10)}-${dv}`;
 }
 
 export function validateRut(value: string | null | undefined): boolean {
