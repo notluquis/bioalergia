@@ -11,12 +11,13 @@ export const Route = createFileRoute("/_authed/calendar/heatmap")({
   validateSearch: (search: Record<string, unknown>): CalendarSearchParams => {
     const parsed = calendarSearchSchema.parse(search);
     if (!parsed.from || !parsed.to) {
-      const startOfYear = dayjs().startOf("year").format("YYYY-MM-DD");
-      const endOfYear = dayjs().endOf("year").format("YYYY-MM-DD");
+      // Default range: previous month + current month + next month (3 months total)
+      const defaultFrom = dayjs().subtract(1, "month").startOf("month").format("YYYY-MM-DD");
+      const defaultTo = dayjs().add(1, "month").endOf("month").format("YYYY-MM-DD");
       return {
         ...parsed,
-        from: parsed.from ?? startOfYear,
-        to: parsed.to ?? endOfYear,
+        from: parsed.from ?? defaultFrom,
+        to: parsed.to ?? defaultTo,
       };
     }
     return parsed;
