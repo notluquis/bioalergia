@@ -1,9 +1,9 @@
-import { zValidator } from "../lib/zod-validator";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
 import { isOAuthConfigured } from "../lib/google/google-core";
+import { zValidator } from "../lib/zod-validator";
 import { getCurrentJobs, getJobHistory, getLogs, startBackup } from "../services/backups";
 import { getBackupTables, listBackups } from "../services/drive";
 import { reply } from "../utils/reply";
@@ -166,16 +166,21 @@ app.post("/:fileId/restore", zValidator("json", restoreSchema), async (c) => {
   const { tables } = c.req.valid("json");
 
   try {
+    const now = new Date();
+    const job = {
+      id: `restore-${Date.now()}`,
+      status: "pending" as const,
+      backupFileId: fileId,
+      currentStep: "Initializing restore...",
+      startedAt: now,
+      progress: 0,
+      tables,
+    };
     // TODO: Implement restore logic
     // This would download the file, decompress, and restore selected tables
     return reply(c, {
       status: "ok",
-      job: {
-        id: `restore-${Date.now()}`,
-        status: "pending",
-        backupFileId: fileId,
-        tables,
-      },
+      job,
     });
   } catch (error) {
     return reply(

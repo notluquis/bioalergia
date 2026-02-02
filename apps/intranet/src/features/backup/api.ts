@@ -35,7 +35,7 @@ const BackupJobSchema = z.looseObject({
     })
     .optional(),
   startedAt: z.coerce.date(),
-  status: z.enum(["completed", "failed", "pending", "running"]),
+  status: z.enum(["completed", "failed", "pending", "running", "uploading"]),
   type: z.enum(["full", "scheduled"]),
 });
 

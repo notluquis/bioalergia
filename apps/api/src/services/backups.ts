@@ -314,10 +314,14 @@ function calculateChecksum(filepath: string): Promise<string> {
 // Simple managers for jobs/history
 interface BackupJob {
   id: string;
-  type: string;
-  status: "running" | "uploading" | "completed" | "failed";
+  type: "full" | "scheduled";
+  status: "running" | "uploading" | "completed" | "failed" | "pending";
   progress: number;
-  currentStep?: string;
+  currentStep: string;
+  startedAt: Date;
+  completedAt?: Date;
+  error?: string;
+  result?: Record<string, unknown>;
 }
 
 interface BackupLogEntry {
@@ -343,7 +347,15 @@ export function getJobHistory() {
 
 export function startBackup() {
   const jobId = `backup-${Date.now()}`;
-  jobs[jobId] = { id: jobId, type: "backup", status: "running", progress: 0 };
+  const now = new Date();
+  jobs[jobId] = {
+    id: jobId,
+    type: "full",
+    status: "running",
+    progress: 0,
+    currentStep: "Initializing...",
+    startedAt: now,
+  };
 
   // Run async
   createBackup((p) => {
