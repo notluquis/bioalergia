@@ -47,8 +47,8 @@ async function issueToken(session: AuthSession): Promise<string> {
   );
 }
 
-import { zValidator } from "../lib/zod-validator";
 import { z } from "zod";
+import { zValidator } from "../lib/zod-validator";
 
 // ... existing imports ...
 
@@ -67,18 +67,18 @@ const mfaLoginSchema = z.object({
 });
 
 const mfaEnableSchema = z.object({
-  token: z.string().min(6, "Token inv?lido"),
+  token: z.string().min(6, "Token inválido"),
 });
 
 // PASSKEY SCHEMAS
 // Note: Passkey bodies are complex JSONs from simplewebauthn, we can be slightly looser or use their types if possible,
-// for now we validate structure existance
-const passkeyResponseSchema = z.object({
+// for now we validate structure existence
+const passkeyVerifySchema = z.object({
   body: z.record(z.unknown()),
   challenge: z.string().min(1),
 });
 
-const passkeyVerifySchema = z.object({
+const passkeyResponseSchema = z.object({
   body: z.record(z.unknown()),
   challenge: z.string().min(1),
 });
