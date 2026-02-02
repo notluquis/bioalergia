@@ -91,7 +91,8 @@ model User {
   @@auth
 
   // Access policies
-  @@deny('all', auth() == null)
+  // Allow read for authentication flows (login/passkey), but deny mutations when not authenticated
+  @@deny('create,update,delete', auth() == null)
   @@allow('read', true)
   @@allow('update', auth().id == id)
   @@allow('all', auth().status == 'ACTIVE')
