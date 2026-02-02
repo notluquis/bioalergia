@@ -100,6 +100,7 @@ export const CalendarDataSchema = z.strictObject({
 
 export const CalendarsResponseSchema = z.strictObject({
   calendars: z.array(CalendarDataSchema),
+  status: z.literal("ok"),
 });
 
 const CalendarAggregateByDateSchema = z.strictObject({
