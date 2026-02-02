@@ -2,7 +2,6 @@ import { z } from "zod";
 
 const zDate = z.coerce.date();
 const zDateNullable = zDate.nullable();
-const zDateNullableOptional = zDateNullable.optional();
 
 // Note: CATEGORY_CHOICES and TREATMENT_STAGE_CHOICES are fetched from
 // /api/calendar/classification-options (single source of truth in parsers.ts)
@@ -189,16 +188,16 @@ export const CalendarSummaryResponseSchema = z.strictObject({
   }),
 });
 
-export const CalendarSyncLogSchema = z.object({
+export const CalendarSyncLogSchema = z.strictObject({
   changeDetails: z
-    .object({
+    .strictObject({
       excluded: z.array(z.string()).optional(),
       inserted: z.array(z.string()).optional(),
       updated: z
         .array(
           z.union([
             z.string(),
-            z.object({
+            z.strictObject({
               changes: z.array(z.string()),
               summary: z.string(),
             }),
@@ -206,16 +205,15 @@ export const CalendarSyncLogSchema = z.object({
         )
         .optional(),
     })
-    .nullable()
-    .optional(),
+    .nullable(),
   errorMessage: z.string().nullable(),
   excluded: z.number(),
-  fetchedAt: zDateNullableOptional,
-  finishedAt: zDateNullableOptional,
+  fetchedAt: z.coerce.date().nullable(),
+  finishedAt: z.coerce.date().nullable(),
   id: z.number(),
   inserted: z.number(),
   skipped: z.number(),
-  startedAt: zDate,
+  startedAt: z.coerce.date().nullable(),
   status: z.enum(["ERROR", "RUNNING", "SUCCESS"]),
   triggerLabel: z.string().nullable(),
   triggerSource: z.string(),
@@ -223,20 +221,20 @@ export const CalendarSyncLogSchema = z.object({
   updated: z.number(),
 });
 
-export const CalendarSyncLogsResponseSchema = z.object({
+export const CalendarSyncLogsResponseSchema = z.strictObject({
   logs: z.array(CalendarSyncLogSchema),
   status: z.literal("ok"),
 });
 
-export const StatusOkSchema = z.object({ status: z.literal("ok") });
+export const StatusOkSchema = z.strictObject({ status: z.literal("ok") });
 
-export const CalendarSyncResponseSchema = z.object({
+export const CalendarSyncResponseSchema = z.strictObject({
   logId: z.number(),
   message: z.string(),
   status: z.literal("accepted"),
 });
 
-export const ClassificationOptionsSchema = z.object({
+export const ClassificationOptionsSchema = z.strictObject({
   categories: z.array(z.string()),
   status: z.literal("ok"),
   treatmentStages: z.array(z.string()),
