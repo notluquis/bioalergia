@@ -319,7 +319,7 @@ calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
       triggerLabel: log.triggerLabel ?? null,
       status: log.status,
       startedAt: log.startedAt ?? null,
-      finishedAt: log.finishedAt ?? null,
+      finishedAt: log.endedAt ?? null,
       fetchedAt: log.fetchedAt ?? null,
       inserted: Number(log.inserted ?? 0),
       updated: Number(log.updated ?? 0),
