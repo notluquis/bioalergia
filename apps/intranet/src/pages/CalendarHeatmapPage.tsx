@@ -32,7 +32,7 @@ function processHeatmapData(
 } {
   const stats = new Map<string, HeatmapDayData>();
   for (const entry of summary?.aggregates?.byDate ?? []) {
-    const key = String(entry.date).slice(0, 10);
+    const key = dayjs(entry.date).format("YYYY-MM-DD");
     stats.set(key, {
       amountExpected: entry.amountExpected ?? 0,
       amountPaid: entry.amountPaid ?? 0,
