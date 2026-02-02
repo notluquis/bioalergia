@@ -75,7 +75,7 @@ const mfaEnableSchema = z.object({
 // for now we validate structure existence
 const passkeyVerifySchema = z.object({
   body: z.record(z.unknown()),
-  challenge: z.string().min(1),
+  challenge: z.string().min(1, "Challenge required"),
 });
 
 const passkeyResponseSchema = z.object({
