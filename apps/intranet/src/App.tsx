@@ -92,15 +92,9 @@ export default function App() {
 
         const fileHandle = launchParams.files[0];
         if (!fileHandle) return;
-        const file = await fileHandle.getFile();
-        console.debug("File opened via PWA launch:", file);
 
-        // Store file in a global state or navigate with it
-        // For now, we'll log it and maybe show a toast or redirect
-
-        // In a real implementation, we would upload this file or open the transaction modal
-        // Since we can't easily pass the File object via URL params, we might need a context
-        // For this prototype, we'll just acknowledge it
+        // In a real implementation, we would handle the file from the PWA launch
+        // For now, we just acknowledge it
       });
     }
   }, []);

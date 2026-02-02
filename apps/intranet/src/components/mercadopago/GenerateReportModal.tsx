@@ -61,12 +61,9 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
       end_date: dayjs().toDate(),
     } as FormData,
     onSubmit: async ({ value }) => {
-      console.log("[MP Generate] Form onSubmit triggered:", value);
-
       // Manual validation
       const result = schema.safeParse(value);
       if (!result.success) {
-        console.warn("[MP Generate] Validation failed:", result.error.issues);
         const firstError = result.error.issues[0]?.message || "Datos inválidos";
         showError(firstError);
         return;
@@ -86,7 +83,6 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          console.log("[MP Generate] Form native onSubmit triggered");
           void form.handleSubmit();
         }}
       >

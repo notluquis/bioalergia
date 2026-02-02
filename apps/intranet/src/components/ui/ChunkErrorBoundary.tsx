@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, type ReactNode } from "react";
 
 import { signalAppFallback } from "@/lib/app-recovery";
 
@@ -24,16 +24,13 @@ export class ChunkErrorBoundary extends Component<Props, State> {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Chunk load error caught:", error, errorInfo);
-
-    // Detectar si es un error de chunk y hacer log
+  componentDidCatch(error: Error) {
+    // Detectar si es un error de chunk
     if (
       /Failed to fetch dynamically imported module|Importing a module script failed/i.test(
         error.message,
       )
     ) {
-      console.warn("Dynamic import failed. A new version may be available. Consider reloading.");
       signalAppFallback("chunk");
     }
   }

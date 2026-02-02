@@ -156,8 +156,8 @@ export default function CounterpartsPage() {
           await attachCounterpartRut(savedId, normalizedRut);
           void queryClient.invalidateQueries({ queryKey: ["counterpart"] });
           toastInfo("Cuentas detectadas vinculadas automáticamente");
-        } catch (attachError) {
-          console.warn("Auto-attach failed", attachError);
+        } catch {
+          // Auto-attach failed, silently continue
         }
       }
     } catch (error_) {

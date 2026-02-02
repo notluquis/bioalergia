@@ -14,14 +14,12 @@ export function UpdateNotification() {
     updateServiceWorker,
   } = useRegisterSW({
     onNeedRefresh() {
-      console.info("New app version available - prompting user");
       setNeedRefresh(true);
     },
     onRegistered() {
       // No periodic checks - let browser handle update detection naturally
       // The service worker will auto-detect new versions on navigation/reload
       // This prevents the notification from appearing repeatedly after update
-      console.info("Service worker registered - auto-update detection enabled");
     },
   });
 

@@ -76,7 +76,6 @@ function logGlobalError(error: unknown, context: string) {
   } else if (error instanceof ApiError && error.details) {
     console.group(`🚨 [${context}] ApiError`);
     console.error(error.message);
-    console.log("details:", error.details);
     console.groupEnd();
   } else {
     // Standard error logging

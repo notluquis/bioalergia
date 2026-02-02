@@ -122,11 +122,10 @@ export class GlobalError extends Component<Props, State> {
       await clearCaches();
       await new Promise((resolve) => setTimeout(resolve, 500));
       // eslint-disable-next-line turbo/no-undeclared-env-vars
-      if (import.meta.env.DEV) {
-        console.debug("Dev mode: preventing reload in GlobalError");
-        this.setState({ isReloading: false });
-      } else {
+      if (!import.meta.env.DEV) {
         globalThis.location.reload();
+      } else {
+        this.setState({ isReloading: false });
       }
     } catch {
       this.setState({ isReloading: false });

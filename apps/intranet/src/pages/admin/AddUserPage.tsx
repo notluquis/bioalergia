@@ -54,12 +54,6 @@ export default function AddUserPage() {
     retry: 1,
   });
 
-  console.log("[AddUserPage]", {
-    isPeopleLoading,
-    hasPeopleData: !!peopleData,
-    peopleError,
-  });
-
   // Filter people who don't have a user yet and exclude test users
   const availablePeople =
     peopleData?.filter(
