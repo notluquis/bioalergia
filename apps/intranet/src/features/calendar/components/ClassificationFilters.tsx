@@ -52,7 +52,7 @@ export function ClassificationFilters({ filters, onNavigate }: ClassificationFil
             onClick={() => toggleFilter(key)}
             size="sm"
             type="button"
-            variant={filters[key] ? "bordered" : "ghost"}
+            variant={filters[key] ? "secondary" : "ghost"}
           >
             {label}
           </Button>
@@ -68,7 +68,7 @@ export function ClassificationFilters({ filters, onNavigate }: ClassificationFil
                 onClick={() => setFilterMode(undefined)}
                 size="sm"
                 type="button"
-                variant={!filters.filterMode || filters.filterMode === "OR" ? "bordered" : "ghost"}
+                variant={!filters.filterMode || filters.filterMode === "OR" ? "secondary" : "ghost"}
               >
                 Cualquiera
               </Button>
@@ -78,7 +78,7 @@ export function ClassificationFilters({ filters, onNavigate }: ClassificationFil
                 onClick={() => setFilterMode("AND")}
                 size="sm"
                 type="button"
-                variant={filters.filterMode === "AND" ? "bordered" : "ghost"}
+                variant={filters.filterMode === "AND" ? "secondary" : "ghost"}
               >
                 Todos
               </Button>
@@ -89,7 +89,7 @@ export function ClassificationFilters({ filters, onNavigate }: ClassificationFil
               onClick={clearFilters}
               size="sm"
               type="button"
-              variant="bordered"
+              variant="tertiary"
             >
               Limpiar
             </Button>

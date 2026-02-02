@@ -6,10 +6,11 @@
  * - Adds legacy/mapped variants (error, success, link)
  * - Makes variant prop strict: compile-time validation only
  */
-import type { VariantProps } from "tailwind-variants";
+
 // biome-ignore lint: buttonVariants is needed for VariantProps to extract types
-import { Button as HeroButton, buttonVariants } from "@heroui/react";
+import { buttonVariants, Button as HeroButton } from "@heroui/react";
 import { type ComponentProps, forwardRef } from "react";
+import type { VariantProps } from "tailwind-variants";
 
 import { cn } from "@/lib/utils";
 
