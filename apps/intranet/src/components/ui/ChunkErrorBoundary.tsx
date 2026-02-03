@@ -35,11 +35,11 @@ export class ChunkErrorBoundary extends Component<Props, State> {
     }
   }
 
-  render(): React.JSX.Element {
+  render(): React.ReactNode {
     if (this.state.hasError) {
-      return <></>;
+      return null;
     }
 
-    return <>{this.props.children}</>;
+    return this.props.children;
   }
 }

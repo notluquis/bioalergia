@@ -1,4 +1,4 @@
-import type { Calendar, CalendarSyncLog } from "@finanzas/db";
+import type { CalendarSyncLog } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
 import { type Context, Hono, type Next } from "hono";

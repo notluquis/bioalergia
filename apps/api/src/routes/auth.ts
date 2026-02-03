@@ -401,7 +401,7 @@ authRoutes.get("/passkey/login/options", async (c) => {
     });
 
     console.log("[passkey] Options generated successfully", {
-      challenge: options.challenge?.slice(0, 20) + "...",
+      challenge: `${options.challenge?.slice(0, 20)}...`,
       rpID: RP_ID,
     });
 
@@ -430,7 +430,8 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
     // Find passkey by credential ID
     // Note: authResponse is typed as unknown in schema, but we cast it or use it assuming structure matches simplewebauthn expectations
     // We need to access id safely.
-    const responseBody = authResponse as any; // Safe cast for now as library validates
+    // biome-ignore lint/suspicious/noExplicitAny: simplewebauthn library requires any cast for response validation
+    const responseBody = authResponse as any;
     const credentialID = responseBody.id;
 
     const passkey = await db.passkey.findUnique({
@@ -581,6 +582,7 @@ authRoutes.post(
 
       // Note: regResponse is typed as unknown by Zod, but simplewebauthn expects a specific structure.
       // We cast it to `any` for library compatibility, as the library itself performs validation.
+      // biome-ignore lint/suspicious/noExplicitAny: simplewebauthn library requires any cast for response validation
       const responseBody = regResponse as any;
 
       const verification = await verifyRegistrationResponse({
