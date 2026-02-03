@@ -71,7 +71,7 @@ function NewPaymentPage() {
     onSuccess: () => {
       toast.success("Pago registrado exitosamente");
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
-      navigate({ to: "/patients/$id", params: { id: String(id) } });
+      void navigate({ to: "/patients/$id", params: { id: String(id) } });
     },
     onError: (error) => {
       toast.error(
@@ -80,7 +80,20 @@ function NewPaymentPage() {
     },
   });
 
-  const form = useForm({
+  const form = useForm<
+    PaymentForm,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    unknown
+  >({
     defaultValues: {
       budgetId: "",
       amount: 0,
@@ -88,7 +101,7 @@ function NewPaymentPage() {
       paymentMethod: "Transferencia",
       reference: "",
       notes: "",
-    } as PaymentForm,
+    },
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value);
     },
@@ -151,7 +164,7 @@ function NewPaymentPage() {
                   label="Método de Pago"
                   selectedKey={field.state.value}
                   onSelectionChange={(key) => {
-                    if (key) field.handleChange(String(key) as any);
+                    if (key) field.handleChange(key as PaymentForm["paymentMethod"]);
                   }}
                 >
                   <SelectItem key="Transferencia" textValue="Transferencia">

@@ -12,21 +12,7 @@ interface ErrorData {
 }
 
 function formatZodIssues(issues: z.ZodIssue[]): string {
-  return issues
-    .map((issue) => {
-      const path = issue.path.length ? issue.path.join(".") : "root";
-      if (issue.code === "invalid_type") {
-        const expected =
-          "expected" in issue && typeof issue.expected === "string" ? issue.expected : undefined;
-        const received =
-          "received" in issue && typeof issue.received === "string" ? issue.received : undefined;
-        if (expected && received) {
-          return `${path}: expected ${expected}, received ${received}`;
-        }
-      }
-      return issue.message ? `${path}: ${issue.message}` : `${path}: ${issue.code}`;
-    })
-    .join(" | ");
+  return issues.map(formatZodIssue).join(" | ");
 }
 
 export class ApiError extends Error {
@@ -138,12 +124,31 @@ type NonJsonRequestOptions = Omit<RequestOptions, "responseSchema"> & {
   responseType: "blob" | "text";
 };
 
-async function request<T>(method: string, url: string, options?: RequestOptions): Promise<T> {
-  const { body, query, responseType = "json", retry, ...fetchOptions } = options ?? {};
+const getIssuePath = (issue: z.ZodIssue) => (issue.path.length ? issue.path.join(".") : "root");
 
-  const finalUrl = buildUrlWithQuery(url, query);
+const formatZodIssue = (issue: z.ZodIssue) => {
+  const path = getIssuePath(issue);
+  if (issue.code === "invalid_type") {
+    const expected =
+      "expected" in issue && typeof issue.expected === "string" ? issue.expected : undefined;
+    const received =
+      "received" in issue && typeof issue.received === "string" ? issue.received : undefined;
+    if (expected && received) {
+      return `${path}: expected ${expected}, received ${received}`;
+    }
+  }
+  return issue.message ? `${path}: ${issue.message}` : `${path}: ${issue.code}`;
+};
 
-  // Ky specific options
+const buildKyOptions = (
+  method: string,
+  fetchOptions: Omit<
+    RequestOptions,
+    "body" | "query" | "responseType" | "retry" | "responseSchema"
+  >,
+  retry?: number,
+  body?: FormData | object,
+): Options => {
   const kyOptions: Options = {
     method,
     retry,
@@ -158,39 +163,59 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
     }
   }
 
+  return kyOptions;
+};
+
+const buildSchemaErrorMessage = (error: z.ZodError) => {
+  const details = error.issues;
+  const pretty = z.prettifyError(error);
+  const issueSummary = formatZodIssues(details);
+  return {
+    details,
+    message: pretty
+      ? `Respuesta inválida del servidor:\n${pretty}`
+      : issueSummary
+        ? `Respuesta inválida del servidor: ${issueSummary}`
+        : "Respuesta inválida del servidor",
+  };
+};
+
+async function parseResponse<T>(
+  res: Response,
+  responseType: ResponseType,
+  responseSchema?: z.ZodTypeAny,
+): Promise<T> {
+  if (responseType === "blob") {
+    return (await res.blob()) as unknown as T;
+  }
+
+  if (responseType === "text") {
+    return (await res.text()) as unknown as T;
+  }
+
+  const data: unknown = await res.json();
+  if (!responseSchema) {
+    return data as T;
+  }
+
+  const parsed = responseSchema.safeParse(data);
+  if (parsed.success) {
+    return parsed.data as T;
+  }
+
+  const { details, message } = buildSchemaErrorMessage(parsed.error);
+  throw new ApiError(message, 500, details);
+}
+
+async function request<T>(method: string, url: string, options?: RequestOptions): Promise<T> {
+  const { body, query, responseType = "json", retry, ...fetchOptions } = options ?? {};
+
+  const finalUrl = buildUrlWithQuery(url, query);
+  const kyOptions = buildKyOptions(method, fetchOptions, retry, body);
+
   try {
     const res = await kyInstance(finalUrl, kyOptions);
-
-    if (responseType === "blob") {
-      return (await res.blob()) as unknown as T;
-    }
-
-    if (responseType === "text") {
-      return (await res.text()) as unknown as T;
-    }
-
-    // responseType === 'json' (default)
-    // kyInstance already has parseJson configured for superjson
-    const data = await res.json<unknown>();
-    if (options?.responseSchema) {
-      const parsed = options.responseSchema.safeParse(data);
-      if (!parsed.success) {
-        const details = parsed.error.issues;
-        const pretty = z.prettifyError(parsed.error);
-        const issueSummary = formatZodIssues(details);
-        throw new ApiError(
-          pretty
-            ? `Respuesta inválida del servidor:\n${pretty}`
-            : issueSummary
-              ? `Respuesta inválida del servidor: ${issueSummary}`
-              : "Respuesta inválida del servidor",
-          500,
-          details,
-        );
-      }
-      return parsed.data as T;
-    }
-    return data as T;
+    return await parseResponse<T>(res, responseType, options?.responseSchema);
   } catch (error) {
     if (error instanceof HTTPError) {
       throw await handleKyError(error);

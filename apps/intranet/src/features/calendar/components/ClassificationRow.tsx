@@ -8,14 +8,13 @@ import Input from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 
-import type { FormValues } from "../schemas";
+import type { ClassificationForm } from "../form-types";
 import { FormattedEventDescription } from "./FormattedEventDescription";
 
 interface ClassificationRowProps {
   categoryChoices: readonly string[];
   event: CalendarUnclassifiedEvent;
-  // biome-ignore lint/suspicious/noExplicitAny: TanStack Form FormApi has complex generic constraints
-  form: any;
+  form: ClassificationForm;
   index: number;
   isSaving: boolean;
   onReset: (index: number, event: CalendarUnclassifiedEvent) => void;
@@ -36,11 +35,7 @@ export function ClassificationRow({
   const description = event.description?.trim();
 
   // Subscribe to category for conditional fields
-  const category = useStore(
-    form.store,
-    // biome-ignore lint/suspicious/noExplicitAny: TanStack Form store type is complex
-    (state: any) => (state as { values: FormValues }).values.entries[index]?.category ?? "",
-  );
+  const category = useStore(form.store, (state) => state.values.entries[index]?.category ?? "");
   const isSubcutaneous = category === "Tratamiento subcutáneo";
 
   return (
@@ -123,14 +118,14 @@ export function ClassificationRow({
           </form.Field>
 
           {isSubcutaneous && (
-            <form.Field name={`entries[${index}].dosage`}>
+            <form.Field name={`entries[${index}].dosageValue`}>
               {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
                 <Input
                   label="Dosis"
                   onChange={(e) => {
                     field.handleChange(e.target.value);
                   }}
-                  placeholder="0.3 ml"
+                  placeholder="0.3"
                   value={field.state.value ?? ""}
                 />
               )}

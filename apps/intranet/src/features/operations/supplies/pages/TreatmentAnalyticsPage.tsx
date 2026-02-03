@@ -1,6 +1,6 @@
 import { Button, Card, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import type React from "react";
 import "dayjs/locale/es";
@@ -34,8 +34,8 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { formatCurrency } from "@/lib/utils";
-// biome-ignore lint/nursery/noImportCycles: route import needed for search params
-import { Route } from "@/routes/_authed/operations/supplies-analytics";
+
+const routeApi = getRouteApi("/_authed/operations/supplies-analytics");
 
 // --- Constants & Config ---
 
@@ -94,8 +94,8 @@ interface PieChartData {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Component logic is centralized for analytics
 export default function TreatmentAnalyticsPage() {
-  const navigate = useNavigate({ from: Route.fullPath });
-  const searchParams = Route.useSearch();
+  const navigate = routeApi.useNavigate();
+  const searchParams = routeApi.useSearch();
   const [period, setPeriod] = useState<"day" | "week" | "month">(searchParams.period || "week");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -113,11 +113,22 @@ export default function TreatmentAnalyticsPage() {
   });
 
   const handleDateChange = (from: string, to: string) => {
-    void navigate({ search: { ...searchParams, from, to } });
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        from,
+        to,
+      }),
+    });
   };
 
   const handleQuickRange = (range: { from: string; to: string }) => {
-    void navigate({ search: { ...searchParams, ...range } });
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        ...range,
+      }),
+    });
   };
 
   const handleRefresh = async () => {

@@ -370,53 +370,80 @@ interface EventItemProps {
   tooltipTrigger: "hover" | "focus";
 }
 
-function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: EventItemProps) {
-  const position = getEventPosition(event, startHour, endHour);
-  if (!position) return null;
+type DisplayMode = "compact" | "detailed" | "minimal" | "normal";
 
-  // Calculate duration to determine display mode
+function getDisplayMode(durationMinutes: number): DisplayMode {
+  if (durationMinutes < 20) return "minimal";
+  if (durationMinutes < 45) return "compact";
+  if (durationMinutes < 90) return "normal";
+  return "detailed";
+}
+
+function getEventDisplayTimes(event: CalendarEventDetail) {
   const start = event.startDateTime ? dayjs(event.startDateTime) : null;
   const end = event.endDateTime ? dayjs(event.endDateTime) : null;
   const durationMinutes = start && end ? end.diff(start, "minute") : 30;
 
-  // Display mode
-  let displayMode: "compact" | "detailed" | "minimal" | "normal";
-  if (durationMinutes < 20) displayMode = "minimal";
-  else if (durationMinutes < 45) displayMode = "compact";
-  else if (durationMinutes < 90) displayMode = "normal";
-  else displayMode = "detailed";
+  return {
+    durationMinutes,
+    end,
+    endTimeStr: end ? end.format("HH:mm") : "",
+    start,
+    timeStr: start ? start.format("HH:mm") : "",
+  };
+}
 
-  const timeStr = start ? start.format("HH:mm") : "";
-  const endTimeStr = end ? end.format("HH:mm") : "";
-  const amountStr =
-    event.amountExpected == null ? "" : currencyFormatter.format(event.amountExpected);
-  const controlFlag = event.controlIncluded === true;
-  const title = event.summary?.trim() ?? "(Sin título)";
+function getEventButtonClasses(displayMode: DisplayMode, category: string | null) {
+  return cn(
+    "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden text-wrap rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-shadow hover:z-10 hover:shadow-md",
+    getCategoryClass(category),
+    displayMode === "minimal" && "items-center justify-center px-[0.3rem] py-[0.1rem]",
+    displayMode === "compact" && "px-[0.35rem] py-[0.15rem]",
+    displayMode === "normal" && "px-[0.4rem] py-[0.2rem]",
+    displayMode === "detailed" && "px-[0.45rem] py-1",
+  );
+}
 
-  const padding = event.totalColumns > 1 ? 2 : 3;
-  const columnWidth = 100 / event.totalColumns;
-  const leftPos = event.column * columnWidth;
+function buildEventTooltipContent({
+  amountStr,
+  controlFlag,
+  endTimeStr,
+  timeStr,
+  title,
+}: {
+  amountStr: string;
+  controlFlag: boolean;
+  endTimeStr: string;
+  timeStr: string;
+  title: string;
+}) {
+  return (
+    <div className="space-y-1 text-xs">
+      <p className="text-foreground font-semibold">{title}</p>
+      <p className="text-default-600">
+        {timeStr} - {endTimeStr}
+      </p>
+      {amountStr && <p className="text-default-600">{amountStr}</p>}
+      {controlFlag && <p className="text-default-600">Control</p>}
+    </div>
+  );
+}
 
-  const eventButton = (
-    <Button
-      className={cn(
-        "absolute z-1 flex min-h-5 flex-col justify-start gap-px overflow-hidden text-wrap rounded-md border-l-[3px] px-1.5 py-1 text-start shadow-sm transition-shadow hover:z-10 hover:shadow-md",
-        getCategoryClass(event.category),
-        displayMode === "minimal" && "items-center justify-center px-[0.3rem] py-[0.1rem]",
-        displayMode === "compact" && "px-[0.35rem] py-[0.15rem]",
-        displayMode === "normal" && "px-[0.4rem] py-[0.2rem]",
-        displayMode === "detailed" && "px-[0.45rem] py-1",
-      )}
-      onPress={() => onEventClick?.(event)}
-      size="sm"
-      style={{
-        height: position.height,
-        left: `calc(${leftPos}% + ${padding}px)`,
-        top: position.top,
-        width: `calc(${columnWidth}% - ${padding * 2}px)`,
-      }}
-      variant="ghost"
-    >
+function EventButtonContent({
+  amountExpected,
+  controlFlag,
+  displayMode,
+  timeStr,
+  title,
+}: {
+  amountExpected: number | null | undefined;
+  controlFlag: boolean;
+  displayMode: DisplayMode;
+  timeStr: string;
+  title: string;
+}) {
+  return (
+    <>
       <span className="flex min-w-0 items-center gap-[0.3rem] overflow-hidden">
         <span
           className={cn(
@@ -445,27 +472,63 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
           </span>
         )}
       </span>
-      {displayMode === "detailed" && event.amountExpected != null && (
+      {displayMode === "detailed" && amountExpected != null && (
         <span className="text-success-600 mt-auto overflow-hidden text-ellipsis whitespace-nowrap text-[0.6rem] font-bold">
-          {currencyFormatter.format(event.amountExpected)}
+          {currencyFormatter.format(amountExpected)}
         </span>
       )}
+    </>
+  );
+}
+
+function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: EventItemProps) {
+  const position = getEventPosition(event, startHour, endHour);
+  if (!position) return null;
+
+  const { durationMinutes, endTimeStr, timeStr } = getEventDisplayTimes(event);
+  const displayMode = getDisplayMode(durationMinutes);
+  const amountStr =
+    event.amountExpected == null ? "" : currencyFormatter.format(event.amountExpected);
+  const controlFlag = event.controlIncluded === true;
+  const title = event.summary?.trim() ?? "(Sin título)";
+
+  const padding = event.totalColumns > 1 ? 2 : 3;
+  const columnWidth = 100 / event.totalColumns;
+  const leftPos = event.column * columnWidth;
+
+  const eventButton = (
+    <Button
+      className={getEventButtonClasses(displayMode, event.category ?? null)}
+      onPress={() => onEventClick?.(event)}
+      size="sm"
+      style={{
+        height: position.height,
+        left: `calc(${leftPos}% + ${padding}px)`,
+        top: position.top,
+        width: `calc(${columnWidth}% - ${padding * 2}px)`,
+      }}
+      variant="ghost"
+    >
+      <EventButtonContent
+        amountExpected={event.amountExpected}
+        controlFlag={controlFlag}
+        displayMode={displayMode}
+        timeStr={timeStr}
+        title={title}
+      />
     </Button>
   );
 
   return (
     <Tooltip
       classNames={{ content: "bg-content1 text-foreground border-default-200" }}
-      content={
-        <div className="space-y-1 text-xs">
-          <p className="text-foreground font-semibold">{title}</p>
-          <p className="text-default-600">
-            {timeStr} - {endTimeStr}
-          </p>
-          {amountStr && <p className="text-default-600">{amountStr}</p>}
-          {controlFlag && <p className="text-default-600">Control</p>}
-        </div>
-      }
+      content={buildEventTooltipContent({
+        amountStr,
+        controlFlag,
+        endTimeStr,
+        timeStr,
+        title,
+      })}
       delay={0}
       isDisabled={tooltipTrigger === "focus"}
       placement="top"
@@ -478,6 +541,61 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
 }
 
 // --- Layout Utilities ---
+
+function sortEventsForLayout(events: CalendarEventDetail[]) {
+  return [...events].toSorted((a, b) => {
+    const { start: startA, end: endA } = getEventTimes(a);
+    const { start: startB, end: endB } = getEventTimes(b);
+    const startDiff = startA - startB;
+    if (startDiff !== 0) return startDiff;
+    return endB - startB - (endA - startA);
+  });
+}
+
+function buildOverlapClusters(sortedEvents: CalendarEventDetail[]) {
+  const clusters: CalendarEventDetail[][] = [];
+
+  for (const event of sortedEvents) {
+    let added = false;
+    for (const cluster of clusters) {
+      if (cluster.some((existing) => eventsOverlap(existing, event))) {
+        cluster.push(event);
+        added = true;
+        break;
+      }
+    }
+    if (!added) clusters.push([event]);
+  }
+
+  return clusters;
+}
+
+function assignColumnsForCluster(cluster: CalendarEventDetail[]): EventWithLayout[] {
+  cluster.sort((a, b) => getEventTimes(a).start - getEventTimes(b).start);
+
+  const columns: number[] = [];
+  const clusterEvents: { column: number; event: CalendarEventDetail }[] = [];
+
+  for (const event of cluster) {
+    const { start, end } = getEventTimes(event);
+    let colIndex = columns.findIndex((colEnd) => start >= colEnd);
+
+    if (colIndex === -1) {
+      colIndex = columns.length;
+      columns.push(end);
+    } else {
+      columns[colIndex] = end; // eslint-disable-line security/detect-object-injection
+    }
+    clusterEvents.push({ column: colIndex, event });
+  }
+
+  const totalColumns = Math.min(columns.length, MAX_COLUMNS);
+  return clusterEvents.map(({ column, event }) => ({
+    ...event,
+    column: Math.min(column, MAX_COLUMNS - 1),
+    totalColumns,
+  }));
+}
 
 function getEventTimes(event: CalendarEventDetail) {
   const start = dayjs(event.startDateTime).valueOf();
@@ -508,61 +626,9 @@ function eventsOverlap(a: CalendarEventDetail, b: CalendarEventDetail): boolean 
 function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] {
   if (events.length === 0) return [];
 
-  // Sort by start time, then by duration (longer first)
-  const sorted = [...events].toSorted((a, b) => {
-    const { start: startA, end: endA } = getEventTimes(a);
-    const { start: startB, end: endB } = getEventTimes(b);
-    const startDiff = startA - startB;
-    if (startDiff !== 0) return startDiff;
-    return endB - startB - (endA - startA);
-  });
-
-  // Group events into overlapping clusters
-  const clusters: CalendarEventDetail[][] = [];
-  for (const event of sorted) {
-    let added = false;
-    for (const cluster of clusters) {
-      if (cluster.some((e) => eventsOverlap(e, event))) {
-        cluster.push(event);
-        added = true;
-        break;
-      }
-    }
-    if (!added) clusters.push([event]);
-  }
-
-  const result: EventWithLayout[] = [];
-  for (const cluster of clusters) {
-    // Sort cluster by start time
-    cluster.sort((a, b) => getEventTimes(a).start - getEventTimes(b).start);
-
-    const columns: number[] = [];
-    const clusterEvents: { column: number; event: CalendarEventDetail }[] = [];
-
-    for (const event of cluster) {
-      const { start, end } = getEventTimes(event);
-      let colIndex = columns.findIndex((colEnd) => start >= colEnd);
-
-      if (colIndex === -1) {
-        colIndex = columns.length;
-        columns.push(end);
-      } else {
-        columns[colIndex] = end; // eslint-disable-line security/detect-object-injection
-      }
-      clusterEvents.push({ column: colIndex, event });
-    }
-
-    const totalColumns = Math.min(columns.length, MAX_COLUMNS);
-    for (const { column, event } of clusterEvents) {
-      result.push({
-        ...event,
-        column: Math.min(column, MAX_COLUMNS - 1),
-        totalColumns,
-      });
-    }
-  }
-
-  return result;
+  const sorted = sortEventsForLayout(events);
+  const clusters = buildOverlapClusters(sorted);
+  return clusters.flatMap((cluster) => assignColumnsForCluster(cluster));
 }
 
 // Get category color class

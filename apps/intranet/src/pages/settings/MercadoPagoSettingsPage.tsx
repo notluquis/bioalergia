@@ -25,6 +25,8 @@ import {
   type MpSyncLog,
 } from "@/services/mercadopago";
 
+const REPORT_PENDING_REGEX = /processing|pending|in_progress|waiting|generating|queued|creating/i;
+
 type MpTab = MpReportType | "sync";
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: large settings page with multiple sections
@@ -55,8 +57,7 @@ export default function MercadoPagoSettingsPage() {
 
   // Queries
   const reportType = activeTab === "sync" ? "release" : activeTab;
-  const reportLimit = reportPagination.pageSize;
-  const reportOffset = reportPagination.pageIndex * reportPagination.pageSize;
+  const { limit: reportLimit, offset: reportOffset } = getPagination(reportPagination);
   const { data: reportResponse } = useQuery({
     ...mercadoPagoKeys.lists(reportType, { limit: reportLimit, offset: reportOffset }),
     refetchInterval: getMpReportsRefetchInterval,
@@ -68,8 +69,7 @@ export default function MercadoPagoSettingsPage() {
   const reports = reportResponse?.reports ?? [];
   const reportTotal = reportResponse?.total ?? reports.length;
 
-  const syncLimit = syncPagination.pageSize;
-  const syncOffset = syncPagination.pageIndex * syncPagination.pageSize;
+  const { limit: syncLimit, offset: syncOffset } = getPagination(syncPagination);
   const { data: syncResponse } = useQuery({
     ...mercadoPagoKeys.syncLogs({ limit: syncLimit, offset: syncOffset }),
     refetchInterval: activeTab === "sync" ? 30_000 : false,
@@ -142,190 +142,9 @@ export default function MercadoPagoSettingsPage() {
     processMutation.isPending,
     processingFile,
   );
-  const paginatedReports = useMemo(() => reports, [reports]);
   const reportPageCount = Math.max(1, Math.ceil(reportTotal / reportPagination.pageSize));
 
-  const syncColumns = useMemo<ColumnDef<MpSyncLog>[]>(
-    () => [
-      {
-        accessorKey: "status",
-        header: "Estado",
-        cell: ({ row }) => (
-          <span
-            className={cn(
-              "rounded-full px-2 py-0.5 text-xs font-semibold",
-              row.original.status === "SUCCESS" && "bg-success/10 text-success",
-              row.original.status === "ERROR" && "bg-danger/10 text-danger",
-              row.original.status === "RUNNING" && "bg-warning/10 text-warning",
-            )}
-          >
-            {row.original.status}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "startedAt",
-        header: "Fecha",
-        cell: ({ row }) => dayjs(row.original.startedAt).format("DD/MM/YYYY HH:mm"),
-      },
-      {
-        accessorKey: "triggerSource",
-        header: "Fuente",
-        cell: ({ row }) => (
-          <span className="text-default-500 text-xs font-mono">{row.original.triggerSource}</span>
-        ),
-      },
-      {
-        accessorKey: "triggerLabel",
-        header: "Detalle",
-        cell: ({ row }) => row.original.triggerLabel ?? "-",
-      },
-      {
-        id: "metrics",
-        header: "Resultados",
-        cell: ({ row }) => {
-          const importStatsByType = getSyncImportStatsByType(row.original);
-          const reportTypes = getSyncReportTypes(row.original);
-          if (importStatsByType) {
-            return (
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                {reportTypes.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    {reportTypes.includes("release") && (
-                      <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
-                        Liberación
-                      </span>
-                    )}
-                    {reportTypes.includes("settlement") && (
-                      <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
-                        Conciliación
-                      </span>
-                    )}
-                  </div>
-                )}
-                {importStatsByType.map(({ label, stats, tone }) =>
-                  stats ? (
-                    <div className="flex items-center gap-1" key={label}>
-                      <span
-                        className={cn(
-                          "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase",
-                          tone === "release" && "bg-primary/10 text-primary",
-                          tone === "settlement" && "bg-warning/10 text-warning",
-                        )}
-                      >
-                        {label}
-                      </span>
-                      <Tooltip delay={0}>
-                        <Tooltip.Trigger>
-                          <span className="bg-default-100 text-default-600 rounded px-1.5 py-0.5">
-                            T{stats.totalRows}
-                          </span>
-                        </Tooltip.Trigger>
-                        <Tooltip.Content>
-                          <p>Total filas</p>
-                        </Tooltip.Content>
-                      </Tooltip>
-                      <Tooltip delay={0}>
-                        <Tooltip.Trigger>
-                          <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
-                            V{stats.validRows}
-                          </span>
-                        </Tooltip.Trigger>
-                        <Tooltip.Content>
-                          <p>Validas</p>
-                        </Tooltip.Content>
-                      </Tooltip>
-                      <Tooltip delay={0}>
-                        <Tooltip.Trigger>
-                          <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
-                            +{stats.insertedRows}
-                          </span>
-                        </Tooltip.Trigger>
-                        <Tooltip.Content>
-                          <p>Insertadas</p>
-                        </Tooltip.Content>
-                      </Tooltip>
-                      <Tooltip delay={0}>
-                        <Tooltip.Trigger>
-                          <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
-                            D{stats.duplicateRows}
-                          </span>
-                        </Tooltip.Trigger>
-                        <Tooltip.Content>
-                          <p>Duplicados</p>
-                        </Tooltip.Content>
-                      </Tooltip>
-                      <Tooltip delay={0}>
-                        <Tooltip.Trigger>
-                          <span className="bg-default-100 text-default-500 rounded px-1.5 py-0.5">
-                            S{stats.skippedRows}
-                          </span>
-                        </Tooltip.Trigger>
-                        <Tooltip.Content>
-                          <p>Omitidas</p>
-                        </Tooltip.Content>
-                      </Tooltip>
-                      {stats.errorCount > 0 && (
-                        <Tooltip delay={0}>
-                          <Tooltip.Trigger>
-                            <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
-                              E{stats.errorCount}
-                            </span>
-                          </Tooltip.Trigger>
-                          <Tooltip.Content>
-                            <p>Errores</p>
-                          </Tooltip.Content>
-                        </Tooltip>
-                      )}
-                    </div>
-                  ) : null,
-                )}
-              </div>
-            );
-          }
-
-          return (
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              {reportTypes.length > 0 && (
-                <div className="flex items-center gap-1">
-                  {reportTypes.includes("release") && (
-                    <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
-                      Liberación
-                    </span>
-                  )}
-                  {reportTypes.includes("settlement") && (
-                    <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
-                      Conciliación
-                    </span>
-                  )}
-                </div>
-              )}
-              <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
-                +{row.original.inserted ?? 0}
-              </span>
-              {row.original.skipped != null && (
-                <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
-                  !{row.original.skipped}
-                </span>
-              )}
-              {row.original.updated != null && row.original.updated > 0 && (
-                <span className="bg-info/10 text-info rounded px-1.5 py-0.5">
-                  ~{row.original.updated}
-                </span>
-              )}
-              {row.original.excluded != null && row.original.excluded > 0 && (
-                <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
-                  -{row.original.excluded}
-                </span>
-              )}
-            </div>
-          );
-        },
-      },
-    ],
-    [],
-  );
-  const paginatedSyncLogs = useMemo(() => syncLogs, [syncLogs]);
+  const syncColumns = useMemo<ColumnDef<MpSyncLog>[]>(() => buildSyncColumns(), []);
   const syncPageCount = Math.max(1, Math.ceil(syncTotal / syncPagination.pageSize));
 
   return (
@@ -520,7 +339,7 @@ export default function MercadoPagoSettingsPage() {
           <DataTable
             columns={columns}
             columnVisibility={columnVisibility}
-            data={paginatedReports}
+            data={reports}
             enablePageSizeSelector={false}
             enableExport={false}
             enableGlobalFilter={false}
@@ -562,7 +381,7 @@ export default function MercadoPagoSettingsPage() {
           </div>
           <DataTable
             columns={syncColumns}
-            data={paginatedSyncLogs}
+            data={syncLogs}
             enablePageSizeSelector={false}
             enableExport={false}
             enableGlobalFilter={false}
@@ -586,6 +405,193 @@ export default function MercadoPagoSettingsPage() {
   );
 }
 
+function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
+  return [
+    {
+      accessorKey: "status",
+      header: "Estado",
+      cell: ({ row }) => (
+        <span
+          className={cn(
+            "rounded-full px-2 py-0.5 text-xs font-semibold",
+            row.original.status === "SUCCESS" && "bg-success/10 text-success",
+            row.original.status === "ERROR" && "bg-danger/10 text-danger",
+            row.original.status === "RUNNING" && "bg-warning/10 text-warning",
+          )}
+        >
+          {row.original.status}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "startedAt",
+      header: "Fecha",
+      cell: ({ row }) => dayjs(row.original.startedAt).format("DD/MM/YYYY HH:mm"),
+    },
+    {
+      accessorKey: "triggerSource",
+      header: "Fuente",
+      cell: ({ row }) => (
+        <span className="text-default-500 text-xs font-mono">{row.original.triggerSource}</span>
+      ),
+    },
+    {
+      accessorKey: "triggerLabel",
+      header: "Detalle",
+      cell: ({ row }) => row.original.triggerLabel ?? "-",
+    },
+    {
+      id: "metrics",
+      header: "Resultados",
+      cell: ({ row }) => {
+        const importStatsByType = getSyncImportStatsByType(row.original);
+        const reportTypes = getSyncReportTypes(row.original);
+        if (importStatsByType) {
+          return (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              {reportTypes.length > 0 && (
+                <div className="flex items-center gap-1">
+                  {reportTypes.includes("release") && (
+                    <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                      Liberación
+                    </span>
+                  )}
+                  {reportTypes.includes("settlement") && (
+                    <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                      Conciliación
+                    </span>
+                  )}
+                </div>
+              )}
+              {importStatsByType.map(({ label, stats, tone }) =>
+                stats ? (
+                  <div className="flex items-center gap-1" key={label}>
+                    <span
+                      className={cn(
+                        "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase",
+                        tone === "release" && "bg-primary/10 text-primary",
+                        tone === "settlement" && "bg-warning/10 text-warning",
+                      )}
+                    >
+                      {label}
+                    </span>
+                    <Tooltip delay={0}>
+                      <Tooltip.Trigger>
+                        <span className="bg-default-100 text-default-600 rounded px-1.5 py-0.5">
+                          T{stats.totalRows}
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        <p>Total filas</p>
+                      </Tooltip.Content>
+                    </Tooltip>
+                    <Tooltip delay={0}>
+                      <Tooltip.Trigger>
+                        <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                          V{stats.validRows}
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        <p>Validas</p>
+                      </Tooltip.Content>
+                    </Tooltip>
+                    <Tooltip delay={0}>
+                      <Tooltip.Trigger>
+                        <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
+                          +{stats.insertedRows}
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        <p>Insertadas</p>
+                      </Tooltip.Content>
+                    </Tooltip>
+                    <Tooltip delay={0}>
+                      <Tooltip.Trigger>
+                        <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                          D{stats.duplicateRows}
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        <p>Duplicados</p>
+                      </Tooltip.Content>
+                    </Tooltip>
+                    <Tooltip delay={0}>
+                      <Tooltip.Trigger>
+                        <span className="bg-default-100 text-default-500 rounded px-1.5 py-0.5">
+                          S{stats.skippedRows}
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        <p>Omitidas</p>
+                      </Tooltip.Content>
+                    </Tooltip>
+                    {stats.errorCount > 0 && (
+                      <Tooltip delay={0}>
+                        <Tooltip.Trigger>
+                          <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
+                            E{stats.errorCount}
+                          </span>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <p>Errores</p>
+                        </Tooltip.Content>
+                      </Tooltip>
+                    )}
+                  </div>
+                ) : null,
+              )}
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            {reportTypes.length > 0 && (
+              <div className="flex items-center gap-1">
+                {reportTypes.includes("release") && (
+                  <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                    Liberación
+                  </span>
+                )}
+                {reportTypes.includes("settlement") && (
+                  <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                    Conciliación
+                  </span>
+                )}
+              </div>
+            )}
+            <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
+              +{row.original.inserted ?? 0}
+            </span>
+            {row.original.skipped != null && (
+              <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                !{row.original.skipped}
+              </span>
+            )}
+            {row.original.updated != null && row.original.updated > 0 && (
+              <span className="bg-info/10 text-info rounded px-1.5 py-0.5">
+                ~{row.original.updated}
+              </span>
+            )}
+            {row.original.excluded != null && row.original.excluded > 0 && (
+              <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
+                -{row.original.excluded}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+}
+
+function getPagination(pagination: PaginationState) {
+  return {
+    limit: pagination.pageSize,
+    offset: pagination.pageIndex * pagination.pageSize,
+  };
+}
+
 function getMpReportsRefetchInterval(query: { state: { data?: { reports?: MPReport[] } } }) {
   if (typeof document !== "undefined" && document.visibilityState !== "visible") {
     return false;
@@ -602,7 +608,7 @@ function getMpReportsRefetchInterval(query: { state: { data?: { reports?: MPRepo
 
 function isReportPending(status?: string) {
   if (!status) return false;
-  return /processing|pending|in_progress|waiting|generating|queued|creating/i.test(status);
+  return REPORT_PENDING_REGEX.test(status);
 }
 
 function getSyncImportStats(details?: MpSyncChangeDetails | null) {

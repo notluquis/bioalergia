@@ -42,7 +42,6 @@ const fields: { helper?: string; key: keyof AppSettings; label: string; type?: s
   { helper: "Ejemplo: CLP, USD", key: "primaryCurrency", label: "Moneda principal" },
 ];
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy form
 export default function SettingsForm() {
   const { settings, updateSettings } = useSettings();
   const { hasRole } = useAuth();
@@ -99,14 +98,6 @@ export default function SettingsForm() {
     setLogoFile(null);
     setFaviconFile(null);
   }, [settings]);
-
-  // Clean up object URLs
-  useEffect(() => {
-    return () => {
-      if (logoPreviewRef.current) URL.revokeObjectURL(logoPreviewRef.current);
-      if (faviconPreviewRef.current) URL.revokeObjectURL(faviconPreviewRef.current);
-    };
-  }, []);
 
   // Clean up object URLs
   useEffect(() => {
@@ -218,222 +209,27 @@ export default function SettingsForm() {
         </p>
       </div>
       <div className={GRID_2_COL_MD}>
-        {fields.map(({ helper, key, label, type }) => (
-          <div className="text-foreground flex flex-col gap-2 text-sm" key={key}>
-            <span className="text-default-700 text-xs font-semibold tracking-wide uppercase">
-              {label}
-            </span>
-            {type === "color" ? (
-              <Input
-                className="h-12 w-20 cursor-pointer px-0"
-                helper={helper}
-                label={label}
-                onChange={(event) => {
-                  handleChange(key, event.target.value);
-                }}
-                type="color"
-                // eslint-disable-next-line security/detect-object-injection
-                value={form[key]}
-              />
-            ) : (
-              (() => {
-                const isEmail = key === "supportEmail";
-                const isPhone = key === "orgPhone";
-                const isName = key === "orgName";
-
-                const inputMode = (() => {
-                  if (isEmail) return "email";
-                  if (isPhone) return "tel";
-                  return "text";
-                })();
-                const autoComplete = (() => {
-                  if (isEmail) return "email";
-                  if (isPhone) return "tel";
-                  if (isName) return "name";
-                  return "off";
-                })();
-
-                return (
-                  <Input
-                    autoComplete={autoComplete}
-                    helper={helper}
-                    id={key}
-                    inputMode={inputMode}
-                    label={label}
-                    onChange={(event) => {
-                      handleChange(key, event.target.value);
-                    }}
-                    placeholder={label}
-                    type={isEmail ? "email" : "text"}
-                    // eslint-disable-next-line security/detect-object-injection
-                    value={form[key]}
-                  />
-                );
-              })()
-            )}
-          </div>
-        ))}
-        <div className="border-default-200 bg-default-50 col-span-full space-y-3 rounded-2xl border p-4">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-default-700 text-xs font-semibold tracking-wide uppercase">
-              Logo institucional
-            </span>
-            <ButtonGroup>
-              <Button
-                onClick={() => {
-                  handleLogoModeChange("url");
-                }}
-                size="sm"
-                type="button"
-                variant={logoMode === "url" ? "primary" : "secondary"}
-              >
-                Usar URL
-              </Button>
-              <Button
-                onClick={() => {
-                  handleLogoModeChange("upload");
-                }}
-                size="sm"
-                type="button"
-                variant={logoMode === "upload" ? "primary" : "secondary"}
-              >
-                Subir archivo
-              </Button>
-            </ButtonGroup>
-          </div>
-          {logoMode === "url" ? (
-            <div className="flex flex-col gap-2">
-              <Input
-                helper="Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej: /uploads/branding/logo.png)."
-                label="URL del logo"
-                onChange={(event) => {
-                  handleChange("logoUrl", event.target.value);
-                }}
-                placeholder="https://..."
-                value={form.logoUrl}
-              />
-            </div>
-          ) : (
-            <div className="text-foreground space-y-3 text-sm">
-              <div>
-                <input
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
-                  className="hidden"
-                  onChange={handleLogoFileChange}
-                  ref={logoInputRef}
-                  type="file"
-                />
-                <Button
-                  onClick={() => logoInputRef.current?.click()}
-                  size="sm"
-                  type="button"
-                  variant="secondary"
-                >
-                  Seleccionar archivo
-                </Button>
-              </div>
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="border-default-200 bg-background flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border p-2">
-                  <img
-                    alt="Vista previa del logo"
-                    className="brand-logo--settings"
-                    src={displayedLogo}
-                  />
-                </div>
-                <div className="text-default-600 text-xs">
-                  <p>{logoPreview ? "Vista previa sin guardar" : "Logo actual"}</p>
-                  <p className="text-default-500 mt-1 break-all">{form.logoUrl}</p>
-                </div>
-              </div>
-              <span className="text-default-500 text-xs">
-                Tamaño máximo 12&nbsp;MB. Los archivos subidos se guardan en{" "}
-                <code className="font-mono">/uploads/branding</code>.
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="border-default-200 bg-default-50 col-span-full space-y-3 rounded-2xl border p-4">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-default-700 text-xs font-semibold tracking-wide uppercase">
-              Favicon del sitio
-            </span>
-            <span className="text-default-700 text-xs font-semibold tracking-wide uppercase">
-              Favicon del sitio
-            </span>
-            <ButtonGroup>
-              <Button
-                onClick={() => {
-                  handleFaviconModeChange("url");
-                }}
-                size="sm"
-                type="button"
-                variant={faviconMode === "url" ? "primary" : "secondary"}
-              >
-                Usar URL
-              </Button>
-              <Button
-                onClick={() => {
-                  handleFaviconModeChange("upload");
-                }}
-                size="sm"
-                type="button"
-                variant={faviconMode === "upload" ? "primary" : "secondary"}
-              >
-                Subir archivo
-              </Button>
-            </ButtonGroup>
-          </div>
-          {faviconMode === "url" ? (
-            <div className="flex flex-col gap-2">
-              <Input
-                helper="Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej: /uploads/branding/favicon.png)."
-                label="URL del favicon"
-                onChange={(event) => {
-                  handleChange("faviconUrl", event.target.value);
-                }}
-                placeholder="https://..."
-                value={form.faviconUrl}
-              />
-            </div>
-          ) : (
-            <div className="text-foreground space-y-3 text-sm">
-              <div>
-                <input
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,image/vnd.microsoft.icon"
-                  className="hidden"
-                  onChange={handleFaviconFileChange}
-                  ref={faviconInputRef}
-                  type="file"
-                />
-                <Button
-                  onClick={() => faviconInputRef.current?.click()}
-                  size="sm"
-                  type="button"
-                  variant="secondary"
-                >
-                  Seleccionar archivo
-                </Button>
-              </div>
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="border-default-200 bg-background flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border p-2">
-                  <img
-                    alt="Vista previa del favicon"
-                    className="h-full w-full object-contain"
-                    src={displayedFavicon}
-                  />
-                </div>
-                <div className="text-default-600 text-xs">
-                  <p>{faviconPreview ? "Vista previa sin guardar" : "Favicon actual"}</p>
-                  <p className="text-default-500 mt-1 break-all">{form.faviconUrl}</p>
-                </div>
-              </div>
-              <span className="text-default-500 text-xs">
-                Usa imágenes cuadradas (ideal 512&nbsp;px) con fondo transparente cuando sea
-                posible. Tamaño máximo 12&nbsp;MB.
-              </span>
-            </div>
-          )}
-        </div>
+        <GeneralSettingsFields form={form} onChange={handleChange} />
+        <LogoSection
+          logoInputRef={logoInputRef}
+          logoMode={logoMode}
+          logoPreview={logoPreview}
+          logoUrl={form.logoUrl}
+          onFileChange={handleLogoFileChange}
+          onModeChange={handleLogoModeChange}
+          onUrlChange={(value) => handleChange("logoUrl", value)}
+          previewUrl={displayedLogo}
+        />
+        <FaviconSection
+          faviconInputRef={faviconInputRef}
+          faviconMode={faviconMode}
+          faviconPreview={faviconPreview}
+          faviconUrl={form.faviconUrl}
+          onFileChange={handleFaviconFileChange}
+          onModeChange={handleFaviconModeChange}
+          onUrlChange={(value) => handleChange("faviconUrl", value)}
+          previewUrl={displayedFavicon}
+        />
       </div>
       {error && (
         <div className="col-span-full">
@@ -467,6 +263,285 @@ export default function SettingsForm() {
         </Suspense>
       )}
     </form>
+  );
+}
+
+function GeneralSettingsFields({
+  form,
+  onChange,
+}: {
+  form: AppSettings;
+  onChange: (key: keyof AppSettings, value: string) => void;
+}) {
+  return (
+    <>
+      {fields.map(({ helper, key, label, type }) => (
+        <div className="text-foreground flex flex-col gap-2 text-sm" key={key}>
+          <span className="text-default-700 text-xs font-semibold tracking-wide uppercase">
+            {label}
+          </span>
+          {type === "color" ? (
+            <Input
+              className="h-12 w-20 cursor-pointer px-0"
+              helper={helper}
+              label={label}
+              onChange={(event) => {
+                onChange(key, event.target.value);
+              }}
+              type="color"
+              // eslint-disable-next-line security/detect-object-injection
+              value={form[key]}
+            />
+          ) : (
+            <TextSettingInput
+              fieldKey={key}
+              form={form}
+              helper={helper}
+              label={label}
+              onChange={onChange}
+            />
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
+function TextSettingInput({
+  form,
+  helper,
+  label,
+  onChange,
+  fieldKey,
+}: {
+  form: AppSettings;
+  helper?: string;
+  label: string;
+  onChange: (key: keyof AppSettings, value: string) => void;
+  fieldKey: keyof AppSettings;
+}) {
+  const isEmail = fieldKey === "supportEmail";
+  const isPhone = fieldKey === "orgPhone";
+  const isName = fieldKey === "orgName";
+
+  const inputMode = isEmail ? "email" : isPhone ? "tel" : "text";
+  const autoComplete = isEmail ? "email" : isPhone ? "tel" : isName ? "name" : "off";
+
+  return (
+    <Input
+      autoComplete={autoComplete}
+      helper={helper}
+      id={fieldKey}
+      inputMode={inputMode}
+      label={label}
+      onChange={(event) => {
+        onChange(fieldKey, event.target.value);
+      }}
+      placeholder={label}
+      type={isEmail ? "email" : "text"}
+      // eslint-disable-next-line security/detect-object-injection
+      value={form[fieldKey]}
+    />
+  );
+}
+
+function LogoSection({
+  logoInputRef,
+  logoMode,
+  logoPreview,
+  logoUrl,
+  onFileChange,
+  onModeChange,
+  onUrlChange,
+  previewUrl,
+}: {
+  logoInputRef: React.RefObject<HTMLInputElement | null>;
+  logoMode: "upload" | "url";
+  logoPreview: null | string;
+  logoUrl: string | null | undefined;
+  onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onModeChange: (mode: "upload" | "url") => void;
+  onUrlChange: (value: string) => void;
+  previewUrl: string;
+}) {
+  return (
+    <div className="border-default-200 bg-default-50 col-span-full space-y-3 rounded-2xl border p-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-default-700 text-xs font-semibold tracking-wide uppercase">
+          Logo institucional
+        </span>
+        <ButtonGroup>
+          <Button
+            onClick={() => {
+              onModeChange("url");
+            }}
+            size="sm"
+            type="button"
+            variant={logoMode === "url" ? "primary" : "secondary"}
+          >
+            Usar URL
+          </Button>
+          <Button
+            onClick={() => {
+              onModeChange("upload");
+            }}
+            size="sm"
+            type="button"
+            variant={logoMode === "upload" ? "primary" : "secondary"}
+          >
+            Subir archivo
+          </Button>
+        </ButtonGroup>
+      </div>
+      {logoMode === "url" ? (
+        <div className="flex flex-col gap-2">
+          <Input
+            helper="Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej: /uploads/branding/logo.png)."
+            label="URL del logo"
+            onChange={(event) => {
+              onUrlChange(event.target.value);
+            }}
+            placeholder="https://..."
+            value={logoUrl ?? ""}
+          />
+        </div>
+      ) : (
+        <div className="text-foreground space-y-3 text-sm">
+          <div>
+            <input
+              accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+              className="hidden"
+              onChange={onFileChange}
+              ref={logoInputRef}
+              type="file"
+            />
+            <Button
+              onClick={() => logoInputRef.current?.click()}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              Seleccionar archivo
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="border-default-200 bg-background flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border p-2">
+              <img alt="Vista previa del logo" className="brand-logo--settings" src={previewUrl} />
+            </div>
+            <div className="text-default-600 text-xs">
+              <p>{logoPreview ? "Vista previa sin guardar" : "Logo actual"}</p>
+              <p className="text-default-500 mt-1 break-all">{logoUrl}</p>
+            </div>
+          </div>
+          <span className="text-default-500 text-xs">
+            Tamaño máximo 12&nbsp;MB. Los archivos subidos se guardan en{" "}
+            <code className="font-mono">/uploads/branding</code>.
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FaviconSection({
+  faviconInputRef,
+  faviconMode,
+  faviconPreview,
+  faviconUrl,
+  onFileChange,
+  onModeChange,
+  onUrlChange,
+  previewUrl,
+}: {
+  faviconInputRef: React.RefObject<HTMLInputElement | null>;
+  faviconMode: "upload" | "url";
+  faviconPreview: null | string;
+  faviconUrl: string | null | undefined;
+  onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onModeChange: (mode: "upload" | "url") => void;
+  onUrlChange: (value: string) => void;
+  previewUrl: string;
+}) {
+  return (
+    <div className="border-default-200 bg-default-50 col-span-full space-y-3 rounded-2xl border p-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-default-700 text-xs font-semibold tracking-wide uppercase">
+          Favicon del sitio
+        </span>
+        <ButtonGroup>
+          <Button
+            onClick={() => {
+              onModeChange("url");
+            }}
+            size="sm"
+            type="button"
+            variant={faviconMode === "url" ? "primary" : "secondary"}
+          >
+            Usar URL
+          </Button>
+          <Button
+            onClick={() => {
+              onModeChange("upload");
+            }}
+            size="sm"
+            type="button"
+            variant={faviconMode === "upload" ? "primary" : "secondary"}
+          >
+            Subir archivo
+          </Button>
+        </ButtonGroup>
+      </div>
+      {faviconMode === "url" ? (
+        <div className="flex flex-col gap-2">
+          <Input
+            helper="Puedes usar una URL pública (https://) o una ruta interna generada tras subir un archivo (ej: /uploads/branding/favicon.png)."
+            label="URL del favicon"
+            onChange={(event) => {
+              onUrlChange(event.target.value);
+            }}
+            placeholder="https://..."
+            value={faviconUrl ?? ""}
+          />
+        </div>
+      ) : (
+        <div className="text-foreground space-y-3 text-sm">
+          <div>
+            <input
+              accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,image/vnd.microsoft.icon"
+              className="hidden"
+              onChange={onFileChange}
+              ref={faviconInputRef}
+              type="file"
+            />
+            <Button
+              onClick={() => faviconInputRef.current?.click()}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              Seleccionar archivo
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="border-default-200 bg-background flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border p-2">
+              <img
+                alt="Vista previa del favicon"
+                className="h-full w-full object-contain"
+                src={previewUrl}
+              />
+            </div>
+            <div className="text-default-600 text-xs">
+              <p>{faviconPreview ? "Vista previa sin guardar" : "Favicon actual"}</p>
+              <p className="text-default-500 mt-1 break-all">{faviconUrl}</p>
+            </div>
+          </div>
+          <span className="text-default-500 text-xs">
+            Usa imágenes cuadradas (ideal 512&nbsp;px) con fondo transparente cuando sea posible.
+            Tamaño máximo 12&nbsp;MB.
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -1,5 +1,7 @@
 // No ListBox needed here
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import type { AnyRoute } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 import { Plus, RotateCw, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
@@ -17,7 +19,6 @@ import { RoleFormModal } from "@/features/roles/components/RoleFormModal";
 import { roleKeys } from "@/features/roles/queries";
 import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
 import { cn } from "@/lib/utils";
-import { routeTree } from "@/routeTree.gen";
 import type { NavConfig } from "@/types/navigation";
 import type { Permission, Role } from "@/types/roles";
 
@@ -26,6 +27,7 @@ import type { Permission, Role } from "@/types/roles";
 export default function RolesSettingsPage() {
   const { impersonate } = useAuth();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const toast = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedRole, setSelectedRole] = useState<null | Role>(null);
@@ -136,10 +138,10 @@ export default function RolesSettingsPage() {
 
   // Pre-process navigation sections with permission data
   const sectionsWithPermissions = processNavSections(
-    getNavSections(),
+    getNavSections(router.routeTree),
     allPermissions || [],
     usedPermissionIds,
-    buildSubjectNavKeyMap(routeTree, allPermissions || []),
+    buildSubjectNavKeyMap(router.routeTree, allPermissions || []),
   );
 
   const unmappedSubjects = useMemo(
@@ -169,7 +171,9 @@ export default function RolesSettingsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       keepalive: true,
-    }).catch(() => {});
+    }).catch((error) => {
+      console.warn("[Roles] Telemetry send failed", error);
+    });
   }, [unmappedSubjects]);
 
   return (
@@ -452,11 +456,12 @@ function buildMatrixItem({
   };
 }
 
-function buildSubjectNavKeyMap(routeTreeData: unknown, allPermissions: Permission[]) {
+type RouteTreeNode = AnyRoute;
+
+function buildSubjectNavKeyMap(routeTreeData: RouteTreeNode, allPermissions: Permission[]) {
   const mapping = new Map<string, Set<string>>();
 
-  // biome-ignore lint/suspicious/noExplicitAny: TanStack Router tree is dynamic with complex generics
-  const walk = (route: any, activeNav?: NavConfig) => {
+  const walk = (route: RouteTreeNode, activeNav?: NavConfig) => {
     const currentNav = (route.options?.staticData?.nav as NavConfig | undefined) ?? activeNav;
     const permission = route.options?.staticData?.permission as { subject?: string } | undefined;
 
@@ -468,14 +473,23 @@ function buildSubjectNavKeyMap(routeTreeData: unknown, allPermissions: Permissio
       mapping.set(subject, existing);
     }
 
-    route.children?.forEach((child: unknown) => {
-      walk(child as any, currentNav);
+    getRouteChildren(route.children).forEach((child) => {
+      walk(child, currentNav);
     });
   };
 
-  walk(routeTreeData as any);
+  walk(routeTreeData);
 
   return addInferredAliases(mapping, allPermissions);
+}
+
+function getRouteChildren(children: RouteTreeNode["children"]): RouteTreeNode[] {
+  if (!children) return [];
+  if (Array.isArray(children)) return children as RouteTreeNode[];
+  if (typeof children === "object") {
+    return Object.values(children as Record<string, RouteTreeNode>);
+  }
+  return [];
 }
 
 function addInferredAliases(mapping: Map<string, Set<string>>, allPermissions: Permission[]) {
@@ -510,21 +524,7 @@ function findBestMappedSubject(
   let bestScore = 0;
 
   for (const candidate of mappedSubjects) {
-    const candidateLower = candidate.toLowerCase();
-    const candidateTokens = mappedTokenMap.get(candidate) ?? tokenizeSubject(candidateLower);
-
-    let score = 0;
-    if (subjectLower.includes(candidateLower)) {
-      score = 1000 + candidateLower.length;
-    } else if (candidateTokens.length > 0) {
-      const matchCount = candidateTokens.filter((token) => subjectTokens.includes(token)).length;
-      if (matchCount === candidateTokens.length && matchCount > 0) {
-        score = 500 + matchCount;
-      } else if (matchCount > 0 && candidateLower.length >= 6) {
-        score = matchCount;
-      }
-    }
-
+    const score = scoreCandidateSubject(subjectLower, subjectTokens, candidate, mappedTokenMap);
     if (score > bestScore) {
       bestScore = score;
       best = candidate;
@@ -533,6 +533,33 @@ function findBestMappedSubject(
 
   if (!best || bestScore < 2) return null;
   return best;
+}
+
+function scoreCandidateSubject(
+  subjectLower: string,
+  subjectTokens: string[],
+  candidate: string,
+  mappedTokenMap: Map<string, string[]>,
+) {
+  const candidateLower = candidate.toLowerCase();
+  const candidateTokens = mappedTokenMap.get(candidate) ?? tokenizeSubject(candidateLower);
+
+  if (subjectLower.includes(candidateLower)) {
+    return 1000 + candidateLower.length;
+  }
+
+  if (candidateTokens.length === 0) return 0;
+
+  const matchCount = candidateTokens.filter((token) => subjectTokens.includes(token)).length;
+  if (matchCount === candidateTokens.length && matchCount > 0) {
+    return 500 + matchCount;
+  }
+
+  if (matchCount > 0 && candidateLower.length >= 6) {
+    return matchCount;
+  }
+
+  return 0;
 }
 
 function tokenizeSubject(subject: string) {

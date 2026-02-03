@@ -201,7 +201,71 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
   };
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <EmployeeFormContent
+      form={form}
+      handleRutBlur={handleRutBlur}
+      handleRutChange={handleRutChange}
+      isEditing={isEditing}
+      isMutating={isMutating}
+      onCancel={onCancel}
+      onSubmit={handleSubmit}
+      setForm={setForm}
+      rutError={rutError}
+    />
+  );
+}
+
+function EmployeeFormContent({
+  form,
+  handleRutBlur,
+  handleRutChange,
+  isEditing,
+  isMutating,
+  onCancel,
+  onSubmit,
+  setForm,
+  rutError,
+}: {
+  form: {
+    bankAccountNumber: string;
+    bankAccountType: string;
+    bankName: string;
+    email: string;
+    fixedSalary: string;
+    fullName: string;
+    hourlyRate: string;
+    overtimeRate: string;
+    retentionRate: string;
+    role: string;
+    rut: string;
+    salaryType: string;
+  };
+  handleRutBlur: () => void;
+  handleRutChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  isEditing: boolean;
+  isMutating: boolean;
+  onCancel: () => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  setForm: React.Dispatch<
+    React.SetStateAction<{
+      bankAccountNumber: string;
+      bankAccountType: string;
+      bankName: string;
+      email: string;
+      fixedSalary: string;
+      fullName: string;
+      hourlyRate: string;
+      overtimeRate: string;
+      retentionRate: string;
+      role: string;
+      rut: string;
+      salaryType: string;
+    }>
+  >;
+  rutError: null | string;
+}) {
+  return (
+    <form className="space-y-4" onSubmit={onSubmit}>
       <div className="grid gap-4 md:grid-cols-3">
         <div className="md:col-span-3">
           <Select
@@ -265,7 +329,6 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
           type="text"
           value={form.bankName}
         />
-        {/* Account type with datalist to avoid UI toggling */}
         <Input
           label="Tipo de cuenta"
           list="bank-account-type-options"
@@ -332,7 +395,6 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
           inputMode="decimal"
           label="Retención (%) - Personalizada"
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            // Allow digits, dots, and commas for decimal input
             const value = event.target.value.replaceAll(/[^\d.,]/g, "");
             setForm((prev) => ({ ...prev, retentionRate: value }));
           }}
@@ -346,10 +408,7 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
           Cancelar
         </Button>
         <Button disabled={isMutating} type="submit">
-          {(() => {
-            if (isMutating) return "Guardando...";
-            return isEditing ? "Actualizar empleado" : "Agregar empleado";
-          })()}
+          {isMutating ? "Guardando..." : isEditing ? "Actualizar empleado" : "Agregar empleado"}
         </Button>
       </div>
     </form>

@@ -1,3 +1,4 @@
+import type { AnyRoute } from "@tanstack/react-router";
 import type { RoutePermission } from "@/types/navigation";
 
 /**
@@ -106,9 +107,9 @@ export function validateRouteNavigation(route: {
  * Extracts all routes from the route tree and validates navigation metadata.
  * Returns a report of missing/invalid routes.
  */
-// Uses any for route tree parameter due to TanStack Router's complex generic type constraints
-// biome-ignore lint/suspicious/noExplicitAny: Route tree structure varies by router implementation
-export function auditRouteNavigation(routeTree: any): {
+type RouteTreeNode = AnyRoute;
+
+export function auditRouteNavigation(routeTree: RouteTreeNode): {
   missingNav: string[];
   missingPermission: string[];
   technicalRoutes: string[];
@@ -119,8 +120,7 @@ export function auditRouteNavigation(routeTree: any): {
   const technicalRoutes: string[] = [];
   const validRoutes: string[] = [];
 
-  // biome-ignore lint/suspicious/noExplicitAny: Route tree structure varies by router implementation
-  function traverse(route: any) {
+  function traverse(route: RouteTreeNode) {
     const fullPath = route.fullPath || route.path || "/";
     const hasNav = !!route.options?.staticData?.nav;
     const hasPermission = !!route.options?.staticData?.permission;
@@ -145,7 +145,7 @@ export function auditRouteNavigation(routeTree: any): {
       validRoutes.push(fullPath);
     }
 
-    route.children?.forEach(traverse);
+    getRouteChildren(route.children).forEach(traverse);
   }
 
   traverse(routeTree);
@@ -162,22 +162,28 @@ export function auditRouteNavigation(routeTree: any): {
  * Generates a list of all permissions from the route tree.
  * Useful for automatically populating /settings/roles.
  */
-// Uses any for route tree parameter due to TanStack Router's complex generic type constraints
-// biome-ignore lint/suspicious/noExplicitAny: Route tree structure varies by router implementation
-export function extractPermissionsFromRoutes(routeTree: any): RoutePermission[] {
+export function extractPermissionsFromRoutes(routeTree: RouteTreeNode): RoutePermission[] {
   const permissions = new Map<string, RoutePermission>();
 
-  // biome-ignore lint/suspicious/noExplicitAny: Route tree structure varies by router implementation
-  function traverse(route: any) {
+  function traverse(route: RouteTreeNode) {
     if (route.options?.staticData?.permission) {
       const perm = route.options.staticData.permission as RoutePermission;
       const key = `${perm.subject}:${perm.action}`;
       permissions.set(key, perm);
     }
-    route.children?.forEach(traverse);
+    getRouteChildren(route.children).forEach(traverse);
   }
 
   traverse(routeTree);
 
   return Array.from(permissions.values());
+}
+
+function getRouteChildren(children: RouteTreeNode["children"]): RouteTreeNode[] {
+  if (!children) return [];
+  if (Array.isArray(children)) return children;
+  if (typeof children === "object") {
+    return Object.values(children as Record<string, RouteTreeNode>);
+  }
+  return [];
 }

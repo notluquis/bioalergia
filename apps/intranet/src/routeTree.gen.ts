@@ -60,6 +60,7 @@ import { Route as AuthedFinanzasLiberacionesRouteImport } from "./routes/_authed
 import { Route as AuthedFinanzasDashboardRouteImport } from "./routes/_authed/finanzas/dashboard"
 import { Route as AuthedFinanzasDailyRouteImport } from "./routes/_authed/finanzas/daily"
 import { Route as AuthedFinanzasCounterpartsRouteImport } from "./routes/_authed/finanzas/counterparts"
+import { Route as AuthedFinanzasConciliacionesLiberacionesRouteImport } from "./routes/_authed/finanzas/conciliaciones-liberaciones"
 import { Route as AuthedFinanzasConciliacionesRouteImport } from "./routes/_authed/finanzas/conciliaciones"
 import { Route as AuthedDevRoutesAuditRouteImport } from "./routes/_authed/dev/routes-audit"
 import { Route as AuthedCertificatesMedicalRouteImport } from "./routes/_authed/certificates/medical"
@@ -311,6 +312,12 @@ const AuthedFinanzasCounterpartsRoute =
     path: "/counterparts",
     getParentRoute: () => AuthedFinanzasRoute,
   } as any)
+const AuthedFinanzasConciliacionesLiberacionesRoute =
+  AuthedFinanzasConciliacionesLiberacionesRouteImport.update({
+    id: "/conciliaciones-liberaciones",
+    path: "/conciliaciones-liberaciones",
+    getParentRoute: () => AuthedFinanzasRoute,
+  } as any)
 const AuthedFinanzasConciliacionesRoute =
   AuthedFinanzasConciliacionesRouteImport.update({
     id: "/conciliaciones",
@@ -415,6 +422,7 @@ export interface FileRoutesByFullPath {
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
+  "/finanzas/conciliaciones-liberaciones": typeof AuthedFinanzasConciliacionesLiberacionesRoute
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/finanzas/daily": typeof AuthedFinanzasDailyRoute
   "/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute
@@ -472,6 +480,7 @@ export interface FileRoutesByTo {
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
+  "/finanzas/conciliaciones-liberaciones": typeof AuthedFinanzasConciliacionesLiberacionesRoute
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/finanzas/daily": typeof AuthedFinanzasDailyRoute
   "/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute
@@ -535,6 +544,7 @@ export interface FileRoutesById {
   "/_authed/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/_authed/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
   "/_authed/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
+  "/_authed/finanzas/conciliaciones-liberaciones": typeof AuthedFinanzasConciliacionesLiberacionesRoute
   "/_authed/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/_authed/finanzas/daily": typeof AuthedFinanzasDailyRoute
   "/_authed/finanzas/dashboard": typeof AuthedFinanzasDashboardRoute
@@ -598,6 +608,7 @@ export interface FileRouteTypes {
     | "/certificates/medical"
     | "/dev/routes-audit"
     | "/finanzas/conciliaciones"
+    | "/finanzas/conciliaciones-liberaciones"
     | "/finanzas/counterparts"
     | "/finanzas/daily"
     | "/finanzas/dashboard"
@@ -655,6 +666,7 @@ export interface FileRouteTypes {
     | "/certificates/medical"
     | "/dev/routes-audit"
     | "/finanzas/conciliaciones"
+    | "/finanzas/conciliaciones-liberaciones"
     | "/finanzas/counterparts"
     | "/finanzas/daily"
     | "/finanzas/dashboard"
@@ -717,6 +729,7 @@ export interface FileRouteTypes {
     | "/_authed/certificates/medical"
     | "/_authed/dev/routes-audit"
     | "/_authed/finanzas/conciliaciones"
+    | "/_authed/finanzas/conciliaciones-liberaciones"
     | "/_authed/finanzas/counterparts"
     | "/_authed/finanzas/daily"
     | "/_authed/finanzas/dashboard"
@@ -1082,6 +1095,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedFinanzasCounterpartsRouteImport
       parentRoute: typeof AuthedFinanzasRoute
     }
+    "/_authed/finanzas/conciliaciones-liberaciones": {
+      id: "/_authed/finanzas/conciliaciones-liberaciones"
+      path: "/conciliaciones-liberaciones"
+      fullPath: "/finanzas/conciliaciones-liberaciones"
+      preLoaderRoute: typeof AuthedFinanzasConciliacionesLiberacionesRouteImport
+      parentRoute: typeof AuthedFinanzasRoute
+    }
     "/_authed/finanzas/conciliaciones": {
       id: "/_authed/finanzas/conciliaciones"
       path: "/conciliaciones"
@@ -1238,6 +1258,7 @@ const AuthedFinanzasPersonalCreditsRouteWithChildren =
 
 interface AuthedFinanzasRouteChildren {
   AuthedFinanzasConciliacionesRoute: typeof AuthedFinanzasConciliacionesRoute
+  AuthedFinanzasConciliacionesLiberacionesRoute: typeof AuthedFinanzasConciliacionesLiberacionesRoute
   AuthedFinanzasCounterpartsRoute: typeof AuthedFinanzasCounterpartsRoute
   AuthedFinanzasDailyRoute: typeof AuthedFinanzasDailyRoute
   AuthedFinanzasDashboardRoute: typeof AuthedFinanzasDashboardRoute
@@ -1253,6 +1274,8 @@ interface AuthedFinanzasRouteChildren {
 
 const AuthedFinanzasRouteChildren: AuthedFinanzasRouteChildren = {
   AuthedFinanzasConciliacionesRoute: AuthedFinanzasConciliacionesRoute,
+  AuthedFinanzasConciliacionesLiberacionesRoute:
+    AuthedFinanzasConciliacionesLiberacionesRoute,
   AuthedFinanzasCounterpartsRoute: AuthedFinanzasCounterpartsRoute,
   AuthedFinanzasDailyRoute: AuthedFinanzasDailyRoute,
   AuthedFinanzasDashboardRoute: AuthedFinanzasDashboardRoute,

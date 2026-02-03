@@ -11,10 +11,9 @@ function AllergyInventoryView() {
     data,
     isFetching,
     isLoading: loading,
+    error,
     refetch,
   } = useSuspenseQuery(inventoryKeys.allergyOverview());
-
-  const error = null;
 
   const grouped = (() => {
     const map = new Map<
@@ -38,6 +37,8 @@ function AllergyInventoryView() {
     return map;
   })();
 
+  const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
+
   return (
     <section className="surface-recessed space-y-4 rounded-3xl p-6 shadow-inner">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -54,7 +55,7 @@ function AllergyInventoryView() {
           {isFetching ? "Actualizando…" : "Refrescar"}
         </Button>
       </div>
-      {error && <Alert variant="error">{error}</Alert>}
+      {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
       {loading && data.length === 0 && <p className="text-default-500 text-xs">Cargando datos…</p>}
       {!loading && data.length === 0 && (
         <p className="text-default-500 text-xs">No hay insumos registrados aún.</p>

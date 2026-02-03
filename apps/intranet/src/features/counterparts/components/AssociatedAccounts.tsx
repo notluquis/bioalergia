@@ -45,26 +45,74 @@ interface AssociatedAccountsProps {
   summaryRange: { from: string; to: string };
 }
 
-export default function AssociatedAccounts({
-  detail,
-  onSummaryRangeChange,
-  selectedId,
-  summary,
-  summaryRange,
-}: Readonly<AssociatedAccountsProps>) {
-  const [accountForm, setAccountForm] = useState<AccountForm>(ACCOUNT_FORM_DEFAULT);
-  const [suggestionQuery, setSuggestionQuery] = useState("");
-  const [quickViewGroup, setQuickViewGroup] = useState<AccountGroup | null>(null);
-  const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
-  const [error, setError] = useState<null | string>(null);
-  const { error: toastError, success: toastSuccess } = useToast();
-  const fallbackRange: DateRange = {
-    from: dayjs().startOf("year").format("YYYY-MM-DD"),
-    to: today(),
-  };
+const buildAccountGrouping = (accounts: CounterpartAccount[] = []) => {
+  const groups = new Map<string, AccountGroup>();
+  const identifierToKey = new Map<string, string>();
 
-  // Suggestions Query
+  for (const account of accounts) {
+    const label = getAccountGroupLabel(account);
+    identifierToKey.set(account.account_identifier, label);
+    const existing = groups.get(label);
+    if (existing) {
+      mergeAccountIntoGroup(existing, account);
+    } else {
+      groups.set(label, createAccountGroup(account, label));
+    }
+  }
+
+  const accountGroups = [...groups.values()]
+    .map((group) => ({
+      ...group,
+      concept: group.concept ?? "",
+    }))
+    .toSorted((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+
+  return { accountGroups, identifierToKey };
+};
+
+const getAccountGroupLabel = (account: CounterpartAccount) =>
+  account.metadata?.bankAccountNumber?.trim() ?? account.account_identifier;
+
+const mergeAccountIntoGroup = (group: AccountGroup, account: CounterpartAccount) => {
+  group.accounts.push(account);
+  group.bankName ??= account.bank_name ?? null;
+  group.holder ??= account.holder ?? null;
+  group.concept ||= account.concept ?? "";
+};
+
+const createAccountGroup = (account: CounterpartAccount, label: string): AccountGroup => ({
+  accounts: [account],
+  bankName: account.bank_name ?? null,
+  concept: account.concept ?? "",
+  holder: account.holder ?? null,
+  key: label,
+  label,
+});
+
+const buildSummaryByGroup = (
+  summary: CounterpartSummary | null,
+  identifierToGroupKey: Map<string, string>,
+) => {
+  const map = new Map<string, { count: number; total: number }>();
+  for (const row of summary?.byAccount ?? []) {
+    const key = identifierToGroupKey.get(row.account_identifier) ?? row.account_identifier;
+    const entry = map.get(key) ?? { count: 0, total: 0 };
+    entry.total += row.total;
+    entry.count += row.count;
+    map.set(key, entry);
+  }
+  return map;
+};
+
+const buildQuickStats = (rows: Transaction[]) => ({
+  count: rows.length,
+  total: rows.reduce((sum: number, row: Transaction) => sum + (row.transactionAmount ?? 0), 0),
+});
+
+const useAccountSuggestions = () => {
+  const [suggestionQuery, setSuggestionQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedQuery(suggestionQuery);
@@ -74,264 +122,42 @@ export default function AssociatedAccounts({
     };
   }, [suggestionQuery]);
 
-  const { data: suggestions = [] } = useQuery({
+  const { data: accountSuggestions = [] } = useQuery({
     enabled: !!debouncedQuery.trim(),
     queryFn: () => fetchAccountSuggestions(debouncedQuery),
     queryKey: ["account-suggestions", debouncedQuery],
     staleTime: 1000 * 60,
   });
 
-  const accountSuggestions = suggestions;
-  // Suspense handles loading, no need for manual loading state
+  return { accountSuggestions, setSuggestionQuery, suggestionQuery };
+};
 
-  const queryClient = useQueryClient();
+const fetchTransactionsForFilter = async (filter: AccountTransactionFilter, range: DateRange) => {
+  if (!filter.sourceId && !filter.bankAccountNumber) return [];
 
-  const addAccountMutation = useMutation({
-    mutationFn: (payload: { data: Parameters<typeof addCounterpartAccount>[1]; id: number }) =>
-      addCounterpartAccount(payload.id, payload.data),
-    onError: (err: Error) => {
-      setError(err.message);
-      toastError(err.message);
+  const payload = await fetchTransactions({
+    filters: {
+      bankAccountNumber: filter.bankAccountNumber ?? "",
+      description: "",
+      destination: "",
+      direction: "OUT",
+      externalReference: "",
+      from: range.from || "",
+      includeAmounts: true,
+      origin: "",
+      sourceId: filter.sourceId ?? "",
+      status: "",
+      to: range.to || "",
+      transactionType: "",
     },
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: ["counterpart-detail", variables.id],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: ["counterpart-summary", variables.id],
-      });
-      setAccountForm(ACCOUNT_FORM_DEFAULT);
-      setSuggestionQuery("");
-      setIsAddAccountModalOpen(false);
-      toastSuccess("Cuenta asociada agregada");
-    },
+    includeTotal: false,
+    page: 1,
+    pageSize: 200,
   });
+  return payload.data;
+};
 
-  function handleAddAccount() {
-    if (!selectedId) {
-      setError("Guarda la contraparte antes de agregar cuentas");
-      toastError("Guarda la contraparte antes de agregar cuentas");
-      return;
-    }
-    if (!accountForm.accountIdentifier.trim()) {
-      setError("Ingresa un identificador de cuenta");
-      toastError("Ingresa un identificador de cuenta");
-      return;
-    }
-    setError(null);
-
-    addAccountMutation.mutate({
-      data: {
-        accountIdentifier: accountForm.accountIdentifier.trim(),
-        accountType: accountForm.accountType.trim() || null,
-        bankName: accountForm.bankName.trim() || null,
-        concept: accountForm.concept.trim() || null,
-        holder: accountForm.holder.trim() || null,
-        metadata: {
-          bankAccountNumber: accountForm.bankAccountNumber.trim() || null,
-          withdrawId: accountForm.accountIdentifier.trim(),
-        },
-      },
-      id: selectedId,
-    });
-  }
-
-  const updateAccountMutation = useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: number;
-      payload: Parameters<typeof updateCounterpartAccount>[1];
-    }) => updateCounterpartAccount(id, payload),
-    onError: (err: Error) => {
-      setError(err.message);
-      toastError(err.message);
-    },
-    onSuccess: () => {
-      if (selectedId) {
-        void queryClient.invalidateQueries({
-          queryKey: ["counterpart-detail", selectedId],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: ["counterpart-summary", selectedId],
-        });
-      }
-      toastSuccess("Concepto actualizado");
-    },
-  });
-
-  const { mutateAsync: updateAccount } = updateAccountMutation;
-
-  const handleGroupConceptChange = async (group: AccountGroup, concept: string) => {
-    const trimmed = concept.trim();
-    const nextConcept = trimmed || null;
-    setError(null);
-
-    try {
-      await Promise.all(
-        group.accounts.map((account) =>
-          updateAccount({
-            id: account.id,
-            payload: { concept: nextConcept },
-          }),
-        ),
-      );
-    } catch {
-      // Error handled by mutation onError
-    }
-  };
-
-  function handleSuggestionClick(suggestion: CounterpartAccountSuggestion) {
-    setAccountForm({
-      accountIdentifier: suggestion.accountIdentifier,
-      accountType: suggestion.accountType ?? "",
-      bankAccountNumber: suggestion.bankAccountNumber ?? "",
-      bankName: suggestion.bankName ?? "",
-      concept: suggestion.assignedCounterpartId ? "" : (suggestion.holder ?? ""),
-      holder: suggestion.holder ?? "",
-    });
-    setSuggestionQuery(suggestion.accountIdentifier);
-  }
-
-  function handleSuggestionCreate(suggestion: CounterpartAccountSuggestion) {
-    setAccountForm({
-      accountIdentifier: suggestion.accountIdentifier,
-      accountType: suggestion.accountType ?? "",
-      bankAccountNumber: suggestion.bankAccountNumber ?? "",
-      bankName: suggestion.bankName ?? "",
-      concept: "",
-      holder: suggestion.holder ?? "",
-    });
-    setSuggestionQuery(suggestion.accountIdentifier);
-  }
-
-  const attachRutMutation = useMutation({
-    mutationFn: ({ id, rut }: { id: number; rut: string }) => attachCounterpartRut(id, rut),
-    onError: (error: Error) => {
-      setError(error.message);
-      toastError(error.message);
-    },
-    onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({
-        queryKey: ["counterpart-detail", variables.id],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: ["counterpart-summary", variables.id],
-      });
-      setSuggestionQuery("");
-      toastSuccess("RUT vinculado correctamente");
-    },
-  });
-
-  function handleAttachRut(rut: null | string | undefined) {
-    if (!selectedId) {
-      setError("Selecciona una contraparte para vincular");
-      toastError("Selecciona una contraparte antes de vincular un RUT");
-      return;
-    }
-    if (!rut) {
-      setError("La sugerencia no contiene un RUT válido");
-      toastError("La sugerencia no contiene un RUT válido");
-      return;
-    }
-    setError(null);
-    attachRutMutation.mutate({ id: selectedId, rut });
-  }
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy grouping logic
-  const accountGrouping = (() => {
-    const groups = new Map<string, AccountGroup>();
-    const identifierToKey = new Map<string, string>();
-
-    for (const account of detail?.accounts ?? []) {
-      const label = account.metadata?.bankAccountNumber?.trim() ?? account.account_identifier;
-      identifierToKey.set(account.account_identifier, label);
-      const existing = groups.get(label);
-      if (existing) {
-        existing.accounts.push(account);
-        if (!existing.bankName && account.bank_name) existing.bankName = account.bank_name;
-        if (!existing.holder && account.holder) existing.holder = account.holder;
-        if (!existing.concept && account.concept) existing.concept = account.concept;
-      } else {
-        groups.set(label, {
-          accounts: [account],
-          bankName: account.bank_name ?? null,
-          concept: account.concept ?? "",
-          holder: account.holder ?? null,
-          key: label,
-          label,
-        });
-      }
-    }
-
-    const accountGroups = [...groups.values()]
-      .map((group) => ({
-        ...group,
-        concept: group.concept ?? "",
-      }))
-      .toSorted((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
-
-    return { accountGroups, identifierToKey };
-  })();
-
-  const accountGroups = accountGrouping.accountGroups;
-  const identifierToGroupKey = accountGrouping.identifierToKey;
-
-  const summaryByGroup = (() => {
-    const map = new Map<string, { count: number; total: number }>();
-    for (const row of summary?.byAccount ?? []) {
-      const key = identifierToGroupKey.get(row.account_identifier) ?? row.account_identifier;
-      const entry = map.get(key) ?? { count: 0, total: 0 };
-      entry.total += row.total;
-      entry.count += row.count;
-      map.set(key, entry);
-    }
-    return map;
-  })();
-
-  const updateAccountForm =
-    <K extends keyof AccountForm>(key: K) =>
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      setAccountForm((prev) => ({ ...prev, [key]: value }));
-    };
-
-  const handleAccountIdentifierChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    setAccountForm((prev) => ({ ...prev, accountIdentifier: value }));
-    setSuggestionQuery(value);
-  };
-
-  // --- Data Fetching with React Query ---
-
-  const fetchTransactionsForFilter = async (filter: AccountTransactionFilter, range: DateRange) => {
-    if (!filter.sourceId && !filter.bankAccountNumber) return [];
-
-    const payload = await fetchTransactions({
-      filters: {
-        bankAccountNumber: filter.bankAccountNumber ?? "",
-        description: "",
-        destination: "",
-        direction: "OUT",
-        externalReference: "",
-        from: range.from || "",
-        includeAmounts: true,
-        origin: "",
-        sourceId: filter.sourceId ?? "",
-        status: "",
-        to: range.to || "",
-        transactionType: "",
-      },
-      includeTotal: false,
-      page: 1,
-      pageSize: 200,
-    });
-    return payload.data;
-  };
-
-  const activeRange = summaryRange;
-
+const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRange: DateRange) => {
   const { data: quickViewRows = [] } = useQuery({
     enabled: !!quickViewGroup,
     queryFn: async () => {
@@ -359,11 +185,9 @@ export default function AssociatedAccounts({
         }
       }
 
-      const sorted = [...dedup.values()].toSorted(
+      return [...dedup.values()].toSorted(
         (a, b) => dayjs(b.transactionDate).valueOf() - dayjs(a.transactionDate).valueOf(),
       );
-
-      return sorted;
     },
     queryKey: [
       "associated-accounts-transactions",
@@ -374,282 +198,603 @@ export default function AssociatedAccounts({
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const handleQuickView = (group: AccountGroup) => {
-    setQuickViewGroup(group);
+  const rows = quickViewRows ?? [];
+  const quickStats = buildQuickStats(rows);
+
+  return { rows, quickStats };
+};
+
+const useAssociatedAccountsModel = ({
+  detail,
+  onSummaryRangeChange,
+  selectedId,
+  summary,
+  summaryRange,
+}: Readonly<AssociatedAccountsProps>) => {
+  const [accountForm, setAccountForm] = useState<AccountForm>(ACCOUNT_FORM_DEFAULT);
+  const [quickViewGroup, setQuickViewGroup] = useState<AccountGroup | null>(null);
+  const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
+  const [error, setError] = useState<null | string>(null);
+  const { error: toastError, success: toastSuccess } = useToast();
+  const queryClient = useQueryClient();
+  const { accountSuggestions, setSuggestionQuery } = useAccountSuggestions();
+
+  const fallbackRange: DateRange = {
+    from: dayjs().startOf("year").format("YYYY-MM-DD"),
+    to: today(),
   };
 
-  const rows = quickViewRows ?? [];
-  const quickStats = {
-    count: rows.length,
-    total: rows.reduce((sum: number, row: Transaction) => sum + (row.transactionAmount ?? 0), 0),
+  const addAccountMutation = useMutation({
+    mutationFn: (payload: { data: Parameters<typeof addCounterpartAccount>[1]; id: number }) =>
+      addCounterpartAccount(payload.id, payload.data),
+    onError: (err: Error) => {
+      setError(err.message);
+      toastError(err.message);
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["counterpart-detail", variables.id],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["counterpart-summary", variables.id],
+      });
+      setAccountForm(ACCOUNT_FORM_DEFAULT);
+      setSuggestionQuery("");
+      setIsAddAccountModalOpen(false);
+      toastSuccess("Cuenta asociada agregada");
+    },
+  });
+
+  const updateAccountMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload: Parameters<typeof updateCounterpartAccount>[1];
+    }) => updateCounterpartAccount(id, payload),
+    onError: (err: Error) => {
+      setError(err.message);
+      toastError(err.message);
+    },
+    onSuccess: () => {
+      if (selectedId) {
+        void queryClient.invalidateQueries({
+          queryKey: ["counterpart-detail", selectedId],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["counterpart-summary", selectedId],
+        });
+      }
+      toastSuccess("Concepto actualizado");
+    },
+  });
+
+  const attachRutMutation = useMutation({
+    mutationFn: ({ id, rut }: { id: number; rut: string }) => attachCounterpartRut(id, rut),
+    onError: (attachError: Error) => {
+      setError(attachError.message);
+      toastError(attachError.message);
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["counterpart-detail", variables.id],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["counterpart-summary", variables.id],
+      });
+      setSuggestionQuery("");
+      toastSuccess("RUT vinculado correctamente");
+    },
+  });
+
+  const { mutateAsync: updateAccount } = updateAccountMutation;
+
+  const handleAddAccount = () => {
+    if (!selectedId) {
+      setError("Guarda la contraparte antes de agregar cuentas");
+      toastError("Guarda la contraparte antes de agregar cuentas");
+      return;
+    }
+    if (!accountForm.accountIdentifier.trim()) {
+      setError("Ingresa un identificador de cuenta");
+      toastError("Ingresa un identificador de cuenta");
+      return;
+    }
+    setError(null);
+
+    addAccountMutation.mutate({
+      data: {
+        accountIdentifier: accountForm.accountIdentifier.trim(),
+        accountType: accountForm.accountType.trim() || null,
+        bankName: accountForm.bankName.trim() || null,
+        concept: accountForm.concept.trim() || null,
+        holder: accountForm.holder.trim() || null,
+        metadata: {
+          bankAccountNumber: accountForm.bankAccountNumber.trim() || null,
+          withdrawId: accountForm.accountIdentifier.trim(),
+        },
+      },
+      id: selectedId,
+    });
   };
+
+  const handleGroupConceptChange = async (group: AccountGroup, concept: string) => {
+    const trimmed = concept.trim();
+    const nextConcept = trimmed || null;
+    setError(null);
+
+    try {
+      await Promise.all(
+        group.accounts.map((account) =>
+          updateAccount({
+            id: account.id,
+            payload: { concept: nextConcept },
+          }),
+        ),
+      );
+    } catch {
+      // Error handled by mutation onError
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: CounterpartAccountSuggestion) => {
+    setAccountForm({
+      accountIdentifier: suggestion.accountIdentifier,
+      accountType: suggestion.accountType ?? "",
+      bankAccountNumber: suggestion.bankAccountNumber ?? "",
+      bankName: suggestion.bankName ?? "",
+      concept: suggestion.assignedCounterpartId ? "" : (suggestion.holder ?? ""),
+      holder: suggestion.holder ?? "",
+    });
+    setSuggestionQuery(suggestion.accountIdentifier);
+  };
+
+  const handleSuggestionCreate = (suggestion: CounterpartAccountSuggestion) => {
+    setAccountForm({
+      accountIdentifier: suggestion.accountIdentifier,
+      accountType: suggestion.accountType ?? "",
+      bankAccountNumber: suggestion.bankAccountNumber ?? "",
+      bankName: suggestion.bankName ?? "",
+      concept: "",
+      holder: suggestion.holder ?? "",
+    });
+    setSuggestionQuery(suggestion.accountIdentifier);
+  };
+
+  const handleAttachRut = (rut: null | string | undefined) => {
+    if (!selectedId) {
+      setError("Selecciona una contraparte para vincular");
+      toastError("Selecciona una contraparte antes de vincular un RUT");
+      return;
+    }
+    if (!rut) {
+      setError("La sugerencia no contiene un RUT válido");
+      toastError("La sugerencia no contiene un RUT válido");
+      return;
+    }
+    setError(null);
+    attachRutMutation.mutate({ id: selectedId, rut });
+  };
+
+  const accountGrouping = buildAccountGrouping(detail?.accounts ?? []);
+  const accountGroups = accountGrouping.accountGroups;
+  const identifierToGroupKey = accountGrouping.identifierToKey;
+  const summaryByGroup = buildSummaryByGroup(summary, identifierToGroupKey);
+
+  const updateAccountForm =
+    <K extends keyof AccountForm>(key: K) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setAccountForm((prev) => ({ ...prev, [key]: value }));
+    };
+
+  const handleAccountIdentifierChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setAccountForm((prev) => ({ ...prev, accountIdentifier: value }));
+    setSuggestionQuery(value);
+  };
+
+  const activeRange = summaryRange;
+  const { rows, quickStats } = useQuickViewTransactions(quickViewGroup, activeRange);
 
   const accountGroupColumns = getAccountGroupColumns(
     summaryByGroup,
     handleGroupConceptChange,
-    handleQuickView,
+    setQuickViewGroup,
   );
 
   const quickViewColumns = getQuickViewColumns();
 
-  const renderQuickViewContent = () => {
-    return (
-      <div className="border-default-100 overflow-hidden rounded-lg border">
-        <DataTable
-          // biome-ignore lint/suspicious/noExplicitAny: tanstack table generic
-          columns={quickViewColumns as ColumnDef<Transaction, any>[]}
-          data={rows}
-          containerVariant="plain"
-          enablePagination={false}
-          enableToolbar={false}
-          enableVirtualization={false}
-          noDataMessage="Sin movimientos dentro del rango seleccionado."
-        />
-      </div>
-    );
+  return {
+    accountForm,
+    accountGroupColumns,
+    accountGroups,
+    accountSuggestions,
+    activeRange,
+    addAccountMutation,
+    attachRutMutation,
+    error,
+    fallbackRange,
+    handleAccountIdentifierChange,
+    handleAddAccount,
+    handleAttachRut,
+    handleSuggestionClick,
+    handleSuggestionCreate,
+    isAddAccountModalOpen,
+    onSummaryRangeChange,
+    quickStats,
+    quickViewColumns,
+    quickViewGroup,
+    rows,
+    selectedId,
+    setIsAddAccountModalOpen,
+    summaryRange,
+    updateAccountForm,
   };
+};
 
-  const renderSuggestions = () => {
-    if (accountSuggestions.length === 0) {
-      return (
-        <span className="text-default-500 text-xs">
-          No hay sugerencias para este identificador.
-        </span>
-      );
-    }
-    return (
-      <div className="border-default-200 bg-background max-h-48 overflow-y-auto rounded-xl border">
-        {accountSuggestions.map((suggestion) => (
-          <div
-            className="border-default-200 flex flex-col gap-1 border-b px-3 py-2 text-xs last:border-b-0"
-            key={suggestion.accountIdentifier}
-          >
-            <span className="text-foreground font-semibold">{suggestion.accountIdentifier}</span>
-            <span className="text-foreground/90">{suggestion.holder ?? "(sin titular)"}</span>
-            {suggestion.bankAccountNumber && (
-              <span className="text-foreground/90 text-xs">
-                Cuenta {suggestion.bankAccountNumber}
-              </span>
-            )}
-            {suggestion.rut && (
-              <span className="text-foreground/90 text-xs">RUT {formatRut(suggestion.rut)}</span>
-            )}
-            <span className="text-foreground/90 text-xs">
-              {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
-            </span>
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Button
-                onClick={() => {
-                  handleSuggestionClick(suggestion);
-                }}
-                size="xs"
-                variant="primary"
-              >
-                Autrellenar
-              </Button>
-              {selectedId && suggestion.rut && (
-                <Button
-                  disabled={attachRutMutation.isPending}
-                  onClick={() => {
-                    handleAttachRut(suggestion.rut);
-                  }}
-                  size="xs"
-                  variant="secondary"
-                >
-                  {attachRutMutation.isPending ? "Vinculando..." : "Vincular por RUT"}
-                </Button>
-              )}
-              {!selectedId && (
-                <Button
-                  onClick={() => {
-                    handleSuggestionCreate(suggestion);
-                  }}
-                  size="xs"
-                  variant="secondary"
-                >
-                  Copiar datos
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
+export default function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
+  const {
+    accountForm,
+    accountGroupColumns,
+    accountGroups,
+    accountSuggestions,
+    activeRange,
+    addAccountMutation,
+    attachRutMutation,
+    error,
+    fallbackRange,
+    handleAccountIdentifierChange,
+    handleAddAccount,
+    handleAttachRut,
+    handleSuggestionClick,
+    handleSuggestionCreate,
+    isAddAccountModalOpen,
+    onSummaryRangeChange,
+    quickStats,
+    quickViewColumns,
+    quickViewGroup,
+    rows,
+    selectedId,
+    setIsAddAccountModalOpen,
+    summaryRange,
+    updateAccountForm,
+  } = useAssociatedAccountsModel(props);
 
   return (
     <section className="surface-recessed relative space-y-5 p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="space-y-1">
-          <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Cuentas asociadas</h2>
-          <p className="text-foreground/90 text-xs">
-            Identificadores detectados en los movimientos y asignados a esta contraparte.
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setIsAddAccountModalOpen(true);
-          }}
-          size="sm"
-          variant="secondary"
-        >
-          + Agregar cuenta
-        </Button>
-      </header>
+      <AssociatedAccountsHeader onAddAccount={() => setIsAddAccountModalOpen(true)} />
       {error && <Alert variant="error">{error}</Alert>}
 
-      <div className="border-default-100 bg-background overflow-hidden rounded-lg border">
-        <DataTable
-          // biome-ignore lint/suspicious/noExplicitAny: tanstack table generic
-          columns={accountGroupColumns as ColumnDef<AccountGroup, any>[]}
-          data={accountGroups}
-          containerVariant="plain"
-          enablePagination={false}
-          enableToolbar={false}
-          enableVirtualization={false}
-          noDataMessage="Sin cuentas asociadas."
-        />
-      </div>
+      <AccountGroupsTable accountGroups={accountGroups} columns={accountGroupColumns} />
 
-      <div className="space-y-4">
-        {quickViewGroup ? (
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-default-500 text-xs tracking-[0.3em] uppercase">
-                  Resumen mensual
-                </p>
-                <h3 className="text-foreground text-lg font-semibold">Transferencias</h3>
-                <p className="text-default-500 text-xs">{quickViewGroup.label}</p>
-                <p className="text-default-400 text-xs">
-                  {activeRange.from} – {activeRange.to}
-                </p>
-              </div>
-              <div className="flex gap-4">
-                <div className="border-default-200/60 bg-background/60 text-default-600 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
-                  Movimientos {quickStats.count}
-                </div>
-                <div className="border-default-200/60 bg-background/60 text-default-600 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
-                  Total {fmtCLP(quickStats.total)}
-                </div>
-              </div>
-            </div>
-            <div className="text-default-600 flex flex-wrap items-end gap-3 text-xs">
-              <Input
-                className="w-36"
-                label="Desde"
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                  onSummaryRangeChange({ from: event.target.value });
-                }}
-                type="date"
-                value={summaryRange.from}
-              />
-              <Input
-                className="w-36"
-                label="Hasta"
-                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                  onSummaryRangeChange({ to: event.target.value });
-                }}
-                type="date"
-                value={summaryRange.to}
-              />
-              <Button
-                onClick={() => {
-                  onSummaryRangeChange({
-                    from: fallbackRange.from,
-                    to: fallbackRange.to,
-                  });
-                }}
-                size="xs"
-                variant="ghost"
-              >
-                Año en curso
-              </Button>
-            </div>
-            <div className="surface-recessed border-default-200/70 border p-4">
-              {renderQuickViewContent()}
-            </div>
-          </div>
-        ) : (
-          <div className="border-default-200/70 bg-background/40 text-default-500 rounded-[28px] border border-dashed p-8 text-center text-sm">
-            Selecciona una cuenta en la tabla superior para ver su resumen y movimientos históricos.
-          </div>
-        )}
-      </div>
+      <QuickViewSection
+        activeRange={activeRange}
+        fallbackRange={fallbackRange}
+        onSummaryRangeChange={onSummaryRangeChange}
+        quickStats={quickStats}
+        quickViewGroup={quickViewGroup}
+        rows={rows}
+        summaryRange={summaryRange}
+        columns={quickViewColumns}
+      />
 
-      <Modal
+      <AddAccountModal
+        accountForm={accountForm}
+        addPending={addAccountMutation.isPending}
         isOpen={isAddAccountModalOpen}
-        onClose={() => {
-          setIsAddAccountModalOpen(false);
-        }}
-        title="Agregar cuenta"
-      >
-        <div className="space-y-4 text-sm">
-          <Input
-            label="Identificador / Cuenta"
-            onChange={handleAccountIdentifierChange}
-            placeholder="Ej. 124282432930"
-            type="text"
-            value={accountForm.accountIdentifier}
+        onAccountIdentifierChange={handleAccountIdentifierChange}
+        onAddAccount={handleAddAccount}
+        onClose={() => setIsAddAccountModalOpen(false)}
+        renderSuggestions={
+          <SuggestionList
+            accountSuggestions={accountSuggestions}
+            attachPending={attachRutMutation.isPending}
+            onAttachRut={handleAttachRut}
+            onSuggestionClick={handleSuggestionClick}
+            onSuggestionCreate={handleSuggestionCreate}
+            selectedId={selectedId}
           />
-          {renderSuggestions()}
-          <div className="grid gap-3 md:grid-cols-2">
-            <Input
-              label="Banco"
-              onChange={updateAccountForm("bankName")}
-              placeholder="Banco"
-              type="text"
-              value={accountForm.bankName}
-            />
-            <Input
-              label="Número de cuenta"
-              onChange={updateAccountForm("bankAccountNumber")}
-              placeholder="Ej. 00123456789"
-              type="text"
-              value={accountForm.bankAccountNumber}
-            />
-            <Input
-              label="Titular"
-              onChange={updateAccountForm("holder")}
-              placeholder="Titular de la cuenta"
-              type="text"
-              value={accountForm.holder}
-            />
-            <Input
-              label="Concepto"
-              onChange={updateAccountForm("concept")}
-              placeholder="Ej. Pago proveedor"
-              type="text"
-              value={accountForm.concept}
-            />
-            <Input
-              label="Tipo de cuenta"
-              onChange={updateAccountForm("accountType")}
-              placeholder="Cuenta corriente"
-              type="text"
-              value={accountForm.accountType}
-            />
+        }
+        updateAccountForm={updateAccountForm}
+      />
+    </section>
+  );
+}
+
+function AssociatedAccountsHeader({ onAddAccount }: { onAddAccount: () => void }) {
+  return (
+    <header className="flex flex-wrap items-center justify-between gap-3">
+      <div className="space-y-1">
+        <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Cuentas asociadas</h2>
+        <p className="text-foreground/90 text-xs">
+          Identificadores detectados en los movimientos y asignados a esta contraparte.
+        </p>
+      </div>
+      <Button onClick={onAddAccount} size="sm" variant="secondary">
+        + Agregar cuenta
+      </Button>
+    </header>
+  );
+}
+
+function AccountGroupsTable({
+  accountGroups,
+  columns,
+}: {
+  accountGroups: AccountGroup[];
+  columns: ReturnType<typeof getAccountGroupColumns>;
+}) {
+  return (
+    <div className="border-default-100 bg-background overflow-hidden rounded-lg border">
+      <DataTable
+        columns={columns as ColumnDef<AccountGroup, unknown>[]}
+        data={accountGroups}
+        containerVariant="plain"
+        enablePagination={false}
+        enableToolbar={false}
+        enableVirtualization={false}
+        noDataMessage="Sin cuentas asociadas."
+      />
+    </div>
+  );
+}
+
+function QuickViewSection({
+  activeRange,
+  fallbackRange,
+  onSummaryRangeChange,
+  quickStats,
+  quickViewGroup,
+  rows,
+  summaryRange,
+  columns,
+}: {
+  activeRange: DateRange;
+  fallbackRange: DateRange;
+  onSummaryRangeChange: (update: Partial<DateRange>) => void;
+  quickStats: { count: number; total: number };
+  quickViewGroup: AccountGroup | null;
+  rows: Transaction[];
+  summaryRange: { from: string; to: string };
+  columns: ColumnDef<Transaction, unknown>[];
+}) {
+  if (!quickViewGroup) {
+    return (
+      <div className="border-default-200/70 bg-background/40 text-default-500 rounded-[28px] border border-dashed p-8 text-center text-sm">
+        Selecciona una cuenta en la tabla superior para ver su resumen y movimientos históricos.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-default-500 text-xs tracking-[0.3em] uppercase">Resumen mensual</p>
+          <h3 className="text-foreground text-lg font-semibold">Transferencias</h3>
+          <p className="text-default-500 text-xs">{quickViewGroup.label}</p>
+          <p className="text-default-400 text-xs">
+            {activeRange.from} – {activeRange.to}
+          </p>
+        </div>
+        <div className="flex gap-4">
+          <div className="border-default-200/60 bg-background/60 text-default-600 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
+            Movimientos {quickStats.count}
           </div>
-          <div className="flex justify-end gap-2">
-            <Button
-              onClick={() => {
-                setIsAddAccountModalOpen(false);
-              }}
-              variant="ghost"
-            >
-              Cancelar
-            </Button>
-            <Button
-              disabled={addAccountMutation.isPending}
-              onClick={() => {
-                handleAddAccount();
-              }}
-            >
-              {addAccountMutation.isPending ? "Guardando..." : "Agregar cuenta"}
-            </Button>
+          <div className="border-default-200/60 bg-background/60 text-default-600 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
+            Total {fmtCLP(quickStats.total)}
           </div>
         </div>
-      </Modal>
-    </section>
+      </div>
+      <div className="text-default-600 flex flex-wrap items-end gap-3 text-xs">
+        <Input
+          className="w-36"
+          label="Desde"
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            onSummaryRangeChange({ from: event.target.value });
+          }}
+          type="date"
+          value={summaryRange.from}
+        />
+        <Input
+          className="w-36"
+          label="Hasta"
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            onSummaryRangeChange({ to: event.target.value });
+          }}
+          type="date"
+          value={summaryRange.to}
+        />
+        <Button
+          onClick={() => {
+            onSummaryRangeChange({
+              from: fallbackRange.from,
+              to: fallbackRange.to,
+            });
+          }}
+          size="xs"
+          variant="ghost"
+        >
+          Año en curso
+        </Button>
+      </div>
+      <div className="surface-recessed border-default-200/70 border p-4">
+        <div className="border-default-100 overflow-hidden rounded-lg border">
+          <DataTable
+            columns={columns as ColumnDef<Transaction, unknown>[]}
+            data={rows}
+            containerVariant="plain"
+            enablePagination={false}
+            enableToolbar={false}
+            enableVirtualization={false}
+            noDataMessage="Sin movimientos dentro del rango seleccionado."
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SuggestionList({
+  accountSuggestions,
+  attachPending,
+  onAttachRut,
+  onSuggestionClick,
+  onSuggestionCreate,
+  selectedId,
+}: {
+  accountSuggestions: CounterpartAccountSuggestion[];
+  attachPending: boolean;
+  onAttachRut: (rut: null | string | undefined) => void;
+  onSuggestionClick: (suggestion: CounterpartAccountSuggestion) => void;
+  onSuggestionCreate: (suggestion: CounterpartAccountSuggestion) => void;
+  selectedId: number | null;
+}) {
+  if (accountSuggestions.length === 0) {
+    return (
+      <span className="text-default-500 text-xs">No hay sugerencias para este identificador.</span>
+    );
+  }
+  return (
+    <div className="border-default-200 bg-background max-h-48 overflow-y-auto rounded-xl border">
+      {accountSuggestions.map((suggestion) => (
+        <div
+          className="border-default-200 flex flex-col gap-1 border-b px-3 py-2 text-xs last:border-b-0"
+          key={suggestion.accountIdentifier}
+        >
+          <span className="text-foreground font-semibold">{suggestion.accountIdentifier}</span>
+          <span className="text-foreground/90">{suggestion.holder ?? "(sin titular)"}</span>
+          {suggestion.bankAccountNumber && (
+            <span className="text-foreground/90 text-xs">
+              Cuenta {suggestion.bankAccountNumber}
+            </span>
+          )}
+          {suggestion.rut && (
+            <span className="text-foreground/90 text-xs">RUT {formatRut(suggestion.rut)}</span>
+          )}
+          <span className="text-foreground/90 text-xs">
+            {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
+          </span>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button
+              onClick={() => {
+                onSuggestionClick(suggestion);
+              }}
+              size="xs"
+              variant="primary"
+            >
+              Autrellenar
+            </Button>
+            {selectedId && suggestion.rut && (
+              <Button
+                disabled={attachPending}
+                onClick={() => {
+                  onAttachRut(suggestion.rut);
+                }}
+                size="xs"
+                variant="secondary"
+              >
+                {attachPending ? "Vinculando..." : "Vincular por RUT"}
+              </Button>
+            )}
+            {!selectedId && (
+              <Button
+                onClick={() => {
+                  onSuggestionCreate(suggestion);
+                }}
+                size="xs"
+                variant="secondary"
+              >
+                Copiar datos
+              </Button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AddAccountModal({
+  accountForm,
+  addPending,
+  isOpen,
+  onAccountIdentifierChange,
+  onAddAccount,
+  onClose,
+  renderSuggestions,
+  updateAccountForm,
+}: {
+  accountForm: AccountForm;
+  addPending: boolean;
+  isOpen: boolean;
+  onAccountIdentifierChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onAddAccount: () => void;
+  onClose: () => void;
+  renderSuggestions: React.ReactNode;
+  updateAccountForm: <K extends keyof AccountForm>(
+    key: K,
+  ) => (event: ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Agregar cuenta">
+      <div className="space-y-4 text-sm">
+        <Input
+          label="Identificador / Cuenta"
+          onChange={onAccountIdentifierChange}
+          placeholder="Ej. 124282432930"
+          type="text"
+          value={accountForm.accountIdentifier}
+        />
+        {renderSuggestions}
+        <div className="grid gap-3 md:grid-cols-2">
+          <Input
+            label="Banco"
+            onChange={updateAccountForm("bankName")}
+            placeholder="Banco"
+            type="text"
+            value={accountForm.bankName}
+          />
+          <Input
+            label="Número de cuenta"
+            onChange={updateAccountForm("bankAccountNumber")}
+            placeholder="Ej. 00123456789"
+            type="text"
+            value={accountForm.bankAccountNumber}
+          />
+          <Input
+            label="Titular"
+            onChange={updateAccountForm("holder")}
+            placeholder="Titular de la cuenta"
+            type="text"
+            value={accountForm.holder}
+          />
+          <Input
+            label="Concepto"
+            onChange={updateAccountForm("concept")}
+            placeholder="Ej. Pago proveedor"
+            type="text"
+            value={accountForm.concept}
+          />
+          <Input
+            label="Tipo de cuenta"
+            onChange={updateAccountForm("accountType")}
+            placeholder="Cuenta corriente"
+            type="text"
+            value={accountForm.accountType}
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button onClick={onClose} variant="ghost">
+            Cancelar
+          </Button>
+          <Button disabled={addPending} onClick={onAddAccount}>
+            {addPending ? "Guardando..." : "Agregar cuenta"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }

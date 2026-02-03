@@ -3,8 +3,7 @@ import type { MissingFieldFilters } from "../api";
 
 interface ClassificationFiltersProps {
   filters: MissingFieldFilters;
-  // biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate type is complex with search params mutations
-  onNavigate: (search: any) => void;
+  onSearchChange: (update: Partial<MissingFieldFilters> & { page?: number }) => void;
 }
 
 const FILTER_BUTTONS = [
@@ -15,53 +14,47 @@ const FILTER_BUTTONS = [
   { key: "missingTreatmentStage" as const, label: "Sin etapa" },
 ] as const;
 
-export function ClassificationFilters({ filters, onNavigate }: ClassificationFiltersProps) {
+export function ClassificationFilters({ filters, onSearchChange }: ClassificationFiltersProps) {
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
   const toggleFilter = (key: keyof MissingFieldFilters) => {
-    onNavigate({
-      search: {
-        missingCategory:
-          key === "missingCategory" ? !filters.missingCategory : filters.missingCategory,
-        missingAmount: key === "missingAmount" ? !filters.missingAmount : filters.missingAmount,
-        missingAttended:
-          key === "missingAttended" ? !filters.missingAttended : filters.missingAttended,
-        missingDosage: key === "missingDosage" ? !filters.missingDosage : filters.missingDosage,
-        missingTreatmentStage:
-          key === "missingTreatmentStage"
-            ? !filters.missingTreatmentStage
-            : filters.missingTreatmentStage,
-        filterMode: filters.filterMode,
-        page: 0,
-      },
+    onSearchChange({
+      missingCategory:
+        key === "missingCategory" ? !filters.missingCategory : filters.missingCategory,
+      missingAmount: key === "missingAmount" ? !filters.missingAmount : filters.missingAmount,
+      missingAttended:
+        key === "missingAttended" ? !filters.missingAttended : filters.missingAttended,
+      missingDosage: key === "missingDosage" ? !filters.missingDosage : filters.missingDosage,
+      missingTreatmentStage:
+        key === "missingTreatmentStage"
+          ? !filters.missingTreatmentStage
+          : filters.missingTreatmentStage,
+      filterMode: filters.filterMode,
+      page: 0,
     });
   };
 
   const setFilterMode = (mode: "AND" | undefined) => {
-    onNavigate({
-      search: {
-        missingCategory: filters.missingCategory,
-        missingAmount: filters.missingAmount,
-        missingAttended: filters.missingAttended,
-        missingDosage: filters.missingDosage,
-        missingTreatmentStage: filters.missingTreatmentStage,
-        filterMode: mode,
-        page: 0,
-      },
+    onSearchChange({
+      missingCategory: filters.missingCategory,
+      missingAmount: filters.missingAmount,
+      missingAttended: filters.missingAttended,
+      missingDosage: filters.missingDosage,
+      missingTreatmentStage: filters.missingTreatmentStage,
+      filterMode: mode,
+      page: 0,
     });
   };
 
   const clearFilters = () => {
-    onNavigate({
-      search: {
-        missingCategory: undefined,
-        missingAmount: undefined,
-        missingAttended: undefined,
-        missingDosage: undefined,
-        missingTreatmentStage: undefined,
-        filterMode: undefined,
-        page: 0,
-      },
+    onSearchChange({
+      missingCategory: undefined,
+      missingAmount: undefined,
+      missingAttended: undefined,
+      missingDosage: undefined,
+      missingTreatmentStage: undefined,
+      filterMode: undefined,
+      page: 0,
     });
   };
 

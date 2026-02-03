@@ -5,21 +5,16 @@ import { StatCard } from "@/components/ui/StatCard";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 import { currencyFormatter } from "@/lib/format";
 
-import type { FormValues } from "../schemas";
+import type { ClassificationForm } from "../form-types";
 
 interface ClassificationTotalsProps {
   events: CalendarUnclassifiedEvent[];
-  // biome-ignore lint/suspicious/noExplicitAny: TanStack Form FormApi has complex generic constraints
-  form: any;
+  form: ClassificationForm;
 }
 
 export function ClassificationTotals({ events, form }: Readonly<ClassificationTotalsProps>) {
   // Subscribe to entries values via TanStack Form's useStore
-  const watchedEntries = useStore(
-    form.store,
-    // biome-ignore lint/suspicious/noExplicitAny: TanStack Form store type is complex
-    (state: any) => (state as { values: FormValues }).values.entries,
-  );
+  const watchedEntries = useStore(form.store, (state) => state.values.entries);
 
   const totals = useMemo(() => {
     let expected = 0;

@@ -18,6 +18,7 @@ import {
   ClassificationStats,
   ClassificationToolbar,
 } from "@/features/calendar/components";
+import type { FormApiFor } from "@/features/calendar/form-types";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { ClassificationEntry, FormValues } from "@/features/calendar/schemas";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
@@ -66,8 +67,21 @@ function CalendarClassificationPage() {
 
   const [savingKey, setSavingKey] = useState<null | string>(null);
 
-  const form = useForm({
-    defaultValues: { entries: [] } as FormValues,
+  const form: FormApiFor<FormValues> = useForm<
+    FormValues,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    unknown
+  >({
+    defaultValues: { entries: [] },
   });
 
   useEffect(() => {
@@ -171,13 +185,23 @@ function CalendarClassificationPage() {
   };
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  type ClassifySearchParams = typeof search;
+
+  const handleSearchChange = (update: Partial<ClassifySearchParams>) => {
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        ...update,
+      }),
+    });
+  };
 
   return (
     <div className="space-y-8">
       <ClassificationStats events={events} form={form} loading={loading} totalCount={totalCount} />
 
       <div className="bg-default-50/50 flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-sm">
-        <ClassificationFilters filters={filters} onNavigate={navigate} />
+        <ClassificationFilters filters={filters} onSearchChange={handleSearchChange} />
         <ClassificationToolbar
           isJobRunning={isJobRunning}
           job={job}
@@ -226,7 +250,7 @@ function CalendarClassificationPage() {
 
       <ClassificationPagination
         loading={loading}
-        onNavigate={navigate}
+        onPageChange={(nextPage) => handleSearchChange({ page: nextPage })}
         page={page}
         pageSize={PAGE_SIZE}
         totalCount={totalCount}

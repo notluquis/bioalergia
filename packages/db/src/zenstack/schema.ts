@@ -2086,6 +2086,742 @@ export class SchemaType implements SchemaDef {
                 sourceId: { type: "String" }
             }
         },
+        SettlementReleaseTransaction: {
+            name: "SettlementReleaseTransaction",
+            fields: {
+                id: {
+                    name: "id",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("row_id") }] }]
+                },
+                sourceId: {
+                    name: "sourceId",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_id") }] }]
+                },
+                origin: {
+                    name: "origin",
+                    type: "String",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("origin") }] }]
+                },
+                effectiveDate: {
+                    name: "effectiveDate",
+                    type: "DateTime",
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("effective_date") }] }]
+                },
+                settlementId: {
+                    name: "settlementId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_id") }] }]
+                },
+                settlementSourceId: {
+                    name: "settlementSourceId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_source_id") }] }]
+                },
+                settlementTransactionDate: {
+                    name: "settlementTransactionDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_transaction_date") }] }]
+                },
+                settlementSettlementDate: {
+                    name: "settlementSettlementDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_settlement_date") }] }]
+                },
+                settlementMoneyReleaseDate: {
+                    name: "settlementMoneyReleaseDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_money_release_date") }] }]
+                },
+                settlementExternalReference: {
+                    name: "settlementExternalReference",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_external_reference") }] }]
+                },
+                settlementUserId: {
+                    name: "settlementUserId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_user_id") }] }]
+                },
+                settlementPaymentMethodType: {
+                    name: "settlementPaymentMethodType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_payment_method_type") }] }]
+                },
+                settlementPaymentMethod: {
+                    name: "settlementPaymentMethod",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_payment_method") }] }]
+                },
+                settlementSite: {
+                    name: "settlementSite",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_site") }] }]
+                },
+                settlementTransactionType: {
+                    name: "settlementTransactionType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_transaction_type") }] }]
+                },
+                settlementTransactionAmount: {
+                    name: "settlementTransactionAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_transaction_amount") }] }]
+                },
+                settlementTransactionCurrency: {
+                    name: "settlementTransactionCurrency",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_transaction_currency") }] }]
+                },
+                settlementSellerAmount: {
+                    name: "settlementSellerAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_seller_amount") }] }]
+                },
+                settlementFeeAmount: {
+                    name: "settlementFeeAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_fee_amount") }] }]
+                },
+                settlementSettlementNetAmount: {
+                    name: "settlementSettlementNetAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_settlement_net_amount") }] }]
+                },
+                settlementSettlementCurrency: {
+                    name: "settlementSettlementCurrency",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_settlement_currency") }] }]
+                },
+                settlementRealAmount: {
+                    name: "settlementRealAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_real_amount") }] }]
+                },
+                settlementCouponAmount: {
+                    name: "settlementCouponAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_coupon_amount") }] }]
+                },
+                settlementMetadata: {
+                    name: "settlementMetadata",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_metadata") }] }]
+                },
+                settlementMkpFeeAmount: {
+                    name: "settlementMkpFeeAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_mkp_fee_amount") }] }]
+                },
+                settlementFinancingFeeAmount: {
+                    name: "settlementFinancingFeeAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_financing_fee_amount") }] }]
+                },
+                settlementShippingFeeAmount: {
+                    name: "settlementShippingFeeAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_shipping_fee_amount") }] }]
+                },
+                settlementTaxesAmount: {
+                    name: "settlementTaxesAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_taxes_amount") }] }]
+                },
+                settlementInstallments: {
+                    name: "settlementInstallments",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_installments") }] }]
+                },
+                settlementTaxDetail: {
+                    name: "settlementTaxDetail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_tax_detail") }] }]
+                },
+                settlementTaxesDisaggregated: {
+                    name: "settlementTaxesDisaggregated",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_taxes_disaggregated") }] }]
+                },
+                settlementDescription: {
+                    name: "settlementDescription",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_description") }] }]
+                },
+                settlementCardInitialNumber: {
+                    name: "settlementCardInitialNumber",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_card_initial_number") }] }]
+                },
+                settlementOperationTags: {
+                    name: "settlementOperationTags",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_operation_tags") }] }]
+                },
+                settlementBusinessUnit: {
+                    name: "settlementBusinessUnit",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_business_unit") }] }]
+                },
+                settlementSubUnit: {
+                    name: "settlementSubUnit",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_sub_unit") }] }]
+                },
+                settlementProductSku: {
+                    name: "settlementProductSku",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_product_sku") }] }]
+                },
+                settlementSaleDetail: {
+                    name: "settlementSaleDetail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_sale_detail") }] }]
+                },
+                settlementTransactionIntentId: {
+                    name: "settlementTransactionIntentId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_transaction_intent_id") }] }]
+                },
+                settlementFranchise: {
+                    name: "settlementFranchise",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_franchise") }] }]
+                },
+                settlementIssuerName: {
+                    name: "settlementIssuerName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_issuer_name") }] }]
+                },
+                settlementLastFourDigits: {
+                    name: "settlementLastFourDigits",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_last_four_digits") }] }]
+                },
+                settlementOrderMp: {
+                    name: "settlementOrderMp",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_order_mp") }] }]
+                },
+                settlementInvoicingPeriod: {
+                    name: "settlementInvoicingPeriod",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_invoicing_period") }] }]
+                },
+                settlementPayBankTransferId: {
+                    name: "settlementPayBankTransferId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_pay_bank_transfer_id") }] }]
+                },
+                settlementIsReleased: {
+                    name: "settlementIsReleased",
+                    type: "Boolean",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_is_released") }] }]
+                },
+                settlementTipAmount: {
+                    name: "settlementTipAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_tip_amount") }] }]
+                },
+                settlementPurchaseId: {
+                    name: "settlementPurchaseId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_purchase_id") }] }]
+                },
+                settlementTotalCouponAmount: {
+                    name: "settlementTotalCouponAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_total_coupon_amount") }] }]
+                },
+                settlementPosId: {
+                    name: "settlementPosId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_pos_id") }] }]
+                },
+                settlementPosName: {
+                    name: "settlementPosName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_pos_name") }] }]
+                },
+                settlementExternalPosId: {
+                    name: "settlementExternalPosId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_external_pos_id") }] }]
+                },
+                settlementStoreId: {
+                    name: "settlementStoreId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_store_id") }] }]
+                },
+                settlementStoreName: {
+                    name: "settlementStoreName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_store_name") }] }]
+                },
+                settlementExternalStoreId: {
+                    name: "settlementExternalStoreId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_external_store_id") }] }]
+                },
+                settlementPoiId: {
+                    name: "settlementPoiId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_poi_id") }] }]
+                },
+                settlementOrderId: {
+                    name: "settlementOrderId",
+                    type: "BigInt",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_order_id") }] }]
+                },
+                settlementShippingId: {
+                    name: "settlementShippingId",
+                    type: "BigInt",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_shipping_id") }] }]
+                },
+                settlementShipmentMode: {
+                    name: "settlementShipmentMode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_shipment_mode") }] }]
+                },
+                settlementPackId: {
+                    name: "settlementPackId",
+                    type: "BigInt",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_pack_id") }] }]
+                },
+                settlementShippingOrderId: {
+                    name: "settlementShippingOrderId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_shipping_order_id") }] }]
+                },
+                settlementPoiWalletName: {
+                    name: "settlementPoiWalletName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_poi_wallet_name") }] }]
+                },
+                settlementPoiBankName: {
+                    name: "settlementPoiBankName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_poi_bank_name") }] }]
+                },
+                settlementCreatedAt: {
+                    name: "settlementCreatedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_created_at") }] }]
+                },
+                settlementUpdatedAt: {
+                    name: "settlementUpdatedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_updated_at") }] }]
+                },
+                releaseId: {
+                    name: "releaseId",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_id") }] }]
+                },
+                releaseSourceId: {
+                    name: "releaseSourceId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_source_id") }] }]
+                },
+                releaseDate: {
+                    name: "releaseDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_date") }] }]
+                },
+                releaseExternalReference: {
+                    name: "releaseExternalReference",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_external_reference") }] }]
+                },
+                releaseRecordType: {
+                    name: "releaseRecordType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_record_type") }] }]
+                },
+                releaseDescription: {
+                    name: "releaseDescription",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_description") }] }]
+                },
+                releaseNetCreditAmount: {
+                    name: "releaseNetCreditAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_net_credit_amount") }] }]
+                },
+                releaseNetDebitAmount: {
+                    name: "releaseNetDebitAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_net_debit_amount") }] }]
+                },
+                releaseGrossAmount: {
+                    name: "releaseGrossAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_gross_amount") }] }]
+                },
+                releaseSellerAmount: {
+                    name: "releaseSellerAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_seller_amount") }] }]
+                },
+                releaseMpFeeAmount: {
+                    name: "releaseMpFeeAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_mp_fee_amount") }] }]
+                },
+                releaseFinancingFeeAmount: {
+                    name: "releaseFinancingFeeAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_financing_fee_amount") }] }]
+                },
+                releaseShippingFeeAmount: {
+                    name: "releaseShippingFeeAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_shipping_fee_amount") }] }]
+                },
+                releaseTaxesAmount: {
+                    name: "releaseTaxesAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_taxes_amount") }] }]
+                },
+                releaseCouponAmount: {
+                    name: "releaseCouponAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_coupon_amount") }] }]
+                },
+                releaseEffectiveCouponAmount: {
+                    name: "releaseEffectiveCouponAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_effective_coupon_amount") }] }]
+                },
+                releaseBalanceAmount: {
+                    name: "releaseBalanceAmount",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_balance_amount") }] }]
+                },
+                releaseTaxAmountTelco: {
+                    name: "releaseTaxAmountTelco",
+                    type: "Decimal",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_tax_amount_telco") }] }]
+                },
+                releaseInstallments: {
+                    name: "releaseInstallments",
+                    type: "Int",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_installments") }] }]
+                },
+                releasePaymentMethod: {
+                    name: "releasePaymentMethod",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_payment_method") }] }]
+                },
+                releasePaymentMethodType: {
+                    name: "releasePaymentMethodType",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_payment_method_type") }] }]
+                },
+                releaseTaxDetail: {
+                    name: "releaseTaxDetail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_tax_detail") }] }]
+                },
+                releaseTaxesDisaggregated: {
+                    name: "releaseTaxesDisaggregated",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_taxes_disaggregated") }] }]
+                },
+                releaseTransactionApprovalDate: {
+                    name: "releaseTransactionApprovalDate",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_transaction_approval_date") }] }]
+                },
+                releaseTransactionIntentId: {
+                    name: "releaseTransactionIntentId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_transaction_intent_id") }] }]
+                },
+                releasePosId: {
+                    name: "releasePosId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_pos_id") }] }]
+                },
+                releasePosName: {
+                    name: "releasePosName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_pos_name") }] }]
+                },
+                releaseExternalPosId: {
+                    name: "releaseExternalPosId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_external_pos_id") }] }]
+                },
+                releaseStoreId: {
+                    name: "releaseStoreId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_store_id") }] }]
+                },
+                releaseStoreName: {
+                    name: "releaseStoreName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_store_name") }] }]
+                },
+                releaseExternalStoreId: {
+                    name: "releaseExternalStoreId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_external_store_id") }] }]
+                },
+                releaseCurrency: {
+                    name: "releaseCurrency",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_currency") }] }]
+                },
+                releaseShippingId: {
+                    name: "releaseShippingId",
+                    type: "BigInt",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_shipping_id") }] }]
+                },
+                releaseShipmentMode: {
+                    name: "releaseShipmentMode",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_shipment_mode") }] }]
+                },
+                releaseShippingOrderId: {
+                    name: "releaseShippingOrderId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_shipping_order_id") }] }]
+                },
+                releaseOrderId: {
+                    name: "releaseOrderId",
+                    type: "BigInt",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_order_id") }] }]
+                },
+                releasePackId: {
+                    name: "releasePackId",
+                    type: "BigInt",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_pack_id") }] }]
+                },
+                releasePoiId: {
+                    name: "releasePoiId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_poi_id") }] }]
+                },
+                releaseItemId: {
+                    name: "releaseItemId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_item_id") }] }]
+                },
+                releaseMetadata: {
+                    name: "releaseMetadata",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_metadata") }] }]
+                },
+                releaseCardInitialNumber: {
+                    name: "releaseCardInitialNumber",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_card_initial_number") }] }]
+                },
+                releaseOperationTags: {
+                    name: "releaseOperationTags",
+                    type: "Json",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_operation_tags") }] }]
+                },
+                releaseLastFourDigits: {
+                    name: "releaseLastFourDigits",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_last_four_digits") }] }]
+                },
+                releaseFranchise: {
+                    name: "releaseFranchise",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_franchise") }] }]
+                },
+                releaseIssuerName: {
+                    name: "releaseIssuerName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_issuer_name") }] }]
+                },
+                releasePoiBankName: {
+                    name: "releasePoiBankName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_poi_bank_name") }] }]
+                },
+                releasePoiWalletName: {
+                    name: "releasePoiWalletName",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_poi_wallet_name") }] }]
+                },
+                releaseBusinessUnit: {
+                    name: "releaseBusinessUnit",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_business_unit") }] }]
+                },
+                releaseSubUnit: {
+                    name: "releaseSubUnit",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_sub_unit") }] }]
+                },
+                releasePayoutBankAccountNumber: {
+                    name: "releasePayoutBankAccountNumber",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_payout_bank_account_number") }] }]
+                },
+                releaseProductSku: {
+                    name: "releaseProductSku",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_product_sku") }] }]
+                },
+                releaseSaleDetail: {
+                    name: "releaseSaleDetail",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_sale_detail") }] }]
+                },
+                releaseOrderMp: {
+                    name: "releaseOrderMp",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_order_mp") }] }]
+                },
+                releasePurchaseId: {
+                    name: "releasePurchaseId",
+                    type: "String",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_purchase_id") }] }]
+                },
+                releaseCreatedAt: {
+                    name: "releaseCreatedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_created_at") }] }]
+                },
+                releaseUpdatedAt: {
+                    name: "releaseUpdatedAt",
+                    type: "DateTime",
+                    optional: true,
+                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("release_updated_at") }] }]
+                }
+            },
+            attributes: [
+                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
+                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
+                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_release_transactions") }] }
+            ],
+            idFields: [],
+            uniqueFields: {},
+            isView: true
+        },
         DailyBalance: {
             name: "DailyBalance",
             fields: {

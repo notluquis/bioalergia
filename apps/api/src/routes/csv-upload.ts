@@ -13,6 +13,10 @@ import { verifyToken } from "../lib/paseto";
 import { reply } from "../utils/reply";
 
 const COOKIE_NAME = "finanzas_session";
+const CURRENCY_DOLLAR_REGEX = /\$/g;
+const THOUSANDS_DOT_REGEX = /\./g;
+const DECIMAL_COMMA_REGEX = /,/g;
+const SLASH_DATE_REGEX = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
 
 export const csvUploadRoutes = new Hono();
 
@@ -27,6 +31,11 @@ type TableName =
   | "services"
   | "inventory_items"
   | "employee_timesheets";
+
+type AuthContext = {
+  email: string;
+  userId: number;
+};
 
 interface CSVRow {
   rut?: unknown;
@@ -113,9 +122,9 @@ function cleanAmount(value: unknown): number {
   if (value == null || value === "") return 0;
   const str = String(value)
     .trim()
-    .replace(/\$/g, "") // Remove $
-    .replace(/\./g, "") // Remove dots (thousands separator in CLP)
-    .replace(/,/g, "."); // Replace comma with dot (decimal separator)
+    .replace(CURRENCY_DOLLAR_REGEX, "") // Remove $
+    .replace(THOUSANDS_DOT_REGEX, "") // Remove dots (thousands separator in CLP)
+    .replace(DECIMAL_COMMA_REGEX, "."); // Replace comma with dot (decimal separator)
   const num = Number(str);
   return Number.isNaN(num) ? 0 : num;
 }
@@ -126,7 +135,7 @@ function parseFlexibleDate(value: unknown): string | null {
   const str = String(value).trim();
 
   // Try DD/M/YYYY or DD/MM/YYYY format
-  const match = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const match = str.match(SLASH_DATE_REGEX);
   if (match) {
     const [, day, month, year] = match;
     const paddedDay = day.padStart(2, "0");
@@ -266,7 +275,6 @@ csvUploadRoutes.post("/preview", async (c) => {
 // IMPORT (INSERT/UPDATE DATA)
 // ============================================================
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy csv import
 csvUploadRoutes.post("/import", async (c) => {
   const auth = await getAuth(c);
   if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
@@ -287,244 +295,7 @@ csvUploadRoutes.post("/import", async (c) => {
     if (!hasPerm) return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  let inserted = 0;
-  let updated = 0;
-  let skipped = 0;
-  const errors: string[] = [];
-
-  for (let i = 0; i < data.length; i++) {
-    const row = data[i] as CSVRow;
-
-    try {
-      if (table === "people") {
-        const existing = await findPersonByRut(String(row.rut));
-        const personData = {
-          names: String(row.names || ""),
-          fatherName: row.fatherName ? String(row.fatherName) : null,
-          motherName: row.motherName ? String(row.motherName) : null,
-          email: row.email ? String(row.email) : null,
-          phone: row.phone ? String(row.phone) : null,
-          address: row.address ? String(row.address) : null,
-        };
-
-        if (existing) {
-          await db.person.update({
-            where: { id: existing.id },
-            data: personData,
-          });
-          updated++;
-        } else {
-          await db.person.create({
-            data: { rut: String(row.rut), ...personData },
-          });
-          inserted++;
-        }
-      } else if (table === "employees") {
-        const person = await findPersonByRut(String(row.rut));
-        if (!person) {
-          errors.push(`Fila ${i + 1}: Persona con RUT ${row.rut} no existe`);
-          skipped++;
-          continue;
-        }
-
-        const employeeData = {
-          position: row.position ? String(row.position) : "No especificado",
-          startDate: row.startDate
-            ? new Date(dayjs(String(row.startDate)).format("YYYY-MM-DD"))
-            : new Date(),
-          status: "ACTIVE" as const,
-        };
-
-        if (person.employee) {
-          await db.employee.update({
-            where: { id: person.employee.id },
-            data: employeeData,
-          });
-          updated++;
-        } else {
-          await db.employee.create({
-            data: { ...employeeData, personId: person.id },
-          });
-          inserted++;
-        }
-      } else if (table === "counterparts") {
-        const person = await findPersonByRut(String(row.rut));
-        if (!person) {
-          errors.push(`Fila ${i + 1}: Persona con RUT ${row.rut} no existe`);
-          skipped++;
-          continue;
-        }
-
-        const counterpartData = {
-          category: String(row.type || "SUPPLIER") as "SUPPLIER" | "CLIENT",
-        };
-
-        if (person.counterpart) {
-          await db.counterpart.update({
-            where: { id: person.counterpart.id },
-            data: counterpartData,
-          });
-          updated++;
-        } else {
-          await db.counterpart.create({
-            data: { ...counterpartData, personId: person.id },
-          });
-          inserted++;
-        }
-      } else if (table === "daily_balances") {
-        const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
-        const date = new Date(dateStr);
-        // DailyBalance schema only has date, amount, note
-        const amountNum = Number(row.amount) || Number(row.closingBalance) || 0;
-        const balanceData = {
-          amount: new Decimal(amountNum.toFixed(2)),
-          note: row.note ? String(row.note) : undefined,
-        };
-
-        const existing = await db.dailyBalance.findUnique({ where: { date } });
-        if (existing) {
-          await db.dailyBalance.update({ where: { date }, data: balanceData });
-          updated++;
-        } else {
-          await db.dailyBalance.create({ data: { date, ...balanceData } });
-          inserted++;
-        }
-      } else if (table === "daily_production_balances") {
-        const dateStr = parseFlexibleDate(row.balanceDate || row.Fecha);
-        if (!dateStr) {
-          errors.push(`Fila ${i + 1}: Fecha inválida`);
-          skipped++;
-          continue;
-        }
-        const balanceDate = new Date(dateStr);
-
-        const productionData = {
-          ingresoTarjetas: cleanAmount(row.ingresoTarjetas || row["INGRESO TARJETAS"]),
-          ingresoTransferencias: cleanAmount(
-            row.ingresoTransferencias || row["INGRESO TRANSFERENCIAS"],
-          ),
-          ingresoEfectivo: cleanAmount(row.ingresoEfectivo || row["INGRESO EFECTIVO"]),
-          gastosDiarios: cleanAmount(row.gastosDiarios || row["GASTOS DIARIOS"]),
-          otrosAbonos: cleanAmount(row.otrosAbonos || row["Otros/abonos"]),
-          consultasMonto: cleanAmount(row.consultasMonto || row.CONSULTAS),
-          controlesMonto: cleanAmount(row.controlesMonto || row.CONTROLES),
-          testsMonto: cleanAmount(row.testsMonto || row.TEST),
-          vacunasMonto: cleanAmount(row.vacunasMonto || row.VACUNAS),
-          licenciasMonto: cleanAmount(row.licenciasMonto || row.LICENCIAS),
-          roxairMonto: cleanAmount(row.roxairMonto || row.ROXAIR),
-          comentarios:
-            row.comentarios || row.Comentarios ? String(row.comentarios || row.Comentarios) : null,
-          status: (row.status as "DRAFT" | "FINAL") || "DRAFT",
-          changeReason: row.changeReason ? String(row.changeReason) : null,
-        };
-
-        const existing = await db.dailyProductionBalance.findUnique({
-          where: { balanceDate },
-        });
-        if (existing) {
-          await db.dailyProductionBalance.update({
-            where: { balanceDate },
-            data: productionData,
-          });
-          updated++;
-        } else {
-          await db.dailyProductionBalance.create({
-            data: {
-              balanceDate,
-              ...productionData,
-              createdBy: auth.userId,
-            },
-          });
-          inserted++;
-        }
-      } else if (table === "services") {
-        const person = row.rut ? await findPersonByRut(String(row.rut)) : null;
-        const serviceData = {
-          name: String(row.name),
-          serviceType: String(row.type || "BUSINESS") as "BUSINESS" | "PERSONAL",
-          frequency: String(row.frequency || "MONTHLY") as "MONTHLY" | "ONCE" | "ANNUAL",
-          defaultAmount: row.defaultAmount
-            ? new Decimal(Number(row.defaultAmount))
-            : new Decimal(0),
-          status: String(row.status || "ACTIVE") as "ACTIVE" | "INACTIVE" | "ARCHIVED",
-          counterpartId: person?.counterpart?.id || null,
-        };
-
-        await db.service.create({ data: serviceData });
-        inserted++;
-      } else if (table === "inventory_items") {
-        const itemData = {
-          name: String(row.name),
-          description: row.description ? String(row.description) : null,
-          currentStock: row.currentStock ? Number(row.currentStock) : 0,
-          categoryId: row.categoryId ? Number(row.categoryId) : null,
-        };
-
-        const existing = await db.inventoryItem.findFirst({
-          where: { name: itemData.name },
-        });
-
-        if (existing) {
-          await db.inventoryItem.update({
-            where: { id: existing.id },
-            data: itemData,
-          });
-          updated++;
-        } else {
-          await db.inventoryItem.create({ data: itemData });
-          inserted++;
-        }
-      } else if (table === "employee_timesheets") {
-        const person = await findPersonByRut(String(row.rut));
-        if (!person?.employee) {
-          errors.push(`Fila ${i + 1}: Empleado con RUT ${row.rut} no existe`);
-          skipped++;
-          continue;
-        }
-
-        const dateStr = dayjs(String(row.workDate)).format("YYYY-MM-DD");
-        const workDate = new Date(dateStr);
-
-        // Parse times if provided
-        const startTime = row.startTime ? new Date(`1970-01-01T${row.startTime}`) : null;
-        const endTime = row.endTime ? new Date(`1970-01-01T${row.endTime}`) : null;
-
-        const timesheetData = {
-          employeeId: person.employee.id,
-          workDate,
-          startTime,
-          endTime,
-          workedMinutes: Number(row.workedMinutes) || 0,
-          overtimeMinutes: Number(row.overtimeMinutes) || 0,
-          comment: row.comment ? String(row.comment) : null,
-        };
-
-        const existing = await db.employeeTimesheet.findFirst({
-          where: {
-            employeeId: person.employee.id,
-            workDate,
-          },
-        });
-
-        if (existing) {
-          await db.employeeTimesheet.update({
-            where: { id: existing.id },
-            data: timesheetData,
-          });
-          updated++;
-        } else {
-          await db.employeeTimesheet.create({ data: timesheetData });
-          inserted++;
-        }
-      } else {
-        skipped++;
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Error desconocido";
-      errors.push(`Fila ${i + 1}: ${msg}`);
-      skipped++;
-    }
-  }
+  const { inserted, updated, skipped, errors } = await importCsvRows(table, data, auth);
 
   console.log(
     "[CSV] Import by",
@@ -546,3 +317,295 @@ csvUploadRoutes.post("/import", async (c) => {
     errors: errors.slice(0, 20),
   });
 });
+
+type ImportOutcome = { inserted: number; skipped: number; updated: number };
+type ImportResult = ImportOutcome & { errors: string[] };
+
+const emptyOutcome = (): ImportOutcome => ({ inserted: 0, skipped: 0, updated: 0 });
+
+const addOutcome = (totals: ImportOutcome, outcome: ImportOutcome) => {
+  totals.inserted += outcome.inserted;
+  totals.updated += outcome.updated;
+  totals.skipped += outcome.skipped;
+};
+
+async function importCsvRows(table: TableName, data: object[], auth: AuthContext): Promise<ImportResult> {
+  const totals = emptyOutcome();
+  const errors: string[] = [];
+
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i] as CSVRow;
+    try {
+      const outcome = await importCsvRow(table, row, auth);
+      addOutcome(totals, outcome);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Error desconocido";
+      errors.push(`Fila ${i + 1}: ${msg}`);
+      totals.skipped += 1;
+    }
+  }
+
+  return { ...totals, errors };
+}
+
+type ImportRowHandler = (row: CSVRow, auth: AuthContext) => Promise<ImportOutcome>;
+
+const importRowHandlers: Record<TableName, ImportRowHandler> = {
+  people: (row) => importPeopleRow(row),
+  employees: (row) => importEmployeesRow(row),
+  counterparts: (row) => importCounterpartsRow(row),
+  daily_balances: (row) => importDailyBalancesRow(row),
+  daily_production_balances: (row, auth) => importDailyProductionBalancesRow(row, auth.userId),
+  transactions: async () => ({ inserted: 0, updated: 0, skipped: 1 }),
+  services: (row) => importServicesRow(row),
+  inventory_items: (row) => importInventoryItemsRow(row),
+  employee_timesheets: (row) => importEmployeeTimesheetsRow(row),
+};
+
+async function importCsvRow(table: TableName, row: CSVRow, auth: AuthContext): Promise<ImportOutcome> {
+  const handler = importRowHandlers[table];
+  return handler ? handler(row, auth) : { inserted: 0, updated: 0, skipped: 1 };
+}
+
+async function importPeopleRow(row: CSVRow): Promise<ImportOutcome> {
+  const existing = await findPersonByRut(String(row.rut));
+  const personData = {
+    names: String(row.names || ""),
+    fatherName: row.fatherName ? String(row.fatherName) : null,
+    motherName: row.motherName ? String(row.motherName) : null,
+    email: row.email ? String(row.email) : null,
+    phone: row.phone ? String(row.phone) : null,
+    address: row.address ? String(row.address) : null,
+  };
+
+  if (existing) {
+    await db.person.update({
+      where: { id: existing.id },
+      data: personData,
+    });
+    return { inserted: 0, updated: 1, skipped: 0 };
+  }
+
+  await db.person.create({
+    data: { rut: String(row.rut), ...personData },
+  });
+  return { inserted: 1, updated: 0, skipped: 0 };
+}
+
+async function importEmployeesRow(row: CSVRow): Promise<ImportOutcome> {
+  const person = await findPersonByRut(String(row.rut));
+  if (!person) {
+    throw new Error(`Persona con RUT ${row.rut} no existe`);
+  }
+
+  const employeeData = {
+    position: row.position ? String(row.position) : "No especificado",
+    startDate: row.startDate
+      ? new Date(dayjs(String(row.startDate)).format("YYYY-MM-DD"))
+      : new Date(),
+    status: "ACTIVE" as const,
+  };
+
+  if (person.employee) {
+    await db.employee.update({
+      where: { id: person.employee.id },
+      data: employeeData,
+    });
+    return { inserted: 0, updated: 1, skipped: 0 };
+  }
+
+  await db.employee.create({
+    data: { ...employeeData, personId: person.id },
+  });
+  return { inserted: 1, updated: 0, skipped: 0 };
+}
+
+async function importCounterpartsRow(row: CSVRow): Promise<ImportOutcome> {
+  const person = await findPersonByRut(String(row.rut));
+  if (!person) {
+    throw new Error(`Persona con RUT ${row.rut} no existe`);
+  }
+
+  const counterpartData = {
+    category: String(row.type || "SUPPLIER") as "SUPPLIER" | "CLIENT",
+  };
+
+  if (person.counterpart) {
+    await db.counterpart.update({
+      where: { id: person.counterpart.id },
+      data: counterpartData,
+    });
+    return { inserted: 0, updated: 1, skipped: 0 };
+  }
+
+  await db.counterpart.create({
+    data: { ...counterpartData, personId: person.id },
+  });
+  return { inserted: 1, updated: 0, skipped: 0 };
+}
+
+async function importDailyBalancesRow(row: CSVRow): Promise<ImportOutcome> {
+  const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
+  const date = new Date(dateStr);
+  const amountNum = Number(row.amount) || Number(row.closingBalance) || 0;
+  const balanceData = {
+    amount: new Decimal(amountNum.toFixed(2)),
+    note: row.note ? String(row.note) : undefined,
+  };
+
+  const existing = await db.dailyBalance.findUnique({ where: { date } });
+  if (existing) {
+    await db.dailyBalance.update({ where: { date }, data: balanceData });
+    return { inserted: 0, updated: 1, skipped: 0 };
+  }
+
+  await db.dailyBalance.create({ data: { date, ...balanceData } });
+  return { inserted: 1, updated: 0, skipped: 0 };
+}
+
+async function importDailyProductionBalancesRow(
+  row: CSVRow,
+  userId: number,
+): Promise<ImportOutcome> {
+  const balanceDate = parseProductionBalanceDate(row);
+  const productionData = buildProductionBalanceData(row);
+  const existing = await db.dailyProductionBalance.findUnique({
+    where: { balanceDate },
+  });
+
+  if (existing) {
+    await db.dailyProductionBalance.update({
+      where: { balanceDate },
+      data: productionData,
+    });
+    return { inserted: 0, updated: 1, skipped: 0 };
+  }
+
+  await db.dailyProductionBalance.create({
+    data: {
+      balanceDate,
+      ...productionData,
+      createdBy: userId,
+    },
+  });
+  return { inserted: 1, updated: 0, skipped: 0 };
+}
+
+function parseProductionBalanceDate(row: CSVRow) {
+  const dateStr = parseFlexibleDate(row.balanceDate || row.Fecha);
+  if (!dateStr) {
+    throw new Error("Fecha inválida");
+  }
+  return new Date(dateStr);
+}
+
+function buildProductionBalanceData(row: CSVRow) {
+  const pick = (...keys: Array<keyof CSVRow>) => {
+    for (const key of keys) {
+      const value = row[key];
+      if (value !== undefined && value !== null && value !== "") {
+        return value;
+      }
+    }
+    return undefined;
+  };
+
+  return {
+    ingresoTarjetas: cleanAmount(pick("ingresoTarjetas", "INGRESO TARJETAS")),
+    ingresoTransferencias: cleanAmount(pick("ingresoTransferencias", "INGRESO TRANSFERENCIAS")),
+    ingresoEfectivo: cleanAmount(pick("ingresoEfectivo", "INGRESO EFECTIVO")),
+    gastosDiarios: cleanAmount(pick("gastosDiarios", "GASTOS DIARIOS")),
+    otrosAbonos: cleanAmount(pick("otrosAbonos", "Otros/abonos")),
+    consultasMonto: cleanAmount(pick("consultasMonto", "CONSULTAS")),
+    controlesMonto: cleanAmount(pick("controlesMonto", "CONTROLES")),
+    testsMonto: cleanAmount(pick("testsMonto", "TEST")),
+    vacunasMonto: cleanAmount(pick("vacunasMonto", "VACUNAS")),
+    licenciasMonto: cleanAmount(pick("licenciasMonto", "LICENCIAS")),
+    roxairMonto: cleanAmount(pick("roxairMonto", "ROXAIR")),
+    comentarios: pick("comentarios", "Comentarios")
+      ? String(pick("comentarios", "Comentarios"))
+      : null,
+    status: (row.status as "DRAFT" | "FINAL") || "DRAFT",
+    changeReason: row.changeReason ? String(row.changeReason) : null,
+  };
+}
+
+async function importServicesRow(row: CSVRow): Promise<ImportOutcome> {
+  const person = row.rut ? await findPersonByRut(String(row.rut)) : null;
+  const serviceData = {
+    name: String(row.name),
+    serviceType: String(row.type || "BUSINESS") as "BUSINESS" | "PERSONAL",
+    frequency: String(row.frequency || "MONTHLY") as "MONTHLY" | "ONCE" | "ANNUAL",
+    defaultAmount: row.defaultAmount ? new Decimal(Number(row.defaultAmount)) : new Decimal(0),
+    status: String(row.status || "ACTIVE") as "ACTIVE" | "INACTIVE" | "ARCHIVED",
+    counterpartId: person?.counterpart?.id || null,
+  };
+
+  await db.service.create({ data: serviceData });
+  return { inserted: 1, updated: 0, skipped: 0 };
+}
+
+async function importInventoryItemsRow(row: CSVRow): Promise<ImportOutcome> {
+  const itemData = {
+    name: String(row.name),
+    description: row.description ? String(row.description) : null,
+    currentStock: row.currentStock ? Number(row.currentStock) : 0,
+    categoryId: row.categoryId ? Number(row.categoryId) : null,
+  };
+
+  const existing = await db.inventoryItem.findFirst({
+    where: { name: itemData.name },
+  });
+
+  if (existing) {
+    await db.inventoryItem.update({
+      where: { id: existing.id },
+      data: itemData,
+    });
+    return { inserted: 0, updated: 1, skipped: 0 };
+  }
+
+  await db.inventoryItem.create({ data: itemData });
+  return { inserted: 1, updated: 0, skipped: 0 };
+}
+
+async function importEmployeeTimesheetsRow(row: CSVRow): Promise<ImportOutcome> {
+  const person = await findPersonByRut(String(row.rut));
+  if (!person?.employee) {
+    throw new Error(`Empleado con RUT ${row.rut} no existe`);
+  }
+
+  const dateStr = dayjs(String(row.workDate)).format("YYYY-MM-DD");
+  const workDate = new Date(dateStr);
+
+  const startTime = row.startTime ? new Date(`1970-01-01T${row.startTime}`) : null;
+  const endTime = row.endTime ? new Date(`1970-01-01T${row.endTime}`) : null;
+
+  const timesheetData = {
+    employeeId: person.employee.id,
+    workDate,
+    startTime,
+    endTime,
+    workedMinutes: Number(row.workedMinutes) || 0,
+    overtimeMinutes: Number(row.overtimeMinutes) || 0,
+    comment: row.comment ? String(row.comment) : null,
+  };
+
+  const existing = await db.employeeTimesheet.findFirst({
+    where: {
+      employeeId: person.employee.id,
+      workDate,
+    },
+  });
+
+  if (existing) {
+    await db.employeeTimesheet.update({
+      where: { id: existing.id },
+      data: timesheetData,
+    });
+    return { inserted: 0, updated: 1, skipped: 0 };
+  }
+
+  await db.employeeTimesheet.create({ data: timesheetData });
+  return { inserted: 1, updated: 0, skipped: 0 };
+}

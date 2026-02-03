@@ -1,3 +1,4 @@
+import type { AnyRoute } from "@tanstack/react-router";
 import {
   BarChart3,
   Box,
@@ -26,10 +27,6 @@ import {
 import type { ComponentType } from "react";
 
 import type { NavConfig, NavSection, RoutePermission } from "@/types/navigation";
-
-// Generated file - may cause import cycle warning but works correctly at runtime
-// biome-ignore lint/nursery/noImportCycles: routeTree is generated and needed for nav extraction
-import { routeTree } from "../routeTree.gen";
 
 // Reuse NavItem interface from original generator to stay compatible with Sidebar
 export interface NavItem {
@@ -86,7 +83,9 @@ interface ExtractedNavItem extends Omit<NavItem, "icon"> {
   section: NavSection;
 }
 
-export function generateNavSections(): NavSectionData[] {
+type RouteTreeNode = AnyRoute;
+
+export function generateNavSections(routeTree: RouteTreeNode): NavSectionData[] {
   const extractedItems = extractNavItems(routeTree);
 
   // Group by section
@@ -127,9 +126,7 @@ export function generateNavSections(): NavSectionData[] {
   return sections;
 }
 
-// Route tree structure is complex and varies by router implementation
-// biome-ignore lint/suspicious/noExplicitAny: TanStack Router route tree cannot be reasonably typed
-function extractNavItems(route: any): ExtractedNavItem[] {
+function extractNavItems(route: RouteTreeNode): ExtractedNavItem[] {
   const items: ExtractedNavItem[] = [];
 
   // Check if current route has nav data
@@ -145,7 +142,6 @@ function extractNavItems(route: any): ExtractedNavItem[] {
     const to = route.fullPath || route.path || "/";
 
     items.push({
-      exact: route.options.exact, // Assuming exact might be in options
       iconKey: nav.iconKey,
       label: nav.label,
       order: nav.order,
@@ -179,8 +175,8 @@ function extractNavItems(route: any): ExtractedNavItem[] {
 
   // Process children
   if (route.children) {
-    // biome-ignore lint/suspicious/noExplicitAny: TanStack Router children structure
-    route.children.forEach((child: any) => {
+    const children = getRouteChildren(route.children);
+    children.forEach((child) => {
       items.push(...extractNavItems(child));
     });
   }
@@ -189,10 +185,21 @@ function extractNavItems(route: any): ExtractedNavItem[] {
 }
 
 let cachedSections: NavSectionData[] | null = null;
+let cachedRouteTree: RouteTreeNode | null = null;
 
-export function getNavSections(): NavSectionData[] {
-  if (!cachedSections) {
-    cachedSections = generateNavSections();
+export function getNavSections(routeTree: RouteTreeNode): NavSectionData[] {
+  if (!cachedSections || cachedRouteTree !== routeTree) {
+    cachedRouteTree = routeTree;
+    cachedSections = generateNavSections(routeTree);
   }
   return cachedSections;
+}
+
+function getRouteChildren(children: RouteTreeNode["children"]): RouteTreeNode[] {
+  if (!children) return [];
+  if (Array.isArray(children)) return children;
+  if (typeof children === "object") {
+    return Object.values(children as Record<string, RouteTreeNode>);
+  }
+  return [];
 }

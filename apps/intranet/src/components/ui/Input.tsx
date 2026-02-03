@@ -51,6 +51,152 @@ const createPasswordToggle = (isVisible: boolean, onToggle: () => void) => (
   </button>
 );
 
+const getInputExtras = (props: Props) => {
+  const startContent = (props as InputProps).startContent;
+  const explicitEndContent = (props as InputProps).endContent;
+  const rightElement = (props as InputProps).rightElement;
+
+  return {
+    startContent,
+    explicitEndContent,
+    rightElement,
+  };
+};
+
+const usePasswordToggle = (type?: string) => {
+  const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
+  const isPassword = type === "password";
+  const inputType = isPassword && isPasswordVisible ? "text" : type;
+  const toggleVisibility = () => setIsPasswordVisible((prev) => !prev);
+  const passwordToggle = isPassword
+    ? createPasswordToggle(isPasswordVisible, toggleVisibility)
+    : null;
+
+  return { inputType, passwordToggle };
+};
+
+const renderTextArea = (
+  props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  options: {
+    className?: string;
+    size: "xs" | "sm" | "md" | "lg";
+    labelElement: React.ReactNode;
+    descriptionElement: React.ReactNode;
+    errorElement: React.ReactNode;
+    commonTextFieldProps: { className?: string; isInvalid: boolean };
+  },
+) => (
+  <TextField {...options.commonTextFieldProps}>
+    {options.labelElement}
+    <HeroTextArea
+      className={cn("w-full", options.size === "xs" && "text-xs", options.className)}
+      placeholder={props.placeholder}
+      {...props}
+    />
+    {options.descriptionElement}
+    {options.errorElement}
+  </TextField>
+);
+
+const renderSelect = (
+  props: React.SelectHTMLAttributes<HTMLSelectElement>,
+  options: {
+    className?: string;
+    size: "xs" | "sm" | "md" | "lg";
+    labelElement: React.ReactNode;
+    descriptionElement: React.ReactNode;
+    errorElement: React.ReactNode;
+    commonTextFieldProps: { className?: string; isInvalid: boolean };
+    children?: React.ReactNode;
+  },
+) => {
+  const { className: selectClassName, ...selectProps } = props;
+
+  return (
+    <TextField {...options.commonTextFieldProps}>
+      {options.labelElement}
+      <InputGroup>
+        <select
+          className={cn(
+            "input-group__input w-full bg-transparent outline-none h-full",
+            options.size === "xs" && "text-xs",
+            options.className,
+            selectClassName,
+          )}
+          {...selectProps}
+        >
+          {options.children}
+        </select>
+      </InputGroup>
+      {options.descriptionElement}
+      {options.errorElement}
+    </TextField>
+  );
+};
+
+const renderGroupedInput = (
+  props: React.InputHTMLAttributes<HTMLInputElement>,
+  options: {
+    className?: string;
+    size: "xs" | "sm" | "md" | "lg";
+    labelElement: React.ReactNode;
+    descriptionElement: React.ReactNode;
+    errorElement: React.ReactNode;
+    commonTextFieldProps: { className?: string; isInvalid: boolean };
+    inputType?: string;
+    startContent?: React.ReactNode;
+    endContent?: React.ReactNode;
+    placeholder?: string;
+    hasError: boolean;
+  },
+) => (
+  <TextField {...options.commonTextFieldProps}>
+    {options.labelElement}
+    <InputGroup className={cn("bg-default-100", options.hasError && "bg-danger-50 border-danger")}>
+      {options.startContent && (
+        <InputGroup.Prefix className="text-default-400">{options.startContent}</InputGroup.Prefix>
+      )}
+      <InputGroup.Input
+        className={cn("h-full", options.size === "xs" && "text-xs", options.className)}
+        type={options.inputType}
+        placeholder={options.placeholder}
+        {...props}
+      />
+      {options.endContent && (
+        <InputGroup.Suffix className="text-default-400">{options.endContent}</InputGroup.Suffix>
+      )}
+    </InputGroup>
+    {options.descriptionElement}
+    {options.errorElement}
+  </TextField>
+);
+
+const renderSimpleInput = (
+  props: React.InputHTMLAttributes<HTMLInputElement>,
+  options: {
+    className?: string;
+    size: "xs" | "sm" | "md" | "lg";
+    labelElement: React.ReactNode;
+    descriptionElement: React.ReactNode;
+    errorElement: React.ReactNode;
+    commonTextFieldProps: { className?: string; isInvalid: boolean };
+    inputType?: string;
+    placeholder?: string;
+  },
+) => (
+  <TextField {...options.commonTextFieldProps}>
+    {options.labelElement}
+    <HeroInput
+      className={cn("w-full", options.size === "xs" && "text-xs", options.className)}
+      type={options.inputType}
+      placeholder={options.placeholder}
+      {...props}
+    />
+    {options.descriptionElement}
+    {options.errorElement}
+  </TextField>
+);
+
 export default function Input(props: Props) {
   const {
     as = "input",
@@ -64,21 +210,10 @@ export default function Input(props: Props) {
     ...rest
   } = props;
 
-  // -- PASSWORD LOGIC --
-  const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
-  const isPassword = type === "password";
-  const inputType = isPassword && isPasswordVisible ? "text" : type;
-  const toggleVisibility = () => setIsPasswordVisible(!isPasswordVisible);
-  const passwordToggle = isPassword
-    ? createPasswordToggle(isPasswordVisible, toggleVisibility)
-    : null;
+  const { inputType, passwordToggle } = usePasswordToggle(type);
 
-  // Resolve start/end content
-  const startContent = (props as InputProps).startContent;
-  const explicitEndContent = (props as InputProps).endContent;
-  const rightElement = (props as InputProps).rightElement;
+  const { explicitEndContent, rightElement, startContent } = getInputExtras(props);
 
-  // Combine end content (password toggle OR explicit endContent OR rightElement)
   const finalEndContent = passwordToggle ?? explicitEndContent ?? rightElement;
   const hasGroup = !!startContent || !!finalEndContent;
 
@@ -91,96 +226,53 @@ export default function Input(props: Props) {
   const descriptionElement = helper ? <Description>{helper}</Description> : null;
   const errorElement = error ? <FieldError>{error}</FieldError> : null;
 
-  // -- RENDER: TEXTAREA --
   if (as === "textarea") {
-    const taProps = rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>;
-    return (
-      <TextField {...commonTextFieldProps}>
-        {labelElement}
-        {/* InputGroup for textarea is rare but explicitly supported via InputGroup.TextArea if needed.
-            For now assuming standard TextArea. */}
-        <HeroTextArea
-          className={cn(
-            "w-full",
-            size === "xs" && "text-xs", // Handle xs sizing manually if needed
-            className,
-          )}
-          placeholder={props.placeholder}
-          // HeroUI TextArea supports standard HTML attributes
-          {...taProps}
-        />
-        {descriptionElement}
-        {errorElement}
-      </TextField>
-    );
+    return renderTextArea(rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>, {
+      className,
+      commonTextFieldProps,
+      descriptionElement,
+      errorElement,
+      labelElement,
+      size,
+    });
   }
 
-  // -- RENDER: SELECT --
   if (as === "select") {
-    const selProps = rest as React.SelectHTMLAttributes<HTMLSelectElement>;
-    // IMPORTANT: using TextField + InputGroup.Input as="select" to simulate native select behavior
-    // while maintaining HeroUI composition.
-    return (
-      <TextField {...commonTextFieldProps}>
-        {labelElement}
-        <InputGroup>
-          <InputGroup.Input
-            as="select"
-            className={cn(
-              "w-full bg-transparent outline-none h-full", // Basic reset
-              size === "xs" && "text-xs",
-              className,
-            )}
-            {...(selProps as any)}
-          >
-            {props.children}
-          </InputGroup.Input>
-        </InputGroup>
-        {descriptionElement}
-        {errorElement}
-      </TextField>
-    );
+    return renderSelect(rest as React.SelectHTMLAttributes<HTMLSelectElement>, {
+      children: props.children,
+      className,
+      commonTextFieldProps,
+      descriptionElement,
+      errorElement,
+      labelElement,
+      size,
+    });
   }
-
-  // -- RENDER: INPUT (Standard) --
-  const inProps = rest as React.InputHTMLAttributes<HTMLInputElement>;
 
   if (hasGroup) {
-    return (
-      <TextField {...commonTextFieldProps}>
-        {labelElement}
-        <InputGroup className={cn("bg-default-100", !!error && "bg-danger-50 border-danger")}>
-          {startContent && (
-            <InputGroup.Prefix className="text-default-400">{startContent}</InputGroup.Prefix>
-          )}
-          <InputGroup.Input
-            className={cn("h-full", size === "xs" && "text-xs", className)}
-            type={inputType}
-            placeholder={props.placeholder}
-            {...inProps}
-          />
-          {finalEndContent && (
-            <InputGroup.Suffix className="text-default-400">{finalEndContent}</InputGroup.Suffix>
-          )}
-        </InputGroup>
-        {descriptionElement}
-        {errorElement}
-      </TextField>
-    );
+    return renderGroupedInput(rest as React.InputHTMLAttributes<HTMLInputElement>, {
+      className,
+      commonTextFieldProps,
+      descriptionElement,
+      endContent: finalEndContent,
+      errorElement,
+      hasError: !!error,
+      inputType,
+      labelElement,
+      placeholder: props.placeholder,
+      size,
+      startContent,
+    });
   }
 
-  // Simple Input (No Group)
-  return (
-    <TextField {...commonTextFieldProps}>
-      {labelElement}
-      <HeroInput
-        className={cn("w-full", size === "xs" && "text-xs", className)}
-        type={inputType}
-        placeholder={props.placeholder}
-        {...inProps}
-      />
-      {descriptionElement}
-      {errorElement}
-    </TextField>
-  );
+  return renderSimpleInput(rest as React.InputHTMLAttributes<HTMLInputElement>, {
+    className,
+    commonTextFieldProps,
+    descriptionElement,
+    errorElement,
+    inputType,
+    labelElement,
+    placeholder: props.placeholder,
+    size,
+  });
 }

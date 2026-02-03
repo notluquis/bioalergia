@@ -28,6 +28,7 @@ const VerifyCertificateSchema = z.union([
     error: z.string().optional(),
   }),
 ]);
+type VerifyCertificateResponse = z.infer<typeof VerifyCertificateSchema>;
 
 export const Route = createFileRoute("/verify/$id")({
   component: VerifyCertificatePage,
@@ -39,8 +40,7 @@ function VerifyCertificatePage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["verify-certificate", id],
     queryFn: async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: apiClient.get generic constraint
-      const data = await apiClient.get<any>(`certificates/verify/${id}`, {
+      const data = await apiClient.get<VerifyCertificateResponse>(`certificates/verify/${id}`, {
         responseSchema: VerifyCertificateSchema,
       });
       return data;
@@ -59,14 +59,16 @@ function VerifyCertificatePage() {
   }
 
   if (error || !data?.valid) {
+    const invalidMessage =
+      typeof data?.error === "string"
+        ? data.error
+        : "Este certificado no existe o ha sido revocado";
     return (
       <div className="min-h-screen flex items-center justify-center bg-danger/10">
         <div className="bg-background p-8 rounded-2xl shadow-xl max-w-md text-center">
           <div className="text-6xl mb-4">❌</div>
           <h1 className="text-3xl font-bold text-danger mb-2">Certificado Inválido</h1>
-          <p className="text-foreground/70">
-            {data?.error || "Este certificado no existe o ha sido revocado"}
-          </p>
+          <p className="text-foreground/70">{invalidMessage}</p>
         </div>
       </div>
     );

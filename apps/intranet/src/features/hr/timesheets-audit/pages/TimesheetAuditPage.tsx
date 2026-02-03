@@ -17,11 +17,13 @@ import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { useAuth } from "@/context/AuthContext";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { employeeKeys } from "@/features/hr/employees/queries";
+import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import {
   type AuditDateRange,
   useTimesheetAudit,
 } from "@/features/hr/timesheets-audit/hooks/use-timesheet-audit";
+import type { TimesheetEntryWithEmployee } from "@/features/hr/timesheets-audit/types";
 import { detectAllOverlaps } from "@/features/hr/timesheets-audit/utils/overlap-detection";
 import { endOfMonth, monthsAgoEnd, monthsAgoStart, startOfMonth } from "@/lib/dates";
 import { PAGE_CONTAINER } from "@/lib/styles";
@@ -64,7 +66,6 @@ const QUICK_RANGES: { id: QuickRange; label: string }[] = [
 
 const MAX_EMPLOYEES = 5;
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export default function TimesheetAuditPage() {
   useAuth();
 
@@ -186,345 +187,472 @@ export default function TimesheetAuditPage() {
 
   return (
     <section className={PAGE_CONTAINER}>
-      {/* Step 1: Period Selection */}
-      <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
-        <div className="mb-4 flex items-center gap-3">
-          <Chip color="accent" size="lg" variant="primary">
-            1
-          </Chip>
-          <h2 className="text-foreground text-lg font-semibold">Selecciona el periodo</h2>
-          {rangeSummary && (
-            <span className="text-default-500 ml-auto text-sm">({rangeSummary})</span>
-          )}
-        </div>
+      <PeriodSelectionPanel
+        customWeeksOpen={customWeeksOpen}
+        handleQuickRangeChange={handleQuickRangeChange}
+        handleSelectAllWeeks={handleSelectAllWeeks}
+        handleWeekToggle={handleWeekToggle}
+        months={months}
+        quickRange={quickRange}
+        rangeSummary={rangeSummary}
+        selectedMonth={selectedMonth}
+        selectedWeekKeys={selectedWeekKeys}
+        setCustomWeeksOpen={setCustomWeeksOpen}
+        setSelectedMonth={setSelectedMonth}
+        setSelectedWeekKeys={setSelectedWeekKeys}
+        weeksForMonth={weeksForMonth}
+      />
 
-        {/* Quick Range Buttons */}
-        <div className="overflow-x-auto pb-2">
-          <ButtonGroup className="min-w-max">
-            {QUICK_RANGES.map((range) => (
-              <Button
-                size="sm"
-                variant={quickRange === range.id ? "primary" : "ghost"}
-                key={range.id}
-                onPress={() => {
-                  handleQuickRangeChange(range.id);
-                }}
-              >
-                {range.label}
-              </Button>
-            ))}
-          </ButtonGroup>
-        </div>
+      <EmployeeSelectionPanel
+        activeEmployees={activeEmployees}
+        employeeOptions={employeeOptions}
+        handleClearEmployees={handleClearEmployees}
+        handleRemoveEmployee={handleRemoveEmployee}
+        isMaxEmployees={isMaxEmployees}
+        selectedEmployeeIds={selectedEmployeeIds}
+        setSelectedEmployeeIds={setSelectedEmployeeIds}
+      />
 
-        {/* Custom Week Picker (collapsible) */}
-        {quickRange === "custom" && (
-          <div className="bg-default-50/50 mt-4 rounded-xl">
-            <Button
-              className="w-full justify-between px-4 py-3"
-              onPress={() => {
-                setCustomWeeksOpen(!customWeeksOpen);
-              }}
-              variant="ghost"
-            >
-              <span>Personalizar semanas específicas</span>
-              <ChevronDown
-                className={cn(
-                  "transform transition-transform duration-300",
-                  customWeeksOpen && "rotate-180",
-                )}
-                size={16}
-              />
-            </Button>
-            <SmoothCollapse isOpen={customWeeksOpen}>
-              <div className="space-y-4 px-4 pt-0 pb-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <Select
-                    aria-label="Seleccionar mes"
-                    className="max-w-xs flex-1"
-                    placeholder="Seleccionar mes"
-                    selectedKey={selectedMonth}
-                    onSelectionChange={(key) => {
-                      if (key) {
-                        setSelectedMonth(key.toString());
-                        setSelectedWeekKeys([]);
-                      }
-                    }}
-                  >
-                    {months.map((month) => (
-                      <SelectItem id={month} key={month}>
-                        {dayjs(`${month}-01`).format("MMMM YYYY")}
-                      </SelectItem>
-                    ))}
-                  </Select>
-                  {weeksForMonth.length > 0 && (
-                    <Button
-                      className="text-primary text-sm"
-                      onPress={handleSelectAllWeeks}
-                      size="sm"
-                      variant="ghost"
-                    >
-                      {selectedWeekKeys.length === weeksForMonth.length
-                        ? "Deseleccionar todas"
-                        : "Seleccionar todas"}
-                    </Button>
-                  )}
-                </div>
+      <ResultsSummaryPanel
+        canShowCalendar={canShowCalendar}
+        entriesCount={entries.length}
+        rangesCount={effectiveRanges.length}
+        totalOverlapDays={totalOverlapDays}
+        totalOverlapPairs={totalOverlapPairs}
+      />
 
-                {/* Weeks Grid */}
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {weeksForMonth.map((week) => {
-                    const isActive = selectedWeekKeys.includes(week.key);
-                    return (
-                      <Button
-                        className={cn(
-                          "justify-start rounded-lg border p-3 text-left transition-all",
-                          isActive
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-default-200 bg-background text-foreground hover:border-primary/50",
-                        )}
-                        key={week.key}
-                        onPress={() => {
-                          handleWeekToggle(week.key);
-                        }}
-                        variant="ghost"
-                      >
-                        <div className="text-sm font-medium">{week.label}</div>
-                      </Button>
-                    );
-                  })}
-                </div>
+      <AuditEmptyState
+        entriesCount={entries.length}
+        selectedEmployeeCount={selectedEmployeeIds.length}
+      />
 
-                {selectedWeekKeys.length === 0 && (
-                  <p className="text-warning text-sm">Selecciona al menos una semana</p>
-                )}
-              </div>
-            </SmoothCollapse>
-          </div>
-        )}
-      </div>
+      <CalendarPanel
+        canShowCalendar={canShowCalendar}
+        effectiveRanges={effectiveRanges}
+        entries={entries}
+        focusDate={focusDate}
+        selectedEmployeeIds={selectedEmployeeIds}
+      />
 
-      {/* Step 2: Employee Selection */}
-      <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
-        <div className="mb-4 flex items-center gap-3">
-          <Chip color="accent" size="lg" variant="primary">
-            2
-          </Chip>
-          <h2 className="text-foreground text-lg font-semibold">Selecciona empleados</h2>
-          <span className="text-default-500 ml-auto text-sm">
-            {selectedEmployeeIds.length}/{MAX_EMPLOYEES}
-          </span>
-        </div>
-
-        {/* Selected Employees */}
-        {selectedEmployeeIds.length > 0 && (
-          <div className="mb-4 flex flex-wrap gap-2">
-            {selectedEmployeeIds.map((id) => {
-              const emp = activeEmployees.find((e) => e.id === id);
-              if (!emp) return null;
-              return (
-                <Chip className="gap-2 px-3 py-2" color="accent" key={id} variant="primary">
-                  <span>{emp.full_name}</span>
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    variant="ghost"
-                    aria-label={`Quitar ${emp.full_name}`}
-                    className="h-5 w-5 min-w-5 p-0"
-                    onPress={() => {
-                      handleRemoveEmployee(id);
-                    }}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Chip>
-              );
-            })}
-            {selectedEmployeeIds.length > 0 && (
-              <Button
-                className="text-danger text-sm"
-                onPress={handleClearEmployees}
-                size="sm"
-                variant="ghost"
-              >
-                Limpiar todos
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Add Employee Dropdown */}
-        {!isMaxEmployees && (
-          <EmployeeMultiSelectPopover
-            buttonLabel="+ Agregar empleado"
-            maxSelected={MAX_EMPLOYEES}
-            onChange={setSelectedEmployeeIds}
-            options={employeeOptions}
-            selectedIds={selectedEmployeeIds}
-          />
-        )}
-
-        {selectedEmployeeIds.length === 0 && (
-          <p className="text-warning mt-2 text-sm">
-            Selecciona al menos 1 empleado para ver la auditoría
-          </p>
-        )}
-
-        {isMaxEmployees && (
-          <p className="text-default-500 mt-2 text-sm">
-            Máximo {MAX_EMPLOYEES} empleados simultáneos
-          </p>
-        )}
-      </div>
-
-      {/* Step 3: Results */}
-      {canShowCalendar && (
-        <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
-          <div className="mb-6 flex items-center gap-3">
-            <Chip color="accent" size="lg" variant="primary">
-              3
-            </Chip>
-            <h2 className="text-foreground text-lg font-semibold">Resultados del análisis</h2>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="border-default-200 bg-background rounded-xl border p-4">
-              <div className="text-default-600 text-sm">Periodos</div>
-              <div className="text-primary mt-2 text-2xl font-bold">{effectiveRanges.length}</div>
-            </div>
-            <div className="border-default-200 bg-background rounded-xl border p-4">
-              <div className="text-default-600 text-sm">Registros</div>
-              <div className="text-foreground mt-2 text-2xl font-bold">{entries.length}</div>
-            </div>
-            <div className="border-default-200 bg-background rounded-xl border p-4">
-              <div className="text-default-600 text-sm">Días con alertas</div>
-              <div
-                className={`mt-2 text-2xl font-bold ${totalOverlapDays > 0 ? "text-warning" : "text-success"}`}
-              >
-                {totalOverlapDays}
-              </div>
-            </div>
-            <div className="border-default-200 bg-background rounded-xl border p-4">
-              <div className="text-default-600 text-sm">Conflictos</div>
-              <div
-                className={`mt-2 text-2xl font-bold ${totalOverlapPairs > 0 ? "text-danger" : "text-success"}`}
-              >
-                {totalOverlapPairs}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Empty States */}
-      {(() => {
-        if (selectedEmployeeIds.length === 0) {
-          return (
-            <Card className="shadow-sm">
-              <CardContent className="flex flex-col items-center py-16 text-center">
-                <Users className="text-default-200 mb-4 h-12 w-12" />
-                <h3 className="text-default-600 text-lg font-semibold">Selecciona empleados</h3>
-                <p className="text-default-400 max-w-md text-sm">
-                  Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar
-                  solapamientos
-                </p>
-              </CardContent>
-            </Card>
-          );
-        }
-        if (entries.length === 0) {
-          return (
-            <Alert variant="warning">
-              No hay registros para el periodo seleccionado. Prueba con otro rango de fechas.
-            </Alert>
-          );
-        }
-        return null;
-      })()}
-
-      {/* Calendar */}
-      {canShowCalendar && (
-        <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
-          <h2 className="text-foreground mb-6 text-lg font-semibold">Calendario de auditoría</h2>
-          <Suspense
-            fallback={
-              <div className="flex h-64 items-center justify-center">
-                <Spinner className="text-primary" color="current" size="lg" />
-              </div>
-            }
-          >
-            <TimesheetAuditCalendar
-              entries={entries}
-              focusDate={focusDate}
-              loading={false}
-              selectedEmployeeIds={selectedEmployeeIds}
-              visibleDateRanges={effectiveRanges}
-            />
-          </Suspense>
-        </div>
-      )}
-
-      {/* Legend (collapsible) */}
-      {canShowCalendar && entries.length > 0 && (
-        <div className="border-default-200 bg-background rounded-2xl border shadow-sm">
-          <Button
-            className="w-full justify-between px-4 py-3"
-            onPress={() => {
-              setLegendOpen(!legendOpen);
-            }}
-            variant="ghost"
-          >
-            <span>📋 Guía de interpretación</span>
-            <ChevronDown
-              className={cn(
-                "transform transition-transform duration-300",
-                legendOpen && "rotate-180",
-              )}
-              size={16}
-            />
-          </Button>
-          <SmoothCollapse isOpen={legendOpen}>
-            <div className="px-4 pt-0 pb-4">
-              <div className="grid gap-6 pt-4 sm:grid-cols-2">
-                <div className="flex items-start gap-3">
-                  <div className="bg-success mt-1 h-4 w-4 shrink-0 rounded" />
-                  <div>
-                    <p className="text-foreground font-semibold">Sin conflicto</p>
-                    <p className="text-default-600 text-sm">Turnos sin solapamiento</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="bg-danger mt-1 h-4 w-4 shrink-0 rounded" />
-                  <div>
-                    <p className="text-foreground font-semibold">Conflicto detectado</p>
-                    <p className="text-default-600 text-sm">Horarios traslapados entre empleados</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-lg">👩‍⚕️</span>
-                  <div>
-                    <p className="text-foreground font-semibold">Compatibles</p>
-                    <p className="text-default-600 text-sm">Enfermero + TENS pueden coexistir</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-lg">⌛</span>
-                  <div>
-                    <p className="text-foreground font-semibold">Tooltip</p>
-                    <p className="text-default-600 text-sm">
-                      Pasa el cursor o toca un bloque para ver detalles del conflicto
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </SmoothCollapse>
-        </div>
-      )}
+      <LegendPanel
+        entriesCount={entries.length}
+        isOpen={legendOpen}
+        onToggle={() => setLegendOpen(!legendOpen)}
+        show={canShowCalendar}
+      />
     </section>
   );
 }
 
+function PeriodSelectionPanel({
+  customWeeksOpen,
+  handleQuickRangeChange,
+  handleSelectAllWeeks,
+  handleWeekToggle,
+  months,
+  quickRange,
+  rangeSummary,
+  selectedMonth,
+  selectedWeekKeys,
+  setCustomWeeksOpen,
+  setSelectedMonth,
+  setSelectedWeekKeys,
+  weeksForMonth,
+}: {
+  customWeeksOpen: boolean;
+  handleQuickRangeChange: (range: QuickRange) => void;
+  handleSelectAllWeeks: () => void;
+  handleWeekToggle: (key: string) => void;
+  months: string[];
+  quickRange: QuickRange;
+  rangeSummary: string;
+  selectedMonth: string;
+  selectedWeekKeys: string[];
+  setCustomWeeksOpen: (open: boolean) => void;
+  setSelectedMonth: (month: string) => void;
+  setSelectedWeekKeys: (keys: string[]) => void;
+  weeksForMonth: WeekDefinition[];
+}) {
+  return (
+    <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
+      <div className="mb-4 flex items-center gap-3">
+        <Chip color="accent" size="lg" variant="primary">
+          1
+        </Chip>
+        <h2 className="text-foreground text-lg font-semibold">Selecciona el periodo</h2>
+        {rangeSummary && <span className="text-default-500 ml-auto text-sm">({rangeSummary})</span>}
+      </div>
+
+      <div className="overflow-x-auto pb-2">
+        <ButtonGroup className="min-w-max">
+          {QUICK_RANGES.map((range) => (
+            <Button
+              size="sm"
+              variant={quickRange === range.id ? "primary" : "ghost"}
+              key={range.id}
+              onPress={() => {
+                handleQuickRangeChange(range.id);
+              }}
+            >
+              {range.label}
+            </Button>
+          ))}
+        </ButtonGroup>
+      </div>
+
+      {quickRange === "custom" && (
+        <div className="bg-default-50/50 mt-4 rounded-xl">
+          <Button
+            className="w-full justify-between px-4 py-3"
+            onPress={() => setCustomWeeksOpen(!customWeeksOpen)}
+            variant="ghost"
+          >
+            <span>Personalizar semanas específicas</span>
+            <ChevronDown
+              className={cn(
+                "transform transition-transform duration-300",
+                customWeeksOpen && "rotate-180",
+              )}
+              size={16}
+            />
+          </Button>
+          <SmoothCollapse isOpen={customWeeksOpen}>
+            <div className="space-y-4 px-4 pt-0 pb-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <Select
+                  aria-label="Seleccionar mes"
+                  className="max-w-xs flex-1"
+                  placeholder="Seleccionar mes"
+                  selectedKey={selectedMonth}
+                  onSelectionChange={(key) => {
+                    if (key) {
+                      setSelectedMonth(key.toString());
+                      setSelectedWeekKeys([]);
+                    }
+                  }}
+                >
+                  {months.map((month) => (
+                    <SelectItem id={month} key={month}>
+                      {dayjs(`${month}-01`).format("MMMM YYYY")}
+                    </SelectItem>
+                  ))}
+                </Select>
+                {weeksForMonth.length > 0 && (
+                  <Button
+                    className="text-primary text-sm"
+                    onPress={handleSelectAllWeeks}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    {selectedWeekKeys.length === weeksForMonth.length
+                      ? "Deseleccionar todas"
+                      : "Seleccionar todas"}
+                  </Button>
+                )}
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {weeksForMonth.map((week) => {
+                  const isActive = selectedWeekKeys.includes(week.key);
+                  return (
+                    <Button
+                      className={cn(
+                        "justify-start rounded-lg border p-3 text-left transition-all",
+                        isActive
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-default-200 bg-background text-foreground hover:border-primary/50",
+                      )}
+                      key={week.key}
+                      onPress={() => handleWeekToggle(week.key)}
+                      variant="ghost"
+                    >
+                      <div className="text-sm font-medium">{week.label}</div>
+                    </Button>
+                  );
+                })}
+              </div>
+
+              {selectedWeekKeys.length === 0 && (
+                <p className="text-warning text-sm">Selecciona al menos una semana</p>
+              )}
+            </div>
+          </SmoothCollapse>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EmployeeSelectionPanel({
+  activeEmployees,
+  employeeOptions,
+  handleClearEmployees,
+  handleRemoveEmployee,
+  isMaxEmployees,
+  selectedEmployeeIds,
+  setSelectedEmployeeIds,
+}: {
+  activeEmployees: Employee[];
+  employeeOptions: Array<{ id: number; label: string }>;
+  handleClearEmployees: () => void;
+  handleRemoveEmployee: (id: number) => void;
+  isMaxEmployees: boolean;
+  selectedEmployeeIds: number[];
+  setSelectedEmployeeIds: (ids: number[]) => void;
+}) {
+  return (
+    <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
+      <div className="mb-4 flex items-center gap-3">
+        <Chip color="accent" size="lg" variant="primary">
+          2
+        </Chip>
+        <h2 className="text-foreground text-lg font-semibold">Selecciona empleados</h2>
+        <span className="text-default-500 ml-auto text-sm">
+          {selectedEmployeeIds.length}/{MAX_EMPLOYEES}
+        </span>
+      </div>
+
+      {selectedEmployeeIds.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {selectedEmployeeIds.map((id) => {
+            const emp = activeEmployees.find((e) => e.id === id);
+            if (!emp) return null;
+            return (
+              <Chip className="gap-2 px-3 py-2" color="accent" key={id} variant="primary">
+                <span>{emp.full_name}</span>
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="ghost"
+                  aria-label={`Quitar ${emp.full_name}`}
+                  className="h-5 w-5 min-w-5 p-0"
+                  onPress={() => {
+                    handleRemoveEmployee(id);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Chip>
+            );
+          })}
+          {selectedEmployeeIds.length > 0 && (
+            <Button
+              className="text-danger text-sm"
+              onPress={handleClearEmployees}
+              size="sm"
+              variant="ghost"
+            >
+              Limpiar todos
+            </Button>
+          )}
+        </div>
+      )}
+
+      {!isMaxEmployees && (
+        <EmployeeMultiSelectPopover
+          buttonLabel="+ Agregar empleado"
+          maxSelected={MAX_EMPLOYEES}
+          onChange={setSelectedEmployeeIds}
+          options={employeeOptions}
+          selectedIds={selectedEmployeeIds}
+        />
+      )}
+
+      {selectedEmployeeIds.length === 0 && (
+        <p className="text-warning mt-2 text-sm">
+          Selecciona al menos 1 empleado para ver la auditoría
+        </p>
+      )}
+
+      {isMaxEmployees && (
+        <p className="text-default-500 mt-2 text-sm">
+          Máximo {MAX_EMPLOYEES} empleados simultáneos
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ResultsSummaryPanel({
+  canShowCalendar,
+  entriesCount,
+  rangesCount,
+  totalOverlapDays,
+  totalOverlapPairs,
+}: {
+  canShowCalendar: boolean;
+  entriesCount: number;
+  rangesCount: number;
+  totalOverlapDays: number;
+  totalOverlapPairs: number;
+}) {
+  if (!canShowCalendar) return null;
+  return (
+    <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
+      <div className="mb-6 flex items-center gap-3">
+        <Chip color="accent" size="lg" variant="primary">
+          3
+        </Chip>
+        <h2 className="text-foreground text-lg font-semibold">Resultados del análisis</h2>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="border-default-200 bg-background rounded-xl border p-4">
+          <div className="text-default-600 text-sm">Periodos</div>
+          <div className="text-primary mt-2 text-2xl font-bold">{rangesCount}</div>
+        </div>
+        <div className="border-default-200 bg-background rounded-xl border p-4">
+          <div className="text-default-600 text-sm">Registros</div>
+          <div className="text-foreground mt-2 text-2xl font-bold">{entriesCount}</div>
+        </div>
+        <div className="border-default-200 bg-background rounded-xl border p-4">
+          <div className="text-default-600 text-sm">Días con alertas</div>
+          <div
+            className={`mt-2 text-2xl font-bold ${totalOverlapDays > 0 ? "text-warning" : "text-success"}`}
+          >
+            {totalOverlapDays}
+          </div>
+        </div>
+        <div className="border-default-200 bg-background rounded-xl border p-4">
+          <div className="text-default-600 text-sm">Conflictos</div>
+          <div
+            className={`mt-2 text-2xl font-bold ${totalOverlapPairs > 0 ? "text-danger" : "text-success"}`}
+          >
+            {totalOverlapPairs}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AuditEmptyState({
+  entriesCount,
+  selectedEmployeeCount,
+}: {
+  entriesCount: number;
+  selectedEmployeeCount: number;
+}) {
+  if (selectedEmployeeCount === 0) {
+    return (
+      <Card className="shadow-sm">
+        <CardContent className="flex flex-col items-center py-16 text-center">
+          <Users className="text-default-200 mb-4 h-12 w-12" />
+          <h3 className="text-default-600 text-lg font-semibold">Selecciona empleados</h3>
+          <p className="text-default-400 max-w-md text-sm">
+            Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar
+            solapamientos
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+  if (entriesCount === 0) {
+    return (
+      <Alert variant="warning">
+        No hay registros para el periodo seleccionado. Prueba con otro rango de fechas.
+      </Alert>
+    );
+  }
+  return null;
+}
+
+function CalendarPanel({
+  canShowCalendar,
+  effectiveRanges,
+  entries,
+  focusDate,
+  selectedEmployeeIds,
+}: {
+  canShowCalendar: boolean;
+  effectiveRanges: AuditDateRange[];
+  entries: TimesheetEntryWithEmployee[];
+  focusDate: Date | null;
+  selectedEmployeeIds: number[];
+}) {
+  if (!canShowCalendar) return null;
+  return (
+    <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
+      <h2 className="text-foreground mb-6 text-lg font-semibold">Calendario de auditoría</h2>
+      <Suspense
+        fallback={
+          <div className="flex h-64 items-center justify-center">
+            <Spinner className="text-primary" color="current" size="lg" />
+          </div>
+        }
+      >
+        <TimesheetAuditCalendar
+          entries={entries}
+          focusDate={focusDate}
+          loading={false}
+          selectedEmployeeIds={selectedEmployeeIds}
+          visibleDateRanges={effectiveRanges}
+        />
+      </Suspense>
+    </div>
+  );
+}
+
+function LegendPanel({
+  entriesCount,
+  isOpen,
+  onToggle,
+  show,
+}: {
+  entriesCount: number;
+  isOpen: boolean;
+  onToggle: () => void;
+  show: boolean;
+}) {
+  if (!show || entriesCount === 0) return null;
+  return (
+    <div className="border-default-200 bg-background rounded-2xl border shadow-sm">
+      <Button className="w-full justify-between px-4 py-3" onPress={onToggle} variant="ghost">
+        <span>📋 Guía de interpretación</span>
+        <ChevronDown
+          className={cn("transform transition-transform duration-300", isOpen && "rotate-180")}
+          size={16}
+        />
+      </Button>
+      <SmoothCollapse isOpen={isOpen}>
+        <div className="px-4 pt-0 pb-4">
+          <div className="grid gap-6 pt-4 sm:grid-cols-2">
+            <div className="flex items-start gap-3">
+              <div className="bg-success mt-1 h-4 w-4 shrink-0 rounded" />
+              <div>
+                <p className="text-foreground font-semibold">Sin conflicto</p>
+                <p className="text-default-600 text-sm">Turnos sin solapamiento</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="bg-danger mt-1 h-4 w-4 shrink-0 rounded" />
+              <div>
+                <p className="text-foreground font-semibold">Conflicto detectado</p>
+                <p className="text-default-600 text-sm">Horarios traslapados entre empleados</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-lg">👩‍⚕️</span>
+              <div>
+                <p className="text-foreground font-semibold">Compatibles</p>
+                <p className="text-default-600 text-sm">Enfermero + TENS pueden coexistir</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-lg">⌛</span>
+              <div>
+                <p className="text-foreground font-semibold">Tooltip</p>
+                <p className="text-default-600 text-sm">
+                  Pasa el cursor o toca un bloque para ver detalles del conflicto
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </SmoothCollapse>
+    </div>
+  );
+}
 function buildWeeksForMonth(month: string): WeekDefinition[] {
   const baseDate = dayjs(`${month}-01`);
   const monthStart = baseDate.startOf("month");
@@ -559,39 +687,28 @@ function buildWeeksForMonth(month: string): WeekDefinition[] {
 
 function getQuickRangeValues(range: QuickRange): null | { end: Date; start: Date } {
   const today = dayjs();
-  switch (range) {
-    case "last-month": {
-      return {
-        end: dayjs(monthsAgoEnd(1)).toDate(),
-        start: dayjs(monthsAgoStart(1)).toDate(),
-      };
-    }
-    case "last-week": {
-      return {
-        end: today.subtract(1, "week").endOf("isoWeek").toDate(),
-        start: today.subtract(1, "week").startOf("isoWeek").toDate(),
-      };
-    }
-    case "this-month": {
-      return {
-        end: dayjs(endOfMonth()).toDate(),
-        start: dayjs(startOfMonth()).toDate(),
-      };
-    }
-    case "this-week": {
-      return {
-        end: today.endOf("isoWeek").toDate(),
-        start: today.startOf("isoWeek").toDate(),
-      };
-    }
-    case "two-months-ago": {
-      return {
-        end: dayjs(monthsAgoEnd(2)).toDate(),
-        start: dayjs(monthsAgoStart(2)).toDate(),
-      };
-    }
-    default: {
-      return null;
-    }
-  }
+  const ranges: Partial<Record<QuickRange, { end: Date; start: Date }>> = {
+    "last-month": {
+      end: dayjs(monthsAgoEnd(1)).toDate(),
+      start: dayjs(monthsAgoStart(1)).toDate(),
+    },
+    "last-week": {
+      end: today.subtract(1, "week").endOf("isoWeek").toDate(),
+      start: today.subtract(1, "week").startOf("isoWeek").toDate(),
+    },
+    "this-month": {
+      end: dayjs(endOfMonth()).toDate(),
+      start: dayjs(startOfMonth()).toDate(),
+    },
+    "this-week": {
+      end: today.endOf("isoWeek").toDate(),
+      start: today.startOf("isoWeek").toDate(),
+    },
+    "two-months-ago": {
+      end: dayjs(monthsAgoEnd(2)).toDate(),
+      start: dayjs(monthsAgoStart(2)).toDate(),
+    },
+  };
+
+  return ranges[range] ?? null;
 }

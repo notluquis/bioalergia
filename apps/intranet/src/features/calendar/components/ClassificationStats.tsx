@@ -1,11 +1,11 @@
 import { StatCard } from "@/components/ui/StatCard";
+import type { ClassificationForm } from "../form-types";
 import type { CalendarUnclassifiedEvent } from "../types";
 import { ClassificationTotals } from "./ClassificationTotals";
 
 interface ClassificationStatsProps {
   events: CalendarUnclassifiedEvent[];
-  // biome-ignore lint/suspicious/noExplicitAny: TanStack Form FormApi has complex generic constraints
-  form: any;
+  form: ClassificationForm;
   loading: boolean;
   totalCount: number;
 }
