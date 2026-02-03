@@ -85,13 +85,11 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
     const endOfMonth = month.endOf("month");
     const daysInMonth = endOfMonth.date();
 
-    // Adjust for Monday start (0=Mon, 5=Sat in our 6-day week)
-    // Sunday is excluded, so we map: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5
-    const jsDay = startOfMonth.day(); // 0=Sun, 1=Mon, ..., 6=Sat
-    // For a Mon-Sat grid: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5
-    // If jsDay=0 (Sun), it's not shown, but for month start we treat it as would be after Sat
-    // jsDay=1 (Mon) -> 0, jsDay=2 (Tue) -> 1, ..., jsDay=6 (Sat) -> 5, jsDay=0 (Sun) -> 6 (but clamp to 0)
-    const startDayOfWeek = jsDay === 0 ? 0 : jsDay - 1; // Sun treated as Monday position (0)
+    // Adjust for Monday start using ISO 8601 (1=Mon, 7=Sun)
+    // Grid displays Mon-Sat (6 columns), so: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5
+    const jsDay = startOfMonth.isoWeekday(); // 1=Mon, 2=Tue, ..., 7=Sun
+    // ISO weekday → grid column: Mon(1)→0, Tue(2)→1, Wed(3)→2, Thu(4)→3, Fri(5)→4, Sat(6)→5, Sun(7)→6
+    const startDayOfWeek = jsDay === 7 ? 6 : jsDay - 1;
 
     // Generate padding days for start grid alignment (now 6 columns)
     const paddingStart: PaddingCell[] = Array.from({ length: startDayOfWeek }).map((_, i) => ({
