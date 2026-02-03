@@ -9,6 +9,11 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, parse, sep } from "node:path";
 
+const STATIC_NAV_REGEX = /staticData:[\s\S]*?\bnav:/s;
+const STATIC_PERMISSION_REGEX = /staticData:[\s\S]*?\bpermission:/s;
+const HIDE_FROM_NAV_REGEX = /hideFromNav:\s*true/;
+const TSX_EXTENSION_REGEX = /\.tsx$/;
+
 // Technical patterns to exclude based on common naming conventions
 // We exclude:
 // - Dynamic routes ($id)
@@ -82,11 +87,11 @@ async function main() {
 
     // Use [\s\S]*? to lazily match content including newlines, ensuring we don't stop at first '}'
     // This allows matching keys that appear after a nested object (e.g. nav: { ... }, permission: { ... })
-    const hasNav = /staticData:[\s\S]*?\bnav:/s.test(content);
-    const hasPermission = /staticData:[\s\S]*?\bpermission:/s.test(content);
-    const hideFromNav = /hideFromNav:\s*true/.test(content);
+    const hasNav = STATIC_NAV_REGEX.test(content);
+    const hasPermission = STATIC_PERMISSION_REGEX.test(content);
+    const hideFromNav = HIDE_FROM_NAV_REGEX.test(content);
 
-    const displayPath = `/${relativePath.replace(/\.tsx$/, "")}`;
+    const displayPath = `/${relativePath.replace(TSX_EXTENSION_REGEX, "")}`;
 
     // Page routes with permission MUST have nav or explicit hide
     if (hasPermission && !hasNav && !hideFromNav) {

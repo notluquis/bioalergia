@@ -15,6 +15,190 @@ const ASSETS_DIR = path.resolve(import.meta.dirname, "../../../assets");
 const LOGOS_DIR = path.join(ASSETS_DIR, "logos");
 const SIGNATURES_DIR = path.join(ASSETS_DIR, "signatures");
 
+const createDoctorInfo = (input: MedicalCertificateInput) => ({
+  name: input.doctorName || defaultDoctorInfo.name,
+  specialty: input.doctorSpecialty || defaultDoctorInfo.specialty,
+  title: defaultDoctorInfo.title,
+  rut: input.doctorRut || defaultDoctorInfo.rut,
+  email: input.doctorEmail || defaultDoctorInfo.email,
+  address: input.doctorAddress || defaultDoctorInfo.address,
+});
+
+const drawLogoIfExists = async (
+  pdfDoc: PDFDocument,
+  page: Awaited<ReturnType<PDFDocument["addPage"]>>,
+  logoPath: string,
+  options: { alignRight?: boolean; scale: number; x: number; y: number },
+  label: string,
+) => {
+  try {
+    if (!fs.existsSync(logoPath)) return;
+    const logoBytes = fs.readFileSync(logoPath);
+    const logoImage = await pdfDoc.embedPng(logoBytes);
+    const logoDims = logoImage.scale(options.scale);
+    page.drawImage(logoImage, {
+      x: options.alignRight ? options.x - logoDims.width : options.x,
+      y: options.y - logoDims.height,
+      width: logoDims.width,
+      height: logoDims.height,
+    });
+  } catch (error) {
+    console.warn(`Could not load ${label} logo:`, error);
+  }
+};
+
+const drawHeaderLogos = async (
+  pdfDoc: PDFDocument,
+  page: Awaited<ReturnType<PDFDocument["addPage"]>>,
+  margin: number,
+  width: number,
+  y: number,
+) => {
+  await drawLogoIfExists(pdfDoc, page, path.join(LOGOS_DIR, "bioalergia.png"), {
+    scale: 0.5,
+    x: margin,
+    y,
+  }, "bioalergia");
+
+  await drawLogoIfExists(pdfDoc, page, path.join(LOGOS_DIR, "aaaeic.png"), {
+    alignRight: true,
+    scale: 0.3,
+    x: width - margin,
+    y,
+  }, "aaaeic");
+};
+
+const drawPatientInfo = (
+  page: Awaited<ReturnType<PDFDocument["addPage"]>>,
+  font: PDFFont,
+  margin: number,
+  startY: number,
+  input: MedicalCertificateInput,
+) => {
+  const patientInfo = [
+    `Nombre Completo: ${input.patientName}`,
+    `RUT: ${input.rut}`,
+    `Fecha de Nacimiento: ${formatDate(input.birthDate)}`,
+    `Domicilio: ${input.address}`,
+    `Fecha: ${formatDate(input.date)}`,
+  ];
+
+  let y = startY;
+  for (const line of patientInfo) {
+    page.drawText(line, { x: margin, y, size: 10, font });
+    y -= 16;
+  }
+
+  return y;
+};
+
+const drawBodyParagraphs = (
+  page: Awaited<ReturnType<PDFDocument["addPage"]>>,
+  font: PDFFont,
+  margin: number,
+  width: number,
+  startY: number,
+  paragraphs: string[],
+) => {
+  let y = startY;
+  for (const paragraph of paragraphs) {
+    const lines = wrapText(paragraph, font, 10, width - 2 * margin);
+    for (const line of lines) {
+      page.drawText(line, { x: margin, y, size: 10, font });
+      y -= 14;
+    }
+    y -= 10;
+  }
+
+  return y;
+};
+
+const drawWatermark = (
+  page: Awaited<ReturnType<PDFDocument["addPage"]>>,
+  font: PDFFont,
+  width: number,
+  height: number,
+  date: string,
+) => {
+  const watermarkText = `Válido ${dayjs(date).format("DD/MM/YYYY")}`;
+  page.drawText(watermarkText, {
+    x: width / 2 - 100,
+    y: height / 2,
+    size: 48,
+    font,
+    color: rgb(0.9, 0.9, 0.9),
+    opacity: 0.3,
+  });
+};
+
+const drawDoctorFooter = (
+  page: Awaited<ReturnType<PDFDocument["addPage"]>>,
+  doctor: ReturnType<typeof createDoctorInfo>,
+  font: PDFFont,
+  boldFont: PDFFont,
+  margin: number,
+  startY: number,
+) => {
+  let y = startY;
+  page.drawText(doctor.name, {
+    x: margin,
+    y,
+    size: 10,
+    font: boldFont,
+    color: rgb(0.1, 0.4, 0.6),
+  });
+  y -= 14;
+  page.drawText(doctor.specialty, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+  y -= 12;
+  page.drawText(doctor.title, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+  y -= 12;
+  page.drawText(`RUT: ${doctor.rut}`, {
+    x: margin,
+    y,
+    size: 9,
+    font,
+    color: rgb(0.1, 0.4, 0.6),
+  });
+  y -= 12;
+  page.drawText(doctor.email, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+  y -= 12;
+  page.drawText(doctor.address, { x: margin, y, size: 9, font, color: rgb(0.1, 0.4, 0.6) });
+};
+
+const drawFooterNote = (
+  page: Awaited<ReturnType<PDFDocument["addPage"]>>,
+  font: PDFFont,
+  width: number,
+) => {
+  page.drawText("Válida solo con firma y timbre", {
+    x: width / 2 - font.widthOfTextAtSize("Válida solo con firma y timbre", 9) / 2,
+    y: 50,
+    size: 9,
+    font,
+    color: rgb(0.1, 0.4, 0.6),
+  });
+};
+
+const drawQrCode = async (
+  pdfDoc: PDFDocument,
+  page: Awaited<ReturnType<PDFDocument["addPage"]>>,
+  qrCodeBuffer: Buffer,
+  width: number,
+) => {
+  try {
+    const qrImage = await pdfDoc.embedPng(qrCodeBuffer);
+    const qrDims = qrImage.scale(0.3);
+    page.drawImage(qrImage, {
+      x: width - qrDims.width - 30,
+      y: 30,
+      width: qrDims.width,
+      height: qrDims.height,
+    });
+  } catch (error) {
+    console.warn("Could not embed QR code:", error);
+  }
+};
+
 /**
  * Generate QR code for certificate verification
  */
@@ -33,7 +217,7 @@ export async function generateQRCode(certificateId: string): Promise<Buffer> {
  */
 export async function generateMedicalCertificatePdf(
   input: MedicalCertificateInput,
-  qrCodeBuffer?: Buffer
+  qrCodeBuffer?: Buffer,
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4
@@ -47,39 +231,7 @@ export async function generateMedicalCertificatePdf(
   let y = height - margin;
 
   // --- HEADER: Logos ---
-  try {
-    const bioalergiaPath = path.join(LOGOS_DIR, "bioalergia.png");
-    if (fs.existsSync(bioalergiaPath)) {
-      const logoBytes = fs.readFileSync(bioalergiaPath);
-      const logoImage = await pdfDoc.embedPng(logoBytes);
-      const logoDims = logoImage.scale(0.5);
-      page.drawImage(logoImage, {
-        x: margin,
-        y: y - logoDims.height,
-        width: logoDims.width,
-        height: logoDims.height,
-      });
-    }
-  } catch (e) {
-    console.warn("Could not load bioalergia logo:", e);
-  }
-
-  try {
-    const aaaeicPath = path.join(LOGOS_DIR, "aaaeic.png");
-    if (fs.existsSync(aaaeicPath)) {
-      const logoBytes = fs.readFileSync(aaaeicPath);
-      const logoImage = await pdfDoc.embedPng(logoBytes);
-      const logoDims = logoImage.scale(0.3);
-      page.drawImage(logoImage, {
-        x: width - margin - logoDims.width,
-        y: y - logoDims.height,
-        width: logoDims.width,
-        height: logoDims.height,
-      });
-    }
-  } catch (e) {
-    console.warn("Could not load aaaeic logo:", e);
-  }
+  await drawHeaderLogos(pdfDoc, page, margin, width, y);
 
   y -= 80;
 
@@ -96,71 +248,20 @@ export async function generateMedicalCertificatePdf(
   y -= 30;
 
   // --- PATIENT INFO ---
-  const patientInfo = [
-    `Nombre Completo: ${input.patientName}`,
-    `RUT: ${input.rut}`,
-    `Fecha de Nacimiento: ${formatDate(input.birthDate)}`,
-    `Domicilio: ${input.address}`,
-    `Fecha: ${formatDate(input.date)}`,
-  ];
-
-  for (const line of patientInfo) {
-    page.drawText(line, { x: margin, y, size: 10, font: helvetica });
-    y -= 16;
-  }
+  y = drawPatientInfo(page, helvetica, margin, y, input);
 
   y -= 20;
 
   // --- BODY TEXT ---
   const bodyParagraphs = generateBodyText(input);
-  for (const paragraph of bodyParagraphs) {
-    const lines = wrapText(paragraph, helvetica, 10, width - 2 * margin);
-    for (const line of lines) {
-      page.drawText(line, { x: margin, y, size: 10, font: helvetica });
-      y -= 14;
-    }
-    y -= 10;
-  }
+  y = drawBodyParagraphs(page, helvetica, margin, width, y, bodyParagraphs);
 
   // --- WATERMARK ---
-  const watermarkText = `Válido ${dayjs(input.date).format("DD/MM/YYYY")}`;
-  page.drawText(watermarkText, {
-    x: width / 2 - 100,
-    y: height / 2,
-    size: 48,
-    font: helveticaBold,
-    color: rgb(0.9, 0.9, 0.9),
-    opacity: 0.3,
-  });
+  drawWatermark(page, helveticaBold, width, height, input.date);
 
   // --- FOOTER: Doctor Info ---
-  const doctor = {
-    name: input.doctorName || defaultDoctorInfo.name,
-    specialty: input.doctorSpecialty || defaultDoctorInfo.specialty,
-    title: defaultDoctorInfo.title,
-    rut: input.doctorRut || defaultDoctorInfo.rut,
-    email: input.doctorEmail || defaultDoctorInfo.email,
-    address: input.doctorAddress || defaultDoctorInfo.address,
-  };
-
-  y = 150;
-  page.drawText(doctor.name, {
-    x: margin,
-    y,
-    size: 10,
-    font: helveticaBold,
-    color: rgb(0.1, 0.4, 0.6),
-  });
-  y -= 14;
-  page.drawText(doctor.specialty, { x: margin, y, size: 9, font: helvetica, color: rgb(0.1, 0.4, 0.6) });
-  y -= 12;
-  page.drawText(doctor.title, { x: margin, y, size: 9, font: helvetica, color: rgb(0.1, 0.4, 0.6) });
-  y -= 12;
-  page.drawText(`RUT: ${doctor.rut}`, { x: margin, y, size: 9, font: helvetica, color: rgb(0.1, 0.4, 0.6) });
-  y -= 12;
-  page.drawText(doctor.email, { x: margin, y, size: 9, font: helvetica, color: rgb(0.1, 0.4, 0.6) });
-  y -= 12;
-  page.drawText(doctor.address, { x: margin, y, size: 9, font: helvetica, color: rgb(0.1, 0.4, 0.6) });
+  const doctor = createDoctorInfo(input);
+  drawDoctorFooter(page, doctor, helvetica, helveticaBold, margin, 150);
 
   // --- SIGNATURE PLACEHOLDER ---
   page.drawText("FIRMA", {
@@ -172,29 +273,11 @@ export async function generateMedicalCertificatePdf(
 
   // --- QR CODE ---
   if (qrCodeBuffer) {
-    try {
-      const qrImage = await pdfDoc.embedPng(qrCodeBuffer);
-      const qrDims = qrImage.scale(0.3); // 60x60px aprox
-      
-      page.drawImage(qrImage, {
-        x: width - qrDims.width - 30,
-        y: 30,
-        width: qrDims.width,
-        height: qrDims.height,
-      });
-    } catch (e) {
-      console.warn("Could not embed QR code:", e);
-    }
+    await drawQrCode(pdfDoc, page, qrCodeBuffer, width);
   }
 
   // --- FOOTER TEXT ---
-  page.drawText("Válida solo con firma y timbre", {
-    x: width / 2 - helvetica.widthOfTextAtSize("Válida solo con firma y timbre", 9) / 2,
-    y: 50,
-    size: 9,
-    font: helvetica,
-    color: rgb(0.1, 0.4, 0.6),
-  });
+  drawFooterNote(page, helvetica, width);
 
   return await pdfDoc.save();
 }

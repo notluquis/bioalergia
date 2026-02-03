@@ -1,5 +1,6 @@
 import type { Column } from "@tanstack/react-table";
 import { PlusCircle } from "lucide-react";
+import type { ComponentProps } from "react";
 import * as React from "react";
 
 import Button from "@/components/ui/Button";
@@ -57,7 +58,9 @@ export function DataTableFacetedFilter<TData, TValue>({
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownPopover placement={"bottom-start" as any}>
+      <DropdownPopover
+        placement={"bottom-start" as ComponentProps<typeof DropdownPopover>["placement"]}
+      >
         <HeroDropdownMenu aria-label={title} className="w-50 p-0">
           <DropdownMenuGroup>
             <div className="p-1">

@@ -31,7 +31,7 @@ export function ServicesHero({ actions, description, title, breadcrumbs }: Servi
             {breadcrumbs.map((crumb) => (
               <Breadcrumbs.Item key={crumb.label}>
                 {crumb.to ? (
-                  <Link className="text-primary font-medium" to={crumb.to as any}>
+                  <Link className="text-primary font-medium" to={crumb.to}>
                     {crumb.label}
                   </Link>
                 ) : (

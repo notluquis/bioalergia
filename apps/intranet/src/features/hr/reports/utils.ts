@@ -23,15 +23,16 @@ export function calculateStats(data: EmployeeWorkData[], periodCount = 1) {
   // Ej: 1600 horas / (10 empleados * 1 mes) = 160h promedio/emp/mes
   const averageHours = totalHours / (data.length * Math.max(periodCount, 1));
 
+  const firstEmployee = data[0];
+  if (!firstEmployee) return null;
+
   const maxEmployee = data.reduce(
     (max, emp) => (emp.totalMinutes > max.totalMinutes ? emp : max),
-    // biome-ignore lint/suspicious/noExplicitAny: default value
-    data[0] ?? ({} as any),
+    firstEmployee,
   );
   const minEmployee = data.reduce(
     (min, emp) => (emp.totalMinutes < min.totalMinutes ? emp : min),
-    // biome-ignore lint/suspicious/noExplicitAny: default value
-    data[0] ?? ({} as any),
+    firstEmployee,
   );
 
   return {

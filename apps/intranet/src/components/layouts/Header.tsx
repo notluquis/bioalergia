@@ -22,8 +22,7 @@ const getMatchLabel = (match: {
     if (typeof match.staticData.title === "string") return match.staticData.title;
     // Handle optional function in staticData if defined that way (less common in TanStack Router but possible)
     if (typeof match.staticData.breadcrumb === "function") {
-      // biome-ignore lint/suspicious/noExplicitAny: Generic breadcrumb handler
-      return (match.staticData.breadcrumb as any)(match.loaderData);
+      return (match.staticData.breadcrumb as (data: unknown) => string)(match.loaderData);
     }
   }
 

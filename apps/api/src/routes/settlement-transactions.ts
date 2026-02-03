@@ -1,6 +1,6 @@
 import { authDb } from "@finanzas/db";
 import type { SettlementTransactionWhereInput } from "@finanzas/db/input";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { z } from "zod";
 
 import { getSessionUser, hasPermission } from "../auth";
@@ -10,35 +10,28 @@ const NUMERIC_PATTERN = /^\d+$/;
 
 const app = new Hono();
 
-// GET /api/settlement-transactions
-app.get("/", async (c) => {
+const querySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  pageSize: z.coerce.number().min(1).max(100).default(50),
+  from: z.string().optional(),
+  to: z.string().optional(),
+  paymentMethod: z.string().optional(),
+  transactionType: z.string().optional(),
+  search: z.string().optional(),
+});
+
+async function requireIntegrationRead(c: Context) {
   const user = await getSessionUser(c);
   if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
 
   const canRead = await hasPermission(user.id, "read", "Integration");
   if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
 
-  const query = c.req.query();
-  const querySchema = z.object({
-    page: z.coerce.number().min(1).default(1),
-    pageSize: z.coerce.number().min(1).max(100).default(50),
-    from: z.string().optional(),
-    to: z.string().optional(),
-    paymentMethod: z.string().optional(),
-    transactionType: z.string().optional(),
-    search: z.string().optional(),
-  });
+  return user;
+}
 
-  const parsed = querySchema.safeParse(query);
-
-  if (!parsed.success) {
-    return c.json({ status: "error", message: "Invalid params" }, 400);
-  }
-
-  const { page, pageSize, from, to, paymentMethod, transactionType, search } = parsed.data;
-  const offset = (page - 1) * pageSize;
-
-  // Build where clause using type-safe SettlementTransactionWhereInput
+function buildSettlementWhere(input: z.infer<typeof querySchema>): SettlementTransactionWhereInput {
+  const { from, to, paymentMethod, transactionType, search } = input;
   const whereConditions: SettlementTransactionWhereInput[] = [];
 
   if (from || to) {
@@ -69,13 +62,23 @@ app.get("/", async (c) => {
     });
   }
 
-  // Combine conditions with AND
-  const where: SettlementTransactionWhereInput =
-    whereConditions.length === 1
-      ? whereConditions[0]
-      : whereConditions.length > 1
-        ? { AND: whereConditions }
-        : {};
+  if (whereConditions.length === 1) return whereConditions[0];
+  if (whereConditions.length > 1) return { AND: whereConditions };
+  return {};
+}
+
+// GET /api/settlement-transactions
+app.get("/", async (c) => {
+  const user = await requireIntegrationRead(c);
+  if (user instanceof Response) return user;
+
+  const parsed = querySchema.safeParse(c.req.query());
+  if (!parsed.success) return c.json({ status: "error", message: "Invalid params" }, 400);
+
+  const { page, pageSize } = parsed.data;
+  const offset = (page - 1) * pageSize;
+
+  const where = buildSettlementWhere(parsed.data);
 
   // Create user-bound client for policy enforcement
   const userDb = authDb.$setAuth(user);
@@ -102,11 +105,8 @@ app.get("/", async (c) => {
 
 // GET /api/settlement-transactions/:id
 app.get("/:id", async (c) => {
-  const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
-
-  const canRead = await hasPermission(user.id, "read", "Integration");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  const user = await requireIntegrationRead(c);
+  if (user instanceof Response) return user;
 
   const id = Number(c.req.param("id"));
 

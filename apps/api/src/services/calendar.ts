@@ -188,22 +188,21 @@ export async function listUnclassifiedCalendarEvents(
   offset: number = 0,
   filters?: MissingFieldFilter,
 ) {
-  const filterMode = filters?.filterMode || "OR";
+  const appliedFilters = filters ?? {};
+  const filterMode = appliedFilters.filterMode || "OR";
 
   // Build conditions based on filters
   const conditions: Record<string, unknown>[] = [];
 
   // Check if any field filters are actually selected (not just undefined)
-  const hasFieldFilters = filters
-    ? [
-        filters.category,
-        filters.amountExpected,
-        filters.amountPaid,
-        filters.attended,
-        filters.dosageValue,
-        filters.treatmentStage,
-      ].some(Boolean)
-    : false;
+  const hasFieldFilters = [
+    appliedFilters.category,
+    appliedFilters.amountExpected,
+    appliedFilters.amountPaid,
+    appliedFilters.attended,
+    appliedFilters.dosageValue,
+    appliedFilters.treatmentStage,
+  ].some(Boolean);
 
   // If no specific filters, default to show events missing ANY classifiable field
   if (!hasFieldFilters) {
@@ -214,27 +213,27 @@ export async function listUnclassifiedCalendarEvents(
       { attended: null, startDateTime: { lte: new Date() } },
     );
   } else {
-    if (filters.category) {
+    if (appliedFilters.category) {
       conditions.push({ OR: [{ category: null }, { category: "" }] });
     }
-    if (filters.amountExpected) {
+    if (appliedFilters.amountExpected) {
       conditions.push({ amountExpected: null });
     }
-    if (filters.amountPaid) {
+    if (appliedFilters.amountPaid) {
       conditions.push({ amountPaid: null });
     }
-    if (filters.attended) {
+    if (appliedFilters.attended) {
       conditions.push({ attended: null, startDateTime: { lte: new Date() } });
     }
     // For dosage: events that are "Tratamiento subcutáneo" but missing dosage
-    if (filters.dosageValue) {
+    if (appliedFilters.dosageValue) {
       conditions.push({
         category: "Tratamiento subcutáneo",
         dosageValue: null,
       });
     }
     // For treatmentStage: events that are "Tratamiento subcutáneo" but missing stage
-    if (filters.treatmentStage) {
+    if (appliedFilters.treatmentStage) {
       conditions.push({
         category: "Tratamiento subcutáneo",
         OR: [{ treatmentStage: null }, { treatmentStage: "" }],

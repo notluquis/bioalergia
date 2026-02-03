@@ -3,6 +3,9 @@ import path from "node:path";
 import * as readline from "node:readline";
 import { OAuth2Client } from "google-auth-library";
 
+const ENV_LINE_REGEX = /^([^=]+)=(.*)$/;
+const ENV_QUOTES_REGEX = /^["']|["']$/g;
+
 // Simple .env parser to avoid adding dotenv dependency if not present
 function loadEnv() {
   try {
@@ -10,10 +13,10 @@ function loadEnv() {
     if (fs.existsSync(envPath)) {
       const content = fs.readFileSync(envPath, "utf-8");
       content.split("\n").forEach((line) => {
-        const match = line.match(/^([^=]+)=(.*)$/);
+        const match = line.match(ENV_LINE_REGEX);
         if (match) {
           const key = match[1].trim();
-          const value = match[2].trim().replace(/^["']|["']$/g, ""); // Remove quotes
+          const value = match[2].trim().replace(ENV_QUOTES_REGEX, ""); // Remove quotes
           if (!process.env[key]) {
             process.env[key] = value;
           }

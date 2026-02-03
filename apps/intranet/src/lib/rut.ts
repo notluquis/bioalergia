@@ -1,3 +1,6 @@
+const RUT_CLEAN_REGEX = /[^0-9K]/g;
+const RUT_BODY_REGEX = /^\d+$/;
+
 export function formatRut(value?: null | string): string {
   if (!value || typeof value !== "string") return "";
 
@@ -11,11 +14,11 @@ export function formatRut(value?: null | string): string {
 
 export function normalizeRut(value?: null | string): null | string {
   if (!value) return null;
-  const cleaned = value.toUpperCase().replaceAll(/[^0-9K]/g, "");
+  const cleaned = value.toUpperCase().replaceAll(RUT_CLEAN_REGEX, "");
   if (!cleaned) return null;
   const body = cleaned.slice(0, -1);
   const dv = cleaned.slice(-1);
-  if (!body || !/^\d+$/.test(body)) return null;
+  if (!body || !RUT_BODY_REGEX.test(body)) return null;
   return `${Number.parseInt(body, 10)}-${dv}`;
 }
 

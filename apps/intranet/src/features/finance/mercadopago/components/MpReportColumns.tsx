@@ -6,6 +6,8 @@ import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import type { MPReport } from "@/services/mercadopago";
 
+const REPORT_PENDING_REGEX = /processing|pending|in_progress|waiting|generating|queued|creating/i;
+
 export const getMpReportColumns = (
   handleDownload: (e: React.MouseEvent, fileName: string) => void,
   handleProcess: (e: React.MouseEvent, fileName: string) => void,
@@ -138,5 +140,5 @@ export const getMpReportColumns = (
 
 function isReportPending(status?: string) {
   if (!status) return false;
-  return /processing|pending|in_progress|waiting|generating|queued|creating/i.test(status);
+  return REPORT_PENDING_REGEX.test(status);
 }

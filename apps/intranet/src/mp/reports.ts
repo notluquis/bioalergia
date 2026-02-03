@@ -25,8 +25,10 @@ export function firstNumber(values: (number | undefined)[]): number | undefined 
   return undefined;
 }
 
+const DELIMITER_REGEX = /[,\t]/;
+
 export function parseDelimited(text: string): string[][] {
-  return text.split("\n").map((line) => line.split(/[,\t]/).map((c) => c.trim()));
+  return text.split("\n").map((line) => line.split(DELIMITER_REGEX).map((c) => c.trim()));
 }
 
 // src/mp/reports.ts

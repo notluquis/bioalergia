@@ -1,6 +1,6 @@
 import type { Table } from "@tanstack/react-table";
 import { Settings2 } from "lucide-react";
-import { useState } from "react";
+import { type ComponentProps, useState } from "react";
 
 import Button from "@/components/ui/Button";
 import {
@@ -43,7 +43,9 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           Columnas
         </Button>
       </DropdownMenuTrigger>
-      <DropdownPopover placement={"bottom-end" as any}>
+      <DropdownPopover
+        placement={"bottom-end" as ComponentProps<typeof DropdownPopover>["placement"]}
+      >
         <HeroDropdownMenu aria-label="Toggle columns" className="w-37.5">
           <DropdownMenuLabel>Alternar columnas</DropdownMenuLabel>
           <DropdownMenuGroup className="border-b px-2 py-2">

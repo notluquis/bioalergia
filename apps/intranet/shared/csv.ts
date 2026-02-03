@@ -1,3 +1,5 @@
+const BOM_REGEX = /^\uFEFF/;
+
 export function detectDelimiter(line: string): string {
   if (line.includes(";")) return ";";
   if (line.includes("|")) return "|";
@@ -5,5 +7,5 @@ export function detectDelimiter(line: string): string {
 }
 
 export function stripBom(value: string): string {
-  return value.replace(/^\uFEFF/, "");
+  return value.replace(BOM_REGEX, "");
 }

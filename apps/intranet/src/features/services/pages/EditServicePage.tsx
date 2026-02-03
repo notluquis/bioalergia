@@ -211,15 +211,15 @@ export default function ServiceEditPage() {
             <section className="space-y-4">
               <ServiceScheduleAccordion
                 canManage={false}
-                onRegisterPayment={() => {}}
-                onUnlinkPayment={() => {}}
+                onRegisterPayment={() => undefined}
+                onUnlinkPayment={() => undefined}
                 schedules={schedules}
                 service={service}
               />
               <ServiceScheduleTable
                 canManage={false}
-                onRegisterPayment={() => {}}
-                onUnlinkPayment={() => {}}
+                onRegisterPayment={() => undefined}
+                onUnlinkPayment={() => undefined}
                 schedules={schedules}
               />
               <div className="flex justify-end">

@@ -14,8 +14,9 @@ export async function getCertificatesFolderId(): Promise<string> {
       spaces: "drive",
     });
 
-    if (response.data.files?.length) {
-      return response.data.files[0].id!;
+    const existingId = response.data.files?.[0]?.id;
+    if (existingId) {
+      return existingId;
     }
 
     const folder = await drive.files.create({
@@ -26,7 +27,11 @@ export async function getCertificatesFolderId(): Promise<string> {
       fields: "id",
     });
 
-    return folder.data.id!;
+    const folderId = folder.data.id;
+    if (!folderId) {
+      throw new Error("Google Drive: missing folder id for certificates");
+    }
+    return folderId;
   } catch (error) {
     throw parseGoogleError(error);
   }
@@ -35,8 +40,8 @@ export async function getCertificatesFolderId(): Promise<string> {
 export async function uploadCertificateToDrive(
   filepath: string,
   filename: string,
-  metadata: Record<string, any>,
-  pdfHash: string
+  metadata: Record<string, unknown>,
+  pdfHash: string,
 ): Promise<{ fileId: string; webViewLink: string | null }> {
   try {
     const drive = await getDriveClient();
@@ -59,8 +64,13 @@ export async function uploadCertificateToDrive(
       fields: "id,webViewLink",
     });
 
+    const fileId = response.data.id;
+    if (!fileId) {
+      throw new Error("Google Drive: missing file id for certificate upload");
+    }
+
     return {
-      fileId: response.data.id!,
+      fileId,
       webViewLink: response.data.webViewLink || null,
     };
   } catch (error) {

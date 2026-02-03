@@ -17,6 +17,10 @@ import { z } from "zod";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+const SLASH_FORMAT_REGEX = /^\d+\s*\/\s*\d+$/;
+const PAGADO_REGEX = /pagado/i;
+const END_AMOUNT_REGEX = /\s(\d{2,3})\s*$/;
+
 // ============================================================================
 // TYPES & EXPORTS
 // ============================================================================
@@ -412,7 +416,7 @@ function extractAmounts(summary: string, description: string) {
   let match: RegExpExecArray | null;
   while ((match = parenPattern.exec(text)) !== null) {
     let content = match[1]; // Use 'let' so we can modify it
-    if (/^\d+\s*\/\s*\d+$/.test(content)) continue; // Skip slash format
+    if (SLASH_FORMAT_REGEX.test(content)) continue; // Skip slash format
 
     // Fix: Remove date patterns to avoid merging them into the amount (e.g. "pagado el 21-11/ 30")
     // Matches "21-11" or "21/11" (if surrounded by spaces or boundary)
@@ -420,7 +424,7 @@ function extractAmounts(summary: string, description: string) {
 
     const amount = normalizeAmountRaw(content);
     if (amount == null) continue;
-    if (/pagado/i.test(content)) {
+    if (PAGADO_REGEX.test(content)) {
       amountPaid = amount;
       if (amountExpected == null) amountExpected = amount;
     } else if (amountExpected == null) {
@@ -473,7 +477,7 @@ function extractAmounts(summary: string, description: string) {
 
   // 4. Fallback: amount at end without parens (e.g., "clusitoid 50")
   if (amountExpected == null) {
-    const endMatch = /\s(\d{2,3})\s*$/.exec(text);
+    const endMatch = END_AMOUNT_REGEX.exec(text);
     if (endMatch) {
       const amount = normalizeAmountRaw(endMatch[1]);
       if (amount != null) amountExpected = amount;
@@ -580,47 +584,14 @@ function extractDosage(
 ): { value: number; unit: string } | null {
   const text = `${summary} ${description}`;
 
-  // Try explicit dosage patterns (0.5 ml, 1 cc, etc.)
-  for (const pattern of DOSAGE_PATTERNS) {
-    const match = pattern.exec(text);
-    if (!match) continue;
-
-    const valueRaw = match[1] ?? "";
-    const unit = match[0]
-      .replace(match[1] ?? "", "")
-      .trim()
-      .toLowerCase();
-
-    if (!valueRaw) continue;
-
-    // Normalize decimal number (handles both 0.5 and 0,5)
-    const value = normalizeDecimalNumber(valueRaw);
-    if (value === null) continue;
-
-    return { value, unit: unit || "ml" };
-  }
-
-  // Pattern for clustoid+dosage format without space: "clustoid0,3", "clustoid0,1"
-  const clustoidDosageMatch = CLUSTOID_DOSAGE_PATTERN.exec(text);
-  if (clustoidDosageMatch) {
-    const value = normalizeDecimalNumber(clustoidDosageMatch[1]);
-    if (value !== null) {
-      return { value, unit: "ml" };
-    }
-  }
-
-  // Fallback: standalone decimal (e.g. "0,5") implies "ml" in this context
-  const decimalMatch = DECIMAL_DOSAGE_FALLBACK.exec(text);
-  if (decimalMatch) {
-    const value = normalizeDecimalNumber(decimalMatch[1]);
-    if (value !== null) {
-      return { value, unit: "ml" };
-    }
-  }
+  return (
+    extractDosageFromPatterns(text) ??
+    extractClustoidDosage(text) ??
+    extractDecimalFallbackDosage(text)
+  );
 
   // NOTE: We do NOT assume a default dosage from patterns anymore.
   // Dosage must be explicitly stated in the text.
-  return null;
 }
 
 function detectTreatmentStage(summary: string, description: string): string | null {
@@ -693,46 +664,94 @@ function inferFinalDosage(
   summary: string | null | undefined,
   description: string | null | undefined,
 ) {
-  // Determine treatment stage:
-  // 1. Pattern-based detection takes priority (e.g., "3era dosis" = Inducción even if 0.5ml)
-  // 2. Only use ml-based inference as fallback when no explicit pattern matched
-  let finalTreatmentStage = isSubcut ? treatmentStage : null;
-  if (isSubcut && dosageData && treatmentStage === null) {
-    // Only apply ml-based rule if no explicit pattern matched
-    const dosageValue = dosageData.value;
-    // Business rule: < 0.5 ml = Inducción, >= 0.5 ml = Mantención
-    // This is a FALLBACK only - explicit patterns like "3era dosis" override this
-    finalTreatmentStage = dosageValue < 0.5 ? "Inducción" : "Mantención";
-  }
-
-  // Infer dosage from treatment stage if not explicitly found
-  let finalDosageValue = dosageData?.value || null;
-  let finalDosageUnit = dosageData?.unit || null;
-
-  if (isSubcut && finalDosageValue === null && finalTreatmentStage !== null) {
-    if (finalTreatmentStage === "Mantención") {
-      // Maintenance dose is always 0.5 ml
-      finalDosageValue = 0.5;
-      finalDosageUnit = "ml";
-    } else if (finalTreatmentStage === "Inducción") {
-      // For induction, try to detect dose number (1st, 2nd, 3rd, etc.)
-      const text = `${summary ?? ""} ${description ?? ""}`;
-      const doseNumber = detectDoseNumber(text);
-      if (doseNumber !== null) {
-        // Dose progression: 1st=0.15ml, 2nd=0.3ml, 3rd/4th/5th=0.5ml
-        if (doseNumber === 1) {
-          finalDosageValue = 0.15;
-        } else if (doseNumber === 2) {
-          finalDosageValue = 0.3;
-        } else {
-          finalDosageValue = 0.5; // 3rd, 4th, 5th doses
-        }
-        finalDosageUnit = "ml";
-      }
-    }
-  }
+  const finalTreatmentStage = inferTreatmentStage(isSubcut, dosageData, treatmentStage);
+  const { finalDosageValue, finalDosageUnit } = inferDosageFromStage(
+    isSubcut,
+    dosageData,
+    finalTreatmentStage,
+    summary,
+    description,
+  );
 
   return { finalDosageValue, finalDosageUnit, finalTreatmentStage };
+}
+
+function extractDosageFromPatterns(text: string): { value: number; unit: string } | null {
+  for (const pattern of DOSAGE_PATTERNS) {
+    const match = pattern.exec(text);
+    if (!match) continue;
+
+    const valueRaw = match[1] ?? "";
+    const unit = match[0]
+      .replace(match[1] ?? "", "")
+      .trim()
+      .toLowerCase();
+
+    if (!valueRaw) continue;
+
+    const value = normalizeDecimalNumber(valueRaw);
+    if (value === null) continue;
+
+    return { value, unit: unit || "ml" };
+  }
+
+  return null;
+}
+
+function extractClustoidDosage(text: string): { value: number; unit: string } | null {
+  const match = CLUSTOID_DOSAGE_PATTERN.exec(text);
+  if (!match) return null;
+
+  const value = normalizeDecimalNumber(match[1]);
+  return value === null ? null : { value, unit: "ml" };
+}
+
+function extractDecimalFallbackDosage(text: string): { value: number; unit: string } | null {
+  const match = DECIMAL_DOSAGE_FALLBACK.exec(text);
+  if (!match) return null;
+
+  const value = normalizeDecimalNumber(match[1]);
+  return value === null ? null : { value, unit: "ml" };
+}
+
+function inferTreatmentStage(
+  isSubcut: boolean,
+  dosageData: { value: number; unit: string } | null,
+  treatmentStage: string | null,
+) {
+  if (!isSubcut) return null;
+  if (treatmentStage !== null) return treatmentStage;
+  if (!dosageData) return null;
+
+  return dosageData.value < 0.5 ? "Inducción" : "Mantención";
+}
+
+function inferDosageFromStage(
+  isSubcut: boolean,
+  dosageData: { value: number; unit: string } | null,
+  treatmentStage: string | null,
+  summary: string | null | undefined,
+  description: string | null | undefined,
+) {
+  const finalDosageValue = dosageData?.value ?? null;
+  const finalDosageUnit = dosageData?.unit ?? null;
+
+  if (!isSubcut || finalDosageValue !== null || treatmentStage === null) {
+    return { finalDosageUnit, finalDosageValue };
+  }
+
+  if (treatmentStage === "Mantención") {
+    return { finalDosageUnit: "ml", finalDosageValue: 0.5 };
+  }
+
+  const doseNumber = detectDoseNumber(`${summary ?? ""} ${description ?? ""}`);
+  if (doseNumber === null) {
+    return { finalDosageUnit, finalDosageValue };
+  }
+
+  if (doseNumber === 1) return { finalDosageUnit: "ml", finalDosageValue: 0.15 };
+  if (doseNumber === 2) return { finalDosageUnit: "ml", finalDosageValue: 0.3 };
+  return { finalDosageUnit: "ml", finalDosageValue: 0.5 };
 }
 
 /**

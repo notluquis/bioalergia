@@ -12,6 +12,8 @@ import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
+const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
+
 export default function TimesheetsPage() {
   useWakeLock();
   useAuth();
@@ -142,7 +144,7 @@ export default function TimesheetsPage() {
 
 // Utility to ensure month is always YYYY-MM
 function formatMonthString(m: string): string {
-  if (/^\d{4}-\d{2}$/.test(m)) return m;
+  if (MONTH_STRING_REGEX.test(m)) return m;
   const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
   if (d.isValid()) return d.format("YYYY-MM");
   return dayjs().format("YYYY-MM");

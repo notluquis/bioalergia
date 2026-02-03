@@ -214,7 +214,7 @@ app.get("/progress", async (c) => {
     });
 
     // Keepalive and Progress Loop
-    while (true) {
+    for (;;) {
       const activeJobs = getCurrentJobs();
 
       for (const job of activeJobs) {

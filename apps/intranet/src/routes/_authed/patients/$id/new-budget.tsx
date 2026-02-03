@@ -23,6 +23,7 @@ export const Route = createFileRoute("/_authed/patients/$id/new-budget")({
 });
 
 const budgetItemSchema = z.object({
+  clientId: z.string().optional(),
   description: z.string().min(1, "Descripción requerida"),
   quantity: z.number().min(1),
   unitPrice: z.number().min(0),
@@ -37,6 +38,13 @@ const budgetSchema = z.object({
 
 type BudgetForm = z.infer<typeof budgetSchema>;
 
+const createBudgetItem = () => ({
+  clientId: globalThis.crypto?.randomUUID?.() ?? `item-${Date.now()}-${Math.random()}`,
+  description: "",
+  quantity: 1,
+  unitPrice: 0,
+});
+
 function NewBudgetPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
@@ -44,14 +52,18 @@ function NewBudgetPage() {
 
   const mutation = useMutation({
     mutationFn: async (data: BudgetForm) => {
-      return await apiClient.post(`/api/patients/${id}/budgets`, data, {
+      const payload = {
+        ...data,
+        items: data.items.map(({ clientId, ...item }) => item),
+      };
+      return await apiClient.post(`/api/patients/${id}/budgets`, payload, {
         responseSchema: BudgetSchema,
       });
     },
     onSuccess: () => {
       toast.success("Presupuesto creado exitosamente");
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
-      navigate({ to: "/patients/$id", params: { id: String(id) } });
+      void navigate({ to: "/patients/$id", params: { id: String(id) } });
     },
     onError: (error) => {
       toast.error(
@@ -65,7 +77,7 @@ function NewBudgetPage() {
       title: "",
       discount: 0,
       notes: "",
-      items: [{ description: "", quantity: 1, unitPrice: 0 }],
+      items: [createBudgetItem()],
     } as BudgetForm,
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value);
@@ -145,9 +157,7 @@ function NewBudgetPage() {
               size="sm"
               variant="outline"
               className="gap-2"
-              onClick={() =>
-                form.pushFieldValue("items", { description: "", quantity: 1, unitPrice: 0 })
-              }
+              onClick={() => form.pushFieldValue("items", createBudgetItem())}
             >
               <Plus size={16} />
               Agregar Ítem
@@ -158,9 +168,9 @@ function NewBudgetPage() {
             <form.Field name="items" mode="array">
               {(field) => (
                 <div className="space-y-4">
-                  {field.state.value.map((_, index) => (
+                  {field.state.value.map((item, index) => (
                     <div
-                      key={index}
+                      key={item.clientId ?? `item-${index}`}
                       className="grid grid-cols-12 gap-3 items-end border-b border-default-100 pb-4 last:border-0 last:pb-0"
                     >
                       <div className="col-span-12 sm:col-span-6">

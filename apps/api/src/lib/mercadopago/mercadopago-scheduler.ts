@@ -20,6 +20,8 @@ const CREATE_COOLDOWN_MINUTES = 30;
 const ADVISORY_LOCK_KEY = 924_017_221;
 const JITTER_MAX_MS = 45_000;
 const PROCESSED_TTL_DAYS = 45;
+const REPORT_READY_REGEX = /ready|generated|available|finished|success/i;
+const MP_DATE_TRIM_REGEX = /\.\d{3}Z$/;
 
 const SETTINGS_KEYS = {
   lastGenerated: (type: ReportType) => `mp:lastGenerated:${type}`,
@@ -294,30 +296,62 @@ async function processPendingWebhooks(
 
     for (const file of payload.files) {
       if (processed.has(file.name)) continue;
-      if (!(file.type === ".csv" || file.name.endsWith(".csv"))) continue;
+      if (!isCsvWebhookFile(file)) continue;
 
-      const type: ReportType = payload.report_type.includes("settlement")
-        ? "settlement"
-        : "release";
-
-      updateJobProgress(jobId, 3, `Procesando webhook: ${file.name}`);
-
-      try {
-        const stats = await MercadoPagoService.processReport(type, { url: file.url });
-        accumulateImportStats(importStats, stats);
-        accumulateImportStats(importStatsByType[type], stats);
-        processed.add(file.name);
-        processedCount += 1;
-        logEvent("mp.autoSync.webhookProcessed", { type, file: file.name });
-      } catch (error) {
-        logError("mp.autoSync.webhookFailed", error, { type, file: file.name });
-      }
+      const type = resolveWebhookReportType(payload.report_type);
+      const processedOk = await processWebhookFile({
+        file,
+        jobId,
+        type,
+        importStats,
+        importStatsByType,
+        processed,
+      });
+      if (processedOk) processedCount += 1;
     }
   }
 
   await persistProcessedFiles("mp:processedFiles:webhook", processed);
   await updateSetting(SETTINGS_KEYS.pendingWebhooks, JSON.stringify([]));
   return processedCount;
+}
+
+function resolveWebhookReportType(reportType: string): ReportType {
+  return reportType.includes("settlement") ? "settlement" : "release";
+}
+
+function isCsvWebhookFile(file: { name: string; type?: string }) {
+  return file.type === ".csv" || file.name.endsWith(".csv");
+}
+
+async function processWebhookFile({
+  file,
+  jobId,
+  type,
+  importStats,
+  importStatsByType,
+  processed,
+}: {
+  file: { name: string; url: string };
+  jobId: string;
+  type: ReportType;
+  importStats: ImportStatsAggregate;
+  importStatsByType: Record<ReportType, ImportStatsAggregate>;
+  processed: Set<string>;
+}) {
+  updateJobProgress(jobId, 3, `Procesando webhook: ${file.name}`);
+
+  try {
+    const stats = await MercadoPagoService.processReport(type, { url: file.url });
+    accumulateImportStats(importStats, stats);
+    accumulateImportStats(importStatsByType[type], stats);
+    processed.add(file.name);
+    logEvent("mp.autoSync.webhookProcessed", { type, file: file.name });
+    return true;
+  } catch (error) {
+    logError("mp.autoSync.webhookFailed", error, { type, file: file.name });
+    return false;
+  }
 }
 
 async function isAutoSyncEnabled() {
@@ -371,7 +405,7 @@ async function getLastProcessedAt(type: ReportType) {
 
 function isReportReady(status?: string) {
   if (!status) return false;
-  return /ready|generated|available|finished|success/i.test(status);
+  return REPORT_READY_REGEX.test(status);
 }
 
 function reportCoversDate(report: MPReportSummary, targetDate: Date) {
@@ -415,7 +449,7 @@ function minutesSince(date: Date) {
 }
 
 function formatMpDate(date: Date) {
-  return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+  return date.toISOString().replace(MP_DATE_TRIM_REGEX, "Z");
 }
 
 function isPeakWindow(date = new Date()) {

@@ -1,5 +1,6 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
+import type { ComponentProps } from "react";
 
 import Button from "@/components/ui/Button";
 import {
@@ -264,7 +265,9 @@ const ActionsCell = ({
           ⋯
         </Button>
       </DropdownMenuTrigger>
-      <DropdownPopover placement={"bottom-end" as any}>
+      <DropdownPopover
+        placement={"bottom-end" as ComponentProps<typeof DropdownPopover>["placement"]}
+      >
         <HeroDropdownMenu aria-label="Acciones de registro">
           <DropdownMenuItem
             onPress={() => {

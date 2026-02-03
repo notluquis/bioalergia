@@ -48,18 +48,20 @@ export async function processReportUrl(url: string, reportType: string): Promise
     // Convert Web Stream to Node Stream
     const nodeStream = Readable.fromWeb(body as import("stream/web").ReadableStream);
 
-    let isFirstRow = true;
-    let batch: ReportRowInput[] = [];
-    let batchValid = 0;
-    let flushPromise: Promise<void> = Promise.resolve();
+    const isFirstRow = { value: true };
+    const batchState: BatchState = {
+      batch: [],
+      batchValid: 0,
+      flushPromise: Promise.resolve(),
+    };
 
     const flushBatch = async () => {
-      if (batch.length === 0) return;
-      const inserted = await insertBatch(reportType, batch);
+      if (batchState.batch.length === 0) return;
+      const inserted = await insertBatch(reportType, batchState.batch);
       stats.insertedRows += inserted;
-      stats.duplicateRows += Math.max(batchValid - inserted, 0);
-      batch = [];
-      batchValid = 0;
+      stats.duplicateRows += Math.max(batchState.batchValid - inserted, 0);
+      batchState.batch = [];
+      batchState.batchValid = 0;
     };
 
     await new Promise<void>((resolve, reject) => {
@@ -67,59 +69,11 @@ export async function processReportUrl(url: string, reportType: string): Promise
         // MercadoPago CSVs use semicolons as separators
         .pipe(csv({ separator: ";" }))
         .on("data", (row) => {
-          stats.totalRows++;
-
-          // Clean keys (trim whitespace)
-          const cleanRow: Record<string, string | undefined> = {};
-          for (const key in row) {
-            const cleanKey = key.trim();
-            cleanRow[cleanKey] = row[key]?.trim?.() ?? row[key];
-          }
-
-          // Debug: log keys of first row to verify parsing
-          if (isFirstRow) {
-            console.log("[MP Ingest] First row keys:", Object.keys(cleanRow));
-            console.log("[MP Ingest] First row SOURCE_ID:", cleanRow.SOURCE_ID);
-            isFirstRow = false;
-          }
-
-          try {
-            const record = reportType.toLowerCase().includes("settlement")
-              ? mapRowToSettlementTransaction(cleanRow)
-              : mapRowToReleaseTransaction(cleanRow);
-
-            if (!record.sourceId) {
-              stats.skippedRows++;
-              return;
-            }
-
-            batch.push(record);
-            batchValid++;
-            stats.validRows++;
-
-            if (batch.length >= BATCH_SIZE) {
-              nodeStream.pause();
-              flushPromise = flushPromise
-                .then(async () => {
-                  await flushBatch();
-                })
-                .then(() => {
-                  nodeStream.resume();
-                })
-                .catch((err) => {
-                  reject(err);
-                });
-            }
-          } catch (err) {
-            stats.errors.push(
-              `Row ${stats.totalRows}: ${err instanceof Error ? err.message : String(err)}`,
-            );
-            stats.skippedRows++;
-          }
+          handleCsvRow(row, reportType, stats, batchState, flushBatch, nodeStream, reject, isFirstRow);
         })
         .on("end", async () => {
           try {
-            await flushPromise;
+            await batchState.flushPromise;
             await flushBatch();
             console.log(`[MP Ingest] Finished processing CSV for ${reportType}. Stats:`, stats);
             resolve();
@@ -144,6 +98,94 @@ export async function processReportUrl(url: string, reportType: string): Promise
 type ReleaseInput = ReturnType<typeof mapRowToReleaseTransaction>;
 type SettlementInput = ReturnType<typeof mapRowToSettlementTransaction>;
 type ReportRowInput = ReleaseInput | SettlementInput;
+
+type BatchState = {
+  batch: ReportRowInput[];
+  batchValid: number;
+  flushPromise: Promise<void>;
+};
+
+const cleanCsvRow = (row: Record<string, string | undefined>) => {
+  const cleanRow: Record<string, string | undefined> = {};
+  for (const key in row) {
+    const cleanKey = key.trim();
+    cleanRow[cleanKey] = row[key]?.trim?.() ?? row[key];
+  }
+  return cleanRow;
+};
+
+const mapReportRow = (reportType: string, row: Record<string, string | undefined>) => {
+  const record = reportType.toLowerCase().includes("settlement")
+    ? mapRowToSettlementTransaction(row)
+    : mapRowToReleaseTransaction(row);
+  return record.sourceId ? record : null;
+};
+
+const logFirstRow = (
+  cleanRow: Record<string, string | undefined>,
+  isFirstRow: { value: boolean },
+) => {
+  if (!isFirstRow.value) return;
+  console.log("[MP Ingest] First row keys:", Object.keys(cleanRow));
+  console.log("[MP Ingest] First row SOURCE_ID:", cleanRow.SOURCE_ID);
+  isFirstRow.value = false;
+};
+
+const enqueueBatchRecord = async (
+  record: ReportRowInput,
+  batchState: BatchState,
+  stats: ImportStats,
+  flushBatch: () => Promise<void>,
+  nodeStream: Readable,
+  reject: (reason?: unknown) => void,
+) => {
+  batchState.batch.push(record);
+  batchState.batchValid += 1;
+  stats.validRows += 1;
+
+  if (batchState.batch.length < BATCH_SIZE) return;
+
+  nodeStream.pause();
+  batchState.flushPromise = batchState.flushPromise
+    .then(async () => {
+      await flushBatch();
+    })
+    .then(() => {
+      nodeStream.resume();
+    })
+    .catch((err) => {
+      reject(err);
+    });
+};
+
+const handleCsvRow = (
+  row: Record<string, string | undefined>,
+  reportType: string,
+  stats: ImportStats,
+  batchState: BatchState,
+  flushBatch: () => Promise<void>,
+  nodeStream: Readable,
+  reject: (reason?: unknown) => void,
+  isFirstRow: { value: boolean },
+) => {
+  stats.totalRows += 1;
+  const cleanRow = cleanCsvRow(row);
+  logFirstRow(cleanRow, isFirstRow);
+
+  try {
+    const record = mapReportRow(reportType, cleanRow);
+    if (!record) {
+      stats.skippedRows += 1;
+      return;
+    }
+    void enqueueBatchRecord(record, batchState, stats, flushBatch, nodeStream, reject);
+  } catch (err) {
+    stats.errors.push(
+      `Row ${stats.totalRows}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    stats.skippedRows += 1;
+  }
+};
 
 async function insertBatch(reportType: string, rows: ReportRowInput[]) {
   if (rows.length === 0) return 0;

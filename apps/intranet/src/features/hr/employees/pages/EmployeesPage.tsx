@@ -36,10 +36,9 @@ export default function EmployeesPage() {
   // Query for employees
   const { data: employees } = useSuspenseQuery(employeeKeys.list({ includeInactive }));
 
-  const loading = false; // Suspense handles loading
-
   useEffect(() => {
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+    const nextPageIndex = includeInactive ? 0 : 0;
+    setPagination((prev) => ({ ...prev, pageIndex: nextPageIndex }));
   }, [includeInactive]);
 
   // ... rest of mutation logic ...
@@ -160,7 +159,7 @@ export default function EmployeesPage() {
           enableExport={false}
           enableGlobalFilter={false}
           enableVirtualization={false}
-          isLoading={loading || isMutating}
+          isLoading={isMutating}
           meta={{
             canEdit,
             onActivate: handleActivate,

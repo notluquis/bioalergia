@@ -419,6 +419,78 @@ function ImportSummaryCard({ previewData }: { previewData: ImportPreviewData }) 
   );
 }
 
+function buildMappingColumns({
+  columnMapping,
+  csvData,
+  csvHeaders,
+  setColumnMapping,
+}: {
+  columnMapping: Record<string, string>;
+  csvData: Record<string, string>[];
+  csvHeaders: string[];
+  setColumnMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+}): ColumnDef<FieldDefinition>[] {
+  return [
+    {
+      accessorKey: "name",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5 font-medium">
+          {row.original.name}
+          {row.original.required && (
+            <Tooltip content="Requerido">
+              <span className="text-danger text-xs">*</span>
+            </Tooltip>
+          )}
+        </div>
+      ),
+      header: "Campo BD",
+    },
+    {
+      accessorKey: "type",
+      cell: ({ row }) => (
+        <Chip className="font-mono" size="sm" variant="secondary">
+          {row.original.type}
+        </Chip>
+      ),
+      header: "Tipo",
+    },
+    {
+      cell: ({ row }) => (
+        <Select
+          className="w-full min-w-35"
+          label="Columna CSV"
+          onChange={(val) => {
+            setColumnMapping((prev) => ({
+              ...prev,
+              [row.original.name]: val as string,
+            }));
+          }}
+          value={columnMapping[row.original.name] ?? ""}
+        >
+          <SelectItem key="">-- Ignorar / Sin mapear --</SelectItem>
+          {csvHeaders.map((header) => (
+            <SelectItem key={header}>{header}</SelectItem>
+          ))}
+        </Select>
+      ),
+      header: "Columna CSV",
+      id: "mapping",
+    },
+    {
+      cell: ({ row }) => {
+        const mappedColumn = columnMapping[row.original.name];
+        return (
+          <span className="text-default-500 max-w-37.5 truncate font-mono text-xs">
+            {(mappedColumn && csvData[0]?.[mappedColumn]) ?? "-"}
+          </span>
+        );
+      },
+      header: "Ejemplo (Fila 1)",
+      id: "preview",
+    },
+  ];
+}
+
 // --- Main Page Component ---
 
 export default function CSVUploadPage() {
@@ -588,66 +660,12 @@ export default function CSVUploadPage() {
 
   const selectedData = getTransformedData();
 
-  // Columns definition for mapping table
-  const columns: ColumnDef<FieldDefinition>[] = [
-    {
-      accessorKey: "name",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1.5 font-medium">
-          {row.original.name}
-          {row.original.required && (
-            <Tooltip content="Requerido">
-              <span className="text-danger text-xs">*</span>
-            </Tooltip>
-          )}
-        </div>
-      ),
-      header: "Campo BD",
-    },
-    {
-      accessorKey: "type",
-      cell: ({ row }) => (
-        <Chip size="sm" variant="secondary" className="font-mono">
-          {row.original.type}
-        </Chip>
-      ),
-      header: "Tipo",
-    },
-    {
-      cell: ({ row }) => (
-        <Select
-          className="w-full min-w-35"
-          label="Columna CSV"
-          onChange={(val) => {
-            setColumnMapping((prev) => ({
-              ...prev,
-              [row.original.name]: val as string,
-            }));
-          }}
-          value={columnMapping[row.original.name] ?? ""}
-        >
-          <SelectItem key="">-- Ignorar / Sin mapear --</SelectItem>
-          {csvHeaders.map((header) => (
-            <SelectItem key={header}>{header}</SelectItem>
-          ))}
-        </Select>
-      ),
-      header: "Columna CSV",
-      id: "mapping",
-    },
-    {
-      cell: ({ row }) => {
-        const mappedColumn = columnMapping[row.original.name];
-        return (
-          <span className="text-default-500 max-w-37.5 truncate font-mono text-xs">
-            {(mappedColumn && csvData[0]?.[mappedColumn]) ?? "-"}
-          </span>
-        );
-      },
-      header: "Ejemplo (Fila 1)",
-      id: "preview",
-    },
-  ];
+  const columns = buildMappingColumns({
+    columnMapping,
+    csvData,
+    csvHeaders,
+    setColumnMapping,
+  });
 
   if (allowedTableOptions.length === 0) {
     return (

@@ -182,6 +182,17 @@ function is404Error(error: unknown): boolean {
   );
 }
 
+async function safeDeleteWatchChannel(channelId: string) {
+  try {
+    await db.calendarWatchChannel.delete({
+      where: { channelId },
+    });
+  } catch (error) {
+    // Ignore missing rows or concurrent deletions
+    logWarn("stop_watch_channel_db_cleanup_failed", { channelId, error });
+  }
+}
+
 /**
  * Stop watching a calendar by stopping the channel
  * @param channelId - Channel ID to stop
@@ -193,11 +204,7 @@ export async function stopWatchChannel(channelId: string, resourceId: string): P
 
     // If no credentials available, just delete from DB
     if (!client) {
-      await db.calendarWatchChannel
-        .delete({
-          where: { channelId },
-        })
-        .catch(() => {}); // Ignore if not found
+      await safeDeleteWatchChannel(channelId);
       return true;
     }
 
@@ -226,11 +233,7 @@ export async function stopWatchChannel(channelId: string, resourceId: string): P
       });
 
       // Ensure removal from database so we don't try again
-      await db.calendarWatchChannel
-        .delete({
-          where: { channelId },
-        })
-        .catch(() => {});
+      await safeDeleteWatchChannel(channelId);
 
       return true;
     }

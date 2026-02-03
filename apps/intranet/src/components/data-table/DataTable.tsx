@@ -15,6 +15,7 @@ import {
   type PaginationState,
   type RowSelectionState,
   type SortingState,
+  type Table,
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
@@ -126,7 +127,254 @@ const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties =>
   };
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component with many feature flags
+interface DataTableContentProps<TData, TValue> {
+  readonly columns: ColumnDef<TData, TValue>[];
+  readonly containerVariant: "default" | "plain";
+  readonly enableVirtualization: boolean;
+  readonly estimatedRowHeight: number;
+  readonly isLoading?: boolean;
+  readonly noDataMessage: string;
+  readonly onRowClick?: (row: TData) => void;
+  readonly renderSubComponent?: (props: {
+    row: import("@tanstack/react-table").Row<TData>;
+  }) => React.ReactNode;
+  readonly table: Table<TData>;
+}
+
+function DataTableContent<TData, TValue>({
+  columns,
+  containerVariant,
+  enableVirtualization,
+  estimatedRowHeight,
+  isLoading,
+  noDataMessage,
+  onRowClick,
+  renderSubComponent,
+  table,
+}: DataTableContentProps<TData, TValue>) {
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const rows = table.getRowModel().rows;
+
+  const virtualizer = useVirtualizer({
+    count: enableVirtualization ? rows.length : 0,
+    estimateSize: () => estimatedRowHeight,
+    getScrollElement: () => tableContainerRef.current,
+    overscan: 10,
+  });
+
+  const virtualRows = virtualizer.getVirtualItems();
+
+  const renderRows = (): React.JSX.Element => {
+    if (isLoading) {
+      return (
+        <tr>
+          <td className="px-4 py-12 text-center" colSpan={columns.length}>
+            <div className="flex flex-col items-center justify-center gap-2">
+              <Spinner className="text-primary" color="current" size="md" />
+              <span className="text-default-500 text-sm">Cargando...</span>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+
+    if (rows.length === 0) {
+      return (
+        <tr>
+          <td className="text-default-500 h-24 text-center italic" colSpan={columns.length}>
+            {noDataMessage}
+          </td>
+        </tr>
+      );
+    }
+
+    if (enableVirtualization && virtualRows.length > 0) {
+      const validVirtualRows = virtualRows.filter((virtualRow) => rows[virtualRow.index]);
+
+      return (
+        <>
+          {validVirtualRows.map((virtualRow) => {
+            const row = rows[virtualRow.index];
+            if (!row) return null;
+
+            return (
+              <React.Fragment key={row.id}>
+                <tr
+                  className="group hover:bg-background/50 border-default-100/50 border-b transition-colors last:border-0"
+                  data-index={virtualRow.index}
+                  data-state={row.getIsSelected() && "selected"}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      className="text-foreground/90 truncate px-4 py-3 align-middle"
+                      key={cell.id}
+                      style={{
+                        ...getCommonPinningStyles(cell.column),
+                        width: cell.column.getSize(),
+                      }}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+                {row.getIsExpanded() && renderSubComponent && (
+                  <tr>
+                    <td colSpan={row.getVisibleCells().length}>{renderSubComponent({ row })}</td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </>
+      );
+    }
+
+    return (
+      <>
+        {rows.map((row) => (
+          <React.Fragment key={row.id}>
+            <tr
+              className={cn(
+                "group hover:bg-background/50 data-[state=selected]:bg-primary/10 border-default-100/50 border-b transition-colors last:border-0",
+                onRowClick && "cursor-pointer",
+              )}
+              data-state={row.getIsSelected() && "selected"}
+              onClick={() => onRowClick?.(row.original)}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <td
+                  className="text-foreground/90 truncate px-4 py-3 align-middle"
+                  key={cell.id}
+                  style={{
+                    ...getCommonPinningStyles(cell.column),
+                    width: cell.column.getSize(),
+                  }}
+                >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+            {row.getIsExpanded() && renderSubComponent && (
+              <tr>
+                <td colSpan={row.getVisibleCells().length}>{renderSubComponent({ row })}</td>
+              </tr>
+            )}
+          </React.Fragment>
+        ))}
+      </>
+    );
+  };
+
+  return (
+    <div
+      className={cn(
+        "relative overflow-visible",
+        containerVariant === "plain"
+          ? "bg-transparent border-0 shadow-none"
+          : "border-default-200/50 bg-background rounded-2xl border shadow-sm",
+      )}
+    >
+      <div
+        className="muted-scrollbar overflow-x-auto overscroll-x-contain overscroll-y-contain"
+        ref={tableContainerRef}
+        style={{
+          maxWidth: "100%",
+          ...(enableVirtualization ? { maxHeight: "70dvh", overflowY: "auto" } : {}),
+        }}
+      >
+        <table
+          className="w-full border-collapse text-left text-sm"
+          style={{
+            minWidth: table.getTotalSize(),
+            width: "100%",
+          }}
+        >
+          <thead className="bg-default-100 sticky top-0 z-10">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr className="border-default-200/50 border-b" key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    className="text-default-600 group relative px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase"
+                    colSpan={header.colSpan}
+                    key={header.id}
+                    onClick={header.column.getToggleSortingHandler()}
+                    style={{
+                      ...getCommonPinningStyles(header.column),
+                      width: header.getSize(),
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                      {{
+                        asc: <ChevronUp className="h-3.5 w-3.5" />,
+                        desc: <ChevronDown className="h-3.5 w-3.5" />,
+                      }[header.column.getIsSorted() as string] ??
+                        (header.column.getCanSort() ? (
+                          <ArrowUpDown className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-50" />
+                        ) : null)}
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Resize column"
+                      className={`bg-default-100 absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none opacity-0 select-none group-hover:opacity-100 ${
+                        header.column.getIsResizing() ? "bg-primary w-1.5 opacity-100" : ""
+                      }`}
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
+                      onClick={(event) => event.stopPropagation()}
+                    />
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody
+            style={
+              enableVirtualization
+                ? {
+                    height: `${virtualizer.getTotalSize()}px`,
+                    position: "relative",
+                  }
+                : undefined
+            }
+          >
+            {renderRows()}
+          </tbody>
+          {table.getFooterGroups().length > 0 && (
+            <tfoot className="bg-default-50/50 font-medium">
+              {table.getFooterGroups().map((footerGroup) => (
+                <tr key={footerGroup.id}>
+                  {footerGroup.headers.map((header) => (
+                    <td
+                      className="text-foreground px-4 py-3 align-middle"
+                      key={header.id}
+                      style={{
+                        ...getCommonPinningStyles(header.column),
+                        width: header.getSize(),
+                      }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.footer, header.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function DataTable<TData, TValue>({
   columns,
   columnVisibility: controlledColumnVisibility,
@@ -224,130 +472,6 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  // Virtual scrolling container ref
-  const tableContainerRef = useRef<HTMLDivElement>(null);
-  const rows = table.getRowModel().rows;
-
-  // Row virtualizer - only active when enableVirtualization is true
-  const virtualizer = useVirtualizer({
-    count: enableVirtualization ? rows.length : 0,
-    estimateSize: () => estimatedRowHeight,
-    getScrollElement: () => tableContainerRef.current,
-    overscan: 10,
-  });
-
-  const virtualRows = virtualizer.getVirtualItems();
-
-  // Render rows - either virtual or normal
-  const renderRows = (): React.JSX.Element => {
-    if (isLoading) {
-      return (
-        <tr>
-          <td className="px-4 py-12 text-center" colSpan={columns.length}>
-            <div className="flex flex-col items-center justify-center gap-2">
-              <Spinner className="text-primary" color="current" size="md" />
-              <span className="text-default-500 text-sm">Cargando...</span>
-            </div>
-          </td>
-        </tr>
-      );
-    }
-
-    if (rows.length === 0) {
-      return (
-        <tr>
-          <td className="text-default-500 h-24 text-center italic" colSpan={columns.length}>
-            {noDataMessage}
-          </td>
-        </tr>
-      );
-    }
-
-    // Virtualized rendering
-    if (enableVirtualization && virtualRows.length > 0) {
-      // Pre-filter valid virtual rows to avoid null returns
-      const validVirtualRows = virtualRows.filter((vr) => rows[vr.index] !== undefined);
-
-      return (
-        <>
-          {validVirtualRows.map((virtualRow) => {
-            const row = rows[virtualRow.index];
-            if (!row) return null;
-
-            return (
-              <React.Fragment key={row.id}>
-                <tr
-                  className="group hover:bg-background/50 border-default-100/50 border-b transition-colors last:border-0"
-                  data-index={virtualRow.index}
-                  data-state={row.getIsSelected() && "selected"}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
-                  }}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      className="text-foreground/90 truncate px-4 py-3 align-middle"
-                      key={cell.id}
-                      style={{
-                        ...getCommonPinningStyles(cell.column),
-                        width: cell.column.getSize(),
-                      }}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-                {row.getIsExpanded() && renderSubComponent && (
-                  <tr>
-                    <td colSpan={row.getVisibleCells().length}>{renderSubComponent({ row })}</td>
-                  </tr>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </>
-      );
-    }
-
-    // Normal (non-virtualized) rendering
-    return (
-      <>
-        {rows.map((row) => (
-          <React.Fragment key={row.id}>
-            <tr
-              className={cn(
-                "group hover:bg-background/50 data-[state=selected]:bg-primary/10 border-default-100/50 border-b transition-colors last:border-0",
-                onRowClick && "cursor-pointer",
-              )}
-              data-state={row.getIsSelected() && "selected"}
-              onClick={() => onRowClick?.(row.original)}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td
-                  className="text-foreground/90 truncate px-4 py-3 align-middle"
-                  key={cell.id}
-                  style={{
-                    ...getCommonPinningStyles(cell.column),
-                    width: cell.column.getSize(),
-                  }}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-            {row.getIsExpanded() && renderSubComponent && (
-              <tr>
-                <td colSpan={row.getVisibleCells().length}>{renderSubComponent({ row })}</td>
-              </tr>
-            )}
-          </React.Fragment>
-        ))}
-      </>
-    );
-  };
-
   return (
     <div className="space-y-4">
       {enableToolbar && (
@@ -358,109 +482,17 @@ export function DataTable<TData, TValue>({
           table={table}
         />
       )}
-      <div
-        className={cn(
-          "relative overflow-visible",
-          containerVariant === "plain"
-            ? "bg-transparent border-0 shadow-none"
-            : "border-default-200/50 bg-background rounded-2xl border shadow-sm",
-        )}
-      >
-        <div
-          className="muted-scrollbar overflow-x-auto overscroll-x-contain overscroll-y-contain"
-          ref={tableContainerRef}
-          style={{
-            maxWidth: "100%",
-            ...(enableVirtualization ? { maxHeight: "70dvh", overflowY: "auto" } : {}),
-          }}
-        >
-          <table
-            className="w-full border-collapse text-left text-sm"
-            style={{
-              minWidth: table.getTotalSize(),
-              width: "100%",
-            }}
-          >
-            <thead className="bg-default-100 sticky top-0 z-10">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr className="border-default-200/50 border-b" key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <th
-                        className="text-default-600 group relative px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase"
-                        colSpan={header.colSpan}
-                        key={header.id}
-                        onClick={header.column.getToggleSortingHandler()}
-                        style={{
-                          ...getCommonPinningStyles(header.column),
-                          width: header.getSize(),
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: <ChevronUp className="h-3.5 w-3.5" />,
-                            desc: <ChevronDown className="h-3.5 w-3.5" />,
-                          }[header.column.getIsSorted() as string] ??
-                            (header.column.getCanSort() ? (
-                              <ArrowUpDown className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-50" />
-                            ) : null)}
-                        </div>
-                        <button
-                          type="button"
-                          aria-label="Resize column"
-                          className={`bg-default-100 absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none opacity-0 select-none group-hover:opacity-100 ${
-                            header.column.getIsResizing() ? "bg-primary w-1.5 opacity-100" : ""
-                          }`}
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </th>
-                    );
-                  })}
-                </tr>
-              ))}
-            </thead>
-            <tbody
-              style={
-                enableVirtualization
-                  ? {
-                      height: `${virtualizer.getTotalSize()}px`,
-                      position: "relative",
-                    }
-                  : undefined
-              }
-            >
-              {renderRows()}
-            </tbody>
-            {table.getFooterGroups().length > 0 && (
-              <tfoot className="bg-default-50/50 font-medium">
-                {table.getFooterGroups().map((footerGroup) => (
-                  <tr key={footerGroup.id}>
-                    {footerGroup.headers.map((header) => (
-                      <td
-                        className="text-foreground px-4 py-3 align-middle"
-                        key={header.id}
-                        style={{
-                          ...getCommonPinningStyles(header.column),
-                          width: header.getSize(),
-                        }}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.footer, header.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tfoot>
-            )}
-          </table>
-        </div>
-      </div>
+      <DataTableContent
+        columns={columns}
+        containerVariant={containerVariant}
+        enableVirtualization={enableVirtualization}
+        estimatedRowHeight={estimatedRowHeight}
+        isLoading={isLoading}
+        noDataMessage={noDataMessage}
+        onRowClick={onRowClick}
+        renderSubComponent={renderSubComponent}
+        table={table}
+      />
       {enablePagination && (
         <DataTablePagination
           enablePageSizeSelector={enablePageSizeSelector}

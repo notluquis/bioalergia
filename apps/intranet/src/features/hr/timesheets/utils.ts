@@ -119,10 +119,12 @@ export function minutesToDuration(totalMinutes: number): string {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
+const TIME_HH_MM_REGEX = /^\d{1,2}:\d{2}$/;
+
 export function parseDuration(value: string): null | number {
   const trimmed = value.trim();
   if (!trimmed) return 0;
-  if (!/^\d{1,2}:\d{2}$/.test(trimmed)) return null;
+  if (!TIME_HH_MM_REGEX.test(trimmed)) return null;
   const parts = trimmed.split(":").map(Number);
   const [hours, minutes] = parts;
   if (hours === undefined || minutes === undefined) return null;
@@ -131,7 +133,7 @@ export function parseDuration(value: string): null | number {
 }
 
 function timeToMinutes(time: string): null | number {
-  if (!/^\d{1,2}:\d{2}$/.test(time)) return null;
+  if (!TIME_HH_MM_REGEX.test(time)) return null;
   const parts = time.split(":").map(Number);
   const [hours, minutes] = parts;
   if (hours === undefined || minutes === undefined) return null;

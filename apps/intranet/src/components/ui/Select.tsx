@@ -38,16 +38,20 @@ function SelectBase<T extends object>({
   className,
   isInvalid,
   ...props
-}: SelectProps<T> & { value?: string | number; onChange?: (val: any) => void }) {
+}: SelectProps<T> & {
+  value?: HeroSelectProps<T>["selectedKey"];
+  onChange?: HeroSelectProps<T>["onSelectionChange"];
+}) {
   const hasError = isInvalid || !!errorMessage;
 
   // Map legacy value/onChange to HeroUI selectedKey/onSelectionChange if provided
-  const mappedProps: any = { ...props };
-  if (props.value !== undefined) {
-    mappedProps.selectedKey = props.value;
+  const { value, onChange, ...restProps } = props;
+  const mappedProps: HeroSelectProps<T> = { ...restProps };
+  if (value !== undefined) {
+    mappedProps.selectedKey = value;
   }
-  if (props.onChange) {
-    mappedProps.onSelectionChange = props.onChange;
+  if (onChange) {
+    mappedProps.onSelectionChange = onChange;
   }
 
   return (

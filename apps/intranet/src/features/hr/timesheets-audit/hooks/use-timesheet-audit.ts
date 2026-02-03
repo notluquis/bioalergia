@@ -34,11 +34,11 @@ export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOpti
   } = useQuery({
     enabled: shouldFetch,
     queryFn: async () => {
-      // biome-ignore lint/style/noNonNullAssertion: checked by shouldFetch
+      if (!firstDay || !lastDay) return [];
       const data = await fetchMultiEmployeeTimesheets(
         employeeIds,
-        dayjs(firstDay!).format("YYYY-MM-DD"),
-        dayjs(lastDay!).format("YYYY-MM-DD"),
+        dayjs(firstDay).format("YYYY-MM-DD"),
+        dayjs(lastDay).format("YYYY-MM-DD"),
       );
       return filterAuditEntries(data, sortedRanges);
     },

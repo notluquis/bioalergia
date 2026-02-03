@@ -16,6 +16,9 @@ import { useEffect, useRef, useState } from "react";
 import { Tooltip } from "@/components/ui/Tooltip";
 import type { CalendarEventData, TimesheetEntryWithEmployee } from "../types";
 
+const TIME_HH_MM_REGEX = /^\d{2}:\d{2}$/;
+const TIME_HH_MM_SS_REGEX = /^\d{2}:\d{2}:\d{2}$/;
+
 import {
   calculateDurationHours,
   formatDuration,
@@ -78,10 +81,10 @@ function normalizeTimeComponent(time: null | string | undefined) {
   if (!time) return null;
   const trimmed = time.trim();
   if (!trimmed) return null;
-  if (/^\d{2}:\d{2}$/.test(trimmed)) {
+  if (TIME_HH_MM_REGEX.test(trimmed)) {
     return `${trimmed}:00`;
   }
-  if (/^\d{2}:\d{2}:\d{2}$/.test(trimmed)) {
+  if (TIME_HH_MM_SS_REGEX.test(trimmed)) {
     return trimmed;
   }
   // fallback: attempt to slice first 8 chars (HH:mm:ss)

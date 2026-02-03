@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 
 import type { DayCell, WeekData } from "../types";
 
+const SKELETON_KEYS = Array.from({ length: 7 }, (_, index) => `skeleton-${index}`);
+
 interface WeekStripProps {
   currentDate: Date;
   isCollapsed?: boolean;
@@ -85,12 +87,8 @@ export function WeekStrip({
           />
         )) ??
           // Skeleton
-          Array.from({ length: 7 }).map((_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
-            <div
-              className="bg-default-100/30 h-16 animate-pulse rounded-xl"
-              key={`skeleton-${i}`}
-            />
+          SKELETON_KEYS.map((key) => (
+            <div className="bg-default-100/30 h-16 animate-pulse rounded-xl" key={key} />
           ))}
       </div>
     </div>

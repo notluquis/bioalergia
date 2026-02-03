@@ -46,7 +46,7 @@ function NewConsultationPage() {
     onSuccess: () => {
       toast.success("Consulta registrada exitosamente");
       queryClient.invalidateQueries({ queryKey: ["patient", id] });
-      navigate({ to: "/patients/$id", params: { id: String(id) } });
+      void navigate({ to: "/patients/$id", params: { id: String(id) } });
     },
     onError: (error) => {
       toast.error(

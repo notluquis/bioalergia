@@ -1,3 +1,6 @@
+const ISO_TIMESTAMP_REGEX =
+  /^([0-9]{4}-[0-9]{2}-[0-9]{2})[T ]([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:?[0-9]{2})?$/;
+
 export function formatDateForDB(date: Date) {
   const pad = (value: number) => value.toString().padStart(2, "0");
   const year = date.getFullYear();
@@ -76,9 +79,7 @@ export function normalizeTimestampString(value: string | Date | null) {
     return "";
   }
 
-  const isoMatch = trimmed.match(
-    /^([0-9]{4}-[0-9]{2}-[0-9]{2})[T ]([0-9]{2}:[0-9]{2}:[0-9]{2})(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:?[0-9]{2})?$/,
-  );
+  const isoMatch = trimmed.match(ISO_TIMESTAMP_REGEX);
   if (isoMatch) {
     const [, datePart, timePart] = isoMatch;
     return `${datePart}T${timePart}`;

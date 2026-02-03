@@ -406,9 +406,31 @@ export async function updateTimesheetEntry(
   id: number,
   data: UpdateTimesheetPayload,
 ): Promise<TimesheetEntry> {
+  const { updateData, isEmpty } = await buildTimesheetUpdateData(id, data);
+
+  if (isEmpty) {
+    return getTimesheetEntryById(id);
+  }
+
+  try {
+    const entry = await db.employeeTimesheet.update({
+      where: { id: BigInt(id) },
+      data: updateData,
+    });
+
+    return mapTimesheetEntry(entry);
+  } catch (error: unknown) {
+    logTimesheetUpdateError(id, updateData, error);
+    throw error;
+  }
+}
+
+async function buildTimesheetUpdateData(
+  id: number,
+  data: UpdateTimesheetPayload,
+): Promise<{ isEmpty: boolean; updateData: EmployeeTimesheetUpdateInput }> {
   const updateData: EmployeeTimesheetUpdateInput = {};
 
-  // Get existing entry to use work_date as reference for time conversion
   const existing = await db.employeeTimesheet.findUnique({
     where: { id: BigInt(id) },
   });
@@ -432,36 +454,28 @@ export async function updateTimesheetEntry(
     updateData.comment = data.comment;
   }
 
-  if (Object.keys(updateData).length === 0) {
-    return getTimesheetEntryById(id);
-  }
+  const isEmpty = Object.keys(updateData).length === 0;
 
-  try {
-    const entry = await db.employeeTimesheet.update({
-      where: { id: BigInt(id) },
-      data: updateData,
-    });
+  return { isEmpty, updateData };
+}
 
-    return mapTimesheetEntry(entry);
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorCode =
-      error instanceof Object && "code" in error
-        ? (error as Record<string, unknown>).code
-        : undefined;
-    const errorMeta =
-      error instanceof Object && "meta" in error
-        ? (error as Record<string, unknown>).meta
-        : undefined;
-    console.error("[timesheets] update error details:", {
-      id,
-      message: errorMessage,
-      code: errorCode,
-      meta: errorMeta,
-      updateData,
-    });
-    throw error;
-  }
+function logTimesheetUpdateError(
+  id: number,
+  updateData: EmployeeTimesheetUpdateInput,
+  error: unknown,
+) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorCode =
+    error instanceof Object && "code" in error ? (error as Record<string, unknown>).code : undefined;
+  const errorMeta =
+    error instanceof Object && "meta" in error ? (error as Record<string, unknown>).meta : undefined;
+  console.error("[timesheets] update error details:", {
+    id,
+    message: errorMessage,
+    code: errorCode,
+    meta: errorMeta,
+    updateData,
+  });
 }
 
 export async function deleteTimesheetEntry(id: number): Promise<void> {

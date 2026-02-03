@@ -21,6 +21,7 @@ export interface AuthSession {
 }
 
 const COOKIE_NAME = "finanzas_session";
+const BEARER_PREFIX = /^Bearer\s+/i;
 
 /**
  * Extract and verify PASETO token from request
@@ -33,7 +34,7 @@ export async function getSessionUser(ctx: Context): Promise<AuthSession | null> 
   }
 
   // 1. Check Authorization header
-  let token = ctx.req.header("Authorization")?.replace(/^Bearer\s+/i, "");
+  let token = ctx.req.header("Authorization")?.replace(BEARER_PREFIX, "");
 
   // 2. Fall back to cookie
   if (!token) {

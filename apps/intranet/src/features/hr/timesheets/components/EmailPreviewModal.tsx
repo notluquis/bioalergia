@@ -17,6 +17,8 @@ import type { TimesheetSummaryRow } from "../types";
 
 import "dayjs/locale/es";
 
+const MONTH_LABEL_REGEX = /^(\d{4})-(\d{2})$/;
+
 interface EmailPreviewModalProps {
   employee: Employee | null;
   isOpen: boolean;
@@ -47,8 +49,7 @@ export default function EmailPreviewModal({
   // Convertir mes a español
   dayjs.locale("es");
   let monthLabelEs = monthLabel;
-  const monthRegex = /^(\d{4})-(\d{2})$/;
-  const monthMatch = monthRegex.exec(monthLabel);
+  const monthMatch = MONTH_LABEL_REGEX.exec(monthLabel);
   if (monthMatch) {
     monthLabelEs = dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY");
   } else if (dayjs(monthLabel, "MMMM YYYY", "en").isValid()) {

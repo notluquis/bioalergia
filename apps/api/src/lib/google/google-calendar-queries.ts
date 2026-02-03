@@ -71,6 +71,223 @@ export type CalendarAggregateResult = {
   available: CalendarAvailableFilters;
 };
 
+const EVENT_DATE_EXPR = sql`coalesce(e.start_date_time, e.start_date)`;
+const EVENT_DATE_ONLY = sql<string>`DATE(${EVENT_DATE_EXPR})`;
+const EVENT_YEAR = sql<number>`extract(year from ${EVENT_DATE_EXPR})`;
+const EVENT_MONTH = sql<number>`extract(month from ${EVENT_DATE_EXPR})`;
+const EVENT_ISO_YEAR = sql<number>`extract(isoyear from ${EVENT_DATE_EXPR})`;
+const EVENT_ISO_WEEK = sql<number>`extract(week from ${EVENT_DATE_EXPR})`;
+const EVENT_WEEKDAY = sql<number>`extract(dow from ${EVENT_DATE_EXPR})`;
+
+type TotalRow = {
+  events: number | string;
+  days: number | string;
+  amountExpected: number | string;
+  amountPaid: number | string;
+};
+
+type MonthRow = {
+  year: number | string;
+  month: number | string;
+  total: number | string;
+  amountExpected: number | string;
+  amountPaid: number | string;
+};
+
+type WeekRow = {
+  isoYear: number | string;
+  isoWeek: number | string;
+  total: number | string;
+  amountExpected: number | string;
+  amountPaid: number | string;
+};
+
+type DateRow = {
+  date: string | Date;
+  total: number | string;
+  amountExpected: number | string;
+  amountPaid: number | string;
+};
+
+type DateTypeRow = {
+  date: string | Date;
+  eventType: string | null;
+  total: number | string;
+};
+
+type WeekdayRow = {
+  weekday: number | string;
+  total: number | string;
+  amountExpected: number | string;
+  amountPaid: number | string;
+};
+
+type CalendarRow = { calendarId: string; total: number | string };
+type EventTypeRow = { eventType: string | null; total: number | string };
+type CategoryRow = { category: string | null; total: number | string };
+
+const buildEventBaseQuery = () =>
+  db.$qb.selectFrom("Event as e").leftJoin("Calendar as c", "e.calendarId", "c.id");
+
+type EventBaseQuery = ReturnType<typeof buildEventBaseQuery>;
+
+const toNumber = (value: number | string | null | undefined) => Number(value ?? 0);
+
+function buildByYearFromMonths(months: MonthRow[]) {
+  const totalsByYear = new Map<number, { total: number; amountExpected: number; amountPaid: number }>();
+
+  for (const month of months) {
+    const year = Number(month.year);
+    const current = totalsByYear.get(year) ?? { total: 0, amountExpected: 0, amountPaid: 0 };
+    totalsByYear.set(year, {
+      total: current.total + toNumber(month.total),
+      amountExpected: current.amountExpected + toNumber(month.amountExpected),
+      amountPaid: current.amountPaid + toNumber(month.amountPaid),
+    });
+  }
+
+  return Array.from(totalsByYear.entries())
+    .map(([year, totals]) => ({ year, ...totals }))
+    .sort((a, b) => b.year - a.year);
+}
+
+function buildMaxEventCount(rows: DateRow[]) {
+  return rows.reduce((max, row) => Math.max(max, toNumber(row.total)), 0);
+}
+
+function applyDateRangeFilters(
+  query: EventBaseQuery,
+  filters: CalendarEventFilters,
+): EventBaseQuery {
+  let q = query;
+
+  if (filters.from && dayjs(filters.from).isValid()) {
+    const fromDate = dayjs(filters.from).startOf("day").toISOString();
+    q = q.where(sql`coalesce(e.start_date_time, e.start_date)`, ">=", fromDate);
+  }
+
+  if (filters.to && dayjs(filters.to).isValid()) {
+    const toDate = dayjs(filters.to).endOf("day").toISOString();
+    q = q.where(sql`coalesce(e.start_date_time, e.start_date)`, "<=", toDate);
+  }
+
+  return q;
+}
+
+function getTotals(query: EventBaseQuery) {
+  return query
+    .select([
+      sql<number>`count(e.id)`.as("events"),
+      sql<number>`count(distinct ${EVENT_DATE_ONLY})`.as("days"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+    ])
+    .executeTakeFirst();
+}
+
+function getByMonth(query: EventBaseQuery) {
+  return query
+    .select([
+      EVENT_YEAR.as("year"),
+      EVENT_MONTH.as("month"),
+      sql<number>`count(e.id)`.as("total"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+    ])
+    .groupBy([EVENT_YEAR, EVENT_MONTH])
+    .orderBy(EVENT_YEAR, "desc")
+    .orderBy(EVENT_MONTH, "desc")
+    .execute();
+}
+
+function getByWeek(query: EventBaseQuery) {
+  return query
+    .select([
+      EVENT_ISO_YEAR.as("isoYear"),
+      EVENT_ISO_WEEK.as("isoWeek"),
+      sql<number>`count(e.id)`.as("total"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+    ])
+    .groupBy([EVENT_ISO_YEAR, EVENT_ISO_WEEK])
+    .orderBy(EVENT_ISO_YEAR, "desc")
+    .orderBy(EVENT_ISO_WEEK, "desc")
+    .execute();
+}
+
+function getByDate(query: EventBaseQuery) {
+  return query
+    .select([
+      EVENT_DATE_ONLY.as("date"),
+      sql<number>`count(e.id)`.as("total"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+    ])
+    .groupBy(EVENT_DATE_ONLY)
+    .orderBy(EVENT_DATE_ONLY, "desc")
+    .execute();
+}
+
+function getByDateType(query: EventBaseQuery) {
+  return query
+    .select([EVENT_DATE_ONLY.as("date"), "e.eventType as eventType", sql<number>`count(e.id)`.as("total")])
+    .groupBy([EVENT_DATE_ONLY, "e.eventType"])
+    .orderBy(EVENT_DATE_ONLY, "desc")
+    .execute();
+}
+
+function getByWeekday(query: EventBaseQuery) {
+  return query
+    .select([
+      EVENT_WEEKDAY.as("weekday"),
+      sql<number>`count(e.id)`.as("total"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+    ])
+    .groupBy(EVENT_WEEKDAY)
+    .orderBy("total", "desc")
+    .execute();
+}
+
+async function getAvailableFilters(filters: CalendarEventFilters): Promise<CalendarAvailableFilters> {
+  const dateRangeQuery = buildEventBaseQuery();
+
+  const scopedQuery = applyDateRangeFilters(dateRangeQuery, filters);
+
+  const [availCalendars, availEventTypes, availCategories] = await Promise.all([
+    scopedQuery
+      .select(["c.googleId as calendarId", sql<number>`count(e.id)`.as("total")])
+      .groupBy("c.googleId")
+      .orderBy("total", "desc")
+      .execute(),
+    scopedQuery
+      .select(["e.eventType as eventType", sql<number>`count(e.id)`.as("total")])
+      .groupBy("e.eventType")
+      .orderBy("total", "desc")
+      .execute(),
+    scopedQuery
+      .select(["e.category", sql<number>`count(e.id)`.as("total")])
+      .groupBy("e.category")
+      .orderBy("total", "desc")
+      .execute(),
+  ]);
+
+  return {
+    calendars: (availCalendars as unknown as CalendarRow[]).map((row) => ({
+      calendarId: String(row.calendarId),
+      total: toNumber(row.total),
+    })),
+    eventTypes: (availEventTypes as unknown as EventTypeRow[]).map((row) => ({
+      eventType: row.eventType,
+      total: toNumber(row.total),
+    })),
+    categories: (availCategories as unknown as CategoryRow[]).map((row) => ({
+      category: row.category,
+      total: toNumber(row.total),
+    })),
+  };
+}
+
 export type CalendarEventDetail = {
   calendarId: string;
   eventId: string;
@@ -125,10 +342,7 @@ export type CalendarEventsByDateResult = {
 
 // Helper: Apply filters to a Kysely query
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy query builder
-function applyFilters<T extends Record<string, unknown>>(
-  query: T,
-  filters: CalendarEventFilters,
-): T {
+function applyFilters(query: EventBaseQuery, filters: CalendarEventFilters): EventBaseQuery {
   let q = query;
 
   if (filters.from) {
@@ -205,247 +419,63 @@ function applyFilters<T extends Record<string, unknown>>(
 export async function getCalendarAggregates(
   filters: CalendarEventFilters,
 ): Promise<CalendarAggregateResult> {
-  const baseQuery = db.$qb
-    .selectFrom("Event as e")
-    .leftJoin("Calendar as c", "e.calendarId", "c.id");
+  const filteredQuery = applyFilters(buildEventBaseQuery(), filters);
 
-  const filteredQuery = applyFilters(baseQuery, filters);
-
-  // 1. Totals
-  const totals = await filteredQuery
-    .select([
-      sql<number>`count(e.id)`.as("events"),
-      sql<number>`count(distinct DATE(coalesce(e.start_date_time, e.start_date)))`.as("days"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
-    ])
-    .executeTakeFirst();
-
-  // 2. By Month
-  const byMonth = await filteredQuery
-    .select([
-      sql<number>`extract(year from coalesce(e.start_date_time, e.start_date))`.as("year"),
-      sql<number>`extract(month from coalesce(e.start_date_time, e.start_date))`.as("month"),
-      sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
-    ])
-    .groupBy([
-      sql`extract(year from coalesce(e.start_date_time, e.start_date))`,
-      sql`extract(month from coalesce(e.start_date_time, e.start_date))`,
-    ])
-    .orderBy(sql`extract(year from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .orderBy(sql`extract(month from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .execute();
-
-  // 3. By Week
-  const byWeek = await filteredQuery
-    .select([
-      sql<number>`extract(isoyear from coalesce(e.start_date_time, e.start_date))`.as("isoYear"),
-      sql<number>`extract(week from coalesce(e.start_date_time, e.start_date))`.as("isoWeek"),
-      sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
-    ])
-    .groupBy([
-      sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`,
-      sql`extract(week from coalesce(e.start_date_time, e.start_date))`,
-    ])
-    .orderBy(sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .orderBy(sql`extract(week from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .execute();
-
-  // 4. By Date
-  const byDate = await filteredQuery
-    .select([
-      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("date"),
-      sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
-    ])
-    .groupBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`)
-    .orderBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`, "desc")
-    .execute();
-
-  // 4b. By Date + Event Type
-  const byDateType = await filteredQuery
-    .select([
-      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("date"),
-      "e.eventType as eventType",
-      sql<number>`count(e.id)`.as("total"),
-    ])
-    .groupBy([sql`DATE(coalesce(e.start_date_time, e.start_date))`, "e.eventType"])
-    .orderBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`, "desc")
-    .execute();
-
-  // 5. By Weekday
-  const byWeekday = await filteredQuery
-    .select([
-      sql<number>`extract(dow from coalesce(e.start_date_time, e.start_date))`.as("weekday"),
-      sql<number>`count(e.id)`.as("total"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
-    ])
-    .groupBy(sql`extract(dow from coalesce(e.start_date_time, e.start_date))`)
-    .orderBy("total", "desc")
-    .execute();
-
-  // 6. Available filters (separate queries without some filters?)
-  // Actually, available filters usually respect the date range but ignore specific selection of that filter?
-  // For simplicity, let's query available filters based on date range ONLY.
-
-  const dateRangeQuery = db.$qb
-    .selectFrom("Event as e")
-    .leftJoin("Calendar as c", "e.calendarId", "c.id");
-
-  let initialQ = dateRangeQuery;
-  if (filters.from && dayjs(filters.from).isValid()) {
-    const fromDate = dayjs(filters.from).startOf("day").toISOString();
-    initialQ = initialQ.where(sql`coalesce(e.start_date_time, e.start_date)`, ">=", fromDate);
-  }
-  if (filters.to && dayjs(filters.to).isValid()) {
-    const toDate = dayjs(filters.to).endOf("day").toISOString();
-    initialQ = initialQ.where(sql`coalesce(e.start_date_time, e.start_date)`, "<=", toDate);
-  }
-
-  const [availCalendars, availEventTypes, availCategories] = await Promise.all([
-    initialQ
-      .select(["c.googleId as calendarId", sql<number>`count(e.id)`.as("total")]) // sql alias uses raw names? Or can strict select use string?
-      // "c.google_id as calendarId" is a string select. ZenStack QB expects valid Model Paths.
-      // "c.googleId as calendarId" ?
-      // If I use string select in Kysely, it parses "col as alias".
-      // ZenStack matches "c.googleId".
-      // Let's use `eb` for safety or CamelCase string.
-      // .select(["c.googleId as calendarId", ...])
-      .groupBy("c.googleId")
-      .orderBy("total", "desc")
-      .execute(),
-    initialQ
-      .select(["e.eventType as eventType", sql<number>`count(e.id)`.as("total")])
-      .groupBy("e.eventType")
-      .orderBy("total", "desc")
-      .execute(),
-    initialQ
-      .select(["e.category", sql<number>`count(e.id)`.as("total")])
-      .groupBy("e.category")
-      .orderBy("total", "desc")
-      .execute(),
+  const [totals, byMonth, byWeek, byDate, byDateType, byWeekday, available] = await Promise.all([
+    getTotals(filteredQuery),
+    getByMonth(filteredQuery),
+    getByWeek(filteredQuery),
+    getByDate(filteredQuery),
+    getByDateType(filteredQuery),
+    getByWeekday(filteredQuery),
+    getAvailableFilters(filters),
   ]);
 
-  // helper types for query results
-  type TotalRow = {
-    events: number | string;
-    days: number | string;
-    amountExpected: number | string;
-    amountPaid: number | string;
-  };
-
-  type MonthRow = {
-    year: number | string;
-    month: number | string;
-    total: number | string;
-    amountExpected: number | string;
-    amountPaid: number | string;
-  };
-  type WeekRow = {
-    isoYear: number | string;
-    isoWeek: number | string;
-    total: number | string;
-    amountExpected: number | string;
-    amountPaid: number | string;
-  };
-  // Compute maxEventCount from byDate results
-  type DateRow = {
-    date: string | Date;
-    total: number | string;
-    amountExpected: number | string;
-    amountPaid: number | string;
-  };
-  type DateTypeRow = {
-    date: string | Date;
-    eventType: string | null;
-    total: number | string;
-  };
-  const maxEventCount = (byDate as unknown as DateRow[]).reduce(
-    (max, row) => Math.max(max, Number(row.total)),
-    0,
-  );
-
-  type WeekdayRow = {
-    weekday: number | string;
-    total: number | string;
-    amountExpected: number | string;
-    amountPaid: number | string;
-  };
-  type CalendarRow = { calendarId: string; total: number | string };
-  type EventTypeRow = { eventType: string | null; total: number | string };
-  type CategoryRow = { category: string | null; total: number | string };
+  const maxEventCount = buildMaxEventCount(byDate as unknown as DateRow[]);
 
   return {
     totals: {
-      events: Number((totals as unknown as TotalRow)?.events || 0),
-      days: Number((totals as unknown as TotalRow)?.days || 0),
-      amountExpected: Number((totals as unknown as TotalRow)?.amountExpected || 0),
-      amountPaid: Number((totals as unknown as TotalRow)?.amountPaid || 0),
+      events: toNumber((totals as unknown as TotalRow)?.events),
+      days: toNumber((totals as unknown as TotalRow)?.days),
+      amountExpected: toNumber((totals as unknown as TotalRow)?.amountExpected),
+      amountPaid: toNumber((totals as unknown as TotalRow)?.amountPaid),
       maxEventCount,
     },
     aggregates: {
-      byYear: (byMonth as unknown as MonthRow[]).reduce(
-        (
-          acc: Array<{ year: number; total: number; amountExpected: number; amountPaid: number }>,
-          _curr: MonthRow,
-        ) => {
-          // Flatten logic omitted, assuming byMonth covers needs or todo: implement proper byYear
-          return acc;
-        },
-        [],
-      ),
-      byMonth: (byMonth as unknown as MonthRow[]).map((r: MonthRow) => ({
-        year: Number(r.year),
-        month: Number(r.month),
-        total: Number(r.total),
-        amountExpected: Number(r.amountExpected),
-        amountPaid: Number(r.amountPaid),
+      byYear: buildByYearFromMonths(byMonth as unknown as MonthRow[]),
+      byMonth: (byMonth as unknown as MonthRow[]).map((r) => ({
+        year: toNumber(r.year),
+        month: toNumber(r.month),
+        total: toNumber(r.total),
+        amountExpected: toNumber(r.amountExpected),
+        amountPaid: toNumber(r.amountPaid),
       })),
-      byWeek: (byWeek as unknown as WeekRow[]).map((r: WeekRow) => ({
-        isoYear: Number(r.isoYear),
-        isoWeek: Number(r.isoWeek),
-        total: Number(r.total),
-        amountExpected: Number(r.amountExpected),
-        amountPaid: Number(r.amountPaid),
+      byWeek: (byWeek as unknown as WeekRow[]).map((r) => ({
+        isoYear: toNumber(r.isoYear),
+        isoWeek: toNumber(r.isoWeek),
+        total: toNumber(r.total),
+        amountExpected: toNumber(r.amountExpected),
+        amountPaid: toNumber(r.amountPaid),
       })),
-      byWeekday: (byWeekday as unknown as WeekdayRow[]).map((r: WeekdayRow) => ({
-        weekday: Number(r.weekday),
-        total: Number(r.total),
-        amountExpected: Number(r.amountExpected),
-        amountPaid: Number(r.amountPaid),
+      byWeekday: (byWeekday as unknown as WeekdayRow[]).map((r) => ({
+        weekday: toNumber(r.weekday),
+        total: toNumber(r.total),
+        amountExpected: toNumber(r.amountExpected),
+        amountPaid: toNumber(r.amountPaid),
       })),
-      byDate: (byDate as unknown as DateRow[]).map((r: DateRow) => ({
+      byDate: (byDate as unknown as DateRow[]).map((r) => ({
         date: dayjs(r.date).format("YYYY-MM-DD"),
-        total: Number(r.total),
-        amountExpected: Number(r.amountExpected),
-        amountPaid: Number(r.amountPaid),
+        total: toNumber(r.total),
+        amountExpected: toNumber(r.amountExpected),
+        amountPaid: toNumber(r.amountPaid),
       })),
-      byDateType: (byDateType as unknown as DateTypeRow[]).map((r: DateTypeRow) => ({
+      byDateType: (byDateType as unknown as DateTypeRow[]).map((r) => ({
         date: dayjs(r.date).format("YYYY-MM-DD"),
         eventType: r.eventType,
-        total: Number(r.total),
+        total: toNumber(r.total),
       })),
     },
-    available: {
-      calendars: (availCalendars as unknown as CalendarRow[]).map((r: CalendarRow) => ({
-        calendarId: String(r.calendarId),
-        total: Number(r.total),
-      })),
-      eventTypes: (availEventTypes as unknown as EventTypeRow[]).map((r: EventTypeRow) => ({
-        eventType: r.eventType,
-        total: Number(r.total),
-      })),
-      categories: (availCategories as unknown as CategoryRow[]).map((r: CategoryRow) => ({
-        category: r.category,
-        total: Number(r.total),
-      })),
-    },
+    available,
   };
 }
 
@@ -456,11 +486,7 @@ export async function getCalendarEventsByDate(
   filters: CalendarEventFilters,
   options: { maxDays?: number } = {},
 ): Promise<CalendarEventsByDateResult> {
-  const baseQuery = db.$qb
-    .selectFrom("Event as e")
-    .leftJoin("Calendar as c", "e.calendarId", "c.id");
-
-  const filteredQuery = applyFilters(baseQuery, filters);
+  const filteredQuery = applyFilters(buildEventBaseQuery(), filters);
 
   const maxDays = options.maxDays || 31;
 
@@ -492,10 +518,7 @@ export async function getCalendarEventsByDate(
     to: undefined,
   };
 
-  let eventsQuery = applyFilters(
-    db.$qb.selectFrom("Event as e").leftJoin("Calendar as c", "e.calendarId", "c.id"),
-    filtersWithoutDates,
-  );
+  let eventsQuery = applyFilters(buildEventBaseQuery(), filtersWithoutDates);
 
   // Filter by the exact dates we found (top N dates with events)
   eventsQuery = eventsQuery.where(

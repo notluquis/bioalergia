@@ -8,6 +8,8 @@ const PersonalCreditsSchema = z.array(PersonalCreditSchema);
 const DeleteCreditResponseSchema = z.object({ success: z.boolean() });
 const PayInstallmentResponseSchema = z.looseObject({});
 
+type PayInstallmentResponse = z.infer<typeof PayInstallmentResponseSchema>;
+
 export const personalFinanceApi = {
   // Create
   createCredit: async (data: CreateCreditInput) => {
@@ -52,8 +54,7 @@ export const personalFinanceApi = {
     installmentNumber: number,
     data: PayInstallmentInput,
   ) => {
-    // biome-ignore lint/suspicious/noExplicitAny: unknown response
-    return apiClient.post<any>(
+    return apiClient.post<PayInstallmentResponse>(
       `/api/personal-finance/credits/${creditId}/installments/${installmentNumber}/pay`,
       {
         ...data,

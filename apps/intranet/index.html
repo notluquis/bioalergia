@@ -5,6 +5,8 @@
     <script>
       // Community 2025 Standard: Global Chunk Load Error Handler
       // Catches errors before React even mounts or during module evaluation
+      const CHUNK_ERROR_REGEX =
+        /Failed to fetch dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i;
       function ensureFallback() {
         var container = document.getElementById("app-fallback");
         if (!container) {
@@ -49,11 +51,7 @@
       // BUBBLE PHASE handler for runtime errors (chunk imports)
       window.addEventListener("error", (e) => {
         var msg = e.message || "";
-        if (
-          /Failed to fetch dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i.test(
-            msg
-          )
-        ) {
+        if (CHUNK_ERROR_REGEX.test(msg)) {
           console.warn("Dynamic import error detected:", msg);
           showFallback("chunk");
         }
@@ -78,7 +76,9 @@
               theme = "dark";
             }
           }
-        } catch (_e) {}
+        } catch (_e) {
+          // Ignore storage access errors (privacy mode, blocked storage, etc.)
+        }
         var html = document.documentElement;
         if (theme === "dark") {
           html.setAttribute("data-theme", "bioalergia-dark");

@@ -57,7 +57,7 @@ export default function Supplies() {
         </div>
         <div className="mt-4">
           <SupplyRequestsTable
-            onStatusChange={canUpdate ? handleStatusChange : () => {}}
+            onStatusChange={canUpdate ? handleStatusChange : () => undefined}
             requests={requests}
           />
         </div>

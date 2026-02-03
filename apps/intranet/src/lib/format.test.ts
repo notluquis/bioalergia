@@ -9,6 +9,8 @@ import {
   formatRelativeDate,
 } from "./format";
 
+const DATE_FORMAT_REGEX = /01[-/]01[-/]2023/;
+
 describe("Format Utilities", () => {
   describe("fmtCLP", () => {
     it("should format number as CLP currency", () => {
@@ -77,14 +79,14 @@ describe("Format Utilities", () => {
   describe("formatDate", () => {
     it("should format date object", () => {
       const date = new Date("2023-01-01T12:00:00");
-      expect(formatDate(date)).toMatch(/01[-/]01[-/]2023/);
+      expect(formatDate(date)).toMatch(DATE_FORMAT_REGEX);
     });
 
     it("should format date string", () => {
       // Use T12:00:00 to avoid timezone issues shifting the date
       // Note: Node environment might use hyphens for es-CL
       const result = formatDate("2023-01-01T12:00:00");
-      expect(result).toMatch(/01[-/]01[-/]2023/);
+      expect(result).toMatch(DATE_FORMAT_REGEX);
     });
 
     it("should return - for invalid date", () => {

@@ -85,26 +85,20 @@ function ChangeGroup({ action, items }: Readonly<{ action: string; items: Change
   );
 }
 
-export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
-  if (!data) return null;
-
-  const rawDetails = data as {
-    excluded?: string[];
-    inserted?: string[];
-    updated?: (string | { changes: string[]; summary: string })[];
-  };
-
+const buildDetailsFromRaw = (rawDetails: {
+  excluded?: string[];
+  inserted?: string[];
+  updated?: (string | { changes: string[]; summary: string })[];
+}): ChangeDetail[] => {
   const details: ChangeDetail[] = [];
 
-  // Transform inserted
-  if (rawDetails.inserted && Array.isArray(rawDetails.inserted)) {
+  if (Array.isArray(rawDetails.inserted)) {
     for (const summary of rawDetails.inserted) {
       details.push({ action: "created", summary });
     }
   }
 
-  // Transform updated
-  if (rawDetails.updated && Array.isArray(rawDetails.updated)) {
+  if (Array.isArray(rawDetails.updated)) {
     for (const item of rawDetails.updated) {
       if (typeof item === "string") {
         details.push({ action: "updated", summary: item });
@@ -114,12 +108,37 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
     }
   }
 
-  // Transform excluded
-  if (rawDetails.excluded && Array.isArray(rawDetails.excluded)) {
+  if (Array.isArray(rawDetails.excluded)) {
     for (const summary of rawDetails.excluded) {
       details.push({ action: "deleted", summary });
     }
   }
+
+  return details;
+};
+
+const groupDetailsByAction = (details: ChangeDetail[]) => {
+  const grouped: Record<string, ChangeDetail[]> = {};
+
+  for (const item of details) {
+    const action = item.action ?? "unknown";
+    grouped[action] ??= [];
+    grouped[action].push(item);
+  }
+
+  return grouped;
+};
+
+export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
+  if (!data) return null;
+
+  const rawDetails = data as {
+    excluded?: string[];
+    inserted?: string[];
+    updated?: (string | { changes: string[]; summary: string })[];
+  };
+
+  const details = buildDetailsFromRaw(rawDetails);
 
   if (details.length === 0) {
     return (
@@ -129,13 +148,7 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
     );
   }
 
-  // Group by action
-  const grouped: Record<string, ChangeDetail[]> = {};
-  for (const item of details) {
-    const action = item.action ?? "unknown";
-    grouped[action] ??= [];
-    grouped[action].push(item);
-  }
+  const grouped = groupDetailsByAction(details);
 
   return (
     <Accordion

@@ -19,10 +19,9 @@ export function ScheduleCalendar({
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventDetail | null>(null);
   const detailPanelRef = useRef<HTMLDivElement>(null);
 
-  const effectiveWeekStart = weekStart!; // Parent ensures this via URL defaults
-
   // Auto-scroll to detail panel when event is selected
   useEffect(() => {
+    if (!weekStart) return;
     if (selectedEvent && detailPanelRef.current) {
       // Small delay to allow DOM to update
       requestAnimationFrame(() => {
@@ -32,7 +31,11 @@ export function ScheduleCalendar({
         });
       });
     }
-  }, [selectedEvent]);
+  }, [selectedEvent, weekStart]);
+
+  if (!weekStart) {
+    return null;
+  }
 
   return (
     <div className="space-y-4">
@@ -40,7 +43,7 @@ export function ScheduleCalendar({
         events={events}
         loading={loading}
         onEventClick={setSelectedEvent}
-        weekStart={effectiveWeekStart}
+        weekStart={weekStart}
       />
 
       {loading && <p className="text-foreground-500 text-center text-xs">Actualizando eventos…</p>}

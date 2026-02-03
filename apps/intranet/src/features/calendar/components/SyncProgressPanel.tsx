@@ -57,20 +57,14 @@ export function SyncProgressPanel({
     pending: "Pendiente",
   };
 
-  const getStatusColor = (
-    status: SyncProgressStatus,
-  ): "accent" | "danger" | "warning" | "default" => {
-    switch (status) {
-      case "completed":
-        return "accent";
-      case "error":
-        return "danger";
-      case "in_progress":
-        return "warning";
-      default:
-        return "default";
-    }
+  const statusColorMap: Record<SyncProgressStatus, "accent" | "danger" | "warning" | "default"> = {
+    completed: "accent",
+    error: "danger",
+    in_progress: "warning",
+    pending: "default",
   };
+
+  const getStatusColor = (status: SyncProgressStatus) => statusColorMap[status];
 
   const dotClass: Record<SyncProgressStatus, string> = {
     completed: "bg-secondary",

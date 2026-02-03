@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AlertCircle, CheckCircle, Search, Settings, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -9,19 +9,19 @@ import Input from "@/components/ui/Input";
 // Import dynamically to avoid bundling in prod if not tree-shaken correctly by router
 // But for this dev page we can import directly for simplicity as the route itself should be dev-only
 import { auditRouteNavigation } from "@/lib/route-utils";
-import { routeTree } from "@/routeTree.gen";
 
 export const Route = createFileRoute("/_authed/dev/routes-audit")({
   component: RoutesAuditPage,
 });
 
 function RoutesAuditPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<"all" | "valid" | "technical" | "error">("all");
 
   const { data: audit } = useQuery({
     queryKey: ["routes-audit"],
-    queryFn: () => auditRouteNavigation(routeTree),
+    queryFn: () => auditRouteNavigation(router.routeTree),
   });
 
   const stats = useMemo(() => {

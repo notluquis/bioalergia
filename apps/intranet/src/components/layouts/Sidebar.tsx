@@ -1,6 +1,7 @@
 import { Avatar } from "@heroui/react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
+import type { ComponentProps } from "react";
 
 import Backdrop from "@/components/ui/Backdrop";
 import {
@@ -34,7 +35,8 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
     if (isMobile && onClose) onClose();
   };
 
-  const visibleSections = getNavSections()
+  const router = useRouter();
+  const visibleSections = getNavSections(router.routeTree)
     .map((section) => {
       const filteredItems = section.items.filter((item) => {
         return !(
@@ -166,7 +168,9 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownPopover placement={"top-start" as any}>
+              <DropdownPopover
+                placement={"top-start" as ComponentProps<typeof DropdownPopover>["placement"]}
+              >
                 <HeroDropdownMenu aria-label="Menu de usuario" className="w-56">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">

@@ -100,7 +100,7 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
     return stream(c, async (stream) => {
       const reader = res.body?.getReader();
       if (!reader) return;
-      while (true) {
+      for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
         await stream.write(value);
@@ -178,7 +178,7 @@ mercadopagoRoutes.get("/settlement/reports/download/:fileName", async (c) => {
     return stream(c, async (stream) => {
       const reader = res.body?.getReader();
       if (!reader) return;
-      while (true) {
+      for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
         await stream.write(value);

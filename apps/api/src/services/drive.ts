@@ -20,6 +20,8 @@ export interface BackupFile {
   customChecksum?: string;
 }
 
+const TABLES_REGEX = /"tables"\s*:\s*(\[[^\]]*\])/;
+
 /**
  * Uploads a backup file to Google Drive.
  */
@@ -294,7 +296,7 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
 
               // Match "tables": ["Table1", "Table2", ...]
               // Handles optional whitespace
-              const match = cleanText.match(/"tables"\s*:\s*(\[[^\]]*\])/);
+              const match = cleanText.match(TABLES_REGEX);
 
               if (match?.[1]) {
                 try {

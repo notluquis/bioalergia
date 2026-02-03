@@ -54,6 +54,119 @@ const INITIAL_STATE: ServiceFormState = {
   startDate: dayjs().toDate(),
 };
 
+const resetFormState = (initialValues?: Partial<CreateServicePayload>) => ({
+  ...INITIAL_STATE,
+  ...initialValues,
+  monthsToGenerate: initialValues?.monthsToGenerate ?? INITIAL_STATE.monthsToGenerate,
+  startDate: initialValues?.startDate ?? INITIAL_STATE.startDate,
+});
+
+const applyFixedDayMode = (prev: ServiceFormState) => {
+  if (prev.emissionStartDay !== null || prev.emissionEndDay !== null || prev.emissionExactDate) {
+    return {
+      ...prev,
+      emissionDay: prev.emissionDay ?? 1,
+      emissionEndDay: null,
+      emissionExactDate: null,
+      emissionStartDay: null,
+    };
+  }
+  return prev.emissionDay == null ? { ...prev, emissionDay: 1 } : prev;
+};
+
+const applyDateRangeMode = (prev: ServiceFormState) => {
+  const nextStart = prev.emissionStartDay ?? 1;
+  const nextEnd = prev.emissionEndDay ?? Math.max(5, nextStart);
+  if (
+    prev.emissionDay !== null ||
+    prev.emissionExactDate ||
+    prev.emissionStartDay !== nextStart ||
+    prev.emissionEndDay !== nextEnd
+  ) {
+    return {
+      ...prev,
+      emissionDay: null,
+      emissionEndDay: nextEnd,
+      emissionExactDate: null,
+      emissionStartDay: nextStart,
+    };
+  }
+  return prev;
+};
+
+const applySpecificDateMode = (prev: ServiceFormState) => {
+  if (prev.emissionDay !== null || prev.emissionStartDay !== null || prev.emissionEndDay !== null) {
+    return {
+      ...prev,
+      emissionDay: null,
+      emissionEndDay: null,
+      emissionStartDay: null,
+    };
+  }
+  return prev;
+};
+
+const applyEmissionMode = (
+  prev: ServiceFormState,
+  emissionMode: ServiceFormState["emissionMode"],
+) => {
+  if (emissionMode === "FIXED_DAY") return applyFixedDayMode(prev);
+  if (emissionMode === "DATE_RANGE") return applyDateRangeMode(prev);
+  if (emissionMode === "SPECIFIC_DATE") return applySpecificDateMode(prev);
+  return prev;
+};
+
+const normalizeOptional = (value?: string | null) => (value?.trim() ? value.trim() : undefined);
+
+const getEmissionFields = (
+  form: ServiceFormState,
+  emissionMode: ServiceFormState["emissionMode"],
+) => ({
+  emissionDay: emissionMode === "FIXED_DAY" ? (form.emissionDay ?? null) : null,
+  emissionEndDay: emissionMode === "DATE_RANGE" ? (form.emissionEndDay ?? null) : null,
+  emissionExactDate:
+    emissionMode === "SPECIFIC_DATE" ? (form.emissionExactDate ?? undefined) : null,
+  emissionMode,
+  emissionStartDay: emissionMode === "DATE_RANGE" ? (form.emissionStartDay ?? null) : null,
+});
+
+const getLateFeeValue = (form: ServiceFormState, lateFeeMode: ServiceFormState["lateFeeMode"]) => {
+  if (lateFeeMode === "NONE") return null;
+  if (form.lateFeeValue === null || form.lateFeeValue === undefined) return null;
+  return Number(form.lateFeeValue);
+};
+
+const getMonthsToGenerate = (form: ServiceFormState) =>
+  form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE" ? 1 : form.monthsToGenerate;
+
+const buildServicePayload = (
+  form: ServiceFormState,
+  emissionMode: ServiceFormState["emissionMode"],
+  lateFeeMode: ServiceFormState["lateFeeMode"],
+): CreateServicePayload => ({
+  accountReference: normalizeOptional(form.accountReference),
+  amountIndexation: form.amountIndexation,
+  category: normalizeOptional(form.category),
+  counterpartAccountId: form.counterpartAccountId ?? null,
+  counterpartId: form.counterpartId ?? null,
+  defaultAmount: Number(form.defaultAmount) || 0,
+  detail: normalizeOptional(form.detail),
+  dueDay: form.dueDay ?? null,
+  ...getEmissionFields(form, emissionMode),
+  frequency: form.frequency,
+  lateFeeGraceDays: lateFeeMode === "NONE" ? null : (form.lateFeeGraceDays ?? null),
+  lateFeeMode,
+  lateFeeValue: getLateFeeValue(form, lateFeeMode),
+  monthsToGenerate: getMonthsToGenerate(form),
+  name: form.name.trim(),
+  notes: normalizeOptional(form.notes),
+  obligationType: form.obligationType,
+  ownership: form.ownership,
+  recurrenceType: form.recurrenceType,
+  serviceType: form.serviceType,
+  startDate: form.startDate,
+});
+
 export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: ServiceFormProps) {
   const [form, setForm] = useState<ServiceFormState>({
     ...INITIAL_STATE,
@@ -66,16 +179,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   const submittingLabel = submitLabel ? "Guardando..." : "Creando...";
 
   useEffect(() => {
-    if (initialValues) {
-      setForm({
-        ...INITIAL_STATE,
-        ...initialValues,
-        monthsToGenerate: initialValues.monthsToGenerate ?? INITIAL_STATE.monthsToGenerate,
-        startDate: initialValues.startDate ?? INITIAL_STATE.startDate,
-      });
-    } else {
-      setForm(INITIAL_STATE);
-    }
+    setForm(initialValues ? resetFormState(initialValues) : INITIAL_STATE);
   }, [initialValues]);
 
   // Extract mode values to prevent unnecessary effect runs
@@ -116,65 +220,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
 
   // Adjust emission fields based on emission mode
   useEffect(() => {
-    setForm(
-      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy logic
-      (prev) => {
-        if (emissionMode === "FIXED_DAY") {
-          if (
-            prev.emissionStartDay !== null ||
-            prev.emissionEndDay !== null ||
-            prev.emissionExactDate
-          ) {
-            return {
-              ...prev,
-              emissionDay: prev.emissionDay ?? 1,
-              emissionEndDay: null,
-              emissionExactDate: null,
-              emissionStartDay: null,
-            };
-          }
-          if (prev.emissionDay == null) {
-            return { ...prev, emissionDay: 1 };
-          }
-          return prev;
-        }
-        if (prev.emissionMode === "DATE_RANGE") {
-          const nextStart = prev.emissionStartDay ?? 1;
-          const nextEnd = prev.emissionEndDay ?? Math.max(5, nextStart);
-          if (
-            prev.emissionDay !== null ||
-            prev.emissionExactDate ||
-            prev.emissionStartDay !== nextStart ||
-            prev.emissionEndDay !== nextEnd
-          ) {
-            return {
-              ...prev,
-              emissionDay: null,
-              emissionEndDay: nextEnd,
-              emissionExactDate: null,
-              emissionStartDay: nextStart,
-            };
-          }
-          return prev;
-        }
-        if (prev.emissionMode === "SPECIFIC_DATE") {
-          if (
-            prev.emissionDay !== null ||
-            prev.emissionStartDay !== null ||
-            prev.emissionEndDay !== null
-          ) {
-            return {
-              ...prev,
-              emissionDay: null,
-              emissionEndDay: null,
-              emissionStartDay: null,
-            };
-          }
-          return prev;
-        }
-        return prev;
-      },
-    );
+    setForm((prev) => applyEmissionMode(prev, emissionMode));
   }, [emissionMode]);
 
   const handleChange = <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => {
@@ -193,47 +239,12 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
       ? 1
       : (form.monthsToGenerate ?? 12);
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy handler
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
     setError(null);
     try {
-      const payload: CreateServicePayload = {
-        accountReference: form.accountReference?.trim() ? form.accountReference.trim() : undefined,
-        amountIndexation: form.amountIndexation,
-        category: form.category?.trim() ? form.category.trim() : undefined,
-        counterpartAccountId: form.counterpartAccountId ?? null,
-        counterpartId: form.counterpartId ?? null,
-        defaultAmount: Number(form.defaultAmount) || 0,
-        detail: form.detail?.trim() ? form.detail.trim() : undefined,
-        dueDay: form.dueDay ?? null,
-        emissionDay: emissionMode === "FIXED_DAY" ? (form.emissionDay ?? null) : null,
-        emissionEndDay: emissionMode === "DATE_RANGE" ? (form.emissionEndDay ?? null) : null,
-        emissionExactDate:
-          emissionMode === "SPECIFIC_DATE" ? (form.emissionExactDate ?? undefined) : null,
-        emissionMode,
-        emissionStartDay: emissionMode === "DATE_RANGE" ? (form.emissionStartDay ?? null) : null,
-        frequency: form.frequency,
-        lateFeeGraceDays: lateFeeMode === "NONE" ? null : (form.lateFeeGraceDays ?? null),
-        lateFeeMode,
-        lateFeeValue: (() => {
-          if (lateFeeMode === "NONE") return null;
-          if (form.lateFeeValue === null || form.lateFeeValue === undefined) return null;
-          return Number(form.lateFeeValue);
-        })(),
-        monthsToGenerate:
-          form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE"
-            ? 1
-            : form.monthsToGenerate,
-        name: form.name.trim(),
-        notes: form.notes?.trim() ? form.notes.trim() : undefined,
-        obligationType: form.obligationType,
-        ownership: form.ownership,
-        recurrenceType: form.recurrenceType,
-        serviceType: form.serviceType,
-        startDate: form.startDate,
-      };
+      const payload = buildServicePayload(form, emissionMode, lateFeeMode);
 
       await onSubmit(payload);
       if (!initialValues) {

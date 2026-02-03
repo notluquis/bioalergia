@@ -14,6 +14,10 @@ import type { BulkRow, TimesheetSummaryRow } from "../types";
 
 import "dayjs/locale/es";
 
+const MONTH_LABEL_REGEX = /^(\d{4})-(\d{2})$/;
+const URL_REGEX = /^https?:\/\//i;
+const TIME_HH_MM_REGEX = /^\d{1,2}:\d{2}$/;
+
 type TimesheetColumnKey = "date" | "entrada" | "overtime" | "salida" | "worked";
 
 const assertUnreachable = (value: never): never => {
@@ -158,7 +162,7 @@ export default function TimesheetExportPDF({
       dayjs.locale("es");
       // monthLabel puede venir como "November 2025" o "2025-11", convertir a español
       let periodEs = monthLabel;
-      const monthMatch = /^(\d{4})-(\d{2})$/.exec(monthLabel);
+      const monthMatch = MONTH_LABEL_REGEX.exec(monthLabel);
       if (monthMatch) {
         // Formato YYYY-MM
         periodEs = dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY");
@@ -527,7 +531,7 @@ function imageToPngDataUrl(objectUrl: string): Promise<null | string> {
 async function loadLogoAsPng(url: string): Promise<null | string> {
   try {
     let blob: Blob | null = null;
-    const isUrl = /^https?:\/\//i.test(url);
+    const isUrl = URL_REGEX.test(url);
 
     if (isUrl) {
       try {
@@ -566,7 +570,7 @@ async function loadLogoAsPng(url: string): Promise<null | string> {
 // === MAIN COMPONENT ===
 
 function timeToMinutes(t?: string): null | number {
-  if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return null;
+  if (!t || !TIME_HH_MM_REGEX.test(t)) return null;
   const parts = t.split(":").map(Number);
   const [h, m] = parts;
   if (h === undefined || m === undefined) return null;

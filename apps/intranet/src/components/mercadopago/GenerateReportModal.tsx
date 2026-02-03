@@ -23,6 +23,16 @@ const schema = z
 
 type FormData = z.infer<typeof schema>;
 
+const getFieldErrorMessage = (error: unknown) => {
+  if (!error) return undefined;
+  if (typeof error === "string") return error;
+  if (typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    return typeof message === "string" ? message : undefined;
+  }
+  return undefined;
+};
+
 interface Props {
   readonly onClose: () => void;
   readonly open: boolean;
@@ -95,7 +105,7 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
         <form.Field name="begin_date">
           {(field) => (
             <Input
-              error={(field.state.meta.errors[0] as any)?.message || field.state.meta.errors[0]}
+              error={getFieldErrorMessage(field.state.meta.errors[0])}
               label="Fecha Inicio"
               onBlur={field.handleBlur}
               onChange={(e) => {
@@ -110,7 +120,7 @@ export default function GenerateReportModal({ onClose, open, reportType }: Props
         <form.Field name="end_date">
           {(field) => (
             <Input
-              error={(field.state.meta.errors[0] as any)?.message || field.state.meta.errors[0]}
+              error={getFieldErrorMessage(field.state.meta.errors[0])}
               label="Fecha Fin"
               onBlur={field.handleBlur}
               onChange={(e) => {

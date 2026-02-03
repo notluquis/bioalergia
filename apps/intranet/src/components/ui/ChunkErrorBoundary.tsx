@@ -2,6 +2,9 @@ import { Component, type ReactNode } from "react";
 
 import { signalAppFallback } from "@/lib/app-recovery";
 
+const CHUNK_ERROR_REGEX =
+  /Failed to fetch dynamically imported module|Importing a module script failed/i;
+
 interface Props {
   children: ReactNode;
 }
@@ -26,11 +29,7 @@ export class ChunkErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error) {
     // Detectar si es un error de chunk
-    if (
-      /Failed to fetch dynamically imported module|Importing a module script failed/i.test(
-        error.message,
-      )
-    ) {
+    if (CHUNK_ERROR_REGEX.test(error.message)) {
       signalAppFallback("chunk");
     }
   }

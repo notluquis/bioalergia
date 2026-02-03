@@ -146,7 +146,7 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
           const BATCH_SIZE = 1000;
           let skip = 0;
 
-          while (true) {
+          for (;;) {
             const batch: unknown[] = await modelDelegate.findMany({
               take: BATCH_SIZE,
               skip: skip,
@@ -388,7 +388,9 @@ export function startBackup() {
 
           try {
             unlinkSync(res.path);
-          } catch {}
+          } catch (error) {
+            console.warn("[Backup] Cleanup failed:", error);
+          }
 
           // Delay cleanup
           setTimeout(() => {
