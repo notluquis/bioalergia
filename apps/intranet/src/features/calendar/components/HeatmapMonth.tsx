@@ -87,9 +87,10 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
 
     // Adjust for Monday start using ISO 8601 (1=Mon, 7=Sun)
     // Grid displays Mon-Sat (6 columns), so: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5
+    // Sunday is filtered out, so sun-starting months have 0 padding (first visible day is Monday)
     const jsDay = startOfMonth.isoWeekday(); // 1=Mon, 2=Tue, ..., 7=Sun
-    // ISO weekday → grid column: Mon(1)→0, Tue(2)→1, Wed(3)→2, Thu(4)→3, Fri(5)→4, Sat(6)→5, Sun(7)→6
-    const startDayOfWeek = jsDay === 7 ? 6 : jsDay - 1;
+    // ISO weekday → grid column: Mon(1)→0, Tue(2)→1, Wed(3)→2, Thu(4)→3, Fri(5)→4, Sat(6)→5, Sun(7)→0 padding
+    const startDayOfWeek = jsDay === 7 ? 0 : jsDay - 1;
 
     // Generate padding days for start grid alignment (now 6 columns)
     const paddingStart: PaddingCell[] = Array.from({ length: startDayOfWeek }).map((_, i) => ({
