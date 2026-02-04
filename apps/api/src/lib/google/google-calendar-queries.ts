@@ -9,6 +9,12 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 const DEFAULT_TIMEZONE = "America/Santiago";
 const TIMEZONE = googleCalendarConfig?.timeZone ?? DEFAULT_TIMEZONE;
+const EVENT_DATE_SQL = sql<string>`
+  COALESCE(
+    e.start_date,
+    (e.start_date_time AT TIME ZONE ${TIMEZONE})::date
+  )
+`;
 
 export type CalendarEventFilters = {
   from?: string;
@@ -426,7 +432,7 @@ function applyFilters(query: EventBaseQuery, filters: CalendarEventFilters): Eve
     // Cast date to string for comparison or strictly compare dates
     // "startDate" is Timestamp/Date.
     // Simplest is to cast to date
-    q = q.where(sql`DATE(coalesce(e.start_date_time, e.start_date))`, "in", filters.dates);
+    q = q.where(EVENT_DATE_SQL, "in", filters.dates);
   }
 
   return q;
@@ -508,9 +514,9 @@ export async function getCalendarEventsByDate(
 
   // 1. Get dates with events
   const dates = await filteredQuery
-    .select(sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("date"))
+    .select(EVENT_DATE_SQL.as("date"))
     .distinct()
-    .orderBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`, "desc")
+    .orderBy(EVENT_DATE_SQL, "desc")
     .limit(maxDays)
     .execute();
 
@@ -539,7 +545,7 @@ export async function getCalendarEventsByDate(
   // Filter by the exact dates we found (top N dates with events)
   eventsQuery = eventsQuery.where(
     // biome-ignore lint/suspicious/noExplicitAny: legacy code
-    sql<any>`DATE(coalesce(e.start_date_time, e.start_date))`,
+    EVENT_DATE_SQL,
     "in",
     targetDates,
   );
@@ -574,7 +580,7 @@ export async function getCalendarEventsByDate(
       "e.dosageUnit as dosageUnit",
       "e.treatmentStage as treatmentStage",
       "e.controlIncluded as controlIncluded",
-      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("eventDateString"), // helper for grouping: use raw SQL names
+      EVENT_DATE_SQL.as("eventDateString"), // helper for grouping: use raw SQL names
     ])
     .orderBy("e.startDateTime", "desc")
     .execute();
@@ -803,7 +809,7 @@ export async function getTreatmentAnalytics(
   // 2. By Date
   const byDate = await baseQuery
     .select([
-      sql<string>`DATE(coalesce(e.start_date_time, e.start_date))`.as("date"),
+      EVENT_DATE_SQL.as("date"),
       sql<number>`count(e.id)`.as("events"),
       sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
       sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
@@ -816,8 +822,8 @@ export async function getTreatmentAnalytics(
         "mantencionCount",
       ),
     ])
-    .groupBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`)
-    .orderBy(sql`DATE(coalesce(e.start_date_time, e.start_date))`, "desc")
+    .groupBy(EVENT_DATE_SQL)
+    .orderBy(EVENT_DATE_SQL, "desc")
     .execute();
 
   // 3. By Week
@@ -927,7 +933,7 @@ export async function getTreatmentAnalytics(
       mantencionCount: Number((totals as unknown as TotalRow)?.mantencionCount || 0),
     },
     byDate: (byDate as unknown as DateRow[]).map((r: DateRow) => ({
-      date: dayjs.tz(r.date as string, TIMEZONE).toDate(),
+      date: dayjs.tz(r.date as string, TIMEZONE).format("YYYY-MM-DD"),
       events: Number(r.events),
       amountExpected: Number(r.amountExpected),
       amountPaid: Number(r.amountPaid),

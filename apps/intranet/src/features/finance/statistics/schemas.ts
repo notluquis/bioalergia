@@ -29,4 +29,5 @@ export const TopParticipantsResponseSchema = z.strictObject({
       total: z.number(),
     }),
   ),
+  status: z.literal("ok"),
 });

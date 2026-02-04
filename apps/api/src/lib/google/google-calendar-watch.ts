@@ -331,7 +331,7 @@ export async function getActiveWatchChannels(): Promise<
  * Setup watch channels for all calendars that don't have one
  * Should be called on server startup
  */
-export async function setupAllWatchChannels(): Promise<void> {
+export async function setupAllWatchChannels(): Promise<boolean> {
   try {
     // Get all calendars
     const calendars = await db.calendar.findMany();
@@ -363,7 +363,7 @@ export async function setupAllWatchChannels(): Promise<void> {
       logEvent("setup_watch_channels_skip", {
         message: "All calendars already have active watch channels",
       });
-      return;
+      return true;
     }
 
     // Register watch channels for calendars that need them
@@ -390,9 +390,11 @@ export async function setupAllWatchChannels(): Promise<void> {
       successCount,
       failCount,
     });
+    return true;
   } catch (error) {
     console.error("setup_watch_channels_error", error);
     logWarn("setup_watch_channels_error", {});
+    return false;
   }
 }
 
@@ -430,8 +432,10 @@ export function scheduleWatchChannelSetup(options: SetupRetryOptions = {}) {
 
     setupInFlight = true;
     try {
-      await setupAllWatchChannels();
-      attemptDelay = initialDelayMs;
+      const ok = await setupAllWatchChannels();
+      if (ok) {
+        attemptDelay = initialDelayMs;
+      }
     } catch (error) {
       console.error("setup_watch_channels_retry_error", error);
       logWarn("setup_watch_channels_retry_error", {});
