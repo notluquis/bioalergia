@@ -1,11 +1,4 @@
-import {
-  Dropdown,
-  DropdownItem,
-  DropdownPopover,
-  DropdownSection,
-  DropdownTrigger,
-  DropdownMenu as HeroDropdownMenu,
-} from "@heroui/react";
+import { Dropdown } from "@heroui/react";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
@@ -15,28 +8,30 @@ const DropdownMenuCheckboxItem = ({
   onCheckedChange,
   children,
   ...props
-}: ComponentProps<typeof DropdownItem> & {
+}: ComponentProps<typeof Dropdown.Item> & {
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
   children?: React.ReactNode;
 }) => (
-  <DropdownItem
+  <Dropdown.Item
     className={cn("justify-between flex items-center gap-2", props.className)}
     onPress={() => onCheckedChange?.(!checked)}
     {...props}
   >
     <div className="flex items-center gap-2">{children}</div>
     {checked && <span className="text-small">✓</span>}
-  </DropdownItem>
+  </Dropdown.Item>
 );
 
 // Aliases for compatibility + strict HeroUI v3 exports
 // DropdownMenuContent removed in favor of strict composition: <DropdownPopover><HeroDropdownMenu>...</HeroDropdownMenu></DropdownPopover>
 
 const DropdownMenu = Dropdown;
-const DropdownMenuTrigger = DropdownTrigger;
-const DropdownMenuGroup = DropdownSection;
-const DropdownMenuItem = DropdownItem;
+const DropdownMenuTrigger = Dropdown.Trigger;
+const DropdownMenuGroup = Dropdown.Section;
+const DropdownMenuItem = Dropdown.Item;
+const DropdownPopover = Dropdown.Popover;
+const HeroDropdownMenu = Dropdown.Menu;
 
 const DropdownMenuSeparator = ({ className, ...props }: React.ComponentProps<"div">) => (
   <div className={cn("-mx-1 my-1 h-px bg-default-200/50", className)} {...props} />

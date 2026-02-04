@@ -69,8 +69,9 @@ export function DataTablePagination<TData>({
               table.setPageIndex(0);
             }}
             variant="outline"
+            isIconOnly
+            aria-label="Ir a la primera página"
           >
-            <span className="sr-only">Ir a la primera página</span>
             <ChevronsLeft className="h-4 w-4" />
           </Button>
           <Button
@@ -80,8 +81,9 @@ export function DataTablePagination<TData>({
               table.setPageIndex(Math.max(0, currentPageIndex - 1));
             }}
             variant="outline"
+            isIconOnly
+            aria-label="Página anterior"
           >
-            <span className="sr-only">Página anterior</span>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
@@ -91,8 +93,9 @@ export function DataTablePagination<TData>({
               table.setPageIndex(canNext ? currentPageIndex + 1 : currentPageIndex);
             }}
             variant="outline"
+            isIconOnly
+            aria-label="Página siguiente"
           >
-            <span className="sr-only">Página siguiente</span>
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Button
@@ -103,8 +106,9 @@ export function DataTablePagination<TData>({
               table.setPageIndex(lastIndex);
             }}
             variant="outline"
+            isIconOnly
+            aria-label="Ir a la última página"
           >
-            <span className="sr-only">Ir a la última página</span>
             <ChevronsRight className="h-4 w-4" />
           </Button>
         </div>
