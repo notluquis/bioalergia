@@ -71,12 +71,7 @@ export default function EmailPreviewModal({
   const summaryYear = month
     ? Number.parseInt(month.split("-")[0] ?? "", 10)
     : new Date().getFullYear();
-  // Handle both camelCase and snake_case from backend
-  const summaryData = summary as unknown as Record<string, unknown>;
-  const employeeRate =
-    (summaryData.retentionRate as null | number) ||
-    (summaryData.retention_rate as null | number) ||
-    null;
+  const employeeRate = summary.retentionRate ?? summary.retention_rate ?? null;
   const effectiveRate = getEffectiveRetentionRate(employeeRate, summaryYear);
   const retentionPercent = formatRetentionPercent(effectiveRate);
 

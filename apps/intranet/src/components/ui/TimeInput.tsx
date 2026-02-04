@@ -1,5 +1,5 @@
 import { DateInputGroup, Label, TimeField } from "@heroui/react";
-import { parseTime, type Time } from "@internationalized/date";
+import { parseTime, type Time, type TimeValue } from "@internationalized/date";
 
 interface TimeInputProps {
   className?: string;
@@ -17,6 +17,12 @@ export default function TimeInput({
   onChange,
   value,
 }: Readonly<TimeInputProps>) {
+  const formatTimeValue = (time: TimeValue) => {
+    const hours = String(time.hour).padStart(2, "0");
+    const minutes = String(time.minute).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  };
+
   let timeValue: Time | null = null;
   try {
     if (value) {
@@ -31,6 +37,7 @@ export default function TimeInput({
     <TimeField
       aria-label="Hora"
       className={className}
+      granularity="minute"
       hourCycle={24}
       isDisabled={disabled}
       onBlur={onBlur}
@@ -38,7 +45,7 @@ export default function TimeInput({
         if (!val) {
           onChange("");
         } else {
-          onChange(val.toString());
+          onChange(formatTimeValue(val));
         }
       }}
       placeholderValue={parseTime("00:00")}

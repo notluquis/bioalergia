@@ -23,13 +23,13 @@ import {
   formatDateLabel,
   hasRowData,
   isRowDirty,
+  isValidTimeString,
   parseDuration,
 } from "@/features/hr/timesheets/utils";
 import { formatISO } from "@/lib/dates";
 
 import type { Employee } from "../../employees/types";
 
-const TIME_HH_MM_REGEX = /^\d{1,2}:\d{2}$/;
 const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
 
 const TimesheetExportPDF = lazy(
@@ -509,10 +509,7 @@ function buildEmailSummary(summaryRow: TimesheetSummaryRow) {
     overtimeMinutes: summaryRow.overtimeMinutes,
     payDate: formatISO(summaryRow.payDate),
     retention: summaryRow.retention,
-    retention_rate: (summaryRow as unknown as Record<string, unknown>).retention_rate as
-      | null
-      | number
-      | undefined, // Legacy support workaround
+    retention_rate: summaryRow.retention_rate,
     retentionRate: summaryRow.retentionRate,
     role: summaryRow.role,
     subtotal: summaryRow.subtotal,
@@ -578,8 +575,8 @@ function hasRequiredTimes(row: BulkRow) {
 }
 
 function hasValidTimes(row: BulkRow) {
-  const entradaOk = !row.entrada || TIME_HH_MM_REGEX.test(row.entrada);
-  const salidaOk = !row.salida || TIME_HH_MM_REGEX.test(row.salida);
+  const entradaOk = !row.entrada || isValidTimeString(row.entrada);
+  const salidaOk = !row.salida || isValidTimeString(row.salida);
   return entradaOk && salidaOk;
 }
 
@@ -764,10 +761,10 @@ function formatMonthString(m: string): string {
 }
 
 function validateBulkRow(row: BulkRow): string | null {
-  if (row.entrada && !TIME_HH_MM_REGEX.test(row.entrada)) {
+  if (row.entrada && !isValidTimeString(row.entrada)) {
     return `Hora de entrada inválida en ${formatDateLabel(row.date)}`;
   }
-  if (row.salida && !TIME_HH_MM_REGEX.test(row.salida)) {
+  if (row.salida && !isValidTimeString(row.salida)) {
     return `Hora de salida inválida en ${formatDateLabel(row.date)}`;
   }
   return null;

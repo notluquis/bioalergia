@@ -51,6 +51,7 @@ export interface TimesheetSummaryRow {
   overtimeRate: number;
   payDate: Date;
   retention: number;
+  retention_rate?: null | number;
   retentionRate: number;
   role: string;
   subtotal: number;

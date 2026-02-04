@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { parseTime, type Time } from "@internationalized/date";
 
 import type { BulkRow, TimesheetEntry, TimesheetSummaryRow } from "./types";
 
@@ -119,24 +120,36 @@ export function minutesToDuration(totalMinutes: number): string {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
-const TIME_HH_MM_REGEX = /^\d{1,2}:\d{2}$/;
+const TIME_HH_MM_REGEX = /^\d{1,2}:\d{2}(:\d{2})?$/;
+
+function parseTimeValue(value: string): null | Time {
+  const cleaned = value.trim();
+  if (!cleaned || !TIME_HH_MM_REGEX.test(cleaned)) return null;
+  try {
+    return parseTime(cleaned);
+  } catch {
+    return null;
+  }
+}
+
+export function isValidTimeString(value: string): boolean {
+  return parseTimeValue(value) !== null;
+}
 
 export function parseDuration(value: string): null | number {
   const trimmed = value.trim();
   if (!trimmed) return 0;
   if (!TIME_HH_MM_REGEX.test(trimmed)) return null;
   const parts = trimmed.split(":").map(Number);
-  const [hours, minutes] = parts;
+  const [hours, minutes, seconds] = parts;
   if (hours === undefined || minutes === undefined) return null;
   if (minutes >= 60) return null;
+  if (seconds !== undefined && seconds >= 60) return null;
   return hours * 60 + minutes;
 }
 
 function timeToMinutes(time: string): null | number {
-  if (!TIME_HH_MM_REGEX.test(time)) return null;
-  const parts = time.split(":").map(Number);
-  const [hours, minutes] = parts;
-  if (hours === undefined || minutes === undefined) return null;
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes >= 60) return null;
-  return hours * 60 + minutes;
+  const parsed = parseTimeValue(time);
+  if (!parsed) return null;
+  return parsed.hour * 60 + parsed.minute;
 }
