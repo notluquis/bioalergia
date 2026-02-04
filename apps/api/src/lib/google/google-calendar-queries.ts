@@ -822,23 +822,39 @@ export async function getTreatmentAnalytics(
     .executeTakeFirst();
 
   // 2. By Date
-  const byDate = await baseQuery
+  // Use a subquery to avoid GROUP BY issues with COALESCE(e.start_date, ...)
+  const byDateBase = baseQuery.select([
+    EVENT_DATE_SQL.as("date"),
+    sql<number>`e.amount_expected`.as("amountExpectedRaw"),
+    sql<number>`e.amount_paid`.as("amountPaidRaw"),
+    sql<number>`e.dosage_value`.as("dosageValueRaw"),
+    sql<boolean>`e.is_domicilio`.as("isDomicilioRaw"),
+    sql<string>`e.treatment_stage`.as("treatmentStageRaw"),
+  ]);
+
+  const byDate = await db.$qb
+    .selectFrom(byDateBase.as("b"))
     .select([
-      EVENT_DATE_SQL.as("date"),
-      sql<number>`count(e.id)`.as("events"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
-      dosageSql.as("dosageMl"),
-      sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
-      sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
+      sql`b.date`.as("date"),
+      sql<number>`count(*)`.as("events"),
+      sql<number>`coalesce(sum(b."amountExpectedRaw"), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(b."amountPaidRaw"), 0)`.as("amountPaid"),
+      sql<number>`
+        COALESCE(
+          SUM(CASE WHEN b."dosageValueRaw" IS NOT NULL THEN b."dosageValueRaw" ELSE 0 END),
+          0
+        )
+      `.as("dosageMl"),
+      sql<number>`sum(case when b."isDomicilioRaw" = true then 1 else 0 end)`.as("domicilioCount"),
+      sql<number>`sum(case when b."treatmentStageRaw" = 'Inducción' then 1 else 0 end)`.as(
         "induccionCount",
       ),
-      sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
+      sql<number>`sum(case when b."treatmentStageRaw" = 'Mantención' then 1 else 0 end)`.as(
         "mantencionCount",
       ),
     ])
-    .groupBy(EVENT_DATE_SQL)
-    .orderBy(EVENT_DATE_SQL, "desc")
+    .groupBy("b.date")
+    .orderBy("b.date", "desc")
     .execute();
 
   // 3. By Week
