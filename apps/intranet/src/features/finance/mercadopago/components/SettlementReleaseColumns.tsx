@@ -89,7 +89,11 @@ const formatJson = (value: unknown) => {
 };
 
 const isEmptyJsonObject = (value: unknown) => {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) {
+    if (value.length === 0) return true;
+    return value.every((item) => isEmptyJsonObject(item));
+  }
   return Object.keys(value).length === 0;
 };
 
