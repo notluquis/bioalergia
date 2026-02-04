@@ -31,6 +31,7 @@ export default function TimeInput({
     <TimeField
       aria-label="Hora"
       className={className}
+      hourCycle={24}
       isDisabled={disabled}
       onBlur={onBlur}
       onChange={(val) => {
@@ -40,6 +41,8 @@ export default function TimeInput({
           onChange(val.toString());
         }
       }}
+      placeholderValue={parseTime("00:00")}
+      shouldForceLeadingZeros
       value={timeValue}
     >
       <Label className="hidden">Hora</Label>
