@@ -13,6 +13,7 @@ import FileInput from "@/components/ui/FileInput";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { type CsvImportPayload, importCsvData, previewCsvImport } from "@/features/data-import/api";
 import { cn } from "@/lib/utils";
 
@@ -547,6 +548,7 @@ function buildMappingColumns({
 
 export default function CSVUploadPage() {
   const { can } = useAuth();
+  const { error: showError, success } = useToast();
   const [selectedTable, setSelectedTable] = useState<string>("");
   const [csvData, setCsvData] = useState<Record<string, string>[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
@@ -578,7 +580,9 @@ export default function CSVUploadPage() {
   } = useMutation({
     mutationFn: (payload: CsvImportPayload) => previewCsvImport(payload),
     onError: (err) => {
-      setErrorMessage(err instanceof Error ? err.message : "Error al previsualizar datos");
+      const message = err instanceof Error ? err.message : "Error al previsualizar datos";
+      setErrorMessage(message);
+      showError(message, "Previsualización fallida");
     },
     onSuccess: (data) => {
       setPreviewData(data);
@@ -592,9 +596,18 @@ export default function CSVUploadPage() {
   } = useMutation({
     mutationFn: (payload: CsvImportPayload) => importCsvData(payload),
     onError: (err) => {
-      setErrorMessage(err instanceof Error ? err.message : "Error al importar datos");
+      const message = err instanceof Error ? err.message : "Error al importar datos";
+      setErrorMessage(message);
+      showError(message, "Importación fallida");
     },
     onSuccess: (data) => {
+      const inserted = data.inserted ?? 0;
+      const updated = data.updated ?? 0;
+      const skipped = data.skipped ?? 0;
+      success(
+        `Importación completada: ${inserted} insertados, ${updated} actualizados, ${skipped} omitidos.`,
+        "Importación exitosa",
+      );
       setPreviewData(data);
       setShowSuccessMessage(true);
       setTimeout(() => {

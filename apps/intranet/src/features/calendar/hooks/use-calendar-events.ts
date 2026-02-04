@@ -60,14 +60,29 @@ function deriveEffectiveFilters(
   search: CalendarSearchParams,
   filters: CalendarFilters,
 ): CalendarFilters {
-  const routeFrom = search.from ?? (search.date ? search.date : filters.from);
-  const routeTo = search.to ?? (search.date ? search.date : filters.to);
+  const dateParam = search.date ? dayjs(search.date) : null;
+  const maxDaysRaw = search.maxDays ?? filters.maxDays;
+  const maxDays =
+    Number.isFinite(maxDaysRaw) && maxDaysRaw > 0 ? Math.min(Math.floor(maxDaysRaw), 120) : 31;
+
+  const dateWindow =
+    dateParam && dateParam.isValid()
+      ? (() => {
+          const half = Math.floor((maxDays - 1) / 2);
+          const from = dateParam.subtract(half, "day").format("YYYY-MM-DD");
+          const to = dateParam.add(maxDays - half - 1, "day").format("YYYY-MM-DD");
+          return { from, to };
+        })()
+      : null;
+
+  const routeFrom = search.from ?? (dateWindow ? dateWindow.from : filters.from);
+  const routeTo = search.to ?? (dateWindow ? dateWindow.to : filters.to);
 
   return {
     calendarIds: search.calendarId ?? filters.calendarIds,
     categories: search.category.length > 0 ? search.category : filters.categories,
     from: routeFrom,
-    maxDays: search.maxDays ?? filters.maxDays,
+    maxDays,
     search: search.search ?? filters.search,
     to: routeTo,
   };
