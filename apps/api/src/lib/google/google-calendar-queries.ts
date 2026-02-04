@@ -486,13 +486,13 @@ export async function getCalendarAggregates(
         amountPaid: toNumber(r.amountPaid),
       })),
       byDate: (byDate as unknown as DateRow[]).map((r) => ({
-        date: dayjs.tz(r.date as string, TIMEZONE).toDate(),
+        date: dayjs.tz(r.date as string, TIMEZONE).format("YYYY-MM-DD"),
         total: toNumber(r.total),
         amountExpected: toNumber(r.amountExpected),
         amountPaid: toNumber(r.amountPaid),
       })),
       byDateType: (byDateType as unknown as DateTypeRow[]).map((r) => ({
-        date: dayjs.tz(r.date as string, TIMEZONE).toDate(),
+        date: dayjs.tz(r.date as string, TIMEZONE).format("YYYY-MM-DD"),
         eventType: r.eventType,
         total: toNumber(r.total),
       })),
@@ -543,12 +543,7 @@ export async function getCalendarEventsByDate(
   let eventsQuery = applyFilters(buildEventBaseQuery(), filtersWithoutDates);
 
   // Filter by the exact dates we found (top N dates with events)
-  eventsQuery = eventsQuery.where(
-    // biome-ignore lint/suspicious/noExplicitAny: legacy code
-    EVENT_DATE_SQL,
-    "in",
-    targetDates,
-  );
+  eventsQuery = eventsQuery.where(EVENT_DATE_SQL, "in", targetDates);
 
   const events = await eventsQuery
     .select([
@@ -591,7 +586,7 @@ export async function getCalendarEventsByDate(
   // Initialize with target dates to match order
   targetDates.forEach((date) => {
     grouped[date as string] = {
-      date: dayjs.tz(date as string, TIMEZONE).toDate(),
+      date: dayjs.tz(date as string, TIMEZONE).format("YYYY-MM-DD"),
       total: 0,
       events: [],
       amountExpected: 0,
@@ -635,7 +630,6 @@ export async function getCalendarEventsByDate(
     isDomicilio: boolean | null;
   };
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy function needing refactor
   (events as unknown as EventRow[]).forEach((ev: EventRow) => {
     // Normalize date to YYYY-MM-DD format to match targetDates
     const dateKey = dayjs.tz(ev.eventDateString as string, TIMEZONE).format("YYYY-MM-DD");
@@ -648,6 +642,9 @@ export async function getCalendarEventsByDate(
       return;
     }
 
+    const toIsoString = (value: string | Date | null | undefined) =>
+      value ? new Date(value).toISOString() : null;
+
     const detail: CalendarEventDetail = {
       calendarId: ev.calendarId,
       eventId: ev.eventId,
@@ -656,23 +653,23 @@ export async function getCalendarEventsByDate(
       category: ev.category,
       summary: ev.summary,
       description: ev.description,
-      startDate: ev.startDate ? new Date(ev.startDate) : null,
-      startDateTime: ev.startDateTime ? new Date(ev.startDateTime) : null,
+      startDate: toIsoString(ev.startDate),
+      startDateTime: toIsoString(ev.startDateTime),
       startTimeZone: ev.startTimeZone,
-      endDate: ev.endDate ? new Date(ev.endDate) : null,
-      endDateTime: ev.endDateTime ? new Date(ev.endDateTime) : null,
+      endDate: toIsoString(ev.endDate),
+      endDateTime: toIsoString(ev.endDateTime),
       endTimeZone: ev.endTimeZone,
       colorId: ev.colorId,
       location: ev.location,
       transparency: ev.transparency,
       visibility: ev.visibility,
       hangoutLink: ev.hangoutLink,
-      eventDate: dayjs.tz(dateKey, TIMEZONE).toDate(),
+      eventDate: dateKey,
       eventDateTime: ev.startDateTime
-        ? new Date(ev.startDateTime)
-        : dayjs.tz(dateKey, TIMEZONE).toDate(),
-      eventCreatedAt: ev.eventCreatedAt ? new Date(ev.eventCreatedAt) : null,
-      eventUpdatedAt: ev.eventUpdatedAt ? new Date(ev.eventUpdatedAt) : null,
+        ? toIsoString(ev.startDateTime)
+        : dayjs.tz(dateKey, TIMEZONE).toISOString(),
+      eventCreatedAt: toIsoString(ev.eventCreatedAt),
+      eventUpdatedAt: toIsoString(ev.eventUpdatedAt),
       rawEvent: null, // we don't select raw json to save bandwidth
       amountExpected: Number(ev.amountExpected || 0),
       amountPaid: Number(ev.amountPaid || 0),
@@ -695,7 +692,9 @@ export async function getCalendarEventsByDate(
   });
 
   return {
-    days: Object.values(grouped).sort((a, b) => b.date.getTime() - a.date.getTime()),
+    days: Object.values(grouped).sort(
+      (a, b) => dayjs.tz(b.date, TIMEZONE).valueOf() - dayjs.tz(a.date, TIMEZONE).valueOf(),
+    ),
     totals: {
       days: targetDates.length,
       events: totalEvents,
