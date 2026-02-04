@@ -221,18 +221,36 @@ calendarRoutes.get(
 
     const { filters, applied, maxDays } = await buildFiltersFromValidQuery(c.req.valid("query"));
     const events = await getCalendarEventsByDate(filters, { maxDays });
-    const debugEvents = events.days
-      .flatMap((day) => day.events)
-      .slice(0, 5)
+    const flatEvents = events.days.flatMap((day) => day.events);
+    const debugEvents = flatEvents.slice(0, 5).map((event) => ({
+      eventId: event.eventId,
+      eventDate: event.eventDate,
+      startDate: event.startDate,
+      startDateTime: event.startDateTime,
+      endDate: event.endDate,
+      endDateTime: event.endDateTime,
+    }));
+    const isIsoDateTime = (value: unknown) =>
+      typeof value === "string" &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
+    const invalidDateTimes = flatEvents
+      .filter(
+        (event) =>
+          (event.startDateTime && !isIsoDateTime(event.startDateTime)) ||
+          (event.endDateTime && !isIsoDateTime(event.endDateTime)),
+      )
+      .slice(0, 10)
       .map((event) => ({
         eventId: event.eventId,
-        eventDate: event.eventDate,
-        startDate: event.startDate,
         startDateTime: event.startDateTime,
-        endDate: event.endDate,
         endDateTime: event.endDateTime,
+        startType: typeof event.startDateTime,
+        endType: typeof event.endDateTime,
       }));
     console.log("[calendar/daily] sample event datetimes", debugEvents);
+    if (invalidDateTimes.length) {
+      console.warn("[calendar/daily] invalid datetime payloads", invalidDateTimes);
+    }
     return reply(c, {
       status: "ok",
       filters: {
