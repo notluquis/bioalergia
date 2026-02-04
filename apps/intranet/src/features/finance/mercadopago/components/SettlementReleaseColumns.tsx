@@ -1,7 +1,10 @@
 import type { SettlementReleaseTransaction } from "@finanzas/db/models";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
+import { useState } from "react";
 
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
 import { fmtCLP } from "@/lib/format";
 
 const amountFields = new Set<string>([
@@ -84,6 +87,30 @@ const formatJson = (value: unknown) => {
   }
 };
 
+function MetadataCell({ value }: Readonly<{ value: unknown }>) {
+  const [open, setOpen] = useState(false);
+  const formatted = formatJson(value);
+
+  if (!formatted) return "";
+
+  return (
+    <>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="px-2"
+        onClick={() => setOpen(true)}
+      >
+        Ver
+      </Button>
+      <Modal isOpen={open} onClose={() => setOpen(false)} title="Release Metadata">
+        <pre className="whitespace-pre-wrap break-words text-xs text-foreground">{formatted}</pre>
+      </Modal>
+    </>
+  );
+}
+
 const allFields: Array<keyof SettlementReleaseTransaction> = [
   "sourceId",
   "origin",
@@ -129,9 +156,7 @@ export const getSettlementReleaseColumns = (): ColumnDef<SettlementReleaseTransa
     if (fieldKey === "releaseMetadata") {
       return {
         accessorKey: fieldKey,
-        cell: ({ getValue }) => (
-          <span className="whitespace-pre-wrap text-xs">{formatJson(getValue<unknown>())}</span>
-        ),
+        cell: ({ getValue }) => <MetadataCell value={getValue<unknown>()} />,
         header: headerOverrides[fieldKey] ?? toLabel(fieldKey),
       };
     }
