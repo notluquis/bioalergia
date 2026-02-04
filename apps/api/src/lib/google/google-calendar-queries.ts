@@ -1,7 +1,14 @@
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
 import { sql } from "kysely";
 import { googleCalendarConfig } from "../../config";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+const DEFAULT_TIMEZONE = "America/Santiago";
+const TIMEZONE = googleCalendarConfig?.timeZone ?? DEFAULT_TIMEZONE;
 
 export type CalendarEventFilters = {
   from?: string;
@@ -134,7 +141,10 @@ type EventBaseQuery = ReturnType<typeof buildEventBaseQuery>;
 const toNumber = (value: number | string | null | undefined) => Number(value ?? 0);
 
 function buildByYearFromMonths(months: MonthRow[]) {
-  const totalsByYear = new Map<number, { total: number; amountExpected: number; amountPaid: number }>();
+  const totalsByYear = new Map<
+    number,
+    { total: number; amountExpected: number; amountPaid: number }
+  >();
 
   for (const month of months) {
     const year = Number(month.year);
@@ -230,7 +240,11 @@ function getByDate(query: EventBaseQuery) {
 
 function getByDateType(query: EventBaseQuery) {
   return query
-    .select([EVENT_DATE_ONLY.as("date"), "e.eventType as eventType", sql<number>`count(e.id)`.as("total")])
+    .select([
+      EVENT_DATE_ONLY.as("date"),
+      "e.eventType as eventType",
+      sql<number>`count(e.id)`.as("total"),
+    ])
     .groupBy([EVENT_DATE_ONLY, "e.eventType"])
     .orderBy(EVENT_DATE_ONLY, "desc")
     .execute();
@@ -249,7 +263,9 @@ function getByWeekday(query: EventBaseQuery) {
     .execute();
 }
 
-async function getAvailableFilters(filters: CalendarEventFilters): Promise<CalendarAvailableFilters> {
+async function getAvailableFilters(
+  filters: CalendarEventFilters,
+): Promise<CalendarAvailableFilters> {
   const dateRangeQuery = buildEventBaseQuery();
 
   const scopedQuery = applyDateRangeFilters(dateRangeQuery, filters);
@@ -464,13 +480,13 @@ export async function getCalendarAggregates(
         amountPaid: toNumber(r.amountPaid),
       })),
       byDate: (byDate as unknown as DateRow[]).map((r) => ({
-        date: dayjs(r.date).format("YYYY-MM-DD"),
+        date: dayjs.tz(r.date as string, TIMEZONE).toDate(),
         total: toNumber(r.total),
         amountExpected: toNumber(r.amountExpected),
         amountPaid: toNumber(r.amountPaid),
       })),
       byDateType: (byDateType as unknown as DateTypeRow[]).map((r) => ({
-        date: dayjs(r.date).format("YYYY-MM-DD"),
+        date: dayjs.tz(r.date as string, TIMEZONE).toDate(),
         eventType: r.eventType,
         total: toNumber(r.total),
       })),
@@ -500,7 +516,7 @@ export async function getCalendarEventsByDate(
 
   type DateOnlyRow = { date: string | Date };
   const targetDates = (dates as unknown as DateOnlyRow[]).map((d: DateOnlyRow) =>
-    dayjs(d.date).format("YYYY-MM-DD"),
+    dayjs.tz(d.date as string, TIMEZONE).format("YYYY-MM-DD"),
   );
 
   if (targetDates.length === 0) {
@@ -569,7 +585,7 @@ export async function getCalendarEventsByDate(
   // Initialize with target dates to match order
   targetDates.forEach((date) => {
     grouped[date as string] = {
-      date: dayjs(date as string).toDate(),
+      date: dayjs.tz(date as string, TIMEZONE).toDate(),
       total: 0,
       events: [],
       amountExpected: 0,
@@ -616,7 +632,7 @@ export async function getCalendarEventsByDate(
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy function needing refactor
   (events as unknown as EventRow[]).forEach((ev: EventRow) => {
     // Normalize date to YYYY-MM-DD format to match targetDates
-    const dateKey = dayjs(ev.eventDateString).format("YYYY-MM-DD");
+    const dateKey = dayjs.tz(ev.eventDateString as string, TIMEZONE).format("YYYY-MM-DD");
 
     if (!grouped[dateKey]) {
       console.warn(
@@ -645,8 +661,10 @@ export async function getCalendarEventsByDate(
       transparency: ev.transparency,
       visibility: ev.visibility,
       hangoutLink: ev.hangoutLink,
-      eventDate: dayjs(dateKey).toDate(),
-      eventDateTime: ev.startDateTime ? new Date(ev.startDateTime) : dayjs(dateKey).toDate(),
+      eventDate: dayjs.tz(dateKey, TIMEZONE).toDate(),
+      eventDateTime: ev.startDateTime
+        ? new Date(ev.startDateTime)
+        : dayjs.tz(dateKey, TIMEZONE).toDate(),
       eventCreatedAt: ev.eventCreatedAt ? new Date(ev.eventCreatedAt) : null,
       eventUpdatedAt: ev.eventUpdatedAt ? new Date(ev.eventUpdatedAt) : null,
       rawEvent: null, // we don't select raw json to save bandwidth
@@ -909,7 +927,7 @@ export async function getTreatmentAnalytics(
       mantencionCount: Number((totals as unknown as TotalRow)?.mantencionCount || 0),
     },
     byDate: (byDate as unknown as DateRow[]).map((r: DateRow) => ({
-      date: dayjs(r.date).format("YYYY-MM-DD"),
+      date: dayjs.tz(r.date as string, TIMEZONE).toDate(),
       events: Number(r.events),
       amountExpected: Number(r.amountExpected),
       amountPaid: Number(r.amountPaid),
