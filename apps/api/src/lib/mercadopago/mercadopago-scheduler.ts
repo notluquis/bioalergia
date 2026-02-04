@@ -13,6 +13,7 @@ import {
 import { logError, logEvent, logWarn } from "../logger";
 
 type ReportType = "release" | "settlement";
+type ProcessedFilesKey = ReportType | "webhook";
 
 const JOB_TYPE = "mp-auto-sync";
 const DEFAULT_CRON = "*/20 * * * *";
@@ -28,11 +29,12 @@ const PROCESSED_TTL_DAYS = 45;
 const REPORT_READY_REGEX = /ready|generated|available|finished|success/i;
 const REPORT_READY_WAIT_MS = 10 * 60 * 1000;
 const REPORT_READY_POLL_MS = 30 * 1000;
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const SETTINGS_KEYS = {
   lastGenerated: (type: ReportType) => `mp:lastGenerated:${type}`,
   lastCreateAttempt: (type: ReportType) => `mp:lastCreateAttempt:${type}`,
-  processedFiles: (type: ReportType) => `mp:processedFiles:${type}`,
+  processedFiles: (type: ProcessedFilesKey) => `mp:processedFiles:${type}`,
   lastProcessedAt: (type: ReportType) => `mp:lastProcessedAt:${type}`,
   lastRun: "mp:lastAutoSyncRun",
   pendingWebhooks: "mp:webhook:pending",
@@ -331,7 +333,7 @@ async function processPendingWebhooks(
   const pending = await loadPendingWebhooks();
   if (pending.length === 0) return 0;
 
-  const processed = await loadProcessedFiles("mp:processedFiles:webhook");
+  const processed = await loadProcessedFiles("webhook");
   let processedCount = 0;
 
   for (const payload of pending) {
@@ -354,7 +356,7 @@ async function processPendingWebhooks(
     }
   }
 
-  await persistProcessedFiles("mp:processedFiles:webhook", processed);
+  await persistProcessedFiles("webhook", processed);
   await updateSetting(SETTINGS_KEYS.pendingWebhooks, JSON.stringify([]));
   return processedCount;
 }
@@ -403,7 +405,7 @@ async function isAutoSyncEnabled() {
   return raw === "true";
 }
 
-async function loadProcessedFiles(type: ReportType) {
+async function loadProcessedFiles(type: ProcessedFilesKey) {
   const raw = await getSetting(SETTINGS_KEYS.processedFiles(type));
   if (!raw) return new Set<string>();
   try {
@@ -430,7 +432,7 @@ async function loadProcessedFiles(type: ReportType) {
   }
 }
 
-async function persistProcessedFiles(type: ReportType, processed: Set<string>) {
+async function persistProcessedFiles(type: ProcessedFilesKey, processed: Set<string>) {
   const now = new Date().toISOString();
   const trimmed = Array.from(processed)
     .slice(-MAX_PROCESSED_FILES)
