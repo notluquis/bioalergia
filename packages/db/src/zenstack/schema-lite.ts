@@ -1776,38 +1776,8 @@ export class SchemaType implements SchemaDef {
           name: "effectiveDate",
           type: "DateTime",
         },
-        settlementId: {
-          name: "settlementId",
-          type: "Int",
-          optional: true,
-        },
-        settlementSourceId: {
-          name: "settlementSourceId",
-          type: "String",
-          optional: true,
-        },
-        settlementTransactionDate: {
-          name: "settlementTransactionDate",
-          type: "DateTime",
-          optional: true,
-        },
-        settlementSettlementDate: {
-          name: "settlementSettlementDate",
-          type: "DateTime",
-          optional: true,
-        },
-        settlementMoneyReleaseDate: {
-          name: "settlementMoneyReleaseDate",
-          type: "DateTime",
-          optional: true,
-        },
         settlementExternalReference: {
           name: "settlementExternalReference",
-          type: "String",
-          optional: true,
-        },
-        settlementUserId: {
-          name: "settlementUserId",
           type: "String",
           optional: true,
         },
@@ -1821,11 +1791,6 @@ export class SchemaType implements SchemaDef {
           type: "String",
           optional: true,
         },
-        settlementSite: {
-          name: "settlementSite",
-          type: "String",
-          optional: true,
-        },
         settlementTransactionType: {
           name: "settlementTransactionType",
           type: "String",
@@ -1833,16 +1798,6 @@ export class SchemaType implements SchemaDef {
         },
         settlementTransactionAmount: {
           name: "settlementTransactionAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementTransactionCurrency: {
-          name: "settlementTransactionCurrency",
-          type: "String",
-          optional: true,
-        },
-        settlementSellerAmount: {
-          name: "settlementSellerAmount",
           type: "Decimal",
           optional: true,
         },
@@ -1856,28 +1811,8 @@ export class SchemaType implements SchemaDef {
           type: "Decimal",
           optional: true,
         },
-        settlementSettlementCurrency: {
-          name: "settlementSettlementCurrency",
-          type: "String",
-          optional: true,
-        },
         settlementRealAmount: {
           name: "settlementRealAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementCouponAmount: {
-          name: "settlementCouponAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementMetadata: {
-          name: "settlementMetadata",
-          type: "Json",
-          optional: true,
-        },
-        settlementMkpFeeAmount: {
-          name: "settlementMkpFeeAmount",
           type: "Decimal",
           optional: true,
         },
@@ -1886,44 +1821,9 @@ export class SchemaType implements SchemaDef {
           type: "Decimal",
           optional: true,
         },
-        settlementShippingFeeAmount: {
-          name: "settlementShippingFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementTaxesAmount: {
-          name: "settlementTaxesAmount",
-          type: "Decimal",
-          optional: true,
-        },
         settlementInstallments: {
           name: "settlementInstallments",
           type: "Int",
-          optional: true,
-        },
-        settlementTaxDetail: {
-          name: "settlementTaxDetail",
-          type: "String",
-          optional: true,
-        },
-        settlementTaxesDisaggregated: {
-          name: "settlementTaxesDisaggregated",
-          type: "Json",
-          optional: true,
-        },
-        settlementDescription: {
-          name: "settlementDescription",
-          type: "String",
-          optional: true,
-        },
-        settlementCardInitialNumber: {
-          name: "settlementCardInitialNumber",
-          type: "String",
-          optional: true,
-        },
-        settlementOperationTags: {
-          name: "settlementOperationTags",
-          type: "Json",
           optional: true,
         },
         settlementBusinessUnit: {
@@ -1936,164 +1836,9 @@ export class SchemaType implements SchemaDef {
           type: "String",
           optional: true,
         },
-        settlementProductSku: {
-          name: "settlementProductSku",
-          type: "String",
-          optional: true,
-        },
-        settlementSaleDetail: {
-          name: "settlementSaleDetail",
-          type: "String",
-          optional: true,
-        },
-        settlementTransactionIntentId: {
-          name: "settlementTransactionIntentId",
-          type: "String",
-          optional: true,
-        },
-        settlementFranchise: {
-          name: "settlementFranchise",
-          type: "String",
-          optional: true,
-        },
-        settlementIssuerName: {
-          name: "settlementIssuerName",
-          type: "String",
-          optional: true,
-        },
-        settlementLastFourDigits: {
-          name: "settlementLastFourDigits",
-          type: "String",
-          optional: true,
-        },
-        settlementOrderMp: {
-          name: "settlementOrderMp",
-          type: "String",
-          optional: true,
-        },
-        settlementInvoicingPeriod: {
-          name: "settlementInvoicingPeriod",
-          type: "String",
-          optional: true,
-        },
         settlementPayBankTransferId: {
           name: "settlementPayBankTransferId",
           type: "String",
-          optional: true,
-        },
-        settlementIsReleased: {
-          name: "settlementIsReleased",
-          type: "Boolean",
-          optional: true,
-        },
-        settlementTipAmount: {
-          name: "settlementTipAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementPurchaseId: {
-          name: "settlementPurchaseId",
-          type: "String",
-          optional: true,
-        },
-        settlementTotalCouponAmount: {
-          name: "settlementTotalCouponAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementPosId: {
-          name: "settlementPosId",
-          type: "String",
-          optional: true,
-        },
-        settlementPosName: {
-          name: "settlementPosName",
-          type: "String",
-          optional: true,
-        },
-        settlementExternalPosId: {
-          name: "settlementExternalPosId",
-          type: "String",
-          optional: true,
-        },
-        settlementStoreId: {
-          name: "settlementStoreId",
-          type: "String",
-          optional: true,
-        },
-        settlementStoreName: {
-          name: "settlementStoreName",
-          type: "String",
-          optional: true,
-        },
-        settlementExternalStoreId: {
-          name: "settlementExternalStoreId",
-          type: "String",
-          optional: true,
-        },
-        settlementPoiId: {
-          name: "settlementPoiId",
-          type: "String",
-          optional: true,
-        },
-        settlementOrderId: {
-          name: "settlementOrderId",
-          type: "BigInt",
-          optional: true,
-        },
-        settlementShippingId: {
-          name: "settlementShippingId",
-          type: "BigInt",
-          optional: true,
-        },
-        settlementShipmentMode: {
-          name: "settlementShipmentMode",
-          type: "String",
-          optional: true,
-        },
-        settlementPackId: {
-          name: "settlementPackId",
-          type: "BigInt",
-          optional: true,
-        },
-        settlementShippingOrderId: {
-          name: "settlementShippingOrderId",
-          type: "String",
-          optional: true,
-        },
-        settlementPoiWalletName: {
-          name: "settlementPoiWalletName",
-          type: "String",
-          optional: true,
-        },
-        settlementPoiBankName: {
-          name: "settlementPoiBankName",
-          type: "String",
-          optional: true,
-        },
-        settlementCreatedAt: {
-          name: "settlementCreatedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        settlementUpdatedAt: {
-          name: "settlementUpdatedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        releaseId: {
-          name: "releaseId",
-          type: "Int",
-          optional: true,
-        },
-        releaseSourceId: {
-          name: "releaseSourceId",
-          type: "String",
-          optional: true,
-        },
-        releaseDate: {
-          name: "releaseDate",
-          type: "DateTime",
           optional: true,
         },
         releaseExternalReference: {
@@ -2101,19 +1846,9 @@ export class SchemaType implements SchemaDef {
           type: "String",
           optional: true,
         },
-        releaseRecordType: {
-          name: "releaseRecordType",
-          type: "String",
-          optional: true,
-        },
         releaseDescription: {
           name: "releaseDescription",
           type: "String",
-          optional: true,
-        },
-        releaseNetCreditAmount: {
-          name: "releaseNetCreditAmount",
-          type: "Decimal",
           optional: true,
         },
         releaseNetDebitAmount: {
@@ -2126,193 +1861,13 @@ export class SchemaType implements SchemaDef {
           type: "Decimal",
           optional: true,
         },
-        releaseSellerAmount: {
-          name: "releaseSellerAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        releaseMpFeeAmount: {
-          name: "releaseMpFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        releaseFinancingFeeAmount: {
-          name: "releaseFinancingFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        releaseShippingFeeAmount: {
-          name: "releaseShippingFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        releaseTaxesAmount: {
-          name: "releaseTaxesAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        releaseCouponAmount: {
-          name: "releaseCouponAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        releaseEffectiveCouponAmount: {
-          name: "releaseEffectiveCouponAmount",
-          type: "Decimal",
-          optional: true,
-        },
         releaseBalanceAmount: {
           name: "releaseBalanceAmount",
           type: "Decimal",
           optional: true,
         },
-        releaseTaxAmountTelco: {
-          name: "releaseTaxAmountTelco",
-          type: "Decimal",
-          optional: true,
-        },
-        releaseInstallments: {
-          name: "releaseInstallments",
-          type: "Int",
-          optional: true,
-        },
-        releasePaymentMethod: {
-          name: "releasePaymentMethod",
-          type: "String",
-          optional: true,
-        },
-        releasePaymentMethodType: {
-          name: "releasePaymentMethodType",
-          type: "String",
-          optional: true,
-        },
-        releaseTaxDetail: {
-          name: "releaseTaxDetail",
-          type: "String",
-          optional: true,
-        },
-        releaseTaxesDisaggregated: {
-          name: "releaseTaxesDisaggregated",
-          type: "Json",
-          optional: true,
-        },
-        releaseTransactionApprovalDate: {
-          name: "releaseTransactionApprovalDate",
-          type: "DateTime",
-          optional: true,
-        },
-        releaseTransactionIntentId: {
-          name: "releaseTransactionIntentId",
-          type: "String",
-          optional: true,
-        },
-        releasePosId: {
-          name: "releasePosId",
-          type: "String",
-          optional: true,
-        },
-        releasePosName: {
-          name: "releasePosName",
-          type: "String",
-          optional: true,
-        },
-        releaseExternalPosId: {
-          name: "releaseExternalPosId",
-          type: "String",
-          optional: true,
-        },
-        releaseStoreId: {
-          name: "releaseStoreId",
-          type: "String",
-          optional: true,
-        },
-        releaseStoreName: {
-          name: "releaseStoreName",
-          type: "String",
-          optional: true,
-        },
-        releaseExternalStoreId: {
-          name: "releaseExternalStoreId",
-          type: "String",
-          optional: true,
-        },
-        releaseCurrency: {
-          name: "releaseCurrency",
-          type: "String",
-          optional: true,
-        },
-        releaseShippingId: {
-          name: "releaseShippingId",
-          type: "BigInt",
-          optional: true,
-        },
-        releaseShipmentMode: {
-          name: "releaseShipmentMode",
-          type: "String",
-          optional: true,
-        },
-        releaseShippingOrderId: {
-          name: "releaseShippingOrderId",
-          type: "String",
-          optional: true,
-        },
-        releaseOrderId: {
-          name: "releaseOrderId",
-          type: "BigInt",
-          optional: true,
-        },
-        releasePackId: {
-          name: "releasePackId",
-          type: "BigInt",
-          optional: true,
-        },
-        releasePoiId: {
-          name: "releasePoiId",
-          type: "String",
-          optional: true,
-        },
-        releaseItemId: {
-          name: "releaseItemId",
-          type: "String",
-          optional: true,
-        },
-        releaseMetadata: {
-          name: "releaseMetadata",
-          type: "Json",
-          optional: true,
-        },
-        releaseCardInitialNumber: {
-          name: "releaseCardInitialNumber",
-          type: "String",
-          optional: true,
-        },
-        releaseOperationTags: {
-          name: "releaseOperationTags",
-          type: "Json",
-          optional: true,
-        },
-        releaseLastFourDigits: {
-          name: "releaseLastFourDigits",
-          type: "String",
-          optional: true,
-        },
-        releaseFranchise: {
-          name: "releaseFranchise",
-          type: "String",
-          optional: true,
-        },
-        releaseIssuerName: {
-          name: "releaseIssuerName",
-          type: "String",
-          optional: true,
-        },
-        releasePoiBankName: {
-          name: "releasePoiBankName",
-          type: "String",
-          optional: true,
-        },
-        releasePoiWalletName: {
-          name: "releasePoiWalletName",
+        releasePayoutBankAccountNumber: {
+          name: "releasePayoutBankAccountNumber",
           type: "String",
           optional: true,
         },
@@ -2321,44 +1876,14 @@ export class SchemaType implements SchemaDef {
           type: "String",
           optional: true,
         },
-        releaseSubUnit: {
-          name: "releaseSubUnit",
+        releaseIssuerName: {
+          name: "releaseIssuerName",
           type: "String",
           optional: true,
         },
-        releasePayoutBankAccountNumber: {
-          name: "releasePayoutBankAccountNumber",
-          type: "String",
-          optional: true,
-        },
-        releaseProductSku: {
-          name: "releaseProductSku",
-          type: "String",
-          optional: true,
-        },
-        releaseSaleDetail: {
-          name: "releaseSaleDetail",
-          type: "String",
-          optional: true,
-        },
-        releaseOrderMp: {
-          name: "releaseOrderMp",
-          type: "String",
-          optional: true,
-        },
-        releasePurchaseId: {
-          name: "releasePurchaseId",
-          type: "String",
-          optional: true,
-        },
-        releaseCreatedAt: {
-          name: "releaseCreatedAt",
-          type: "DateTime",
-          optional: true,
-        },
-        releaseUpdatedAt: {
-          name: "releaseUpdatedAt",
-          type: "DateTime",
+        releaseMetadata: {
+          name: "releaseMetadata",
+          type: "Json",
           optional: true,
         },
       },
