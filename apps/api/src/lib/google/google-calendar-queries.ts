@@ -516,7 +516,7 @@ export async function getCalendarEventsByDate(
   const dates = await filteredQuery
     .select(EVENT_DATE_SQL.as("date"))
     .distinct()
-    .orderBy(EVENT_DATE_SQL, "desc")
+    .orderBy("date", "desc")
     .limit(maxDays)
     .execute();
 
