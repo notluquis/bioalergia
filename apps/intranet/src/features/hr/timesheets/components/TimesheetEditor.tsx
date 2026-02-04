@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import Alert from "@/components/ui/Alert";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
@@ -53,29 +53,45 @@ export default function TimesheetEditor({
   selectedEmployee,
   summaryRow,
 }: TimesheetEditorProps) {
-  const queryClient = useQueryClient();
-  const { success: toastSuccess } = useToast();
-
-  const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
-  const [initialRows, setInitialRows] = useState<BulkRow[]>([]);
-  const [errorLocal, setErrorLocal] = useState<null | string>(null);
-
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailPrepareStatus, setEmailPrepareStatus] = useState<null | string>(null);
-
   // --- Query ---
-  const { data: detailData } = useSuspenseQuery({
+  const { data: detailData, dataUpdatedAt } = useSuspenseQuery({
     queryFn: () => fetchTimesheetDetail(employeeId, formatMonthString(month)),
     queryKey: ["timesheet-detail", employeeId, month],
   });
 
-  // --- Sync State ---
-  useEffect(() => {
-    const rows = buildBulkRows(formatMonthString(month), detailData.entries);
-    setBulkRows(rows);
-    setInitialRows(rows);
-    setErrorLocal(null);
-  }, [detailData, month]);
+  const initialRows = buildBulkRows(formatMonthString(month), detailData.entries);
+
+  return (
+    <TimesheetEditorInner
+      key={dataUpdatedAt}
+      activeEmployees={activeEmployees}
+      employeeId={employeeId}
+      initialRows={initialRows}
+      month={month}
+      monthLabel={monthLabel}
+      selectedEmployee={selectedEmployee}
+      summaryRow={summaryRow}
+    />
+  );
+}
+
+function TimesheetEditorInner({
+  activeEmployees,
+  employeeId,
+  initialRows,
+  month,
+  monthLabel,
+  selectedEmployee,
+  summaryRow,
+}: TimesheetEditorProps & { initialRows: BulkRow[] }) {
+  const queryClient = useQueryClient();
+  const { success: toastSuccess } = useToast();
+
+  const [bulkRows, setBulkRows] = useState<BulkRow[]>(() => initialRows);
+  const [errorLocal, setErrorLocal] = useState<null | string>(null);
+
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailPrepareStatus, setEmailPrepareStatus] = useState<null | string>(null);
 
   // --- Mutations ---
 
