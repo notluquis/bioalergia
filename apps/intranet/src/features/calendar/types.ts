@@ -23,7 +23,7 @@ export type CalendarSearchParams = z.infer<typeof calendarSearchSchema>;
 export interface CalendarAggregateByDate {
   amountExpected: number;
   amountPaid: number;
-  date: Date;
+  date: string;
   total: number;
 }
 
@@ -58,7 +58,7 @@ export interface CalendarAggregateByYear {
 }
 
 export interface CalendarAggregateByDateType {
-  date: Date;
+  date: string;
   eventType: null | string;
   total: number;
 }

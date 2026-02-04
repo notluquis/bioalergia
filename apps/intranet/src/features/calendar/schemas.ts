@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const zDate = z.coerce.date();
+const zDateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected date in YYYY-MM-DD format");
 const zDateNullable = zDate.nullable();
 
 // Note: CATEGORY_CHOICES and TREATMENT_STAGE_CHOICES are fetched from
@@ -60,7 +61,7 @@ export const CalendarEventDetailSchema = z.strictObject({
 export const CalendarDayEventsSchema = z.strictObject({
   amountExpected: z.number(),
   amountPaid: z.number(),
-  date: zDate,
+  date: zDateOnly,
   events: z.array(CalendarEventDetailSchema),
   total: z.number(),
 });
@@ -106,7 +107,7 @@ export const CalendarsResponseSchema = z.strictObject({
 const CalendarAggregateByDateSchema = z.strictObject({
   amountExpected: z.number(),
   amountPaid: z.number(),
-  date: zDate,
+  date: zDateOnly,
   total: z.number(),
 });
 
@@ -141,7 +142,7 @@ const CalendarAggregateByYearSchema = z.strictObject({
 });
 
 const CalendarAggregateByDateTypeSchema = z.strictObject({
-  date: zDate,
+  date: zDateOnly,
   eventType: z.string().nullable(),
   total: z.number(),
 });
