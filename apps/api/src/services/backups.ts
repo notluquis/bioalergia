@@ -67,6 +67,7 @@ function getAllModelNames(): string[] {
     "CommonSupply",
     "SettlementTransaction",
     "ReleaseTransaction",
+    "WithdrawTransaction",
     "CalendarSyncLog",
   ];
 }

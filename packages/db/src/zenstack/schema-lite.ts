@@ -1755,6 +1755,112 @@ export class SchemaType implements SchemaDef {
         sourceId: { type: "String" },
       },
     },
+    WithdrawTransaction: {
+      name: "WithdrawTransaction",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        withdrawId: {
+          name: "withdrawId",
+          type: "String",
+          unique: true,
+        },
+        dateCreated: {
+          name: "dateCreated",
+          type: "DateTime",
+        },
+        status: {
+          name: "status",
+          type: "String",
+          optional: true,
+        },
+        statusDetail: {
+          name: "statusDetail",
+          type: "String",
+          optional: true,
+        },
+        amount: {
+          name: "amount",
+          type: "Decimal",
+          optional: true,
+        },
+        fee: {
+          name: "fee",
+          type: "Decimal",
+          optional: true,
+        },
+        activityUrl: {
+          name: "activityUrl",
+          type: "String",
+          optional: true,
+        },
+        payoutDescription: {
+          name: "payoutDescription",
+          type: "String",
+          optional: true,
+        },
+        bankAccountHolder: {
+          name: "bankAccountHolder",
+          type: "String",
+          optional: true,
+        },
+        identificationType: {
+          name: "identificationType",
+          type: "String",
+          optional: true,
+        },
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
+          optional: true,
+        },
+        bankId: {
+          name: "bankId",
+          type: "String",
+          optional: true,
+        },
+        bankName: {
+          name: "bankName",
+          type: "String",
+          optional: true,
+        },
+        bankBranch: {
+          name: "bankBranch",
+          type: "String",
+          optional: true,
+        },
+        bankAccountType: {
+          name: "bankAccountType",
+          type: "String",
+          optional: true,
+        },
+        bankAccountNumber: {
+          name: "bankAccountNumber",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          default: ExpressionUtils.call("now"),
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        withdrawId: { type: "String" },
+      },
+    },
     SettlementReleaseTransaction: {
       name: "SettlementReleaseTransaction",
       fields: {

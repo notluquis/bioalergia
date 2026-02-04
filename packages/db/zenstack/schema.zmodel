@@ -554,6 +554,39 @@ model ReleaseTransaction {
   @@map("release_transactions")
 }
 
+// MercadoPago Withdraw Report data (Retiros)
+model WithdrawTransaction {
+  id                      Int       @id @default(autoincrement())
+  withdrawId              String    @unique @map("withdraw_id") @db.VarChar(64)
+  dateCreated             DateTime  @map("date_created")
+  status                  String?   @db.VarChar(50)
+  statusDetail            String?   @map("status_detail") @db.VarChar(100)
+  amount                  Decimal?  @db.Decimal(17, 2)
+  fee                     Decimal?  @db.Decimal(17, 2)
+  activityUrl             String?   @map("activity_url") @db.VarChar(500)
+  payoutDescription       String?   @map("payout_desc") @db.VarChar(500)
+  bankAccountHolder       String?   @map("bank_account_holder") @db.VarChar(255)
+  identificationType      String?   @map("identification_type") @db.VarChar(50)
+  identificationNumber    String?   @map("identification_number") @db.VarChar(50)
+  bankId                  String?   @map("bank_id") @db.VarChar(50)
+  bankName                String?   @map("bank_name") @db.VarChar(200)
+  bankBranch              String?   @map("bank_branch") @db.VarChar(200)
+  bankAccountType         String?   @map("bank_account_type") @db.VarChar(50)
+  bankAccountNumber       String?   @map("bank_account_number") @db.VarChar(100)
+
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().roles?[role.name == 'ADMIN'])
+
+  @@index([dateCreated])
+  @@index([withdrawId])
+  @@map("withdraw_transactions")
+}
+
 view SettlementReleaseTransaction {
   id String @unique @map("row_id")
   sourceId String @map("source_id")

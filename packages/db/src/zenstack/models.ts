@@ -22,6 +22,7 @@ export type EmployeeTimesheet = $ModelResult<$Schema, "EmployeeTimesheet">;
 export type Transaction = $ModelResult<$Schema, "Transaction">;
 export type SettlementTransaction = $ModelResult<$Schema, "SettlementTransaction">;
 export type ReleaseTransaction = $ModelResult<$Schema, "ReleaseTransaction">;
+export type WithdrawTransaction = $ModelResult<$Schema, "WithdrawTransaction">;
 export type SettlementReleaseTransaction = $ModelResult<$Schema, "SettlementReleaseTransaction">;
 export type DailyBalance = $ModelResult<$Schema, "DailyBalance">;
 export type Service = $ModelResult<$Schema, "Service">;

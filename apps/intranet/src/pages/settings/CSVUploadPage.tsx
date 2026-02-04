@@ -29,6 +29,26 @@ interface FieldDefinition {
   type: string;
 }
 
+const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+const extractHeaderAliases = (header: string) => {
+  const match = header.match(/\(([^)]+)\)/);
+  const aliases = [header];
+  if (match?.[1]) aliases.push(match[1]);
+  return aliases;
+};
+
+const matchHeaderForField = (fieldName: string, headers: string[]) => {
+  const normalizedField = normalizeKey(fieldName);
+  for (const header of headers) {
+    const aliases = extractHeaderAliases(header);
+    if (aliases.some((alias) => normalizeKey(alias) === normalizedField)) {
+      return header;
+    }
+  }
+  return undefined;
+};
+
 // Constants
 const TABLE_OPTIONS: TableOption[] = [
   {
@@ -120,6 +140,28 @@ const TABLE_OPTIONS: TableOption[] = [
   },
   {
     fields: [
+      { name: "dateCreated", required: true, type: "date" },
+      { name: "withdrawId", required: true, type: "string" },
+      { name: "status", required: false, type: "string" },
+      { name: "statusDetail", required: false, type: "string" },
+      { name: "amount", required: false, type: "number" },
+      { name: "fee", required: false, type: "number" },
+      { name: "activityUrl", required: false, type: "string" },
+      { name: "payoutDescription", required: false, type: "string" },
+      { name: "bankAccountHolder", required: false, type: "string" },
+      { name: "identificationType", required: false, type: "string" },
+      { name: "identificationNumber", required: false, type: "string" },
+      { name: "bankId", required: false, type: "string" },
+      { name: "bankName", required: false, type: "string" },
+      { name: "bankBranch", required: false, type: "string" },
+      { name: "bankAccountType", required: false, type: "string" },
+      { name: "bankAccountNumber", required: false, type: "string" },
+    ],
+    label: "Retiros (MercadoPago)",
+    value: "withdrawals",
+  },
+  {
+    fields: [
       { name: "name", required: true, type: "string" },
       { name: "description", required: false, type: "string" },
       { name: "frequency", required: true, type: "enum" },
@@ -170,6 +212,7 @@ const SUPPORTED_TABLES = new Set([
   "people",
   "services",
   "transactions",
+  "withdrawals",
 ]);
 
 const PERMISSION_MAP: Record<string, { action: string; subject: string }> = {
@@ -182,6 +225,7 @@ const PERMISSION_MAP: Record<string, { action: string; subject: string }> = {
   people: { action: "create", subject: "Person" },
   services: { action: "create", subject: "Service" },
   transactions: { action: "create", subject: "Transaction" },
+  withdrawals: { action: "create", subject: "WithdrawTransaction" },
 };
 
 // --- Sub-Components ---
@@ -586,11 +630,7 @@ export default function CSVUploadPage() {
     if (currentTable) {
       const autoMapping: Record<string, string> = {};
       for (const field of currentTable.fields) {
-        const matchingHeader = headers.find(
-          (h) =>
-            h.toLowerCase() === field.name.toLowerCase() ||
-            h.toLowerCase().replaceAll("_", "") === field.name.toLowerCase(),
-        );
+        const matchingHeader = matchHeaderForField(field.name, headers);
         if (matchingHeader) {
           autoMapping[field.name] = matchingHeader;
         }
@@ -611,6 +651,7 @@ export default function CSVUploadPage() {
 
     Papa.parse(file, {
       complete: handleParseComplete,
+      delimitersToGuess: [",", ";", "\t", "|"],
       error: (error) => {
         setParseStatus("error");
         setErrorMessage(`Error al leer archivo: ${error.message}`);

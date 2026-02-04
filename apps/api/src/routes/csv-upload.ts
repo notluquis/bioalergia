@@ -28,6 +28,7 @@ type TableName =
   | "daily_balances"
   | "daily_production_balances"
   | "transactions"
+  | "withdrawals"
   | "services"
   | "inventory_items"
   | "employee_timesheets";
@@ -92,6 +93,20 @@ interface CSVRow {
   VACUNAS?: unknown;
   LICENCIAS?: unknown;
   ROXAIR?: unknown;
+  dateCreated?: unknown;
+  withdrawId?: unknown;
+  statusDetail?: unknown;
+  fee?: unknown;
+  activityUrl?: unknown;
+  payoutDescription?: unknown;
+  bankAccountHolder?: unknown;
+  identificationType?: unknown;
+  identificationNumber?: unknown;
+  bankId?: unknown;
+  bankName?: unknown;
+  bankBranch?: unknown;
+  bankAccountType?: unknown;
+  bankAccountNumber?: unknown;
 }
 
 // Helper to get auth
@@ -156,6 +171,7 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
   daily_balances: { action: "create", subject: "DailyBalance" },
   daily_production_balances: { action: "create", subject: "ProductionBalance" },
   transactions: { action: "create", subject: "Transaction" },
+  withdrawals: { action: "create", subject: "WithdrawTransaction" },
   services: { action: "create", subject: "Service" },
   inventory_items: { action: "create", subject: "InventoryItem" },
   employee_timesheets: { action: "create", subject: "Timesheet" },
@@ -225,6 +241,17 @@ csvUploadRoutes.post("/preview", async (c) => {
         }
         const exists = await db.dailyProductionBalance.findUnique({
           where: { balanceDate: new Date(dateStr) },
+        });
+        if (exists) toUpdate++;
+        else toInsert++;
+      } else if (table === "withdrawals") {
+        if (!row.withdrawId) {
+          errors.push(`Fila ${i + 1}: withdrawId requerido`);
+          toSkip++;
+          continue;
+        }
+        const exists = await db.withdrawTransaction.findUnique({
+          where: { withdrawId: String(row.withdrawId) },
         });
         if (exists) toUpdate++;
         else toInsert++;
@@ -329,7 +356,11 @@ const addOutcome = (totals: ImportOutcome, outcome: ImportOutcome) => {
   totals.skipped += outcome.skipped;
 };
 
-async function importCsvRows(table: TableName, data: object[], auth: AuthContext): Promise<ImportResult> {
+async function importCsvRows(
+  table: TableName,
+  data: object[],
+  auth: AuthContext,
+): Promise<ImportResult> {
   const totals = emptyOutcome();
   const errors: string[] = [];
 
@@ -357,12 +388,17 @@ const importRowHandlers: Record<TableName, ImportRowHandler> = {
   daily_balances: (row) => importDailyBalancesRow(row),
   daily_production_balances: (row, auth) => importDailyProductionBalancesRow(row, auth.userId),
   transactions: async () => ({ inserted: 0, updated: 0, skipped: 1 }),
+  withdrawals: (row) => importWithdrawalsRow(row),
   services: (row) => importServicesRow(row),
   inventory_items: (row) => importInventoryItemsRow(row),
   employee_timesheets: (row) => importEmployeeTimesheetsRow(row),
 };
 
-async function importCsvRow(table: TableName, row: CSVRow, auth: AuthContext): Promise<ImportOutcome> {
+async function importCsvRow(
+  table: TableName,
+  row: CSVRow,
+  auth: AuthContext,
+): Promise<ImportOutcome> {
   const handler = importRowHandlers[table];
   return handler ? handler(row, auth) : { inserted: 0, updated: 0, skipped: 1 };
 }
@@ -487,6 +523,61 @@ async function importDailyProductionBalancesRow(
       ...productionData,
       createdBy: userId,
     },
+  });
+  return { inserted: 1, updated: 0, skipped: 0 };
+}
+
+async function importWithdrawalsRow(row: CSVRow): Promise<ImportOutcome> {
+  if (!row.withdrawId) {
+    throw new Error("withdrawId requerido");
+  }
+
+  const dateStr = parseFlexibleDate(row.dateCreated);
+  if (!dateStr) {
+    throw new Error("Fecha inválida");
+  }
+
+  const parseDecimal = (value: unknown) => {
+    if (value == null || String(value).trim() === "") return null;
+    const num = cleanAmount(value);
+    return new Decimal(num.toFixed(2));
+  };
+
+  const amountValue = parseDecimal(row.amount);
+  const feeValue = parseDecimal(row.fee);
+  const withdrawData = {
+    dateCreated: new Date(dateStr),
+    status: row.status ? String(row.status) : null,
+    statusDetail: row.statusDetail ? String(row.statusDetail) : null,
+    amount: amountValue,
+    fee: feeValue,
+    activityUrl: row.activityUrl ? String(row.activityUrl) : null,
+    payoutDescription: row.payoutDescription ? String(row.payoutDescription) : null,
+    bankAccountHolder: row.bankAccountHolder ? String(row.bankAccountHolder) : null,
+    identificationType: row.identificationType ? String(row.identificationType) : null,
+    identificationNumber: row.identificationNumber ? String(row.identificationNumber) : null,
+    bankId: row.bankId ? String(row.bankId) : null,
+    bankName: row.bankName ? String(row.bankName) : null,
+    bankBranch: row.bankBranch ? String(row.bankBranch) : null,
+    bankAccountType: row.bankAccountType ? String(row.bankAccountType) : null,
+    bankAccountNumber: row.bankAccountNumber ? String(row.bankAccountNumber) : null,
+  };
+
+  const withdrawId = String(row.withdrawId);
+  const existing = await db.withdrawTransaction.findUnique({
+    where: { withdrawId },
+  });
+
+  if (existing) {
+    await db.withdrawTransaction.update({
+      where: { withdrawId },
+      data: withdrawData,
+    });
+    return { inserted: 0, updated: 1, skipped: 0 };
+  }
+
+  await db.withdrawTransaction.create({
+    data: { withdrawId, ...withdrawData },
   });
   return { inserted: 1, updated: 0, skipped: 0 };
 }

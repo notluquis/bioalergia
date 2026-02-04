@@ -4406,6 +4406,303 @@ export class SchemaType implements SchemaDef {
         sourceId: { type: "String" },
       },
     },
+    WithdrawTransaction: {
+      name: "WithdrawTransaction",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        withdrawId: {
+          name: "withdrawId",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_id") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(64) }] },
+          ],
+        },
+        dateCreated: {
+          name: "dateCreated",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("date_created") }],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        statusDetail: {
+          name: "statusDetail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("status_detail") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] },
+          ],
+        },
+        amount: {
+          name: "amount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        fee: {
+          name: "fee",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        activityUrl: {
+          name: "activityUrl",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("activity_url") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(500) }] },
+          ],
+        },
+        payoutDescription: {
+          name: "payoutDescription",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("payout_desc") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(500) }] },
+          ],
+        },
+        bankAccountHolder: {
+          name: "bankAccountHolder",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_account_holder") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] },
+          ],
+        },
+        identificationType: {
+          name: "identificationType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("identification_type") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        bankId: {
+          name: "bankId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_id") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        bankName: {
+          name: "bankName",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_name") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        bankBranch: {
+          name: "bankBranch",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_branch") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        bankAccountType: {
+          name: "bankAccountType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_account_type") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        bankAccountNumber: {
+          name: "bankAccountNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_account_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]),
+                "?",
+                ExpressionUtils.binary(
+                  ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]),
+                  "==",
+                  ExpressionUtils.literal("ADMIN"),
+                ),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("dateCreated")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("withdrawId")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("withdraw_transactions") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        withdrawId: { type: "String" },
+      },
+    },
     SettlementReleaseTransaction: {
       name: "SettlementReleaseTransaction",
       fields: {

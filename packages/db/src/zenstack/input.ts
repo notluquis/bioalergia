@@ -433,6 +433,36 @@ export type ReleaseTransactionGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "ReleaseTransaction", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "ReleaseTransaction", Args, Options>;
+export type WithdrawTransactionFindManyArgs = $FindManyArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionFindUniqueArgs = $FindUniqueArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionFindFirstArgs = $FindFirstArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionExistsArgs = $ExistsArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionCreateArgs = $CreateArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionCreateManyArgs = $CreateManyArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "WithdrawTransaction"
+>;
+export type WithdrawTransactionUpdateArgs = $UpdateArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionUpdateManyArgs = $UpdateManyArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "WithdrawTransaction"
+>;
+export type WithdrawTransactionUpsertArgs = $UpsertArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionDeleteArgs = $DeleteArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionDeleteManyArgs = $DeleteManyArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionCountArgs = $CountArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionAggregateArgs = $AggregateArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionGroupByArgs = $GroupByArgs<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionWhereInput = $WhereInput<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionSelect = $SelectInput<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionInclude = $IncludeInput<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionOmit = $OmitInput<$Schema, "WithdrawTransaction">;
+export type WithdrawTransactionGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "WithdrawTransaction", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "WithdrawTransaction", Args, Options>;
 export type SettlementReleaseTransactionFindManyArgs = $FindManyArgs<
   $Schema,
   "SettlementReleaseTransaction"
