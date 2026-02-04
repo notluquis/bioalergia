@@ -88,7 +88,7 @@ const formatJson = (value: unknown) => {
   }
 };
 
-const isEmptyJsonObject = (value: unknown) => {
+const isEmptyJsonObject = (value: unknown): boolean => {
   if (!value || typeof value !== "object") return false;
   if (Array.isArray(value)) {
     if (value.length === 0) return true;
@@ -153,60 +153,65 @@ const allFields: Array<keyof SettlementReleaseTransaction> = [
   "releaseMetadata",
 ];
 
+const getHeader = (fieldKey: string) => headerOverrides[fieldKey] ?? toLabel(fieldKey);
+
+const buildOriginColumn = (): ColumnDef<SettlementReleaseTransaction> => ({
+  accessorKey: "origin",
+  cell: ({ getValue }) => {
+    const value = getValue<string>();
+    return originLabels[value] ?? value ?? "";
+  },
+  header: getHeader("origin"),
+});
+
+const buildMetadataColumn = (
+  fieldKey: "settlementMetadata" | "releaseMetadata",
+  title: string,
+): ColumnDef<SettlementReleaseTransaction> => ({
+  accessorKey: fieldKey,
+  cell: ({ getValue }) => <MetadataCell title={title} value={getValue<unknown>()} />,
+  header: getHeader(fieldKey),
+});
+
+const buildStandardColumn = (
+  fieldKey: keyof SettlementReleaseTransaction,
+): ColumnDef<SettlementReleaseTransaction> => {
+  const key = String(fieldKey);
+
+  if (dateFields.has(key)) {
+    return {
+      accessorKey: key,
+      cell: ({ getValue }) => (
+        <span className="text-foreground font-medium">{formatDate(getValue())}</span>
+      ),
+      header: getHeader(key),
+    };
+  }
+
+  if (amountFields.has(key)) {
+    return {
+      accessorKey: key,
+      cell: ({ getValue }) => formatAmount(getValue()),
+      header: getHeader(key),
+    };
+  }
+
+  return {
+    accessorKey: key,
+    header: getHeader(key),
+  };
+};
+
+const columnBuilders: Partial<
+  Record<keyof SettlementReleaseTransaction, () => ColumnDef<SettlementReleaseTransaction>>
+> = {
+  origin: buildOriginColumn,
+  settlementMetadata: () => buildMetadataColumn("settlementMetadata", "Settlement Metadata"),
+  releaseMetadata: () => buildMetadataColumn("releaseMetadata", "Release Metadata"),
+};
+
 export const getSettlementReleaseColumns = (): ColumnDef<SettlementReleaseTransaction>[] =>
   allFields.map((field) => {
-    const fieldKey = String(field);
-    if (field === "origin") {
-      return {
-        accessorKey: fieldKey,
-        cell: ({ getValue }) => {
-          const value = getValue<string>();
-          return originLabels[value] ?? value ?? "";
-        },
-        header: headerOverrides[fieldKey] ?? toLabel(fieldKey),
-      };
-    }
-
-    if (fieldKey === "settlementMetadata") {
-      return {
-        accessorKey: fieldKey,
-        cell: ({ getValue }) => (
-          <MetadataCell title="Settlement Metadata" value={getValue<unknown>()} />
-        ),
-        header: headerOverrides[fieldKey] ?? toLabel(fieldKey),
-      };
-    }
-
-    if (fieldKey === "releaseMetadata") {
-      return {
-        accessorKey: fieldKey,
-        cell: ({ getValue }) => (
-          <MetadataCell title="Release Metadata" value={getValue<unknown>()} />
-        ),
-        header: headerOverrides[fieldKey] ?? toLabel(fieldKey),
-      };
-    }
-
-    if (dateFields.has(fieldKey)) {
-      return {
-        accessorKey: fieldKey,
-        cell: ({ getValue }) => (
-          <span className="text-foreground font-medium">{formatDate(getValue())}</span>
-        ),
-        header: headerOverrides[fieldKey] ?? toLabel(fieldKey),
-      };
-    }
-
-    if (amountFields.has(fieldKey)) {
-      return {
-        accessorKey: fieldKey,
-        cell: ({ getValue }) => formatAmount(getValue()),
-        header: headerOverrides[fieldKey] ?? toLabel(fieldKey),
-      };
-    }
-
-    return {
-      accessorKey: fieldKey,
-      header: headerOverrides[fieldKey] ?? toLabel(fieldKey),
-    };
+    const custom = columnBuilders[field];
+    return custom ? custom() : buildStandardColumn(field);
   });

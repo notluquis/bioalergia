@@ -39,7 +39,7 @@ export interface MpSyncLog {
   errorMessage?: string | null;
   excluded?: number | null;
   finishedAt?: Date | null;
-  id: number;
+  id: bigint;
   inserted?: number | null;
   skipped?: number | null;
   startedAt: Date;
@@ -91,7 +91,7 @@ const MpSyncLogSchema = z.object({
   errorMessage: z.string().nullable().optional(),
   excluded: z.number().nullable().optional(),
   finishedAt: z.coerce.date().nullable().optional(),
-  id: z.number(),
+  id: z.bigint(),
   inserted: z.number().nullable().optional(),
   skipped: z.number().nullable().optional(),
   startedAt: z.coerce.date(),
