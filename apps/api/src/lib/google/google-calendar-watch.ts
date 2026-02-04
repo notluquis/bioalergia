@@ -94,7 +94,7 @@ export async function registerWatchChannel(
     }
 
     const channelId = randomUUID();
-    const expiration = new Date(Date.now() + CHANNEL_TTL_DAYS * 24 * 60 * 60 * 1000);
+    const fallbackExpiration = new Date(Date.now() + CHANNEL_TTL_DAYS * 24 * 60 * 60 * 1000);
 
     logEvent("register_watch_channel_start", {
       calendarGoogleId,
@@ -124,6 +124,13 @@ export async function registerWatchChannel(
       });
       return null;
     }
+
+    const responseExpirationMs = response.data.expiration
+      ? Number(response.data.expiration)
+      : Number.NaN;
+    const expiration = Number.isFinite(responseExpirationMs)
+      ? new Date(responseExpirationMs)
+      : fallbackExpiration;
 
     // Store in database
     await db.calendarWatchChannel.upsert({
@@ -331,7 +338,12 @@ export async function getActiveWatchChannels(): Promise<
  * Setup watch channels for all calendars that don't have one
  * Should be called on server startup
  */
-export async function setupAllWatchChannels(): Promise<boolean> {
+type SetupResult = "updated" | "skipped" | "failed";
+
+let lastSkipLogAt = 0;
+const SKIP_LOG_THROTTLE_MS = 60 * 60 * 1_000; // 1 hour
+
+export async function setupAllWatchChannels(): Promise<SetupResult> {
   try {
     // Get all calendars
     const calendars = await db.calendar.findMany();
@@ -360,10 +372,14 @@ export async function setupAllWatchChannels(): Promise<boolean> {
     });
 
     if (calendarsNeedingChannels.length === 0) {
-      logEvent("setup_watch_channels_skip", {
-        message: "All calendars already have active watch channels",
-      });
-      return true;
+      const now = Date.now();
+      if (now - lastSkipLogAt >= SKIP_LOG_THROTTLE_MS) {
+        logEvent("setup_watch_channels_skip", {
+          message: "All calendars already have active watch channels",
+        });
+        lastSkipLogAt = now;
+      }
+      return "skipped";
     }
 
     // Register watch channels for calendars that need them
@@ -390,19 +406,20 @@ export async function setupAllWatchChannels(): Promise<boolean> {
       successCount,
       failCount,
     });
-    return true;
+    return "updated";
   } catch (error) {
     console.error("setup_watch_channels_error", error);
     logWarn("setup_watch_channels_error", {});
-    return false;
+    return "failed";
   }
 }
 
 type SetupRetryOptions = {
   initialDelayMs?: number;
   maxDelayMs?: number;
-  multiplier?: number;
   jitterMs?: number;
+  fallbackDelayMs?: number;
+  minDelayMs?: number;
 };
 
 let setupInFlight = false;
@@ -410,44 +427,65 @@ let setupInFlight = false;
 export function scheduleWatchChannelSetup(options: SetupRetryOptions = {}) {
   const {
     initialDelayMs = 5_000,
-    maxDelayMs = 5 * 60 * 1_000,
-    multiplier = 2,
+    maxDelayMs = 60 * 60 * 1_000,
     jitterMs = 1_000,
+    fallbackDelayMs = 6 * 60 * 60 * 1_000,
+    minDelayMs = 30_000,
   } = options;
 
-  let attemptDelay = initialDelayMs;
+  let timer: ReturnType<typeof setTimeout> | null = null;
 
-  const scheduleNext = () => {
+  const scheduleNext = (delayMs: number) => {
+    if (timer) {
+      clearTimeout(timer);
+    }
     const jitter = Math.floor(Math.random() * jitterMs);
-    const delay = Math.min(maxDelayMs, attemptDelay + jitter);
-    setTimeout(runAttempt, delay);
-    attemptDelay = Math.min(maxDelayMs, Math.floor(attemptDelay * multiplier));
+    const delay = Math.min(maxDelayMs, Math.max(minDelayMs, delayMs + jitter));
+    timer = setTimeout(runMaintenance, delay);
   };
 
-  const runAttempt = async () => {
+  const computeNextDelay = async (_lastResult: SetupResult | null) => {
+    const nextExpiration = await db.calendarWatchChannel.findFirst({
+      orderBy: { expiration: "asc" },
+      select: { expiration: true },
+    });
+
+    if (!nextExpiration) {
+      return fallbackDelayMs;
+    }
+
+    const bufferMs = RENEWAL_BUFFER_DAYS * 24 * 60 * 60 * 1000;
+    const targetTime = nextExpiration.expiration.getTime() - bufferMs;
+    const delayMs = targetTime - Date.now();
+    return delayMs;
+  };
+
+  const runMaintenance = async () => {
     if (setupInFlight) {
-      scheduleNext();
+      scheduleNext(initialDelayMs);
       return;
     }
 
     setupInFlight = true;
+    let result: SetupResult | null = null;
     try {
-      const ok = await setupAllWatchChannels();
-      if (ok) {
-        attemptDelay = initialDelayMs;
-      }
+      result = await setupAllWatchChannels();
+      await renewWatchChannels();
     } catch (error) {
       console.error("setup_watch_channels_retry_error", error);
       logWarn("setup_watch_channels_retry_error", {});
+      result = "failed";
     } finally {
       setupInFlight = false;
-      scheduleNext();
     }
+
+    const nextDelay = await computeNextDelay(result);
+    scheduleNext(nextDelay);
   };
 
-  runAttempt().catch((error) => {
+  runMaintenance().catch((error) => {
     console.error("setup_watch_channels_initial_error", error);
     logWarn("setup_watch_channels_initial_error", {});
-    scheduleNext();
+    scheduleNext(initialDelayMs);
   });
 }

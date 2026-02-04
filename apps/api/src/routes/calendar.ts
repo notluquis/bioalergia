@@ -778,10 +778,21 @@ calendarRoutes.post("/webhook", async (c) => {
   const resourceState = c.req.header("x-goog-resource-state");
   const resourceId = c.req.header("x-goog-resource-id");
   const messageNumber = c.req.header("x-goog-message-number");
+  const channelExpirationHeader = c.req.header("x-goog-channel-expiration");
 
   if (!channelId || !resourceId) {
     console.warn("[webhook] ⚠️ Missing channelId or resourceId");
     return reply(c, { error: "Missing required headers" }, 400);
+  }
+
+  if (channelExpirationHeader) {
+    const expirationMs = Date.parse(channelExpirationHeader);
+    if (Number.isFinite(expirationMs)) {
+      await db.calendarWatchChannel.updateMany({
+        where: { channelId, resourceId },
+        data: { expiration: new Date(expirationMs) },
+      });
+    }
   }
 
   if (resourceState === "sync") {
