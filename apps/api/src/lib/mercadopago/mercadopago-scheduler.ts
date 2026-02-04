@@ -1,10 +1,15 @@
-import cron from "node-cron";
-
 import { db } from "@finanzas/db";
-import { getSetting, updateSetting } from "../../services/settings";
-import { MercadoPagoService, type ImportStats } from "../../services/mercadopago";
+import cron from "node-cron";
+import { formatMpDate, type ImportStats, MercadoPagoService } from "../../services/mercadopago";
 import { createMpSyncLogEntry, finalizeMpSyncLogEntry } from "../../services/mercadopago-sync";
-import { getActiveJobsByType, startJob, updateJobProgress, completeJob, failJob } from "../jobQueue";
+import { getSetting, updateSetting } from "../../services/settings";
+import {
+  completeJob,
+  failJob,
+  getActiveJobsByType,
+  startJob,
+  updateJobProgress,
+} from "../jobQueue";
 import { logError, logEvent, logWarn } from "../logger";
 
 type ReportType = "release" | "settlement";
@@ -21,7 +26,8 @@ const ADVISORY_LOCK_KEY = 924_017_221;
 const JITTER_MAX_MS = 45_000;
 const PROCESSED_TTL_DAYS = 45;
 const REPORT_READY_REGEX = /ready|generated|available|finished|success/i;
-const MP_DATE_TRIM_REGEX = /\.\d{3}Z$/;
+const REPORT_READY_WAIT_MS = 10 * 60 * 1000;
+const REPORT_READY_POLL_MS = 30 * 1000;
 
 const SETTINGS_KEYS = {
   lastGenerated: (type: ReportType) => `mp:lastGenerated:${type}`,
@@ -122,9 +128,11 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
       release: createImportStatsAggregate(),
       settlement: createImportStatsAggregate(),
     };
+    const refreshedReportsByType = new Map<ReportType, MPReportSummary[]>();
     for (const [index, type] of types.entries()) {
       const reports = lists[index] as MPReportSummary[];
-      await ensureDailyReport(type, reports);
+      const refreshed = await ensureDailyReport(type, reports, jobId);
+      refreshedReportsByType.set(type, refreshed);
     }
     updateJobProgress(jobId, 2, "Reportes diarios verificados");
 
@@ -132,8 +140,8 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
     const results: Record<string, number> = {
       pendingWebhooks: pendingProcessed,
     };
-    for (const [index, type] of types.entries()) {
-      const reports = lists[index] as MPReportSummary[];
+    for (const type of types) {
+      const reports = refreshedReportsByType.get(type) ?? [];
       results[type] = await processReadyReports(
         type,
         reports,
@@ -178,17 +186,25 @@ interface MPReportSummary {
   date_created?: string;
 }
 
-async function ensureDailyReport(type: ReportType, reports: MPReportSummary[]) {
+async function ensureDailyReport(
+  type: ReportType,
+  reports: MPReportSummary[],
+  jobId: string,
+): Promise<MPReportSummary[]> {
   const targetDate = getYesterdayDate();
   const existing = reports.find((report) => reportCoversDate(report, targetDate));
   if (existing) {
-    logEvent("mp.autoSync.reportSkipped", {
-      type,
-      reason: "already_exists",
-      begin: existing.begin_date,
-      end: existing.end_date,
-    });
-    return;
+    if (existing.file_name && isReportReady(existing.status)) {
+      logEvent("mp.autoSync.reportSkipped", {
+        type,
+        reason: "already_exists",
+        begin: existing.begin_date,
+        end: existing.end_date,
+      });
+      return reports;
+    }
+
+    return await waitForReportReady(type, targetDate, jobId);
   }
 
   const lastGenerated = await getValidSettingDate(SETTINGS_KEYS.lastGenerated(type));
@@ -209,7 +225,7 @@ async function ensureDailyReport(type: ReportType, reports: MPReportSummary[]) {
       lastCreateAttempt: lastCreateAttempt.toISOString(),
       cooldownMinutes: CREATE_COOLDOWN_MINUTES,
     });
-    return;
+    return reports;
   }
 
   const { beginDate, endDate } = toDayRange(targetDate);
@@ -225,6 +241,33 @@ async function ensureDailyReport(type: ReportType, reports: MPReportSummary[]) {
   });
   await updateSetting(SETTINGS_KEYS.lastGenerated(type), targetDate.toISOString());
   logEvent("mp.autoSync.reportCreated", { type, begin: beginDate, end: endDate });
+
+  return await waitForReportReady(type, targetDate, jobId);
+}
+
+async function waitForReportReady(type: ReportType, targetDate: Date, jobId: string) {
+  const deadline = Date.now() + REPORT_READY_WAIT_MS;
+  let lastReports: MPReportSummary[] = [];
+
+  while (Date.now() < deadline) {
+    updateJobProgress(jobId, 2, `Esperando reporte ${type} listo`);
+    const reports = (await MercadoPagoService.listReports(type)) as MPReportSummary[];
+    lastReports = reports;
+    const ready = reports.find(
+      (report) =>
+        reportCoversDate(report, targetDate) && report.file_name && isReportReady(report.status),
+    );
+    if (ready) {
+      return reports;
+    }
+    await sleep(REPORT_READY_POLL_MS);
+  }
+
+  logWarn("mp.autoSync.reportWaitTimeout", {
+    type,
+    targetDate: targetDate.toISOString(),
+  });
+  return lastReports;
 }
 
 async function processReadyReports(
@@ -257,13 +300,13 @@ async function processReadyReports(
 
     updateJobProgress(jobId, 3 + processedCount, `Procesando ${type}: ${fileName}`);
 
-      try {
-        const stats = await MercadoPagoService.processReport(type, { fileName });
-        accumulateImportStats(importStats, stats);
-        accumulateImportStats(importStatsForType, stats);
-        processedSet.add(fileName);
-        processedCount += 1;
-        const createdAt = parseDate(report.date_created);
+    try {
+      const stats = await MercadoPagoService.processReport(type, { fileName });
+      accumulateImportStats(importStats, stats);
+      accumulateImportStats(importStatsForType, stats);
+      processedSet.add(fileName);
+      processedCount += 1;
+      const createdAt = parseDate(report.date_created);
       if (createdAt && (!newestProcessedAt || createdAt > newestProcessedAt)) {
         newestProcessedAt = createdAt;
       }
@@ -446,10 +489,6 @@ function isSameDay(a: Date, b: Date) {
 
 function minutesSince(date: Date) {
   return (Date.now() - date.getTime()) / 60000;
-}
-
-function formatMpDate(date: Date) {
-  return date.toISOString().replace(MP_DATE_TRIM_REGEX, "Z");
 }
 
 function isPeakWindow(date = new Date()) {

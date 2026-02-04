@@ -74,6 +74,12 @@ export const MercadoPagoService = {
   },
 };
 
+const MP_DATE_TRIM_REGEX = /\.\d{3}Z$/;
+
+export function formatMpDate(date: Date) {
+  return date.toISOString().replace(MP_DATE_TRIM_REGEX, "Z");
+}
+
 function appendReportRange(baseUrl: string, range: { begin_date: string; end_date: string }) {
   const params = new URLSearchParams();
   if (range.begin_date) params.set("begin_date", range.begin_date);

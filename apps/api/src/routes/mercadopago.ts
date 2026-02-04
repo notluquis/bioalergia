@@ -11,11 +11,11 @@ import bcrypt from "bcryptjs";
 import { type Context, Hono } from "hono";
 import { stream } from "hono/streaming";
 import { getSessionUser, hasPermission } from "../auth";
-import { MercadoPagoService, MP_WEBHOOK_PASSWORD } from "../services/mercadopago";
 import {
   acquireSchedulerLock,
   releaseSchedulerLock,
 } from "../lib/mercadopago/mercadopago-scheduler";
+import { formatMpDate, MercadoPagoService, MP_WEBHOOK_PASSWORD } from "../services/mercadopago";
 import {
   createMpSyncLogEntry,
   finalizeMpSyncLogEntry,
@@ -73,7 +73,11 @@ mercadopagoRoutes.post("/reports", async (c) => {
   }
 
   try {
-    const data = await MercadoPagoService.createReport("release", body);
+    const { begin_date, end_date } = body as { begin_date: string; end_date: string };
+    const data = await MercadoPagoService.createReport("release", {
+      begin_date: formatMpDate(new Date(begin_date)),
+      end_date: formatMpDate(new Date(end_date)),
+    });
     console.log("[MP Release] Report created by", auth.email);
     return reply(c, data, 201);
   } catch (e) {
@@ -151,7 +155,11 @@ mercadopagoRoutes.post("/settlement/reports", async (c) => {
   }
 
   try {
-    const data = await MercadoPagoService.createReport("settlement", body);
+    const { begin_date, end_date } = body as { begin_date: string; end_date: string };
+    const data = await MercadoPagoService.createReport("settlement", {
+      begin_date: formatMpDate(new Date(begin_date)),
+      end_date: formatMpDate(new Date(end_date)),
+    });
     console.log("[MP Settlement] Report created by", auth.email);
     return reply(c, data, 201);
   } catch (e) {
