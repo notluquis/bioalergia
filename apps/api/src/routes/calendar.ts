@@ -192,12 +192,27 @@ calendarRoutes.get(
       filters.to = filters.to || today.format("YYYY-MM-DD");
     }
 
-    const analytics = await getTreatmentAnalytics(filters);
-    return reply(c, {
-      status: "ok",
-      filters,
-      data: analytics,
-    });
+    try {
+      const analytics = await getTreatmentAnalytics(filters);
+      return reply(c, {
+        status: "ok",
+        filters,
+        data: analytics,
+      });
+    } catch (error) {
+      console.error("[calendar/treatment-analytics] failed", {
+        filters,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return reply(
+        c,
+        {
+          status: "error",
+          message: "Error al obtener analytics",
+        },
+        500,
+      );
+    }
   },
 );
 
