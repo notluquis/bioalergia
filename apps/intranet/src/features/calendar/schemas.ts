@@ -4,7 +4,6 @@ const zDate = z.coerce.date();
 const zDateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected date in YYYY-MM-DD format");
 const zDateOnlyNullable = zDateOnly.nullable();
 const zDateTime = z.string().datetime({ offset: true });
-const zDateTimeNullable = zDateTime.nullable();
 const zEventDateTime = z.preprocess((value) => {
   if (value instanceof Date) {
     return value.toISOString();
@@ -47,12 +46,12 @@ export const CalendarEventDetailSchema = z.strictObject({
   endDate: zDateOnlyNullable,
   endDateTime: zEventDateTime,
   endTimeZone: z.string().nullable(),
-  eventCreatedAt: zDateTimeNullable,
+  eventCreatedAt: zEventDateTime,
   eventDate: zDateOnly,
   eventDateTime: zEventDateTime,
   eventId: z.string(),
   eventType: z.string().nullable(),
-  eventUpdatedAt: zDateTimeNullable,
+  eventUpdatedAt: zEventDateTime,
   hangoutLink: z.string().nullable(),
   isDomicilio: z.boolean().nullable().optional(),
   location: z.string().nullable(),
@@ -261,11 +260,11 @@ export const CalendarUnclassifiedEventSchema = z.strictObject({
   dosageValue: z.number().nullable(),
   dosageUnit: z.string().nullable(),
   endDate: zDateOnlyNullable,
-  endDateTime: zDateTimeNullable,
+  endDateTime: zEventDateTime,
   eventId: z.string(),
   eventType: z.string().nullable(),
   startDate: zDateOnlyNullable,
-  startDateTime: zDateTimeNullable,
+  startDateTime: zEventDateTime,
   status: z.string().nullable(),
   summary: z.string().nullable(),
   treatmentStage: z.string().nullable(),
