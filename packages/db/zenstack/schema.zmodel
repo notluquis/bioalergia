@@ -555,7 +555,7 @@ model ReleaseTransaction {
 }
 
 view SettlementReleaseTransaction {
-  id String @map("row_id")
+  id String @unique @map("row_id")
   sourceId String @map("source_id")
   origin String @map("origin")
   effectiveDate DateTime @map("effective_date")
