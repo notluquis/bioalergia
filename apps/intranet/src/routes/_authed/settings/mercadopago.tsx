@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authed/settings/mercadopago")({
     permission: { action: "read", subject: "Integration" },
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "Integration")) {
+    if (!context.can("read", "Integration")) {
       const routeApi = getRouteApi("/_authed/settings/mercadopago");
       throw routeApi.redirect({ to: "/" });
     }

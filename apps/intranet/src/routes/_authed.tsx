@@ -11,6 +11,8 @@ import Button from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
+import type { AuthSessionData } from "@/features/auth/types";
+import { ability, updateAbility } from "@/lib/authz/ability";
 import { BUILD_TIMESTAMP } from "@/version";
 
 // This layout wraps all authenticated routes.
@@ -41,6 +43,16 @@ export const Route = createFileRoute("/_authed")({
         to: "/onboarding",
       });
     }
+
+    const session = context.queryClient.getQueryData<AuthSessionData | null>(["auth", "session"]);
+    const abilityRules = session?.abilityRules ?? [];
+    updateAbility(abilityRules);
+
+    return {
+      abilityRules,
+      can: ability.can.bind(ability),
+      user,
+    };
   },
   component: AuthedLayout,
 });

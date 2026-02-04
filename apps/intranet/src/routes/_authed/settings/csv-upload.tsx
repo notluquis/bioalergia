@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authed/settings/csv-upload")({
     permission: { action: "create", subject: "BulkData" },
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("create", "BulkData")) {
+    if (!context.can("create", "BulkData")) {
       const routeApi = getRouteApi("/_authed/settings/csv-upload");
       throw routeApi.redirect({ to: "/" });
     }

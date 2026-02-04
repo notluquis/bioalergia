@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_authed/calendar/classify")({
     title: "Clasificar eventos",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("update", "CalendarEvent")) {
+    if (!context.can("update", "CalendarEvent")) {
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }

@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authed/calendar/heatmap")({
     title: "Mapa de calor",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "CalendarHeatmap")) {
+    if (!context.can("read", "CalendarHeatmap")) {
       const routeApi = getRouteApi("/_authed/calendar/heatmap");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });

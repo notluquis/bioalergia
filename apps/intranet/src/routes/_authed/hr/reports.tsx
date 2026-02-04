@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authed/hr/reports")({
     permission: { action: "read", subject: "Report" },
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "Report")) {
+    if (!context.can("read", "Report")) {
       const routeApi = getRouteApi("/_authed/hr/reports");
       throw routeApi.redirect({ to: "/" });
     }

@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authed/settings/inventario")({
     permission: { action: "update", subject: "InventorySetting" },
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("update", "InventorySetting")) {
+    if (!context.can("update", "InventorySetting")) {
       const routeApi = getRouteApi("/_authed/settings/inventario");
       throw routeApi.redirect({ to: "/" });
     }

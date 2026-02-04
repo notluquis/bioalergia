@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authed/operations/supplies")({
     title: "Solicitudes de insumos",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "SupplyRequest")) {
+    if (!context.can("read", "SupplyRequest")) {
       const routeApi = getRouteApi("/_authed/operations/supplies");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });

@@ -10,7 +10,7 @@ import { serviceQueries } from "@/features/services/queries";
 // Services index - shows the overview page
 export const Route = createFileRoute("/_authed/services/")({
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "ServiceList")) {
+    if (!context.can("read", "ServiceList")) {
       const routeApi = getRouteApi("/_authed/services/");
       throw routeApi.redirect({ to: "/" });
     }

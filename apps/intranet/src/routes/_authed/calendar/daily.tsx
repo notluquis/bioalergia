@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authed/calendar/daily")({
     title: "Detalle diario",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "CalendarDaily")) {
+    if (!context.can("read", "CalendarDaily")) {
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }

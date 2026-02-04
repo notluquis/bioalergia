@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_authed/finanzas/personal-credits")({
   },
   beforeLoad: ({ context }) => {
     // Permission check - Assuming 'PersonalCredit' subject.
-    if (!context.auth.can("read", "PersonalCredit")) {
+    if (!context.can("read", "PersonalCredit")) {
       throw new Error("Unauthorized");
     }
   },

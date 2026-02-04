@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authed/calendar/sync-history")({
     title: "Historial de sincronización",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "CalendarSyncLog")) {
+    if (!context.can("read", "CalendarSyncLog")) {
       const routeApi = getRouteApi("/_authed/calendar/sync-history");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });

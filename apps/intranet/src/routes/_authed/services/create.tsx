@@ -7,7 +7,7 @@ const CreateServicePage = lazy(() => import("@/features/services/pages/CreateSer
 
 export const Route = createFileRoute("/_authed/services/create")({
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("create", "Service")) {
+    if (!context.can("create", "Service")) {
       const routeApi = getRouteApi("/_authed/services/create");
       throw routeApi.redirect({ to: "/" });
     }

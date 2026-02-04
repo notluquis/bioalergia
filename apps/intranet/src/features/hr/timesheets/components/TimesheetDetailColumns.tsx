@@ -1,12 +1,10 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import type { ComponentProps } from "react";
 
 import Button from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownPopover,
   HeroDropdownMenu,
 } from "@/components/ui/DropdownMenu";
@@ -260,14 +258,16 @@ const ActionsCell = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Button className="h-8 w-8 p-0" size="sm" variant="secondary">
-          ⋯
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownPopover
-        placement={"bottom-end" as ComponentProps<typeof DropdownPopover>["placement"]}
+      <Button
+        aria-label="Acciones"
+        className="h-8 w-8 p-0"
+        isIconOnly
+        size="sm"
+        variant="secondary"
       >
+        ⋯
+      </Button>
+      <DropdownPopover placement="bottom end">
         <HeroDropdownMenu aria-label="Acciones de registro">
           <DropdownMenuItem
             onPress={() => {

@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authed/calendar/schedule")({
     title: "Calendario interactivo",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "CalendarSchedule")) {
+    if (!context.can("read", "CalendarSchedule")) {
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }

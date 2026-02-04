@@ -1,4 +1,6 @@
-import { useEffect } from "react";
+import type { RawRuleOf } from "@casl/ability";
+import { useEffect, useRef } from "react";
+import type { AppAbility } from "@/lib/authz/ability";
 import { updateAbility } from "@/lib/authz/ability";
 import { useAuth } from "../hooks/use-auth";
 
@@ -8,17 +10,31 @@ import { useAuth } from "../hooks/use-auth";
  */
 export function AuthListener() {
   const { sessionData, impersonatedRole } = useAuth();
+  const lastRulesKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const sessionLoaded = sessionData !== undefined;
+    if (!sessionLoaded && !impersonatedRole) return;
+
+    const rules: RawRuleOf<AppAbility>[] = impersonatedRole
+      ? impersonatedRole.permissions.map((rp) => ({
+          action: rp.permission.action,
+          subject: rp.permission.subject,
+          conditions: undefined,
+        }))
+      : (sessionData?.abilityRules ?? []);
+
+    const rulesKey = rules
+      .map((rule) => `${rule.action}:${String(rule.subject)}:${JSON.stringify(rule.conditions)}`)
+      .join("|");
+
+    if (rulesKey === lastRulesKeyRef.current) return;
+    lastRulesKeyRef.current = rulesKey;
+
     if (impersonatedRole) {
-      // Build rules from the role
-      const rules = impersonatedRole.permissions.map((rp) => ({
-        action: rp.permission.action,
-        subject: rp.permission.subject,
-      }));
       updateAbility(rules);
-    } else if (sessionData) {
-      updateAbility(sessionData.abilityRules ?? []);
+    } else if (sessionLoaded && sessionData) {
+      updateAbility(rules);
     } else {
       updateAbility([]);
     }

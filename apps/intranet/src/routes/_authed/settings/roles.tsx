@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authed/settings/roles")({
     title: "Roles y permisos",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "Role")) {
+    if (!context.can("read", "Role")) {
       const routeApi = getRouteApi("/_authed/settings/roles");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });

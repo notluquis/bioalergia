@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authed/hr/employees")({
     permission: { action: "read", subject: "Employee" },
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "Employee")) {
+    if (!context.can("read", "Employee")) {
       const routeApi = getRouteApi("/_authed/hr/employees");
       throw routeApi.redirect({ to: "/" });
     }

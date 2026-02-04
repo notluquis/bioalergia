@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authed/finanzas/payouts")({
   beforeLoad: ({ context }) => {
     // Assuming simple permission check for now using 'read' 'Finance' as a broad category or specific if 'ReleaseTransaction' is mapped in Ability.
     // Ideally this matches the check inside the component or API.
-    if (!context.auth.can("read", "ReleaseTransaction")) {
+    if (!context.can("read", "ReleaseTransaction")) {
       // Fallback or just let the component handle the error message if we want to be less strict here,
       // but standard is to redirect.
       const routeApi = getRouteApi("/_authed/finanzas/payouts");

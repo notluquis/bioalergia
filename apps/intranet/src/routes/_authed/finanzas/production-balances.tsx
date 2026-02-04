@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authed/finanzas/production-balances")({
     title: "Balance diario de producción",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "DailyBalance")) {
+    if (!context.can("read", "DailyBalance")) {
       const routeApi = getRouteApi("/_authed/finanzas/production-balances");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });

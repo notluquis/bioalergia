@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authed/finanzas/participants")({
     title: "Análisis de participantes",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "Person")) {
+    if (!context.can("read", "Person")) {
       const routeApi = getRouteApi("/_authed/finanzas/participants");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });

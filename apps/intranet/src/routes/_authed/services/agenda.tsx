@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authed/services/agenda")({
     breadcrumb: "Agenda",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "ServiceAgenda")) {
+    if (!context.can("read", "ServiceAgenda")) {
       const routeApi = getRouteApi("/_authed/services/agenda");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });

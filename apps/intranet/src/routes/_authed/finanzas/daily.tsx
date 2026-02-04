@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authed/finanzas/daily")({
     title: "Ingresos Diarios",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "Event")) {
+    if (!context.can("read", "Event")) {
       throw redirect({ to: "/" });
     }
   },

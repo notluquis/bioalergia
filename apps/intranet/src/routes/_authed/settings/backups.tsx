@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authed/settings/backups")({
     title: "Copias de seguridad",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "Backup")) {
+    if (!context.can("read", "Backup")) {
       const routeApi = getRouteApi("/_authed/settings/backups");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });

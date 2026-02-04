@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authed/operations/supplies-analytics")({
     title: "Analytics",
   },
   beforeLoad: ({ context }) => {
-    if (!context.auth.can("read", "CalendarEvent")) {
+    if (!context.can("read", "CalendarEvent")) {
       const routeApi = getRouteApi("/_authed/operations/supplies-analytics");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
