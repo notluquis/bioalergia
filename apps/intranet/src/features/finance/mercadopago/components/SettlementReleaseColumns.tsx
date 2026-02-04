@@ -105,7 +105,9 @@ function MetadataCell({ value }: Readonly<{ value: unknown }>) {
         Ver
       </Button>
       <Modal isOpen={open} onClose={() => setOpen(false)} title="Release Metadata">
-        <pre className="whitespace-pre-wrap break-words text-xs text-foreground">{formatted}</pre>
+        <pre className="whitespace-pre-wrap wrap-break-word text-xs text-foreground">
+          {formatted}
+        </pre>
       </Modal>
     </>
   );
