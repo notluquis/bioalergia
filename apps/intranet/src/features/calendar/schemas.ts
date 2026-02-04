@@ -2,7 +2,9 @@ import { z } from "zod";
 
 const zDate = z.coerce.date();
 const zDateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected date in YYYY-MM-DD format");
-const zDateNullable = zDate.nullable();
+const zDateOnlyNullable = zDateOnly.nullable();
+const zDateTime = z.string().datetime({ offset: true });
+const zDateTimeNullable = zDateTime.nullable();
 
 // Note: CATEGORY_CHOICES and TREATMENT_STAGE_CHOICES are fetched from
 // /api/calendar/classification-options (single source of truth in parsers.ts)
@@ -35,21 +37,21 @@ export const CalendarEventDetailSchema = z.strictObject({
   description: z.string().nullable(),
   dosageValue: z.number().nullable().optional(),
   dosageUnit: z.string().nullable().optional(),
-  endDate: zDateNullable,
-  endDateTime: zDateNullable,
+  endDate: zDateOnlyNullable,
+  endDateTime: zDateTimeNullable,
   endTimeZone: z.string().nullable(),
-  eventCreatedAt: zDateNullable,
-  eventDate: zDate,
-  eventDateTime: zDateNullable,
+  eventCreatedAt: zDateTimeNullable,
+  eventDate: zDateOnly,
+  eventDateTime: zDateTimeNullable,
   eventId: z.string(),
   eventType: z.string().nullable(),
-  eventUpdatedAt: zDateNullable,
+  eventUpdatedAt: zDateTimeNullable,
   hangoutLink: z.string().nullable(),
   isDomicilio: z.boolean().nullable().optional(),
   location: z.string().nullable(),
   rawEvent: z.unknown(),
-  startDate: zDateNullable,
-  startDateTime: zDateNullable,
+  startDate: zDateOnlyNullable,
+  startDateTime: zDateTimeNullable,
   startTimeZone: z.string().nullable(),
   status: z.string().nullable(),
   summary: z.string().nullable(),
@@ -251,12 +253,12 @@ export const CalendarUnclassifiedEventSchema = z.strictObject({
   description: z.string().nullable(),
   dosageValue: z.number().nullable(),
   dosageUnit: z.string().nullable(),
-  endDate: zDateNullable,
-  endDateTime: zDateNullable,
+  endDate: zDateOnlyNullable,
+  endDateTime: zDateTimeNullable,
   eventId: z.string(),
   eventType: z.string().nullable(),
-  startDate: zDateNullable,
-  startDateTime: zDateNullable,
+  startDate: zDateOnlyNullable,
+  startDateTime: zDateTimeNullable,
   status: z.string().nullable(),
   summary: z.string().nullable(),
   treatmentStage: z.string().nullable(),
