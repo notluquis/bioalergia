@@ -678,15 +678,14 @@ function processBulkRow(
     return entryId ? { removeId: entryId } : {};
   }
 
-  const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
-
   return {
     entry: {
       comment,
-      end_time: salida ? dayjs(`${dateKey} ${salida}`).toISOString() : null,
+      // Always send local time in HH:MM (America/Santiago policy handled server-side)
+      end_time: salida || null,
       extra_amount: 0,
       overtime_minutes: overtime,
-      start_time: entrada ? dayjs(`${dateKey} ${entrada}`).toISOString() : null,
+      start_time: entrada || null,
       work_date: row.date,
     },
   };
