@@ -221,6 +221,18 @@ calendarRoutes.get(
 
     const { filters, applied, maxDays } = await buildFiltersFromValidQuery(c.req.valid("query"));
     const events = await getCalendarEventsByDate(filters, { maxDays });
+    const debugEvents = events.days
+      .flatMap((day) => day.events)
+      .slice(0, 5)
+      .map((event) => ({
+        eventId: event.eventId,
+        eventDate: event.eventDate,
+        startDate: event.startDate,
+        startDateTime: event.startDateTime,
+        endDate: event.endDate,
+        endDateTime: event.endDateTime,
+      }));
+    console.log("[calendar/daily] sample event datetimes", debugEvents);
     return reply(c, {
       status: "ok",
       filters: {
