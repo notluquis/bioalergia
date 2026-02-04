@@ -2,7 +2,7 @@
 import { serve } from "@hono/node-server";
 import app from "./app";
 import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler";
-import { setupAllWatchChannels } from "./lib/google/google-calendar-watch";
+import { scheduleWatchChannelSetup } from "./lib/google/google-calendar-watch";
 import { startMercadoPagoScheduler } from "./lib/mercadopago/mercadopago-scheduler";
 
 const port = Number(process.env.PORT) || 3000;
@@ -12,9 +12,7 @@ console.log(`🚀 Finanzas API starting on port ${port}`);
 // Run this after server starts to avoid blocking startup (though these are async anyway)
 if (process.env.NODE_ENV === "production" || process.env.ENABLE_CALENDAR_SYNC === "true") {
   startGoogleCalendarScheduler();
-  setupAllWatchChannels().catch((err) => {
-    console.error("Failed to setup watch channels:", err);
-  });
+  scheduleWatchChannelSetup();
 }
 
 if (process.env.NODE_ENV === "production" || process.env.ENABLE_MP_AUTO_SYNC === "true") {

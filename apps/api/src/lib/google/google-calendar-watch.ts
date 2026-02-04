@@ -395,3 +395,55 @@ export async function setupAllWatchChannels(): Promise<void> {
     logWarn("setup_watch_channels_error", {});
   }
 }
+
+type SetupRetryOptions = {
+  initialDelayMs?: number;
+  maxDelayMs?: number;
+  multiplier?: number;
+  jitterMs?: number;
+};
+
+let setupInFlight = false;
+
+export function scheduleWatchChannelSetup(options: SetupRetryOptions = {}) {
+  const {
+    initialDelayMs = 5_000,
+    maxDelayMs = 5 * 60 * 1_000,
+    multiplier = 2,
+    jitterMs = 1_000,
+  } = options;
+
+  let attemptDelay = initialDelayMs;
+
+  const scheduleNext = () => {
+    const jitter = Math.floor(Math.random() * jitterMs);
+    const delay = Math.min(maxDelayMs, attemptDelay + jitter);
+    setTimeout(runAttempt, delay);
+    attemptDelay = Math.min(maxDelayMs, Math.floor(attemptDelay * multiplier));
+  };
+
+  const runAttempt = async () => {
+    if (setupInFlight) {
+      scheduleNext();
+      return;
+    }
+
+    setupInFlight = true;
+    try {
+      await setupAllWatchChannels();
+      attemptDelay = initialDelayMs;
+    } catch (error) {
+      console.error("setup_watch_channels_retry_error", error);
+      logWarn("setup_watch_channels_retry_error", {});
+    } finally {
+      setupInFlight = false;
+      scheduleNext();
+    }
+  };
+
+  runAttempt().catch((error) => {
+    console.error("setup_watch_channels_initial_error", error);
+    logWarn("setup_watch_channels_initial_error", {});
+    scheduleNext();
+  });
+}
