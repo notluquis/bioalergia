@@ -5,10 +5,13 @@ const zDateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected date in YYYY
 const zDateOnlyNullable = zDateOnly.nullable();
 const zDateTime = z.string().datetime({ offset: true });
 const zDateTimeNullable = zDateTime.nullable();
-const zEventDateTime = z.preprocess(
-  (value) => (value === "" ? null : value),
-  z.union([zDateTime, zDateOnly]).nullable(),
-);
+const zEventDateTime = z.preprocess((value) => {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (value === "") return null;
+  return value;
+}, z.union([zDateTime, zDateOnly]).nullable());
 
 // Note: CATEGORY_CHOICES and TREATMENT_STAGE_CHOICES are fetched from
 // /api/calendar/classification-options (single source of truth in parsers.ts)
