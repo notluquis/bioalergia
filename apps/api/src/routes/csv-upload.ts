@@ -341,6 +341,9 @@ csvUploadRoutes.post("/import", async (c) => {
     inserted,
     updated,
     skipped,
+    toInsert: inserted,
+    toUpdate: updated,
+    toSkip: skipped,
     errors: errors.slice(0, 20),
   });
 });
