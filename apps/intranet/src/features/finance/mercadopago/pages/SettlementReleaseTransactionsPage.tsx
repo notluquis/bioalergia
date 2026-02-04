@@ -57,9 +57,9 @@ export default function SettlementReleaseTransactionsPage() {
     <section className="mx-auto w-full max-w-none space-y-4 p-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <h1 className="typ-title text-foreground">Conciliaciones + Liberaciones</h1>
+          <h1 className="typ-title text-foreground">Conciliaciones + Liberaciones + Retiros</h1>
           <p className="typ-body text-default-600 max-w-2xl">
-            Unifica conciliaciones y liberaciones por ID origen (FULL OUTER JOIN).
+            Unifica conciliaciones, liberaciones y retiros por ID origen (FULL OUTER JOIN).
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-3">

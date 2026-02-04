@@ -16,9 +16,11 @@ const amountFields = new Set<string>([
   "releaseNetDebitAmount",
   "releaseGrossAmount",
   "releaseBalanceAmount",
+  "withdrawAmount",
+  "withdrawFee",
 ]);
 
-const dateFields = new Set<string>(["effectiveDate"]);
+const dateFields = new Set<string>(["effectiveDate", "withdrawDateCreated"]);
 
 const headerOverrides: Record<string, string> = {
   effectiveDate: "Fecha",
@@ -47,12 +49,32 @@ const headerOverrides: Record<string, string> = {
   releaseBusinessUnit: "Release Business Unit",
   releaseIssuerName: "Release Issuer Name",
   releaseMetadata: "Release Metadata",
+  withdrawId: "Withdraw ID",
+  withdrawDateCreated: "Withdraw Fecha Creacion",
+  withdrawStatus: "Withdraw Estado",
+  withdrawStatusDetail: "Withdraw Detalle Estado",
+  withdrawAmount: "Withdraw Monto",
+  withdrawFee: "Withdraw Tarifa",
+  withdrawActivityUrl: "Withdraw Activity URL",
+  withdrawPayoutDesc: "Withdraw Motivo",
+  withdrawBankAccountHolder: "Withdraw Titular",
+  withdrawIdentificationType: "Withdraw Tipo Identificacion",
+  withdrawIdentificationNumber: "Withdraw Numero Identificacion",
+  withdrawBankId: "Withdraw Banco ID",
+  withdrawBankName: "Withdraw Banco",
+  withdrawBankBranch: "Withdraw Sucursal",
+  withdrawBankAccountType: "Withdraw Tipo Cuenta",
+  withdrawBankAccountNumber: "Withdraw Numero Cuenta",
 };
 
 const originLabels: Record<string, string> = {
+  all: "Todas",
   both: "Ambas",
   release: "Liberacion",
+  release_withdraw: "Liberacion + Retiro",
   settlement: "Conciliacion",
+  settlement_withdraw: "Conciliacion + Retiro",
+  withdraw: "Retiro",
 };
 
 const CAMEL_CASE_REGEX = /([a-z])([A-Z])/g;
@@ -151,6 +173,22 @@ const allFields: Array<keyof SettlementReleaseTransaction> = [
   "releaseBusinessUnit",
   "releaseIssuerName",
   "releaseMetadata",
+  "withdrawId",
+  "withdrawDateCreated",
+  "withdrawStatus",
+  "withdrawStatusDetail",
+  "withdrawAmount",
+  "withdrawFee",
+  "withdrawActivityUrl",
+  "withdrawPayoutDesc",
+  "withdrawBankAccountHolder",
+  "withdrawIdentificationType",
+  "withdrawIdentificationNumber",
+  "withdrawBankId",
+  "withdrawBankName",
+  "withdrawBankBranch",
+  "withdrawBankAccountType",
+  "withdrawBankAccountNumber",
 ];
 
 const getHeader = (fieldKey: string) => headerOverrides[fieldKey] ?? toLabel(fieldKey);

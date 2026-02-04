@@ -5017,6 +5017,192 @@ export class SchemaType implements SchemaDef {
             },
           ],
         },
+        withdrawId: {
+          name: "withdrawId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_id") }],
+            },
+          ],
+        },
+        withdrawDateCreated: {
+          name: "withdrawDateCreated",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_date_created") }],
+            },
+          ],
+        },
+        withdrawStatus: {
+          name: "withdrawStatus",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_status") }],
+            },
+          ],
+        },
+        withdrawStatusDetail: {
+          name: "withdrawStatusDetail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_status_detail") }],
+            },
+          ],
+        },
+        withdrawAmount: {
+          name: "withdrawAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_amount") }],
+            },
+          ],
+        },
+        withdrawFee: {
+          name: "withdrawFee",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_fee") }],
+            },
+          ],
+        },
+        withdrawActivityUrl: {
+          name: "withdrawActivityUrl",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_activity_url") }],
+            },
+          ],
+        },
+        withdrawPayoutDesc: {
+          name: "withdrawPayoutDesc",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_payout_desc") }],
+            },
+          ],
+        },
+        withdrawBankAccountHolder: {
+          name: "withdrawBankAccountHolder",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("withdraw_bank_account_holder") },
+              ],
+            },
+          ],
+        },
+        withdrawIdentificationType: {
+          name: "withdrawIdentificationType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("withdraw_identification_type") },
+              ],
+            },
+          ],
+        },
+        withdrawIdentificationNumber: {
+          name: "withdrawIdentificationNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("withdraw_identification_number") },
+              ],
+            },
+          ],
+        },
+        withdrawBankId: {
+          name: "withdrawBankId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_bank_id") }],
+            },
+          ],
+        },
+        withdrawBankName: {
+          name: "withdrawBankName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_bank_name") }],
+            },
+          ],
+        },
+        withdrawBankBranch: {
+          name: "withdrawBankBranch",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_bank_branch") }],
+            },
+          ],
+        },
+        withdrawBankAccountType: {
+          name: "withdrawBankAccountType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("withdraw_bank_account_type") },
+              ],
+            },
+          ],
+        },
+        withdrawBankAccountNumber: {
+          name: "withdrawBankAccountNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("withdraw_bank_account_number") },
+              ],
+            },
+          ],
+        },
       },
       attributes: [
         {

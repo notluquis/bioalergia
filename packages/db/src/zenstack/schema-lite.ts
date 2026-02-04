@@ -1997,6 +1997,86 @@ export class SchemaType implements SchemaDef {
           type: "Json",
           optional: true,
         },
+        withdrawId: {
+          name: "withdrawId",
+          type: "String",
+          optional: true,
+        },
+        withdrawDateCreated: {
+          name: "withdrawDateCreated",
+          type: "DateTime",
+          optional: true,
+        },
+        withdrawStatus: {
+          name: "withdrawStatus",
+          type: "String",
+          optional: true,
+        },
+        withdrawStatusDetail: {
+          name: "withdrawStatusDetail",
+          type: "String",
+          optional: true,
+        },
+        withdrawAmount: {
+          name: "withdrawAmount",
+          type: "Decimal",
+          optional: true,
+        },
+        withdrawFee: {
+          name: "withdrawFee",
+          type: "Decimal",
+          optional: true,
+        },
+        withdrawActivityUrl: {
+          name: "withdrawActivityUrl",
+          type: "String",
+          optional: true,
+        },
+        withdrawPayoutDesc: {
+          name: "withdrawPayoutDesc",
+          type: "String",
+          optional: true,
+        },
+        withdrawBankAccountHolder: {
+          name: "withdrawBankAccountHolder",
+          type: "String",
+          optional: true,
+        },
+        withdrawIdentificationType: {
+          name: "withdrawIdentificationType",
+          type: "String",
+          optional: true,
+        },
+        withdrawIdentificationNumber: {
+          name: "withdrawIdentificationNumber",
+          type: "String",
+          optional: true,
+        },
+        withdrawBankId: {
+          name: "withdrawBankId",
+          type: "String",
+          optional: true,
+        },
+        withdrawBankName: {
+          name: "withdrawBankName",
+          type: "String",
+          optional: true,
+        },
+        withdrawBankBranch: {
+          name: "withdrawBankBranch",
+          type: "String",
+          optional: true,
+        },
+        withdrawBankAccountType: {
+          name: "withdrawBankAccountType",
+          type: "String",
+          optional: true,
+        },
+        withdrawBankAccountNumber: {
+          name: "withdrawBankAccountNumber",
+          type: "String",
+          optional: true,
+        },
       },
       idFields: ["id"],
       uniqueFields: {
