@@ -751,9 +751,9 @@ export default function CSVUploadPage() {
       )}
 
       {/* 4. Preview & Import Actions */}
-      {previewData && !showSuccessMessage && (
+      {csvHeaders.length > 0 && currentTable && !showSuccessMessage && (
         <>
-          <ImportSummaryCard previewData={previewData} />
+          {previewData && <ImportSummaryCard previewData={previewData} />}
 
           {/* Action Buttons */}
           <div className="bg-background/80 border-default-100 sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-t p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
@@ -769,11 +769,12 @@ export default function CSVUploadPage() {
               ) : (
                 <FileUp className="mr-2 h-4 w-4" />
               )}
-              Recalcular vista previa
+              {previewData ? "Recalcular vista previa" : "Generar vista previa"}
             </Button>
 
             <Button
               disabled={
+                !previewData ||
                 !isValidMapping ||
                 isPreviewPending ||
                 isImportPending ||
