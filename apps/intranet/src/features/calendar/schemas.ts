@@ -5,6 +5,10 @@ const zDateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected date in YYYY
 const zDateOnlyNullable = zDateOnly.nullable();
 const zDateTime = z.string().datetime({ offset: true });
 const zDateTimeNullable = zDateTime.nullable();
+const zEventDateTime = z.preprocess(
+  (value) => (value === "" ? null : value),
+  z.union([zDateTime, zDateOnly]).nullable(),
+);
 
 // Note: CATEGORY_CHOICES and TREATMENT_STAGE_CHOICES are fetched from
 // /api/calendar/classification-options (single source of truth in parsers.ts)
@@ -38,11 +42,11 @@ export const CalendarEventDetailSchema = z.strictObject({
   dosageValue: z.number().nullable().optional(),
   dosageUnit: z.string().nullable().optional(),
   endDate: zDateOnlyNullable,
-  endDateTime: zDateTimeNullable,
+  endDateTime: zEventDateTime,
   endTimeZone: z.string().nullable(),
   eventCreatedAt: zDateTimeNullable,
   eventDate: zDateOnly,
-  eventDateTime: zDateTimeNullable,
+  eventDateTime: zEventDateTime,
   eventId: z.string(),
   eventType: z.string().nullable(),
   eventUpdatedAt: zDateTimeNullable,
@@ -51,7 +55,7 @@ export const CalendarEventDetailSchema = z.strictObject({
   location: z.string().nullable(),
   rawEvent: z.unknown(),
   startDate: zDateOnlyNullable,
-  startDateTime: zDateTimeNullable,
+  startDateTime: zEventDateTime,
   startTimeZone: z.string().nullable(),
   status: z.string().nullable(),
   summary: z.string().nullable(),
