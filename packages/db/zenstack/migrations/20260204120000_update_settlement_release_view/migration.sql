@@ -1,7 +1,9 @@
 -- Settlement + Release combined view (reduced column set)
 -- ZenStack migration
 
-CREATE OR REPLACE VIEW public.settlement_release_transactions AS
+DROP VIEW IF EXISTS public.settlement_release_transactions;
+
+CREATE VIEW public.settlement_release_transactions AS
 SELECT
   COALESCE(s.source_id, r.source_id) AS row_id,
   COALESCE(s.source_id, r.source_id) AS source_id,
