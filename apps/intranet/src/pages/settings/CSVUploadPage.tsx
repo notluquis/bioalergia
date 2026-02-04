@@ -271,9 +271,13 @@ function TableSelectionCard({
               onChange={(val) => onTableChange(val as string)}
               value={selectedTable}
             >
-              <SelectItem key="">-- Seleccionar tabla --</SelectItem>
+              <SelectItem id="" key="">
+                -- Seleccionar tabla --
+              </SelectItem>
               {allowedTableOptions.map((table) => (
-                <SelectItem key={table.value}>{table.label}</SelectItem>
+                <SelectItem id={table.value} key={table.value}>
+                  {table.label}
+                </SelectItem>
               ))}
             </Select>
           </div>
@@ -511,9 +515,13 @@ function buildMappingColumns({
           }}
           value={columnMapping[row.original.name] ?? ""}
         >
-          <SelectItem key="">-- Ignorar / Sin mapear --</SelectItem>
+          <SelectItem id="" key="">
+            -- Ignorar / Sin mapear --
+          </SelectItem>
           {csvHeaders.map((header) => (
-            <SelectItem key={header}>{header}</SelectItem>
+            <SelectItem id={header} key={header}>
+              {header}
+            </SelectItem>
           ))}
         </Select>
       ),

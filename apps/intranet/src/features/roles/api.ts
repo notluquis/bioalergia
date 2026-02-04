@@ -149,9 +149,11 @@ export async function updateRolePermissions({
   permissionIds,
   roleId,
 }: UpdateRolePermissionsParams) {
-  return apiClient.post(
+  await apiClient.postRaw(
     `/api/roles/${roleId}/permissions`,
     { permissionIds },
-    { responseSchema: StatusResponseSchema },
+    {
+      responseType: "text",
+    },
   );
 }

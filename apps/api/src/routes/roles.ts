@@ -123,7 +123,7 @@ app.post("/:id/permissions", async (c) => {
   }
 
   await assignPermissionsToRole(id, parsed.data.permissionIds);
-  return reply(c, { status: "ok" });
+  return c.body(null, 204);
 });
 
 // Sync permissions - generates CRUD permissions for all subjects

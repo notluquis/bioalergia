@@ -466,9 +466,13 @@ function logTimesheetUpdateError(
 ) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorCode =
-    error instanceof Object && "code" in error ? (error as Record<string, unknown>).code : undefined;
+    error instanceof Object && "code" in error
+      ? (error as Record<string, unknown>).code
+      : undefined;
   const errorMeta =
-    error instanceof Object && "meta" in error ? (error as Record<string, unknown>).meta : undefined;
+    error instanceof Object && "meta" in error
+      ? (error as Record<string, unknown>).meta
+      : undefined;
   console.error("[timesheets] update error details:", {
     id,
     message: errorMessage,
@@ -594,6 +598,7 @@ export function buildEmployeeSummary(
       email: null,
       workedMinutes: 0,
       overtimeMinutes: 0,
+      extraAmount: 0,
       hourlyRate: 0,
       overtimeRate: 0,
       retentionRate: 0,
@@ -625,6 +630,7 @@ export function buildEmployeeSummary(
       email: employee.person.email ?? null,
       workedMinutes: 0,
       overtimeMinutes: 0,
+      extraAmount: 0,
       hourlyRate: 0,
       overtimeRate: 0,
       retentionRate,
@@ -654,6 +660,7 @@ export function buildEmployeeSummary(
     email: employee.person.email ?? null,
     workedMinutes: data.workedMinutes,
     overtimeMinutes: data.overtimeMinutes,
+    extraAmount: 0,
     hourlyRate,
     overtimeRate,
     retentionRate,
@@ -693,6 +700,7 @@ export async function buildMonthlySummary(from: string, to: string, employeeId?:
   const totals = {
     workedMinutes: 0,
     overtimeMinutes: 0,
+    extraAmount: 0,
     subtotal: 0,
     retention: 0,
     net: 0,
@@ -713,6 +721,7 @@ export async function buildMonthlySummary(from: string, to: string, employeeId?:
     results.push(summary);
     totals.workedMinutes += summary.workedMinutes;
     totals.overtimeMinutes += summary.overtimeMinutes;
+    totals.extraAmount += summary.extraAmount;
     totals.subtotal += summary.subtotal;
     totals.retention += summary.retention;
     totals.net += summary.net;
@@ -761,6 +770,7 @@ export async function buildMonthlySummary(from: string, to: string, employeeId?:
   return {
     employees: results,
     totals: {
+      extraAmount: roundCurrency(totals.extraAmount),
       hours: minutesToDuration(totals.workedMinutes),
       overtime: minutesToDuration(totals.overtimeMinutes),
       subtotal: roundCurrency(totals.subtotal),
