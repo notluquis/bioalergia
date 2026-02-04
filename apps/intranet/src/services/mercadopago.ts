@@ -27,6 +27,8 @@ export interface MPReport {
   file_name?: string;
   id: number;
   status?: string;
+  status_detail?: string;
+  state?: string;
 }
 
 export interface MPReportListResponse {
@@ -78,6 +80,8 @@ const MPReportSchema = z.looseObject({
   file_name: z.string().optional(),
   id: z.number(),
   status: z.string().optional(),
+  status_detail: z.string().optional(),
+  state: z.string().optional(),
 });
 
 const MPReportListResponseSchema = z.object({
@@ -231,7 +235,16 @@ export const MPService = {
       `${baseUrl}/reports?${query.toString()}`,
       { responseSchema: MPReportListResponseSchema },
     );
-    return { reports: response.reports ?? [], total: response.total ?? 0 };
+    const normalizeReportStatus = (report: MPReport): MPReport => {
+      const status = report.status ?? report.status_detail ?? report.state;
+      if (status) return { ...report, status };
+      if (!report.file_name) return { ...report, status: "processing" };
+      return report;
+    };
+    return {
+      reports: (response.reports ?? []).map(normalizeReportStatus),
+      total: response.total ?? 0,
+    };
   },
   listSyncLogs: async (params?: {
     limit?: number;
