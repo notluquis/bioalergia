@@ -1841,6 +1841,11 @@ export class SchemaType implements SchemaDef {
           type: "String",
           optional: true,
         },
+        settlementMetadata: {
+          name: "settlementMetadata",
+          type: "Json",
+          optional: true,
+        },
         releaseExternalReference: {
           name: "releaseExternalReference",
           type: "String",

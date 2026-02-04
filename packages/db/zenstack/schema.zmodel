@@ -572,6 +572,7 @@ view SettlementReleaseTransaction {
   settlementBusinessUnit String? @map("settlement_business_unit")
   settlementSubUnit String? @map("settlement_sub_unit")
   settlementPayBankTransferId String? @map("settlement_pay_bank_transfer_id")
+  settlementMetadata Json? @map("settlement_metadata")
   releaseExternalReference String? @map("release_external_reference")
   releaseDescription String? @map("release_description")
   releaseNetDebitAmount Decimal? @map("release_net_debit_amount")

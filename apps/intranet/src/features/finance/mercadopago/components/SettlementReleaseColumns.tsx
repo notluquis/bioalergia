@@ -37,6 +37,7 @@ const headerOverrides: Record<string, string> = {
   settlementBusinessUnit: "Settlement Business Unit",
   settlementSubUnit: "Settlement Sub Unit",
   settlementPayBankTransferId: "Settlement Pay Bank Transfer ID",
+  settlementMetadata: "Settlement Metadata",
   releaseExternalReference: "Release External Reference",
   releaseDescription: "Release Description",
   releaseNetDebitAmount: "Debito Neto (Lib.)",
@@ -87,8 +88,14 @@ const formatJson = (value: unknown) => {
   }
 };
 
-function MetadataCell({ value }: Readonly<{ value: unknown }>) {
+const isEmptyJsonObject = (value: unknown) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return Object.keys(value).length === 0;
+};
+
+function MetadataCell({ value, title }: Readonly<{ value: unknown; title: string }>) {
   const [open, setOpen] = useState(false);
+  if (isEmptyJsonObject(value)) return "";
   const formatted = formatJson(value);
 
   if (!formatted) return "";
@@ -104,7 +111,7 @@ function MetadataCell({ value }: Readonly<{ value: unknown }>) {
       >
         Ver
       </Button>
-      <Modal isOpen={open} onClose={() => setOpen(false)} title="Release Metadata">
+      <Modal isOpen={open} onClose={() => setOpen(false)} title={title}>
         <pre className="whitespace-pre-wrap wrap-break-word text-xs text-foreground">
           {formatted}
         </pre>
@@ -130,6 +137,7 @@ const allFields: Array<keyof SettlementReleaseTransaction> = [
   "settlementBusinessUnit",
   "settlementSubUnit",
   "settlementPayBankTransferId",
+  "settlementMetadata",
   "releaseExternalReference",
   "releaseDescription",
   "releaseNetDebitAmount",
@@ -155,10 +163,22 @@ export const getSettlementReleaseColumns = (): ColumnDef<SettlementReleaseTransa
       };
     }
 
+    if (fieldKey === "settlementMetadata") {
+      return {
+        accessorKey: fieldKey,
+        cell: ({ getValue }) => (
+          <MetadataCell title="Settlement Metadata" value={getValue<unknown>()} />
+        ),
+        header: headerOverrides[fieldKey] ?? toLabel(fieldKey),
+      };
+    }
+
     if (fieldKey === "releaseMetadata") {
       return {
         accessorKey: fieldKey,
-        cell: ({ getValue }) => <MetadataCell value={getValue<unknown>()} />,
+        cell: ({ getValue }) => (
+          <MetadataCell title="Release Metadata" value={getValue<unknown>()} />
+        ),
         header: headerOverrides[fieldKey] ?? toLabel(fieldKey),
       };
     }

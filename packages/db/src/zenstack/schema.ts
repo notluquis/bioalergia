@@ -4603,6 +4603,17 @@ export class SchemaType implements SchemaDef {
             },
           ],
         },
+        settlementMetadata: {
+          name: "settlementMetadata",
+          type: "Json",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("settlement_metadata") }],
+            },
+          ],
+        },
         releaseExternalReference: {
           name: "releaseExternalReference",
           type: "String",

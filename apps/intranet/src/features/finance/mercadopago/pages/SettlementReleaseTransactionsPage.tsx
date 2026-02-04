@@ -1,5 +1,6 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { Alert, Button, Card, Input, Label, TextField } from "@heroui/react";
+import type { PaginationState, VisibilityState } from "@tanstack/react-table";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -9,21 +10,6 @@ import { today } from "@/lib/dates";
 
 import { getSettlementReleaseColumns } from "../components/SettlementReleaseColumns";
 
-const defaultVisibility = {
-  effectiveDate: true,
-  origin: true,
-  sourceId: true,
-  settlementTransactionType: true,
-  settlementTransactionAmount: true,
-  settlementSettlementNetAmount: true,
-  settlementRealAmount: true,
-  releaseGrossAmount: true,
-  releaseNetCreditAmount: true,
-  releaseNetDebitAmount: true,
-  releaseMpFeeAmount: true,
-  releaseFinancingFeeAmount: true,
-};
-
 export default function SettlementReleaseTransactionsPage() {
   const client = useClientQueries(schemaLite);
 
@@ -32,19 +18,34 @@ export default function SettlementReleaseTransactionsPage() {
     to: today(),
   });
   const [appliedFilters, setAppliedFilters] = useState(draftFilters);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
   const { can } = useAuth();
   const canView = can("read", "Integration");
 
+  const filters = {
+    effectiveDate: {
+      gte: appliedFilters.from ? new Date(appliedFilters.from) : undefined,
+      lte: appliedFilters.to ? new Date(appliedFilters.to) : undefined,
+    },
+  };
+
+  const { data: total = 0 } = client.settlementReleaseTransaction.useCount({
+    where: filters,
+  });
+
   const { data: rows, isLoading } = client.settlementReleaseTransaction.useFindMany({
     orderBy: { effectiveDate: "desc" },
-    where: {
-      effectiveDate: {
-        gte: appliedFilters.from ? new Date(appliedFilters.from) : undefined,
-        lte: appliedFilters.to ? new Date(appliedFilters.to) : undefined,
-      },
-    },
+    skip: pagination.pageIndex * pagination.pageSize,
+    take: pagination.pageSize,
+    where: filters,
   });
+
+  const pageCount = Math.max(1, Math.ceil(total / pagination.pageSize));
 
   const handleFilterChange = (update: Partial<typeof draftFilters>) => {
     setDraftFilters((prev) => ({ ...prev, ...update }));
@@ -91,6 +92,7 @@ export default function SettlementReleaseTransactionsPage() {
           <Button
             onPress={() => {
               setAppliedFilters(draftFilters);
+              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
             }}
             size="sm"
             variant="primary"
@@ -104,7 +106,7 @@ export default function SettlementReleaseTransactionsPage() {
         <Card>
           <Card.Content className="p-0">
             <DataTable
-              columnVisibility={defaultVisibility}
+              columnVisibility={columnVisibility}
               columns={columns}
               data={rows ?? []}
               containerVariant="plain"
@@ -112,6 +114,10 @@ export default function SettlementReleaseTransactionsPage() {
               enableGlobalFilter={false}
               isLoading={isLoading}
               noDataMessage="No se encontraron resultados en el rango seleccionado."
+              onColumnVisibilityChange={setColumnVisibility}
+              onPaginationChange={setPagination}
+              pageCount={pageCount}
+              pagination={pagination}
             />
           </Card.Content>
         </Card>
