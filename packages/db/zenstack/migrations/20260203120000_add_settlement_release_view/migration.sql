@@ -1,7 +1,7 @@
 -- Settlement + Release combined view (FULL OUTER JOIN)
 -- ZenStack migration
 
-CREATE OR REPLACE VIEW settlement_release_transactions AS
+CREATE OR REPLACE VIEW public.settlement_release_transactions AS
 SELECT
   COALESCE(s.source_id, r.source_id) AS row_id,
   COALESCE(s.source_id, r.source_id) AS source_id,
@@ -128,6 +128,6 @@ SELECT
   r.purchase_id AS release_purchase_id,
   r.created_at AS release_created_at,
   r.updated_at AS release_updated_at
-FROM settlement_transactions s
-FULL OUTER JOIN release_transactions r
+FROM public.settlement_transactions s
+FULL OUTER JOIN public.release_transactions r
   ON s.source_id = r.source_id;

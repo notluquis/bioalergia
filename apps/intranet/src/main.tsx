@@ -63,6 +63,14 @@ globalThis.addEventListener("unhandledrejection", (event) => {
 // ============================================================================
 
 function logGlobalError(error: unknown, context: string) {
+  const zenstackInfo =
+    typeof error === "object" &&
+    error !== null &&
+    "info" in error &&
+    (error as { info?: unknown }).info
+      ? (error as { info?: unknown; status?: unknown })
+      : null;
+
   if (error instanceof ZodError) {
     console.group(`🚨 [${context}] Validation Error`);
     console.table(
@@ -76,6 +84,14 @@ function logGlobalError(error: unknown, context: string) {
   } else if (error instanceof ApiError && error.details) {
     console.group(`🚨 [${context}] ApiError`);
     console.error(error.message);
+    console.groupEnd();
+  } else if (zenstackInfo) {
+    console.group(`🚨 [${context}] ZenStack Query Error`);
+    console.error(
+      "Status:",
+      typeof zenstackInfo.status === "number" ? zenstackInfo.status : "unknown",
+    );
+    console.error("Info:", zenstackInfo.info);
     console.groupEnd();
   } else {
     // Standard error logging
