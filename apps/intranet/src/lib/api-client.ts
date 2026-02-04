@@ -193,7 +193,8 @@ async function parseResponse<T>(
     return (await res.text()) as unknown as T;
   }
 
-  const data: unknown = await res.json();
+  const rawText = await res.text();
+  const data: unknown = rawText ? superJsonParser(rawText) : null;
   if (!responseSchema) {
     return data as T;
   }

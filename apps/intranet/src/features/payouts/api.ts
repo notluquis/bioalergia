@@ -42,7 +42,7 @@ export async function fetchReleaseTransactions(
   if (params.descriptions?.length) searchParams.set("descriptions", params.descriptions.join(","));
 
   return apiClient.get<FetchReleaseTransactionsResponse>(
-    `api/release-transactions?${searchParams.toString()}`,
+    `/api/release-transactions?${searchParams.toString()}`,
     { responseSchema: FetchReleaseTransactionsResponseSchema },
   );
 }

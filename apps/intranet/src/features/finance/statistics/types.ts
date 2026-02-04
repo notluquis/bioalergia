@@ -24,7 +24,7 @@ export interface StatsResponse {
 
 export interface TopParticipantData {
   count: number;
-  personId: number;
+  personId: string;
   personName: string;
   total: number;
 }

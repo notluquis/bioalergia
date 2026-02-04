@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { createAuthContext, getSessionUser } from "../auth";
 import { zValidator } from "../lib/zod-validator";
+import { reply } from "../utils/reply";
 
 export const personalFinanceRoutes = new Hono();
 
@@ -61,7 +62,7 @@ personalFinanceRoutes.get("/credits", async (c) => {
       },
     },
   });
-  return c.json(credits);
+  return reply(c, credits);
 });
 
 // GET /credits/:id - Get credit details with all installments
@@ -78,8 +79,8 @@ personalFinanceRoutes.get("/credits/:id", async (c) => {
     },
   });
 
-  if (!credit) return c.json({ error: "Credit not found" }, 404);
-  return c.json(credit);
+  if (!credit) return reply(c, { error: "Credit not found" }, 404);
+  return reply(c, credit);
 });
 
 // POST /credits - Create new credit
@@ -121,7 +122,7 @@ personalFinanceRoutes.post("/credits", zValidator("json", createCreditSchema), a
     },
   });
 
-  return c.json(newCredit, 201);
+  return reply(c, newCredit, 201);
 });
 
 // POST /credits/:id/installments/:number/pay - Pay an installment
@@ -146,11 +147,11 @@ personalFinanceRoutes.post(
     });
 
     if (!installment) {
-      return c.json({ error: "Installment not found" }, 404);
+      return reply(c, { error: "Installment not found" }, 404);
     }
 
     if (installment.status === "PAID") {
-      return c.json({ error: "Installment already paid" }, 400);
+      return reply(c, { error: "Installment already paid" }, 400);
     }
 
     // Update
@@ -181,7 +182,7 @@ personalFinanceRoutes.post(
       });
     }
 
-    return c.json(updated);
+    return reply(c, updated);
   },
 );
 
@@ -194,5 +195,5 @@ personalFinanceRoutes.delete("/credits/:id", async (c) => {
     where: { id },
   });
 
-  return c.json({ success: true });
+  return reply(c, { success: true });
 });

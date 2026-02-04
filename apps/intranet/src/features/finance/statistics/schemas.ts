@@ -24,7 +24,7 @@ export const TopParticipantsResponseSchema = z.strictObject({
   data: z.array(
     z.strictObject({
       count: z.number(),
-      personId: z.number(),
+      personId: z.string(),
       personName: z.string(),
       total: z.number(),
     }),

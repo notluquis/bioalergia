@@ -261,22 +261,11 @@ export async function getParticipantLeaderboard(params: {
 
   return {
     status: "ok",
-    participants: (stats as ParticipantRow[]).map((s) => ({
-      participant: s.participant,
-      displayName: s.displayName,
-      identificationNumber: s.identificationNumber,
-      bankAccountHolder: s.bankAccountHolder,
-      bankAccountNumber: s.bankAccountNumber,
-      bankAccountType: s.bankAccountType,
-      bankName: s.bankName,
-      bankBranch: null, // Not typically in metadata
-      withdrawId: s.withdrawId,
-      totalCount: Number(s.totalCount),
-      totalAmount: Number(s.totalAmount),
-      outgoingCount: Number(s.outgoingCount),
-      outgoingAmount: Number(s.outgoingAmount),
-      incomingCount: Number(s.incomingCount),
-      incomingAmount: Number(s.incomingAmount),
+    data: (stats as ParticipantRow[]).map((s) => ({
+      count: Number(s.outgoingCount),
+      personId: s.participant,
+      personName: s.displayName,
+      total: Number(s.outgoingAmount),
     })),
   };
 }

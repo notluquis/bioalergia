@@ -229,68 +229,70 @@ function AnalyticsCharts({
         <Card.Header className="pb-2">
           <h3 className="text-base font-semibold text-foreground">Tendencia de Actividad</h3>
         </Card.Header>
-        <Card.Content className="h-60">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.1} />
-                  <stop offset="95%" stopColor={COLORS.success} stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.1} />
-                  <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.grid} />
-              <XAxis
-                dataKey={period === "day" ? "date" : "label"}
-                stroke={COLORS.default}
-                tick={{ fontSize: 12 }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(val) => (period === "day" ? dayjs(val).format("D MMM") : val)}
-              />
-              <YAxis
-                yAxisId="left"
-                stroke={COLORS.default}
-                tick={{ fontSize: 12 }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(val) => `$${val / 1000}k`}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                stroke={COLORS.default}
-                tick={{ fontSize: 12 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Area
-                yAxisId="left"
-                type="monotone"
-                dataKey="amountPaid"
-                name="Ingresos ($)"
-                stroke={COLORS.success}
-                fillOpacity={1}
-                fill="url(#colorRevenue)"
-                strokeWidth={2}
-              />
-              <Area
-                yAxisId="right"
-                type="monotone"
-                dataKey="events"
-                name="Tratamientos"
-                stroke={COLORS.primary}
-                fillOpacity={1}
-                fill="url(#colorVolume)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+        <Card.Content>
+          <div className="h-60 min-h-[240px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.1} />
+                    <stop offset="95%" stopColor={COLORS.success} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.1} />
+                    <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.grid} />
+                <XAxis
+                  dataKey={period === "day" ? "date" : "label"}
+                  stroke={COLORS.default}
+                  tick={{ fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) => (period === "day" ? dayjs(val).format("D MMM") : val)}
+                />
+                <YAxis
+                  yAxisId="left"
+                  stroke={COLORS.default}
+                  tick={{ fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) => `$${val / 1000}k`}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  stroke={COLORS.default}
+                  tick={{ fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Area
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="amountPaid"
+                  name="Ingresos ($)"
+                  stroke={COLORS.success}
+                  fillOpacity={1}
+                  fill="url(#colorRevenue)"
+                  strokeWidth={2}
+                />
+                <Area
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="events"
+                  name="Tratamientos"
+                  stroke={COLORS.primary}
+                  fillOpacity={1}
+                  fill="url(#colorVolume)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </Card.Content>
       </Card>
 
@@ -317,32 +319,34 @@ function PieChartCard({
       <Card.Header className="pb-0">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       </Card.Header>
-      <Card.Content className="h-32">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={35}
-              outerRadius={50}
-              paddingAngle={5}
-              dataKey="value"
-            >
-              {data.map((entry, index) => (
-                <Cell key={entry.name} fill={colors[index % colors.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend
-              verticalAlign="middle"
-              align="right"
-              layout="vertical"
-              iconType="circle"
-              wrapperStyle={{ fontSize: "11px" }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+      <Card.Content>
+        <div className="h-32 min-h-[128px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={35}
+                outerRadius={50}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {data.map((entry, index) => (
+                  <Cell key={entry.name} fill={colors[index % colors.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend
+                verticalAlign="middle"
+                align="right"
+                layout="vertical"
+                iconType="circle"
+                wrapperStyle={{ fontSize: "11px" }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </Card.Content>
     </Card>
   );
