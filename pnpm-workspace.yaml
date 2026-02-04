@@ -8,3 +8,10 @@ optimisticRepeatInstall: true
 dedupePeerDependents: true
 injectWorkspacePackages: true
 
+# Allow/deny dependency build scripts (pnpm v10+)
+allowBuilds:
+  argon2: true
+  esbuild: true
+  prisma: false
+  "@prisma/engines": false
+  better-sqlite3: false
