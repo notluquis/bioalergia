@@ -9,12 +9,28 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 const DEFAULT_TIMEZONE = "America/Santiago";
 const TIMEZONE = googleCalendarConfig?.timeZone ?? DEFAULT_TIMEZONE;
+const DATE_ONLY_FORMAT = "YYYY-MM-DD";
 const EVENT_DATE_SQL = sql<string>`
   COALESCE(
     e.start_date,
     (e.start_date_time AT TIME ZONE ${TIMEZONE})::date
   )
 `;
+
+const formatDateOnly = (value: string | Date | null | undefined): string => {
+  if (!value) return "";
+  if (value instanceof Date) {
+    // Date-only values from Postgres can arrive as Date at UTC midnight.
+    // Format in UTC to avoid shifting the calendar day.
+    return dayjs.utc(value).format(DATE_ONLY_FORMAT);
+  }
+  if (value.includes("T")) {
+    // Datetime string: convert to calendar date in the configured timezone.
+    return dayjs(value).tz(TIMEZONE).format(DATE_ONLY_FORMAT);
+  }
+  // Date-only string (YYYY-MM-DD)
+  return value;
+};
 
 export type CalendarEventFilters = {
   from?: string;
@@ -486,13 +502,13 @@ export async function getCalendarAggregates(
         amountPaid: toNumber(r.amountPaid),
       })),
       byDate: (byDate as unknown as DateRow[]).map((r) => ({
-        date: dayjs.tz(r.date as string, TIMEZONE).format("YYYY-MM-DD"),
+        date: formatDateOnly(r.date as string | Date),
         total: toNumber(r.total),
         amountExpected: toNumber(r.amountExpected),
         amountPaid: toNumber(r.amountPaid),
       })),
       byDateType: (byDateType as unknown as DateTypeRow[]).map((r) => ({
-        date: dayjs.tz(r.date as string, TIMEZONE).format("YYYY-MM-DD"),
+        date: formatDateOnly(r.date as string | Date),
         eventType: r.eventType,
         total: toNumber(r.total),
       })),
@@ -522,7 +538,7 @@ export async function getCalendarEventsByDate(
 
   type DateOnlyRow = { date: string | Date };
   const targetDates = (dates as unknown as DateOnlyRow[]).map((d: DateOnlyRow) =>
-    dayjs.tz(d.date as string, TIMEZONE).format("YYYY-MM-DD"),
+    formatDateOnly(d.date),
   );
 
   if (targetDates.length === 0) {
@@ -586,7 +602,7 @@ export async function getCalendarEventsByDate(
   // Initialize with target dates to match order
   targetDates.forEach((date) => {
     grouped[date as string] = {
-      date: dayjs.tz(date as string, TIMEZONE).format("YYYY-MM-DD"),
+      date: formatDateOnly(date),
       total: 0,
       events: [],
       amountExpected: 0,
@@ -632,7 +648,7 @@ export async function getCalendarEventsByDate(
 
   (events as unknown as EventRow[]).forEach((ev: EventRow) => {
     // Normalize date to YYYY-MM-DD format to match targetDates
-    const dateKey = dayjs.tz(ev.eventDateString as string, TIMEZONE).format("YYYY-MM-DD");
+    const dateKey = formatDateOnly(ev.eventDateString as string | Date);
 
     if (!grouped[dateKey]) {
       console.warn(
@@ -932,7 +948,7 @@ export async function getTreatmentAnalytics(
       mantencionCount: Number((totals as unknown as TotalRow)?.mantencionCount || 0),
     },
     byDate: (byDate as unknown as DateRow[]).map((r: DateRow) => ({
-      date: dayjs.tz(r.date as string, TIMEZONE).format("YYYY-MM-DD"),
+      date: formatDateOnly(r.date as string | Date),
       events: Number(r.events),
       amountExpected: Number(r.amountExpected),
       amountPaid: Number(r.amountPaid),
