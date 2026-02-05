@@ -1,3 +1,21 @@
-pnpm exec lint-staged
-pnpm --filter ./apps/site --if-present audit:routes
-pnpm --filter ./apps/intranet type-check
+#!/bin/sh
+
+if [ -x /usr/libexec/path_helper ]; then
+  # Load macOS system PATH for GUI git clients without invoking shells
+  eval "$(/usr/libexec/path_helper -s)"
+fi
+export PATH="/opt/homebrew/bin:$PATH"
+
+PNPM_CMD="pnpm"
+if ! command -v pnpm >/dev/null 2>&1; then
+  if command -v corepack >/dev/null 2>&1; then
+    PNPM_CMD="corepack pnpm"
+  else
+    echo "pnpm not found and corepack unavailable. Please install pnpm or enable corepack." >&2
+    exit 127
+  fi
+fi
+
+$PNPM_CMD exec lint-staged
+$PNPM_CMD --filter ./apps/site --if-present audit:routes
+$PNPM_CMD --filter ./apps/intranet type-check
