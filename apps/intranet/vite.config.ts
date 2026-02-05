@@ -5,15 +5,12 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import checker from "vite-plugin-checker";
-import { VitePWA } from "vite-plugin-pwa";
+import { cachePreset, VitePWA } from "vite-plugin-pwa";
 import { configDefaults } from "vitest/config";
 
 // Regex Constants (Top-level scope for performance)
 const REGEX_API_FALLBACK = /^\/api/;
 const REGEX_SHARE_TARGET_FALLBACK = /^\/share-target/;
-const REGEX_ASSETS_JS_CSS = /\.(?:js|css)$/;
-const REGEX_ASSETS_IMAGES = /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/;
-const REGEX_ASSETS_FONTS = /\.(?:woff|woff2|ttf|otf|eot)$/;
 
 // Bundle Analysis:
 // Use Vite's built-in analysis with: pnpm exec vite build --mode analyze
@@ -56,44 +53,21 @@ export default defineConfig(({ mode }) => ({
         // Runtime caching strategies
         runtimeCaching: [
           {
-            // Navigation requests (HTML) - NetworkFirst to always get fresh HTML
+            // Navigation - fresh content priority
             urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
             options: {
               cacheName: "pages-cache",
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 },
-              networkTimeoutSeconds: 3, // Quick fallback for navigation
+              networkTimeoutSeconds: 3,
             },
           },
-          {
-            // JS/CSS assets - NetworkFirst WITHOUT timeout to ensure fresh after deploys
-            // No timeout = waits for network indefinitely, only uses cache if network fails
-            // This prevents serving stale assets from cache (critical for Windows 11)
-            urlPattern: REGEX_ASSETS_JS_CSS,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "assets-cache",
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
-              // NO networkTimeoutSeconds - always wait for fresh network response
-            },
-          },
-          {
-            urlPattern: REGEX_ASSETS_IMAGES,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "images-cache",
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-          {
-            // Fonts - CacheFirst (rarely change)
-            urlPattern: REGEX_ASSETS_FONTS,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "fonts-cache",
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
+          // cachePreset: Official vite-plugin-pwa optimized strategies
+          // JS/CSS: StaleWhileRevalidate, 24h (serve fast, update in background)
+          // Images: StaleWhileRevalidate, 24h
+          // Fonts: CacheFirst, 365d
+          // See: https://github.com/vite-pwa/vite-plugin-pwa
+          ...cachePreset,
         ],
       },
       manifest: {

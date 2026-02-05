@@ -28,8 +28,12 @@ export function onAppFallback(callback: (reason: AppFallbackReason) => void) {
 }
 
 /**
- * Clear only the caches, but keep service workers registered.
- * Use this for updates when you want to force fresh content but maintain SW control.
+ * Clear only the runtime caches, but keep service workers registered.
+ * Use this for emergency situations (hard reset) when you want to force fresh content.
+ *
+ * NOTE: With StaleWhileRevalidate strategy (cachePreset), manual cache clearing
+ * is usually UNNECESSARY. Workbox automatically invalidates caches on SW update.
+ * Only use this for troubleshooting, not in normal update flows.
  */
 export async function clearOnlyCaches() {
   if (typeof window === "undefined" || !("caches" in globalThis)) {
