@@ -8,6 +8,10 @@
   "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev": "pnpm -r --if-present dev",
+    "mail:start": "node scripts/mail-agent.mjs start",
+    "mail:status": "node scripts/mail-agent.mjs status",
+    "mail:stop": "node scripts/mail-agent.mjs stop",
+    "mail:logs": "node scripts/mail-agent.mjs logs",
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test",
     "lint": "biome lint .",

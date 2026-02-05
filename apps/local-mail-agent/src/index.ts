@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createSecureServer } from "node:http2";
 import { serve } from "@hono/node-server";
+import type { Context } from "hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { ImapFlow } from "imapflow";
@@ -123,6 +124,23 @@ async function loadSecrets() {
   return { smtpUser, smtpPass, agentToken };
 }
 
+async function requireAuthorizedSecrets(c: Context) {
+  let secrets: Awaited<ReturnType<typeof loadSecrets>>;
+  try {
+    secrets = await loadSecrets();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Keychain error";
+    return { error: c.json({ status: "error", message }, 500) } as const;
+  }
+
+  const token = c.req.header("X-Local-Agent-Token");
+  if (!token || token !== secrets.agentToken) {
+    return { error: c.json({ status: "error", message: "Unauthorized" }, 401) } as const;
+  }
+
+  return { secrets } as const;
+}
+
 async function createTransport(smtpUser: string, smtpPass: string) {
   if (SMTP_POOL) {
     const poolOptions: SMTPPool.Options = {
@@ -238,6 +256,98 @@ async function appendToSentMailbox({
   }
 }
 
+function parseEmailPayload(body: unknown) {
+  return EmailPayloadSchema.parse(body);
+}
+
+function parseAttachments(payload: z.infer<typeof EmailPayloadSchema>) {
+  let totalBytes = 0;
+  const attachments = payload.attachments.map((attachment) => {
+    if (!isLikelyBase64(attachment.contentBase64)) {
+      throw new Error("Adjunto base64 inválido");
+    }
+    totalBytes += estimateBase64Bytes(attachment.contentBase64);
+    return {
+      filename: attachment.filename,
+      content: sanitizeBase64(attachment.contentBase64),
+      encoding: "base64" as const,
+      contentType: attachment.contentType,
+    };
+  });
+
+  if (totalBytes > MAX_ATTACHMENT_BYTES) {
+    throw new Error("Adjunto supera 30 MB");
+  }
+
+  return attachments;
+}
+
+function buildMailOptions({
+  attachments,
+  payload,
+  smtpUser,
+}: {
+  attachments: Array<{
+    content: string;
+    contentType: string;
+    encoding: "base64";
+    filename: string;
+  }>;
+  payload: z.infer<typeof EmailPayloadSchema>;
+  smtpUser: string;
+}) {
+  const dsn: SMTPConnection.DSNOptions | undefined = DSN_ENABLED
+    ? {
+        envid: randomUUID(),
+        notify: DSN_NOTIFY,
+        orcpt: smtpUser,
+        ret: "HDRS",
+      }
+    : undefined;
+
+  const messageId = `<${randomUUID()}@bioalergia.cl>`;
+  const messageDate = new Date();
+
+  const mailOptions: Mail.Options & { dsn?: SMTPConnection.DSNOptions } = {
+    from: smtpUser,
+    to: payload.to,
+    messageId,
+    date: messageDate,
+    subject: payload.subject,
+    html: payload.html,
+    text: payload.text,
+    attachments,
+    dsn,
+  };
+
+  return mailOptions;
+}
+
+async function saveSentCopy({
+  rawMessage,
+  smtpPass,
+  smtpUser,
+}: {
+  rawMessage: string;
+  smtpPass: string;
+  smtpUser: string;
+}) {
+  try {
+    const appendResult = await appendToSentMailbox({
+      rawMessage,
+      smtpPass,
+      smtpUser,
+    });
+    return {
+      sentFolderSaved: appendResult.saved,
+      sentFolderPath: appendResult.sentPath as null | string,
+    };
+  } catch (error) {
+    console.error("[mail-agent] IMAP append to Sent failed:", formatImapError(error));
+    return { sentFolderSaved: false, sentFolderPath: null };
+  }
+}
+
 const app = new Hono();
 
 app.use(
@@ -282,21 +392,13 @@ app.get("/health/config", (c) => {
 });
 
 app.get("/health/smtp", async (c) => {
-  let secrets: Awaited<ReturnType<typeof loadSecrets>>;
-  try {
-    secrets = await loadSecrets();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Keychain error";
-    return c.json({ status: "error", message }, 500);
-  }
-
-  const token = c.req.header("X-Local-Agent-Token");
-  if (!token || token !== secrets.agentToken) {
-    return c.json({ status: "error", message: "Unauthorized" }, 401);
+  const auth = await requireAuthorizedSecrets(c);
+  if (auth.error) {
+    return auth.error;
   }
 
   try {
-    const transporter = await getTransporter(secrets.smtpUser, secrets.smtpPass);
+    const transporter = await getTransporter(auth.secrets.smtpUser, auth.secrets.smtpPass);
     await transporter.verify();
     return c.json({ status: "ok", smtp: "ready" });
   } catch (error) {
@@ -307,17 +409,9 @@ app.get("/health/smtp", async (c) => {
 });
 
 app.post("/shutdown", async (c) => {
-  let secrets: Awaited<ReturnType<typeof loadSecrets>>;
-  try {
-    secrets = await loadSecrets();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Keychain error";
-    return c.json({ status: "error", message }, 500);
-  }
-
-  const token = c.req.header("X-Local-Agent-Token");
-  if (!token || token !== secrets.agentToken) {
-    return c.json({ status: "error", message: "Unauthorized" }, 401);
+  const auth = await requireAuthorizedSecrets(c);
+  if (auth.error) {
+    return auth.error;
   }
 
   await closeTransporter();
@@ -329,87 +423,38 @@ app.post("/shutdown", async (c) => {
 });
 
 app.post("/send", async (c) => {
-  let secrets: Awaited<ReturnType<typeof loadSecrets>>;
-  try {
-    secrets = await loadSecrets();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Keychain error";
-    return c.json({ status: "error", message }, 500);
-  }
-
-  const token = c.req.header("X-Local-Agent-Token");
-  if (!token || token !== secrets.agentToken) {
-    return c.json({ status: "error", message: "Unauthorized" }, 401);
+  const auth = await requireAuthorizedSecrets(c);
+  if (auth.error) {
+    return auth.error;
   }
 
   let payload: z.infer<typeof EmailPayloadSchema>;
   try {
-    payload = EmailPayloadSchema.parse(await c.req.json());
+    payload = parseEmailPayload(await c.req.json());
   } catch (error) {
     const message = error instanceof Error ? error.message : "Payload inválido";
     return c.json({ status: "error", message }, 400);
   }
 
-  let totalBytes = 0;
-  for (const attachment of payload.attachments) {
-    if (!isLikelyBase64(attachment.contentBase64)) {
-      return c.json({ status: "error", message: "Adjunto base64 inválido" }, 400);
-    }
-    totalBytes += estimateBase64Bytes(attachment.contentBase64);
+  let attachments: ReturnType<typeof parseAttachments>;
+  try {
+    attachments = parseAttachments(payload);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Adjuntos inválidos";
+    const status = message.includes("30 MB") ? 413 : 400;
+    return c.json({ status: "error", message }, status);
   }
-
-  if (totalBytes > MAX_ATTACHMENT_BYTES) {
-    return c.json({ status: "error", message: "Adjunto supera 30 MB" }, 413);
-  }
-
-  const attachments = payload.attachments.map((attachment) => ({
-    filename: attachment.filename,
-    content: sanitizeBase64(attachment.contentBase64),
-    encoding: "base64" as const,
-    contentType: attachment.contentType,
-  }));
 
   try {
-    const transporter = await getTransporter(secrets.smtpUser, secrets.smtpPass);
-    const dsn: SMTPConnection.DSNOptions | undefined = DSN_ENABLED
-      ? {
-          envid: randomUUID(),
-          notify: DSN_NOTIFY,
-          orcpt: secrets.smtpUser,
-          ret: "HDRS",
-        }
-      : undefined;
-    const messageId = `<${randomUUID()}@bioalergia.cl>`;
-    const messageDate = new Date();
-    const mailOptions: Mail.Options & { dsn?: SMTPConnection.DSNOptions } = {
-      from: secrets.smtpUser,
-      to: payload.to,
-      messageId,
-      date: messageDate,
-      subject: payload.subject,
-      html: payload.html,
-      text: payload.text,
-      attachments,
-      dsn,
-    };
-
+    const transporter = await getTransporter(auth.secrets.smtpUser, auth.secrets.smtpPass);
+    const mailOptions = buildMailOptions({ attachments, payload, smtpUser: auth.secrets.smtpUser });
     const rawMessage = await buildRawRfc822Message(mailOptions);
     const info = await transporter.sendMail(mailOptions);
-
-    let sentFolderSaved = true;
-    let sentFolderPath: null | string = null;
-    try {
-      const appendResult = await appendToSentMailbox({
-        rawMessage,
-        smtpPass: secrets.smtpPass,
-        smtpUser: secrets.smtpUser,
-      });
-      sentFolderSaved = appendResult.saved;
-      sentFolderPath = appendResult.sentPath;
-    } catch (error) {
-      sentFolderSaved = false;
-      console.error("[mail-agent] IMAP append to Sent failed:", formatImapError(error));
-    }
+    const { sentFolderSaved, sentFolderPath } = await saveSentCopy({
+      rawMessage,
+      smtpPass: auth.secrets.smtpPass,
+      smtpUser: auth.secrets.smtpUser,
+    });
 
     console.log(
       `[mail-agent] Sent email to ${payload.to} (subject: ${payload.subject}) id=${info.messageId}`,

@@ -82,6 +82,11 @@ temp/
 # Local TLS certs
 *.pem
 
+# Local mail-agent runtime artifacts
+artifacts/local-mail-agent.pid
+artifacts/local-mail-agent.sock
+artifacts/local-mail-agent.state.json
+
 # Storybook
 storybook-static/
 **/storybook-static/

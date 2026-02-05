@@ -45,6 +45,15 @@ pnpm --filter @finanzas/local-mail-agent dev
 
 Luego en la intranet usa `https://127.0.0.1:3333`.
 
+## Comandos rápidos (desde la raíz del repo)
+
+```bash
+pnpm mail:start
+pnpm mail:status
+pnpm mail:stop
+pnpm mail:logs
+```
+
 ## CORS
 
 Puedes permitir orígenes adicionales con:
