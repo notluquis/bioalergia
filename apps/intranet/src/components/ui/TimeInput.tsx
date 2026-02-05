@@ -1,5 +1,5 @@
 import { DateInputGroup, Label, TimeField } from "@heroui/react";
-import { parseTime, type Time, type TimeValue } from "@internationalized/date";
+import { parseTime, type Time } from "@internationalized/date";
 
 interface TimeInputProps {
   className?: string;
@@ -17,7 +17,7 @@ export default function TimeInput({
   onChange,
   value,
 }: Readonly<TimeInputProps>) {
-  const formatTimeValue = (time: TimeValue) => {
+  const formatTimeValue = (time: Time) => {
     const hours = String(time.hour).padStart(2, "0");
     const minutes = String(time.minute).padStart(2, "0");
     return `${hours}:${minutes}`;

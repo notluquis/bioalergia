@@ -79,6 +79,11 @@ temp/
 # Turbo
 .turbo
 
+# Storybook
+storybook-static/
+**/storybook-static/
+**/.storybook/.cache/
+
 # Deployments
 .vercel
 .railway

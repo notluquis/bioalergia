@@ -12,6 +12,7 @@
       "!**/dist",
       "!**/.turbo",
       "!**/node_modules",
+      "!**/public/mockServiceWorker.js",
       "!**/*.css",
       "!**/routeTree.gen.ts"
     ]
@@ -117,6 +118,7 @@
       },
       "nursery": {
         "recommended": true,
+        "useSortedClasses": "warn",
         "noFloatingPromises": "warn",
         "noImportCycles": "warn",
         "noUnresolvedImports": "off",
