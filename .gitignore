@@ -111,3 +111,19 @@ apps/api/src/lib/parsers.test.ts
 apps/api/src/lib/parsers.case_test.ts
 # Generic pattern to ignore parser test variants
 **/src/lib/parsers*.test.ts
+
+# Jupyter notebooks with sensitive data
+docs/*BACKUP*.ipynb
+docs/*BIOALERGIA*.ipynb
+docs/*backup*.ipynb
+*.ipynb.bak
+
+# Email backup directories
+*_backup/
+titan_backup/
+email_backup/
+
+# Sensitive data files
+**/credentials.json
+**/secrets.json
+**/config.local.json
