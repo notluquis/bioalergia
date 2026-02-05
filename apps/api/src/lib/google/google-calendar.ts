@@ -401,6 +401,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
         gotNewSyncToken: !!result.nextSyncToken,
       });
     } catch (error) {
+      // TODO: Parse GaxiosError and retry 429/503 using retryAfterSeconds + exponential backoff.
       // If syncToken is invalid (e.g., expired), reset and do full sync
       if (error instanceof Error && error.message.includes("410")) {
         logWarn("googleCalendar.fetch.syncTokenExpired", {

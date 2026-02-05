@@ -65,6 +65,7 @@ export async function uploadToDrive(
       md5Checksum: response.data.md5Checksum || null,
     };
   } catch (error) {
+    // TODO: Retry on 429/503 using GoogleApiError.retryAfterSeconds + exponential backoff.
     throw parseGoogleError(error);
   }
 }
@@ -83,6 +84,7 @@ export async function downloadFromDrive(fileId: string, destPath: string): Promi
       (response.data as NodeJS.ReadableStream).pipe(dest).on("finish", resolve).on("error", reject);
     });
   } catch (error) {
+    // TODO: Retry on 429/503 using GoogleApiError.retryAfterSeconds + exponential backoff.
     throw parseGoogleError(error);
   }
 }
@@ -115,6 +117,7 @@ export async function listBackups(): Promise<BackupFile[]> {
       customChecksum: f.appProperties?.customChecksum,
     }));
   } catch (error) {
+    // TODO: Retry on 429/503 using GoogleApiError.retryAfterSeconds + exponential backoff.
     throw parseGoogleError(error);
   }
 }
@@ -157,6 +160,7 @@ export async function cleanupOldBackups(
 
     return { deleted: deletedFiles.length, deletedFiles, errors };
   } catch (error) {
+    // TODO: Retry on 429/503 using GoogleApiError.retryAfterSeconds + exponential backoff.
     throw parseGoogleError(error);
   }
 }
@@ -188,6 +192,7 @@ export async function getBackupInfo(fileId: string): Promise<BackupFile> {
     if (error instanceof GoogleApiError && error.code === 404) {
       throw new Error(`Backup file with ID ${fileId} not found`);
     }
+    // TODO: Retry on 429/503 using GoogleApiError.retryAfterSeconds + exponential backoff.
     throw parseGoogleError(error);
   }
 }

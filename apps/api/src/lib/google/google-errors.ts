@@ -12,9 +12,12 @@ import { GaxiosError } from "gaxios";
  */
 export interface GoogleApiErrorInfo {
   code: number;
+  status?: string;
   reason: string;
   message: string;
   domain: string;
+  metadata?: Record<string, string>;
+  retryAfterSeconds?: number;
   originalError: Error;
 }
 
@@ -23,16 +26,22 @@ export interface GoogleApiErrorInfo {
  */
 export class GoogleApiError extends Error {
   code: number;
+  status?: string;
   reason: string;
   domain: string;
+  metadata?: Record<string, string>;
+  retryAfterSeconds?: number;
   originalError: Error;
 
   constructor(info: GoogleApiErrorInfo) {
     super(info.message);
     this.name = "GoogleApiError";
     this.code = info.code;
+    this.status = info.status;
     this.reason = info.reason;
     this.domain = info.domain;
+    this.metadata = info.metadata;
+    this.retryAfterSeconds = info.retryAfterSeconds;
     this.originalError = info.originalError;
   }
 }
@@ -71,24 +80,51 @@ const ERROR_MESSAGES: Record<number, Record<string, string> | string> = {
  */
 function extractGaxiosDetails(error: GaxiosError): {
   code: number;
+  status?: string;
   reason: string;
   domain: string;
   rawMessage: string;
+  metadata?: Record<string, string>;
+  retryAfterSeconds?: number;
 } {
   const code = error.response?.status ?? error.code ?? 500;
+  const headers = error.response?.headers as Record<string, unknown> | undefined;
+  const retryAfterSeconds = parseRetryAfterSeconds(headers?.["retry-after"]);
   const data = error.response?.data as {
     error?: {
-      errors?: Array<{ reason?: string; domain?: string; message?: string }>;
+      status?: string;
       message?: string;
+      errors?: Array<{ reason?: string; domain?: string; message?: string }>;
+      details?: Array<{ ["@type"]?: string; reason?: string; domain?: string; metadata?: Record<string, string> }>;
     };
   };
+
+  const aipInfo = extractAip193Info(data?.error);
+  if (aipInfo) {
+    return {
+      code: Number(code),
+      status: data?.error?.status ?? aipInfo.status,
+      reason: aipInfo.reason ?? "unknown",
+      domain: aipInfo.domain ?? "global",
+      rawMessage: aipInfo.message ?? data?.error?.message ?? error.message,
+      metadata: aipInfo.metadata,
+      retryAfterSeconds,
+    };
+  }
 
   const firstError = data?.error?.errors?.[0];
   const reason = firstError?.reason ?? "unknown";
   const domain = firstError?.domain ?? "global";
   const rawMessage = firstError?.message ?? data?.error?.message ?? error.message;
 
-  return { code: Number(code), reason, domain, rawMessage };
+  return {
+    code: Number(code),
+    status: data?.error?.status,
+    reason,
+    domain,
+    rawMessage,
+    retryAfterSeconds,
+  };
 }
 
 /**
@@ -113,6 +149,65 @@ function getHumanMessage(code: number, reason: string, rawMessage: string): stri
   return rawMessage || `Error de Google API (código ${code})`;
 }
 
+function extractAip193Info(
+  error: {
+    status?: string;
+    message?: string;
+    details?: Array<{ ["@type"]?: string; reason?: string; domain?: string; metadata?: Record<string, string> }>;
+  } | undefined,
+): { status?: string; message?: string; reason?: string; domain?: string; metadata?: Record<string, string> } | null {
+  if (!error?.details || !Array.isArray(error.details)) {
+    return null;
+  }
+
+  const errorInfo = error.details.find(
+    (detail) => detail?.["@type"] === "type.googleapis.com/google.rpc.ErrorInfo",
+  );
+  if (!errorInfo) {
+    return null;
+  }
+
+  return {
+    status: error.status,
+    message: error.message,
+    reason: errorInfo.reason,
+    domain: errorInfo.domain,
+    metadata: errorInfo.metadata,
+  };
+}
+
+function parseRetryAfterSeconds(value: unknown): number | undefined {
+  if (value == null) {
+    return undefined;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.floor(value));
+  }
+
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const seconds = Number(trimmed);
+  if (Number.isFinite(seconds)) {
+    return Math.max(0, Math.floor(seconds));
+  }
+
+  const date = new Date(trimmed);
+  if (!Number.isNaN(date.getTime())) {
+    const deltaMs = date.getTime() - Date.now();
+    return Math.max(0, Math.ceil(deltaMs / 1000));
+  }
+
+  return undefined;
+}
+
 /**
  * Parses any error into a clean GoogleApiError.
  * Handles GaxiosError, standard Error, and unknown types.
@@ -123,14 +218,18 @@ export function parseGoogleError(error: unknown): GoogleApiError {
   }
 
   if (error instanceof GaxiosError) {
-    const { code, reason, domain, rawMessage } = extractGaxiosDetails(error);
+    const { code, status, reason, domain, rawMessage, metadata, retryAfterSeconds } =
+      extractGaxiosDetails(error);
     const message = getHumanMessage(code, reason, rawMessage);
 
     return new GoogleApiError({
       code,
+      status,
       reason,
       domain,
       message,
+      metadata,
+      retryAfterSeconds,
       originalError: error,
     });
   }
@@ -138,18 +237,24 @@ export function parseGoogleError(error: unknown): GoogleApiError {
   if (error instanceof Error) {
     return new GoogleApiError({
       code: 500,
+      status: undefined,
       reason: "unknown",
       domain: "application",
       message: error.message,
+      metadata: undefined,
+      retryAfterSeconds: undefined,
       originalError: error,
     });
   }
 
   return new GoogleApiError({
     code: 500,
+    status: undefined,
     reason: "unknown",
     domain: "application",
     message: String(error),
+    metadata: undefined,
+    retryAfterSeconds: undefined,
     originalError: new Error(String(error)),
   });
 }
