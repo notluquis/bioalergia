@@ -81,9 +81,16 @@ Este comando hace `verify()` y envía un correo de prueba desde `smtp_user` haci
 pnpm --filter @finanzas/local-mail-agent test:send-self
 ```
 
-## Copia de enviados
+## Guardar en Sent (IMAP APPEND)
 
-El agente agrega `bcc: smtp_user` en cada envío para mantener una copia en tu cuenta.
+Después de enviar por SMTP, el agente intenta guardar la copia en carpeta `Sent` usando IMAP `APPEND` (RFC822).
+
+Variables opcionales:
+
+- `LOCAL_AGENT_IMAP_HOST` (default: `mail.spacemail.com`)
+- `LOCAL_AGENT_IMAP_PORT` (default: `993`)
+- `LOCAL_AGENT_IMAP_SECURE` (default: `1`)
+- `LOCAL_AGENT_IMAP_SENT_MAILBOX` (si quieres forzar carpeta, por ejemplo `Sent`)
 
 ## Flags opcionales
 

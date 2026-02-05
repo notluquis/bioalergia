@@ -4,10 +4,13 @@ import { createSecureServer } from "node:http2";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { ImapFlow } from "imapflow";
 import nodemailer from "nodemailer";
+import type Mail from "nodemailer/lib/mailer";
 import type SMTPConnection from "nodemailer/lib/smtp-connection";
 import type SMTPPool from "nodemailer/lib/smtp-pool";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
+import type StreamTransport from "nodemailer/lib/stream-transport";
 import { z } from "zod";
 import { readKeychainSecret } from "./keychain";
 
@@ -15,6 +18,10 @@ const SERVICE_NAME = "bioalergia-local-mail-agent";
 const SMTP_HOST = "mail.spacemail.com";
 const SMTP_PORT = 465;
 const SMTP_SECURE = true;
+const IMAP_HOST = process.env.LOCAL_AGENT_IMAP_HOST ?? "mail.spacemail.com";
+const IMAP_PORT = Number.parseInt(process.env.LOCAL_AGENT_IMAP_PORT ?? "993", 10);
+const IMAP_SECURE = process.env.LOCAL_AGENT_IMAP_SECURE !== "0";
+const IMAP_SENT_MAILBOX = process.env.LOCAL_AGENT_IMAP_SENT_MAILBOX;
 const MAX_ATTACHMENT_BYTES = 30 * 1024 * 1024;
 const DEFAULT_PORT = 3333;
 const DEFAULT_ALLOWED_ORIGINS = ["https://intranet.bioalergia.cl", "http://localhost"];
@@ -98,6 +105,13 @@ function formatSmtpError(error: unknown) {
   };
 }
 
+function formatImapError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "IMAP append error";
+}
+
 async function loadSecrets() {
   const [smtpUser, smtpPass, agentToken] = await Promise.all([
     readKeychainSecret(SERVICE_NAME, "smtp_user"),
@@ -148,6 +162,68 @@ async function createTransport(smtpUser: string, smtpPass: string) {
     },
   };
   return nodemailer.createTransport(smtpOptions);
+}
+
+async function buildRawRfc822Message(mailOptions: Mail.Options) {
+  const streamTransport = nodemailer.createTransport({
+    streamTransport: true,
+    buffer: true,
+    newline: "windows",
+    disableFileAccess: true,
+    disableUrlAccess: true,
+  });
+  const info = (await streamTransport.sendMail(mailOptions)) as StreamTransport.SentMessageInfo;
+  return info.message.toString("utf-8");
+}
+
+async function resolveSentMailboxPath(client: ImapFlow) {
+  if (IMAP_SENT_MAILBOX) {
+    return IMAP_SENT_MAILBOX;
+  }
+
+  const boxes = await client.list();
+  const sentByFlag = boxes.find(
+    (box) => box.specialUse === "\\Sent" || box.specialUse?.toUpperCase() === "SENT",
+  );
+  if (sentByFlag?.path) {
+    return sentByFlag.path;
+  }
+
+  const sentByName = boxes.find((box) => box.path.toLowerCase().includes("sent"));
+  if (sentByName?.path) {
+    return sentByName.path;
+  }
+
+  return "Sent";
+}
+
+async function appendToSentMailbox({
+  rawMessage,
+  smtpPass,
+  smtpUser,
+}: {
+  rawMessage: string;
+  smtpPass: string;
+  smtpUser: string;
+}) {
+  const client = new ImapFlow({
+    host: IMAP_HOST,
+    port: IMAP_PORT,
+    secure: IMAP_SECURE,
+    auth: {
+      user: smtpUser,
+      pass: smtpPass,
+    },
+  });
+
+  await client.connect();
+  try {
+    const sentPath = await resolveSentMailboxPath(client);
+    await client.append(sentPath, rawMessage, ["\\Seen"], new Date());
+    return { saved: true, sentPath };
+  } finally {
+    await client.logout().catch(() => undefined);
+  }
 }
 
 const app = new Hono();
@@ -269,20 +345,45 @@ app.post("/send", async (c) => {
           ret: "HDRS",
         }
       : undefined;
-    const info = await transporter.sendMail({
+    const messageId = `<${randomUUID()}@bioalergia.cl>`;
+    const messageDate = new Date();
+    const mailOptions: Mail.Options & { dsn?: SMTPConnection.DSNOptions } = {
       from: secrets.smtpUser,
       to: payload.to,
-      bcc: secrets.smtpUser,
+      messageId,
+      date: messageDate,
       subject: payload.subject,
       html: payload.html,
       text: payload.text,
       attachments,
       dsn,
-    });
+    };
+
+    const rawMessage = await buildRawRfc822Message(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+
+    let sentFolderSaved = true;
+    let sentFolderPath: null | string = null;
+    try {
+      const appendResult = await appendToSentMailbox({
+        rawMessage,
+        smtpPass: secrets.smtpPass,
+        smtpUser: secrets.smtpUser,
+      });
+      sentFolderSaved = appendResult.saved;
+      sentFolderPath = appendResult.sentPath;
+    } catch (error) {
+      sentFolderSaved = false;
+      console.error("[mail-agent] IMAP append to Sent failed:", formatImapError(error));
+    }
+
     console.log(
       `[mail-agent] Sent email to ${payload.to} (subject: ${payload.subject}) id=${info.messageId}`,
     );
-    return c.json({ status: "ok" });
+    if (sentFolderSaved && sentFolderPath) {
+      console.log(`[mail-agent] Saved sent copy in mailbox: ${sentFolderPath}`);
+    }
+    return c.json({ status: "ok", sentFolderSaved, sentFolderPath });
   } catch (error) {
     const smtpError = formatSmtpError(error);
     console.error("[mail-agent] SMTP send failed:", smtpError);

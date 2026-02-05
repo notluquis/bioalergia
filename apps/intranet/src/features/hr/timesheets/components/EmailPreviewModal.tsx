@@ -1,4 +1,5 @@
 import {
+  Chip,
   ModalBackdrop,
   ModalBody,
   ModalContainer,
@@ -34,7 +35,13 @@ interface EmailPreviewModalProps {
 const LOCAL_AGENT_TOKEN_KEY = "bioalergia_local_mail_agent_token";
 const LOCAL_AGENT_URL_KEY = "bioalergia_local_mail_agent_url";
 const DEFAULT_LOCAL_AGENT_URL =
-  import.meta.env.VITE_LOCAL_MAIL_AGENT_URL ?? "http://127.0.0.1:3333";
+  import.meta.env.VITE_LOCAL_MAIL_AGENT_URL ?? "https://127.0.0.1:3333";
+const TRAILING_SLASHES_REGEX = /\/+$/;
+
+type AgentStatus = {
+  kind: "danger" | "success" | "warning";
+  message: string;
+};
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export function EmailPreviewModal({
@@ -50,7 +57,7 @@ export function EmailPreviewModal({
   const isPreparing = prepareStatus !== null && prepareStatus !== "done";
   const [agentToken, setAgentToken] = useState("");
   const [agentUrl, setAgentUrl] = useState(DEFAULT_LOCAL_AGENT_URL);
-  const [agentStatus, setAgentStatus] = useState<null | string>(null);
+  const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [checkingAgent, setCheckingAgent] = useState(false);
   const [checkingSmtp, setCheckingSmtp] = useState(false);
   const isHttpsPage = typeof window !== "undefined" && window.location.protocol === "https:";
@@ -118,22 +125,31 @@ export function EmailPreviewModal({
               <div className="mb-4 rounded-xl border border-default-200 bg-default-50/40 p-4">
                 <p className="mb-3 font-semibold text-sm">Agente local</p>
                 <div className="mb-3">
-                  <label className="mb-1 block text-default-600 text-xs">URL del agente</label>
+                  <label className="mb-1 block text-default-600 text-xs" htmlFor="local-agent-url">
+                    URL del agente
+                  </label>
                   <input
+                    id="local-agent-url"
                     className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-sm"
                     onChange={(event) => {
                       const value = event.target.value;
                       setAgentUrl(value);
                       localStorage.setItem(LOCAL_AGENT_URL_KEY, value);
                     }}
-                    placeholder="http://127.0.0.1:3333"
+                    placeholder="https://127.0.0.1:3333"
                     type="text"
                     value={agentUrl}
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="mb-1 block text-default-600 text-xs">Token</label>
+                  <label
+                    className="mb-1 block text-default-600 text-xs"
+                    htmlFor="local-agent-token"
+                  >
+                    Token
+                  </label>
                   <input
+                    id="local-agent-token"
                     className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-sm"
                     onChange={(event) => {
                       const value = event.target.value;
@@ -152,14 +168,22 @@ export function EmailPreviewModal({
                       setCheckingAgent(true);
                       setAgentStatus(null);
                       try {
-                        const response = await fetch(`${agentUrl}/health`);
+                        const response = await fetch(`${normalizeAgentUrl(agentUrl)}/health`);
                         if (!response.ok) {
-                          setAgentStatus("Agente respondió con error");
+                          const message = await readLocalAgentErrorMessage(
+                            response,
+                            "Agente respondió con error",
+                          );
+                          setAgentStatus({ kind: "danger", message });
                         } else {
-                          setAgentStatus("Agente activo");
+                          setAgentStatus({ kind: "success", message: "Agente activo" });
                         }
                       } catch {
-                        setAgentStatus("Agente no responde");
+                        setAgentStatus({
+                          kind: "danger",
+                          message:
+                            "Agente no responde. Revisa URL, HTTPS/certificado y que esté corriendo.",
+                        });
                       } finally {
                         setCheckingAgent(false);
                       }
@@ -174,18 +198,32 @@ export function EmailPreviewModal({
                       setCheckingSmtp(true);
                       setAgentStatus(null);
                       try {
-                        const response = await fetch(`${agentUrl}/health/smtp`, {
+                        const response = await fetch(`${normalizeAgentUrl(agentUrl)}/health/smtp`, {
                           headers: {
                             "X-Local-Agent-Token": agentToken,
                           },
                         });
                         if (!response.ok) {
-                          setAgentStatus("SMTP no disponible o token inválido");
+                          if (response.status === 401) {
+                            setAgentStatus({
+                              kind: "warning",
+                              message: "Token inválido o faltante",
+                            });
+                            return;
+                          }
+                          const message = await readLocalAgentErrorMessage(
+                            response,
+                            "SMTP no disponible",
+                          );
+                          setAgentStatus({
+                            kind: "danger",
+                            message: `SMTP no disponible: ${message}`,
+                          });
                         } else {
-                          setAgentStatus("SMTP listo");
+                          setAgentStatus({ kind: "success", message: "SMTP listo" });
                         }
                       } catch {
-                        setAgentStatus("No se pudo verificar SMTP");
+                        setAgentStatus({ kind: "danger", message: "No se pudo verificar SMTP" });
                       } finally {
                         setCheckingSmtp(false);
                       }
@@ -194,8 +232,14 @@ export function EmailPreviewModal({
                   >
                     {checkingSmtp ? "Validando SMTP..." : "Verificar SMTP"}
                   </Button>
-                  {agentStatus && <span className="text-default-600 text-xs">{agentStatus}</span>}
                 </div>
+                {agentStatus && (
+                  <div className="mt-2">
+                    <Chip color={agentStatus.kind} size="sm" variant="soft">
+                      {agentStatus.message}
+                    </Chip>
+                  </div>
+                )}
                 {isHttpsPage && isHttpAgent && (
                   <p className="mt-2 text-amber-600 text-xs">
                     El navegador bloquea HTTP desde una página HTTPS. Usa HTTPS en el agente local.
@@ -334,6 +378,27 @@ export function EmailPreviewModal({
       </ModalBackdrop>
     </ModalRoot>
   );
+}
+
+async function readLocalAgentErrorMessage(response: Response, fallbackMessage: string) {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    return fallbackMessage;
+  }
+
+  try {
+    const data = (await response.json()) as { code?: string; message?: string };
+    if (!data?.message) {
+      return fallbackMessage;
+    }
+    return data.code ? `${data.message} (${data.code})` : data.message;
+  } catch {
+    return fallbackMessage;
+  }
+}
+
+function normalizeAgentUrl(value: string) {
+  return value.trim().replace(TRAILING_SLASHES_REGEX, "");
 }
 
 function renderPrepareButtonContent(status: string | null) {
