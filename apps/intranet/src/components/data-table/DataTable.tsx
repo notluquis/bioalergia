@@ -16,6 +16,7 @@ import {
   type RowSelectionState,
   type SortingState,
   type Table,
+  type TableMeta,
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
@@ -81,7 +82,7 @@ interface DataTableProps<TData, TValue> {
   /**
    * Metadata to pass to table instance (useful for actions)
    */
-  readonly meta?: Record<string, unknown>;
+  readonly meta?: TableMeta<TData>;
   /**
    * Custom message when no data is available
    */

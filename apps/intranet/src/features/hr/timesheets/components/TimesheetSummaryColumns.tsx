@@ -5,20 +5,6 @@ import { fmtCLP } from "@/lib/format";
 
 import type { TimesheetSummaryRow } from "../types";
 
-export interface SummaryTotals {
-  extraAmount: number;
-  hours: string;
-  net: number;
-  overtime: string;
-  retention: number;
-  subtotal: number;
-}
-
-// Define the shape of our meta to include totals
-interface TableMeta {
-  totals?: SummaryTotals;
-}
-
 export const getTimesheetSummaryColumns = (): ColumnDef<TimesheetSummaryRow>[] => [
   {
     accessorKey: "fullName",
@@ -36,8 +22,7 @@ export const getTimesheetSummaryColumns = (): ColumnDef<TimesheetSummaryRow>[] =
   {
     accessorKey: "hoursFormatted",
     footer: ({ table }) => {
-      const meta = table.options.meta as TableMeta;
-      return meta.totals?.hours;
+      return table.options.meta?.totals?.hours;
     },
     header: "Horas trabajadas",
   },
@@ -50,8 +35,7 @@ export const getTimesheetSummaryColumns = (): ColumnDef<TimesheetSummaryRow>[] =
     accessorKey: "overtimeFormatted",
     cell: ({ getValue }) => getValue() as string,
     footer: ({ table }) => {
-      const meta = table.options.meta as TableMeta;
-      return meta.totals?.overtime;
+      return table.options.meta?.totals?.overtime;
     },
     header: "Extras",
   },
@@ -59,8 +43,7 @@ export const getTimesheetSummaryColumns = (): ColumnDef<TimesheetSummaryRow>[] =
     accessorKey: "subtotal",
     cell: ({ getValue }) => fmtCLP(getValue() as number),
     footer: ({ table }) => {
-      const meta = table.options.meta as TableMeta;
-      return meta.totals ? fmtCLP(meta.totals.subtotal) : null;
+      return table.options.meta?.totals ? fmtCLP(table.options.meta.totals.subtotal) : null;
     },
     header: "Subtotal",
   },
@@ -68,8 +51,7 @@ export const getTimesheetSummaryColumns = (): ColumnDef<TimesheetSummaryRow>[] =
     accessorKey: "retention",
     cell: ({ getValue }) => fmtCLP(getValue() as number),
     footer: ({ table }) => {
-      const meta = table.options.meta as TableMeta;
-      return meta.totals ? fmtCLP(meta.totals.retention) : null;
+      return table.options.meta?.totals ? fmtCLP(table.options.meta.totals.retention) : null;
     },
     header: "Retención",
   },
@@ -77,16 +59,17 @@ export const getTimesheetSummaryColumns = (): ColumnDef<TimesheetSummaryRow>[] =
     accessorKey: "net",
     cell: ({ getValue }) => fmtCLP(getValue() as number),
     footer: ({ table }) => {
-      const meta = table.options.meta as TableMeta;
-      return meta.totals ? fmtCLP(meta.totals.net) : null;
+      return table.options.meta?.totals ? fmtCLP(table.options.meta.totals.net) : null;
     },
     header: "Líquido",
   },
   {
     accessorKey: "payDate",
     cell: ({ getValue }) => {
-      const val = getValue() as null | Date;
-      return val && dayjs(val).isValid() ? dayjs(val).format("DD-MM-YYYY") : "—";
+      const val = getValue() as null | string;
+      return val && dayjs(val, "YYYY-MM-DD", true).isValid()
+        ? dayjs(val, "YYYY-MM-DD").format("DD-MM-YYYY")
+        : "—";
     },
     header: "Fecha pago",
   },

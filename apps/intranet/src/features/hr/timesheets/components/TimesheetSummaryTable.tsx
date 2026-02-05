@@ -1,14 +1,16 @@
 import { DataTable } from "@/components/data-table/DataTable";
 
+import type { TableMeta } from "@tanstack/react-table";
+
 import type { TimesheetSummaryRow } from "../types";
 
-import { getTimesheetSummaryColumns, type SummaryTotals } from "./TimesheetSummaryColumns";
+import { getTimesheetSummaryColumns } from "./TimesheetSummaryColumns";
 
 interface TimesheetSummaryTableProps {
   loading: boolean;
   onSelectEmployee: (id: null | number) => void;
   selectedEmployeeId: null | number;
-  summary: null | { employees: TimesheetSummaryRow[]; totals: SummaryTotals };
+  summary: null | { employees: TimesheetSummaryRow[]; totals: TableMeta<TimesheetSummaryRow>["totals"] };
 }
 
 export default function TimesheetSummaryTable({

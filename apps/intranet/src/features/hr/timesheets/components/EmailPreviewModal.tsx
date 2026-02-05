@@ -5,9 +5,9 @@ import {
   ModalDialog,
   ModalFooter,
   ModalRoot,
-  Spinner,
-} from "@heroui/react";
-import { formatRetentionPercent, getEffectiveRetentionRate } from "@shared/retention";
+  Spinner } from
+"@heroui/react";
+import { formatRetentionPercent, getEffectiveRetentionRate } from "~/shared/retention";
 import dayjs from "dayjs";
 import Button from "@/components/ui/Button";
 import type { Employee } from "@/features/hr/employees/types";
@@ -31,7 +31,7 @@ interface EmailPreviewModalProps {
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
-export default function EmailPreviewModal({
+export function EmailPreviewModal({
   employee,
   isOpen,
   month,
@@ -39,7 +39,7 @@ export default function EmailPreviewModal({
   onClose,
   onPrepare,
   prepareStatus,
-  summary,
+  summary
 }: EmailPreviewModalProps) {
   const isPreparing = prepareStatus !== null && prepareStatus !== "done";
 
@@ -70,9 +70,9 @@ export default function EmailPreviewModal({
   const boletaDescription = `SERVICIOS DE ${summary.role.toUpperCase()} ${totalHoursFormatted} HORAS`;
 
   // Get year from month in YYYY-MM format
-  const summaryYear = month
-    ? Number.parseInt(month.split("-")[0] ?? "", 10)
-    : new Date().getFullYear();
+  const summaryYear = month ?
+  Number.parseInt(month.split("-")[0] ?? "", 10) :
+  new Date().getFullYear();
   const employeeRate = summary.retentionRate ?? summary.retention_rate ?? null;
   const effectiveRate = getEffectiveRetentionRate(employeeRate, summaryYear);
   const retentionPercent = formatRetentionPercent(effectiveRate);
@@ -96,11 +96,11 @@ export default function EmailPreviewModal({
               <div className="mb-4 rounded-xl bg-default-50/50 p-4">
                 <p className="text-default-600 text-sm">
                   <strong>Para:</strong>{" "}
-                  {employeeEmail ? (
-                    <span className="font-medium text-foreground">{employeeEmail}</span>
-                  ) : (
-                    <span className="text-danger">⚠️ Sin email registrado</span>
-                  )}
+                  {employeeEmail ?
+                  <span className="font-medium text-foreground">{employeeEmail}</span> :
+
+                  <span className="text-danger">⚠️ Sin email registrado</span>
+                  }
                 </p>
                 <p className="mt-1 text-default-600 text-sm">
                   <strong>Asunto:</strong>{" "}
@@ -181,7 +181,9 @@ export default function EmailPreviewModal({
                 <div className="rounded-lg border border-amber-500 bg-amber-100 p-3 text-center text-sm">
                   <strong className="text-amber-800">
                     📅 Fecha de pago estimada:{" "}
-                    {summary.payDate ? dayjs(summary.payDate).format("DD-MM-YYYY") : "—"}
+                  {summary.payDate
+                    ? dayjs(summary.payDate, "YYYY-MM-DD").format("DD-MM-YYYY")
+                    : "—"}
                   </strong>
                 </div>
 
@@ -198,7 +200,7 @@ export default function EmailPreviewModal({
                 {prepareStatus === "generating-pdf" && "Generando documento PDF..."}
                 {prepareStatus === "preparing" && "Preparando archivo de email..."}
                 {prepareStatus === "done" &&
-                  "✅ Archivo descargado - Ábrelo con doble click y presiona Enviar"}
+                "✅ Archivo descargado - Ábrelo con doble click y presiona Enviar"}
                 {!prepareStatus && "Se descargará un archivo .eml que puedes abrir con Outlook."}
               </p>
               <div className="flex shrink-0 gap-3">
@@ -209,8 +211,8 @@ export default function EmailPreviewModal({
                   className="min-w-44"
                   disabled={isPreparing || !employeeEmail || prepareStatus === "done"}
                   onClick={onPrepare}
-                  variant="primary"
-                >
+                  variant="primary">
+                  
                   {renderPrepareButtonContent(prepareStatus)}
                 </Button>
               </div>
@@ -218,8 +220,8 @@ export default function EmailPreviewModal({
           </ModalDialog>
         </ModalContainer>
       </ModalBackdrop>
-    </ModalRoot>
-  );
+    </ModalRoot>);
+
 }
 
 function renderPrepareButtonContent(status: string | null) {
@@ -228,24 +230,24 @@ function renderPrepareButtonContent(status: string | null) {
       <span className="flex items-center gap-2">
         <Spinner size="sm" />
         Generando PDF...
-      </span>
-    );
+      </span>);
+
   }
   if (status === "preparing") {
     return (
       <span className="flex items-center gap-2">
         <Spinner size="sm" />
         Preparando...
-      </span>
-    );
+      </span>);
+
   }
   if (status === "done") {
     return (
       <span className="flex items-center gap-2">
         <span>📧</span>
         Descargado
-      </span>
-    );
+      </span>);
+
   }
   return <>Preparar Email</>;
 }

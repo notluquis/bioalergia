@@ -60,7 +60,7 @@ const TimesheetSummaryResponseSchema = z.looseObject({
         overtimeFormatted: z.string(),
         overtimeMinutes: z.number(),
         overtimeRate: z.number(),
-        payDate: z.coerce.date(),
+        payDate: z.string(),
         retention: z.number(),
         retention_rate: z.number().nullable().optional(),
         retentionRate: z.number(),
