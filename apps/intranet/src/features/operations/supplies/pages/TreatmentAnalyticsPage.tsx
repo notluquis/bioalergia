@@ -265,12 +265,17 @@ function AnalyticsCharts({
       {/* Trend Chart */}
       <Card className="border-default-200 shadow-sm">
         <Card.Header className="pb-2">
-          <h3 className="font-semibold text-base text-foreground">Tendencia de Actividad</h3>
+          <h3 className="font-semibold text-base text-foreground">
+            Tendencia de Actividad (antiguo → nuevo)
+          </h3>
         </Card.Header>
         <Card.Content>
           <div className="h-60 min-h-[240px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <AreaChart
+                data={trendData?.toReversed() ?? []}
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+              >
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.1} />
@@ -530,13 +535,12 @@ function AnalyticsHeader({
   return (
     <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
       <div>
-        <h1 className="flex items-center gap-2 font-bold text-2xl text-foreground">
-          Análisis de Tratamientos
-          {isLoading && <Spinner size="sm" color="current" />}
-        </h1>
-        <p className="text-default-500 text-small">
-          Visualiza el rendimiento operativo y financiero
-        </p>
+        {isLoading && (
+          <div className="flex items-center gap-2">
+            <Spinner size="sm" color="current" />
+            <span className="text-default-500 text-sm">Cargando datos...</span>
+          </div>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2">
