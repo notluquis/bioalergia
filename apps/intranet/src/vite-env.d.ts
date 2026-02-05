@@ -8,4 +8,5 @@ interface ImportMeta {
 interface ImportMetaEnv {
   readonly VITE_APP_BUILD_ID?: string;
   readonly VITE_APP_BUILD_TIMESTAMP?: string;
+  readonly VITE_LOCAL_MAIL_AGENT_URL?: string;
 }

@@ -87,9 +87,23 @@ const TimesheetSummaryResponseSchema = z.looseObject({
     .optional(),
 });
 
-const PrepareEmailResponseSchema = z.object({
-  emlBase64: z.string(),
-  filename: z.string(),
+const PrepareEmailPayloadSchema = z.object({
+  to: z.string().email(),
+  from: z.string().email(),
+  subject: z.string(),
+  html: z.string(),
+  text: z.string().optional(),
+  attachments: z.array(
+    z.object({
+      filename: z.string(),
+      contentBase64: z.string(),
+      contentType: z.string(),
+    }),
+  ),
+});
+
+const PrepareEmailPayloadResponseSchema = z.object({
+  payload: PrepareEmailPayloadSchema,
   message: z.string().optional(),
   status: z.string(),
 });
@@ -190,7 +204,7 @@ export async function fetchTimesheetSummary(month: string, employeeId?: null | n
   return data;
 }
 
-export async function prepareTimesheetEmail(payload: {
+export async function prepareTimesheetEmailPayload(payload: {
   employeeEmail: string;
   employeeId: number;
   employeeName: string;
@@ -210,11 +224,12 @@ export async function prepareTimesheetEmail(payload: {
   };
 }) {
   const data = await apiClient.post<{
-    emlBase64: string;
-    filename: string;
+    payload: z.infer<typeof PrepareEmailPayloadSchema>;
     message?: string;
     status: string;
-  }>("/api/timesheets/prepare-email", payload, { responseSchema: PrepareEmailResponseSchema });
+  }>("/api/timesheets/prepare-email-payload", payload, {
+    responseSchema: PrepareEmailPayloadResponseSchema,
+  });
 
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al preparar el email");

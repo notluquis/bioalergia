@@ -8,7 +8,7 @@ import {
   bulkUpsertTimesheets,
   deleteTimesheet,
   fetchTimesheetDetail,
-  prepareTimesheetEmail,
+  prepareTimesheetEmailPayload,
 } from "@/features/hr/timesheets/api";
 import { EmailPreviewModal } from "@/features/hr/timesheets/components/EmailPreviewModal";
 import { TimesheetDetailTable } from "@/features/hr/timesheets/components/TimesheetDetailTable";
@@ -29,6 +29,10 @@ import {
 import type { Employee } from "../../employees/types";
 
 const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
+const DEFAULT_LOCAL_AGENT_URL =
+  import.meta.env.VITE_LOCAL_MAIL_AGENT_URL ?? "http://127.0.0.1:3333";
+const LOCAL_AGENT_TOKEN_KEY = "bioalergia_local_mail_agent_token";
+const LOCAL_AGENT_URL_KEY = "bioalergia_local_mail_agent_url";
 
 const TimesheetExportPDF = lazy(() =>
   import("@/features/hr/timesheets/components/TimesheetExportPDF").then((m) => ({
@@ -130,7 +134,7 @@ function TimesheetEditorInner({
 
   // Email Mutation
   const emailMutation = useMutation({
-    mutationFn: prepareTimesheetEmail,
+    mutationFn: prepareTimesheetEmailPayload,
     onError: (err) => {
       const message = err instanceof Error ? err.message : "Error al preparar el email";
       setErrorLocal(message);
@@ -406,8 +410,8 @@ function createHandlePrepareEmail({
 }: {
   emailHasError: boolean;
   emailMutateAsync: (
-    args: Parameters<typeof prepareTimesheetEmail>[0],
-  ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmail>>>;
+    args: Parameters<typeof prepareTimesheetEmailPayload>[0],
+  ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmailPayload>>>;
   generatePdfBase64: () => Promise<null | string>;
   month: string;
   monthLabel: string;
@@ -425,7 +429,7 @@ function createHandlePrepareEmail({
     setErrorLocal(null);
 
     try {
-      const filename = await runPrepareEmail({
+      await runPrepareEmail({
         emailMutateAsync,
         generatePdfBase64,
         month,
@@ -435,7 +439,7 @@ function createHandlePrepareEmail({
         summaryRow,
       });
       setEmailPrepareStatus("done");
-      toastSuccess(`Archivo descargado: ${filename}`);
+      toastSuccess("Email enviado correctamente");
     } catch (error_) {
       if (!emailHasError) {
         const message = error_ instanceof Error ? error_.message : "Error al preparar el email";
@@ -456,8 +460,8 @@ async function runPrepareEmail({
   summaryRow,
 }: {
   emailMutateAsync: (
-    args: Parameters<typeof prepareTimesheetEmail>[0],
-  ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmail>>>;
+    args: Parameters<typeof prepareTimesheetEmailPayload>[0],
+  ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmailPayload>>>;
   generatePdfBase64: () => Promise<null | string>;
   month: string;
   monthLabel: string;
@@ -470,7 +474,7 @@ async function runPrepareEmail({
     throw new Error("No se pudo generar el PDF");
   }
 
-  setEmailPrepareStatus("preparing");
+  setEmailPrepareStatus("preparing-payload");
 
   const payload = buildPrepareEmailPayload({
     month,
@@ -482,8 +486,8 @@ async function runPrepareEmail({
 
   const data = await emailMutateAsync(payload);
   ensurePrepareEmailSuccess(data);
-  downloadEmlFile(data.emlBase64, data.filename);
-  return data.filename;
+  setEmailPrepareStatus("sending");
+  await sendLocalAgentEmail(data.payload);
 }
 
 function buildPrepareEmailPayload({
@@ -524,24 +528,80 @@ function buildEmailSummary(summaryRow: TimesheetSummaryRow) {
   };
 }
 
-function ensurePrepareEmailSuccess(data: Awaited<ReturnType<typeof prepareTimesheetEmail>>) {
+function ensurePrepareEmailSuccess(data: Awaited<ReturnType<typeof prepareTimesheetEmailPayload>>) {
   if (data.status !== "ok") {
     throw new Error(data.message || "Error al preparar el email");
   }
 }
 
-function downloadEmlFile(emlBase64: string, filename: string) {
-  const emlBlob = new Blob([Uint8Array.from(atob(emlBase64), (c) => c.codePointAt(0) ?? 0)], {
-    type: "message/rfc822",
-  });
-  const url = URL.createObjectURL(emlBlob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+async function sendLocalAgentEmail(payload: {
+  to: string;
+  from: string;
+  subject: string;
+  html: string;
+  text?: string;
+  attachments: Array<{ filename: string; contentBase64: string; contentType: string }>;
+}) {
+  const token = getLocalAgentToken();
+  if (!token) {
+    throw new Error("Token del agente local no configurado");
+  }
+
+  const agentUrl = getLocalAgentUrl();
+  let response: Response;
+  try {
+    response = await fetch(`${agentUrl}/send`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Local-Agent-Token": token,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error("Agente local no está corriendo o no responde en 127.0.0.1");
+    }
+    throw error;
+  }
+
+  if (!response.ok) {
+    const fallbackMessage = "Error al enviar el email";
+    let message = fallbackMessage;
+    try {
+      const data = (await response.json()) as { message?: string };
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      // ignore JSON parse errors
+    }
+
+    if (response.status === 401) {
+      message = "Token inválido o no autorizado";
+    }
+    if (response.status === 413) {
+      message = "El adjunto supera el límite de 30 MB";
+    }
+
+    throw new Error(message);
+  }
+}
+
+function getLocalAgentToken() {
+  const storedToken = localStorage.getItem(LOCAL_AGENT_TOKEN_KEY);
+  if (storedToken) {
+    return storedToken;
+  }
+  return null;
+}
+
+function getLocalAgentUrl() {
+  const storedUrl = localStorage.getItem(LOCAL_AGENT_URL_KEY);
+  if (storedUrl) {
+    return storedUrl;
+  }
+  return DEFAULT_LOCAL_AGENT_URL;
 }
 
 function createHandleRowChange(

@@ -123,6 +123,202 @@ const emailBodySchema = z.object({
   }),
 });
 
+const EMAIL_FROM_ADDRESS = "lpulgar@bioalergia.cl";
+const PDF_FILENAME = "liquidacion.pdf";
+
+function buildTimesheetEmailHtml({
+  employeeName,
+  month,
+  monthLabel,
+  summary,
+}: {
+  employeeName: string;
+  month: string;
+  monthLabel: string;
+  summary: {
+    role: string;
+    subtotal: number;
+    retention: number;
+    net: number;
+    payDate: string;
+    workedMinutes?: number;
+    overtimeMinutes?: number;
+    retentionRate?: number;
+    retention_rate?: number;
+  };
+}) {
+  const totalMinutes = (summary.workedMinutes || 0) + (summary.overtimeMinutes || 0);
+  const totalHrs = Math.floor(totalMinutes / 60);
+  const totalMins = totalMinutes % 60;
+  const totalHoursFormatted = `${String(totalHrs).padStart(2, "0")}:${String(totalMins).padStart(2, "0")}`;
+
+  const boletaDescription = `SERVICIOS DE ${summary.role.toUpperCase()} ${totalHoursFormatted} HORAS`;
+
+  const fmtCLP = (amount: number) => {
+    return new Intl.NumberFormat("es-CL", {
+      style: "currency",
+      currency: "CLP",
+    }).format(amount);
+  };
+
+  const summaryYear = month
+    ? Number.parseInt(month.split("-")[0] ?? "2024", 10)
+    : new Date().getFullYear();
+  const employeeRate = summary.retentionRate || summary.retention_rate || null;
+  const effectiveRate = employeeRate ?? (summaryYear >= 2024 ? 0.1275 : 0.1);
+  const retentionPercent = `${(effectiveRate * 100).toFixed(2)}%`;
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0; }
+    .content { background: #f9fafb; padding: 20px; }
+    .boleta-box { background: #d1fae5; border: 2px solid #10b981; border-radius: 8px; padding: 16px; margin: 20px 0; }
+    .boleta-box h3 { color: #065f46; font-size: 12px; text-transform: uppercase; margin: 0 0 12px 0; }
+    .boleta-box .description { font-family: monospace; font-weight: bold; font-size: 14px; color: #065f46; margin-bottom: 12px; }
+    .boleta-box .amount { font-family: monospace; font-weight: bold; font-size: 24px; color: #065f46; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; border-radius: 8px; overflow: hidden; }
+    th { background: #e5e7eb; color: #4b5563; text-align: left; padding: 12px; font-size: 11px; text-transform: uppercase; }
+    td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
+    .total-row { background: #1e40af; color: white; font-weight: bold; }
+    .info-box { border: 1px solid #f59e0b; background: #fef3c7; padding: 12px; border-radius: 8px; margin: 16px 0; text-align: center; color: #92400e; }
+    .attachment-box { border: 1px solid #0ea5e9; background: #e0f2fe; padding: 12px; border-radius: 8px; margin: 16px 0; color: #075985; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2 style="margin: 0;">Boleta de Honorarios - ${monthLabel}</h2>
+      <p style="margin: 5px 0 0 0; opacity: 0.9;">Servicios de ${summary.role}</p>
+    </div>
+    <div class="content">
+      <p>Estimado/a <strong>${employeeName}</strong>,</p>
+      <p>A continuación encontrarás el resumen de los servicios prestados durante el periodo <strong>${monthLabel}</strong>, favor corroborar y emitir boleta de honorarios.</p>
+      
+      <div class="boleta-box">
+        <h3>📝 Para la boleta de honorarios</h3>
+        <div>
+          <p style="margin: 0 0 5px 0; font-size: 12px; color: #065f46;">Descripción:</p>
+          <p class="description">${boletaDescription}</p>
+        </div>
+        <div>
+          <p style="margin: 0 0 5px 0; font-size: 12px; color: #065f46;">Monto Bruto:</p>
+          <p class="amount">${fmtCLP(summary.subtotal)}</p>
+        </div>
+      </div>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th style="text-align: right;">Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Horas totales</td>
+            <td style="text-align: right; font-family: monospace;">${totalHoursFormatted}</td>
+          </tr>
+          <tr>
+            <td>Monto Bruto</td>
+            <td style="text-align: right; font-family: monospace;">${fmtCLP(summary.subtotal)}</td>
+          </tr>
+          <tr>
+            <td>Retención (${retentionPercent})</td>
+            <td style="text-align: right; font-family: monospace;">-${fmtCLP(summary.retention)}</td>
+          </tr>
+          <tr class="total-row">
+            <td>Total Líquido</td>
+            <td style="text-align: right; font-family: monospace;">${fmtCLP(summary.net)}</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div class="info-box">
+        <strong>📅 Fecha de pago estimada: ${summary.payDate}</strong>
+      </div>
+      
+      <div class="attachment-box">
+        <strong>📎 Adjunto:</strong> Se incluye el documento PDF con el detalle completo de horas trabajadas.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+`.trim();
+}
+
+function buildTimesheetEmailPayload({
+  employeeEmail,
+  employeeName,
+  month,
+  monthLabel,
+  pdfBase64,
+  summary,
+}: {
+  employeeEmail: string;
+  employeeName: string;
+  month: string;
+  monthLabel: string;
+  pdfBase64: string;
+  summary: {
+    role: string;
+    subtotal: number;
+    retention: number;
+    net: number;
+    payDate: string;
+    workedMinutes?: number;
+    overtimeMinutes?: number;
+    retentionRate?: number;
+    retention_rate?: number;
+  };
+}) {
+  const htmlBody = buildTimesheetEmailHtml({ employeeName, month, monthLabel, summary });
+  return {
+    to: employeeEmail,
+    from: EMAIL_FROM_ADDRESS,
+    subject: `Boleta de Honorarios - ${monthLabel} - ${employeeName}`,
+    html: htmlBody,
+    attachments: [
+      {
+        filename: PDF_FILENAME,
+        contentBase64: pdfBase64,
+        contentType: "application/pdf",
+      },
+    ],
+  };
+}
+
+function buildEmlFromPayload(payload: ReturnType<typeof buildTimesheetEmailPayload>) {
+  const boundary = `----=_Part_${Date.now()}`;
+  return [
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    `Subject: ${payload.subject}`,
+    `From: ${payload.from}`,
+    `To: ${payload.to}`,
+    ``,
+    `--${boundary}`,
+    `Content-Type: text/html; charset=utf-8`,
+    `Content-Transfer-Encoding: 8bit`,
+    ``,
+    payload.html,
+    ``,
+    `--${boundary}`,
+    `Content-Type: ${payload.attachments[0].contentType}; name="${payload.attachments[0].filename}"`,
+    `Content-Transfer-Encoding: base64`,
+    `Content-Disposition: attachment; filename="${payload.attachments[0].filename}"`,
+    ``,
+    payload.attachments[0].contentBase64,
+    `--${boundary}--`,
+  ].join("\r\n");
+}
+
 // ============================================================
 // ROUTES
 // ============================================================
@@ -542,7 +738,43 @@ app.delete("/:id", zValidator("param", idParamSchema), async (c) => {
   }
 });
 
-// POST /prepare-email - Prepare email with PDF attachment
+// POST /prepare-email-payload - Prepare payload for local mail agent
+app.post("/prepare-email-payload", zValidator("json", emailBodySchema), async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canRead = await hasPermission(user.id, "read", "Timesheet");
+  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+  const canReadReport = await hasPermission(user.id, "read", "Report");
+
+  if (!canRead && !canReadList && !canReadAudit && !canReadReport) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  try {
+    const { month, monthLabel, pdfBase64, employeeName, employeeEmail, summary } =
+      c.req.valid("json");
+
+    const payload = buildTimesheetEmailPayload({
+      employeeEmail,
+      employeeName,
+      month,
+      monthLabel,
+      pdfBase64,
+      summary,
+    });
+
+    return reply(c, { status: "ok", payload });
+  } catch (error) {
+    console.error("[timesheets] prepare-email-payload error:", error);
+    return reply(c, { status: "error", message: "Error al preparar el email" }, 500);
+  }
+});
+
+// POST /prepare-email - Prepare email with PDF attachment (legacy .eml)
 app.post("/prepare-email", zValidator("json", emailBodySchema), async (c) => {
   const user = await getSessionUser(c);
   if (!user) {
@@ -562,142 +794,17 @@ app.post("/prepare-email", zValidator("json", emailBodySchema), async (c) => {
     const { employeeId, month, monthLabel, pdfBase64, employeeName, employeeEmail, summary } =
       c.req.valid("json");
 
-    // Convert PDF to .eml format for download
     const filename = `liquidacion_${month}_${employeeId}.eml`;
-
-    // Build HTML email body matching preview
-    const totalMinutes = (summary.workedMinutes || 0) + (summary.overtimeMinutes || 0);
-    const totalHrs = Math.floor(totalMinutes / 60);
-    const totalMins = totalMinutes % 60;
-    const totalHoursFormatted = `${String(totalHrs).padStart(2, "0")}:${String(totalMins).padStart(2, "0")}`;
-
-    const boletaDescription = `SERVICIOS DE ${summary.role.toUpperCase()} ${totalHoursFormatted} HORAS`;
-
-    // Format currency CLP
-    const fmtCLP = (amount: number) => {
-      return new Intl.NumberFormat("es-CL", {
-        style: "currency",
-        currency: "CLP",
-      }).format(amount);
-    };
-
-    // Get retention rate
-    // Get retention rate
-    const summaryYear = month
-      ? Number.parseInt(month.split("-")[0] ?? "2024", 10)
-      : new Date().getFullYear();
-    const employeeRate = summary.retentionRate || summary.retention_rate || null;
-    const effectiveRate = employeeRate ?? (summaryYear >= 2024 ? 0.1275 : 0.1);
-    const retentionPercent = `${(effectiveRate * 100).toFixed(2)}%`;
-
-    const htmlBody = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0; }
-    .content { background: #f9fafb; padding: 20px; }
-    .boleta-box { background: #d1fae5; border: 2px solid #10b981; border-radius: 8px; padding: 16px; margin: 20px 0; }
-    .boleta-box h3 { color: #065f46; font-size: 12px; text-transform: uppercase; margin: 0 0 12px 0; }
-    .boleta-box .description { font-family: monospace; font-weight: bold; font-size: 14px; color: #065f46; margin-bottom: 12px; }
-    .boleta-box .amount { font-family: monospace; font-weight: bold; font-size: 24px; color: #065f46; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; border-radius: 8px; overflow: hidden; }
-    th { background: #e5e7eb; color: #4b5563; text-align: left; padding: 12px; font-size: 11px; text-transform: uppercase; }
-    td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
-    .total-row { background: #1e40af; color: white; font-weight: bold; }
-    .info-box { border: 1px solid #f59e0b; background: #fef3c7; padding: 12px; border-radius: 8px; margin: 16px 0; text-align: center; color: #92400e; }
-    .attachment-box { border: 1px solid #0ea5e9; background: #e0f2fe; padding: 12px; border-radius: 8px; margin: 16px 0; color: #075985; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h2 style="margin: 0;">Boleta de Honorarios - ${monthLabel}</h2>
-      <p style="margin: 5px 0 0 0; opacity: 0.9;">Servicios de ${summary.role}</p>
-    </div>
-    <div class="content">
-      <p>Estimado/a <strong>${employeeName}</strong>,</p>
-      <p>A continuación encontrarás el resumen de los servicios prestados durante el periodo <strong>${monthLabel}</strong>, favor corroborar y emitir boleta de honorarios.</p>
-      
-      <div class="boleta-box">
-        <h3>📝 Para la boleta de honorarios</h3>
-        <div>
-          <p style="margin: 0 0 5px 0; font-size: 12px; color: #065f46;">Descripción:</p>
-          <p class="description">${boletaDescription}</p>
-        </div>
-        <div>
-          <p style="margin: 0 0 5px 0; font-size: 12px; color: #065f46;">Monto Bruto:</p>
-          <p class="amount">${fmtCLP(summary.subtotal)}</p>
-        </div>
-      </div>
-      
-      <table>
-        <thead>
-          <tr>
-            <th>Concepto</th>
-            <th style="text-align: right;">Detalle</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Horas totales</td>
-            <td style="text-align: right; font-family: monospace;">${totalHoursFormatted}</td>
-          </tr>
-          <tr>
-            <td>Monto Bruto</td>
-            <td style="text-align: right; font-family: monospace;">${fmtCLP(summary.subtotal)}</td>
-          </tr>
-          <tr>
-            <td>Retención (${retentionPercent})</td>
-            <td style="text-align: right; font-family: monospace;">-${fmtCLP(summary.retention)}</td>
-          </tr>
-          <tr class="total-row">
-            <td>Total Líquido</td>
-            <td style="text-align: right; font-family: monospace;">${fmtCLP(summary.net)}</td>
-          </tr>
-        </tbody>
-      </table>
-      
-      <div class="info-box">
-        <strong>📅 Fecha de pago estimada: ${summary.payDate}</strong>
-      </div>
-      
-      <div class="attachment-box">
-        <strong>📎 Adjunto:</strong> Se incluye el documento PDF con el detalle completo de horas trabajadas.
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-`.trim();
-
-    // Create EML with HTML content and attachment
-    const boundary = `----=_Part_${Date.now()}`;
-    const emlContent = [
-      `MIME-Version: 1.0`,
-      `Content-Type: multipart/mixed; boundary="${boundary}"`,
-      `Subject: Boleta de Honorarios - ${monthLabel} - ${employeeName}`,
-      `To: ${employeeEmail}`,
-      ``,
-      `--${boundary}`,
-      `Content-Type: text/html; charset=utf-8`,
-      `Content-Transfer-Encoding: 8bit`,
-      ``,
-      htmlBody,
-      ``,
-      `--${boundary}`,
-      `Content-Type: application/pdf; name="liquidacion.pdf"`,
-      `Content-Transfer-Encoding: base64`,
-      `Content-Disposition: attachment; filename="liquidacion.pdf"`,
-      ``,
+    const payload = buildTimesheetEmailPayload({
+      employeeEmail,
+      employeeName,
+      month,
+      monthLabel,
       pdfBase64,
-      `--${boundary}--`,
-    ].join("\r\n");
+      summary,
+    });
 
-    const emlBase64 = Buffer.from(emlContent).toString("base64");
+    const emlBase64 = Buffer.from(buildEmlFromPayload(payload)).toString("base64");
 
     return reply(c, {
       status: "ok",

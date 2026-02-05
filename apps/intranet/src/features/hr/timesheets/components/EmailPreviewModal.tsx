@@ -8,6 +8,7 @@ import {
   Spinner,
 } from "@heroui/react";
 import dayjs from "dayjs";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { Employee } from "@/features/hr/employees/types";
 import { fmtCLP } from "@/lib/format";
@@ -26,9 +27,14 @@ interface EmailPreviewModalProps {
   monthLabel: string;
   onClose: () => void;
   onPrepare: () => void;
-  prepareStatus: null | string; // null | 'generating-pdf' | 'preparing' | 'done'
+  prepareStatus: null | string; // null | 'generating-pdf' | 'preparing-payload' | 'sending' | 'done'
   summary: null | TimesheetSummaryRow;
 }
+
+const LOCAL_AGENT_TOKEN_KEY = "bioalergia_local_mail_agent_token";
+const LOCAL_AGENT_URL_KEY = "bioalergia_local_mail_agent_url";
+const DEFAULT_LOCAL_AGENT_URL =
+  import.meta.env.VITE_LOCAL_MAIL_AGENT_URL ?? "http://127.0.0.1:3333";
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export function EmailPreviewModal({
@@ -42,6 +48,21 @@ export function EmailPreviewModal({
   summary,
 }: EmailPreviewModalProps) {
   const isPreparing = prepareStatus !== null && prepareStatus !== "done";
+  const [agentToken, setAgentToken] = useState("");
+  const [agentUrl, setAgentUrl] = useState(DEFAULT_LOCAL_AGENT_URL);
+  const [agentStatus, setAgentStatus] = useState<null | string>(null);
+  const [checkingAgent, setCheckingAgent] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    const storedToken = localStorage.getItem(LOCAL_AGENT_TOKEN_KEY) ?? "";
+    const storedUrl = localStorage.getItem(LOCAL_AGENT_URL_KEY) ?? DEFAULT_LOCAL_AGENT_URL;
+    setAgentToken(storedToken);
+    setAgentUrl(storedUrl);
+    setAgentStatus(null);
+  }, [isOpen]);
 
   // Retain logic for month label and computations
   const employeeEmail = employee?.person?.email;
@@ -91,6 +112,63 @@ export function EmailPreviewModal({
             </div>
 
             <ModalBody className="block max-h-[60vh] overflow-y-auto p-6">
+              <div className="mb-4 rounded-xl border border-default-200 bg-default-50/40 p-4">
+                <p className="mb-3 font-semibold text-sm">Agente local</p>
+                <div className="mb-3">
+                  <label className="mb-1 block text-default-600 text-xs">URL del agente</label>
+                  <input
+                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-sm"
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setAgentUrl(value);
+                      localStorage.setItem(LOCAL_AGENT_URL_KEY, value);
+                    }}
+                    placeholder="http://127.0.0.1:3333"
+                    type="text"
+                    value={agentUrl}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="mb-1 block text-default-600 text-xs">Token</label>
+                  <input
+                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-sm"
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setAgentToken(value);
+                      localStorage.setItem(LOCAL_AGENT_TOKEN_KEY, value);
+                    }}
+                    placeholder="Token del agente local"
+                    type="password"
+                    value={agentToken}
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    disabled={checkingAgent}
+                    onClick={async () => {
+                      setCheckingAgent(true);
+                      setAgentStatus(null);
+                      try {
+                        const response = await fetch(`${agentUrl}/health`);
+                        if (!response.ok) {
+                          setAgentStatus("Agente respondió con error");
+                        } else {
+                          setAgentStatus("Agente activo");
+                        }
+                      } catch {
+                        setAgentStatus("Agente no responde");
+                      } finally {
+                        setCheckingAgent(false);
+                      }
+                    }}
+                    variant="secondary"
+                  >
+                    {checkingAgent ? "Verificando..." : "Verificar agente"}
+                  </Button>
+                  {agentStatus && <span className="text-default-600 text-xs">{agentStatus}</span>}
+                </div>
+              </div>
+
               {/* Content wraps in ModalBody for spacing/scroll */}
               {/* Destinatario */}
               <div className="mb-4 rounded-xl bg-default-50/50 p-4">
@@ -198,10 +276,10 @@ export function EmailPreviewModal({
             <ModalFooter className="flex items-center justify-between border-default-200 border-t bg-background px-6 py-4">
               <p className="mr-4 flex-1 text-default-400 text-xs">
                 {prepareStatus === "generating-pdf" && "Generando documento PDF..."}
-                {prepareStatus === "preparing" && "Preparando archivo de email..."}
-                {prepareStatus === "done" &&
-                  "✅ Archivo descargado - Ábrelo con doble click y presiona Enviar"}
-                {!prepareStatus && "Se descargará un archivo .eml que puedes abrir con Outlook."}
+                {prepareStatus === "preparing-payload" && "Preparando contenido del email..."}
+                {prepareStatus === "sending" && "Enviando correo desde el agente local..."}
+                {prepareStatus === "done" && "✅ Email enviado correctamente"}
+                {!prepareStatus && "Se enviará el correo desde tu Mac usando el agente local."}
               </p>
               <div className="flex shrink-0 gap-3">
                 <Button disabled={isPreparing} onClick={onClose} variant="secondary">
@@ -233,11 +311,19 @@ function renderPrepareButtonContent(status: string | null) {
       </span>
     );
   }
-  if (status === "preparing") {
+  if (status === "preparing-payload") {
     return (
       <span className="flex items-center gap-2">
         <Spinner size="sm" />
         Preparando...
+      </span>
+    );
+  }
+  if (status === "sending") {
+    return (
+      <span className="flex items-center gap-2">
+        <Spinner size="sm" />
+        Enviando...
       </span>
     );
   }
