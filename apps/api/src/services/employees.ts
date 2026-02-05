@@ -117,7 +117,8 @@ export async function listEmployees(options?: {
           { names: { contains: "test" } },
           { rut: { startsWith: "11111111" } },
           { rut: { startsWith: "TEMP-" } },
-          { email: { contains: "test" } },
+          // Guard null emails so they don't get excluded by NOT (...) semantics
+          { AND: [{ email: { not: null } }, { email: { contains: "test" } }] },
         ],
       },
     };
