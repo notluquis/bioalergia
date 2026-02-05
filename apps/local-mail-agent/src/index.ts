@@ -37,6 +37,8 @@ const SMTP_MAX_CONNECTIONS = Number.parseInt(
 const SMTP_MAX_MESSAGES = Number.parseInt(process.env.LOCAL_AGENT_SMTP_MAX_MESSAGES ?? "50", 10);
 const DSN_ENABLED = process.env.LOCAL_AGENT_DSN_ENABLED === "1";
 const DSN_NOTIFY: SMTPConnection.DSNOption[] = ["FAILURE", "DELAY"];
+let cachedTransporter: Awaited<ReturnType<typeof createTransport>> | null = null;
+let cachedTransportUser: null | string = null;
 
 const AttachmentSchema = z.object({
   filename: z.string().min(1),
@@ -164,6 +166,16 @@ async function createTransport(smtpUser: string, smtpPass: string) {
   return nodemailer.createTransport(smtpOptions);
 }
 
+async function getTransporter(smtpUser: string, smtpPass: string) {
+  if (cachedTransporter && cachedTransportUser === smtpUser) {
+    return cachedTransporter;
+  }
+
+  cachedTransporter = await createTransport(smtpUser, smtpPass);
+  cachedTransportUser = smtpUser;
+  return cachedTransporter;
+}
+
 async function buildRawRfc822Message(mailOptions: Mail.Options) {
   const streamTransport = nodemailer.createTransport({
     streamTransport: true,
@@ -284,7 +296,7 @@ app.get("/health/smtp", async (c) => {
   }
 
   try {
-    const transporter = await createTransport(secrets.smtpUser, secrets.smtpPass);
+    const transporter = await getTransporter(secrets.smtpUser, secrets.smtpPass);
     await transporter.verify();
     return c.json({ status: "ok", smtp: "ready" });
   } catch (error) {
@@ -336,7 +348,7 @@ app.post("/send", async (c) => {
   }));
 
   try {
-    const transporter = await createTransport(secrets.smtpUser, secrets.smtpPass);
+    const transporter = await getTransporter(secrets.smtpUser, secrets.smtpPass);
     const dsn: SMTPConnection.DSNOptions | undefined = DSN_ENABLED
       ? {
           envid: randomUUID(),
@@ -393,6 +405,27 @@ app.post("/send", async (c) => {
 
 const port = Number.parseInt(process.env.PORT || String(DEFAULT_PORT), 10);
 const hostname = "127.0.0.1";
+
+async function closeTransporter() {
+  if (!cachedTransporter) {
+    return;
+  }
+  try {
+    cachedTransporter.close();
+  } catch {
+    // noop
+  } finally {
+    cachedTransporter = null;
+    cachedTransportUser = null;
+  }
+}
+
+process.on("SIGINT", () => {
+  void closeTransporter().finally(() => process.exit(0));
+});
+process.on("SIGTERM", () => {
+  void closeTransporter().finally(() => process.exit(0));
+});
 
 if (TLS_KEY_PATH && TLS_CERT_PATH) {
   const key = readFileSync(TLS_KEY_PATH);
