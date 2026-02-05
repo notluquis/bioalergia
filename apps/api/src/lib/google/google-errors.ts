@@ -46,6 +46,18 @@ export class GoogleApiError extends Error {
   }
 }
 
+export type GoogleRetryOptions = {
+  maxAttempts?: number;
+  baseDelayMs?: number;
+  maxDelayMs?: number;
+  jitter?: number;
+  idempotent?: boolean;
+  retryOnCodes?: readonly number[];
+  retryOnReasons?: readonly string[];
+  retryOnStatuses?: readonly string[];
+  context?: string;
+};
+
 /**
  * Human-readable error messages in Spanish.
  */
@@ -147,6 +159,95 @@ function getHumanMessage(code: number, reason: string, rawMessage: string): stri
   }
 
   return rawMessage || `Error de Google API (código ${code})`;
+}
+
+function isRetryableError(error: GoogleApiError, options: Required<GoogleRetryOptions>): boolean {
+  if (!options.idempotent) {
+    return false;
+  }
+
+  if (options.retryOnCodes.includes(error.code)) {
+    return true;
+  }
+
+  if (options.retryOnReasons.includes(error.reason)) {
+    return true;
+  }
+
+  if (error.status && options.retryOnStatuses.includes(error.status)) {
+    return true;
+  }
+
+  return false;
+}
+
+function computeRetryDelayMs(
+  attempt: number,
+  error: GoogleApiError,
+  options: Required<GoogleRetryOptions>,
+): number {
+  const baseDelay = options.baseDelayMs * Math.pow(2, attempt);
+  const cappedDelay = Math.min(baseDelay, options.maxDelayMs);
+  const headerDelay = error.retryAfterSeconds
+    ? Math.max(cappedDelay, error.retryAfterSeconds * 1000)
+    : cappedDelay;
+  const jitterFactor = 1 + (Math.random() * 2 - 1) * options.jitter;
+  return Math.max(0, Math.floor(headerDelay * jitterFactor));
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function retryGoogleCall<T>(
+  operation: () => Promise<T>,
+  options: GoogleRetryOptions = {},
+): Promise<T> {
+  const resolved: Required<GoogleRetryOptions> = {
+    maxAttempts: options.maxAttempts ?? 4,
+    baseDelayMs: options.baseDelayMs ?? 500,
+    maxDelayMs: options.maxDelayMs ?? 10_000,
+    jitter: options.jitter ?? 0.2,
+    idempotent: options.idempotent ?? true,
+    retryOnCodes: options.retryOnCodes ?? [429, 500, 502, 503, 504],
+    retryOnReasons: options.retryOnReasons ?? [
+      "rateLimitExceeded",
+      "userRateLimitExceeded",
+      "quotaExceeded",
+      "backendError",
+    ],
+    retryOnStatuses: options.retryOnStatuses ?? [
+      "RESOURCE_EXHAUSTED",
+      "UNAVAILABLE",
+      "INTERNAL",
+      "ABORTED",
+      "DEADLINE_EXCEEDED",
+    ],
+    context: options.context ?? "",
+  };
+
+  let attempt = 0;
+
+  while (true) {
+    try {
+      return await operation();
+    } catch (err) {
+      const parsed = parseGoogleError(err);
+      const shouldRetry = isRetryableError(parsed, resolved);
+      const isLastAttempt = attempt >= resolved.maxAttempts - 1;
+
+      if (!shouldRetry || isLastAttempt) {
+        if (resolved.context) {
+          parsed.message = `${resolved.context}: ${parsed.message}`;
+        }
+        throw parsed;
+      }
+
+      const delayMs = computeRetryDelayMs(attempt, parsed, resolved);
+      attempt += 1;
+      await sleep(delayMs);
+    }
+  }
 }
 
 function extractAip193Info(

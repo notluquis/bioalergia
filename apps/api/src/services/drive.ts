@@ -9,7 +9,7 @@ import { createReadStream, createWriteStream } from "node:fs";
 import dayjs from "dayjs";
 
 import { getBackupFolderId, getDriveClient } from "../lib/google/google-core";
-import { GoogleApiError, parseGoogleError } from "../lib/google/google-errors";
+import { GoogleApiError, parseGoogleError, retryGoogleCall } from "../lib/google/google-errors";
 
 export interface BackupFile {
   id: string;
@@ -40,23 +40,30 @@ export async function uploadToDrive(
     const drive = await getDriveClient();
     const folderId = await getBackupFolderId();
 
-    const response = await drive.files.create({
-      requestBody: {
-        name: filename,
-        parents: [folderId],
-        description: JSON.stringify({ tables, stats }), // Store tables & stats in description (16KB limit)
-        appProperties: {
-          backupVersion: "1.0",
-          customChecksum: checksum || "", // Store custom checksum (64 bytes)
-        },
+    const response = await retryGoogleCall(
+      () =>
+        drive.files.create({
+          requestBody: {
+            name: filename,
+            parents: [folderId],
+            description: JSON.stringify({ tables, stats }), // Store tables & stats in description (16KB limit)
+            appProperties: {
+              backupVersion: "1.0",
+              customChecksum: checksum || "", // Store custom checksum (64 bytes)
+            },
+          },
+          media: {
+            mimeType: "application/octet-stream",
+            body: createReadStream(filepath),
+          },
+          fields: "id,name,size,md5Checksum,webViewLink",
+          supportsAllDrives: true,
+        }),
+      {
+        idempotent: false,
+        context: "drive.files.create",
       },
-      media: {
-        mimeType: "application/octet-stream",
-        body: createReadStream(filepath),
-      },
-      fields: "id,name,size,md5Checksum,webViewLink",
-      supportsAllDrives: true,
-    });
+    );
 
     return {
       // biome-ignore lint/style/noNonNullAssertion: legacy google types
@@ -65,7 +72,6 @@ export async function uploadToDrive(
       md5Checksum: response.data.md5Checksum || null,
     };
   } catch (error) {
-    // TODO: Retry on 429/503 using GoogleApiError.retryAfterSeconds + exponential backoff.
     throw parseGoogleError(error);
   }
 }
@@ -78,13 +84,15 @@ export async function downloadFromDrive(fileId: string, destPath: string): Promi
     const drive = await getDriveClient();
     const dest = createWriteStream(destPath);
 
-    const response = await drive.files.get({ fileId, alt: "media" }, { responseType: "stream" });
+    const response = await retryGoogleCall(
+      () => drive.files.get({ fileId, alt: "media" }, { responseType: "stream" }),
+      { context: "drive.files.get" },
+    );
 
     await new Promise<void>((resolve, reject) => {
       (response.data as NodeJS.ReadableStream).pipe(dest).on("finish", resolve).on("error", reject);
     });
   } catch (error) {
-    // TODO: Retry on 429/503 using GoogleApiError.retryAfterSeconds + exponential backoff.
     throw parseGoogleError(error);
   }
 }
@@ -97,13 +105,17 @@ export async function listBackups(): Promise<BackupFile[]> {
     const drive = await getDriveClient();
     const folderId = await getBackupFolderId();
 
-    const response = await drive.files.list({
-      q: `'${folderId}' in parents and trashed = false`,
-      fields: "files(id,name,createdTime,size,webViewLink,appProperties)",
-      orderBy: "createdTime desc",
-      pageSize: 100,
-      supportsAllDrives: true,
-    });
+    const response = await retryGoogleCall(
+      () =>
+        drive.files.list({
+          q: `'${folderId}' in parents and trashed = false`,
+          fields: "files(id,name,createdTime,size,webViewLink,appProperties)",
+          orderBy: "createdTime desc",
+          pageSize: 100,
+          supportsAllDrives: true,
+        }),
+      { context: "drive.files.list" },
+    );
 
     return (response.data.files || []).map((f) => ({
       // biome-ignore lint/style/noNonNullAssertion: legacy google types
@@ -117,7 +129,6 @@ export async function listBackups(): Promise<BackupFile[]> {
       customChecksum: f.appProperties?.customChecksum,
     }));
   } catch (error) {
-    // TODO: Retry on 429/503 using GoogleApiError.retryAfterSeconds + exponential backoff.
     throw parseGoogleError(error);
   }
 }
@@ -136,12 +147,16 @@ export async function cleanupOldBackups(
 
     const cutoffDate = dayjs().subtract(retentionDays, "day").toISOString();
 
-    const response = await drive.files.list({
-      q: `'${folderId}' in parents and trashed = false and createdTime < '${cutoffDate}'`,
-      fields: "files(id,name,createdTime)",
-      pageSize: 100,
-      supportsAllDrives: true,
-    });
+    const response = await retryGoogleCall(
+      () =>
+        drive.files.list({
+          q: `'${folderId}' in parents and trashed = false and createdTime < '${cutoffDate}'`,
+          fields: "files(id,name,createdTime)",
+          pageSize: 100,
+          supportsAllDrives: true,
+        }),
+      { context: "drive.files.list" },
+    );
 
     const files = response.data.files || [];
     const deletedFiles: string[] = [];
@@ -149,7 +164,10 @@ export async function cleanupOldBackups(
     for (const file of files) {
       try {
         // biome-ignore lint/style/noNonNullAssertion: legacy google types
-        await drive.files.delete({ fileId: file.id!, supportsAllDrives: true });
+        await retryGoogleCall(
+          () => drive.files.delete({ fileId: file.id!, supportsAllDrives: true }),
+          { context: "drive.files.delete" },
+        );
         // biome-ignore lint/style/noNonNullAssertion: legacy google types
         deletedFiles.push(file.name!);
       } catch (deleteError) {
@@ -160,7 +178,6 @@ export async function cleanupOldBackups(
 
     return { deleted: deletedFiles.length, deletedFiles, errors };
   } catch (error) {
-    // TODO: Retry on 429/503 using GoogleApiError.retryAfterSeconds + exponential backoff.
     throw parseGoogleError(error);
   }
 }
@@ -172,11 +189,15 @@ export async function getBackupInfo(fileId: string): Promise<BackupFile> {
   try {
     const drive = await getDriveClient();
 
-    const response = await drive.files.get({
-      fileId,
-      fields: "id,name,createdTime,size,webViewLink",
-      supportsAllDrives: true,
-    });
+    const response = await retryGoogleCall(
+      () =>
+        drive.files.get({
+          fileId,
+          fields: "id,name,createdTime,size,webViewLink",
+          supportsAllDrives: true,
+        }),
+      { context: "drive.files.get" },
+    );
 
     return {
       // biome-ignore lint/style/noNonNullAssertion: legacy google types
@@ -192,7 +213,6 @@ export async function getBackupInfo(fileId: string): Promise<BackupFile> {
     if (error instanceof GoogleApiError && error.code === 404) {
       throw new Error(`Backup file with ID ${fileId} not found`);
     }
-    // TODO: Retry on 429/503 using GoogleApiError.retryAfterSeconds + exponential backoff.
     throw parseGoogleError(error);
   }
 }
@@ -207,11 +227,15 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
 
     // 1. Try to get tables from metadata (Fastest)
     try {
-      const metadata = await drive.files.get({
-        fileId,
-        fields: "description",
-        supportsAllDrives: true,
-      });
+      const metadata = await retryGoogleCall(
+        () =>
+          drive.files.get({
+            fileId,
+            fields: "description",
+            supportsAllDrives: true,
+          }),
+        { context: "drive.files.get" },
+      );
 
       if (metadata.data.description) {
         try {
@@ -235,7 +259,10 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
     const streamModule = await import("node:stream");
 
     // Get file as stream and read just enough to get the tables list
-    const response = await drive.files.get({ fileId, alt: "media" }, { responseType: "stream" });
+    const response = await retryGoogleCall(
+      () => drive.files.get({ fileId, alt: "media" }, { responseType: "stream" }),
+      { context: "drive.files.get" },
+    );
 
     return new Promise((resolve) => {
       const chunks: Buffer[] = [];
@@ -343,11 +370,15 @@ export async function getBackupStats(
 ): Promise<Record<string, { count: number; hash: string }>> {
   try {
     const drive = await getDriveClient();
-    const metadata = await drive.files.get({
-      fileId,
-      fields: "description",
-      supportsAllDrives: true,
-    });
+    const metadata = await retryGoogleCall(
+      () =>
+        drive.files.get({
+          fileId,
+          fields: "description",
+          supportsAllDrives: true,
+        }),
+      { context: "drive.files.get" },
+    );
 
     if (metadata.data.description) {
       try {

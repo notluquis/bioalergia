@@ -1,6 +1,6 @@
 import { createReadStream } from "node:fs";
 import { getDriveClient } from "../lib/google/google-core";
-import { parseGoogleError } from "../lib/google/google-errors";
+import { parseGoogleError, retryGoogleCall } from "../lib/google/google-errors";
 
 const ATTACHMENTS_FOLDER_NAME = "Patient Attachments";
 
@@ -8,24 +8,32 @@ export async function getAttachmentsFolderId(): Promise<string> {
   try {
     const drive = await getDriveClient();
 
-    const response = await drive.files.list({
-      q: `name='${ATTACHMENTS_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-      fields: "files(id)",
-      spaces: "drive",
-    });
+    const response = await retryGoogleCall(
+      () =>
+        drive.files.list({
+          q: `name='${ATTACHMENTS_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+          fields: "files(id)",
+          spaces: "drive",
+        }),
+      { context: "drive.files.list" },
+    );
 
     const existingFolderId = response.data.files?.[0]?.id;
     if (existingFolderId) {
       return existingFolderId;
     }
 
-    const folder = await drive.files.create({
-      requestBody: {
-        name: ATTACHMENTS_FOLDER_NAME,
-        mimeType: "application/vnd.google-apps.folder",
-      },
-      fields: "id",
-    });
+    const folder = await retryGoogleCall(
+      () =>
+        drive.files.create({
+          requestBody: {
+            name: ATTACHMENTS_FOLDER_NAME,
+            mimeType: "application/vnd.google-apps.folder",
+          },
+          fields: "id",
+        }),
+      { idempotent: false, context: "drive.files.create" },
+    );
 
     const folderId = folder.data.id;
     if (!folderId) {
@@ -48,21 +56,25 @@ export async function uploadPatientAttachmentToDrive(
     const drive = await getDriveClient();
     const folderId = await getAttachmentsFolderId();
 
-    const response = await drive.files.create({
-      requestBody: {
-        name: filename,
-        parents: [folderId],
-        appProperties: {
-          patientId,
-          type: "attachment",
-        },
-      },
-      media: {
-        mimeType,
-        body: createReadStream(filepath),
-      },
-      fields: "id,webViewLink",
-    });
+    const response = await retryGoogleCall(
+      () =>
+        drive.files.create({
+          requestBody: {
+            name: filename,
+            parents: [folderId],
+            appProperties: {
+              patientId,
+              type: "attachment",
+            },
+          },
+          media: {
+            mimeType,
+            body: createReadStream(filepath),
+          },
+          fields: "id,webViewLink",
+        }),
+      { idempotent: false, context: "drive.files.create" },
+    );
 
     const fileId = response.data.id;
     if (!fileId) {

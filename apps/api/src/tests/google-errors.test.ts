@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { GaxiosError } from "gaxios";
-import { parseGoogleError } from "../lib/google/google-errors";
+import { GoogleApiError, parseGoogleError, retryGoogleCall } from "../lib/google/google-errors";
 
 type MinimalResponse = {
   status: number;
@@ -135,5 +135,40 @@ describe("google-errors", () => {
     expect(parsed.reason).toBe("unknown");
     expect(parsed.domain).toBe("application");
     expect(parsed.message).toBe("boom");
+  });
+
+  it("retries with retryAfterSeconds and returns the final result", async () => {
+    vi.useFakeTimers();
+    let attempts = 0;
+
+    const operation = vi.fn(async () => {
+      attempts += 1;
+      if (attempts < 3) {
+        throw new GoogleApiError({
+          code: 429,
+          status: "RESOURCE_EXHAUSTED",
+          reason: "rateLimitExceeded",
+          domain: "googleapis.com",
+          message: "Rate limit exceeded",
+          retryAfterSeconds: 1,
+          originalError: new Error("rate limit"),
+        });
+      }
+      return "ok";
+    });
+
+    const promise = retryGoogleCall(operation, {
+      maxAttempts: 3,
+      baseDelayMs: 1,
+      jitter: 0,
+      context: "test.retry",
+    });
+
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(result).toBe("ok");
+    expect(operation).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
   });
 });
