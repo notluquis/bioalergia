@@ -62,18 +62,19 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: "pages-cache",
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 },
-              networkTimeoutSeconds: 3,
+              networkTimeoutSeconds: 3, // Quick fallback for navigation
             },
           },
           {
-            // JS/CSS assets - NetworkFirst to ensure fresh after deploys
-            // Falls back to cache when offline
+            // JS/CSS assets - NetworkFirst WITHOUT timeout to ensure fresh after deploys
+            // No timeout = waits for network indefinitely, only uses cache if network fails
+            // This prevents serving stale assets from cache (critical for Windows 11)
             urlPattern: REGEX_ASSETS_JS_CSS,
             handler: "NetworkFirst",
             options: {
               cacheName: "assets-cache",
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
-              networkTimeoutSeconds: 3,
+              // NO networkTimeoutSeconds - always wait for fresh network response
             },
           },
           {

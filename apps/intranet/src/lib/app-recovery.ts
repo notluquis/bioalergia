@@ -60,20 +60,6 @@ export async function clearAppCaches() {
   }
 }
 
-/**
- * Force a hard reload with cache bypass.
- * Adds a timestamp query parameter to ensure browser doesn't serve cached version.
- */
-export function forceReload() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  const url = new URL(globalThis.location.href);
-  url.searchParams.set("_pwa_update", Date.now().toString());
-  globalThis.location.replace(url.toString());
-}
-
 declare global {
   interface Window {
     __APP_FALLBACK_REASON__?: AppFallbackReason;
