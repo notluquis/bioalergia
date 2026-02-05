@@ -154,7 +154,7 @@ export function TimesheetExportPDF({
       addLegalNote(doc, pageWidth, margin);
 
       // Guardar / previsualizar
-      const safeName = (employee.full_name || "Trabajador").replaceAll(/[^a-zA-Z0-9_\- ]/g, "");
+      const safeName = (employee.full_name || "Prestador").replaceAll(/[^a-zA-Z0-9_\- ]/g, "");
       if (preview) {
         const pdfDataUri = doc.output("dataurlstring");
         const previewWindow = window.open("", "_blank", "noopener,noreferrer");
@@ -167,7 +167,7 @@ export function TimesheetExportPDF({
           );
         }
       } else {
-        doc.save(`Honorarios_${safeName}_${monthLabel}.pdf`);
+        doc.save(`ResumenHonorarios_${safeName}_${monthLabel}.pdf`);
       }
     } catch (error: unknown) {
       console.error("Export PDF error:", error);

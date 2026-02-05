@@ -122,8 +122,8 @@ export function TimesheetDetailTable({
         meta={meta as unknown as Record<string, unknown>}
         noDataMessage={
           employeeOptions.length > 0
-            ? "Selecciona un trabajador para ver o editar sus horas."
-            : "Registra a trabajadores activos para comenzar a cargar horas."
+            ? "Selecciona un prestador para ver o editar sus tiempos."
+            : "Registra prestadores activos para comenzar a cargar tiempos."
         }
       />
 

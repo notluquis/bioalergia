@@ -77,7 +77,7 @@ export function TimesheetsPage() {
             <Select
               className="w-full"
               isDisabled={activeEmployees.length === 0}
-              label="Trabajador"
+              label="Prestador"
               placeholder="Seleccionar..."
               selectedKey={selectedEmployeeId ? String(selectedEmployeeId) : null}
               onSelectionChange={(key) => {

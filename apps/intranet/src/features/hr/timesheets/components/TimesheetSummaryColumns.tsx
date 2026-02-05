@@ -9,7 +9,7 @@ export const getTimesheetSummaryColumns = (): ColumnDef<TimesheetSummaryRow>[] =
   {
     accessorKey: "fullName",
     footer: "TOTAL", // Appears in the first column
-    header: "Trabajador",
+    header: "Prestador",
     meta: {
       className: "font-medium",
     },

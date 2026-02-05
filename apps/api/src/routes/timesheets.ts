@@ -124,7 +124,7 @@ const emailBodySchema = z.object({
 });
 
 const EMAIL_FROM_ADDRESS = "lpulgar@bioalergia.cl";
-const PDF_FILENAME = "liquidacion.pdf";
+const PDF_FILENAME = "resumen_honorarios.pdf";
 
 function buildTimesheetEmailHtml({
   employeeName,
@@ -796,7 +796,7 @@ app.post("/prepare-email", zValidator("json", emailBodySchema), async (c) => {
     const { employeeId, month, monthLabel, pdfBase64, employeeName, employeeEmail, summary } =
       c.req.valid("json");
 
-    const filename = `liquidacion_${month}_${employeeId}.eml`;
+    const filename = `resumen_honorarios_${month}_${employeeId}.eml`;
     const payload = buildTimesheetEmailPayload({
       employeeEmail,
       employeeName,
