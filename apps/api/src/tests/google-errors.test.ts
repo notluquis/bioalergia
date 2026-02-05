@@ -8,8 +8,32 @@ type MinimalResponse = {
   headers?: Record<string, string>;
 };
 
+type GaxiosResponseLike = {
+  status: number;
+  statusText: string;
+  data: unknown;
+  headers: Record<string, string>;
+  config: { url: string; method: string };
+};
+
 function buildGaxiosError(message: string, response: MinimalResponse) {
-  return new GaxiosError(message, { url: "https://example.com", method: "GET" }, response);
+  const responseLike: GaxiosResponseLike = {
+    status: response.status,
+    statusText: "",
+    data: response.data ?? null,
+    headers: response.headers ?? {},
+    config: { url: "https://example.com", method: "GET" },
+  };
+  const error = Object.create(GaxiosError.prototype) as GaxiosError & {
+    response?: GaxiosResponseLike;
+    config?: { url: string; method: string };
+  };
+  error.name = "GaxiosError";
+  error.message = message;
+  error.code = String(response.status);
+  error.config = responseLike.config;
+  error.response = responseLike;
+  return error;
 }
 
 describe("google-errors", () => {
@@ -27,6 +51,18 @@ describe("google-errors", () => {
           ],
           message: "Rate limit exceeded",
         },
+      },
+    });
+    expect((error as { response?: { data?: unknown } }).response?.data).toEqual({
+      error: {
+        errors: [
+          {
+            reason: "userRateLimitExceeded",
+            domain: "usageLimits",
+            message: "Rate limit exceeded",
+          },
+        ],
+        message: "Rate limit exceeded",
       },
     });
 
@@ -55,6 +91,20 @@ describe("google-errors", () => {
             },
           ],
         },
+      },
+    });
+    expect((error as { response?: { data?: unknown } }).response?.data).toEqual({
+      error: {
+        status: "RESOURCE_EXHAUSTED",
+        message: "Quota exceeded",
+        details: [
+          {
+            "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+            reason: "RATE_LIMIT_EXCEEDED",
+            domain: "googleapis.com",
+            metadata: { quotaLocation: "global" },
+          },
+        ],
       },
     });
 
