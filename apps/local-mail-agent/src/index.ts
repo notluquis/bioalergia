@@ -143,7 +143,7 @@ app.post("/send", async (c) => {
 
   try {
     const transporter = await createTransport(secrets.smtpUser, secrets.smtpPass);
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: secrets.smtpUser,
       to: payload.to,
       subject: payload.subject,
@@ -151,6 +151,9 @@ app.post("/send", async (c) => {
       text: payload.text,
       attachments,
     });
+    console.log(
+      `[mail-agent] Sent email to ${payload.to} (subject: ${payload.subject}) id=${info.messageId}`,
+    );
     return c.json({ status: "ok" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "SMTP error";
