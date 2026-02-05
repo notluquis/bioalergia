@@ -218,7 +218,7 @@ function mapTimesheetEntry(entry: EmployeeTimesheet): TimesheetEntry {
   return {
     id: Number(entry.id),
     employee_id: entry.employeeId,
-    work_date: dayjs(entry.workDate).tz(TIMEZONE).format("YYYY-MM-DD"),
+    work_date: dayjs.utc(entry.workDate).format("YYYY-MM-DD"),
     start_time: entry.startTime ? dateToTimeString(entry.startTime) : "",
     end_time: entry.endTime ? dateToTimeString(entry.endTime) : "",
     worked_minutes: entry.workedMinutes,
