@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { createSecureServer } from "node:http2";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -12,6 +14,8 @@ const SMTP_SECURE = true;
 const MAX_ATTACHMENT_BYTES = 30 * 1024 * 1024;
 const DEFAULT_PORT = 3333;
 const DEFAULT_ALLOWED_ORIGINS = ["https://intranet.bioalergia.cl", "http://localhost"];
+const TLS_KEY_PATH = process.env.LOCAL_AGENT_TLS_KEY_PATH;
+const TLS_CERT_PATH = process.env.LOCAL_AGENT_TLS_CERT_PATH;
 
 const AttachmentSchema = z.object({
   filename: z.string().min(1),
@@ -84,10 +88,15 @@ app.use(
   "*",
   cors({
     origin: getAllowedOrigins(),
-    allowHeaders: ["Content-Type", "X-Local-Agent-Token"],
+    allowHeaders: ["Content-Type", "X-Local-Agent-Token", "Access-Control-Request-Private-Network"],
     allowMethods: ["POST", "GET", "OPTIONS"],
   }),
 );
+
+app.use("*", async (c, next) => {
+  await next();
+  c.header("Access-Control-Allow-Private-Network", "true");
+});
 
 app.get("/health", (c) => c.json({ status: "ok" }));
 
@@ -152,6 +161,23 @@ app.post("/send", async (c) => {
 const port = Number.parseInt(process.env.PORT || String(DEFAULT_PORT), 10);
 const hostname = "127.0.0.1";
 
-serve({ fetch: app.fetch, port, hostname }, (info) => {
-  console.log(`Local mail agent listening on http://${info.address}:${info.port}`);
-});
+if (TLS_KEY_PATH && TLS_CERT_PATH) {
+  const key = readFileSync(TLS_KEY_PATH);
+  const cert = readFileSync(TLS_CERT_PATH);
+  serve(
+    {
+      fetch: app.fetch,
+      port,
+      hostname,
+      createServer: createSecureServer,
+      serverOptions: { key, cert },
+    },
+    (info) => {
+      console.log(`Local mail agent listening on https://${info.address}:${info.port}`);
+    },
+  );
+} else {
+  serve({ fetch: app.fetch, port, hostname }, (info) => {
+    console.log(`Local mail agent listening on http://${info.address}:${info.port}`);
+  });
+}

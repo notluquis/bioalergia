@@ -52,6 +52,8 @@ export function EmailPreviewModal({
   const [agentUrl, setAgentUrl] = useState(DEFAULT_LOCAL_AGENT_URL);
   const [agentStatus, setAgentStatus] = useState<null | string>(null);
   const [checkingAgent, setCheckingAgent] = useState(false);
+  const isHttpsPage = typeof window !== "undefined" && window.location.protocol === "https:";
+  const isHttpAgent = agentUrl.startsWith("http://");
 
   useEffect(() => {
     if (!isOpen) {
@@ -167,6 +169,11 @@ export function EmailPreviewModal({
                   </Button>
                   {agentStatus && <span className="text-default-600 text-xs">{agentStatus}</span>}
                 </div>
+                {isHttpsPage && isHttpAgent && (
+                  <p className="mt-2 text-amber-600 text-xs">
+                    El navegador bloquea HTTP desde una página HTTPS. Usa HTTPS en el agente local.
+                  </p>
+                )}
               </div>
 
               {/* Content wraps in ModalBody for spacing/scroll */}

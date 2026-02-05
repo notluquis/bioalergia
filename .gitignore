@@ -79,6 +79,9 @@ temp/
 # Turbo
 .turbo
 
+# Local TLS certs
+*.pem
+
 # Storybook
 storybook-static/
 **/storybook-static/
