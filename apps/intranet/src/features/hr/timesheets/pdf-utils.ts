@@ -45,8 +45,9 @@ export async function generateTimesheetPdfBase64(
     doc.setFont("helvetica", "bold");
     doc.text("Boleta de Honorarios", margin, 30);
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text("Resumen de Prestación de Servicios a Honorarios (para emisión de BHE)", margin, 36);
     doc.setFontSize(10);
-    doc.text(`Servicios de ${summaryRow.role}`, margin, 38);
     doc.text(`Periodo: ${monthLabel}`, margin, 45);
 
     // Employee info
@@ -62,12 +63,12 @@ export async function generateTimesheetPdfBase64(
 
     autoTable(doc, {
       body: [
-        ["Horas trabajadas", summaryRow.hoursFormatted],
-        ["Horas extras", summaryRow.overtimeFormatted],
+        ["Tiempo total facturable", summaryRow.hoursFormatted],
+        ["Tiempo adicional facturable", summaryRow.overtimeFormatted],
         ["Tarifa por hora", fmtCLP(summaryRow.hourlyRate)],
-        ["Subtotal", fmtCLP(summaryRow.subtotal)],
+        ["Monto bruto de honorarios", fmtCLP(summaryRow.subtotal)],
         [`Retención (${retentionPercent})`, `-${fmtCLP(summaryRow.retention)}`],
-        ["Total líquido", fmtCLP(summaryRow.net)],
+        ["Líquido estimado", fmtCLP(summaryRow.net)],
       ],
       columnStyles: { 1: { halign: "right" } },
       head: [["Concepto", "Valor"]],
@@ -94,7 +95,7 @@ export async function generateTimesheetPdfBase64(
     if (detailBody.length > 0) {
       autoTable(doc, {
         body: detailBody,
-        head: [["Fecha", "Entrada", "Salida", "Extras"]],
+        head: [["Fecha", "Inicio de prestación", "Término de prestación", "Observación"]],
         headStyles: { fillColor: [241, 167, 34], halign: "center" },
         margin: { left: margin, right: margin },
         startY: nextY,
@@ -102,6 +103,18 @@ export async function generateTimesheetPdfBase64(
         theme: "grid",
       });
     }
+
+    // Nota de blindaje legal
+    const finalTableRef = doc as unknown as { lastAutoTable?: { finalY: number } };
+    const noteY = finalTableRef.lastAutoTable
+      ? finalTableRef.lastAutoTable.finalY + 10
+      : nextY + 50;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    const noteText =
+      "Nota: Este resumen se emite exclusivamente para fines de respaldo, conciliación y cálculo de honorarios del periodo indicado. Los tramos horarios consignados corresponden a la planificación y coordinación de las prestaciones y no constituyen control de jornada, asistencia ni implican vínculo de subordinación o dependencia.";
+    const splitNote = doc.splitTextToSize(noteText, 190);
+    doc.text(splitNote, margin, noteY);
 
     // Convert to base64
     const pdfBlob = doc.output("blob");

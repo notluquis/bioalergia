@@ -99,7 +99,7 @@ export function EmailPreviewModal({
   const totalMins = totalMinutes % 60;
   const totalHoursFormatted = `${String(totalHrs).padStart(2, "0")}:${String(totalMins).padStart(2, "0")}`;
 
-  const boletaDescription = `SERVICIOS DE ${summary.role.toUpperCase()} ${totalHoursFormatted} HORAS`;
+  const boletaDescription = `SERVICIOS PROFESIONALES DE ${summary.role.toUpperCase()} - PERIODO ${monthLabelEs.toUpperCase()} - TIEMPO FACTURABLE ${totalHoursFormatted}`;
 
   // Get year from month in YYYY-MM format
   const summaryYear = month
@@ -307,25 +307,30 @@ export function EmailPreviewModal({
                   Estimado/a <strong>{employee.full_name}</strong>,
                 </p>
                 <p className="mb-4 text-foreground text-sm">
-                  A continuación encontrarás el resumen de los servicios prestados durante el
-                  periodo <strong>{monthLabelEs}</strong>, favor corroborar y emitir boleta de
-                  honorarios.
+                  Junto con saludar, comparto el resumen de prestaciones de servicios profesionales
+                  a honorarios correspondientes al periodo <strong>{monthLabelEs}</strong>, para su
+                  revisión.
+                </p>
+                <p className="mb-4 text-foreground text-sm">
+                  Si está conforme, agradeceré emitir la Boleta de Honorarios Electrónica (BHE) por
+                  el monto bruto indicado, considerando la retención vigente según corresponda en la
+                  emisión.
                 </p>
 
                 {/* Caja verde para la boleta */}
                 <div className="mb-4 rounded-lg border-2 border-green-500 bg-green-100 p-4">
                   <p className="mb-3 font-semibold text-green-800 text-xs uppercase tracking-wider">
-                    📝 Para la boleta de honorarios
+                    🧾 Datos para emitir BHE
                   </p>
                   <div className="space-y-2">
                     <div>
-                      <p className="mb-1 text-green-800 text-xs">Descripción:</p>
+                      <p className="mb-1 text-green-800 text-xs">Descripción sugerida:</p>
                       <p className="font-bold font-mono text-green-800 text-sm">
                         {boletaDescription}
                       </p>
                     </div>
                     <div>
-                      <p className="mb-1 text-green-800 text-xs">Monto Bruto:</p>
+                      <p className="mb-1 text-green-800 text-xs">Monto bruto honorarios:</p>
                       <p className="font-bold font-mono text-green-800 text-xl">
                         {fmtCLP(summary.subtotal)}
                       </p>
@@ -342,13 +347,13 @@ export function EmailPreviewModal({
 
                   <div className="divide-y divide-base-300 border-default-200 border-x border-b">
                     <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-3">
-                      <div className="text-foreground">Horas totales</div>
+                      <div className="text-foreground">Tiempo total facturable</div>
                       <div className="text-right font-mono text-foreground">
                         {totalHoursFormatted}
                       </div>
                     </div>
                     <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 py-3">
-                      <div className="text-foreground">Monto Bruto</div>
+                      <div className="text-foreground">Monto bruto de honorarios</div>
                       <div className="text-right font-mono text-foreground">
                         {fmtCLP(summary.subtotal)}
                       </div>
@@ -360,7 +365,7 @@ export function EmailPreviewModal({
                       </div>
                     </div>
                     <div className="grid grid-cols-[1fr_auto] gap-x-3 bg-blue-700 px-3 py-3">
-                      <div className="font-bold text-white">Total Líquido</div>
+                      <div className="font-bold text-white">Líquido estimado</div>
                       <div className="text-right font-bold font-mono text-white">
                         {fmtCLP(summary.net)}
                       </div>
@@ -371,7 +376,7 @@ export function EmailPreviewModal({
                 {/* Fecha de pago */}
                 <div className="rounded-lg border border-amber-500 bg-amber-100 p-3 text-center text-sm">
                   <strong className="text-amber-800">
-                    📅 Fecha de pago estimada:{" "}
+                    📅 Fecha estimada de pago/transferencia de honorarios:{" "}
                     {summary.payDate
                       ? dayjs(summary.payDate, "YYYY-MM-DD").format("DD-MM-YYYY")
                       : "—"}
@@ -380,9 +385,16 @@ export function EmailPreviewModal({
 
                 {/* Nota de adjunto */}
                 <div className="mt-3 rounded-lg border border-sky-500 bg-sky-100 p-3 text-sky-700 text-sm">
-                  <strong>📎 Adjunto:</strong> Se incluye el documento PDF con el detalle completo
-                  de horas trabajadas.
+                  <strong>📎 Adjunto:</strong> Documento PDF con el detalle del periodo para
+                  respaldo y conciliación.
                 </div>
+
+                {/* Nota legal */}
+                <p className="mt-3 text-default-600 text-xs">
+                  Nota: El detalle de tramos horarios se incluye únicamente para fines de
+                  respaldo/conciliación de honorarios y no constituye control de jornada ni implica
+                  subordinación o dependencia.
+                </p>
               </div>
             </ModalBody>
 

@@ -152,7 +152,7 @@ function buildTimesheetEmailHtml({
   const totalMins = totalMinutes % 60;
   const totalHoursFormatted = `${String(totalHrs).padStart(2, "0")}:${String(totalMins).padStart(2, "0")}`;
 
-  const boletaDescription = `SERVICIOS DE ${summary.role.toUpperCase()} ${totalHoursFormatted} HORAS`;
+  const boletaDescription = `SERVICIOS PROFESIONALES DE ${summary.role.toUpperCase()} - PERIODO ${monthLabel.toUpperCase()} - TIEMPO FACTURABLE ${totalHoursFormatted}`;
 
   const fmtCLP = (amount: number) => {
     return new Intl.NumberFormat("es-CL", {
@@ -194,20 +194,21 @@ function buildTimesheetEmailHtml({
   <div class="container">
     <div class="header">
       <h2 style="margin: 0;">Boleta de Honorarios - ${monthLabel}</h2>
-      <p style="margin: 5px 0 0 0; opacity: 0.9;">Servicios de ${summary.role}</p>
+      <p style="margin: 5px 0 0 0; opacity: 0.9;">Prestación de servicios profesionales a honorarios</p>
     </div>
     <div class="content">
       <p>Estimado/a <strong>${employeeName}</strong>,</p>
-      <p>A continuación encontrarás el resumen de los servicios prestados durante el periodo <strong>${monthLabel}</strong>, favor corroborar y emitir boleta de honorarios.</p>
+      <p>Junto con saludar, comparto el resumen de prestaciones de servicios profesionales a honorarios correspondientes al periodo <strong>${monthLabel}</strong>, para su revisión.</p>
+      <p>Si está conforme, agradeceré emitir la Boleta de Honorarios Electrónica (BHE) por el monto bruto indicado, considerando la retención vigente según corresponda en la emisión.</p>
       
       <div class="boleta-box">
-        <h3>📝 Para la boleta de honorarios</h3>
+        <h3>🧾 Datos para emitir BHE</h3>
         <div>
-          <p style="margin: 0 0 5px 0; font-size: 12px; color: #065f46;">Descripción:</p>
+          <p style="margin: 0 0 5px 0; font-size: 12px; color: #065f46;">Descripción sugerida:</p>
           <p class="description">${boletaDescription}</p>
         </div>
         <div>
-          <p style="margin: 0 0 5px 0; font-size: 12px; color: #065f46;">Monto Bruto:</p>
+          <p style="margin: 0 0 5px 0; font-size: 12px; color: #065f46;">Monto bruto honorarios:</p>
           <p class="amount">${fmtCLP(summary.subtotal)}</p>
         </div>
       </div>
@@ -221,11 +222,11 @@ function buildTimesheetEmailHtml({
         </thead>
         <tbody>
           <tr>
-            <td>Horas totales</td>
+            <td>Tiempo total facturable</td>
             <td style="text-align: right; font-family: monospace;">${totalHoursFormatted}</td>
           </tr>
           <tr>
-            <td>Monto Bruto</td>
+            <td>Monto bruto de honorarios</td>
             <td style="text-align: right; font-family: monospace;">${fmtCLP(summary.subtotal)}</td>
           </tr>
           <tr>
@@ -233,19 +234,20 @@ function buildTimesheetEmailHtml({
             <td style="text-align: right; font-family: monospace;">-${fmtCLP(summary.retention)}</td>
           </tr>
           <tr class="total-row">
-            <td>Total Líquido</td>
+            <td>Líquido estimado</td>
             <td style="text-align: right; font-family: monospace;">${fmtCLP(summary.net)}</td>
           </tr>
         </tbody>
       </table>
       
       <div class="info-box">
-        <strong>📅 Fecha de pago estimada: ${summary.payDate}</strong>
+        <strong>📅 Fecha estimada de pago/transferencia de honorarios: ${summary.payDate}</strong>
       </div>
       
       <div class="attachment-box">
-        <strong>📎 Adjunto:</strong> Se incluye el documento PDF con el detalle completo de horas trabajadas.
+        <strong>📎 Adjunto:</strong> Documento PDF con el detalle del periodo para respaldo y conciliación.
       </div>
+      <p style="font-size: 12px; color: #4b5563;">Nota: El detalle de tramos horarios se incluye únicamente para fines de respaldo/conciliación de honorarios y no constituye control de jornada ni implica subordinación o dependencia.</p>
     </div>
   </div>
 </body>

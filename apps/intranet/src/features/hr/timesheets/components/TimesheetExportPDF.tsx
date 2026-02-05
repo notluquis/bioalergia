@@ -35,10 +35,10 @@ interface TimesheetExportPDFProps {
 
 const COLUMN_LABELS: Record<TimesheetColumnKey, string> = {
   date: "Fecha",
-  entrada: "Entrada",
-  overtime: "Extras",
-  salida: "Salida",
-  worked: "Trabajadas",
+  entrada: "Inicio de prestación",
+  overtime: "Observación",
+  salida: "Término de prestación",
+  worked: "Tiempo facturable",
 };
 
 type AutoTableFactory = typeof import("jspdf-autotable");
@@ -112,7 +112,7 @@ export function TimesheetExportPDF({
     pageSize?: JsPdfPageSize;
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy function
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: pdf generation requires sequential steps
   async function handleExport(preview = true) {
     try {
       const libs = await loadPdfLibs();
@@ -124,79 +124,11 @@ export function TimesheetExportPDF({
         typeof pageSize?.getWidth === "function" ? pageSize.getWidth() : (pageSize?.width ?? 210);
       const margin = 10;
 
-      // Logo (mantener proporción)
-      const resolvedLogo = settings.logoUrl || logoUrl;
-      let logoDataUrl: null | string = null;
-      if (resolvedLogo) {
-        logoDataUrl = await loadLogoAsPng(resolvedLogo);
-      }
-      if (!logoDataUrl) {
-        logoDataUrl = await loadLogoAsPng("/logo.png");
-      }
+      // Agregar header (logo + título + datos org)
+      const { infoStartY } = await addPdfHeader(doc, settings, logoUrl, pageWidth, margin);
 
-      const headerTopY = margin + 2;
-      let logoBottomY = headerTopY;
-      const dims = await getLogoDimensions(logoDataUrl);
-      if (dims && logoDataUrl) {
-        doc.addImage(logoDataUrl, "PNG", margin, headerTopY, dims.w, dims.h);
-        logoBottomY = headerTopY + dims.h;
-      }
-
-      // Encabezado a la derecha (título + datos organización)
-      const orgName = settings.orgName || "Bioalergia";
-      const orgAddress = settings.orgAddress || "";
-      const orgPhone = settings.orgPhone || "";
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text("Honorarios por servicios prestados", pageWidth - margin, headerTopY + 2, {
-        align: "right",
-      });
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      const rightLines = [orgName, orgAddress, orgPhone ? `Tel: ${orgPhone}` : null].filter(
-        Boolean,
-      ) as string[];
-      let rightY = headerTopY + 8;
-      for (const line of rightLines) {
-        doc.text(line, pageWidth - margin, rightY, { align: "right" });
-        rightY += 5;
-      }
-
-      // Info de trabajador y periodo - forzar español
-      dayjs.locale("es");
-      // monthLabel puede venir como "November 2025" o "2025-11", convertir a español
-      let periodEs = monthLabel;
-      const monthMatch = MONTH_LABEL_REGEX.exec(monthLabel);
-      if (monthMatch) {
-        // Formato YYYY-MM
-        periodEs = dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY");
-      } else if (dayjs(monthLabel, "MMMM YYYY", "en").isValid()) {
-        // Formato inglés "November 2025"
-        periodEs = dayjs(monthLabel, "MMMM YYYY", "en").locale("es").format("MMMM YYYY");
-      } else if (dayjs(monthLabel, "MMMM YYYY", "es").isValid()) {
-        // Ya está en español
-        periodEs = dayjs(monthLabel, "MMMM YYYY", "es").locale("es").format("MMMM YYYY");
-      }
-      // Capitalizar primera letra
-      periodEs = periodEs.charAt(0).toUpperCase() + periodEs.slice(1);
-      // Usar payDate del summary (ya calculado en el backend) en lugar de recalcular
-      const payDateFormatted = summary?.payDate
-        ? dayjs(summary.payDate, "YYYY-MM-DD").format("DD-MM-YYYY")
-        : null;
-      const infoStartY = Math.max(logoBottomY, rightY) + 6;
-      doc.setFontSize(10);
-      doc.text(`Prestador: ${employee?.full_name || "-"}`, margin, infoStartY);
-      doc.text(`RUT: ${employee?.person?.rut || "-"}`, margin, infoStartY + 6);
-      doc.text(`Periodo: ${periodEs}`, pageWidth - margin, infoStartY, { align: "right" });
-      if (payDateFormatted) {
-        doc.text(`Fecha de pago: ${payDateFormatted}`, pageWidth - margin, infoStartY + 6, {
-          align: "right",
-        });
-      }
-      const net = typeof summary?.net === "number" ? summary.net : 0;
-      doc.setFont("helvetica", "bold");
-      doc.text(`Total líquido: ${fmtCLP(net)}`, margin, infoStartY + 14);
-      doc.setFont("helvetica", "normal");
+      // Agregar info del prestador y periodo
+      addPrestadorInfo(doc, employee, monthLabel, summary, pageWidth, margin, infoStartY);
 
       // Tabla de RESUMEN
       drawSummaryTable({ autoTable, doc, infoStartY, margin, pageWidth, summary });
@@ -217,6 +149,9 @@ export function TimesheetExportPDF({
         selectedCols,
         startY: nextY,
       });
+
+      // Nota de blindaje legal
+      addLegalNote(doc, pageWidth, margin);
 
       // Guardar / previsualizar
       const safeName = (employee.full_name || "Trabajador").replaceAll(/[^a-zA-Z0-9_\- ]/g, "");
@@ -343,6 +278,112 @@ function blobToDataUrl(blob: Blob): Promise<null | string> {
   });
 }
 
+// === PDF GENERATION HELPERS ===
+
+interface HeaderResult {
+  infoStartY: number;
+}
+
+async function addPdfHeader(
+  doc: import("jspdf").default,
+  settings: { logoUrl?: string; orgName?: string; orgAddress?: string; orgPhone?: string },
+  logoUrl: string,
+  pageWidth: number,
+  margin: number,
+): Promise<HeaderResult> {
+  const resolvedLogo = settings.logoUrl || logoUrl;
+  let logoDataUrl: null | string = null;
+  if (resolvedLogo) {
+    logoDataUrl = await loadLogoAsPng(resolvedLogo);
+  }
+  if (!logoDataUrl) {
+    logoDataUrl = await loadLogoAsPng("/logo.png");
+  }
+
+  const headerTopY = margin + 2;
+  let logoBottomY = headerTopY;
+  const dims = await getLogoDimensions(logoDataUrl);
+  if (dims && logoDataUrl) {
+    doc.addImage(logoDataUrl, "PNG", margin, headerTopY, dims.w, dims.h);
+    logoBottomY = headerTopY + dims.h;
+  }
+
+  const orgName = settings.orgName || "Bioalergia";
+  const orgAddress = settings.orgAddress || "";
+  const orgPhone = settings.orgPhone || "";
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("Boleta de Honorarios", pageWidth - margin, headerTopY + 2, { align: "right" });
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    "Resumen de Prestación de Servicios a Honorarios (para emisión de BHE)",
+    pageWidth - margin,
+    headerTopY + 7,
+    { align: "right" },
+  );
+  const rightLines = [orgName, orgAddress, orgPhone ? `Tel: ${orgPhone}` : null].filter(
+    Boolean,
+  ) as string[];
+  let rightY = headerTopY + 8;
+  for (const line of rightLines) {
+    doc.text(line, pageWidth - margin, rightY, { align: "right" });
+    rightY += 5;
+  }
+
+  return { infoStartY: Math.max(logoBottomY, rightY) + 6 };
+}
+
+function addPrestadorInfo(
+  doc: import("jspdf").default,
+  employee: Employee | null,
+  monthLabel: string,
+  summary: null | TimesheetSummaryRow,
+  pageWidth: number,
+  margin: number,
+  infoStartY: number,
+): void {
+  dayjs.locale("es");
+  let periodEs = monthLabel;
+  const monthMatch = MONTH_LABEL_REGEX.exec(monthLabel);
+  if (monthMatch) {
+    periodEs = dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY");
+  } else if (dayjs(monthLabel, "MMMM YYYY", "en").isValid()) {
+    periodEs = dayjs(monthLabel, "MMMM YYYY", "en").locale("es").format("MMMM YYYY");
+  } else if (dayjs(monthLabel, "MMMM YYYY", "es").isValid()) {
+    periodEs = dayjs(monthLabel, "MMMM YYYY", "es").locale("es").format("MMMM YYYY");
+  }
+  periodEs = periodEs.charAt(0).toUpperCase() + periodEs.slice(1);
+  const payDateFormatted = summary?.payDate
+    ? dayjs(summary.payDate, "YYYY-MM-DD").format("DD-MM-YYYY")
+    : null;
+
+  doc.setFontSize(10);
+  doc.text(`Prestador: ${employee?.full_name || "-"}`, margin, infoStartY);
+  doc.text(`RUT: ${employee?.person?.rut || "-"}`, margin, infoStartY + 6);
+  doc.text(`Periodo: ${periodEs}`, pageWidth - margin, infoStartY, { align: "right" });
+  if (payDateFormatted) {
+    doc.text(`Fecha de pago: ${payDateFormatted}`, pageWidth - margin, infoStartY + 6, {
+      align: "right",
+    });
+  }
+  const net = typeof summary?.net === "number" ? summary.net : 0;
+  doc.setFont("helvetica", "bold");
+  doc.text(`Líquido estimado: ${fmtCLP(net)}`, margin, infoStartY + 14);
+  doc.setFont("helvetica", "normal");
+}
+
+function addLegalNote(doc: import("jspdf").default, pageWidth: number, margin: number): void {
+  const finalTableRef = doc as unknown as { lastAutoTable?: { finalY: number } };
+  const noteY = finalTableRef.lastAutoTable ? finalTableRef.lastAutoTable.finalY + 10 : 120;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  const noteText =
+    "Nota: Este resumen se emite exclusivamente para fines de respaldo, conciliación y cálculo de honorarios del periodo indicado. Los tramos horarios consignados corresponden a la planificación y coordinación de las prestaciones y no constituyen control de jornada, asistencia ni implican vínculo de subordinación o dependencia.";
+  const splitNote = doc.splitTextToSize(noteText, pageWidth - margin * 2);
+  doc.text(splitNote, margin, noteY);
+}
+
 // === NEW EXTRACTED HELPERS ===
 
 function computeWorked(entrada?: string, salida?: string): string {
@@ -465,12 +506,14 @@ function drawSummaryTable({
     const retentionPercent = formatRetentionPercent(summary.retentionRate || 0);
 
     summaryBody.push(
-      ["Horas trabajadas", summary.hoursFormatted || "0:00"],
-      ...(hasOvertime ? [["Horas extras", summary.overtimeFormatted || "0:00"]] : []),
+      ["Tiempo total facturable", summary.hoursFormatted || "0:00"],
+      ...(hasOvertime
+        ? [["Tiempo adicional facturable", summary.overtimeFormatted || "0:00"]]
+        : []),
       ["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)],
-      ["Subtotal", fmtCLP(summary.subtotal || 0)],
+      ["Monto bruto de honorarios", fmtCLP(summary.subtotal || 0)],
       [`Retención (${retentionPercent})`, `-${fmtCLP(summary.retention || 0)}`],
-      ["Total Líquido", fmtCLP(summary.net || 0)],
+      ["Líquido estimado", fmtCLP(summary.net || 0)],
     );
   }
 

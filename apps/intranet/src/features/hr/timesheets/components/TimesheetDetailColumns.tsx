@@ -363,7 +363,7 @@ export const getTimesheetDetailColumns = () => [
       />
     ),
 
-    header: "Entrada",
+    header: "Inicio",
     maxSize: 130,
     minSize: 100,
     size: 110,
@@ -378,7 +378,7 @@ export const getTimesheetDetailColumns = () => [
       />
     ),
 
-    header: "Salida",
+    header: "Término",
     maxSize: 130,
     minSize: 100,
     size: 110,
