@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { clearAppCaches } from "@/lib/app-recovery";
+import { clearOnlyCaches, forceReload } from "@/lib/app-recovery";
 
 export function UpdateNotification() {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -24,14 +24,15 @@ export function UpdateNotification() {
   });
   const handleUpdate = async () => {
     setIsUpdating(true);
-    setNeedRefresh(false);
+    // DON'T reset needRefresh here - let the reload handle it naturally
+    // If we reset it and the update fails, the notification disappears but nothing happens
 
     try {
       // Step 1: Tell the new service worker to skip waiting and activate
       await updateServiceWorker(true);
 
       // Step 2: Wait for the new service worker to actually take control
-      // This is crucial - we need to ensure the new SW is controlling before clearing cache
+      // This is crucial - we need to ensure the new SW is controlling before reloading
       if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
         await new Promise<void>((resolve) => {
           navigator.serviceWorker.addEventListener(
@@ -41,16 +42,18 @@ export function UpdateNotification() {
             },
             { once: true },
           );
-          // Fallback timeout in case controllerchange doesn't fire
-          setTimeout(resolve, 1000);
+          // Increased timeout for Windows 11 compatibility (was 1000ms)
+          setTimeout(resolve, 3000);
         });
       }
 
-      // Step 3: Force a complete reload from network
-      globalThis.location.reload();
+      // Step 3: Force a hard reload with cache bypass
+      // Using query param to ensure browser doesn't serve cached version (Windows 11 issue)
+      forceReload();
     } catch (error) {
       console.error("Update failed", error);
-      globalThis.location.reload();
+      // Fallback to force reload even on error
+      forceReload();
     }
   };
 
@@ -59,14 +62,35 @@ export function UpdateNotification() {
       return;
     }
     setIsUpdating(true);
-    setNeedRefresh(false);
+    // DON'T reset needRefresh here - let the reload handle it naturally
+
     try {
+      // Step 1: Activate new service worker first
       await updateServiceWorker(true);
-      await clearAppCaches();
-      globalThis.location.reload();
+
+      // Step 2: Wait for new SW to take control
+      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+        await new Promise<void>((resolve) => {
+          navigator.serviceWorker.addEventListener(
+            "controllerchange",
+            () => {
+              resolve();
+            },
+            { once: true },
+          );
+          setTimeout(resolve, 3000);
+        });
+      }
+
+      // Step 3: Clear ONLY caches, NOT service workers
+      // The new SW needs to stay registered to take control after reload
+      await clearOnlyCaches();
+
+      // Step 4: Force hard reload with cache bypass
+      forceReload();
     } catch (error) {
       console.error("Clean update failed", error);
-      globalThis.location.reload();
+      forceReload();
     }
   };
 
