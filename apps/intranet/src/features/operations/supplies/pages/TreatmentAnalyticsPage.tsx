@@ -265,9 +265,7 @@ function AnalyticsCharts({
       {/* Trend Chart */}
       <Card className="border-default-200 shadow-sm">
         <Card.Header className="pb-2">
-          <h3 className="font-semibold text-base text-foreground">
-            Tendencia de Actividad (antiguo → nuevo)
-          </h3>
+          <h3 className="font-semibold text-base text-foreground">Tendencia de Actividad</h3>
         </Card.Header>
         <Card.Content>
           <div className="h-60 min-h-[240px] w-full">
