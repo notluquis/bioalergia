@@ -67,6 +67,12 @@ Respuesta esperada:
 {"status":"ok","smtp":"ready"}
 ```
 
+También expone configuración activa (sin secretos):
+
+```bash
+curl -k https://127.0.0.1:3333/health/config
+```
+
 ## Test de envío a tu mismo correo
 
 Este comando hace `verify()` y envía un correo de prueba desde `smtp_user` hacia `smtp_user`:
@@ -74,3 +80,15 @@ Este comando hace `verify()` y envía un correo de prueba desde `smtp_user` haci
 ```bash
 pnpm --filter @finanzas/local-mail-agent test:send-self
 ```
+
+## Copia de enviados
+
+El agente agrega `bcc: smtp_user` en cada envío para mantener una copia en tu cuenta.
+
+## Flags opcionales
+
+- `LOCAL_AGENT_SMTP_POOL=1` habilita pool SMTP.
+- `LOCAL_AGENT_SMTP_MAX_CONNECTIONS=2` conexiones máximas del pool.
+- `LOCAL_AGENT_SMTP_MAX_MESSAGES=50` mensajes por conexión del pool.
+- `LOCAL_AGENT_SMTP_DEBUG=1` logs SMTP detallados.
+- `LOCAL_AGENT_DSN_ENABLED=1` adjunta DSN en `sendMail` (`failure`,`delay`).

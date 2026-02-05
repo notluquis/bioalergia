@@ -1,9 +1,13 @@
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createSecureServer } from "node:http2";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import nodemailer from "nodemailer";
+import type SMTPConnection from "nodemailer/lib/smtp-connection";
+import type SMTPPool from "nodemailer/lib/smtp-pool";
+import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import { z } from "zod";
 import { readKeychainSecret } from "./keychain";
 
@@ -17,6 +21,15 @@ const DEFAULT_ALLOWED_ORIGINS = ["https://intranet.bioalergia.cl", "http://local
 const TLS_KEY_PATH = process.env.LOCAL_AGENT_TLS_KEY_PATH;
 const TLS_CERT_PATH = process.env.LOCAL_AGENT_TLS_CERT_PATH;
 const BASE64_PATTERN = /^[A-Za-z0-9+/=]+$/;
+const SMTP_POOL = process.env.LOCAL_AGENT_SMTP_POOL === "1";
+const SMTP_DEBUG = process.env.LOCAL_AGENT_SMTP_DEBUG === "1";
+const SMTP_MAX_CONNECTIONS = Number.parseInt(
+  process.env.LOCAL_AGENT_SMTP_MAX_CONNECTIONS ?? "2",
+  10,
+);
+const SMTP_MAX_MESSAGES = Number.parseInt(process.env.LOCAL_AGENT_SMTP_MAX_MESSAGES ?? "50", 10);
+const DSN_ENABLED = process.env.LOCAL_AGENT_DSN_ENABLED === "1";
+const DSN_NOTIFY: SMTPConnection.DSNOption[] = ["FAILURE", "DELAY"];
 
 const AttachmentSchema = z.object({
   filename: z.string().min(1),
@@ -95,18 +108,46 @@ async function loadSecrets() {
 }
 
 async function createTransport(smtpUser: string, smtpPass: string) {
-  return nodemailer.createTransport({
+  if (SMTP_POOL) {
+    const poolOptions: SMTPPool.Options = {
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: SMTP_SECURE,
+      pool: true,
+      maxConnections: SMTP_MAX_CONNECTIONS,
+      maxMessages: SMTP_MAX_MESSAGES,
+      debug: SMTP_DEBUG,
+      logger: SMTP_DEBUG,
+      connectionTimeout: 20_000,
+      greetingTimeout: 20_000,
+      socketTimeout: 60_000,
+      disableFileAccess: true,
+      disableUrlAccess: true,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    };
+    return nodemailer.createTransport(poolOptions);
+  }
+
+  const smtpOptions: SMTPTransport.Options = {
     host: SMTP_HOST,
     port: SMTP_PORT,
     secure: SMTP_SECURE,
+    debug: SMTP_DEBUG,
+    logger: SMTP_DEBUG,
     connectionTimeout: 20_000,
     greetingTimeout: 20_000,
     socketTimeout: 60_000,
+    disableFileAccess: true,
+    disableUrlAccess: true,
     auth: {
       user: smtpUser,
       pass: smtpPass,
     },
-  });
+  };
+  return nodemailer.createTransport(smtpOptions);
 }
 
 const app = new Hono();
@@ -126,6 +167,31 @@ app.use("*", async (c, next) => {
 });
 
 app.get("/health", (c) => c.json({ status: "ok" }));
+
+app.get("/health/config", (c) => {
+  return c.json({
+    status: "ok",
+    config: {
+      smtp: {
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+        secure: SMTP_SECURE,
+        pool: SMTP_POOL,
+        maxConnections: SMTP_POOL ? SMTP_MAX_CONNECTIONS : null,
+        maxMessages: SMTP_POOL ? SMTP_MAX_MESSAGES : null,
+        debug: SMTP_DEBUG,
+        disableFileAccess: true,
+        disableUrlAccess: true,
+        dsnEnabled: DSN_ENABLED,
+        dsnNotify: DSN_ENABLED ? DSN_NOTIFY : [],
+      },
+      tls: {
+        enabled: Boolean(TLS_KEY_PATH && TLS_CERT_PATH),
+      },
+      allowedOrigins: getAllowedOrigins(),
+    },
+  });
+});
 
 app.get("/health/smtp", async (c) => {
   let secrets: Awaited<ReturnType<typeof loadSecrets>>;
@@ -195,13 +261,23 @@ app.post("/send", async (c) => {
 
   try {
     const transporter = await createTransport(secrets.smtpUser, secrets.smtpPass);
+    const dsn: SMTPConnection.DSNOptions | undefined = DSN_ENABLED
+      ? {
+          envid: randomUUID(),
+          notify: DSN_NOTIFY,
+          orcpt: secrets.smtpUser,
+          ret: "HDRS",
+        }
+      : undefined;
     const info = await transporter.sendMail({
       from: secrets.smtpUser,
       to: payload.to,
+      bcc: secrets.smtpUser,
       subject: payload.subject,
       html: payload.html,
       text: payload.text,
       attachments,
+      dsn,
     });
     console.log(
       `[mail-agent] Sent email to ${payload.to} (subject: ${payload.subject}) id=${info.messageId}`,
