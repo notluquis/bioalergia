@@ -60,6 +60,7 @@ export function EmailPreviewModal({
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [checkingAgent, setCheckingAgent] = useState(false);
   const [checkingSmtp, setCheckingSmtp] = useState(false);
+  const [stoppingAgent, setStoppingAgent] = useState(false);
   const isHttpsPage = typeof window !== "undefined" && window.location.protocol === "https:";
   const isHttpAgent = agentUrl.startsWith("http://");
 
@@ -231,6 +232,40 @@ export function EmailPreviewModal({
                     variant="secondary"
                   >
                     {checkingSmtp ? "Validando SMTP..." : "Verificar SMTP"}
+                  </Button>
+                  <Button
+                    disabled={stoppingAgent || !agentToken}
+                    onClick={async () => {
+                      setStoppingAgent(true);
+                      setAgentStatus(null);
+                      try {
+                        const response = await fetch(`${normalizeAgentUrl(agentUrl)}/shutdown`, {
+                          method: "POST",
+                          headers: {
+                            "X-Local-Agent-Token": agentToken,
+                          },
+                        });
+                        if (!response.ok) {
+                          const message = await readLocalAgentErrorMessage(
+                            response,
+                            "No se pudo apagar el agente",
+                          );
+                          setAgentStatus({ kind: "danger", message });
+                        } else {
+                          setAgentStatus({ kind: "warning", message: "Agente apagándose..." });
+                        }
+                      } catch {
+                        setAgentStatus({
+                          kind: "danger",
+                          message: "No se pudo contactar al agente para apagarlo.",
+                        });
+                      } finally {
+                        setStoppingAgent(false);
+                      }
+                    }}
+                    variant="secondary"
+                  >
+                    {stoppingAgent ? "Apagando..." : "Apagar agente"}
                   </Button>
                 </div>
                 {agentStatus && (

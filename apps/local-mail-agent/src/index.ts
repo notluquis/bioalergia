@@ -306,6 +306,28 @@ app.get("/health/smtp", async (c) => {
   }
 });
 
+app.post("/shutdown", async (c) => {
+  let secrets: Awaited<ReturnType<typeof loadSecrets>>;
+  try {
+    secrets = await loadSecrets();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Keychain error";
+    return c.json({ status: "error", message }, 500);
+  }
+
+  const token = c.req.header("X-Local-Agent-Token");
+  if (!token || token !== secrets.agentToken) {
+    return c.json({ status: "error", message: "Unauthorized" }, 401);
+  }
+
+  await closeTransporter();
+  setTimeout(() => {
+    process.exit(0);
+  }, 100);
+
+  return c.json({ status: "ok", message: "Shutting down local mail agent" });
+});
+
 app.post("/send", async (c) => {
   let secrets: Awaited<ReturnType<typeof loadSecrets>>;
   try {

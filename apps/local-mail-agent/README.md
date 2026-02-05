@@ -73,6 +73,12 @@ También expone configuración activa (sin secretos):
 curl -k https://127.0.0.1:3333/health/config
 ```
 
+Apagado remoto (requiere token):
+
+```bash
+curl -k -X POST -H "X-Local-Agent-Token: <TOKEN_LOCAL>" https://127.0.0.1:3333/shutdown
+```
+
 ## Test de envío a tu mismo correo
 
 Este comando hace `verify()` y envía un correo de prueba desde `smtp_user` hacia `smtp_user`:
