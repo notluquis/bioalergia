@@ -94,8 +94,8 @@ app.get("/", async (c) => {
   const items = await listProductionBalances(fromDateStr, toDateStr);
   return reply(c, {
     status: "ok",
-    from: dayjs(fromDateStr).toDate(),
-    to: dayjs(toDateStr).toDate(),
+    from: fromDateStr,
+    to: toDateStr,
     items: items.map(mapResponse),
   });
 });
