@@ -81,6 +81,7 @@ function ThemeIcon({ theme }: { theme: "light" | "dark" }) {
         d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36-6.36-1.42 1.42M7.06 16.94l-1.42 1.42m0-11.3 1.42 1.42m9.9 9.9 1.42 1.42"
         strokeLinecap="round"
       />
+
       <circle cx="12" cy="12" r="4" />
     </svg>
   ) : (
@@ -100,8 +101,7 @@ function ThemeIcon({ theme }: { theme: "light" | "dark" }) {
     </svg>
   );
 }
-
-export default function App() {
+export function App() {
   const posthog = usePostHog();
   const { theme, toggle } = useThemePreference();
   const whatsappLink = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
@@ -150,6 +150,7 @@ export default function App() {
                   className="h-9 w-auto sm:h-11 md:h-14"
                   loading="eager"
                 />
+
                 <div className="flex items-center gap-2 md:hidden">
                   <Button
                     className="h-8 rounded-full bg-(--accent) px-3 font-semibold text-white text-xs sm:h-9 sm:px-4 sm:text-sm"
