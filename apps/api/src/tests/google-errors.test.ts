@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
 import { GaxiosError } from "gaxios";
+import { describe, expect, it, vi } from "vitest";
 import { GoogleApiError, parseGoogleError, retryGoogleCall } from "../lib/google/google-errors";
 
 type MinimalResponse = {

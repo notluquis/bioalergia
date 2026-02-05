@@ -1,7 +1,7 @@
+import { zValidator as baseValidator } from "@hono/zod-validator";
 import type { ValidationTargets } from "hono";
 import type { ZodSchema } from "zod";
 import { z } from "zod";
-import { zValidator as baseValidator } from "@hono/zod-validator";
 
 import { reply } from "../utils/reply";
 

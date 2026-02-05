@@ -11,8 +11,8 @@ import { compileExcludePatterns, googleCalendarConfig } from "../../config";
 import { parseCalendarMetadata } from "../../modules/calendar/parsers";
 import { loadSettings } from "../../services/settings";
 import { logEvent, logWarn } from "../logger";
-import { retryGoogleCall } from "./google-errors";
 import { removeGoogleCalendarEvents, upsertGoogleCalendarEvents } from "./google-calendar-store";
+import { retryGoogleCall } from "./google-errors";
 
 const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
 const STORAGE_ROOT = path.resolve(process.cwd(), "storage", "google-calendar");
@@ -257,10 +257,9 @@ async function fetchCalendarEventsForId(
       }
     }
 
-    const response = await retryGoogleCall(
-      () => client.events.list(requestParams),
-      { context: "calendar.events.list" },
-    );
+    const response = await retryGoogleCall(() => client.events.list(requestParams), {
+      context: "calendar.events.list",
+    });
 
     const items = response.data.items ?? [];
 

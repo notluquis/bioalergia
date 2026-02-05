@@ -8,9 +8,9 @@ async function main() {
     where: {
       OR: [
         { AND: [{ action: "manage" }, { subject: "all" }] },
-        { action: "manage" } // 'manage' is overly permissive; project standard requires explicit CRUD permissions, so 'manage' is treated as dangerous and removed
-      ]
-    }
+        { action: "manage" }, // 'manage' is overly permissive; project standard requires explicit CRUD permissions, so 'manage' is treated as dangerous and removed
+      ],
+    },
   });
 
   if (dangerousPerms.length > 0) {
@@ -18,7 +18,7 @@ async function main() {
     for (const perm of dangerousPerms) {
       console.log(`   🔥 Deleting: ID ${perm.id} (${perm.action}:${perm.subject})`);
       await db.permission.delete({
-        where: { id: perm.id }
+        where: { id: perm.id },
       });
     }
     console.log("✅ All targeted permissions removed.");
@@ -31,9 +31,9 @@ async function main() {
     where: {
       OR: [
         { name: { contains: "manage", mode: "insensitive" } },
-        { name: { equals: "GOD", mode: "insensitive" } }
-      ]
-    }
+        { name: { equals: "GOD", mode: "insensitive" } },
+      ],
+    },
   });
 
   if (suspiciousRoles.length > 0) {
@@ -47,8 +47,7 @@ async function main() {
   console.log("\n🚀 Cleanup complete.");
 }
 
-main()
-  .catch((e) => {
-    console.error("❌ Error during cleanup:", e);
-    process.exit(1);
-  });
+main().catch((e) => {
+  console.error("❌ Error during cleanup:", e);
+  process.exit(1);
+});

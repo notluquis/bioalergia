@@ -7,7 +7,7 @@ const CERTIFICATES_FOLDER_NAME = "Medical Certificates";
 export async function getCertificatesFolderId(): Promise<string> {
   try {
     const drive = await getDriveClient();
-    
+
     const response = await retryGoogleCall(
       () =>
         drive.files.list({

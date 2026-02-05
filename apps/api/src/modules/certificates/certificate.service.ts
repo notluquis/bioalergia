@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { PDFDocument, rgb, StandardFonts, type PDFFont } from "pdf-lib";
 import dayjs from "dayjs";
+import { PDFDocument, type PDFFont, rgb, StandardFonts } from "pdf-lib";
 import "dayjs/locale/es.js";
 import QRCode from "qrcode";
 
@@ -54,18 +54,30 @@ const drawHeaderLogos = async (
   width: number,
   y: number,
 ) => {
-  await drawLogoIfExists(pdfDoc, page, path.join(LOGOS_DIR, "bioalergia.png"), {
-    scale: 0.5,
-    x: margin,
-    y,
-  }, "bioalergia");
+  await drawLogoIfExists(
+    pdfDoc,
+    page,
+    path.join(LOGOS_DIR, "bioalergia.png"),
+    {
+      scale: 0.5,
+      x: margin,
+      y,
+    },
+    "bioalergia",
+  );
 
-  await drawLogoIfExists(pdfDoc, page, path.join(LOGOS_DIR, "aaaeic.png"), {
-    alignRight: true,
-    scale: 0.3,
-    x: width - margin,
-    y,
-  }, "aaaeic");
+  await drawLogoIfExists(
+    pdfDoc,
+    page,
+    path.join(LOGOS_DIR, "aaaeic.png"),
+    {
+      alignRight: true,
+      scale: 0.3,
+      x: width - margin,
+      y,
+    },
+    "aaaeic",
+  );
 };
 
 const drawPatientInfo = (
@@ -287,13 +299,13 @@ export async function generateMedicalCertificatePdf(
  * Supports multiple loading methods for Railway deployment:
  * 1. File path (Railway Volumes): PFX_PATH env var
  * 2. Base64 string (Railway Env Var): PFX_BASE64 env var
- * 
+ *
  * @see https://github.com/vbuch/node-signpdf
  */
 export async function signPdf(
   pdfBytes: Uint8Array,
   pfxPath?: string,
-  pfxPassword?: string
+  pfxPassword?: string,
 ): Promise<Uint8Array> {
   const actualPassword = pfxPassword || process.env.PFX_PASSWORD || "";
 
@@ -301,8 +313,9 @@ export async function signPdf(
 
   // Method 1: Load from Railway Volume or local file path
   if (process.env.PFX_PATH || pfxPath) {
-    const actualPfxPath = pfxPath || process.env.PFX_PATH || path.join(SIGNATURES_DIR, "doctor.pfx");
-    
+    const actualPfxPath =
+      pfxPath || process.env.PFX_PATH || path.join(SIGNATURES_DIR, "doctor.pfx");
+
     if (fs.existsSync(actualPfxPath)) {
       console.log(`Loading PFX from file: ${actualPfxPath}`);
       p12Buffer = fs.readFileSync(actualPfxPath);
@@ -332,7 +345,7 @@ export async function signPdf(
     // Import @signpdf packages (actively maintained replacement for node-signpdf)
     const signpdfModule = await import("@signpdf/signpdf");
     const { P12Signer } = await import("@signpdf/signer-p12");
-    
+
     const signpdf = signpdfModule.default;
 
     // Create P12 signer with certificate
@@ -340,7 +353,7 @@ export async function signPdf(
 
     // Sign the PDF
     const signedPdf = await signpdf.sign(Buffer.from(pdfBytes), signer);
-    
+
     console.log("PDF signed successfully with @signpdf");
     return new Uint8Array(signedPdf);
   } catch (error) {
@@ -361,24 +374,24 @@ function generateBodyText(input: MedicalCertificateInput): string[] {
 
   // Main certification
   paragraphs.push(
-    `Se certifica que ${input.patientName}, fue evaluada en atención médica el día ${formatDate(input.date)} por ${input.diagnosis}${input.symptoms ? `, presentando ${input.symptoms}` : ""}.`
+    `Se certifica que ${input.patientName}, fue evaluada en atención médica el día ${formatDate(input.date)} por ${input.diagnosis}${input.symptoms ? `, presentando ${input.symptoms}` : ""}.`,
   );
 
   // Status
   paragraphs.push(
-    "El cuadro se encuentra en estudio por el equipo clínico, con indicación de seguimiento y medidas de control según evolución."
+    "El cuadro se encuentra en estudio por el equipo clínico, con indicación de seguimiento y medidas de control según evolución.",
   );
 
   // Rest period
   if (input.restDays && input.restStartDate && input.restEndDate) {
     paragraphs.push(
-      `Por lo anterior, se indica reposo médico por ${input.restDays} (${input.restDays === 1 ? "un" : input.restDays}) día${input.restDays === 1 ? "" : "s"}, correspondiente al ${formatDate(input.restStartDate)}${input.restDays > 1 ? ` hasta el ${formatDate(input.restEndDate)}` : ""}, con la finalidad de favorecer recuperación y observación clínica.`
+      `Por lo anterior, se indica reposo médico por ${input.restDays} (${input.restDays === 1 ? "un" : input.restDays}) día${input.restDays === 1 ? "" : "s"}, correspondiente al ${formatDate(input.restStartDate)}${input.restDays > 1 ? ` hasta el ${formatDate(input.restEndDate)}` : ""}, con la finalidad de favorecer recuperación y observación clínica.`,
     );
   }
 
   // Recommendations
   paragraphs.push(
-    "Se le indica reposo y vigilancia de síntomas, evitar exposición a posibles desencadenantes hasta completar estudio, y control según indicación del equipo tratante o antes si presenta empeoramiento (dificultad respiratoria, edema progresivo, compromiso general u otros signos de alarma)."
+    "Se le indica reposo y vigilancia de síntomas, evitar exposición a posibles desencadenantes hasta completar estudio, y control según indicación del equipo tratante o antes si presenta empeoramiento (dificultad respiratoria, edema progresivo, compromiso general u otros signos de alarma).",
   );
 
   // Purpose

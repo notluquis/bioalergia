@@ -14,9 +14,7 @@ export function Section({ id, eyebrow, title, subtitle, children }: SectionProps
       {(eyebrow || title || subtitle) && (
         <div className="grid gap-3">
           {eyebrow ? (
-            <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted)">
-              {eyebrow}
-            </div>
+            <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted)">{eyebrow}</div>
           ) : null}
           {title ? (
             <h2 className="text-3xl font-semibold text-(--ink) sm:text-4xl">{title}</h2>

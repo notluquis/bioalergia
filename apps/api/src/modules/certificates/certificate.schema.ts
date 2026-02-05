@@ -19,8 +19,14 @@ export const medicalCertificateSchema = z.object({
 
   // Rest period (optional)
   restDays: z.number().int().min(0).optional(),
-  restStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  restEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  restStartDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  restEndDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 
   // Purpose
   purpose: z.enum(["trabajo", "estudio", "otro"]).default("trabajo"),

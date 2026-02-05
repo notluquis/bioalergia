@@ -21,8 +21,7 @@ export const glossary = [
   },
   {
     term: "Conjuntivitis alérgica",
-    definition:
-      "Irritación de la conjuntiva ocular con enrojecimiento, lagrimeo y picazón.",
+    definition: "Irritación de la conjuntiva ocular con enrojecimiento, lagrimeo y picazón.",
   },
   {
     term: "Inmunoterapia",
@@ -36,7 +35,6 @@ export const glossary = [
   },
   {
     term: "Anafilaxia",
-    definition:
-      "Reacción alérgica grave y rápida que requiere atención médica inmediata.",
+    definition: "Reacción alérgica grave y rápida que requiere atención médica inmediata.",
   },
 ];

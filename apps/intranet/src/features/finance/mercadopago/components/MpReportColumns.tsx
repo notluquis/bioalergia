@@ -88,7 +88,7 @@ export const getMpReportColumns = (
         </Chip>
       ) : (
         <Chip className="gap-1.5" color="success" size="sm" variant="soft">
-          <span className="bg-success h-1.5 w-1.5 rounded-full"></span>
+          <span className="bg-success h-1.5 w-1.5 rounded-full" />
           Disponible
         </Chip>
       ),

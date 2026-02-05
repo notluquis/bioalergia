@@ -1,10 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { zValidator } from "../lib/zod-validator";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth.js";
 import * as doctoraliaClient from "../lib/doctoralia/doctoralia-client.js";
 import { isDoctoraliaConfigured } from "../lib/doctoralia/doctoralia-core.js";
+import { zValidator } from "../lib/zod-validator";
 import {
   createDoctoraliaSyncLogEntry,
   finalizeDoctoraliaSyncLogEntry,

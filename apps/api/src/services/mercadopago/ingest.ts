@@ -69,7 +69,16 @@ export async function processReportUrl(url: string, reportType: string): Promise
         // MercadoPago CSVs use semicolons as separators
         .pipe(csv({ separator: ";" }))
         .on("data", (row) => {
-          handleCsvRow(row, reportType, stats, batchState, flushBatch, nodeStream, reject, isFirstRow);
+          handleCsvRow(
+            row,
+            reportType,
+            stats,
+            batchState,
+            flushBatch,
+            nodeStream,
+            reject,
+            isFirstRow,
+          );
         })
         .on("end", async () => {
           try {

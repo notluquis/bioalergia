@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.13/schema.json",
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -54,7 +54,7 @@
       },
       "correctness": {
         "recommended": true,
-        "noInnerDeclarations": "off",
+        "noInnerDeclarations": "warn",
         "useExhaustiveDependencies": "warn",
         "noUnusedVariables": "error",
         "noUnusedImports": "error",
@@ -78,8 +78,8 @@
       },
       "style": {
         "recommended": true,
-        "useBlockStatements": "off",
-        "useSelfClosingElements": "off",
+        "useBlockStatements": "warn",
+        "useSelfClosingElements": "warn",
         "noNonNullAssertion": "warn",
         "useImportType": "error",
         "useExportType": "error",
@@ -97,7 +97,7 @@
       "performance": {
         "recommended": true,
         "noAccumulatingSpread": "warn",
-        "noDelete": "warn",
+        "noDelete": "error",
         "useTopLevelRegex": "warn"
       },
       "security": {
@@ -121,7 +121,7 @@
         "useSortedClasses": "warn",
         "noFloatingPromises": "warn",
         "noImportCycles": "warn",
-        "noUnresolvedImports": "off",
+        "noUnresolvedImports": "warn",
         "noUnnecessaryConditions": "warn"
       }
     }

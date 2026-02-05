@@ -191,14 +191,14 @@ inventoryRoutes.post("/items", async (c) => {
         id: item.id,
         categoryId: item.categoryId,
         name: item.name,
-      description: item.description,
-      currentStock: item.currentStock,
-      created_at: item.createdAt,
-      updated_at: item.updatedAt,
-      category_name: item.category?.name,
+        description: item.description,
+        currentStock: item.currentStock,
+        created_at: item.createdAt,
+        updated_at: item.updatedAt,
+        category_name: item.category?.name,
+      },
     },
-  },
-  201,
+    201,
   );
 });
 

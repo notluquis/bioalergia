@@ -97,7 +97,7 @@ export function DailyIncomePage() {
                     </div>
                   </div>
                 </div>
-                <div className="divider my-0"></div>
+                <div className="divider my-0" />
                 <ul className="space-y-2">
                   {dayEvents.map((event: EventForDaily) => (
                     <li key={event.id} className="flex justify-between text-sm items-center">

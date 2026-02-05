@@ -39,7 +39,7 @@ const columns: ColumnDef<PersonalCredit>[] = [
           <div
             className="bg-primary h-2.5 rounded-full transition-all"
             style={{ width: `${percent}%` }}
-          ></div>
+          />
         </div>
       );
     },

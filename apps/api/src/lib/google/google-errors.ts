@@ -107,7 +107,12 @@ function extractGaxiosDetails(error: GaxiosError): {
       status?: string;
       message?: string;
       errors?: Array<{ reason?: string; domain?: string; message?: string }>;
-      details?: Array<{ ["@type"]?: string; reason?: string; domain?: string; metadata?: Record<string, string> }>;
+      details?: Array<{
+        ["@type"]?: string;
+        reason?: string;
+        domain?: string;
+        metadata?: Record<string, string>;
+      }>;
     };
   };
 
@@ -186,7 +191,7 @@ function computeRetryDelayMs(
   error: GoogleApiError,
   options: Required<GoogleRetryOptions>,
 ): number {
-  const baseDelay = options.baseDelayMs * Math.pow(2, attempt);
+  const baseDelay = options.baseDelayMs * 2 ** attempt;
   const cappedDelay = Math.min(baseDelay, options.maxDelayMs);
   const headerDelay = error.retryAfterSeconds
     ? Math.max(cappedDelay, error.retryAfterSeconds * 1000)
@@ -251,12 +256,25 @@ export async function retryGoogleCall<T>(
 }
 
 function extractAip193Info(
-  error: {
-    status?: string;
-    message?: string;
-    details?: Array<{ ["@type"]?: string; reason?: string; domain?: string; metadata?: Record<string, string> }>;
-  } | undefined,
-): { status?: string; message?: string; reason?: string; domain?: string; metadata?: Record<string, string> } | null {
+  error:
+    | {
+        status?: string;
+        message?: string;
+        details?: Array<{
+          ["@type"]?: string;
+          reason?: string;
+          domain?: string;
+          metadata?: Record<string, string>;
+        }>;
+      }
+    | undefined,
+): {
+  status?: string;
+  message?: string;
+  reason?: string;
+  domain?: string;
+  metadata?: Record<string, string>;
+} | null {
   if (!error?.details || !Array.isArray(error.details)) {
     return null;
   }
