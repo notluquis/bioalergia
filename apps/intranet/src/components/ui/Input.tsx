@@ -215,11 +215,11 @@ export default function Input(props: Props) {
   const { explicitEndContent, rightElement, startContent } = getInputExtras(props);
 
   const finalEndContent = passwordToggle ?? explicitEndContent ?? rightElement;
-  const hasGroup = !!startContent || !!finalEndContent;
+  const hasGroup = Boolean(startContent) || Boolean(finalEndContent);
 
   const commonTextFieldProps = {
     className: containerClassName,
-    isInvalid: !!error,
+    isInvalid: Boolean(error),
   };
 
   const labelElement = label ? <Label>{label}</Label> : null;
@@ -256,7 +256,7 @@ export default function Input(props: Props) {
       descriptionElement,
       endContent: finalEndContent,
       errorElement,
-      hasError: !!error,
+      hasError: Boolean(error),
       inputType,
       labelElement,
       placeholder: props.placeholder,

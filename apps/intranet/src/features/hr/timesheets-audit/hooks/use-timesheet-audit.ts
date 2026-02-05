@@ -25,7 +25,8 @@ export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOpti
   const firstDay = sortedRanges[0]?.start;
   const lastDay = sortedRanges.at(-1)?.end;
 
-  const shouldFetch = employeeIds.length > 0 && ranges.length > 0 && !!firstDay && !!lastDay;
+  const shouldFetch =
+    employeeIds.length > 0 && ranges.length > 0 && Boolean(firstDay) && Boolean(lastDay);
 
   const {
     data: entries = [],

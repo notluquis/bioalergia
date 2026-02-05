@@ -23,7 +23,7 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
   const { error: toastError, success: toastSuccess } = useToast();
 
   // Determine required permission based on mode
-  const isEditing = !!employee?.id;
+  const isEditing = Boolean(employee?.id);
   const hasPermission = isEditing ? can("update", "Employee") : can("create", "Employee");
 
   const [form, setForm] = useState<{

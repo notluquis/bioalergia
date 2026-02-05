@@ -34,7 +34,7 @@ export async function updateUserMfa(userId: number, secret: string | null, enabl
 
 export function resolveUserRole(user: { roles?: Array<{ role?: { name: string } }> }): string[] {
   if (user.roles && Array.isArray(user.roles)) {
-    return user.roles.map((r) => r.role?.name).filter((r): r is string => !!r);
+    return user.roles.map((r) => r.role?.name).filter((r): r is string => Boolean(r));
   }
   return [];
 }

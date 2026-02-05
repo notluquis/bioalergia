@@ -122,8 +122,8 @@ export function auditRouteNavigation(routeTree: RouteTreeNode): {
 
   function traverse(route: RouteTreeNode) {
     const fullPath = route.fullPath || route.path || "/";
-    const hasNav = !!route.options?.staticData?.nav;
-    const hasPermission = !!route.options?.staticData?.permission;
+    const hasNav = Boolean(route.options?.staticData?.nav);
+    const hasPermission = Boolean(route.options?.staticData?.permission);
     const hideFromNav = route.options?.staticData?.hideFromNav === true;
 
     const validation = validateRouteNavigation({

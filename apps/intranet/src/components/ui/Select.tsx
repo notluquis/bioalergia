@@ -42,7 +42,7 @@ function SelectBase<T extends object>({
   value?: HeroSelectProps<T>["selectedKey"];
   onChange?: HeroSelectProps<T>["onSelectionChange"];
 }) {
-  const hasError = isInvalid || !!errorMessage;
+  const hasError = isInvalid || Boolean(errorMessage);
 
   // Map legacy value/onChange to HeroUI selectedKey/onSelectionChange if provided
   const { value, onChange, ...restProps } = props;

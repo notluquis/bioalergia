@@ -375,7 +375,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
 
       logEvent("googleCalendar.fetch.start", {
         calendarId,
-        usingSyncToken: !!savedSyncToken,
+        usingSyncToken: Boolean(savedSyncToken),
         timeMin: savedSyncToken ? undefined : range.timeMin,
         timeMax: savedSyncToken ? undefined : range.timeMax,
       });
@@ -401,7 +401,7 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
         calendarId,
         totalEvents: result.events.length,
         excluded: result.excluded.length,
-        gotNewSyncToken: !!result.nextSyncToken,
+        gotNewSyncToken: Boolean(result.nextSyncToken),
       });
     } catch (error) {
       // TODO: Parse GaxiosError and retry 429/503 using retryAfterSeconds + exponential backoff.

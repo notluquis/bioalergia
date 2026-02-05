@@ -39,6 +39,7 @@
           }
         },
         "noExcessiveNestedTestSuites": "warn",
+        "noImplicitCoercions": "error",
         "noUselessCatch": "error",
         "noUselessConstructor": "error",
         "noUselessEmptyExport": "error",
@@ -56,6 +57,7 @@
         "recommended": true,
         "noInnerDeclarations": "warn",
         "useExhaustiveDependencies": "warn",
+        "noUndeclaredDependencies": "error",
         "noUnusedVariables": "error",
         "noUnusedImports": "error",
         "noUnusedFunctionParameters": "warn",
@@ -68,6 +70,7 @@
         "noExplicitAny": "error",
         "noArrayIndexKey": "warn",
         "noConsole": "off",
+        "noVar": "error",
         "noApproximativeNumericConstant": "warn",
         "noConfusingVoidType": "warn",
         "noDoubleEquals": "warn",
@@ -78,6 +81,7 @@
       },
       "style": {
         "recommended": true,
+        "noDefaultExport": "error",
         "useBlockStatements": "warn",
         "useSelfClosingElements": "warn",
         "noNonNullAssertion": "warn",
@@ -97,13 +101,17 @@
       "performance": {
         "recommended": true,
         "noAccumulatingSpread": "warn",
+        "noBarrelFile": "error",
         "noDelete": "error",
+        "noNamespaceImport": "error",
+        "noReExportAll": "error",
         "useTopLevelRegex": "warn"
       },
       "security": {
         "recommended": true,
         "noDangerouslySetInnerHtml": "warn",
-        "noGlobalEval": "error"
+        "noGlobalEval": "error",
+        "noSecrets": "error"
       },
       "a11y": {
         "recommended": true,

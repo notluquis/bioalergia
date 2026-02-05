@@ -44,7 +44,7 @@ export function EmissionSection({
     <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <Select
         errorMessage={errors.emissionMode?.message}
-        isInvalid={!!errors.emissionMode}
+        isInvalid={Boolean(errors.emissionMode)}
         label="Modalidad de emisión"
         onChange={(val) => onChange("emissionMode", val as ServiceEmissionMode)}
         value={emissionMode}

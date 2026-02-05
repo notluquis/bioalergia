@@ -6,7 +6,7 @@ export const loanKeys = {
   all: ["loans"] as const,
   detail: (id: string) =>
     queryOptions({
-      enabled: !!id,
+      enabled: Boolean(id),
       queryFn: () => fetchLoanDetail(id),
       queryKey: ["loans", "detail", id],
     }),

@@ -214,7 +214,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   });
 
   const { data: accounts = [] } = useQuery<CounterpartAccount[]>({
-    enabled: !!form.counterpartId,
+    enabled: Boolean(form.counterpartId),
     queryFn: async () => {
       // safe assurance due to enabled check
       // biome-ignore lint/style/noNonNullAssertion: safe assurance due to enabled check

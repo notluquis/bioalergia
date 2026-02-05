@@ -238,7 +238,7 @@ export default function MercadoPagoSettingsPage() {
 
       {/* Import Stats Modal */}
       <Modal
-        isOpen={!!lastImportStats}
+        isOpen={Boolean(lastImportStats)}
         onClose={() => {
           setLastImportStats(null);
         }}

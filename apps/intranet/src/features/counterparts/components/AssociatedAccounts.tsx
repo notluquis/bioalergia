@@ -123,7 +123,7 @@ const useAccountSuggestions = () => {
   }, [suggestionQuery]);
 
   const { data: accountSuggestions = [] } = useQuery({
-    enabled: !!debouncedQuery.trim(),
+    enabled: Boolean(debouncedQuery.trim()),
     queryFn: () => fetchAccountSuggestions(debouncedQuery),
     queryKey: ["account-suggestions", debouncedQuery],
     staleTime: 1000 * 60,
@@ -161,7 +161,7 @@ const fetchTransactionsForFilter = async (filter: AccountTransactionFilter, rang
 
 const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRange: DateRange) => {
   const { data: quickViewRows = [] } = useQuery({
-    enabled: !!quickViewGroup,
+    enabled: Boolean(quickViewGroup),
     queryFn: async () => {
       // safe to assert quickViewGroup is present due to enabled
       // biome-ignore lint/style/noNonNullAssertion: enabled check

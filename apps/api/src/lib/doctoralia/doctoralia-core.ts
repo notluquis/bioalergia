@@ -19,7 +19,7 @@ let cachedToken: { token: string; expiresAt: number } | null = null;
  * Check if Doctoralia is configured
  */
 export function isDoctoraliaConfigured(): boolean {
-  return !!(process.env.DOCTORALIA_CLIENT_ID && process.env.DOCTORALIA_CLIENT_SECRET);
+  return Boolean(process.env.DOCTORALIA_CLIENT_ID && process.env.DOCTORALIA_CLIENT_SECRET);
 }
 
 /**

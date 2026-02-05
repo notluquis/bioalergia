@@ -8,16 +8,16 @@
       const CHUNK_ERROR_REGEX =
         /Failed to fetch dynamically imported module|Importing a module script failed|is not a valid JavaScript MIME type/i;
       function ensureFallback() {
-        var container = document.getElementById("app-fallback");
+        const container = document.getElementById("app-fallback");
         if (!container) {
           return;
         }
         container.addEventListener("click", (e) => {
-          var target = e.target;
+          const target = e.target;
           if (!(target instanceof HTMLElement)) {
             return;
           }
-          var action = target.getAttribute("data-action");
+          const action = target.getAttribute("data-action");
           if (action === "reload" || action === "retry") {
             location.reload();
           }
@@ -25,7 +25,7 @@
       }
 
       function showFallback(reason) {
-        var container = document.getElementById("app-fallback");
+        const container = document.getElementById("app-fallback");
         if (!container) {
           return;
         }
@@ -50,7 +50,7 @@
 
       // BUBBLE PHASE handler for runtime errors (chunk imports)
       window.addEventListener("error", (e) => {
-        var msg = e.message || "";
+        const msg = e.message || "";
         if (CHUNK_ERROR_REGEX.test(msg)) {
           console.warn("Dynamic import error detected:", msg);
           showFallback("chunk");

@@ -40,7 +40,7 @@ export function MoneyInput({
         maximumFractionDigits: 0,
       }}
       isDisabled={disabled}
-      isInvalid={!!error}
+      isInvalid={Boolean(error)}
       onChange={(val) => {
         onValueChange(val ?? null);
       }}

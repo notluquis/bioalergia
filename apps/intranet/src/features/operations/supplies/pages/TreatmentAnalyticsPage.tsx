@@ -105,7 +105,7 @@ export default function TreatmentAnalyticsPage() {
     calendarIds: searchParams.calendarId,
   };
 
-  const hasValidDates = !!filters.from && !!filters.to;
+  const hasValidDates = Boolean(filters.from) && Boolean(filters.to);
 
   const { data, isLoading, refetch } = useQuery({
     ...calendarQueries.treatmentAnalytics(filters),

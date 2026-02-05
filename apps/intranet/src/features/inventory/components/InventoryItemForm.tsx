@@ -76,7 +76,7 @@ export default function InventoryItemForm({
         value={form.description ?? ""}
       />
       <Input
-        disabled={!!item} // Disable if editing
+        disabled={Boolean(item)} // Disable if editing
         label="Stock inicial"
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           setForm({ ...form, current_stock: Number(event.target.value) });

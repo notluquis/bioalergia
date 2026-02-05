@@ -299,7 +299,7 @@ export default function UserManagementPage() {
 
       <Modal
         boxClassName="max-w-md"
-        isOpen={!!editingUser}
+        isOpen={Boolean(editingUser)}
         onClose={() => {
           setEditingUser(null);
         }}

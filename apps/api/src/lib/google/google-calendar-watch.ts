@@ -60,8 +60,8 @@ async function getCalendarClient(): Promise<CalendarClient | null> {
 
   if (!clientEmail || !privateKey) {
     logWarn("google_calendar_invalid_credentials", {
-      hasEmail: !!clientEmail,
-      hasKey: !!privateKey,
+      hasEmail: Boolean(clientEmail),
+      hasKey: Boolean(privateKey),
     });
     return null;
   }

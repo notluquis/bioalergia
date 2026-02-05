@@ -6,7 +6,7 @@ export const expenseKeys = {
   all: ["monthly-expenses"] as const,
   detail: (id: string) =>
     queryOptions({
-      enabled: !!id,
+      enabled: Boolean(id),
       queryFn: () => fetchMonthlyExpenseDetail(id),
       queryKey: ["monthly-expense-detail", id],
     }),

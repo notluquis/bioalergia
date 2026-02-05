@@ -187,7 +187,7 @@ export function PermissionsMatrixTable({
               <div className="contents">
                 {section.items.map((item) => {
                   const itemKey = `${section.title}-${item.label}`;
-                  const isOpen = !!openItems[itemKey];
+                  const isOpen = Boolean(openItems[itemKey]);
                   const hasMultiple = item.relatedPermissions.length > 1;
 
                   if (hasMultiple) {

@@ -155,7 +155,7 @@ function extractNavItems(route: RouteTreeNode): ExtractedNavItem[] {
   // In development, warn about routes that might be missing nav
   else if (process.env.NODE_ENV === "development") {
     const fullPath = route.fullPath || route.path;
-    const hasPermission = !!route.options?.staticData?.permission;
+    const hasPermission = Boolean(route.options?.staticData?.permission);
     const hideFromNav = route.options?.staticData?.hideFromNav === true;
 
     // Only warn for non-technical routes with permission but no nav

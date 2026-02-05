@@ -15,7 +15,7 @@ export const serviceKeys = {
 export const serviceQueries = {
   detail: (publicId: string, enabled = true) =>
     queryOptions({
-      enabled: enabled && !!publicId,
+      enabled: enabled && Boolean(publicId),
       queryFn: () => fetchServiceDetail(publicId),
       queryKey: serviceKeys.detail(publicId),
     }),

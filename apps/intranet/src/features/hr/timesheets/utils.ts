@@ -6,9 +6,7 @@ import type { BulkRow, TimesheetEntry, TimesheetSummaryRow } from "./types";
 export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow[] {
   const base = dayjs(`${month}-01`);
   const days = base.daysInMonth();
-  const entryMap = new Map(
-    entries.map((entry) => [entry.work_date, entry]),
-  );
+  const entryMap = new Map(entries.map((entry) => [entry.work_date, entry]));
   const rows: BulkRow[] = [];
   for (let day = 1; day <= days; day += 1) {
     const dateKey = base.date(day).format("YYYY-MM-DD");

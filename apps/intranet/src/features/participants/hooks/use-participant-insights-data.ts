@@ -56,7 +56,7 @@ export function useParticipantInsightsData() {
   const monthly = detailData?.monthly || [];
   const counterparts = detailData?.counterparts || [];
   const detailError = detailErrorObj instanceof Error ? detailErrorObj.message : null;
-  const visible = !!detailData && !detailLoading && !detailError;
+  const visible = Boolean(detailData) && !detailLoading && !detailError;
 
   // Transformations (Memoization via React 19 Compiler, logic moved inline or simplifed)
 

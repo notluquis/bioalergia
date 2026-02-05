@@ -64,8 +64,8 @@ app.get("/", zValidator("query", listPeopleQuerySchema), async (c) => {
     // Map to include convenience flags
     const mappedPeople = people.map((p) => ({
       ...p,
-      hasUser: !!p.user,
-      hasEmployee: !!p.employee,
+      hasUser: Boolean(p.user),
+      hasEmployee: Boolean(p.employee),
     }));
 
     return reply(c, { status: "ok", people: mappedPeople });
@@ -106,8 +106,8 @@ app.get("/:id", zValidator("param", peopleParamSchema), async (c) => {
     return reply(c, {
       person: {
         ...person,
-        hasUser: !!person.user,
-        hasEmployee: !!person.employee,
+        hasUser: Boolean(person.user),
+        hasEmployee: Boolean(person.employee),
       },
     });
   } catch (error) {

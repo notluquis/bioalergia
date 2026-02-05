@@ -6,14 +6,14 @@ export const counterpartKeys = {
   all: ["counterpart"] as const,
   detail: (id: number) =>
     queryOptions({
-      enabled: !!id,
+      enabled: Boolean(id),
       queryFn: () => fetchCounterpart(id),
       queryKey: ["counterpart-detail", id],
     }),
   lists: () => [...counterpartKeys.all, "list"] as const,
   summary: (id: number, range: { from: string; to: string }) =>
     queryOptions({
-      enabled: !!id,
+      enabled: Boolean(id),
       queryFn: () => fetchCounterpartSummary(id, range),
       queryKey: ["counterpart-summary", id, range],
     }),

@@ -75,8 +75,8 @@ integrationRoutes.get("/google/callback", async (c) => {
   // Verify state matches (CSRF protection)
   if (!state || !savedState || state !== savedState) {
     logWarn("google.oauth.invalid_state", {
-      hasState: !!state,
-      hasSavedState: !!savedState,
+      hasState: Boolean(state),
+      hasSavedState: Boolean(savedState),
       matches: state === savedState,
     });
     return c.redirect(`${frontendUrl}${settingsPath}?error=invalid_state`);

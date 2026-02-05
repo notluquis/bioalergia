@@ -22,7 +22,7 @@ export function usePushNotifications() {
       if ("serviceWorker" in navigator) {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
-        setIsSubscribed(!!subscription);
+        setIsSubscribed(Boolean(subscription));
       }
     };
 

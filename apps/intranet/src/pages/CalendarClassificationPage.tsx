@@ -162,7 +162,7 @@ function CalendarClassificationPage() {
     },
   });
 
-  const isJobRunning = !!activeJobId && !isComplete && !isFailed;
+  const isJobRunning = Boolean(activeJobId) && !isComplete && !isFailed;
 
   const error = (() => {
     if (queryError instanceof Error) {
