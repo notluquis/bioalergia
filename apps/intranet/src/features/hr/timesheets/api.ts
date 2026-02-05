@@ -28,7 +28,7 @@ const TimesheetEntrySchema = z.looseObject({
   id: z.number(),
   overtime_minutes: z.number(),
   start_time: z.string().nullable(),
-  work_date: z.coerce.date(),
+  work_date: z.string(),
   worked_minutes: z.number(),
 });
 

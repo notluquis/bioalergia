@@ -7,12 +7,12 @@ export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow
   const base = dayjs(`${month}-01`);
   const days = base.daysInMonth();
   const entryMap = new Map(
-    entries.map((entry) => [dayjs(entry.work_date).format("YYYY-MM-DD"), entry]),
+    entries.map((entry) => [entry.work_date, entry]),
   );
   const rows: BulkRow[] = [];
   for (let day = 1; day <= days; day += 1) {
-    const dateValue = base.date(day).toDate();
-    const dateKey = dayjs(dateValue).format("YYYY-MM-DD");
+    const dateKey = base.date(day).format("YYYY-MM-DD");
+    const dateValue = new Date(`${dateKey}T00:00:00`);
     const entry = entryMap.get(dateKey);
     const extraMinutes = entry?.overtime_minutes || 0;
     rows.push({

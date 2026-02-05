@@ -5,7 +5,7 @@ export interface TimesheetEntry {
   id: number;
   overtime_minutes: number;
   start_time: null | string;
-  work_date: Date;
+  work_date: string;
   worked_minutes: number;
 }
 

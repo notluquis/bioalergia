@@ -17,6 +17,7 @@ import {
   calculateWorkedMinutes,
   computeStatus,
   formatDateLabel,
+  hasRowData,
   isRowDirty,
   minutesToDuration,
 } from "../utils";
