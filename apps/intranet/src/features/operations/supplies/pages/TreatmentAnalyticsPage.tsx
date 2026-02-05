@@ -54,19 +54,21 @@ const PIE_COLORS_STAGE = [COLORS.primary, COLORS.secondary, COLORS.default];
 const PIE_COLORS_LOCATION = [COLORS.secondary, COLORS.primary];
 
 // --- Quick Ranges Helpers ---
-const getThisWeek = () => ({
-  from: dayjs().startOf("week").format("YYYY-MM-DD"),
-  to: dayjs().endOf("week").format("YYYY-MM-DD"),
+const getDefaultRange = () => ({
+  from: dayjs().subtract(3, "month").startOf("month").format("YYYY-MM-DD"),
+  to: dayjs().add(1, "month").endOf("month").format("YYYY-MM-DD"),
 });
 
-const getThisMonth = () => ({
-  from: dayjs().startOf("month").format("YYYY-MM-DD"),
-  to: dayjs().endOf("month").format("YYYY-MM-DD"),
-});
-const getLastMonth = () => ({
-  from: dayjs().subtract(1, "month").startOf("month").format("YYYY-MM-DD"),
-  to: dayjs().subtract(1, "month").endOf("month").format("YYYY-MM-DD"),
-});
+const getMonthRange = (month: string) => {
+  const base = dayjs(`${month}-01`);
+  if (!base.isValid()) {
+    return getDefaultRange();
+  }
+  return {
+    from: base.startOf("month").format("YYYY-MM-DD"),
+    to: base.endOf("month").format("YYYY-MM-DD"),
+  };
+};
 
 // --- Types ---
 
@@ -96,19 +98,33 @@ interface PieChartData {
 export function TreatmentAnalyticsPage() {
   const navigate = routeApi.useNavigate();
   const searchParams = routeApi.useSearch();
-  const [period, setPeriod] = useState<"day" | "week" | "month">(searchParams.period || "week");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  const selectedMonth = searchParams.month;
+  const isMonthSelected = Boolean(selectedMonth);
+  const period: "day" | "week" | "month" = isMonthSelected
+    ? searchParams.period === "day" || searchParams.period === "week"
+      ? searchParams.period
+      : "week"
+    : "month";
+  const granularity = period === "day" ? "day" : period === "week" ? "week" : "month";
+
+  const resolvedRange = isMonthSelected
+    ? getMonthRange(selectedMonth || "")
+    : searchParams.from && searchParams.to
+      ? { from: searchParams.from, to: searchParams.to }
+      : getDefaultRange();
+
   const filters: TreatmentAnalyticsFilters = {
-    from: searchParams.from || getThisMonth().from,
-    to: searchParams.to || getThisMonth().to,
+    from: resolvedRange.from,
+    to: resolvedRange.to,
     calendarIds: searchParams.calendarId,
   };
 
   const hasValidDates = Boolean(filters.from) && Boolean(filters.to);
 
   const { data, isLoading, refetch } = useQuery({
-    ...calendarQueries.treatmentAnalytics(filters),
+    ...calendarQueries.treatmentAnalytics(filters, granularity),
     enabled: hasValidDates,
   });
 
@@ -118,15 +134,33 @@ export function TreatmentAnalyticsPage() {
         ...prev,
         from,
         to,
+        month: undefined,
+        period: "month",
       }),
     });
   };
 
-  const handleQuickRange = (range: { from: string; to: string }) => {
+  const handleMonthSelect = (month: string) => {
+    const range = getMonthRange(month);
     void navigate({
       search: (prev) => ({
         ...prev,
-        ...range,
+        month,
+        from: range.from,
+        to: range.to,
+        period: "week",
+      }),
+    });
+  };
+
+  const handleSetPeriod = (nextPeriod: "day" | "week") => {
+    if (!isMonthSelected) {
+      return;
+    }
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        period: nextPeriod,
       }),
     });
   };
@@ -150,10 +184,10 @@ export function TreatmentAnalyticsPage() {
     period === "day"
       ? data?.byDate
       : period === "week"
-        ? data?.byWeek.map((d) => ({ ...d, label: `S${d.isoWeek}` }))
-        : data?.byMonth.map((d) => ({
+        ? data?.byWeek?.map((d) => ({ ...d, label: `S${d.isoWeek}` }))
+        : data?.byMonth?.map((d) => ({
             ...d,
-            label: dayjs(`${d.year}-${d.month}-01`).format("MMM"),
+            label: dayjs(`${d.year}-${d.month}-01`).format("MMM YYYY"),
           }));
 
   const pieDataStage: PieChartData[] = [
@@ -170,11 +204,13 @@ export function TreatmentAnalyticsPage() {
   return (
     <div className="mx-auto max-w-400 space-y-6 pb-10">
       <AnalyticsHeader
+        isMonthSelected={isMonthSelected}
         period={period}
         isFilterOpen={isFilterOpen}
         isLoading={isLoading}
         onToggleFilter={() => setIsFilterOpen(!isFilterOpen)}
-        onSetPeriod={setPeriod}
+        onSetPeriod={handleSetPeriod}
+        onSelectMonth={handleMonthSelect}
         onRefresh={handleRefresh}
       />
 
@@ -182,7 +218,7 @@ export function TreatmentAnalyticsPage() {
         <AnalyticsFilters
           filters={filters}
           onDateChange={handleDateChange}
-          onQuickRange={handleQuickRange}
+          onMonthSelect={handleMonthSelect}
         />
       )}
 
@@ -200,7 +236,7 @@ export function TreatmentAnalyticsPage() {
           />
 
           <AnalyticsCharts
-            trendData={trendData}
+            trendData={trendData || []}
             pieDataStage={pieDataStage}
             pieDataLocation={pieDataLocation}
             period={period}
@@ -219,7 +255,7 @@ function AnalyticsCharts({
   pieDataLocation,
   period,
 }: {
-  trendData: AnalyticsTrendPoint[] | undefined;
+  trendData: AnalyticsTrendPoint[];
   pieDataStage: PieChartData[];
   pieDataLocation: PieChartData[];
   period: "day" | "week" | "month";
@@ -304,8 +340,10 @@ function AnalyticsCharts({
 
       {/* Distribution Charts */}
       <div className="grid grid-cols-1 gap-4">
-        <PieChartCard title="Por Etapa" data={pieDataStage} colors={PIE_COLORS_STAGE} />
-        <PieChartCard title="Por Ubicación" data={pieDataLocation} colors={PIE_COLORS_LOCATION} />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <PieChartCard title="Por Etapa" data={pieDataStage} colors={PIE_COLORS_STAGE} />
+          <PieChartCard title="Por Ubicación" data={pieDataLocation} colors={PIE_COLORS_LOCATION} />
+        </div>
       </div>
     </div>
   );
@@ -326,15 +364,15 @@ function PieChartCard({
         <h3 className="font-semibold text-foreground text-sm">{title}</h3>
       </Card.Header>
       <Card.Content>
-        <div className="h-32 min-h-[128px] w-full">
+        <div className="h-24 min-h-[96px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={35}
-                outerRadius={50}
+                innerRadius={28}
+                outerRadius={42}
                 paddingAngle={5}
                 dataKey="value"
               >
@@ -467,20 +505,28 @@ function AnalyticsDetailTable({
 // --- Sub Components ---
 
 function AnalyticsHeader({
+  isMonthSelected,
   period,
   isFilterOpen,
   isLoading,
   onToggleFilter,
   onSetPeriod,
+  onSelectMonth,
   onRefresh,
 }: {
+  isMonthSelected: boolean;
   period: "day" | "week" | "month";
   isFilterOpen: boolean;
   isLoading: boolean;
   onToggleFilter: () => void;
-  onSetPeriod: (p: "day" | "week" | "month") => void;
+  onSetPeriod: (p: "day" | "week") => void;
+  onSelectMonth: (month: string) => void;
   onRefresh: () => void;
 }) {
+  const prevMonth = dayjs().subtract(1, "month").format("YYYY-MM");
+  const currentMonth = dayjs().format("YYYY-MM");
+  const nextMonth = dayjs().add(1, "month").format("YYYY-MM");
+
   return (
     <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
       <div>
@@ -492,23 +538,36 @@ function AnalyticsHeader({
           Visualiza el rendimiento operativo y financiero
         </p>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center rounded-lg bg-default-100 p-1">
-          {(["day", "week", "month"] as const).map((p) => (
-            <button
-              type="button"
-              key={p}
-              onClick={() => onSetPeriod(p)}
-              className={`rounded-md px-3 py-1 font-medium text-xs transition-colors ${
-                period === p
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-default-500 hover:text-foreground"
-              }`}
-            >
-              {p === "day" ? "Día" : p === "week" ? "Semana" : "Mes"}
-            </button>
-          ))}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onPress={() => onSelectMonth(prevMonth)}>
+            Mes anterior
+          </Button>
+          <Button size="sm" variant="outline" onPress={() => onSelectMonth(currentMonth)}>
+            Mes actual
+          </Button>
+          <Button size="sm" variant="outline" onPress={() => onSelectMonth(nextMonth)}>
+            Mes siguiente
+          </Button>
         </div>
+        {isMonthSelected && (
+          <div className="flex items-center rounded-lg bg-default-100 p-1">
+            {(["week", "day"] as const).map((p) => (
+              <button
+                type="button"
+                key={p}
+                onClick={() => onSetPeriod(p)}
+                className={`rounded-md px-3 py-1 font-medium text-xs transition-colors ${
+                  period === p
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-default-500 hover:text-foreground"
+                }`}
+              >
+                {p === "day" ? "Día" : "Semana"}
+              </button>
+            ))}
+          </div>
+        )}
         <Button
           isIconOnly
           variant="ghost"
@@ -529,11 +588,11 @@ function AnalyticsHeader({
 function AnalyticsFilters({
   filters,
   onDateChange,
-  onQuickRange,
+  onMonthSelect,
 }: {
   filters: TreatmentAnalyticsFilters;
   onDateChange: (from: string, to: string) => void;
-  onQuickRange: (range: { from: string; to: string }) => void;
+  onMonthSelect: (month: string) => void;
 }) {
   return (
     <Card className="border-default-100 bg-content2/50">
@@ -565,14 +624,26 @@ function AnalyticsFilters({
           </div>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="ghost" onPress={() => onQuickRange(getThisWeek())}>
-            Esta Semana
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() => onMonthSelect(dayjs().subtract(1, "month").format("YYYY-MM"))}
+          >
+            Mes anterior
           </Button>
-          <Button size="sm" variant="ghost" onPress={() => onQuickRange(getLastMonth())}>
-            Mes Pasado
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() => onMonthSelect(dayjs().format("YYYY-MM"))}
+          >
+            Mes actual
           </Button>
-          <Button size="sm" variant="ghost" onPress={() => onQuickRange(getThisMonth())}>
-            Este Mes
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() => onMonthSelect(dayjs().add(1, "month").format("YYYY-MM"))}
+          >
+            Mes siguiente
           </Button>
         </div>
       </Card.Content>

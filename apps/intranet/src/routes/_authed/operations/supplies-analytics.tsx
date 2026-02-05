@@ -15,6 +15,10 @@ const analyticsSearchSchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
   period: z.enum(["day", "week", "month"]).default("week").optional(),
+  month: z
+    .string()
+    .optional()
+    .refine((val) => !val || /^\d{4}-\d{2}$/.test(val), { message: "Invalid month format" }),
   calendarId: z
     .union([z.string(), z.array(z.string())])
     .optional()

@@ -307,9 +307,9 @@ export interface TreatmentAnalyticsByMonth extends TreatmentAnalyticsPeriodData 
 }
 
 export interface TreatmentAnalytics {
-  byDate: TreatmentAnalyticsByDate[];
-  byMonth: TreatmentAnalyticsByMonth[];
-  byWeek: TreatmentAnalyticsByWeek[];
+  byDate?: TreatmentAnalyticsByDate[];
+  byMonth?: TreatmentAnalyticsByMonth[];
+  byWeek?: TreatmentAnalyticsByWeek[];
   totals: TreatmentAnalyticsPeriodData;
 }
 

@@ -23,8 +23,10 @@ export const calendarKeys = {
   options: ["classification-options"] as const,
   summary: (filters: CalendarFilters) =>
     ["calendar", "summary", normalizeFilters(filters)] as const,
-  treatmentAnalytics: (filters: TreatmentAnalyticsFilters) =>
-    ["calendar", "treatment-analytics", filters] as const,
+  treatmentAnalytics: (
+    filters: TreatmentAnalyticsFilters,
+    granularity?: "day" | "week" | "month" | "all",
+  ) => ["calendar", "treatment-analytics", filters, granularity ?? "all"] as const,
   unclassified: (page: number, pageSize: number, filters: MissingFieldFilters) =>
     ["calendar-unclassified", page, pageSize, filters] as const,
   list: ["calendars"] as const,
@@ -61,10 +63,13 @@ export const calendarQueries = {
       queryFn: () => fetchCalendarSummary(normalizeFilters(filters)),
       queryKey: calendarKeys.summary(filters),
     }),
-  treatmentAnalytics: (filters: TreatmentAnalyticsFilters) =>
+  treatmentAnalytics: (
+    filters: TreatmentAnalyticsFilters,
+    granularity?: "day" | "week" | "month" | "all",
+  ) =>
     queryOptions({
-      queryFn: () => fetchTreatmentAnalytics(filters),
-      queryKey: calendarKeys.treatmentAnalytics(filters),
+      queryFn: () => fetchTreatmentAnalytics(filters, granularity),
+      queryKey: calendarKeys.treatmentAnalytics(filters, granularity),
       staleTime: 5 * 60 * 1000, // 5 minutes
     }),
   unclassified: (page: number, pageSize: number, filters: MissingFieldFilters = {}) =>

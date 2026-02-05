@@ -216,6 +216,7 @@ export async function syncCalendarEvents(): Promise<CalendarSyncResponse> {
 
 export async function fetchTreatmentAnalytics(
   filters: TreatmentAnalyticsFilters,
+  granularity?: "day" | "week" | "month" | "all",
 ): Promise<TreatmentAnalytics> {
   const params = new URLSearchParams();
   if (filters.from) {
@@ -230,6 +231,9 @@ export async function fetchTreatmentAnalytics(
     for (const id of filters.calendarIds) {
       params.append("calendarId", id);
     }
+  }
+  if (granularity) {
+    params.set("granularity", granularity);
   }
 
   const response = await apiClient.get<{

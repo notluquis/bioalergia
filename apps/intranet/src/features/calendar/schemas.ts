@@ -310,9 +310,9 @@ const TreatmentAnalyticsByMonthSchema = TreatmentAnalyticsPeriodSchema.extend({
 
 export const TreatmentAnalyticsResponseSchema = z.strictObject({
   data: z.strictObject({
-    byDate: z.array(TreatmentAnalyticsByDateSchema),
-    byMonth: z.array(TreatmentAnalyticsByMonthSchema),
-    byWeek: z.array(TreatmentAnalyticsByWeekSchema),
+    byDate: z.array(TreatmentAnalyticsByDateSchema).optional(),
+    byMonth: z.array(TreatmentAnalyticsByMonthSchema).optional(),
+    byWeek: z.array(TreatmentAnalyticsByWeekSchema).optional(),
     totals: TreatmentAnalyticsPeriodSchema,
   }),
   filters: z.strictObject({

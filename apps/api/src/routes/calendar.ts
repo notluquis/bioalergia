@@ -11,6 +11,7 @@ import {
   getCalendarEventsByDate,
   getTreatmentAnalytics,
   type TreatmentAnalyticsFilters,
+  type TreatmentAnalyticsGranularity,
 } from "../lib/google/google-calendar-queries";
 import {
   CATEGORY_CHOICES,
@@ -171,6 +172,7 @@ const analyticsQuerySchema = z.object({
   from: dateSchema,
   to: dateSchema,
   calendarId: z.preprocess(arrayPreprocess, z.array(z.string()).optional()),
+  granularity: z.enum(["day", "week", "month", "all"]).optional(),
 });
 
 calendarRoutes.get(
@@ -195,6 +197,8 @@ calendarRoutes.get(
       calendarIds: query.calendarId,
     };
 
+    const granularity = (query.granularity ?? "all") as TreatmentAnalyticsGranularity;
+
     // Set default date range if not provided (last 30 days)
     if (!filters.from || !filters.to) {
       const today = dayjs();
@@ -203,7 +207,7 @@ calendarRoutes.get(
     }
 
     try {
-      const analytics = await getTreatmentAnalytics(filters);
+      const analytics = await getTreatmentAnalytics(filters, { granularity });
       return reply(c, {
         status: "ok",
         filters,

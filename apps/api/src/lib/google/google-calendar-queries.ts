@@ -728,6 +728,8 @@ export type TreatmentAnalyticsFilters = {
   calendarIds?: string[];
 };
 
+export type TreatmentAnalyticsGranularity = "all" | "day" | "week" | "month";
+
 export type TreatmentAnalyticsResult = {
   totals: {
     events: number;
@@ -738,7 +740,7 @@ export type TreatmentAnalyticsResult = {
     induccionCount: number;
     mantencionCount: number;
   };
-  byDate: Array<{
+  byDate?: Array<{
     date: string;
     events: number;
     amountExpected: number;
@@ -748,7 +750,7 @@ export type TreatmentAnalyticsResult = {
     induccionCount: number;
     mantencionCount: number;
   }>;
-  byWeek: Array<{
+  byWeek?: Array<{
     isoYear: number;
     isoWeek: number;
     events: number;
@@ -759,7 +761,7 @@ export type TreatmentAnalyticsResult = {
     induccionCount: number;
     mantencionCount: number;
   }>;
-  byMonth: Array<{
+  byMonth?: Array<{
     year: number;
     month: number;
     events: number;
@@ -778,7 +780,13 @@ export type TreatmentAnalyticsResult = {
  */
 export async function getTreatmentAnalytics(
   filters: TreatmentAnalyticsFilters,
+  options?: { granularity?: TreatmentAnalyticsGranularity },
 ): Promise<TreatmentAnalyticsResult> {
+  const granularity = options?.granularity ?? "all";
+  const includeByDate = granularity === "all" || granularity === "day";
+  const includeByWeek = granularity === "all" || granularity === "week";
+  const includeByMonth = granularity === "all" || granularity === "month";
+
   let baseQuery = db.$qb
     .selectFrom("Event as e")
     .leftJoin("Calendar as c", "e.calendarId", "c.id")
@@ -834,80 +842,90 @@ export async function getTreatmentAnalytics(
     sql<string>`e.treatment_stage`.as("treatmentStageRaw"),
   ]);
 
-  const byDate = await db.$qb
-    .selectFrom(byDateBase.as("b"))
-    .select([
-      sql`b.date`.as("date"),
-      sql<number>`count(*)`.as("events"),
-      sql<number>`coalesce(sum(b."amountExpectedRaw"), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(b."amountPaidRaw"), 0)`.as("amountPaid"),
-      sql<number>`
-        COALESCE(
-          SUM(CASE WHEN b."dosageValueRaw" IS NOT NULL THEN b."dosageValueRaw" ELSE 0 END),
-          0
-        )
-      `.as("dosageMl"),
-      sql<number>`sum(case when b."isDomicilioRaw" = true then 1 else 0 end)`.as("domicilioCount"),
-      sql<number>`sum(case when b."treatmentStageRaw" = 'Inducción' then 1 else 0 end)`.as(
-        "induccionCount",
-      ),
-      sql<number>`sum(case when b."treatmentStageRaw" = 'Mantención' then 1 else 0 end)`.as(
-        "mantencionCount",
-      ),
-    ])
-    .groupBy("b.date")
-    .orderBy("b.date", "desc")
-    .execute();
+  const byDate = includeByDate
+    ? await db.$qb
+        .selectFrom(byDateBase.as("b"))
+        .select([
+          sql`b.date`.as("date"),
+          sql<number>`count(*)`.as("events"),
+          sql<number>`coalesce(sum(b."amountExpectedRaw"), 0)`.as("amountExpected"),
+          sql<number>`coalesce(sum(b."amountPaidRaw"), 0)`.as("amountPaid"),
+          sql<number>`
+            COALESCE(
+              SUM(CASE WHEN b."dosageValueRaw" IS NOT NULL THEN b."dosageValueRaw" ELSE 0 END),
+              0
+            )
+          `.as("dosageMl"),
+          sql<number>`sum(case when b."isDomicilioRaw" = true then 1 else 0 end)`.as(
+            "domicilioCount",
+          ),
+          sql<number>`sum(case when b."treatmentStageRaw" = 'Inducción' then 1 else 0 end)`.as(
+            "induccionCount",
+          ),
+          sql<number>`sum(case when b."treatmentStageRaw" = 'Mantención' then 1 else 0 end)`.as(
+            "mantencionCount",
+          ),
+        ])
+        .groupBy("b.date")
+        .orderBy("b.date", "desc")
+        .execute()
+    : null;
 
   // 3. By Week
-  const byWeek = await baseQuery
-    .select([
-      sql<number>`extract(isoyear from coalesce(e.start_date_time, e.start_date))`.as("isoYear"),
-      sql<number>`extract(week from coalesce(e.start_date_time, e.start_date))`.as("isoWeek"),
-      sql<number>`count(e.id)`.as("events"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
-      dosageSql.as("dosageMl"),
-      sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
-      sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
-        "induccionCount",
-      ),
-      sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
-        "mantencionCount",
-      ),
-    ])
-    .groupBy([
-      sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`,
-      sql`extract(week from coalesce(e.start_date_time, e.start_date))`,
-    ])
-    .orderBy(sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .orderBy(sql`extract(week from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .execute();
+  const byWeek = includeByWeek
+    ? await baseQuery
+        .select([
+          sql<number>`extract(isoyear from coalesce(e.start_date_time, e.start_date))`.as(
+            "isoYear",
+          ),
+          sql<number>`extract(week from coalesce(e.start_date_time, e.start_date))`.as("isoWeek"),
+          sql<number>`count(e.id)`.as("events"),
+          sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+          sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+          dosageSql.as("dosageMl"),
+          sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
+          sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
+            "induccionCount",
+          ),
+          sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
+            "mantencionCount",
+          ),
+        ])
+        .groupBy([
+          sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`,
+          sql`extract(week from coalesce(e.start_date_time, e.start_date))`,
+        ])
+        .orderBy(sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`, "desc")
+        .orderBy(sql`extract(week from coalesce(e.start_date_time, e.start_date))`, "desc")
+        .execute()
+    : null;
 
   // 4. By Month
-  const byMonth = await baseQuery
-    .select([
-      sql<number>`extract(year from coalesce(e.start_date_time, e.start_date))`.as("year"),
-      sql<number>`extract(month from coalesce(e.start_date_time, e.start_date))`.as("month"),
-      sql<number>`count(e.id)`.as("events"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
-      dosageSql.as("dosageMl"),
-      sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
-      sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
-        "induccionCount",
-      ),
-      sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
-        "mantencionCount",
-      ),
-    ])
-    .groupBy([
-      sql`extract(year from coalesce(e.start_date_time, e.start_date))`,
-      sql`extract(month from coalesce(e.start_date_time, e.start_date))`,
-    ])
-    .orderBy(sql`extract(year from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .orderBy(sql`extract(month from coalesce(e.start_date_time, e.start_date))`, "desc")
-    .execute();
+  const byMonth = includeByMonth
+    ? await baseQuery
+        .select([
+          sql<number>`extract(year from coalesce(e.start_date_time, e.start_date))`.as("year"),
+          sql<number>`extract(month from coalesce(e.start_date_time, e.start_date))`.as("month"),
+          sql<number>`count(e.id)`.as("events"),
+          sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+          sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+          dosageSql.as("dosageMl"),
+          sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
+          sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
+            "induccionCount",
+          ),
+          sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
+            "mantencionCount",
+          ),
+        ])
+        .groupBy([
+          sql`extract(year from coalesce(e.start_date_time, e.start_date))`,
+          sql`extract(month from coalesce(e.start_date_time, e.start_date))`,
+        ])
+        .orderBy(sql`extract(year from coalesce(e.start_date_time, e.start_date))`, "desc")
+        .orderBy(sql`extract(month from coalesce(e.start_date_time, e.start_date))`, "desc")
+        .execute()
+    : null;
 
   // Type casting for query results
   type TotalRow = {
@@ -965,38 +983,44 @@ export async function getTreatmentAnalytics(
       induccionCount: Number((totals as unknown as TotalRow)?.induccionCount || 0),
       mantencionCount: Number((totals as unknown as TotalRow)?.mantencionCount || 0),
     },
-    byDate: (byDate as unknown as DateRow[]).map((r: DateRow) => ({
-      date: formatDateOnly(r.date as string | Date),
-      events: Number(r.events),
-      amountExpected: Number(r.amountExpected),
-      amountPaid: Number(r.amountPaid),
-      dosageMl: Number(r.dosageMl),
-      domicilioCount: Number(r.domicilioCount),
-      induccionCount: Number(r.induccionCount),
-      mantencionCount: Number(r.mantencionCount),
-    })),
-    byWeek: (byWeek as unknown as WeekRow[]).map((r: WeekRow) => ({
-      isoYear: Number(r.isoYear),
-      isoWeek: Number(r.isoWeek),
-      events: Number(r.events),
-      amountExpected: Number(r.amountExpected),
-      amountPaid: Number(r.amountPaid),
-      dosageMl: Number(r.dosageMl),
-      domicilioCount: Number(r.domicilioCount),
-      induccionCount: Number(r.induccionCount),
-      mantencionCount: Number(r.mantencionCount),
-    })),
-    byMonth: (byMonth as unknown as MonthRow[]).map((r: MonthRow) => ({
-      year: Number(r.year),
-      month: Number(r.month),
-      events: Number(r.events),
-      amountExpected: Number(r.amountExpected),
-      amountPaid: Number(r.amountPaid),
-      dosageMl: Number(r.dosageMl),
-      domicilioCount: Number(r.domicilioCount),
-      induccionCount: Number(r.induccionCount),
-      mantencionCount: Number(r.mantencionCount),
-    })),
+    byDate: byDate
+      ? (byDate as unknown as DateRow[]).map((r: DateRow) => ({
+          date: formatDateOnly(r.date as string | Date),
+          events: Number(r.events),
+          amountExpected: Number(r.amountExpected),
+          amountPaid: Number(r.amountPaid),
+          dosageMl: Number(r.dosageMl),
+          domicilioCount: Number(r.domicilioCount),
+          induccionCount: Number(r.induccionCount),
+          mantencionCount: Number(r.mantencionCount),
+        }))
+      : undefined,
+    byWeek: byWeek
+      ? (byWeek as unknown as WeekRow[]).map((r: WeekRow) => ({
+          isoYear: Number(r.isoYear),
+          isoWeek: Number(r.isoWeek),
+          events: Number(r.events),
+          amountExpected: Number(r.amountExpected),
+          amountPaid: Number(r.amountPaid),
+          dosageMl: Number(r.dosageMl),
+          domicilioCount: Number(r.domicilioCount),
+          induccionCount: Number(r.induccionCount),
+          mantencionCount: Number(r.mantencionCount),
+        }))
+      : undefined,
+    byMonth: byMonth
+      ? (byMonth as unknown as MonthRow[]).map((r: MonthRow) => ({
+          year: Number(r.year),
+          month: Number(r.month),
+          events: Number(r.events),
+          amountExpected: Number(r.amountExpected),
+          amountPaid: Number(r.amountPaid),
+          dosageMl: Number(r.dosageMl),
+          domicilioCount: Number(r.domicilioCount),
+          induccionCount: Number(r.induccionCount),
+          mantencionCount: Number(r.mantencionCount),
+        }))
+      : undefined,
   };
 }
 
