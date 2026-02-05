@@ -1,13 +1,10 @@
 export interface TimesheetEntry {
   comment: null | string;
-  created_at: Date;
   employee_id: number;
   end_time: null | string;
-  extra_amount: number;
   id: number;
   overtime_minutes: number;
   start_time: null | string;
-  updated_at: Date;
   work_date: Date;
   worked_minutes: number;
 }
@@ -16,7 +13,6 @@ export interface TimesheetPayload {
   comment?: null | string;
   employee_id: number;
   end_time?: null | string;
-  extra_amount?: number;
   overtime_minutes?: number;
   start_time?: null | string;
   work_date: Date;
@@ -61,7 +57,6 @@ export interface TimesheetSummaryRow {
 export interface TimesheetUpsertEntry {
   comment: null | string;
   end_time: null | string;
-  extra_amount: number;
   overtime_minutes: number;
   start_time: null | string;
   work_date: Date;

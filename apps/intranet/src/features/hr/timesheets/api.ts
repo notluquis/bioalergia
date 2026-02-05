@@ -23,14 +23,11 @@ const StatusResponseSchema = z.object({
 
 const TimesheetEntrySchema = z.looseObject({
   comment: z.string().nullable(),
-  created_at: z.coerce.date(),
   employee_id: z.number(),
   end_time: z.string().nullable(),
-  extra_amount: z.number(),
   id: z.number(),
   overtime_minutes: z.number(),
   start_time: z.string().nullable(),
-  updated_at: z.coerce.date(),
   work_date: z.coerce.date(),
   worked_minutes: z.number(),
 });
@@ -182,7 +179,9 @@ export async function fetchTimesheetMonths() {
 
 export async function fetchTimesheetSummary(month: string, employeeId?: null | number) {
   const query: Record<string, string> = { month };
-  if (employeeId) query.employeeId = String(employeeId);
+  if (employeeId) {
+    query.employeeId = String(employeeId);
+  }
 
   const data = await apiClient.get<TimesheetSummaryResponse & { message?: string; status: string }>(
     "/api/timesheets/summary",

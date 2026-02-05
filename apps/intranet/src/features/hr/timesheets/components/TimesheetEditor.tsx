@@ -86,6 +86,8 @@ function TimesheetEditorInner({
 }: TimesheetEditorProps & { initialRows: BulkRow[] }) {
   const queryClient = useQueryClient();
   const { success: toastSuccess } = useToast();
+  const detailQueryKey = ["timesheet-detail", employeeId, month];
+  const summaryQueryKey = ["timesheet-summary", month, employeeId];
 
   const [bulkRows, setBulkRows] = useState<BulkRow[]>(() => initialRows);
   const [errorLocal, setErrorLocal] = useState<null | string>(null);
@@ -108,8 +110,8 @@ function TimesheetEditorInner({
       setErrorLocal(message);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["timesheet-detail"] });
-      void queryClient.invalidateQueries({ queryKey: ["timesheet-summary"] });
+      void queryClient.refetchQueries({ queryKey: detailQueryKey });
+      void queryClient.refetchQueries({ queryKey: summaryQueryKey });
     },
   });
 
@@ -121,8 +123,8 @@ function TimesheetEditorInner({
       setErrorLocal(err instanceof Error ? err.message : "Error al eliminar");
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["timesheet-detail"] });
-      void queryClient.invalidateQueries({ queryKey: ["timesheet-summary"] });
+      void queryClient.refetchQueries({ queryKey: detailQueryKey });
+      void queryClient.refetchQueries({ queryKey: summaryQueryKey });
       toastSuccess("Registro eliminado");
     },
   });
@@ -269,7 +271,7 @@ function TimesheetHeaderActions({
       <Suspense
         fallback={
           <div className="flex items-center gap-2">
-            <Button className="bg-primary/70 cursor-wait" disabled variant="primary">
+            <Button className="cursor-wait bg-primary/70" disabled variant="primary">
               Cargando exportador...
             </Button>
           </div>
@@ -385,7 +387,9 @@ function buildPdfBase64({
   selectedEmployee: Employee;
   summaryRow: null | TimesheetSummaryRow;
 }): Promise<null | string> {
-  if (!summaryRow) return Promise.resolve(null);
+  if (!summaryRow) {
+    return Promise.resolve(null);
+  }
   return generateTimesheetPdfBase64(selectedEmployee, summaryRow, bulkRows, monthLabel);
 }
 
@@ -415,7 +419,9 @@ function createHandlePrepareEmail({
   toastSuccess: (message: string) => void;
 }) {
   return async () => {
-    if (!summaryRow || !month) return;
+    if (!summaryRow || !month) {
+      return;
+    }
     setEmailPrepareStatus("generating-pdf");
     setErrorLocal(null);
 
@@ -461,7 +467,9 @@ async function runPrepareEmail({
   summaryRow: TimesheetSummaryRow;
 }) {
   const pdfBase64 = await generatePdfBase64();
-  if (!pdfBase64) throw new Error("No se pudo generar el PDF");
+  if (!pdfBase64) {
+    throw new Error("No se pudo generar el PDF");
+  }
 
   setEmailPrepareStatus("preparing");
 
@@ -543,7 +551,9 @@ function createHandleRowChange(
   return (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => {
     setBulkRows((prev) => {
       const currentRow = prev[index];
-      if (!currentRow || currentRow[field] === value) return prev;
+      if (!currentRow || currentRow[field] === value) {
+        return prev;
+      }
       return prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
     });
   };
@@ -557,16 +567,24 @@ function createHandleResetRow(
     setBulkRows((prev) => {
       const next = [...prev];
       const initialRow = initialRows[index];
-      if (initialRow) next[index] = { ...initialRow };
+      if (initialRow) {
+        next[index] = { ...initialRow };
+      }
       return next;
     });
   };
 }
 
 function isRowReadyForImmediateSave(row: BulkRow, initial: BulkRow) {
-  if (!isRowDirty(row, initial)) return false;
-  if (!hasRequiredTimes(row)) return false;
-  if (!hasValidTimes(row)) return false;
+  if (!isRowDirty(row, initial)) {
+    return false;
+  }
+  if (!hasRequiredTimes(row)) {
+    return false;
+  }
+  if (!hasValidTimes(row)) {
+    return false;
+  }
   return parseDuration(row.overtime) !== null;
 }
 
@@ -582,13 +600,14 @@ function hasValidTimes(row: BulkRow) {
 
 function buildImmediateSaveEntry(row: BulkRow): null | TimesheetUpsertEntry {
   const overtime = parseDuration(row.overtime);
-  if (overtime === null) return null;
+  if (overtime === null) {
+    return null;
+  }
 
   const comment = row.comment.trim() || null;
   return {
     comment,
     end_time: row.salida || null,
-    extra_amount: 0,
     overtime_minutes: overtime,
     start_time: row.entrada || null,
     work_date: row.date,
@@ -615,14 +634,22 @@ function createSaveRowImmediately({
   }) => Promise<unknown>;
 }) {
   return async (index: number) => {
-    if (isUpsertPending) return;
+    if (isUpsertPending) {
+      return;
+    }
     const row = bulkRows[index];
     const initial = initialRows[index];
-    if (!row || !initial) return;
+    if (!row || !initial) {
+      return;
+    }
 
-    if (!isRowReadyForImmediateSave(row, initial)) return;
+    if (!isRowReadyForImmediateSave(row, initial)) {
+      return;
+    }
     const entry = buildImmediateSaveEntry(row);
-    if (!entry) return;
+    if (!entry) {
+      return;
+    }
 
     try {
       await upsertMutate({
@@ -647,8 +674,12 @@ function createHandleSalidaBlur(saveRowImmediately: (index: number) => Promise<v
 
 function createHandleRemoveEntry(deleteMutate: (entryId: number) => void) {
   return (row: BulkRow) => {
-    if (!row.entryId) return;
-    if (!confirm("¿Eliminar el registro de este día?")) return;
+    if (!row.entryId) {
+      return;
+    }
+    if (!confirm("¿Eliminar el registro de este día?")) {
+      return;
+    }
     deleteMutate(row.entryId);
   };
 }
@@ -657,10 +688,14 @@ function processBulkRow(
   row: BulkRow,
   initial: BulkRow,
 ): { entry?: TimesheetUpsertEntry; error?: string; removeId?: number } {
-  if (!isRowDirty(row, initial)) return {};
+  if (!isRowDirty(row, initial)) {
+    return {};
+  }
 
   const validationError = validateBulkRow(row);
-  if (validationError) return { error: validationError };
+  if (validationError) {
+    return { error: validationError };
+  }
 
   const overtime = parseDuration(row.overtime);
   if (overtime === null) {
@@ -680,7 +715,6 @@ function processBulkRow(
       comment,
       // Always send local time in HH:MM (America/Santiago policy handled server-side)
       end_time: salida || null,
-      extra_amount: 0,
       overtime_minutes: overtime,
       start_time: entrada || null,
       work_date: row.date,
@@ -694,13 +728,19 @@ function collectBulkChanges(bulkRows: BulkRow[], initialRows: BulkRow[]) {
 
   for (const [index, row] of bulkRows.entries()) {
     const initial = initialRows[index];
-    if (!initial) continue;
+    if (!initial) {
+      continue;
+    }
     const result = processBulkRow(row, initial);
     if (result.error) {
       return { entries, removeIds, error: result.error };
     }
-    if (result.entry) entries.push(result.entry);
-    if (result.removeId) removeIds.push(result.removeId);
+    if (result.entry) {
+      entries.push(result.entry);
+    }
+    if (result.removeId) {
+      removeIds.push(result.removeId);
+    }
   }
 
   return { entries, removeIds, error: null };
@@ -754,9 +794,13 @@ function createHandleBulkSave({
 
 // Utility to ensure month is always YYYY-MM
 function formatMonthString(m: string): string {
-  if (MONTH_STRING_REGEX.test(m)) return m;
+  if (MONTH_STRING_REGEX.test(m)) {
+    return m;
+  }
   const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
-  if (d.isValid()) return d.format("YYYY-MM");
+  if (d.isValid()) {
+    return d.format("YYYY-MM");
+  }
   return dayjs().format("YYYY-MM");
 }
 

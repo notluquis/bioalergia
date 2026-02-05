@@ -18,10 +18,10 @@ export function buildBulkRows(month: string, entries: TimesheetEntry[]): BulkRow
     rows.push({
       comment: entry?.comment ?? "",
       date: dateValue,
-      entrada: entry?.start_time ?? "",
+      entrada: normalizeTimeString(entry?.start_time),
       entryId: entry?.id ?? null,
       overtime: extraMinutes ? minutesToDuration(extraMinutes) : "",
-      salida: entry?.end_time ?? "",
+      salida: normalizeTimeString(entry?.end_time),
     });
   }
   return rows;
@@ -41,12 +41,16 @@ const editableFields: (keyof Pick<BulkRow, "comment" | "entrada" | "overtime" | 
 ];
 
 export function calculateWorkedMinutes(startTime: string, endTime: string): number {
-  if (!startTime || !endTime || startTime === "00:00" || endTime === "00:00") return 0;
+  if (!startTime || !endTime || startTime === "00:00" || endTime === "00:00") {
+    return 0;
+  }
 
   const start = timeToMinutes(startTime);
   const end = timeToMinutes(endTime);
 
-  if (start === null || end === null) return 0;
+  if (start === null || end === null) {
+    return 0;
+  }
 
   let totalMinutes = end - start;
 
@@ -59,26 +63,38 @@ export function calculateWorkedMinutes(startTime: string, endTime: string): numb
 }
 
 export function computeExtraAmount(extraMinutes: number, hourlyRate: number): number {
-  if (!hourlyRate || extraMinutes <= 0) return 0;
+  if (!hourlyRate || extraMinutes <= 0) {
+    return 0;
+  }
   return Math.round((extraMinutes / 60) * hourlyRate * 100) / 100;
 }
 
 export function computeStatus(row: BulkRow, dirty: boolean): string {
-  if (row.entryId && !dirty) return "Registrado";
-  if (row.entryId && dirty) return "Sin guardar";
-  if (!row.entryId && hasRowData(row)) return "Sin guardar";
+  if (row.entryId && !dirty) {
+    return "Registrado";
+  }
+  if (row.entryId && dirty) {
+    return "Sin guardar";
+  }
+  if (!row.entryId && hasRowData(row)) {
+    return "Sin guardar";
+  }
   return "No trabajado";
 }
 
 export function formatDateLabel(value: Date | string | null): string {
-  if (!value) return "—";
+  if (!value) {
+    return "—";
+  }
   const date = dayjs(value);
   return date.isValid() ? date.format("DD-MM-YYYY") : String(value);
 }
 
 export function formatExtraHours(row: TimesheetSummaryRow): string {
   // Si no hay extraAmount, retornar 00:00
-  if (!row.extraAmount) return "00:00";
+  if (!row.extraAmount) {
+    return "00:00";
+  }
 
   // Si hay overtimeRate definido, calcular horas basado en extraAmount / overtimeRate
   if (row.overtimeRate > 0) {
@@ -95,7 +111,9 @@ export function formatTotalExtraHours(rows: TimesheetSummaryRow[]): string {
   let totalMinutes = 0;
   for (const row of rows) {
     // Si no hay extraAmount, continuar
-    if (!row.extraAmount) continue;
+    if (!row.extraAmount) {
+      continue;
+    }
 
     // Si hay overtimeRate definido, calcular horas basado en extraAmount / overtimeRate
     totalMinutes +=
@@ -107,7 +125,9 @@ export function formatTotalExtraHours(rows: TimesheetSummaryRow[]): string {
 }
 
 export function isRowDirty(row: BulkRow, initial?: BulkRow): boolean {
-  if (!initial) return hasRowData(row);
+  if (!initial) {
+    return hasRowData(row);
+  }
   return editableFields.some((field) => row[field] !== initial[field]);
 }
 
@@ -124,7 +144,9 @@ const TIME_HH_MM_REGEX = /^\d{1,2}:\d{2}(:\d{2})?$/;
 
 function parseTimeValue(value: string): null | Time {
   const cleaned = value.trim();
-  if (!cleaned || !TIME_HH_MM_REGEX.test(cleaned)) return null;
+  if (!cleaned || !TIME_HH_MM_REGEX.test(cleaned)) {
+    return null;
+  }
   try {
     return parseTime(cleaned);
   } catch {
@@ -136,20 +158,45 @@ export function isValidTimeString(value: string): boolean {
   return parseTimeValue(value) !== null;
 }
 
+export function normalizeTimeString(value?: null | string): string {
+  if (!value) {
+    return "";
+  }
+  const parsed = parseTimeValue(value);
+  if (!parsed) {
+    return value.trim();
+  }
+  const hours = String(parsed.hour).padStart(2, "0");
+  const minutes = String(parsed.minute).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
 export function parseDuration(value: string): null | number {
   const trimmed = value.trim();
-  if (!trimmed) return 0;
-  if (!TIME_HH_MM_REGEX.test(trimmed)) return null;
+  if (!trimmed) {
+    return 0;
+  }
+  if (!TIME_HH_MM_REGEX.test(trimmed)) {
+    return null;
+  }
   const parts = trimmed.split(":").map(Number);
   const [hours, minutes, seconds] = parts;
-  if (hours === undefined || minutes === undefined) return null;
-  if (minutes >= 60) return null;
-  if (seconds !== undefined && seconds >= 60) return null;
+  if (hours === undefined || minutes === undefined) {
+    return null;
+  }
+  if (minutes >= 60) {
+    return null;
+  }
+  if (seconds !== undefined && seconds >= 60) {
+    return null;
+  }
   return hours * 60 + minutes;
 }
 
 function timeToMinutes(time: string): null | number {
   const parsed = parseTimeValue(time);
-  if (!parsed) return null;
+  if (!parsed) {
+    return null;
+  }
   return parsed.hour * 60 + parsed.minute;
 }
