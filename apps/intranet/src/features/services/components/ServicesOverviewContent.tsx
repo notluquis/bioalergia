@@ -2,20 +2,19 @@ import { Chip, Spinner } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
-import ServiceDetail from "@/features/services/components/ServiceDetail";
-import ServiceForm from "@/features/services/components/ServiceForm";
-import ServiceList from "@/features/services/components/ServiceList";
-import ServicesFilterPanel from "@/features/services/components/ServicesFilterPanel";
-import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
+import { ServiceDetail } from "@/features/services/components/ServiceDetail";
+import { ServiceForm } from "@/features/services/components/ServiceForm";
+import { ServiceList } from "@/features/services/components/ServiceList";
+import { ServicesFilterPanel } from "@/features/services/components/ServicesFilterPanel";
+import { ServicesUnifiedAgenda } from "@/features/services/components/ServicesUnifiedAgenda";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
-
-export default function ServicesOverviewContent() {
+export function ServicesOverviewContent() {
   const overview = useServicesOverview();
   const {
     aggregatedError,
@@ -206,6 +205,7 @@ export default function ServicesOverviewContent() {
           }}
           submitLabel="Crear servicio"
         />
+
         {createError && (
           <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
             {createError}
@@ -233,6 +233,7 @@ export default function ServicesOverviewContent() {
               type="number"
               value={paymentForm.transactionId}
             />
+
             <Input
               label="Monto pagado"
               min={0}
@@ -244,6 +245,7 @@ export default function ServicesOverviewContent() {
               type="number"
               value={paymentForm.paidAmount}
             />
+
             <Input
               label="Fecha de pago"
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -253,6 +255,7 @@ export default function ServicesOverviewContent() {
               type="date"
               value={dayjs(paymentForm.paidDate).format("YYYY-MM-DD")}
             />
+
             <Input
               as="textarea"
               label="Nota"
@@ -262,6 +265,7 @@ export default function ServicesOverviewContent() {
               rows={2}
               value={paymentForm.note}
             />
+
             {paymentError && (
               <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
                 {paymentError}

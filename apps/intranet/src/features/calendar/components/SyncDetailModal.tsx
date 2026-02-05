@@ -1,5 +1,5 @@
 import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
-import Modal from "@/components/ui/Modal";
+import { Modal } from "@/components/ui/Modal";
 import type { CalendarSyncLog } from "@/features/calendar/types";
 import { numberFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";

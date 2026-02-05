@@ -50,7 +50,9 @@ export function useDailyBalanceForm() {
   // Find item by date (YYYY-MM-DD)
   const selectedDayItem =
     weekQuery.data.find(
-      (item) => dayjs(item.date).format(DATE_FORMAT) === dayjs(selectedDate).format(DATE_FORMAT),
+      (item) =>
+        dayjs(item.date, DATE_FORMAT).format(DATE_FORMAT) ===
+        dayjs(selectedDate).format(DATE_FORMAT),
     ) || null;
 
   // Load data when query succeeds (if day changes or we just loaded data)
@@ -86,7 +88,7 @@ export function useDailyBalanceForm() {
           item.ingresoEfectivo +
           item.otrosAbonos;
         if (item.date) {
-          const dateKey = dayjs(item.date).format(DATE_FORMAT);
+          const dateKey = dayjs(item.date, DATE_FORMAT).format(DATE_FORMAT);
           entries[dateKey] = calculatedTotal;
         }
       }

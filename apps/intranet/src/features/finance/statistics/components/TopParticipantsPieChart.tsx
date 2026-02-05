@@ -19,8 +19,7 @@ const COLORS = [
   "hsl(var(--su))", // success
   "hsl(var(--wa))", // warning
 ];
-
-export default function TopParticipantsPieChart({ data }: TopParticipantsPieChartProps) {
+export function TopParticipantsPieChart({ data }: TopParticipantsPieChartProps) {
   const chartData = data.map((item) => ({
     name: item.personName,
     value: item.total,

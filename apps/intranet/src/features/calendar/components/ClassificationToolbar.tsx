@@ -1,5 +1,5 @@
 import { RefreshCw } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import type { ReclassifyJob } from "../types";
 

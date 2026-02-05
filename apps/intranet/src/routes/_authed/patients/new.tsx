@@ -5,13 +5,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { Save, User, UserPlus, X } from "lucide-react";
 import { z } from "zod";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { CardContent } from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
-import { formatISO } from "@/lib/dates";
 import { formatRut, validateRut } from "@/lib/rut";
 import { TITLE_LG } from "@/lib/styles";
 
@@ -34,12 +33,12 @@ interface PatientFormState {
   email: string;
   phone: string;
   address: string;
-  birthDate: Date;
+  birthDate: string;
   bloodType: string;
   notes: string;
 }
 
-type PatientPayload = Omit<PatientFormState, "birthDate"> & { birthDate: string };
+type PatientPayload = PatientFormState;
 
 function AddPatientPage() {
   const navigate = useNavigate();
@@ -71,7 +70,7 @@ function AddPatientPage() {
       email: "",
       phone: "",
       address: "",
-      birthDate: dayjs().toDate(),
+      birthDate: dayjs().format("YYYY-MM-DD"),
       bloodType: "",
       notes: "",
     } as PatientFormState,
@@ -82,7 +81,7 @@ function AddPatientPage() {
       }
       await createPatientMutation.mutateAsync({
         ...value,
-        birthDate: formatISO(value.birthDate),
+        birthDate: value.birthDate,
       });
     },
   });
@@ -178,8 +177,8 @@ function AddPatientPage() {
                     <Input
                       label="Fecha de Nacimiento"
                       type="date"
-                      value={dayjs(field.state.value).format("YYYY-MM-DD")}
-                      onChange={(e) => field.handleChange(dayjs(e.target.value).toDate())}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
                       required
                     />
                   )}

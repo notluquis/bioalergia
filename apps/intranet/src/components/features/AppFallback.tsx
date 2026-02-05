@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { type AppFallbackReason, clearAppCaches, onAppFallback } from "@/lib/app-recovery";
 
 const PRE_MOUNT_SHELL_ID = "app-fallback";

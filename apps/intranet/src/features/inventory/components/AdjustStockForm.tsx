@@ -1,8 +1,8 @@
 import type React from "react";
 import { useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 import type { InventoryItem, InventoryMovement } from "../types";
 
@@ -12,8 +12,7 @@ interface AdjustStockFormProps {
   onSave: (movement: InventoryMovement) => void;
   saving: boolean;
 }
-
-export default function AdjustStockForm({ item, onCancel, onSave, saving }: AdjustStockFormProps) {
+export function AdjustStockForm({ item, onCancel, onSave, saving }: AdjustStockFormProps) {
   const [quantityChange, setQuantityChange] = useState("");
   const [reason, setReason] = useState("");
 
@@ -43,6 +42,7 @@ export default function AdjustStockForm({ item, onCancel, onSave, saving }: Adju
           type="number"
           value={quantityChange}
         />
+
         <Input
           label="Razón del ajuste"
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {

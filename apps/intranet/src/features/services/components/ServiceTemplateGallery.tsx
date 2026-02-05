@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 import type { CreateServicePayload } from "../types";
 
@@ -96,8 +96,7 @@ export const SERVICE_TEMPLATES: ServiceTemplate[] = [
     },
   },
 ];
-
-export default function ServiceTemplateGallery({ onApply }: ServiceTemplateGalleryProps) {
+export function ServiceTemplateGallery({ onApply }: ServiceTemplateGalleryProps) {
   return (
     <section className="space-y-4 border border-default-200 bg-background p-4 text-foreground text-sm">
       <div className="flex flex-col gap-1">

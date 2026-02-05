@@ -1,15 +1,14 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { dashboardKeys } from "../queries";
-import DashboardChart from "./DashboardChart";
-import MetricCard from "./MetricCard";
-import RecentMovementsWidget from "./RecentMovementsWidget";
+import { DashboardChart } from "./DashboardChart";
+import { MetricCard } from "./MetricCard";
+import { RecentMovementsWidget } from "./RecentMovementsWidget";
 
 interface Props {
   statsParams: { from: string; to: string };
 }
-
-export default function DashboardTransactionsSection({ statsParams }: Props) {
+export function DashboardTransactionsSection({ statsParams }: Props) {
   const { data: stats } = useSuspenseQuery(dashboardKeys.stats(statsParams));
   const { data: recentMovements } = useSuspenseQuery(dashboardKeys.recentMovements());
 

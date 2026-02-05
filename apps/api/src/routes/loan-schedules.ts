@@ -70,4 +70,4 @@ app.post("/:id/unlink", async (c) => {
   return reply(c, { status: "ok", schedule: updated });
 });
 
-export default app;
+export const loanScheduleRoutes = app;

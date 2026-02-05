@@ -1,4 +1,4 @@
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { formatRut } from "@/lib/rut";
 
 import type { Counterpart, CounterpartCategory } from "../types";
@@ -23,8 +23,7 @@ const CATEGORY_LABELS = CATEGORY_OPTIONS.reduce<Record<string, string>>((acc, it
   acc[item.value] = item.label;
   return acc;
 }, {});
-
-export default function CounterpartList({
+export function CounterpartList({
   className,
   counterparts,
   onSelectCounterpart,

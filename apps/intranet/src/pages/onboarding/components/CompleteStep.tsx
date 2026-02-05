@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 interface CompleteStepProps {
   onFinish: () => void;

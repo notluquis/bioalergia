@@ -1,7 +1,7 @@
 import type { ChangeEvent } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 import type { ServiceSummary, ServiceType } from "../types";
 
@@ -24,12 +24,7 @@ const STATUS_LABELS: Record<ServiceSummary["status"], string> = {
 };
 
 const STATUS_ORDER: ServiceSummary["status"][] = ["ACTIVE", "INACTIVE", "ARCHIVED"];
-
-export default function ServicesFilterPanel({
-  filters,
-  onChange,
-  services,
-}: ServicesFilterPanelProps) {
+export function ServicesFilterPanel({ filters, onChange, services }: ServicesFilterPanelProps) {
   const typeOptions = (() => {
     const counts = new Map<ServiceType, number>();
     for (const service of services) {

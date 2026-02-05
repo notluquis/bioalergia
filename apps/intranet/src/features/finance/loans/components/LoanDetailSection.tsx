@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import LoanDetail from "@/features/finance/loans/components/LoanDetail";
+import { LoanDetail } from "@/features/finance/loans/components/LoanDetail";
 import { loanKeys } from "@/features/finance/loans/queries";
 import type { LoanSchedule, RegenerateSchedulePayload } from "@/features/finance/loans/types";
 
@@ -10,8 +10,7 @@ interface LoanDetailSectionProps {
   onRegisterPayment: (schedule: LoanSchedule) => void;
   onUnlinkPayment: (schedule: LoanSchedule) => void;
 }
-
-export default function LoanDetailSection({
+export function LoanDetailSection({
   canManage,
   loanId,
   onRegenerate,

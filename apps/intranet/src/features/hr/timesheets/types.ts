@@ -15,15 +15,15 @@ export interface TimesheetPayload {
   end_time?: null | string;
   overtime_minutes?: number;
   start_time?: null | string;
-  work_date: Date;
+  work_date: string; // YYYY-MM-DD
   worked_minutes: number;
 }
 
 export interface TimesheetSummaryResponse {
   employees: TimesheetSummaryRow[];
-  from: Date;
+  from: string;
   month: string;
-  to: Date;
+  to: string;
   totals: {
     extraAmount: number;
     hours: string;
@@ -59,7 +59,7 @@ export interface TimesheetUpsertEntry {
   end_time: null | string;
   overtime_minutes: number;
   start_time: null | string;
-  work_date: Date;
+  work_date: string; // YYYY-MM-DD
 }
 
 export const EMPTY_BULK_ROW = {

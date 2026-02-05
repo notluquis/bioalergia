@@ -1,9 +1,13 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 
-const TemplatesPage = lazy(() => import("@/features/services/pages/TemplatesPage"));
+const TemplatesPage = lazy(() =>
+  import("@/features/services/pages/TemplatesPage").then((m) => ({
+    default: m.ServicesTemplatesPage,
+  })),
+);
 
 export const Route = createFileRoute("/_authed/services/templates")({
   staticData: {

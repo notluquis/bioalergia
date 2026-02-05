@@ -12,8 +12,7 @@ import { balanceKeys } from "@/features/finance/balances/queries";
 import type { BalanceDraft } from "@/features/finance/balances/types";
 import { deriveInitialBalance, formatBalanceInput } from "@/features/finance/balances/utils";
 import { today } from "@/lib/dates";
-
-export default function DailyBalances() {
+export function DailyBalances() {
   const { can } = useAuth();
   // canEdit flag removed (unused)
 
@@ -43,7 +42,7 @@ export default function DailyBalances() {
   useEffect(() => {
     const nextDrafts: Record<string, BalanceDraft> = {};
     for (const day of report.days) {
-      const dateKey = dayjs(day.date).format("YYYY-MM-DD");
+      const dateKey = dayjs(day.date, "YYYY-MM-DD").format("YYYY-MM-DD");
       nextDrafts[dateKey] = {
         note: day.note ?? "",
         value: day.recordedBalance == null ? "" : formatBalanceInput(day.recordedBalance),

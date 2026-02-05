@@ -4,7 +4,9 @@
  */
 
 // Re-export existing formatters
-export { coerceAmount, fmtCLP, formatRelativeDate, numberFormatter } from "@/lib/format";
+import { coerceAmount, fmtCLP, formatRelativeDate, numberFormatter } from "@/lib/format";
+
+export { coerceAmount, fmtCLP, formatRelativeDate, numberFormatter };
 
 /**
  * Calculate summary from form data

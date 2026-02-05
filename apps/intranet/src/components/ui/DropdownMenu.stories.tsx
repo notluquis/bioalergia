@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 
-import Button from "./Button";
+import { Button } from "./Button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
-import { formatISO } from "@/lib/dates";
+import { zDateString } from "@/lib/api-validate";
 
 import type {
   TimesheetEntry,
@@ -28,16 +28,16 @@ const TimesheetEntrySchema = z.looseObject({
   id: z.number(),
   overtime_minutes: z.number(),
   start_time: z.string().nullable(),
-  work_date: z.string(),
+  work_date: zDateString,
   worked_minutes: z.number(),
 });
 
 const TimesheetDetailResponseSchema = z.object({
   entries: z.array(TimesheetEntrySchema),
-  from: z.coerce.date(),
+  from: zDateString,
   message: z.string().optional(),
   status: z.string(),
-  to: z.coerce.date(),
+  to: zDateString,
 });
 
 const TimesheetMonthsResponseSchema = z.object({
@@ -70,11 +70,11 @@ const TimesheetSummaryResponseSchema = z.looseObject({
       }),
     )
     .default([]),
-  from: z.coerce.date().optional(),
+  from: zDateString.optional(),
   message: z.string().optional(),
   month: z.string().optional(),
   status: z.string(),
-  to: z.coerce.date().optional(),
+  to: zDateString.optional(),
   totals: z
     .object({
       extraAmount: z.number(),
@@ -105,10 +105,6 @@ export async function bulkUpsertTimesheets(
   entries: TimesheetUpsertEntry[] = [],
   removeIds: number[] = [],
 ) {
-  const serializedEntries = entries.map((entry) => ({
-    ...entry,
-    work_date: formatISO(entry.work_date),
-  }));
   const data = await apiClient.post<{
     inserted: number;
     message?: string;
@@ -118,7 +114,7 @@ export async function bulkUpsertTimesheets(
     "/api/timesheets/bulk",
     {
       employee_id: employeeId,
-      entries: serializedEntries,
+      entries,
       remove_ids: removeIds.length > 0 ? removeIds : undefined,
     },
     { responseSchema: BulkUpsertResponseSchema },
@@ -228,12 +224,9 @@ export async function prepareTimesheetEmail(payload: {
 }
 
 export async function updateTimesheet(id: number, payload: Partial<TimesheetPayload>) {
-  const requestPayload = payload.work_date
-    ? { ...payload, work_date: formatISO(payload.work_date) }
-    : payload;
   const data = await apiClient.put<{ entry: TimesheetEntry; message?: string; status: string }>(
     `/api/timesheets/${id}`,
-    requestPayload,
+    payload,
     { responseSchema: TimesheetEntryResponseSchema },
   );
 
@@ -244,10 +237,9 @@ export async function updateTimesheet(id: number, payload: Partial<TimesheetPayl
 }
 
 export async function upsertTimesheet(payload: TimesheetPayload) {
-  const requestPayload = { ...payload, work_date: formatISO(payload.work_date) };
   const data = await apiClient.post<{ entry: TimesheetEntry; message?: string; status: string }>(
     "/api/timesheets",
-    requestPayload,
+    payload,
     { responseSchema: TimesheetEntryResponseSchema },
   );
 

@@ -4,8 +4,8 @@ import type { Table } from "@tanstack/react-table";
 import { Settings2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 interface DataTableViewOptionsProps<TData> {
   readonly table: Table<TData>;

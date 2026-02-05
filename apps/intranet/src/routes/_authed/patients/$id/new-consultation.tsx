@@ -6,9 +6,9 @@ import { ChevronLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { ConsultationSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER } from "@/lib/styles";

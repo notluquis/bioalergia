@@ -12,11 +12,11 @@ import { CheckCircle2, Clock, FileText, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
-import GenerateReportModal from "@/components/mercadopago/GenerateReportModal";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { GenerateReportModal } from "@/components/mercadopago/GenerateReportModal";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { Select, SelectItem } from "@/components/ui/Select";
-import StatCard from "@/components/ui/StatCard";
+import { StatCard } from "@/components/ui/StatCard";
 import { useToast } from "@/context/ToastContext";
 import { getMpReportColumns } from "@/features/finance/mercadopago/components/MpReportColumns";
 import { mercadoPagoKeys } from "@/features/finance/mercadopago/queries";
@@ -121,7 +121,7 @@ const useReportActions = ({
 };
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: large settings page with multiple sections
-export default function MercadoPagoSettingsPage() {
+export function MercadoPagoSettingsPage() {
   const queryClient = useQueryClient();
   const { error: showError, success: showSuccess } = useToast();
   const [activeTab, setActiveTab] = useState<MpTab>("release");

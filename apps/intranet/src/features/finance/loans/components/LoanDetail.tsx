@@ -2,14 +2,14 @@ import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { Select, SelectItem } from "@/components/ui/Select";
 
 import type { LoanSchedule, LoanSummary, RegenerateSchedulePayload } from "../types";
 
-import LoanScheduleTable from "./LoanScheduleTable";
+import { LoanScheduleTable } from "./LoanScheduleTable";
 
 interface LoanDetailProps {
   canManage: boolean;
@@ -96,7 +96,7 @@ export function LoanDetail({
             {loan.borrower_name} · {loan.borrower_type === "PERSON" ? "Persona natural" : "Empresa"}
           </p>
           <div className="flex flex-wrap items-center gap-3 text-default-500 text-xs">
-            <span>Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}</span>
+            <span>Inicio {dayjs(loan.start_date, "YYYY-MM-DD").format("DD MMM YYYY")}</span>
             <span>
               {loan.total_installments} cuotas ·{" "}
               {
@@ -192,17 +192,19 @@ export function LoanDetail({
             type="number"
             value={regenerateForm.totalInstallments ?? loan.total_installments}
           />
+
           <Input
             label="Nueva fecha de inicio"
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
               setRegenerateForm((prev) => ({
                 ...prev,
-                startDate: dayjs(event.target.value).toDate(),
+                startDate: event.target.value,
               }));
             }}
             type="date"
-            value={dayjs(regenerateForm.startDate ?? loan.start_date).format("YYYY-MM-DD")}
+            value={regenerateForm.startDate ?? loan.start_date}
           />
+
           <Input
             label="Tasa de interés (%)"
             min={0}
@@ -213,6 +215,7 @@ export function LoanDetail({
             type="number"
             value={regenerateForm.interestRate ?? loan.interest_rate}
           />
+
           <Select
             label="Frecuencia"
             onChange={(key) => {
@@ -260,5 +263,3 @@ export function LoanDetail({
     </section>
   );
 }
-
-export default LoanDetail;

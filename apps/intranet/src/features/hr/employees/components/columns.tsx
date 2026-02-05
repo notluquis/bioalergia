@@ -1,9 +1,8 @@
 import { Chip } from "@heroui/react";
-import { getRetentionRateForYear } from "@shared/retention";
 import type { ColumnDef } from "@tanstack/react-table";
-
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import type { Employee } from "@/features/hr/employees/types";
+import { getRetentionRateForYear } from "~/shared/retention";
 
 export interface EmployeeTableMeta {
   canEdit: boolean;
@@ -28,6 +27,7 @@ export const columns: ColumnDef<Employee>[] = [
     cell: ({ row }) => (
       <span className="font-medium text-foreground">{row.original.full_name}</span>
     ),
+
     header: "Nombre",
   },
   {
@@ -69,6 +69,7 @@ export const columns: ColumnDef<Employee>[] = [
     cell: ({ row }) => (
       <span className="text-default-500">{row.original.person?.email ?? "—"}</span>
     ),
+
     header: "Correo",
   },
   {
@@ -134,6 +135,7 @@ export const columns: ColumnDef<Employee>[] = [
         {row.original.status === "ACTIVE" ? "Activo" : "Inactivo"}
       </Chip>
     ),
+
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },

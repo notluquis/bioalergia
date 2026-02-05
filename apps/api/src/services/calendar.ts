@@ -1,6 +1,7 @@
 import { db } from "@finanzas/db";
 
 import type { CalendarEventRecord } from "../lib/google/google-calendar";
+import { calendarSyncService } from "../modules/calendar/service";
 
 export async function loadSettings() {
   const settings = await db.setting.findMany();
@@ -412,4 +413,4 @@ export async function createCalendarEvent(data: CalendarEventRecord) {
   });
 }
 
-export { calendarSyncService } from "../modules/calendar/service";
+export { calendarSyncService };

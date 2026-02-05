@@ -3,7 +3,7 @@ import { Key, Loader2, LogOut, ShieldCheck } from "lucide-react";
 import { Suspense, useEffect } from "react";
 import { z } from "zod";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -45,8 +45,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   no_refresh_token: "Google no proporcionó token. Revoca el acceso y vuelve a intentar.",
   token_exchange_failed: "Error al intercambiar código. Intenta nuevamente.",
 };
-
-export default function GoogleDriveConnectWrapper() {
+export function GoogleDriveConnectWrapper() {
   return (
     <Suspense
       fallback={
@@ -59,6 +58,8 @@ export default function GoogleDriveConnectWrapper() {
     </Suspense>
   );
 }
+
+export { GoogleDriveConnectWrapper as GoogleDriveConnect };
 
 function GoogleDriveConnect() {
   const { error: showError, success } = useToast();

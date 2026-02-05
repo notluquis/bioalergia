@@ -1,11 +1,12 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 
 import { personalFinanceApi } from "../api";
 import { personalFinanceKeys } from "../queries";
@@ -41,7 +42,7 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
   const form = useForm({
     defaultValues: {
       amount: Number(installment.amount),
-      paymentDate: new Date(),
+      paymentDate: dayjs().format("YYYY-MM-DD"),
     } as PayInstallmentInput,
     onSubmit: ({ value }) => {
       mutation.mutate(value);
@@ -72,8 +73,8 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
         title={`Pagar Cuota #${installment.installmentNumber}`}
       >
         <div className="mb-4 text-gray-500 text-sm">
-          Registrar pago de la cuota vencida el {new Date(installment.dueDate).toLocaleDateString()}
-          .
+          Registrar pago de la cuota vencida el{" "}
+          {dayjs(installment.dueDate, "YYYY-MM-DD").format("DD/MM/YYYY")}.
         </div>
 
         <form
@@ -97,6 +98,7 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
                   type="number"
                   value={field.state.value}
                 />
+
                 {field.state.meta.errors.length > 0 && (
                   <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
                 )}
@@ -111,12 +113,13 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
                   label="Fecha de Pago"
                   onBlur={field.handleBlur}
                   onChange={(e) => {
-                    field.handleChange(new Date(e.target.value));
+                    field.handleChange(e.target.value);
                   }}
                   required
                   type="date"
-                  value={field.state.value ? field.state.value.toISOString().split("T")[0] : ""}
+                  value={field.state.value || ""}
                 />
+
                 {field.state.meta.errors.length > 0 && (
                   <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
                 )}

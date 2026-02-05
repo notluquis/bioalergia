@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 
-import TimeInput from "./TimeInput";
+import { TimeInput } from "./TimeInput";
 
 const meta: Meta<typeof TimeInput> = {
   title: "UI/TimeInput",

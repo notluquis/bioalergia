@@ -3,9 +3,9 @@ import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { Select, SelectItem } from "@/components/ui/Select";
 
 import type {
@@ -19,8 +19,8 @@ import type {
   ServiceType,
 } from "../types";
 
-import ServiceScheduleAccordion from "./ServiceScheduleAccordion";
-import ServiceScheduleTable from "./ServiceScheduleTable";
+import { ServiceScheduleAccordion } from "./ServiceScheduleAccordion";
+import { ServiceScheduleTable } from "./ServiceScheduleTable";
 
 interface ServiceDetailProps {
   canManage: boolean;
@@ -218,8 +218,6 @@ export function ServiceDetail({
   );
 }
 
-export default ServiceDetail;
-
 function ServiceHeader({
   canManage,
   onEdit,
@@ -382,6 +380,7 @@ function RegenerateServiceModal({
           type="number"
           value={values.months ?? service.next_generation_months}
         />
+
         <Input
           label="Nueva fecha de inicio"
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -393,6 +392,7 @@ function RegenerateServiceModal({
           type="date"
           value={dayjs(values.startDate ?? service.start_date).format("YYYY-MM-DD")}
         />
+
         <Input
           label="Monto base"
           min={0}
@@ -403,6 +403,7 @@ function RegenerateServiceModal({
           type="number"
           value={values.defaultAmount ?? service.default_amount}
         />
+
         <Input
           label="Día de vencimiento"
           max={31}
@@ -416,6 +417,7 @@ function RegenerateServiceModal({
           type="number"
           value={values.dueDay ?? service.due_day ?? ""}
         />
+
         <Select
           label="Frecuencia"
           onChange={(val) => {

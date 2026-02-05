@@ -116,4 +116,4 @@ app.get("/:id", zValidator("param", peopleParamSchema), async (c) => {
   }
 });
 
-export default app;
+export const peopleRoutes = app;

@@ -1,8 +1,7 @@
 import dayjs from "dayjs";
 
 const RANGE_DAYS = 30;
-
-export default function DashboardChart({
+export function DashboardChart({
   data,
   loading,
 }: {
@@ -44,6 +43,7 @@ export default function DashboardChart({
                   className="flex-1 rounded-full bg-success/80 shadow-sm"
                   style={{ height: `${inHeight}px` }}
                 />
+
                 <div
                   className="flex-1 rounded-full bg-danger/80 shadow-sm"
                   style={{ height: `${outHeight}px` }}

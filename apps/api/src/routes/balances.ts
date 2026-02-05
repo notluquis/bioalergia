@@ -27,8 +27,8 @@ app.get("/", async (c) => {
   const report = await getBalancesReport(parsed.data.from, parsed.data.to);
   return reply(c, {
     status: "ok",
-    from: new Date(parsed.data.from),
-    to: new Date(parsed.data.to),
+    from: parsed.data.from,
+    to: parsed.data.to,
     ...report,
   });
 });
@@ -63,4 +63,4 @@ app.post("/", async (c) => {
   return reply(c, { status: "ok" });
 });
 
-export default app;
+export const balanceRoutes = app;

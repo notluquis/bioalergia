@@ -11,7 +11,7 @@
 
 import { Spinner } from "@heroui/react";
 
-import Alert from "@/components/ui/Alert";
+import { Alert } from "@/components/ui/Alert";
 import { useAuth } from "@/context/AuthContext";
 
 import { CierrePanel } from "./components/CierrePanel";
@@ -19,8 +19,7 @@ import { EntryForm } from "./components/EntryForm";
 import { TopBar } from "./components/TopBar";
 import { WeekStrip } from "./components/WeekStrip";
 import { useDailyBalanceForm } from "./hooks/use-daily-balance-form";
-
-export default function DailyBalancePage() {
+export function DailyBalancePage() {
   const { can } = useAuth();
   const canView = can("read", "DailyBalance");
 

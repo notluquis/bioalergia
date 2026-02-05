@@ -18,14 +18,14 @@ import dayjs from "dayjs";
 import { ArrowDown, ArrowUp, BarChart3, Calendar, TrendingUp } from "lucide-react";
 import { useState } from "react";
 
-import StatCard from "@/components/ui/StatCard";
+import { StatCard } from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { BalanceSummary } from "@/features/finance/balances/components/BalanceSummary";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
-import MonthlyFlowChart from "../components/MonthlyFlowChart";
-import MovementTypeList from "../components/MovementTypeList";
-import TopParticipantsSection from "../components/TopParticipantsSection";
+import { MonthlyFlowChart } from "../components/MonthlyFlowChart";
+import { MovementTypeList } from "../components/MovementTypeList";
+import { TopParticipantsSection } from "../components/TopParticipantsSection";
 import { useStatsData } from "../hooks/use-stats-data";
 
 import "dayjs/locale/es";
@@ -67,8 +67,7 @@ const QUICK_MONTHS = [
     value: "year",
   },
 ];
-
-export default function FinanzasStatsPage() {
+export function FinanzasStatsPage() {
   const { can } = useAuth();
   const {
     balancesError,
@@ -220,6 +219,7 @@ export default function FinanzasStatsPage() {
               title="INGRESOS"
               value={totals.in}
             />
+
             <StatCard
               className="text-danger"
               icon={ArrowDown}
@@ -227,6 +227,7 @@ export default function FinanzasStatsPage() {
               title="EGRESOS"
               value={totals.out}
             />
+
             <StatCard
               className={totals.net >= 0 ? "text-success" : "text-danger"}
               icon={BarChart3}

@@ -10,8 +10,7 @@ interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: React.ReactNode;
   onCheckedChange?: (checked: boolean) => void;
 }
-
-export default function Checkbox({
+export function Checkbox({
   className,
   label,
   checked,

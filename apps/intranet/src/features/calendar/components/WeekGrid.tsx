@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { useEffect, useState } from "react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -731,5 +731,3 @@ function NowIndicator({ endHour, startHour }: Readonly<{ endHour: number; startH
     </div>
   );
 }
-
-export default WeekGrid;

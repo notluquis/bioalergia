@@ -4,20 +4,19 @@ import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Lock, PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-import AdjustStockForm from "@/features/inventory/components/AdjustStockForm";
-import AllergyInventoryView from "@/features/inventory/components/AllergyInventoryView";
+import { AdjustStockForm } from "@/features/inventory/components/AdjustStockForm";
+import { AllergyInventoryView } from "@/features/inventory/components/AllergyInventoryView";
 import { columns } from "@/features/inventory/components/columns";
-import InventoryItemForm from "@/features/inventory/components/InventoryItemForm";
+import { InventoryItemForm } from "@/features/inventory/components/InventoryItemForm";
 import { inventoryKeys } from "@/features/inventory/queries";
 import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
-
-export default function InventoryPage() {
+export function InventoryPage() {
   const client = useClientQueries(schemaLite);
 
   const { can } = useAuth();

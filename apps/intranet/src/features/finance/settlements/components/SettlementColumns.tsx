@@ -2,7 +2,7 @@ import { Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 import { formatAmount } from "@/features/finance/utils";
 
@@ -83,6 +83,7 @@ export const columns: ColumnDef<SettlementTransaction, unknown>[] = [
         {row.original.sourceId}
       </span>
     ),
+
     enablePinning: true, // Hint for UI, logic handled in DataTable state
     header: "ID Origen",
     minSize: 180,
@@ -98,6 +99,7 @@ export const columns: ColumnDef<SettlementTransaction, unknown>[] = [
         {row.original.transactionType}
       </Chip>
     ),
+
     header: "Tipo",
     minSize: 150,
   },
@@ -138,6 +140,7 @@ export const columns: ColumnDef<SettlementTransaction, unknown>[] = [
         {row.original.description}
       </span>
     ),
+
     header: "Descripción",
     minSize: 200,
   },
@@ -159,6 +162,7 @@ export const columns: ColumnDef<SettlementTransaction, unknown>[] = [
         )}
       </div>
     ),
+
     header: "Liberado",
     size: 90,
   },

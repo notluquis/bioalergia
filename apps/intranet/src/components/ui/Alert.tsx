@@ -12,8 +12,7 @@ interface AlertProps {
   onClose?: () => void;
   variant?: "error" | "info" | "success" | "warning";
 }
-
-export default function Alert({
+export function Alert({
   children,
   className = "",
   onClose,

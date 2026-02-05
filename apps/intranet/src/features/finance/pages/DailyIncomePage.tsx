@@ -18,7 +18,10 @@ export function DailyIncomePage() {
   const client = useClientQueries(schemaLite);
   const { data: events, isLoading } = client.event.useFindMany({
     where: {
-      AND: [{ startDate: { gte: new Date(from) } }, { startDate: { lte: new Date(to) } }],
+      AND: [
+        { startDate: { gte: dayjs(from, "YYYY-MM-DD").toDate() } },
+        { startDate: { lte: dayjs(to, "YYYY-MM-DD").toDate() } },
+      ],
     },
     orderBy: { startDateTime: "desc" },
   });
@@ -88,7 +91,7 @@ export function DailyIncomePage() {
               <Card.Content className="gap-4 p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-lg capitalize">
-                    {dayjs(date).format("dddd D [de] MMMM")}
+                    {dayjs(date, "YYYY-MM-DD").format("dddd D [de] MMMM")}
                   </h3>
                   <div className="text-right text-sm">
                     <div className="text-default-600">

@@ -71,7 +71,7 @@ const mapSizeToHero = (size: string | undefined): "sm" | "md" | "lg" | undefined
   return size as "sm" | "md" | "lg" | undefined;
 };
 
-const FinalButton = forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     { className, variant, size = "md", fullWidth, isLoading, isDisabled, children, ...props },
     ref,
@@ -95,6 +95,5 @@ const FinalButton = forwardRef<HTMLButtonElement, ButtonProps>(
   },
 );
 
-FinalButton.displayName = "Button";
-
-export default FinalButton;
+Button.displayName = "Button";
+export { Button };

@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 
 import type { ServiceEmissionMode } from "../../types";
@@ -78,6 +78,7 @@ export function EmissionSection({
             type="number"
             value={emissionStartDay ?? ""}
           />
+
           <Input
             label="Día término emisión"
             max={31}

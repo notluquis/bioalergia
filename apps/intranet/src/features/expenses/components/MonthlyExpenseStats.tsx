@@ -6,11 +6,7 @@ interface MonthlyExpenseStatsProps {
   loading: boolean;
   stats: MonthlyExpenseStatsRow[];
 }
-
-export default function MonthlyExpenseStats({
-  loading,
-  stats,
-}: Readonly<MonthlyExpenseStatsProps>) {
+export function MonthlyExpenseStats({ loading, stats }: Readonly<MonthlyExpenseStatsProps>) {
   if (loading) {
     return <p className="text-default-400 text-xs">Calculando estadísticas…</p>;
   }

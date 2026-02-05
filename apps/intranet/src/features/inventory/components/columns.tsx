@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Lock } from "lucide-react";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 import type { InventoryItem } from "../types";
 
@@ -23,6 +23,7 @@ export const columns: ColumnDef<InventoryItem>[] = [
     cell: ({ row }) => (
       <span className="text-foreground">{row.original.category_name ?? "Sin categoría"}</span>
     ),
+
     header: "Categoría",
   },
   {

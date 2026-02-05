@@ -1,4 +1,6 @@
 import { authDb } from "@finanzas/db";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
 import { Decimal } from "decimal.js";
 import type { Context } from "hono";
 import { Hono } from "hono";
@@ -9,6 +11,7 @@ import { zValidator } from "../lib/zod-validator";
 import { reply } from "../utils/reply";
 
 export const personalFinanceRoutes = new Hono();
+dayjs.extend(utc);
 
 // Middleware to get authenticated DB client
 async function getAuthDb(c: Context) {
@@ -21,6 +24,8 @@ async function getAuthDb(c: Context) {
 }
 
 // Schemas
+const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
 const createCreditSchema = z.object({
   bankName: z.string().min(1),
   creditNumber: z.string().min(1),
@@ -28,13 +33,13 @@ const createCreditSchema = z.object({
   totalAmount: z.number().positive(),
   currency: z.enum(["CLP", "UF", "USD"]).default("CLP"),
   interestRate: z.number().optional(),
-  startDate: z.coerce.date(), // Accepts ISO string or Date object
+  startDate: dateOnlySchema,
   totalInstallments: z.number().int().positive(),
   installments: z
     .array(
       z.object({
         installmentNumber: z.number().int(),
-        dueDate: z.coerce.date(),
+        dueDate: dateOnlySchema,
         amount: z.number(),
         capitalAmount: z.number().optional(),
         interestAmount: z.number().optional(),
@@ -45,9 +50,13 @@ const createCreditSchema = z.object({
 });
 
 const payInstallmentSchema = z.object({
-  paymentDate: z.coerce.date().default(() => new Date()),
+  paymentDate: dateOnlySchema.default(() => dayjs().format("YYYY-MM-DD")),
   amount: z.number().positive(), // Amount actually paid
 });
+
+function parseDateOnlyUtc(value: string): Date {
+  return dayjs.utc(value, "YYYY-MM-DD", true).toDate();
+}
 
 // Routes
 
@@ -106,13 +115,13 @@ personalFinanceRoutes.post("/credits", zValidator("json", createCreditSchema), a
       totalAmount: new Decimal(data.totalAmount),
       currency: data.currency,
       interestRate: data.interestRate ? new Decimal(data.interestRate) : undefined,
-      startDate: data.startDate,
+      startDate: parseDateOnlyUtc(data.startDate),
       totalInstallments: data.totalInstallments,
       status: "ACTIVE",
       installments: {
         create: data.installments?.map((inst) => ({
           installmentNumber: inst.installmentNumber,
-          dueDate: inst.dueDate,
+          dueDate: parseDateOnlyUtc(inst.dueDate),
           amount: new Decimal(inst.amount),
           capitalAmount: inst.capitalAmount ? new Decimal(inst.capitalAmount) : undefined,
           interestAmount: inst.interestAmount ? new Decimal(inst.interestAmount) : undefined,
@@ -164,7 +173,7 @@ personalFinanceRoutes.post(
       where: { id: installment.id },
       data: {
         status: "PAID",
-        paidAt: paymentDate,
+        paidAt: parseDateOnlyUtc(paymentDate),
         paidAmount: new Decimal(amount),
       },
     });

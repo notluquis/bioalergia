@@ -38,11 +38,11 @@ interface TimesheetAuditCalendarProps {
 const SECONDS_IN_DAY = 24 * 60 * 60 - 1; // 23:59:59
 const SLOT_BUFFER_SECONDS = 60 * 30;
 
-function buildDateTime(date: Date, time: null | string) {
+function buildDateTime(date: string, time: null | string) {
   if (!time) {
     return null;
   }
-  return `${dayjs(date).format("YYYY-MM-DD")}T${time}`;
+  return `${date}T${time}`;
 }
 
 function clampSeconds(value: number) {
@@ -63,7 +63,7 @@ function convertToCalendarEvents(
     .filter((entry) => entry.start_time && entry.end_time)
     .map((entry) => {
       const duration = calculateDurationHours(entry.start_time, entry.end_time);
-      const dateKey = dayjs(entry.work_date).format("YYYY-MM-DD");
+      const dateKey = entry.work_date;
       const overlappingOnDate = overlappingEmployeesByDate.get(dateKey) || new Set();
       const hasOverlap = overlappingOnDate.has(entry.employee_id);
 
@@ -184,8 +184,7 @@ const buildTooltipContent = (props: {
     </div>
   );
 };
-
-export default function TimesheetAuditCalendar({
+export function TimesheetAuditCalendar({
   entries,
   focusDate,
   loading = false,
@@ -224,22 +223,21 @@ export default function TimesheetAuditCalendar({
       return entries;
     }
     return entries.filter((entry) =>
-      visibleDateRanges.some(
-        (range) => entry.work_date >= range.start && entry.work_date <= range.end,
-      ),
+      visibleDateRanges.some((range) => {
+        const startKey = dayjs(range.start).format("YYYY-MM-DD");
+        const endKey = dayjs(range.end).format("YYYY-MM-DD");
+        return entry.work_date >= startKey && entry.work_date <= endKey;
+      }),
     );
   })();
 
   // Memoize overlap detection to avoid recalculation
   const overlappingEmployeesByDate = (() => {
     const map = new Map<string, Set<number>>();
-    const dates = new Set(rangeFilteredEntries.map((e) => dayjs(e.work_date).format("YYYY-MM-DD")));
+    const dates = new Set(rangeFilteredEntries.map((e) => e.work_date));
 
     for (const dateKey of dates) {
-      const overlapping = getOverlappingEmployeesForDate(
-        rangeFilteredEntries,
-        dayjs(dateKey).toDate(),
-      );
+      const overlapping = getOverlappingEmployeesForDate(rangeFilteredEntries, dateKey);
       map.set(dateKey, new Set(overlapping));
     }
 

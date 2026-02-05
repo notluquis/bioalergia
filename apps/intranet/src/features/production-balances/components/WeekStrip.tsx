@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 import { fmtCLP } from "@/lib/format";
 import { cn } from "@/lib/utils";

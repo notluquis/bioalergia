@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
 
-import Button from "@/components/ui/Button";
-import AssociatedAccounts from "@/features/counterparts/components/AssociatedAccounts";
+import { Button } from "@/components/ui/Button";
+import { AssociatedAccounts } from "@/features/counterparts/components/AssociatedAccounts";
 import { counterpartKeys } from "@/features/counterparts/queries";
 import type { Counterpart } from "@/features/counterparts/types";
 import { ServicesSurface } from "@/features/services/components/ServicesShell";
@@ -14,8 +14,7 @@ interface CounterpartDetailSectionProps {
   onSummaryRangeChange: (update: Partial<{ from: string; to: string }>) => void;
   summaryRange: { from: string; to: string };
 }
-
-export default function CounterpartDetailSection({
+export function CounterpartDetailSection({
   canUpdate,
   counterpartId,
   onEdit,

@@ -3,7 +3,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import { signalAppFallback } from "@/lib/app-recovery";
 import { logger } from "@/lib/logger";
 
-import Button from "./Button";
+import { Button } from "./Button";
 
 interface Props {
   children: ReactNode;

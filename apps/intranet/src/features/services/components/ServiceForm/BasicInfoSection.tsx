@@ -1,6 +1,6 @@
 import type { ChangeEvent } from "react";
 
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { ServiceFormState } from "../ServiceForm";
@@ -30,6 +30,7 @@ export function BasicInfoSection({
         required
         value={name}
       />
+
       <Input
         helper="Ej: Servicios básicos, Marketing, Arriendo"
         label="Categoría"
@@ -38,6 +39,7 @@ export function BasicInfoSection({
         }}
         value={category ?? ""}
       />
+
       <Input
         as="textarea"
         helper="Describe qué cubre el servicio o condiciones especiales"
@@ -48,6 +50,7 @@ export function BasicInfoSection({
         rows={3}
         value={detail ?? ""}
       />
+
       <Input
         as="textarea"
         label="Notas"

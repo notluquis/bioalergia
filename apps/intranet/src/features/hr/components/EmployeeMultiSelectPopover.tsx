@@ -3,8 +3,8 @@ import { useDebouncedValue } from "@tanstack/react-pacer";
 import { Check, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 
 export interface EmployeeMultiSelectOption {
@@ -89,6 +89,7 @@ export function EmployeeMultiSelectPopover({
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
+
           <div className="max-h-72 overflow-y-auto">
             {filteredOptions.length === 0 ? (
               <div className="p-3 text-center text-default-400 text-sm">{emptyLabel}</div>

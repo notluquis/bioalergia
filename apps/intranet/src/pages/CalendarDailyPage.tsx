@@ -34,7 +34,9 @@ function CalendarDailyPage() {
 
   // Get data for selected Day
   const selectedDayEntry = daily?.days.find(
-    (d) => dayjs(d.date).format("YYYY-MM-DD") === dayjs(currentSelectedDate).format("YYYY-MM-DD"),
+    (d) =>
+      dayjs(d.date, "YYYY-MM-DD").format("YYYY-MM-DD") ===
+      dayjs(currentSelectedDate).format("YYYY-MM-DD"),
   );
 
   const hasEvents = (selectedDayEntry?.events.length ?? 0) > 0;
@@ -147,5 +149,4 @@ function CalendarDailyPage() {
     </section>
   );
 }
-
-export default CalendarDailyPage;
+export { CalendarDailyPage };

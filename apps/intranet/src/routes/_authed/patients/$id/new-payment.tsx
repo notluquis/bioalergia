@@ -6,14 +6,14 @@ import { ChevronLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { PatientBudgetListSchema, PatientPaymentSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
-import { formatISO } from "@/lib/dates";
+import { zDateString } from "@/lib/api-validate";
 import { PAGE_CONTAINER } from "@/lib/styles";
 
 export const Route = createFileRoute("/_authed/patients/$id/new-payment")({
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authed/patients/$id/new-payment")({
 const paymentSchema = z.object({
   budgetId: z.string().optional(),
   amount: z.number().positive("Monto debe ser mayor a 0"),
-  paymentDate: z.coerce.date(),
+  paymentDate: zDateString,
   paymentMethod: z.enum(["Transferencia", "Efectivo", "Tarjeta", "Otro"]),
   reference: z.string().optional(),
   notes: z.string().optional(),
@@ -63,7 +63,7 @@ function NewPaymentPage() {
         {
           ...data,
           budgetId: data.budgetId ? Number(data.budgetId) : undefined,
-          paymentDate: formatISO(data.paymentDate),
+          paymentDate: data.paymentDate,
         },
         { responseSchema: PatientPaymentSchema },
       );
@@ -97,7 +97,7 @@ function NewPaymentPage() {
     defaultValues: {
       budgetId: "",
       amount: 0,
-      paymentDate: dayjs().toDate(),
+      paymentDate: dayjs().format("YYYY-MM-DD"),
       paymentMethod: "Transferencia",
       reference: "",
       notes: "",
@@ -139,8 +139,8 @@ function NewPaymentPage() {
                 <Input
                   type="date"
                   label="Fecha de Pago"
-                  value={dayjs(field.state.value).format("YYYY-MM-DD")}
-                  onChange={(e) => field.handleChange(dayjs(e.target.value).toDate())}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
                   error={field.state.meta.errors.join(", ")}
                 />

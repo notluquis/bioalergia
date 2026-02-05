@@ -2,7 +2,7 @@ import { Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 import type { ServiceSchedule } from "../types";
 
@@ -34,6 +34,7 @@ export const getColumns = (
         {dayjs(row.original.period_start).format("MMM YYYY")}
       </span>
     ),
+
     header: "Periodo",
   },
   {
@@ -41,6 +42,7 @@ export const getColumns = (
     cell: ({ row }) => (
       <span className="text-foreground">{dayjs(row.original.due_date).format("DD MMM YYYY")}</span>
     ),
+
     header: "Vencimiento",
   },
   {

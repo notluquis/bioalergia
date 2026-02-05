@@ -11,9 +11,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { createInventoryCategory, deleteInventoryCategory } from "@/features/inventory/api";
 import { inventoryKeys } from "@/features/inventory/queries";
@@ -38,8 +38,7 @@ interface InventoryListProps {
   toggleCategory: (id: number) => void;
   uncategorizedItems: InventoryItem[];
 }
-
-export default function InventorySettingsPage() {
+export function InventorySettingsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());

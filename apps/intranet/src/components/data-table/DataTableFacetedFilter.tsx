@@ -1,15 +1,15 @@
 import { Dropdown, Label, type Selection } from "@heroui/react";
 import type { Column } from "@tanstack/react-table";
 import { PlusCircle } from "lucide-react";
-import * as React from "react";
+import { type ComponentType, useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 interface DataTableFacetedFilterProps<TData, TValue> {
   readonly column?: Column<TData, TValue>;
   readonly options: {
-    readonly icon?: React.ComponentType<{ className?: string }>;
+    readonly icon?: ComponentType<{ className?: string }>;
     readonly label: string;
     readonly value: string;
   }[];
@@ -23,7 +23,7 @@ export function DataTableFacetedFilter<TData, TValue>({
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues();
   const selectedValues = new Set((column?.getFilterValue() as string[] | undefined) ?? []);
-  const [search, setSearch] = React.useState("");
+  const [search, setSearch] = useState("");
 
   const filteredOptions = options.filter((option) =>
     option.label.toLowerCase().includes(search.toLowerCase()),

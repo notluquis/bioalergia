@@ -2,21 +2,20 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import {
   fetchServiceDetail,
   regenerateServiceSchedules,
   updateService,
 } from "@/features/services/api";
-import ServiceForm from "@/features/services/components/ServiceForm";
-import ServiceScheduleAccordion from "@/features/services/components/ServiceScheduleAccordion";
-import ServiceScheduleTable from "@/features/services/components/ServiceScheduleTable";
+import { ServiceForm } from "@/features/services/components/ServiceForm";
+import { ServiceScheduleAccordion } from "@/features/services/components/ServiceScheduleAccordion";
+import { ServiceScheduleTable } from "@/features/services/components/ServiceScheduleTable";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
 import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
 import { fmtCLP } from "@/lib/format";
-
-export default function ServiceEditPage() {
+export function ServiceEditPage() {
   const { id } = useParams({ from: "/_authed/services/$id/edit" });
   const queryClient = useQueryClient();
   const [saveMessage, setSaveMessage] = useState<null | string>(null);
@@ -80,7 +79,6 @@ export default function ServiceEditPage() {
       // Error handled by mutation state
     }
   };
-
   const summaryCards = useMemo(() => {
     const { service } = detail;
     return [
@@ -121,6 +119,7 @@ export default function ServiceEditPage() {
         title: "Última modificación",
       },
     ];
+
     if (service.overdue_count > 0) {
       items.push({
         date: dayjs().format("DD MMM YYYY"),
@@ -224,12 +223,14 @@ export default function ServiceEditPage() {
                 schedules={schedules}
                 service={service}
               />
+
               <ServiceScheduleTable
                 canManage={false}
                 onRegisterPayment={() => undefined}
                 onUnlinkPayment={() => undefined}
                 schedules={schedules}
               />
+
               <div className="flex justify-end">
                 <Button
                   disabled={updateMutation.isPending}

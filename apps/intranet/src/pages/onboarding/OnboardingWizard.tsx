@@ -1,18 +1,16 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { useEffect } from "react";
-import Alert from "@/components/ui/Alert";
+import { Alert } from "@/components/ui/Alert";
 
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import {
-  CompleteStep,
-  FinancialStep,
-  MfaStep,
-  PasswordStep,
-  ProfileStep,
-  WelcomeStep,
-} from "@/pages/onboarding/components";
+import { CompleteStep } from "./components/CompleteStep";
+import { FinancialStep } from "./components/FinancialStep";
+import { MfaStep } from "./components/MfaStep";
+import { PasswordStep } from "./components/PasswordStep";
+import { ProfileStep } from "./components/ProfileStep";
+import { WelcomeStep } from "./components/WelcomeStep";
 import { useOnboardingForm } from "./hooks/useOnboardingForm";
 
 const STEPS = [
@@ -33,6 +31,7 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
           className="absolute top-1/2 left-0 z-0 h-0.5 -translate-y-1/2 bg-primary transition-all duration-500"
           style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
         />
+
         {STEPS.map((step, idx) => (
           <div className="relative z-10 flex flex-col items-center gap-2 px-1" key={step.id}>
             <div
@@ -89,6 +88,7 @@ function StepContent({
         isLoading={logic.isLoading}
       />
     ),
+
     2: (
       <FinancialStep
         profile={logic.profile}
@@ -98,6 +98,7 @@ function StepContent({
         isLoading={logic.isLoading}
       />
     ),
+
     3: (
       <PasswordStep
         password={logic.password}
@@ -110,6 +111,7 @@ function StepContent({
         error={logic.error}
       />
     ),
+
     4: (
       <MfaStep
         mfaSecret={logic.mfaSecret}
@@ -122,6 +124,7 @@ function StepContent({
         isLoading={logic.isLoading}
       />
     ),
+
     5: <CompleteStep onFinish={() => mf2.mutate()} isLoading={logic.isLoading} />,
   } as Record<number, React.ReactNode>;
   return (
@@ -135,8 +138,7 @@ function StepContent({
     </>
   );
 }
-
-export default function OnboardingWizard() {
+export function OnboardingWizard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const logic = useOnboardingForm();

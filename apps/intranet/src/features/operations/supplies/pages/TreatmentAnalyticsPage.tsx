@@ -93,7 +93,7 @@ interface PieChartData {
 // --- Main Page Component ---
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Component logic is centralized for analytics
-export default function TreatmentAnalyticsPage() {
+export function TreatmentAnalyticsPage() {
   const navigate = routeApi.useNavigate();
   const searchParams = routeApi.useSearch();
   const [period, setPeriod] = useState<"day" | "week" | "month">(searchParams.period || "week");
@@ -198,12 +198,14 @@ export default function TreatmentAnalyticsPage() {
             totalMl={totalMl}
             domicilioCount={domicilioCount}
           />
+
           <AnalyticsCharts
             trendData={trendData}
             pieDataStage={pieDataStage}
             pieDataLocation={pieDataLocation}
             period={period}
           />
+
           <AnalyticsDetailTable data={trendData || []} period={period} />
         </>
       )}
@@ -252,6 +254,7 @@ function AnalyticsCharts({
                   axisLine={false}
                   tickFormatter={(val) => (period === "day" ? dayjs(val).format("D MMM") : val)}
                 />
+
                 <YAxis
                   yAxisId="left"
                   stroke={COLORS.default}
@@ -260,6 +263,7 @@ function AnalyticsCharts({
                   axisLine={false}
                   tickFormatter={(val) => `$${val / 1000}k`}
                 />
+
                 <YAxis
                   yAxisId="right"
                   orientation="right"
@@ -268,6 +272,7 @@ function AnalyticsCharts({
                   tickLine={false}
                   axisLine={false}
                 />
+
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
                 <Area
@@ -280,6 +285,7 @@ function AnalyticsCharts({
                   fill="url(#colorRevenue)"
                   strokeWidth={2}
                 />
+
                 <Area
                   yAxisId="right"
                   type="monotone"
@@ -358,13 +364,8 @@ const CustomTooltip = ({
   label,
 }: {
   active?: boolean;
-  label?: string;
-  // payload contains tooltip data for each series in the chart
-  payload?: Array<{
-    color: string;
-    name: string;
-    value: number;
-  }>;
+  label?: string; // payload contains tooltip data for each series in the chart
+  payload?: Array<{ color: string; name: string; value: number }>;
 }) => {
   if (active && payload && payload.length) {
     return (
@@ -598,6 +599,7 @@ function AnalyticsKpiGrid({
         icon={Syringe}
         trend="Total periodo"
       />
+
       <KpiCard
         title="Ingresos"
         value={formatCurrency(totalRevenue)}
@@ -605,6 +607,7 @@ function AnalyticsKpiGrid({
         trend="Facturado"
         color="success"
       />
+
       <KpiCard
         title="Consumo (ml)"
         value={totalMl.toFixed(1)}
@@ -612,6 +615,7 @@ function AnalyticsKpiGrid({
         trend="Total ml"
         color="warning"
       />
+
       <KpiCard
         title="Domicilios"
         value={domicilioCount}

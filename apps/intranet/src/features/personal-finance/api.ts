@@ -19,9 +19,9 @@ export const personalFinanceApi = {
         ...data,
         installments: data.installments?.map((i) => ({
           ...i,
-          dueDate: i.dueDate.toISOString(),
+          dueDate: i.dueDate,
         })),
-        startDate: data.startDate.toISOString(),
+        startDate: data.startDate,
       },
       { responseSchema: PersonalCreditSchema },
     );
@@ -58,7 +58,7 @@ export const personalFinanceApi = {
       `/api/personal-finance/credits/${creditId}/installments/${installmentNumber}/pay`,
       {
         ...data,
-        paymentDate: data.paymentDate.toISOString(),
+        paymentDate: data.paymentDate,
       },
       { responseSchema: PayInstallmentResponseSchema },
     );

@@ -1,6 +1,6 @@
 // apps/api/src/index.ts - Server Entry Point
 import { serve } from "@hono/node-server";
-import app from "./app";
+import { app } from "./app";
 import { startGoogleCalendarScheduler } from "./lib/google/google-calendar-scheduler";
 import { scheduleWatchChannelSetup } from "./lib/google/google-calendar-watch";
 import { startMercadoPagoScheduler } from "./lib/mercadopago/mercadopago-scheduler";

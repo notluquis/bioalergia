@@ -44,8 +44,7 @@ const ACCENT_THEME: Record<
     value: "text-danger",
   },
 };
-
-export default function MetricCard({
+export function MetricCard({
   accent,
   loading,
   title,
@@ -67,6 +66,7 @@ export default function MetricCard({
         aria-hidden="true"
         className={`pointer-events-none absolute inset-0 rounded-3xl bg-linear-to-br ${theme.gradient}`}
       />
+
       <div className="relative flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">

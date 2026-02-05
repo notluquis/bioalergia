@@ -113,4 +113,4 @@ app.post("/:publicId/unlink", async (c) => {
   return reply(c, { status: "error", message: "MonthlyExpense feature not yet implemented" }, 501);
 });
 
-export default app;
+export const expenseRoutes = app;

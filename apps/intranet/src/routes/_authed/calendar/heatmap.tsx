@@ -2,10 +2,12 @@ import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { type CalendarSearchParams, calendarSearchSchema } from "@/features/calendar/types";
 
-const CalendarHeatmapPage = lazy(() => import("@/pages/CalendarHeatmapPage"));
+const CalendarHeatmapPage = lazy(() =>
+  import("@/pages/CalendarHeatmapPage").then((m) => ({ default: m.CalendarHeatmapPage })),
+);
 
 export const Route = createFileRoute("/_authed/calendar/heatmap")({
   validateSearch: (search: Record<string, unknown>): CalendarSearchParams => {

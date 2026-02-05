@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zDateString } from "@/lib/api-validate";
 
 // Zod Schemas (mirroring backend)
 export const createCreditSchema = z.object({
@@ -11,7 +12,7 @@ export const createCreditSchema = z.object({
       z.object({
         amount: z.number(),
         capitalAmount: z.number().optional(),
-        dueDate: z.date(),
+        dueDate: zDateString,
         installmentNumber: z.number().int(),
         interestAmount: z.number().optional(),
         otherCharges: z.number().optional(),
@@ -19,14 +20,14 @@ export const createCreditSchema = z.object({
     )
     .optional(),
   interestRate: z.number().optional(),
-  startDate: z.date({ message: "La fecha de inicio es requerida" }),
+  startDate: zDateString,
   totalAmount: z.number().positive("El monto debe ser positivo"),
   totalInstallments: z.number().int().positive("Debe tener al menos 1 cuota"),
 });
 
 export const payInstallmentSchema = z.object({
   amount: z.number().positive(),
-  paymentDate: z.date(),
+  paymentDate: zDateString,
 });
 
 export type CreateCreditInput = z.infer<typeof createCreditSchema>;
@@ -44,10 +45,10 @@ export interface PersonalCredit {
   institution?: null | string;
   interestRate?: null | number;
   nextPaymentAmount?: null | number;
-  nextPaymentDate?: null | Date;
+  nextPaymentDate?: null | string;
   // Calculated/extended fields
   remainingAmount?: number;
-  startDate: Date; // ISO Date
+  startDate: string; // YYYY-MM-DD
 
   status: "ACTIVE" | "PAID" | "REFINANCED";
   totalAmount: number; // Decimal in DB, number in JS (usually handled by serializer)
@@ -59,12 +60,12 @@ export interface PersonalCreditInstallment {
   amount: number;
   capitalAmount?: null | number;
   creditId: number;
-  dueDate: Date;
+  dueDate: string;
   id: number;
   installmentNumber: number;
   interestAmount?: null | number;
   otherCharges?: null | number;
   paidAmount?: null | number;
-  paidAt?: null | Date;
+  paidAt?: null | string;
   status: "PAID" | "PENDING";
 }

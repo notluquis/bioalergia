@@ -2,7 +2,7 @@ import { Chip } from "@heroui/react";
 import dayjs from "dayjs";
 
 import { DataTable } from "@/components/data-table/DataTable";
-import Alert from "@/components/ui/Alert";
+import { Alert } from "@/components/ui/Alert";
 import { fmtCLP } from "@/lib/format";
 
 import type { BalanceDraft, BalancesApiResponse } from "../types";
@@ -13,8 +13,8 @@ interface Props {
   drafts: Record<string, BalanceDraft>;
   error: null | string;
   loading: boolean;
-  onDraftChange: (date: Date, patch: Partial<BalanceDraft>) => void;
-  onSave: (date: Date) => void;
+  onDraftChange: (date: string, patch: Partial<BalanceDraft>) => void;
+  onSave: (date: string) => void;
   report: BalancesApiResponse | null;
   saving: Record<string, boolean>;
 }
@@ -36,7 +36,7 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
           {report?.previous && (
             <Chip className="gap-2" size="lg" variant="tertiary">
               <span className="text-xs">
-                Saldo previo ({dayjs(report.previous.date).format("DD/MM")}):
+                Saldo previo ({dayjs(report.previous.date, "YYYY-MM-DD").format("DD/MM")}):
               </span>
               <span className="font-semibold">{fmtCLP(report.previous.balance)}</span>
             </Chip>

@@ -1,7 +1,7 @@
 import { Key } from "lucide-react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 interface PasswordStepProps {
   password: string;
@@ -58,6 +58,7 @@ export function PasswordStep({
           value={password}
           error={error && password.length < 8 ? "Mínimo 8 caracteres" : undefined}
         />
+
         <Input
           label="Confirmar contraseña"
           minLength={8}

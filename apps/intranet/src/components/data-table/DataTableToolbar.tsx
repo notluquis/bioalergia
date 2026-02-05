@@ -2,8 +2,8 @@ import type { Table } from "@tanstack/react-table";
 import { Download, X } from "lucide-react";
 import Papa from "papaparse";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 import { DataTableFacetedFilter } from "./DataTableFacetedFilter";
 import { DataTableViewOptions } from "./DataTableViewOptions";

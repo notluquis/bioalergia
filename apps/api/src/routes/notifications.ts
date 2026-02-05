@@ -41,4 +41,4 @@ app.post("/send-test", async (c) => {
   return reply(c, result);
 });
 
-export default app;
+export const notificationRoutes = app;

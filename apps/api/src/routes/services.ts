@@ -164,4 +164,4 @@ app.post("/:id/schedules", async (c) => {
   return reply(c, { status: "error", message: "ServiceSchedule feature not yet implemented" }, 501);
 });
 
-export default app;
+export const serviceRoutes = app;

@@ -6,9 +6,9 @@ import React from "react";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationHistory } from "@/features/notifications/components/NotificationHistory";
 
-import Clock from "../features/Clock";
-import Button from "../ui/Button";
-import ThemeToggle from "../ui/ThemeToggle";
+import { Clock } from "../features/Clock";
+import { Button } from "../ui/Button";
+import { ThemeToggle } from "../ui/ThemeToggle";
 
 // Helper: Extract label from match data
 const getMatchLabel = (match: {
@@ -93,8 +93,7 @@ const getPageTitle = (
   }
   return "Inicio";
 };
-
-export default function Header() {
+export function Header() {
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
   const { logout } = useAuth();

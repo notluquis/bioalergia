@@ -12,8 +12,7 @@ interface LoanScheduleTableProps {
   onUnlinkPayment: (schedule: LoanSchedule) => void;
   schedules: LoanSchedule[];
 }
-
-export default function LoanScheduleTable({
+export function LoanScheduleTable({
   canManage,
   onRegisterPayment,
   onUnlinkPayment,

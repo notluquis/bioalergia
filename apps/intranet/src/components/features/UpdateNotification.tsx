@@ -2,8 +2,8 @@ import { useRegisterSW } from "virtual:pwa-register/react";
 import { X } from "lucide-react";
 import { useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { clearAppCaches } from "@/lib/app-recovery";
 
 export function UpdateNotification() {
@@ -22,7 +22,6 @@ export function UpdateNotification() {
       // This prevents the notification from appearing repeatedly after update
     },
   });
-
   const handleUpdate = async () => {
     setIsUpdating(true);
     setNeedRefresh(false);

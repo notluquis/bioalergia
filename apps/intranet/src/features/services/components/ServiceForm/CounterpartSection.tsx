@@ -1,6 +1,6 @@
 import type { ChangeEvent } from "react";
 
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { GRID_2_COL_MD } from "@/lib/styles";
 

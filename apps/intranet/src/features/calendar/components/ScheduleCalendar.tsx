@@ -1,9 +1,9 @@
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import type { CalendarEventDetail } from "../types";
 import { DailyEventCard } from "./DailyEventCard";
-import WeekGrid from "./WeekGrid";
+import { WeekGrid } from "./WeekGrid";
 
 export interface ScheduleCalendarProps {
   events: CalendarEventDetail[];
@@ -74,5 +74,3 @@ export function ScheduleCalendar({
     </div>
   );
 }
-
-export default ScheduleCalendar;

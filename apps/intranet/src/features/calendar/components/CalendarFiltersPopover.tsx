@@ -1,7 +1,7 @@
 import { Popover } from "@heroui/react";
 import { Filter } from "lucide-react";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 import { CalendarFilterPanel, type CalendarFilterPanelProps } from "./CalendarFilterPanel";
 

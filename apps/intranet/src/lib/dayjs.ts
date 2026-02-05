@@ -24,5 +24,4 @@ dayjs.extend(localeData);
 
 // Set default locale
 dayjs.locale("es");
-
-export default dayjs;
+export { dayjs };

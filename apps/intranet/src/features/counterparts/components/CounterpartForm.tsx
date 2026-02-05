@@ -3,9 +3,9 @@ import { useForm, useStore } from "@tanstack/react-form";
 import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { z } from "zod";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { formatRut, validateRut } from "@/lib/rut";
 import { GRID_2_COL_MD } from "@/lib/styles";
@@ -49,8 +49,7 @@ interface CounterpartFormProps {
 }
 
 type CounterpartFormValues = z.infer<typeof counterpartFormSchema>;
-
-export default function CounterpartForm({
+export function CounterpartForm({
   counterpart,
   error,
   loading = false,
@@ -143,6 +142,7 @@ export default function CounterpartForm({
                   type="text"
                   value={field.state.value}
                 />
+
                 {field.state.meta.errors.length > 0 && (
                   <p className="mt-1 text-danger text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
@@ -166,6 +166,7 @@ export default function CounterpartForm({
                   type="text"
                   value={field.state.value}
                 />
+
                 {field.state.meta.errors.length > 0 && (
                   <p className="mt-1 text-danger text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
@@ -241,6 +242,7 @@ export default function CounterpartForm({
                   type="email"
                   value={field.state.value ?? ""}
                 />
+
                 {field.state.meta.errors.length > 0 && (
                   <p className="mt-1 text-danger text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
@@ -265,6 +267,7 @@ export default function CounterpartForm({
                     rows={4}
                     value={field.state.value}
                   />
+
                   {field.state.meta.errors.length > 0 && (
                     <p className="mt-1 text-danger text-xs">
                       {field.state.meta.errors.map((err) => String(err)).join(", ")}

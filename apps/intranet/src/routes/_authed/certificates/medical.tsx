@@ -5,9 +5,9 @@ import dayjs from "dayjs";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { apiClient } from "@/lib/api-client";
 
 const medicalCertificateSearchSchema = z.object({
@@ -199,6 +199,7 @@ function MedicalCertificatePage() {
                       onBlur={field.handleBlur}
                       placeholder="Ej: cuadro compatible con reacción alérgica"
                     />
+
                     {field.state.meta.errors.length > 0 && (
                       <p className="mt-1 text-danger text-sm">
                         {field.state.meta.errors.join(", ")}

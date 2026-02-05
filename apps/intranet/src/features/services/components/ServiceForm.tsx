@@ -2,18 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import type { CounterpartAccount } from "../../counterparts/types";
 import type { CreateServicePayload } from "../types";
-import {
-  BasicInfoSection,
-  CounterpartSection,
-  EmissionSection,
-  FinancialSection,
-  SchedulingSection,
-  ServiceClassificationSection,
-} from "./ServiceForm/index";
+import { BasicInfoSection } from "./ServiceForm/BasicInfoSection";
+import { CounterpartSection } from "./ServiceForm/CounterpartSection";
+import { EmissionSection } from "./ServiceForm/EmissionSection";
+import { FinancialSection } from "./ServiceForm/FinancialSection";
+import { SchedulingSection } from "./ServiceForm/SchedulingSection";
+import { ServiceClassificationSection } from "./ServiceForm/ServiceClassificationSection";
 
 export type ServiceFormState = CreateServicePayload & {
   emissionExactDate?: null | Date;
@@ -342,5 +340,3 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
     </form>
   );
 }
-
-export default ServiceForm;

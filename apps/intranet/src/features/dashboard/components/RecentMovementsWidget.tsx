@@ -4,8 +4,7 @@ import dayjs from "dayjs";
 import type { Transaction } from "@/features/finance/types";
 
 import { fmtCLP } from "@/lib/format";
-
-export default function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
+export function RecentMovementsWidget({ rows }: { rows: Transaction[] }) {
   return (
     <article className="surface-recessed space-y-4 p-6">
       <div className="flex items-center justify-between">

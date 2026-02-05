@@ -1,14 +1,14 @@
 import { Checkbox, Popover } from "@heroui/react";
-import { formatRetentionPercent } from "~/shared/retention";
 import dayjs from "dayjs";
 import type { CellHookData } from "jspdf-autotable";
 import React from "react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
 import { apiClient } from "@/lib/api-client";
 import { fmtCLP } from "@/lib/format";
+import { formatRetentionPercent } from "~/shared/retention";
 
 import type { BulkRow, TimesheetSummaryRow } from "../types";
 
@@ -38,7 +38,7 @@ const COLUMN_LABELS: Record<TimesheetColumnKey, string> = {
   entrada: "Entrada",
   overtime: "Extras",
   salida: "Salida",
-  worked: "Trabajadas"
+  worked: "Trabajadas",
 };
 
 type AutoTableFactory = typeof import("jspdf-autotable");
@@ -63,26 +63,26 @@ interface SummaryTableProps {
   margin: number;
   pageWidth: number;
   summary: null | TimesheetSummaryRow;
-}export
-
-function TimesheetExportPDF({
+}
+export function TimesheetExportPDF({
   bulkRows,
   columns,
   employee,
   logoUrl,
   monthLabel,
-  summary
+  summary,
 }: TimesheetExportPDFProps) {
   const { settings } = useSettings();
   const defaultCols: readonly TimesheetColumnKey[] = [
-  "date",
-  "entrada",
-  "salida",
-  "worked",
-  "overtime"];
+    "date",
+    "entrada",
+    "salida",
+    "worked",
+    "overtime",
+  ];
 
   const [selectedCols, setSelectedCols] = React.useState<TimesheetColumnKey[]>(
-    columns.length > 0 ? columns : [...defaultCols]
+    columns.length > 0 ? columns : [...defaultCols],
   );
   const [showOptions, setShowOptions] = React.useState(false);
   const pdfLibsRef = React.useRef<null | {
@@ -93,9 +93,9 @@ function TimesheetExportPDF({
   async function loadPdfLibs() {
     if (!pdfLibsRef.current) {
       const [{ default: jsPDF }, autoTableModule] = await Promise.all([
-      import("jspdf"),
-      import("jspdf-autotable")]
-      );
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
       const autoTable = autoTableModule.default ?? autoTableModule;
       pdfLibsRef.current = { autoTable, jsPDF };
     }
@@ -118,10 +118,10 @@ function TimesheetExportPDF({
       const libs = await loadPdfLibs();
       const { autoTable, jsPDF } = libs;
       const doc = new jsPDF();
-      const internal = (doc as unknown as {internal?: JsPdfInternal;}).internal ?? {};
+      const internal = (doc as unknown as { internal?: JsPdfInternal }).internal ?? {};
       const pageSize = internal.pageSize ?? internal.getPageSize?.();
       const pageWidth: number =
-      typeof pageSize?.getWidth === "function" ? pageSize.getWidth() : pageSize?.width ?? 210;
+        typeof pageSize?.getWidth === "function" ? pageSize.getWidth() : (pageSize?.width ?? 210);
       const margin = 10;
 
       // Logo (mantener proporción)
@@ -149,12 +149,12 @@ function TimesheetExportPDF({
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
       doc.text("Honorarios por servicios prestados", pageWidth - margin, headerTopY + 2, {
-        align: "right"
+        align: "right",
       });
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       const rightLines = [orgName, orgAddress, orgPhone ? `Tel: ${orgPhone}` : null].filter(
-        Boolean
+        Boolean,
       ) as string[];
       let rightY = headerTopY + 8;
       for (const line of rightLines) {
@@ -190,7 +190,7 @@ function TimesheetExportPDF({
       doc.text(`Periodo: ${periodEs}`, pageWidth - margin, infoStartY, { align: "right" });
       if (payDateFormatted) {
         doc.text(`Fecha de pago: ${payDateFormatted}`, pageWidth - margin, infoStartY + 6, {
-          align: "right"
+          align: "right",
         });
       }
       const net = typeof summary?.net === "number" ? summary.net : 0;
@@ -202,7 +202,7 @@ function TimesheetExportPDF({
       drawSummaryTable({ autoTable, doc, infoStartY, margin, pageWidth, summary });
 
       // Tabla de DETALLE
-      const lastTableReference = doc as unknown as {lastAutoTable?: {finalY: number;};};
+      const lastTableReference = doc as unknown as { lastAutoTable?: { finalY: number } };
       const lastAutoTable = lastTableReference.lastAutoTable;
       const nextY = lastAutoTable ? lastAutoTable.finalY + 8 : infoStartY + 30;
 
@@ -215,7 +215,7 @@ function TimesheetExportPDF({
         margin,
         pageWidth,
         selectedCols,
-        startY: nextY
+        startY: nextY,
       });
 
       // Guardar / previsualizar
@@ -228,7 +228,7 @@ function TimesheetExportPDF({
           previewWindow.location.href = pdfDataUri;
         } else {
           alert(
-            "No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes."
+            "No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes.",
           );
         }
       } else {
@@ -247,8 +247,8 @@ function TimesheetExportPDF({
           className="rounded-xl bg-primary px-4 py-2 font-semibold text-primary-foreground text-sm shadow-md hover:bg-primary/85 focus-visible:outline-2 focus-visible:outline-primary/35 focus-visible:outline-offset-2"
           onClick={() => handleExport(true)}
           type="button"
-          variant="primary">
-          
+          variant="primary"
+        >
           Exportar PDF
         </Button>
         <Popover isOpen={showOptions} onOpenChange={setShowOptions}>
@@ -258,8 +258,8 @@ function TimesheetExportPDF({
                 className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-default-200 bg-background text-primary shadow hover:bg-background/90"
                 size="sm"
                 type="button"
-                variant="secondary">
-                
+                variant="secondary"
+              >
                 ⋯
               </Button>
             </Tooltip>
@@ -268,30 +268,30 @@ function TimesheetExportPDF({
             className="w-64 rounded-xl border border-default-200 bg-background p-0 shadow-xl"
             isNonModal
             offset={8}
-            placement="bottom end">
-            
+            placement="bottom end"
+          >
             <Popover.Dialog className="p-3">
               <p className="mb-2 font-semibold text-default-700 text-xs">Columnas del detalle</p>
               <div className="space-y-2">
-                {[...defaultCols].map((key) =>
-                <Checkbox
-                  key={key}
-                  isSelected={selectedCols.includes(key)}
-                  onChange={(checked) => {
-                    setSelectedCols((prev) => {
-                      const set = new Set<TimesheetColumnKey>(prev);
-                      if (checked) {
-                        set.add(key);
-                      } else {
-                        set.delete(key);
-                      }
-                      return [...set];
-                    });
-                  }}>
-                  
+                {[...defaultCols].map((key) => (
+                  <Checkbox
+                    key={key}
+                    isSelected={selectedCols.includes(key)}
+                    onChange={(checked) => {
+                      setSelectedCols((prev) => {
+                        const set = new Set<TimesheetColumnKey>(prev);
+                        if (checked) {
+                          set.add(key);
+                        } else {
+                          set.delete(key);
+                        }
+                        return [...set];
+                      });
+                    }}
+                  >
                     {COLUMN_LABELS[key] || key}
                   </Checkbox>
-                )}
+                ))}
               </div>
               <div className="mt-3 flex justify-end gap-2">
                 <Button
@@ -300,24 +300,24 @@ function TimesheetExportPDF({
                     setShowOptions(false);
                   }}
                   size="sm"
-                  variant="ghost">
-                  
+                  variant="ghost"
+                >
                   Cerrar
                 </Button>
                 <Button
                   className="text-primary text-xs"
                   onClick={() => handleExport(true)}
                   size="sm"
-                  variant="ghost">
-                  
+                  variant="ghost"
+                >
                   Vista previa
                 </Button>
                 <Button
                   className="text-primary text-xs"
                   onClick={() => handleExport(false)}
                   size="sm"
-                  variant="ghost">
-                  
+                  variant="ghost"
+                >
                   Descargar
                 </Button>
               </div>
@@ -325,8 +325,8 @@ function TimesheetExportPDF({
           </Popover.Content>
         </Popover>
       </div>
-    </div>);
-
+    </div>
+  );
 }
 
 // Helper: Cargar logo y normalizarlo a PNG (evitar "wrong PNG signature")
@@ -355,9 +355,9 @@ function computeWorked(entrada?: string, salida?: string): string {
   if (diff < 0) {
     diff += 24 * 60;
   }
-  const hh = String(Math.floor(diff / 60)).
-  toString().
-  padStart(2, "0");
+  const hh = String(Math.floor(diff / 60))
+    .toString()
+    .padStart(2, "0");
   const mm = String(diff % 60).padStart(2, "0");
   return `${hh}:${mm}`;
 }
@@ -371,42 +371,42 @@ function drawDetailTable({
   margin,
   pageWidth,
   selectedCols,
-  startY
+  startY,
 }: DetailTableProps) {
   const hasAnyOvertime = bulkRows.some(
-    (row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00"
+    (row) => row.overtime && row.overtime !== "0:00" && row.overtime !== "00:00",
   );
   const baseColKeys: TimesheetColumnKey[] =
-  selectedCols.length > 0 ? selectedCols : [...defaultCols];
-  const colKeys: TimesheetColumnKey[] = hasAnyOvertime ?
-  baseColKeys :
-  baseColKeys.filter((k) => k !== "overtime");
+    selectedCols.length > 0 ? selectedCols : [...defaultCols];
+  const colKeys: TimesheetColumnKey[] = hasAnyOvertime
+    ? baseColKeys
+    : baseColKeys.filter((k) => k !== "overtime");
 
   const workedRows = bulkRows.filter((row) => row.entrada || row.salida);
 
   const body = workedRows.map((row) =>
-  colKeys.map((key): string => {
-    switch (key) {
-      case "date":{
+    colKeys.map((key): string => {
+      switch (key) {
+        case "date": {
           return dayjs(row.date).isValid() ? dayjs(row.date).format("DD-MM-YYYY") : "-";
         }
-      case "entrada":{
+        case "entrada": {
           return row.entrada || "-";
         }
-      case "overtime":{
+        case "overtime": {
           return row.overtime || "-";
         }
-      case "salida":{
+        case "salida": {
           return row.salida || "-";
         }
-      case "worked":{
+        case "worked": {
           return computeWorked(row.entrada, row.salida) || "-";
         }
-      default:{
+        default: {
           return assertUnreachable(key);
         }
-    }
-  })
+      }
+    }),
   );
 
   if (body.length === 0) {
@@ -422,14 +422,14 @@ function drawDetailTable({
       1: { halign: "center" },
       2: { halign: "center" },
       3: { halign: "center" },
-      4: { halign: "center" }
+      4: { halign: "center" },
     },
     head: [colKeys.map((k) => labels[k] ?? k.toUpperCase())],
     headStyles: {
       fillColor: [241, 167, 34],
       fontSize: 9,
       fontStyle: "bold",
-      textColor: [255, 255, 255]
+      textColor: [255, 255, 255],
     },
     margin: { left: margin, right: margin },
     startY,
@@ -445,7 +445,7 @@ function drawDetailTable({
           data.cell.styles.fillColor = [245, 245, 245];
         }
       }
-    }
+    },
   });
 }
 
@@ -455,7 +455,7 @@ function drawSummaryTable({
   infoStartY,
   margin,
   pageWidth,
-  summary
+  summary,
 }: SummaryTableProps) {
   const summaryHead = [["Concepto", "Valor"]];
   const hasOvertime = summary && (summary.overtimeMinutes > 0 || (summary.extraAmount || 0) > 0);
@@ -470,13 +470,13 @@ function drawSummaryTable({
       ["Tarifa por hora", fmtCLP(summary.hourlyRate || 0)],
       ["Subtotal", fmtCLP(summary.subtotal || 0)],
       [`Retención (${retentionPercent})`, `-${fmtCLP(summary.retention || 0)}`],
-      ["Total Líquido", fmtCLP(summary.net || 0)]
+      ["Total Líquido", fmtCLP(summary.net || 0)],
     );
   }
 
-  const summaryColumnStyles: Record<string, {halign: "center" | "left" | "right";}> = {
+  const summaryColumnStyles: Record<string, { halign: "center" | "left" | "right" }> = {
     0: { halign: "left" },
-    1: { halign: "right" }
+    1: { halign: "right" },
   };
 
   autoTable(doc, {
@@ -488,11 +488,11 @@ function drawSummaryTable({
     startY: infoStartY + 20,
     styles: { cellPadding: 2, fontSize: 9, overflow: "linebreak" },
     tableWidth: pageWidth - margin * 2,
-    theme: "grid"
+    theme: "grid",
   });
 }
 
-function getLogoDimensions(logoDataUrl: null | string): Promise<null | {h: number;w: number;}> {
+function getLogoDimensions(logoDataUrl: null | string): Promise<null | { h: number; w: number }> {
   if (!logoDataUrl) {
     return Promise.resolve(null);
   }

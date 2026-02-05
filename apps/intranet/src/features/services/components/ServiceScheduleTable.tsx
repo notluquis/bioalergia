@@ -41,5 +41,3 @@ export function ServiceScheduleTable({
     </div>
   );
 }
-
-export default ServiceScheduleTable;

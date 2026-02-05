@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 
 import type { MonthlyExpenseDetail as MonthlyExpenseDetailData } from "../types";
 
@@ -13,8 +13,7 @@ interface MonthlyExpenseDetailProps {
   onLinkTransaction: () => void;
   onUnlinkTransaction: (transactionId: number) => void;
 }
-
-export default function MonthlyExpenseDetail({
+export function MonthlyExpenseDetail({
   canManage,
   expense,
   loading,
@@ -59,10 +58,12 @@ export default function MonthlyExpenseDetail({
           title="Monto esperado"
           value={`$${expense.amountExpected.toLocaleString("es-CL")}`}
         />
+
         <DetailCard
           title="Monto aplicado"
           value={`$${expense.amountApplied.toLocaleString("es-CL")}`}
         />
+
         <DetailCard title="Estado" value={expense.status === "OPEN" ? "Pendiente" : "Cerrado"} />
         <DetailCard
           helper="Registros conciliados"

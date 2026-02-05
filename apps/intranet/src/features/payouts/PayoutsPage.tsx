@@ -1,11 +1,10 @@
 import { DataTable } from "@/components/data-table/DataTable";
-import Alert from "@/components/ui/Alert";
+import { Alert } from "@/components/ui/Alert";
 import { useAuth } from "@/context/AuthContext";
 
 import { columns } from "./components/columns";
 import { usePayouts } from "./hooks/use-payouts";
-
-export default function PayoutsPage() {
+export function PayoutsPage() {
   const { can } = useAuth();
   const canView = can("read", "ReleaseTransaction"); // Assuming same permission as logic
   const { payouts } = usePayouts();

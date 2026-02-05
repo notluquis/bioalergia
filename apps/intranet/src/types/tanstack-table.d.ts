@@ -1,5 +1,10 @@
 import "@tanstack/react-table";
 
+import type { BalanceDraft } from "@/features/finance/balances/types";
+import type { Employee } from "@/features/hr/employees/types";
+import type { InventoryItem } from "@/features/inventory/types";
+import type { SupplyRequest } from "@/features/supplies/types";
+
 declare module "@tanstack/react-table" {
   interface TableMeta<TData extends RowData> {
     totals?: {
@@ -10,5 +15,22 @@ declare module "@tanstack/react-table" {
       retention: number;
       subtotal: number;
     };
+    drafts?: Record<string, BalanceDraft>;
+    onDraftChange?: (date: string, patch: Partial<BalanceDraft>) => void;
+    onSave?: (date: string) => void;
+    saving?: Record<string, boolean>;
+
+    canEdit?: boolean;
+    onActivate?: (id: number) => void;
+    onDeactivate?: (id: number) => void;
+    onEdit?: (employee: Employee) => void;
+
+    canAdjust?: boolean;
+    canUpdate?: boolean;
+    openAdjustStockModal?: (item: InventoryItem) => void;
+    openEditModal?: (item: InventoryItem) => void;
+
+    isAdmin?: boolean;
+    onStatusChange?: (requestId: number, newStatus: SupplyRequest["status"]) => void;
   }
 }

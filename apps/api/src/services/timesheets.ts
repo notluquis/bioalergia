@@ -253,17 +253,16 @@ export async function ensureFixedSalaryRecord(
   }
 
   const firstDayOfMonth = `${month}-01`;
-  const monthStart = new Date(`${month}-01`);
-  const monthEnd = new Date(monthStart);
-  monthEnd.setMonth(monthEnd.getMonth() + 1);
+  const monthStart = dayjs.tz(firstDayOfMonth, "YYYY-MM-DD", TIMEZONE);
+  const monthEnd = monthStart.add(1, "month");
 
   // Check if record already exists for this month
   const existing = await db.employeeTimesheet.findFirst({
     where: {
       employeeId,
       workDate: {
-        gte: monthStart,
-        lt: monthEnd,
+        gte: monthStart.toDate(),
+        lt: monthEnd.toDate(),
       },
     },
   });
@@ -276,7 +275,7 @@ export async function ensureFixedSalaryRecord(
   await db.employeeTimesheet.create({
     data: {
       employeeId,
-      workDate: new Date(firstDayOfMonth),
+      workDate: monthStart.toDate(),
       startTime: null,
       endTime: null,
       workedMinutes: 0,
@@ -308,8 +307,8 @@ export async function listTimesheetEntries(
     where: {
       ...(options.employee_id && { employeeId: options.employee_id }),
       workDate: {
-        gte: new Date(options.from),
-        lte: new Date(options.to),
+        gte: dayjs.tz(options.from, "YYYY-MM-DD", TIMEZONE).startOf("day").toDate(),
+        lte: dayjs.tz(options.to, "YYYY-MM-DD", TIMEZONE).endOf("day").toDate(),
       },
     },
     orderBy: { workDate: "asc" },
@@ -322,7 +321,7 @@ export async function listTimesheetEntries(
 export async function upsertTimesheetEntry(
   payload: UpsertTimesheetPayload,
 ): Promise<TimesheetEntry> {
-  const workDateObj = new Date(payload.work_date);
+  const workDateObj = dayjs.tz(payload.work_date, "YYYY-MM-DD", TIMEZONE).toDate();
 
   // Convert time strings directly to HH:MM:SS format for PostgreSQL TIME columns
   // No timezone conversion - keep as-is from user input
@@ -388,7 +387,7 @@ export async function upsertTimesheetEntry(
     return {
       id: Number(result.id),
       employee_id: result.employeeId,
-      work_date: formatDateOnly(new Date(result.workDate)),
+      work_date: dayjs(result.workDate).tz(TIMEZONE).format("YYYY-MM-DD"),
       start_time: result.startTime ? dateToTimeString(result.startTime) : "",
       end_time: result.endTime ? dateToTimeString(result.endTime) : "",
       worked_minutes: result.workedMinutes,
@@ -708,8 +707,8 @@ export async function buildMonthlySummary(from: string, to: string, employeeId?:
     by: ["employeeId"],
     where: {
       workDate: {
-        gte: new Date(from),
-        lte: new Date(to),
+        gte: dayjs.tz(from, "YYYY-MM-DD", TIMEZONE).startOf("day").toDate(),
+        lte: dayjs.tz(to, "YYYY-MM-DD", TIMEZONE).endOf("day").toDate(),
       },
       ...(employeeId && { employeeId }),
     },

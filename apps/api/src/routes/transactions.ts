@@ -193,4 +193,4 @@ app.get("/stats", zValidator("query", statsQuerySchema), async (c) => {
   }
 });
 
-export default app;
+export const transactionRoutes = app;

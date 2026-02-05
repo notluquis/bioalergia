@@ -2,8 +2,8 @@ import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import type { FocusEvent } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import type { Transaction } from "@/features/finance/types";
 import { fmtCLP } from "@/lib/format";
 
@@ -125,6 +125,7 @@ export const getQuickViewColumns = () => [
     cell: ({ getValue }) => (
       <div className="text-right">{getValue() == null ? "-" : fmtCLP(getValue())}</div>
     ),
+
     header: () => <div className="text-right">Monto</div>,
   }),
 ];

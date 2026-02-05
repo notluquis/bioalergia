@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 import type { ServiceFrequency, ServiceSummary, ServiceType } from "../types";
 
@@ -141,5 +141,3 @@ export function ServiceList({
     </aside>
   );
 }
-
-export default ServiceList;

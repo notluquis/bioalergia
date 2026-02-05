@@ -1,10 +1,12 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { employeeKeys } from "@/features/hr/employees/queries";
 
-const EmployeesPage = lazy(() => import("@/features/hr/employees/pages/EmployeesPage"));
+const EmployeesPage = lazy(() =>
+  import("@/features/hr/employees/pages/EmployeesPage").then((m) => ({ default: m.EmployeesPage })),
+);
 
 export const Route = createFileRoute("/_authed/hr/employees")({
   staticData: {
@@ -22,6 +24,7 @@ export const Route = createFileRoute("/_authed/hr/employees")({
       <EmployeesPage />
     </Suspense>
   ),
+
   loader: ({ context: { queryClient } }) => {
     return queryClient.ensureQueryData(employeeKeys.list({ includeInactive: false }));
   },

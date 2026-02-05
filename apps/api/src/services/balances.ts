@@ -1,8 +1,16 @@
 import { db } from "@finanzas/db";
 import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TIMEZONE = "America/Santiago";
+const parseDateOnly = (value: string) => dayjs.tz(value, "YYYY-MM-DD", TIMEZONE);
 
 export interface DailyBalanceRecord {
-  date: Date;
+  date: string; // YYYY-MM-DD
   totalIn: number;
   totalOut: number;
   netChange: number;
@@ -16,7 +24,7 @@ export interface DailyBalanceRecord {
 export interface BalancesApiResponse {
   days: DailyBalanceRecord[];
   previous: {
-    date: Date;
+    date: string;
     balance: number;
   } | null;
 }
@@ -24,7 +32,7 @@ export interface BalancesApiResponse {
 export async function getBalancesReport(from: string, to: string): Promise<BalancesApiResponse> {
   const previous = await db.dailyBalance.findFirst({
     where: {
-      date: { lt: new Date(dayjs(from).startOf("day").toISOString()) },
+      date: { lt: parseDateOnly(from).startOf("day").toDate() },
     },
     orderBy: { date: "desc" },
   });
@@ -32,8 +40,8 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
   const transactions = await db.transaction.findMany({
     where: {
       transactionDate: {
-        gte: new Date(dayjs(from).startOf("day").toISOString()),
-        lte: new Date(dayjs(to).endOf("day").toISOString()),
+        gte: parseDateOnly(from).startOf("day").toDate(),
+        lte: parseDateOnly(to).endOf("day").toDate(),
       },
     },
     select: {
@@ -46,19 +54,21 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
   const existingBalances = await db.dailyBalance.findMany({
     where: {
       date: {
-        gte: new Date(dayjs(from).startOf("day").toISOString()),
-        lte: new Date(dayjs(to).endOf("day").toISOString()),
+        gte: parseDateOnly(from).startOf("day").toDate(),
+        lte: parseDateOnly(to).endOf("day").toDate(),
       },
     },
   });
 
-  const balanceMap = new Map(existingBalances.map((b) => [dayjs(b.date).format("YYYY-MM-DD"), b]));
+  const balanceMap = new Map(
+    existingBalances.map((b) => [dayjs(b.date).tz(TIMEZONE).format("YYYY-MM-DD"), b]),
+  );
 
   const days: DailyBalanceRecord[] = [];
   let runningBalance = previous ? Number(previous.amount) : 0;
 
-  let current = dayjs(from);
-  const end = dayjs(to);
+  let current = parseDateOnly(from);
+  const end = parseDateOnly(to);
 
   while (current.isBefore(end) || current.isSame(end, "day")) {
     const dateStr = current.format("YYYY-MM-DD");
@@ -86,7 +96,7 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
     const difference = recordedBalance !== null ? recordedBalance - expectedBalance : null;
 
     days.push({
-      date: current.toDate(),
+      date: dateStr,
       totalIn,
       totalOut,
       netChange,
@@ -110,7 +120,7 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
     days,
     previous: previous
       ? {
-          date: previous.date,
+          date: dayjs(previous.date).tz(TIMEZONE).format("YYYY-MM-DD"),
           balance: Number(previous.amount),
         }
       : null,
@@ -120,15 +130,16 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
 import { Decimal } from "decimal.js";
 
 export async function upsertDailyBalance(date: string, amount: number, note?: string) {
+  const parsed = parseDateOnly(date).toDate();
   return db.dailyBalance.upsert({
-    where: { date: new Date(date) },
+    where: { date: parsed },
     update: {
       amount: new Decimal(amount),
       note,
       updatedAt: new Date(),
     },
     create: {
-      date: new Date(date),
+      date: parsed,
       amount: new Decimal(amount),
       note,
     },

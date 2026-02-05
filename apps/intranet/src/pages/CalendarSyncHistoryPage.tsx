@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { Calendar as CalendarIcon, ChevronDown, Loader2, RefreshCw, Settings2 } from "lucide-react";
 import { useState } from "react";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { SectionError } from "@/components/ui/SectionError";
 import { ChangeDetailsViewer } from "@/features/calendar/components/ChangeDetailsViewer";
 import { StatusBadge } from "@/features/calendar/components/StatusBadge";
@@ -13,8 +13,7 @@ import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events
 import { calendarQueries } from "@/features/calendar/queries";
 import type { CalendarData } from "@/features/calendar/types";
 import { cn } from "@/lib/utils";
-
-export default function CalendarSyncHistoryPage() {
+export function CalendarSyncHistoryPage() {
   const [showConfig, setShowConfig] = useState(false);
 
   const {

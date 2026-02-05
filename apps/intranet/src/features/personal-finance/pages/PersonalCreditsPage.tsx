@@ -4,7 +4,7 @@ import { Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Suspense } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils";
 import { CreateCreditForm } from "../components/CreateCreditForm";
 import { personalFinanceQueries } from "../queries";
@@ -76,6 +76,7 @@ const columns: ColumnDef<PersonalCredit>[] = [
         </Button>
       </Link>
     ),
+
     id: "actions",
   },
 ];
@@ -93,8 +94,7 @@ export function PersonalCreditsPage() {
     </div>
   );
 }
-
-export default function PersonalCreditsPageWrapper() {
+export function PersonalCreditsPageWrapper() {
   return (
     <Suspense fallback={<div>Cargando créditos...</div>}>
       <PersonalCreditsPage />

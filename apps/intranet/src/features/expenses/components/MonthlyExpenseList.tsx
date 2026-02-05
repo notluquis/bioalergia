@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 import type { MonthlyExpense } from "../types";
 
@@ -10,8 +10,7 @@ interface MonthlyExpenseListProps {
   onSelect: (publicId: string) => void;
   selectedId: null | string;
 }
-
-export default function MonthlyExpenseList({
+export function MonthlyExpenseList({
   expenses,
   onCreateRequest,
   onSelect,

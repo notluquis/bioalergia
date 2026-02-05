@@ -4,9 +4,9 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { AlertCircle, User as UserIcon } from "lucide-react";
 import { Suspense } from "react";
 import { z } from "zod";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { createRole, type RoleUser, roleKeys, roleQueries, updateRole } from "@/features/roles/api";
 import type { Role } from "@/types/roles";

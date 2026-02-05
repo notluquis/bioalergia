@@ -112,7 +112,9 @@ export function formatRelativeDate(date: Date | string): string {
 
 // === DURATION FORMATTING ===
 
-export { formatFileSize } from "../../shared/format";
+import { formatFileSize } from "../../shared/format";
+
+export { formatFileSize };
 
 // === NUMERIC FORMATTING ===
 
@@ -162,9 +164,11 @@ export function formatPercentage(value: number, decimals = 1): string {
 
 // === FILE SIZE FORMATTING ===
 
-export {
+import {
   durationToMinutes,
   minutesToDuration,
   minutesToTime,
   parseTimeToMinutes,
 } from "~/shared/time";
+
+export { durationToMinutes, minutesToDuration, minutesToTime, parseTimeToMinutes };

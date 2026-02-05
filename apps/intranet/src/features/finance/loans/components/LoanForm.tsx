@@ -2,11 +2,12 @@ import { useForm, useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
 import { z } from "zod";
 
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
-import Checkbox from "@/components/ui/Checkbox";
-import Input from "@/components/ui/Input";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
+import { zDateString } from "@/lib/api-validate";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { CreateLoanPayload } from "../types";
@@ -23,7 +24,7 @@ const loanFormSchema = z.object({
   interestType: z.enum(["SIMPLE", "COMPOUND"]),
   notes: z.string().optional(),
   principalAmount: z.number().positive("El monto principal debe ser mayor a 0"),
-  startDate: z.date(),
+  startDate: zDateString,
   title: z.string().trim().min(1, "El título es requerido"),
   totalInstallments: z.number().int().min(1, "Debe tener al menos 1 cuota"),
 });
@@ -46,7 +47,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
       interestType: "SIMPLE" as const,
       notes: "",
       principalAmount: 0,
-      startDate: dayjs().toDate(),
+      startDate: dayjs().format("YYYY-MM-DD"),
       title: "",
       totalInstallments: 10,
     } as LoanFormData,
@@ -83,6 +84,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 required
                 value={field.state.value}
               />
+
               {field.state.meta.errors.length > 0 && (
                 <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
@@ -102,6 +104,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 required
                 value={field.state.value}
               />
+
               {field.state.meta.errors.length > 0 && (
                 <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
@@ -144,6 +147,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 type="number"
                 value={field.state.value}
               />
+
               {field.state.meta.errors.length > 0 && (
                 <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
@@ -166,6 +170,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 type="number"
                 value={field.state.value}
               />
+
               {field.state.meta.errors.length > 0 && (
                 <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
@@ -229,6 +234,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 type="number"
                 value={field.state.value}
               />
+
               {field.state.meta.errors.length > 0 && (
                 <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
@@ -243,12 +249,13 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                 label="Fecha de Inicio"
                 onBlur={field.handleBlur}
                 onChange={(e) => {
-                  field.handleChange(dayjs(e.target.value).toDate());
+                  field.handleChange(e.target.value);
                 }}
                 required
                 type="date"
-                value={dayjs(field.state.value).format("YYYY-MM-DD")}
+                value={field.state.value}
               />
+
               {field.state.meta.errors.length > 0 && (
                 <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
@@ -266,6 +273,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
                   field.handleChange(e.target.checked);
                 }}
               />
+
               {field.state.meta.errors.length > 0 && (
                 <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
               )}
@@ -287,6 +295,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
               rows={3}
               value={field.state.value ?? ""}
             />
+
             {field.state.meta.errors.length > 0 && (
               <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
             )}
@@ -316,5 +325,3 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
     </form>
   );
 }
-
-export default LoanForm;

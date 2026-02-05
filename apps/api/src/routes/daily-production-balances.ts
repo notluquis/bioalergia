@@ -188,4 +188,4 @@ app.put("/:id", async (c) => {
   return reply(c, { status: "ok", item: mapResponse(updated) });
 });
 
-export default app;
+export const dailyProductionRoutes = app;

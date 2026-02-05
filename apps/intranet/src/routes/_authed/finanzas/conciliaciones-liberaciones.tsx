@@ -1,10 +1,12 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 
-const SettlementReleasePage = lazy(
-  () => import("@/features/finance/mercadopago/pages/SettlementReleaseTransactionsPage"),
+const SettlementReleasePage = lazy(() =>
+  import("@/features/finance/mercadopago/pages/SettlementReleaseTransactionsPage").then((m) => ({
+    default: m.SettlementReleaseTransactionsPage,
+  })),
 );
 
 export const Route = createFileRoute("/_authed/finanzas/conciliaciones-liberaciones")({

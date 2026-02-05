@@ -5,6 +5,9 @@ import path from "node:path";
 import type { User } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import type { PatientWhereInput } from "@finanzas/db/input";
+import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
 import { Hono } from "hono";
 import { getSessionUser } from "../../auth.js";
 import { zValidator } from "../../lib/zod-validator";
@@ -16,6 +19,12 @@ import {
   createPaymentSchema,
   updatePatientSchema,
 } from "./patients.schema.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TIMEZONE = "America/Santiago";
+const parseDateOnly = (value: string) => dayjs.tz(value, "YYYY-MM-DD", TIMEZONE).toDate();
 
 type Variables = {
   user: User;
@@ -156,7 +165,7 @@ patientsRoutes.post("/", zValidator("json", createPatientSchema), async (c) => {
     const patient = await db.patient.create({
       data: {
         personId: person.id,
-        birthDate: new Date(input.birthDate),
+        birthDate: parseDateOnly(input.birthDate),
         bloodType: input.bloodType,
         notes: input.notes,
       },
@@ -219,7 +228,7 @@ patientsRoutes.put("/:id", zValidator("json", updatePatientSchema), async (c) =>
     const updatedPatient = await db.patient.update({
       where: { id },
       data: {
-        birthDate: input.birthDate ? new Date(input.birthDate) : undefined,
+        birthDate: input.birthDate ? parseDateOnly(input.birthDate) : undefined,
         bloodType: input.bloodType,
         notes: input.notes,
       },
@@ -259,7 +268,7 @@ patientsRoutes.post(
       const consultation = await db.consultation.create({
         data: {
           patientId,
-          date: new Date(input.date),
+          date: parseDateOnly(input.date),
           reason: input.reason,
           diagnosis: input.diagnosis,
           treatment: input.treatment,
@@ -344,7 +353,7 @@ patientsRoutes.post("/:id/payments", zValidator("json", createPaymentSchema), as
         budgetId: input.budgetId,
         // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
         amount: input.amount as any,
-        paymentDate: new Date(input.paymentDate),
+        paymentDate: parseDateOnly(input.paymentDate),
         paymentMethod: input.paymentMethod,
         reference: input.reference,
         notes: input.notes,
@@ -449,4 +458,4 @@ patientsRoutes.get("/:id/attachments", async (c) => {
   }
 });
 
-export default patientsRoutes;
+export { patientsRoutes };

@@ -1,10 +1,9 @@
 import { Lock } from "lucide-react";
 
-import Alert from "@/components/ui/Alert";
+import { Alert } from "@/components/ui/Alert";
 import { useAuth } from "@/context/AuthContext";
-import ServicesCreateContent from "@/features/services/components/ServicesCreateContent";
-
-export default function ServicesCreatePage() {
+import { ServicesCreateContent } from "@/features/services/components/ServicesCreateContent";
+export function ServicesCreatePage() {
   const { can } = useAuth();
   const canCreate = can("create", "Service");
 

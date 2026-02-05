@@ -1,6 +1,6 @@
 import { Check, ChevronDown, ChevronRight, Eye, Pencil, Trash2 } from "lucide-react";
 import { Fragment, useState } from "react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuItem,

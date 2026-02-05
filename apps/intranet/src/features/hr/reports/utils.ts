@@ -59,7 +59,7 @@ export function calculateStats(data: EmployeeWorkData[], periodCount = 1) {
 export function groupByDay(entries: TimesheetEntry[]): Record<string, number> {
   const map = new Map<string, number>();
   for (const entry of entries) {
-    const dateKey = dayjs(entry.work_date).format("YYYY-MM-DD");
+    const dateKey = dayjs(entry.work_date, "YYYY-MM-DD").format("YYYY-MM-DD");
     const current = map.get(dateKey) ?? 0;
     map.set(dateKey, current + entry.worked_minutes);
   }
@@ -72,7 +72,7 @@ export function groupByDay(entries: TimesheetEntry[]): Record<string, number> {
 export function groupByMonth(entries: TimesheetEntry[]): Record<string, number> {
   const map = new Map<string, number>();
   for (const entry of entries) {
-    const month = dayjs(entry.work_date).format("YYYY-MM");
+    const month = dayjs(entry.work_date, "YYYY-MM-DD").format("YYYY-MM");
     const current = map.get(month) ?? 0;
     map.set(month, current + entry.worked_minutes);
   }
@@ -85,7 +85,7 @@ export function groupByMonth(entries: TimesheetEntry[]): Record<string, number> 
 export function groupByWeek(entries: TimesheetEntry[]): Record<string, number> {
   const map = new Map<string, number>();
   for (const entry of entries) {
-    const date = dayjs(entry.work_date);
+    const date = dayjs(entry.work_date, "YYYY-MM-DD");
     const week = date.isoWeek();
     const year = date.isoWeekYear();
     const key = `${year}-W${String(week).padStart(2, "0")}`;
@@ -175,7 +175,9 @@ export function processEmployeeData(
   const totalOvertimeMinutes = entries.reduce((sum, e) => sum + e.overtime_minutes, 0);
 
   // Calculate distinct days worked (entries might be multiple per day, though typically 1 per day/emp in this system, but let's be safe)
-  const uniqueDays = new Set(entries.map((e) => dayjs(e.work_date).format("YYYY-MM-DD")));
+  const uniqueDays = new Set(
+    entries.map((e) => dayjs(e.work_date, "YYYY-MM-DD").format("YYYY-MM-DD")),
+  );
   const totalDays = uniqueDays.size;
 
   const avgDailyMinutes = totalDays > 0 ? Math.round(totalMinutes / totalDays) : 0;

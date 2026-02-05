@@ -3,9 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import { Suspense, useState } from "react";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
-import Skeleton from "@/components/ui/Skeleton";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -14,8 +14,8 @@ import {
   createCounterpart,
   updateCounterpart,
 } from "@/features/counterparts/api";
-import CounterpartForm from "@/features/counterparts/components/CounterpartForm";
-import CounterpartList from "@/features/counterparts/components/CounterpartList";
+import { CounterpartForm } from "@/features/counterparts/components/CounterpartForm";
+import { CounterpartList } from "@/features/counterparts/components/CounterpartList";
 import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
 import { counterpartKeys } from "@/features/counterparts/queries";
 import type {
@@ -31,9 +31,8 @@ import {
 import { getPersonFullName } from "@/lib/person";
 import { normalizeRut } from "@/lib/rut";
 
-import CounterpartDetailSection from "../components/CounterpartDetailSection";
-
-export default function CounterpartsPage() {
+import { CounterpartDetailSection } from "../components/CounterpartDetailSection";
+export function CounterpartsPage() {
   const client = useClientQueries(schemaLite);
 
   const { can } = useAuth();
@@ -182,6 +181,7 @@ export default function CounterpartsPage() {
     { label: "Persona natural", value: "NATURAL" },
     { label: "Empresa", value: "JURIDICAL" },
   ];
+
   const CATEGORY_FILTERS: { label: string; value: "ALL" | CounterpartCategory }[] = [
     { label: "Todos los tipos", value: "ALL" },
     { label: "Proveedores", value: "SUPPLIER" },
@@ -227,6 +227,7 @@ export default function CounterpartsPage() {
         description="Gestiona proveedores, prestamistas y clientes con sus cuentas asociadas y movimientos históricos."
         title="Contrapartes"
       />
+
       <ServicesSurface>
         <div className="space-y-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">

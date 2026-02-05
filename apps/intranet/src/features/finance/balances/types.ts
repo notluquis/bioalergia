@@ -5,14 +5,14 @@ export interface BalanceDraft {
 
 export interface BalancesApiResponse {
   days: DailyBalanceDay[];
-  from: Date;
-  previous: null | { balance: number; date: Date; note: null | string };
+  from: string;
+  previous: null | { balance: number; date: string; note: null | string };
   status: "ok";
-  to: Date;
+  to: string;
 }
 
 export interface DailyBalanceDay {
-  date: Date;
+  date: string;
   difference: null | number;
   expectedBalance: null | number;
   hasCashback: boolean;

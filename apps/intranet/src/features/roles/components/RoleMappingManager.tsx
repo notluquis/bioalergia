@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import type { Employee } from "@/features/hr/employees/api";
 import type { Role as AvailableRole } from "@/types/roles";
 
@@ -9,8 +9,7 @@ import type { RoleMapping } from "../api";
 import { roleQueries, saveRoleMapping } from "../api";
 import type { ExtendedRoleMapping } from "./RoleMappingColumns";
 import { getColumns } from "./RoleMappingColumns";
-
-export default function RoleMappingManager() {
+export function RoleMappingManager() {
   const queryClient = useQueryClient();
   const [mappings, setMappings] = useState<ExtendedRoleMapping[]>([]);
   const [availableRoles, setAvailableRoles] = useState<AvailableRole[]>([]);
@@ -37,7 +36,6 @@ export default function RoleMappingManager() {
       // Success means invalidation is triggerd
     },
   });
-
   // Sync data to local state
   useEffect(() => {
     // data is guaranteed by Suspense

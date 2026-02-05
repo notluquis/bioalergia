@@ -9,19 +9,16 @@ import { lazy, Suspense } from "react";
 import type { TopParticipantData } from "../types";
 
 // Lazy load pie chart
-const TopParticipantsPieChart = lazy(() => import("./TopParticipantsPieChart.js"));
+const TopParticipantsPieChart = lazy(() =>
+  import("./TopParticipantsPieChart.js").then((m) => ({ default: m.TopParticipantsPieChart })),
+);
 
 interface TopParticipantsSectionProps {
   data: TopParticipantData[];
   error: null | string;
   loading: boolean;
 }
-
-export default function TopParticipantsSection({
-  data,
-  error,
-  loading,
-}: TopParticipantsSectionProps) {
+export function TopParticipantsSection({ data, error, loading }: TopParticipantsSectionProps) {
   return (
     <Card className="p-6">
       <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zDateString } from "@/lib/api-validate";
 
 const DecimalSchema = z.union([z.number(), z.string()]);
 
@@ -17,7 +18,7 @@ export const PersonSchema = z.strictObject({
 });
 
 export const PatientListItemSchema = z.strictObject({
-  birthDate: z.coerce.date(),
+  birthDate: zDateString,
   bloodType: z.string().nullable().optional(),
   createdAt: z.coerce.date(),
   id: z.number(),
@@ -31,7 +32,7 @@ export const PatientListSchema = z.array(PatientListItemSchema);
 
 export const ConsultationSchema = z.strictObject({
   createdAt: z.coerce.date(),
-  date: z.coerce.date(),
+  date: zDateString,
   diagnosis: z.string().nullable().optional(),
   eventId: z.number().nullable().optional(),
   id: z.number(),
@@ -44,11 +45,11 @@ export const ConsultationSchema = z.strictObject({
 
 export const MedicalCertificateSchema = z.strictObject({
   address: z.string(),
-  birthDate: z.coerce.date(),
+  birthDate: zDateString,
   diagnosis: z.string(),
   driveFileId: z.string(),
   id: z.string(),
-  issuedAt: z.coerce.date(),
+  issuedAt: zDateString,
   issuedBy: z.number(),
   metadata: z.unknown().nullable().optional(),
   patientId: z.number().nullable().optional(),
@@ -58,8 +59,8 @@ export const MedicalCertificateSchema = z.strictObject({
   purpose: z.string(),
   purposeDetail: z.string().nullable().optional(),
   restDays: z.number().nullable().optional(),
-  restEndDate: z.coerce.date().nullable().optional(),
-  restStartDate: z.coerce.date().nullable().optional(),
+  restEndDate: zDateString.nullable().optional(),
+  restStartDate: zDateString.nullable().optional(),
   symptoms: z.string().nullable().optional(),
 });
 
@@ -79,7 +80,7 @@ export const PatientPaymentSchema = z.strictObject({
   id: z.number(),
   notes: z.string().nullable().optional(),
   patientId: z.number(),
-  paymentDate: z.coerce.date(),
+  paymentDate: zDateString,
   paymentMethod: z.string(),
   reference: z.string().nullable().optional(),
 });
@@ -113,7 +114,7 @@ export const AttachmentSchema = z.strictObject({
 
 export const PatientDetailSchema = z.strictObject({
   attachments: z.array(AttachmentSchema),
-  birthDate: z.coerce.date(),
+  birthDate: zDateString,
   bloodType: z.string().nullable().optional(),
   budgets: z.array(BudgetSchema),
   consultations: z.array(ConsultationSchema),

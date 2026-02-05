@@ -1,22 +1,22 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import * as api from "./api";
+import { fetchAllergyOverview, getInventoryCategories, getInventoryItems } from "./api";
 
 export const inventoryKeys = {
   all: ["inventory"] as const,
   allergyOverview: () =>
     queryOptions({
-      queryFn: () => api.fetchAllergyOverview(),
+      queryFn: () => fetchAllergyOverview(),
       queryKey: ["inventory", "allergy-overview"],
     }),
   categories: () =>
     queryOptions({
-      queryFn: () => api.getInventoryCategories(),
+      queryFn: () => getInventoryCategories(),
       queryKey: ["inventory", "categories"],
     }),
   items: () =>
     queryOptions({
-      queryFn: () => api.getInventoryItems(),
+      queryFn: () => getInventoryItems(),
       queryKey: ["inventory", "items"],
     }),
 };

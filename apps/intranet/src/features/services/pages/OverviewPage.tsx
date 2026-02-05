@@ -1,5 +1,4 @@
-import ServicesOverviewContent from "@/features/services/components/ServicesOverviewContent";
-
-export default function ServicesOverviewPage() {
+import { ServicesOverviewContent } from "@/features/services/components/ServicesOverviewContent";
+export function ServicesOverviewPage() {
   return <ServicesOverviewContent />;
 }

@@ -1,5 +1,4 @@
-import ServicesTemplatesContent from "@/features/services/components/ServicesTemplatesContent";
-
-export default function ServicesTemplatesPage() {
+import { ServicesTemplatesContent } from "@/features/services/components/ServicesTemplatesContent";
+export function ServicesTemplatesPage() {
   return <ServicesTemplatesContent />;
 }

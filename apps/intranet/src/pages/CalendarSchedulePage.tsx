@@ -4,10 +4,10 @@ import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React from "react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
-import ScheduleCalendar from "@/features/calendar/components/ScheduleCalendar";
+import { ScheduleCalendar } from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { numberFormatter } from "@/lib/format";
@@ -50,7 +50,7 @@ function CalendarSchedulePage() {
   // Purely derived state from the URL (Source of Truth)
   const actualWeekStart = getActualWeekStart();
   const currentWeekStartStr = search.from ?? actualWeekStart.format(DATE_FORMAT);
-  const currentDisplayed = dayjs(currentWeekStartStr);
+  const currentDisplayed = dayjs(currentWeekStartStr, DATE_FORMAT);
 
   // The hook already filters events by the 'from'/'to' range in the URL.
   // No need to re-filter on the client.
@@ -213,5 +213,4 @@ function CalendarSchedulePage() {
     </section>
   );
 }
-
-export default CalendarSchedulePage;
+export { CalendarSchedulePage };

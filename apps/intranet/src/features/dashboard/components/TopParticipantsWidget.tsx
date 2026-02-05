@@ -4,8 +4,7 @@ import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
 
 import type { ParticipantSummaryRow } from "../../participants/types";
-
-export default function TopParticipantsWidget({
+export function TopParticipantsWidget({
   data,
   error,
   loading,

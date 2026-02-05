@@ -1,9 +1,13 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 
-const InventorySettingsPage = lazy(() => import("@/pages/settings/InventorySettingsPage"));
+const InventorySettingsPage = lazy(() =>
+  import("@/pages/settings/InventorySettingsPage").then((m) => ({
+    default: m.InventorySettingsPage,
+  })),
+);
 
 export const Route = createFileRoute("/_authed/settings/inventario")({
   staticData: {

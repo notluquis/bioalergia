@@ -2,7 +2,7 @@ import { Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Download, Loader2, RefreshCw } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import type { MPReport } from "@/services/mercadopago";
 
@@ -20,6 +20,7 @@ export const getMpReportColumns = (
     cell: ({ row }) => (
       <span className="font-mono text-default-500 text-xs">#{row.original.id}</span>
     ),
+
     header: "ID",
   },
   {
@@ -42,6 +43,7 @@ export const getMpReportColumns = (
         {row.original.begin_date ? dayjs(row.original.begin_date).format("DD/MM/YYYY") : "-"}
       </span>
     ),
+
     header: "Desde",
   },
   {
@@ -51,6 +53,7 @@ export const getMpReportColumns = (
         {row.original.end_date ? dayjs(row.original.end_date).format("DD/MM/YYYY") : "-"}
       </span>
     ),
+
     header: "Hasta",
   },
   {
@@ -63,6 +66,7 @@ export const getMpReportColumns = (
         {row.original.file_name ?? <span className="opacity-50">-</span>}
       </div>
     ),
+
     header: "Archivo",
   },
   {
@@ -75,6 +79,7 @@ export const getMpReportColumns = (
         {row.original.created_from === "schedule" ? "Automático" : "Manual"}
       </Chip>
     ),
+
     header: "Origen",
     id: "source",
   },
@@ -92,6 +97,7 @@ export const getMpReportColumns = (
           Disponible
         </Chip>
       ),
+
     header: "Estado",
   },
   {

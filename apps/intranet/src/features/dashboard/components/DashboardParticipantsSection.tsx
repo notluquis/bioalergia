@@ -2,7 +2,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { participantQueries } from "@/features/participants/queries";
 
-import TopParticipantsWidget from "./TopParticipantsWidget";
+import { TopParticipantsWidget } from "./TopParticipantsWidget";
 
 interface Props {
   params: {
@@ -12,8 +12,7 @@ interface Props {
     to: string;
   };
 }
-
-export default function DashboardParticipantsSection({ params }: Props) {
+export function DashboardParticipantsSection({ params }: Props) {
   const { data: leaderboardData } = useSuspenseQuery(participantQueries.leaderboard(params));
   const topParticipants = leaderboardData.participants || [];
 

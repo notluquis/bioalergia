@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 import type { LoanSummary } from "../types";
 
@@ -78,7 +78,7 @@ export function LoanList({
                   {loan.paid_installments}/{loan.total_installments} cuotas
                 </span>
                 <span className="text-default-500">
-                  Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}
+                  Inicio {dayjs(loan.start_date, "YYYY-MM-DD").format("DD MMM YYYY")}
                 </span>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-background/60">
@@ -99,5 +99,3 @@ export function LoanList({
     </aside>
   );
 }
-
-export default LoanList;

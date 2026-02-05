@@ -2,15 +2,14 @@ import { useLocation } from "@tanstack/react-router";
 import { Fingerprint, Mail } from "lucide-react";
 import type { ChangeEvent, FormEvent } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import ThemeToggle from "@/components/ui/ThemeToggle";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useSettings } from "@/context/SettingsContext";
 import { useLoginLogic } from "@/features/auth/hooks/useLoginLogic";
 
 type LoginStep = "credentials" | "mfa" | "passkey";
-
-export default function LoginPage() {
+export function LoginPage() {
   const { settings } = useSettings();
   const location = useLocation();
   const from = (location.state as null | { from?: string })?.from ?? "/";
@@ -37,6 +36,7 @@ export default function LoginPage() {
           logoSrc={logoSrc}
           fallbackLogo={fallbackLogo}
         />
+
         {!state.isSuccess && (
           <LoginContent
             step={state.step}
@@ -101,6 +101,7 @@ function LoginHeader({ step, orgName, logoSrc, fallbackLogo }: LoginHeaderProps)
         }}
         src={logoSrc}
       />
+
       <div>
         <h1 className="text-balance font-semibold text-2xl text-foreground">
           {step === "mfa" ? "Verifica tu identidad" : "Inicia sesión"}

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import * as readline from "node:readline";
+import { createInterface } from "node:readline";
 import { OAuth2Client } from "google-auth-library";
 
 const ENV_LINE_REGEX = /^([^=]+)=(.*)$/;
@@ -56,7 +56,7 @@ async function main() {
   console.log(`\n${authUrl}\n`);
   console.log("2. Copy the authorization code provided by Google.");
 
-  const rl = readline.createInterface({
+  const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
   });

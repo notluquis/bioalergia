@@ -2,8 +2,8 @@ import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { queryKeys } from "@/lib/query-keys";
@@ -24,8 +24,7 @@ interface SupplyRequestFormProps {
 }
 
 type SupplyRequestFormValues = z.infer<typeof supplyRequestSchema>;
-
-export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFormProps) {
+export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFormProps) {
   const queryClient = useQueryClient();
   const { error: toastError, success: toastSuccess } = useToast();
 
@@ -150,6 +149,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
               type="number"
               value={field.state.value}
             />
+
             {field.state.meta.errors.length > 0 && (
               <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
             )}
@@ -222,6 +222,7 @@ export default function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyR
               rows={3}
               value={field.state.value ?? ""}
             />
+
             {field.state.meta.errors.length > 0 && (
               <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
             )}

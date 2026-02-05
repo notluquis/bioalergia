@@ -2,10 +2,12 @@ import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { participantQueries } from "@/features/participants/queries";
 
-const ParticipantInsights = lazy(() => import("@/pages/ParticipantInsights"));
+const ParticipantInsights = lazy(() =>
+  import("@/pages/ParticipantInsights").then((m) => ({ default: m.ParticipantInsightsPage })),
+);
 
 export const Route = createFileRoute("/_authed/finanzas/participants")({
   staticData: {
@@ -25,6 +27,7 @@ export const Route = createFileRoute("/_authed/finanzas/participants")({
       <ParticipantInsights />
     </Suspense>
   ),
+
   loader: async ({ context }) => {
     // Default params matching the hook defaults
     const now = dayjs();

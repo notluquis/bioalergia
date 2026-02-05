@@ -2,7 +2,7 @@ import { Chip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowDownToLine, ArrowUpFromLine, ChevronDown, ChevronRight } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 
 import { formatAmount } from "@/features/finance/utils";
 
@@ -63,6 +63,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
         {row.original.sourceId}
       </span>
     ),
+
     enablePinning: true,
     header: "ID Origen",
     minSize: 180,
@@ -80,6 +81,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
         {row.original.recordType}
       </Chip>
     ),
+
     header: "Tipo",
     minSize: 150,
   },
@@ -91,6 +93,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
         {row.original.description}
       </span>
     ),
+
     header: "Descripción",
     minSize: 200,
   },

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
-import { parseOrThrow, zStatusOk } from "@/lib/api-validate";
+import { parseOrThrow, zDateString, zStatusOk } from "@/lib/api-validate";
 
 export interface DailyBalancePayload {
   date: string;
@@ -22,7 +22,7 @@ export interface DailyBalancePayload {
 // Result from GET /api/daily-production-balances
 // Result from GET /api/daily-production-balances
 export interface ProductionBalanceApiItem {
-  date: Date;
+  date: string;
   changeReason: null | string;
   // total?
   comentarios: null | string;
@@ -48,10 +48,10 @@ export interface ProductionBalanceApiItem {
 }
 
 interface ApiListResponse<T> {
-  from: Date;
+  from: string;
   items: T[];
   status: "ok";
-  to: Date;
+  to: string;
 }
 
 interface ApiSuccessResponse<T> {
@@ -67,7 +67,7 @@ const ProductionBalanceApiItemSchema = z.strictObject({
   controlesMonto: z.number(),
   createdAt: z.coerce.date(),
   createdByEmail: z.string().nullable(),
-  date: z.coerce.date(),
+  date: zDateString,
   gastosDiarios: z.number(),
   id: z.number(),
   ingresoEfectivo: z.number(),
@@ -84,10 +84,10 @@ const ProductionBalanceApiItemSchema = z.strictObject({
 });
 
 const ApiListResponseSchema = z.strictObject({
-  from: z.coerce.date(),
+  from: zDateString,
   items: z.array(ProductionBalanceApiItemSchema),
   status: zStatusOk.shape.status,
-  to: z.coerce.date(),
+  to: zDateString,
 });
 
 const ApiSuccessResponseSchema = z.strictObject({

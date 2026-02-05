@@ -1,9 +1,13 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 
-const MercadoPagoSettingsPage = lazy(() => import("@/pages/settings/MercadoPagoSettingsPage"));
+const MercadoPagoSettingsPage = lazy(() =>
+  import("@/pages/settings/MercadoPagoSettingsPage").then((m) => ({
+    default: m.MercadoPagoSettingsPage,
+  })),
+);
 
 export const Route = createFileRoute("/_authed/settings/mercadopago")({
   staticData: {

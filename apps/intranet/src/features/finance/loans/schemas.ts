@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zDateString } from "@/lib/api-validate";
 
 export const LoanSummarySchema = z.strictObject({
   borrower_name: z.string(),
@@ -14,7 +15,7 @@ export const LoanSummarySchema = z.strictObject({
   principal_amount: z.number(),
   public_id: z.string(),
   remaining_amount: z.number(),
-  start_date: z.coerce.date(),
+  start_date: zDateString,
   status: z.enum(["ACTIVE", "COMPLETED", "DEFAULTED"]),
   title: z.string(),
   total_expected: z.number(),
@@ -32,7 +33,7 @@ const LoanScheduleTransactionSchema = z.strictObject({
 
 export const LoanScheduleSchema = z.strictObject({
   created_at: z.coerce.date(),
-  due_date: z.coerce.date(),
+  due_date: zDateString,
   expected_amount: z.number(),
   expected_interest: z.number(),
   expected_principal: z.number(),
@@ -40,7 +41,7 @@ export const LoanScheduleSchema = z.strictObject({
   installment_number: z.number(),
   loan_id: z.number(),
   paid_amount: z.number().nullable(),
-  paid_date: z.coerce.date().nullable(),
+  paid_date: zDateString.nullable(),
   status: z.enum(["OVERDUE", "PAID", "PARTIAL", "PENDING", "SKIPPED"]),
   transaction: z.union([LoanScheduleTransactionSchema, z.null()]).optional(),
   transaction_id: z.number().nullable(),

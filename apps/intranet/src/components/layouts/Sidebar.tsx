@@ -3,7 +3,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
 import type { ComponentProps } from "react";
 
-import Backdrop from "@/components/ui/Backdrop";
+import { Backdrop } from "@/components/ui/Backdrop";
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -26,8 +26,7 @@ interface SidebarProps {
   readonly isOpen: boolean; // For mobile drawer state
   readonly onClose?: () => void;
 }
-
-export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
   const { logout, user } = useAuth();
   const { can } = useCan();
 

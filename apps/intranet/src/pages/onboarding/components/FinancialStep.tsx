@@ -1,7 +1,7 @@
 import { CreditCard } from "lucide-react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 
 interface FinancialStepProps {
@@ -50,6 +50,7 @@ export function FinancialStep({
           placeholder="Ej: Banco de Chile"
           value={profile.bankName}
         />
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select
             label="Tipo de cuenta"

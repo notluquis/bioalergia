@@ -64,7 +64,7 @@ function deriveEffectiveFilters(
   search: CalendarSearchParams,
   filters: CalendarFilters,
 ): CalendarFilters {
-  const dateParam = search.date ? dayjs(search.date) : null;
+  const dateParam = search.date ? dayjs(search.date, "YYYY-MM-DD") : null;
   const maxDaysRaw = search.maxDays ?? filters.maxDays;
   const maxDays =
     Number.isFinite(maxDaysRaw) && maxDaysRaw > 0 ? Math.min(Math.floor(maxDaysRaw), 120) : 31;
@@ -288,7 +288,7 @@ export function useCalendarEvents() {
 
   // Display date defaults to today (unless explicitly set via URL param)
   // This is separate from the data range (from/to) which buffers -2 weeks for performance
-  const currentSelectedDate = dayjs(search.date ?? today()).toDate();
+  const currentSelectedDate = dayjs(search.date ?? today(), "YYYY-MM-DD").toDate();
   const availableCalendars = summary?.available.calendars ?? [];
   const availableCategories = summary?.available.categories ?? [];
 

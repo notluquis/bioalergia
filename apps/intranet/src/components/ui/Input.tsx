@@ -93,6 +93,7 @@ const renderTextArea = (
       placeholder={props.placeholder}
       {...props}
     />
+
     {options.descriptionElement}
     {options.errorElement}
   </TextField>
@@ -162,6 +163,7 @@ const renderGroupedInput = (
         placeholder={options.placeholder}
         {...props}
       />
+
       {options.endContent && (
         <InputGroup.Suffix className="text-default-400">{options.endContent}</InputGroup.Suffix>
       )}
@@ -192,12 +194,12 @@ const renderSimpleInput = (
       placeholder={options.placeholder}
       {...props}
     />
+
     {options.descriptionElement}
     {options.errorElement}
   </TextField>
 );
-
-export default function Input(props: Props) {
+export function Input(props: Props) {
   const {
     as = "input",
     className,

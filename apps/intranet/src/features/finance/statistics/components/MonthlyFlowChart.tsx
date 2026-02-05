@@ -10,13 +10,14 @@ import { lazy, Suspense } from "react";
 import type { MonthlyFlowData } from "../types";
 
 // Lazy load Recharts (heavy dependency)
-const MonthlyFlowChartInner = lazy(() => import("./MonthlyFlowChartInner.js"));
+const MonthlyFlowChartInner = lazy(() =>
+  import("./MonthlyFlowChartInner.js").then((m) => ({ default: m.MonthlyFlowChartInner })),
+);
 
 interface MonthlyFlowChartProps {
   readonly data: MonthlyFlowData[];
 }
-
-export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
+export function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
   if (data.length === 0) {
     return (
       <Card className="p-6">

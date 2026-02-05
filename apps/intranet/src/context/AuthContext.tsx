@@ -1,11 +1,11 @@
 // Deprecated: AuthContext is replaced by direct TanStack Store + Query logic
 // Re-exporting for backward compatibility
 
-import type { AuthContextType } from "@/features/auth/hooks/use-auth";
+import { type AuthContextType, useAuth } from "@/features/auth/hooks/use-auth";
+import type { AuthSessionData, AuthUser, LoginResult } from "@/features/auth/types";
 
-export type { AuthContextType } from "@/features/auth/hooks/use-auth";
-export { useAuth } from "@/features/auth/hooks/use-auth";
-export type { AuthSessionData, AuthUser, LoginResult } from "@/features/auth/types";
+export type { AuthContextType, AuthSessionData, AuthUser, LoginResult };
+export { useAuth };
 
 // Expose dummy Context if strictly needed, but types show it might be used.
 // If any code uses useContext(AuthContext), it will fail if we don't validly provide it.

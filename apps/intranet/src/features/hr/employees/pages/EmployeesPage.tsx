@@ -6,17 +6,16 @@ import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { ChevronUp, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { columns } from "@/features/hr/employees/components/columns";
-import EmployeeForm from "@/features/hr/employees/components/EmployeeForm";
+import { EmployeeForm } from "@/features/hr/employees/components/EmployeeForm";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import type { Employee } from "@/features/hr/employees/types";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 // ... existing imports
-
-export default function EmployeesPage() {
+export function EmployeesPage() {
   const client = useClientQueries(schemaLite);
 
   const { can } = useAuth();

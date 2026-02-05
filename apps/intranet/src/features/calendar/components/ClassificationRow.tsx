@@ -1,10 +1,10 @@
 import { useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
-import Checkbox from "@/components/ui/Checkbox";
-import Input from "@/components/ui/Input";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
 

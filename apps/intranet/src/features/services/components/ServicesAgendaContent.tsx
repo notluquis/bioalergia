@@ -1,14 +1,13 @@
 import { Spinner } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
-import ServicesUnifiedAgenda from "@/features/services/components/ServicesUnifiedAgenda";
+import { ServicesUnifiedAgenda } from "@/features/services/components/ServicesUnifiedAgenda";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 import { currencyFormatter } from "@/lib/format";
-
-export default function ServicesAgendaContent() {
+export function ServicesAgendaContent() {
   const {
     aggregatedError,
     aggregatedLoading,

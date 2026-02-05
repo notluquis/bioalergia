@@ -1,11 +1,13 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { calendarQueries } from "@/features/calendar/queries";
 import { computeDefaultFilters, getScheduleDefaultRange } from "@/features/calendar/utils/filters";
 
-const CalendarSchedulePage = lazy(() => import("@/pages/CalendarSchedulePage"));
+const CalendarSchedulePage = lazy(() =>
+  import("@/pages/CalendarSchedulePage").then((m) => ({ default: m.CalendarSchedulePage })),
+);
 
 import {
   type CalendarFilters,
@@ -44,6 +46,7 @@ export const Route = createFileRoute("/_authed/calendar/schedule")({
       <CalendarSchedulePage />
     </Suspense>
   ),
+
   loaderDeps: ({ search }) => search,
   loader: async ({ context, deps: search }) => {
     const defaults = computeDefaultFilters({});

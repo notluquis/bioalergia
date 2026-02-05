@@ -3,10 +3,14 @@ import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { z } from "zod";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { calendarQueries } from "@/features/calendar/queries";
 
-const CalendarClassificationPage = lazy(() => import("@/pages/CalendarClassificationPage"));
+const CalendarClassificationPage = lazy(() =>
+  import("@/pages/CalendarClassificationPage").then((m) => ({
+    default: m.CalendarClassificationPage,
+  })),
+);
 
 import type { MissingFieldFilters } from "@/features/calendar/api";
 
@@ -53,6 +57,7 @@ export const Route = createFileRoute("/_authed/calendar/classify")({
       <CalendarClassificationPage />
     </Suspense>
   ),
+
   loader: async ({ context, deps: search }) => {
     const filters: MissingFieldFilters = {
       missingCategory: search.missingCategory,

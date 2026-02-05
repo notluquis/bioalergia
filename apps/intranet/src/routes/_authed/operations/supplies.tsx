@@ -1,9 +1,13 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 
-const SuppliesPage = lazy(() => import("@/features/operations/supplies/pages/SuppliesPage"));
+const SuppliesPage = lazy(() =>
+  import("@/features/operations/supplies/pages/SuppliesPage").then((m) => ({
+    default: m.Supplies,
+  })),
+);
 
 export const Route = createFileRoute("/_authed/operations/supplies")({
   staticData: {
@@ -23,6 +27,7 @@ export const Route = createFileRoute("/_authed/operations/supplies")({
       <SuppliesPage />
     </Suspense>
   ),
+
   loader: async ({ context: { queryClient } }) => {
     const { supplyQueries } = await import("@/features/supplies/queries");
     await Promise.all([

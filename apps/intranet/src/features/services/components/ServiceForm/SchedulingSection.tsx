@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
@@ -59,6 +59,7 @@ export function SchedulingSection({
         type="date"
         value={startDate ? dayjs(startDate).format("YYYY-MM-DD") : ""}
       />
+
       <Input
         disabled={recurrenceType === "ONE_OFF" || frequency === "ONCE"}
         helper={
@@ -75,6 +76,7 @@ export function SchedulingSection({
         type="number"
         value={effectiveMonths}
       />
+
       <Input
         label="Día de vencimiento"
         max={31}

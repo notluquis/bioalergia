@@ -11,7 +11,7 @@ import {
   Trash2,
   UserCog,
 } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -85,6 +85,7 @@ export const getColumns = (actions: {
         {row.original.role}
       </Chip>
     ),
+
     header: "Rol",
   },
   {
@@ -124,6 +125,7 @@ export const getColumns = (actions: {
         )}
       </div>
     ),
+
     header: () => <div className="text-center">MFA</div>,
     size: 60,
   },
@@ -146,6 +148,7 @@ export const getColumns = (actions: {
         )}
       </div>
     ),
+
     header: () => <div className="text-center">Passkey</div>,
     size: 60,
   },
@@ -156,6 +159,7 @@ export const getColumns = (actions: {
         {dayjs(row.original.createdAt).format("DD MMM YYYY")}
       </span>
     ),
+
     header: "Creado",
   },
   {

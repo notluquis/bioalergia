@@ -5,9 +5,9 @@ import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { MPService, type MpReportType } from "@/services/mercadopago";
 
@@ -42,8 +42,7 @@ interface Props {
   readonly open: boolean;
   readonly reportType: MpReportType;
 }
-
-export default function GenerateReportModal({ onClose, open, reportType }: Props) {
+export function GenerateReportModal({ onClose, open, reportType }: Props) {
   const queryClient = useQueryClient();
   const { error: showError, success: showSuccess } = useToast();
   const [progress, setProgress] = useState<null | { current: number; total: number }>(null);

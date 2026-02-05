@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import app from "../app";
+import { app } from "../app";
 
 // Mock the database to strictly prevent any accidental connections
 // even though this test shouldn't touch them.

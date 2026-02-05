@@ -6,39 +6,39 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { rateLimiter } from "hono-rate-limiter";
 import { createAuthContext, getSessionUser } from "./auth";
-import certificatesRoutes from "./modules/certificates/index.js";
-import patientsRoutes from "./modules/patients/index.js";
+import { certificatesRoutes } from "./modules/certificates/index.js";
+import { patientsRoutes } from "./modules/patients/index.js";
 import { authRoutes } from "./routes/auth";
-import backupRoutes from "./routes/backups";
-import balanceRoutes from "./routes/balances";
+import { backupRoutes } from "./routes/backups";
+import { balanceRoutes } from "./routes/balances";
 import { calendarRoutes } from "./routes/calendar";
-import counterpartRoutes from "./routes/counterparts";
+import { counterpartRoutes } from "./routes/counterparts";
 import { csvUploadRoutes } from "./routes/csv-upload";
-import dailyProductionRoutes from "./routes/daily-production-balances";
+import { dailyProductionRoutes } from "./routes/daily-production-balances";
 import { doctoraliaRoutes } from "./routes/doctoralia";
-import employeeRoutes from "./routes/employees";
-import expenseRoutes from "./routes/expenses";
+import { employeeRoutes } from "./routes/employees";
+import { expenseRoutes } from "./routes/expenses";
 import { integrationRoutes } from "./routes/integrations";
 import { inventoryRoutes } from "./routes/inventory";
-import loanScheduleRoutes from "./routes/loan-schedules";
-import loanRoutes from "./routes/loans";
+import { loanScheduleRoutes } from "./routes/loan-schedules";
+import { loanRoutes } from "./routes/loans";
 import { mercadopagoRoutes } from "./routes/mercadopago";
-import notificationRoutes from "./routes/notifications";
-import peopleRoutes from "./routes/people";
+import { notificationRoutes } from "./routes/notifications";
+import { peopleRoutes } from "./routes/people";
 import { personalFinanceRoutes } from "./routes/personal-finance";
-import releaseTransactionRoutes from "./routes/release-transactions";
-import roleRoutes from "./routes/roles";
-import serviceScheduleRoutes from "./routes/service-schedules";
-import serviceRoutes from "./routes/services";
+import { releaseTransactionRoutes } from "./routes/release-transactions";
+import { roleRoutes } from "./routes/roles";
+import { serviceScheduleRoutes } from "./routes/service-schedules";
+import { serviceRoutes } from "./routes/services";
 import { settingsRoutes } from "./routes/settings";
-import settlementTransactionRoutes from "./routes/settlement-transactions";
+import { settlementTransactionRoutes } from "./routes/settlement-transactions";
 import { shareTargetRoutes } from "./routes/share-target";
 import { suppliesRoutes } from "./routes/supplies";
-import timesheetRoutes from "./routes/timesheets";
-import transactionRoutes from "./routes/transactions";
+import { timesheetRoutes } from "./routes/timesheets";
+import { transactionRoutes } from "./routes/transactions";
 import { userRoutes } from "./routes/users";
 
-const app = new Hono();
+export const app = new Hono();
 
 // Request logging middleware (before everything else)
 app.use("*", async (c, next) => {
@@ -246,5 +246,3 @@ app.get("/", (c) => {
 
   return c.json(info);
 });
-
-export default app;

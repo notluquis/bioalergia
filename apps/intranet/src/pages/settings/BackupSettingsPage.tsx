@@ -20,8 +20,8 @@ import {
   Upload,
 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
-import GoogleDriveConnect from "@/components/backup/GoogleDriveConnect";
-import Button from "@/components/ui/Button";
+import { GoogleDriveConnect } from "@/components/backup/GoogleDriveConnect";
+import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { triggerBackup, triggerRestore } from "@/features/backup/api";
@@ -36,8 +36,7 @@ dayjs.extend(relativeTime);
 dayjs.locale("es");
 
 // ==================== MAIN COMPONENT ====================
-
-export default function BackupSettingsPage() {
+export function BackupSettingsPage() {
   const { can } = useAuth();
   const { error: showError, success } = useToast();
   const queryClient = useQueryClient();
@@ -94,7 +93,6 @@ export default function BackupSettingsPage() {
         // Ignore parse errors
       }
     };
-
     const handleError = () => {
       eventSource.close();
     };
@@ -193,18 +191,21 @@ export default function BackupSettingsPage() {
           label="Backups completos"
           value={String(fullBackups.length)}
         />
+
         <StatCard
           color="info"
           icon={<FileText className="size-5 text-info" />}
           label="Exports incrementales"
           value={String(auditExports.length)}
         />
+
         <StatCard
           color="success"
           icon={<Database className="size-5 text-success" />}
           label="Almacenamiento total"
           value={formatFileSize(totalSize)}
         />
+
         <StatCard
           color="warning"
           icon={<Clock className="size-5 text-warning" />}
@@ -486,6 +487,7 @@ function BackupTablesList({
                 isSelected={selectedTables.includes(table)}
                 onChange={() => toggleTable(table)}
               />
+
               <span className="flex-1 truncate">{table}</span>
             </label>
           ))}

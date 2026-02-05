@@ -8,8 +8,8 @@ import { parseDate } from "@internationalized/date";
 import { RotateCcw, Search } from "lucide-react";
 import React, { type FormEvent } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import { NULL_CATEGORY_VALUE } from "../constants";
 import type { CalendarFilters } from "../types";

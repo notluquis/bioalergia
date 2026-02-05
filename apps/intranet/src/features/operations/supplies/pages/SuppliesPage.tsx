@@ -1,12 +1,11 @@
 import { RefreshCcw } from "lucide-react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
-import SupplyRequestForm from "@/features/supplies/components/SupplyRequestForm";
-import SupplyRequestsTable from "@/features/supplies/components/SupplyRequestsTable";
+import { SupplyRequestForm } from "@/features/supplies/components/SupplyRequestForm";
+import { SupplyRequestsTable } from "@/features/supplies/components/SupplyRequestsTable";
 import { useSupplyManagement } from "@/features/supplies/hooks/use-supply-management";
-
-export default function Supplies() {
+export function Supplies() {
   const { can } = useAuth();
   const { commonSupplies, handleStatusChange, refresh, requests } = useSupplyManagement();
 

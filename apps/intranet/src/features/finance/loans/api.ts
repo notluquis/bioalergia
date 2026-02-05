@@ -1,5 +1,4 @@
 import { apiClient } from "@/lib/api-client";
-import { formatISO } from "@/lib/dates";
 import {
   LoanDetailResponseSchema,
   LoanListResponseSchema,
@@ -15,13 +14,9 @@ import type {
 } from "./types";
 
 export async function createLoan(payload: CreateLoanPayload): Promise<LoanDetailResponse> {
-  return apiClient.post<LoanDetailResponse>(
-    "/api/loans",
-    { ...payload, startDate: formatISO(payload.startDate) },
-    {
-      responseSchema: LoanDetailResponseSchema,
-    },
-  );
+  return apiClient.post<LoanDetailResponse>("/api/loans", payload, {
+    responseSchema: LoanDetailResponseSchema,
+  });
 }
 
 export async function fetchLoanDetail(publicId: string): Promise<LoanDetailResponse> {
@@ -40,13 +35,9 @@ export async function regenerateSchedules(
   publicId: string,
   payload: RegenerateSchedulePayload,
 ): Promise<LoanDetailResponse> {
-  return apiClient.post<LoanDetailResponse>(
-    `/api/loans/${publicId}/schedules`,
-    { ...payload, startDate: payload.startDate ? formatISO(payload.startDate) : undefined },
-    {
-      responseSchema: LoanDetailResponseSchema,
-    },
-  );
+  return apiClient.post<LoanDetailResponse>(`/api/loans/${publicId}/schedules`, payload, {
+    responseSchema: LoanDetailResponseSchema,
+  });
 }
 
 export async function registerLoanPayment(
@@ -55,7 +46,7 @@ export async function registerLoanPayment(
 ): Promise<{ schedule: LoanSchedule; status: "ok" }> {
   return apiClient.post<{ schedule: LoanSchedule; status: "ok" }>(
     `/api/loan-schedules/${scheduleId}/pay`,
-    { ...payload, paidDate: formatISO(payload.paidDate) },
+    payload,
     { responseSchema: LoanScheduleResponseSchema },
   );
 }

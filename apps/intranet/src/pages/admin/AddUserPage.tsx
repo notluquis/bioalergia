@@ -4,10 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Shield, UserPlus, Users } from "lucide-react";
-import Button from "@/components/ui/Button";
-import Checkbox from "@/components/ui/Checkbox";
-import Input from "@/components/ui/Input";
-import PageLoader from "@/components/ui/PageLoader";
+import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Input } from "@/components/ui/Input";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople } from "@/features/people/api";
@@ -28,8 +28,7 @@ interface AddUserFormState {
   role: string;
   rut: string;
 }
-
-export default function AddUserPage() {
+export function AddUserPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { error: toastError, success } = useToast();
@@ -121,6 +120,7 @@ export default function AddUserPage() {
   }
 
   if (peopleError) {
+    // biome-ignore lint/security/noSecrets: Log label, not a secret.
     console.error("[AddUserPage] Error:", peopleError);
     return (
       <div className="mx-auto max-w-2xl space-y-8">

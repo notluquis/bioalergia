@@ -3,8 +3,8 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { AlertCircle, AlertTriangle, ArrowRight } from "lucide-react";
 import { Suspense, useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { deleteRole, reassignRoleUsers, roleKeys, roleQueries } from "@/features/roles/api";

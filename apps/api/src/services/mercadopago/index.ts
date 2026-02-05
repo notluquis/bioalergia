@@ -1,9 +1,15 @@
-import { checkMpConfig, MP_ACCESS_TOKEN, MP_API, mpFetch, safeMpJson } from "./client";
+import {
+  checkMpConfig,
+  MP_ACCESS_TOKEN,
+  MP_API,
+  MP_WEBHOOK_PASSWORD,
+  mpFetch,
+  safeMpJson,
+} from "./client";
 import { type ImportStats, processReportUrl } from "./ingest";
 
-// Re-export webhook password for controller
-export { MP_WEBHOOK_PASSWORD } from "./client";
-export type { ImportStats } from "./ingest";
+export type { ImportStats };
+export { MP_WEBHOOK_PASSWORD };
 
 export const MercadoPagoService = {
   /**

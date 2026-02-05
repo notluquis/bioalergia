@@ -1,3 +1,3 @@
 pnpm exec lint-staged
-pnpm --filter @finanzas/site audit:routes
-pnpm --filter @finanzas/intranet type-check
+pnpm --filter ./apps/site --if-present audit:routes
+pnpm --filter ./apps/intranet type-check

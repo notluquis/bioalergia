@@ -93,5 +93,3 @@ export function StatCard({
     </article>
   );
 }
-
-export default StatCard;

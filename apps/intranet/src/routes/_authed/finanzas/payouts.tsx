@@ -1,9 +1,11 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 
-const PayoutsPage = lazy(() => import("@/features/payouts/PayoutsPage"));
+const PayoutsPage = lazy(() =>
+  import("@/features/payouts/PayoutsPage").then((m) => ({ default: m.PayoutsPage })),
+);
 
 export const Route = createFileRoute("/_authed/finanzas/payouts")({
   staticData: {
@@ -25,6 +27,7 @@ export const Route = createFileRoute("/_authed/finanzas/payouts")({
       <PayoutsPage />
     </Suspense>
   ),
+
   loader: async ({ context: { queryClient } }) => {
     const { payoutKeys } = await import("@/features/payouts/queries");
     await queryClient.ensureQueryData(payoutKeys.list());

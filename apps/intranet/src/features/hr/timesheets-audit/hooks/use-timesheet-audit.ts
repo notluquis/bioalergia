@@ -55,7 +55,8 @@ function filterAuditEntries(data: TimesheetEntryWithEmployee[], ranges: AuditDat
   return data.filter((entry) => ranges.some((range) => isWithinRange(entry.work_date, range)));
 }
 
-function isWithinRange(date: Date, range: AuditDateRange) {
-  const value = date.getTime();
-  return value >= range.start.getTime() && value <= range.end.getTime();
+function isWithinRange(date: string, range: AuditDateRange) {
+  const startKey = dayjs(range.start).format("YYYY-MM-DD");
+  const endKey = dayjs(range.end).format("YYYY-MM-DD");
+  return date >= startKey && date <= endKey;
 }

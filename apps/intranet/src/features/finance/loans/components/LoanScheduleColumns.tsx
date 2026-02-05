@@ -2,7 +2,7 @@ import { Chip, type ChipProps } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { currencyFormatter } from "@/lib/format";
 
 import type { LoanSchedule } from "../types";
@@ -11,7 +11,8 @@ import type { LoanSchedule } from "../types";
 const isScheduleLate = (schedule: LoanSchedule) => {
   return (
     schedule.status === "OVERDUE" ||
-    (schedule.status === "PENDING" && dayjs(schedule.due_date).isBefore(dayjs(), "day"))
+    (schedule.status === "PENDING" &&
+      dayjs(schedule.due_date, "YYYY-MM-DD").isBefore(dayjs(), "day"))
   );
 };
 
@@ -27,6 +28,7 @@ export const getColumns = (
     cell: ({ row }) => (
       <span className="font-medium text-default-600">{row.original.installment_number}</span>
     ),
+
     header: "#",
   },
   {
@@ -36,7 +38,7 @@ export const getColumns = (
       const isLate = isScheduleLate(schedule);
       return (
         <span className={isLate ? "font-semibold text-rose-600" : ""}>
-          {dayjs(schedule.due_date).format("DD MMM YYYY")}
+          {dayjs(schedule.due_date, "YYYY-MM-DD").format("DD MMM YYYY")}
         </span>
       );
     },
@@ -49,6 +51,7 @@ export const getColumns = (
         {currencyFormatter.format(row.original.expected_principal)}
       </div>
     ),
+
     header: () => <div className="text-right">Capital</div>,
   },
   {
@@ -58,6 +61,7 @@ export const getColumns = (
         {currencyFormatter.format(row.original.expected_interest)}
       </div>
     ),
+
     header: () => <div className="text-right">Interés</div>,
   },
   {
@@ -67,6 +71,7 @@ export const getColumns = (
         {currencyFormatter.format(row.original.expected_amount)}
       </div>
     ),
+
     header: () => <div className="text-right">Cuota</div>,
   },
   {
@@ -119,7 +124,7 @@ export const getColumns = (
           </span>
           {schedule.paid_date && (
             <span className="text-[10px] text-default-400">
-              {dayjs(schedule.paid_date).format("DD MMM")}
+              {dayjs(schedule.paid_date, "YYYY-MM-DD").format("DD MMM")}
             </span>
           )}
         </div>

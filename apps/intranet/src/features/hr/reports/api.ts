@@ -1,28 +1,26 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
+import { zDateString } from "@/lib/api-validate";
 
 import type { TimesheetEntry } from "../timesheets/types";
 
 const TimesheetEntrySchema = z.looseObject({
   comment: z.string().nullable(),
-  created_at: z.coerce.date(),
   employee_id: z.number(),
   end_time: z.string().nullable(),
-  extra_amount: z.number(),
   id: z.number(),
   overtime_minutes: z.number(),
   start_time: z.string().nullable(),
-  updated_at: z.coerce.date(),
-  work_date: z.coerce.date(),
+  work_date: zDateString,
   worked_minutes: z.number(),
 });
 
 const EmployeeTimesheetsResponseSchema = z.object({
   entries: z.array(TimesheetEntrySchema),
-  from: z.coerce.date(),
+  from: zDateString,
   message: z.string().optional(),
   status: z.literal("ok"),
-  to: z.coerce.date(),
+  to: zDateString,
 });
 
 const GlobalTimesheetsResponseSchema = z.object({

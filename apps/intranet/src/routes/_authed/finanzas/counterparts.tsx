@@ -1,9 +1,11 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 
-const Counterparts = lazy(() => import("@/pages/Counterparts"));
+const Counterparts = lazy(() =>
+  import("@/pages/Counterparts").then((m) => ({ default: m.CounterpartsRoute })),
+);
 
 export const Route = createFileRoute("/_authed/finanzas/counterparts")({
   staticData: {

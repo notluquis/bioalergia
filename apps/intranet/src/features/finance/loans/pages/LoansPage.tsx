@@ -2,10 +2,10 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
 import {
   createLoan,
@@ -13,9 +13,9 @@ import {
   registerLoanPayment,
   unlinkLoanPayment,
 } from "@/features/finance/loans/api";
-import LoanDetailSection from "@/features/finance/loans/components/LoanDetailSection";
-import LoanForm from "@/features/finance/loans/components/LoanForm";
-import LoanList from "@/features/finance/loans/components/LoanList";
+import { LoanDetailSection } from "@/features/finance/loans/components/LoanDetailSection";
+import { LoanForm } from "@/features/finance/loans/components/LoanForm";
+import { LoanList } from "@/features/finance/loans/components/LoanList";
 import { loanKeys } from "@/features/finance/loans/queries";
 import type {
   CreateLoanPayload,
@@ -24,8 +24,7 @@ import type {
   RegenerateSchedulePayload,
 } from "@/features/finance/loans/types";
 import { PAGE_CONTAINER } from "@/lib/styles";
-
-export default function LoansPage() {
+export function LoansPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const canManage = can("update", "Loan");
@@ -39,7 +38,7 @@ export default function LoansPage() {
   const [paymentSchedule, setPaymentSchedule] = useState<LoanSchedule | null>(null);
   const [paymentForm, setPaymentForm] = useState({
     paidAmount: "",
-    paidDate: dayjs().toDate(),
+    paidDate: dayjs().format("YYYY-MM-DD"),
     transactionId: "",
   });
   const [paymentError, setPaymentError] = useState<null | string>(null);
@@ -119,7 +118,7 @@ export default function LoansPage() {
         schedule.paid_amount == null
           ? String(schedule.expected_amount)
           : String(schedule.paid_amount),
-      paidDate: schedule.paid_date ?? dayjs().toDate(),
+      paidDate: schedule.paid_date ? schedule.paid_date : dayjs().format("YYYY-MM-DD"),
       transactionId: schedule.transaction_id ? String(schedule.transaction_id) : "",
     });
     setPaymentError(null);
@@ -227,6 +226,7 @@ export default function LoansPage() {
             await handleCreateLoan(payload);
           }}
         />
+
         {createError && (
           <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
             {createError}
@@ -257,6 +257,7 @@ export default function LoansPage() {
               type="number"
               value={paymentForm.transactionId}
             />
+
             <Input
               inputMode="decimal"
               label="Monto pagado"
@@ -269,18 +270,20 @@ export default function LoansPage() {
               type="number"
               value={paymentForm.paidAmount}
             />
+
             <Input
               label="Fecha de pago"
               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                 setPaymentForm((prev) => ({
                   ...prev,
-                  paidDate: dayjs(event.target.value).toDate(),
+                  paidDate: event.target.value,
                 }));
               }}
               required
               type="date"
-              value={dayjs(paymentForm.paidDate).format("YYYY-MM-DD")}
+              value={paymentForm.paidDate}
             />
+
             {paymentError && (
               <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
                 {paymentError}

@@ -1,10 +1,12 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { serviceQueries } from "@/features/services/queries";
 
-const EditServicePage = lazy(() => import("@/features/services/pages/EditServicePage"));
+const EditServicePage = lazy(() =>
+  import("@/features/services/pages/EditServicePage").then((m) => ({ default: m.ServiceEditPage })),
+);
 
 export const Route = createFileRoute("/_authed/services/$id/edit")({
   beforeLoad: ({ context }) => {

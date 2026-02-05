@@ -4,16 +4,15 @@ import React from "react";
 
 import { PerformanceIndicator } from "./components/features/PerformanceIndicator";
 import { UpdateNotification } from "./components/features/UpdateNotification";
-import Header from "./components/layouts/Header";
+import { Header } from "./components/layouts/Header";
 import { BottomNav } from "./components/layouts/MobileNav";
-import Sidebar from "./components/layouts/Sidebar";
-import Button from "./components/ui/Button";
+import { Sidebar } from "./components/layouts/Sidebar";
+import { Button } from "./components/ui/Button";
 import { Tooltip } from "./components/ui/Tooltip";
 import { useAuth } from "./context/AuthContext";
 import { useSettings } from "./context/SettingsContext";
 import { BUILD_TIMESTAMP } from "./version";
-
-export default function App() {
+export function App() {
   const { impersonatedRole, stopImpersonating } = useAuth();
   const navigationState = useRouterState({ select: (s) => s.status });
   const { settings } = useSettings();
@@ -150,6 +149,7 @@ export default function App() {
                 sidebarOpen ? "absolute translate-y-0 rotate-45" : ""
               }`}
             />
+
             <span
               className={`block h-0.5 w-4 rounded-full bg-current transition-all duration-200 ${
                 sidebarOpen ? "absolute translate-y-0 -rotate-45" : ""

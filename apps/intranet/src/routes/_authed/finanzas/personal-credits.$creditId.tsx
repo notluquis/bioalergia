@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { personalFinanceQueries } from "@/features/personal-finance/queries";
 
-const PersonalCreditDetailsPage = lazy(
-  () => import("@/features/personal-finance/pages/PersonalCreditDetailsPage"),
+const PersonalCreditDetailsPage = lazy(() =>
+  import("@/features/personal-finance/pages/PersonalCreditDetailsPage").then((m) => ({
+    default: m.PersonalCreditDetailsPageWrapper,
+  })),
 );
 
 export const Route = createFileRoute("/_authed/finanzas/personal-credits/$creditId")({
@@ -18,6 +20,7 @@ export const Route = createFileRoute("/_authed/finanzas/personal-credits/$credit
       <PersonalCreditDetailsPage />
     </Suspense>
   ),
+
   loader: async ({ context: { queryClient }, params }) => {
     const creditId = Number(params.creditId);
     if (!Number.isNaN(creditId)) {

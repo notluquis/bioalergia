@@ -1,9 +1,13 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 
-const UserManagementPage = lazy(() => import("@/features/users/pages/UserManagementPage"));
+const UserManagementPage = lazy(() =>
+  import("@/features/users/pages/UserManagementPage").then((m) => ({
+    default: m.UserManagementPage,
+  })),
+);
 
 export const Route = createFileRoute("/_authed/settings/users")({
   staticData: {

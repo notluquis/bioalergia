@@ -3,8 +3,8 @@ import { useMutation } from "@tanstack/react-query";
 import { Check, Fingerprint, Loader2, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -15,8 +15,7 @@ import {
   setupMfa,
   verifyPasskeyRegistration,
 } from "@/features/auth/api";
-
-export default function AccountSettingsPage() {
+export function AccountSettingsPage() {
   const { refreshSession, user } = useAuth();
   const { error, success } = useToast();
 
@@ -215,6 +214,7 @@ export default function AccountSettingsPage() {
                         loading="lazy"
                         src={qrCodeUrl}
                       />
+
                       <p className="mt-2 text-default-400 text-xs">Secreto: {mfaSecret}</p>
                     </div>
 
@@ -231,6 +231,7 @@ export default function AccountSettingsPage() {
                           placeholder="000000"
                           value={mfaToken}
                         />
+
                         <Button
                           disabled={enableMfaMutation.isPending || mfaToken.length !== 6}
                           onClick={() => {

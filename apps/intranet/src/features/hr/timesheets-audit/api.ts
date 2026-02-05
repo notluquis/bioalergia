@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
+import { zDateString } from "@/lib/api-validate";
 
 import type { TimesheetEntryWithEmployee } from "./types";
 
@@ -40,7 +41,7 @@ export async function fetchMultiEmployeeTimesheets(
             id: z.number(),
             overtime_minutes: z.number(),
             start_time: z.string(),
-            work_date: z.coerce.date(),
+            work_date: zDateString,
             worked_minutes: z.number(),
           }),
         ),

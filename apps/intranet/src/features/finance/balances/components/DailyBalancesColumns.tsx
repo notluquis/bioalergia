@@ -2,8 +2,8 @@ import { Chip } from "@heroui/react";
 import type { ColumnDef, Row, Table } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { fmtCLP } from "@/lib/format";
 
 import type { BalanceDraft, DailyBalanceDay } from "../types";
@@ -12,8 +12,8 @@ import { formatBalanceInput } from "../utils";
 
 export interface BalanceTableMeta {
   drafts: Record<string, BalanceDraft>;
-  onDraftChange: (date: Date, patch: Partial<BalanceDraft>) => void;
-  onSave: (date: Date) => void;
+  onDraftChange: (date: string, patch: Partial<BalanceDraft>) => void;
+  onSave: (date: string) => void;
   saving: Record<string, boolean>;
 }
 
@@ -24,7 +24,7 @@ const formatDifference = (diff: null | number) => {
   return diff >= 0 ? fmtCLP(diff) : `-${fmtCLP(Math.abs(diff))}`;
 };
 
-const getDateKey = (date: Date) => dayjs(date).format("YYYY-MM-DD");
+const getDateKey = (date: string) => dayjs(date, "YYYY-MM-DD").format("YYYY-MM-DD");
 
 // Custom Cell for the "Registrado" Input
 const RecordedBalanceCell = ({
@@ -112,7 +112,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
     accessorKey: "date",
     cell: ({ row }) => (
       <div className="flex flex-col gap-0.5">
-        <span>{dayjs(row.original.date).format("DD/MM/YY")}</span>
+        <span>{dayjs(row.original.date, "YYYY-MM-DD").format("DD/MM/YY")}</span>
         {row.original.hasCashback && (
           <Chip color="warning" size="sm" variant="primary">
             CB
@@ -120,6 +120,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
         )}
       </div>
     ),
+
     header: "Fecha",
   },
   {
@@ -129,6 +130,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
         {fmtCLP(Math.abs(row.original.totalIn))}
       </div>
     ),
+
     header: () => <div className="text-right">Ingresos</div>,
   },
   {
@@ -138,6 +140,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
         -{fmtCLP(Math.abs(row.original.totalOut))}
       </div>
     ),
+
     header: () => <div className="text-right">Egresos</div>,
   },
   {
@@ -161,6 +164,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
         {row.original.expectedBalance == null ? "—" : fmtCLP(row.original.expectedBalance)}
       </div>
     ),
+
     header: () => <div className="text-right">Esperado</div>,
   },
   {

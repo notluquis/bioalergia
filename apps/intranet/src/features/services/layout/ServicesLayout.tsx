@@ -1,5 +1,4 @@
 import { Outlet } from "@tanstack/react-router";
-
-export default function ServicesLayout() {
+export function ServicesLayout() {
   return <Outlet />;
 }

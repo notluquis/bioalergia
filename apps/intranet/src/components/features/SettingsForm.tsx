@@ -12,9 +12,9 @@ import {
 } from "@/features/settings/api";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
-import Alert from "../ui/Alert";
-import Button from "../ui/Button";
-import Input from "../ui/Input";
+import { Alert } from "../ui/Alert";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
 const FALLBACK_FAVICON_PATH = "/icons/icon-192.png";
@@ -43,8 +43,7 @@ const fields: { helper?: string; key: keyof AppSettings; label: string; type?: s
   { key: "orgAddress", label: "Dirección" },
   { helper: "Ejemplo: CLP, USD", key: "primaryCurrency", label: "Moneda principal" },
 ];
-
-export default function SettingsForm() {
+export function SettingsForm() {
   const { settings, updateSettings } = useSettings();
   const { hasRole } = useAuth();
   const [form, setForm] = useState<AppSettings>(settings);
@@ -242,6 +241,7 @@ export default function SettingsForm() {
           onUrlChange={(value) => handleChange("logoUrl", value)}
           previewUrl={displayedLogo}
         />
+
         <FaviconSection
           faviconInputRef={faviconInputRef}
           faviconMode={faviconMode}
@@ -437,6 +437,7 @@ function LogoSection({
               ref={logoInputRef}
               type="file"
             />
+
             <Button
               onClick={() => logoInputRef.current?.click()}
               size="sm"
@@ -535,6 +536,7 @@ function FaviconSection({
               ref={faviconInputRef}
               type="file"
             />
+
             <Button
               onClick={() => faviconInputRef.current?.click()}
               size="sm"
@@ -621,6 +623,7 @@ function InternalSettingsSection() {
           type="number"
           value={String(upsertChunkSize)}
         />
+
         <div className="flex items-end gap-2 md:col-span-2">
           <Button
             disabled={internalMutation.isPending}

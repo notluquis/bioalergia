@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { today } from "@/lib/dates";
 import { currencyFormatter } from "@/lib/format";
 
@@ -36,8 +36,7 @@ function canUnlink(schedule: ServiceSchedule) {
   }
   return true;
 }
-
-export default ServiceScheduleAccordion;
+export { ServiceScheduleAccordion };
 
 function capitalize(value: string) {
   if (value.length === 0) {

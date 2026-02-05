@@ -21,9 +21,8 @@ const handleRetry = async () => {
   }
 };
 
-import Button from "@/components/ui/Button";
-
-export default function ChunkLoadErrorPage() {
+import { Button } from "@/components/ui/Button";
+export function ChunkLoadErrorPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-default-50 p-4">
       <div className="w-full max-w-md space-y-6 text-center">

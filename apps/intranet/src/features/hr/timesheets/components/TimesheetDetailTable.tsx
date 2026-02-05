@@ -2,8 +2,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/context/AuthContext";
 import type { Employee } from "@/features/hr/employees/types";
 
@@ -32,8 +32,7 @@ interface TimesheetDetailTableProps {
   saving: boolean;
   selectedEmployee: Employee | null;
 }
-
-export default function TimesheetDetailTable({
+export function TimesheetDetailTable({
   bulkRows,
   employeeOptions,
   initialRows,

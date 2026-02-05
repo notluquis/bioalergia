@@ -1,10 +1,14 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { inventoryKeys } from "@/features/inventory/queries";
 
-const InventoryPage = lazy(() => import("@/features/operations/inventory/pages/InventoryPage"));
+const InventoryPage = lazy(() =>
+  import("@/features/operations/inventory/pages/InventoryPage").then((m) => ({
+    default: m.InventoryPage,
+  })),
+);
 
 export const Route = createFileRoute("/_authed/operations/inventory")({
   staticData: {
@@ -24,6 +28,7 @@ export const Route = createFileRoute("/_authed/operations/inventory")({
       <InventoryPage />
     </Suspense>
   ),
+
   loader: ({ context: { queryClient } }) => {
     return queryClient.ensureQueryData(inventoryKeys.items());
   },

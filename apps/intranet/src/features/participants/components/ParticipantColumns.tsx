@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
 
@@ -73,6 +73,7 @@ export const getMonthlyColumns = (): ColumnDef<ParticipantMonthlyRow>[] => [
     cell: ({ getValue }) => (
       <div className="font-medium capitalize">{dayjs(getValue<string>()).format("MMMM YYYY")}</div>
     ),
+
     header: "Mes",
   },
   {
@@ -165,6 +166,7 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
         <div className="text-default-500 text-xs">{row.original.outgoingCount} txs</div>
       </div>
     ),
+
     header: "Monto",
     id: "amount",
   },

@@ -1,8 +1,8 @@
 import type React from "react";
 import { useEffect, useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 
 import { getInventoryCategories } from "../api";
@@ -14,13 +14,7 @@ interface InventoryItemFormProps {
   onSave: (item: Omit<InventoryItem, "id">) => void;
   saving: boolean;
 }
-
-export default function InventoryItemForm({
-  item,
-  onCancel,
-  onSave,
-  saving,
-}: InventoryItemFormProps) {
+export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryItemFormProps) {
   const [form, setForm] = useState({
     ...item,
     category_id: item?.category_id ?? null,
@@ -50,6 +44,7 @@ export default function InventoryItemForm({
           type="text"
           value={form.name ?? ""}
         />
+
         <Select
           label="Categoría"
           onChange={(key) => {
@@ -75,6 +70,7 @@ export default function InventoryItemForm({
         rows={3}
         value={form.description ?? ""}
       />
+
       <Input
         disabled={Boolean(item)} // Disable if editing
         label="Stock inicial"
@@ -85,6 +81,7 @@ export default function InventoryItemForm({
         type="number"
         value={form.current_stock ?? 0}
       />
+
       <div className="flex items-center justify-end gap-3 pt-4">
         <Button onClick={onCancel} type="button" variant="secondary">
           Cancelar

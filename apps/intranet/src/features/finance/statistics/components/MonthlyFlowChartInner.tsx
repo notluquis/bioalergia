@@ -28,8 +28,7 @@ dayjs.locale("es");
 interface MonthlyFlowChartInnerProps {
   data: MonthlyFlowData[];
 }
-
-export default function MonthlyFlowChartInner({ data }: MonthlyFlowChartInnerProps) {
+export function MonthlyFlowChartInner({ data }: MonthlyFlowChartInnerProps) {
   const chartData = data.map((item) => {
     // item.month viene como "YYYY-MM" (e.g., "2025-01")
     const monthDate = dayjs(`${item.month}-01`, "YYYY-MM-DD");
@@ -60,6 +59,7 @@ export default function MonthlyFlowChartInner({ data }: MonthlyFlowChartInnerPro
             return fmtCLP(num);
           }}
         />
+
         <Tooltip
           contentStyle={{
             backgroundColor: "hsl(var(--b1))",
@@ -72,6 +72,7 @@ export default function MonthlyFlowChartInner({ data }: MonthlyFlowChartInnerPro
             return fmtCLP(num);
           }}
         />
+
         <Legend iconType="circle" wrapperStyle={{ fontSize: "0.875rem" }} />
         <Bar dataKey="Ingresos" fill="hsl(var(--su))" radius={[4, 4, 0, 0]} />
         <Bar dataKey="Egresos" fill="hsl(var(--er))" radius={[4, 4, 0, 0]} />

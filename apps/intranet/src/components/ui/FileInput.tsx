@@ -5,8 +5,7 @@ import { cn } from "@/lib/utils";
 interface FileInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
 }
-
-export default function FileInput({ className, label, ...props }: Readonly<FileInputProps>) {
+export function FileInput({ className, label, ...props }: Readonly<FileInputProps>) {
   return (
     <label className="flex w-full flex-col gap-2">
       {label && (

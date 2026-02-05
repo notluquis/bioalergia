@@ -11,14 +11,14 @@ export interface CalendarEventData {
   has_overlap: boolean;
   id: string;
   start_time: string;
-  work_date: Date;
+  work_date: string;
 }
 
 export interface OverlapInfo {
   employee_count: number;
   employee_ids: number[];
   total_overlapping_pairs: number;
-  work_date: Date;
+  work_date: string;
 }
 
 export interface TimesheetEntryWithEmployee {
@@ -30,6 +30,6 @@ export interface TimesheetEntryWithEmployee {
   id: number;
   overtime_minutes: number;
   start_time: string; // HH:MM format
-  work_date: Date;
+  work_date: string;
   worked_minutes: number;
 }

@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { fmtCLP, formatDate } from "@/lib/format";
 import { inventoryKeys } from "../queries";
 import type { AllergyInventoryOverview } from "../types";
@@ -52,6 +52,7 @@ function AllergyInventoryView() {
           </p>
         </div>
         <Button disabled={isFetching} onClick={() => void refetch()} size="sm" variant="ghost">
+          {/* biome-ignore lint/security/noSecrets: UI label, not a secret */}{" "}
           {isFetching ? "Actualizando…" : "Refrescar"}
         </Button>
       </div>
@@ -135,5 +136,4 @@ function ProviderCard({ provider }: { provider: AllergyInventoryOverview["provid
     </div>
   );
 }
-
-export default AllergyInventoryView;
+export { AllergyInventoryView };

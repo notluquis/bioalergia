@@ -3,21 +3,19 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { getRouteApi } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import Alert from "@/components/ui/Alert";
+import { Alert } from "@/components/ui/Alert";
 import {
   classifyCalendarEvent,
   type MissingFieldFilters,
   reclassifyAllCalendarEvents,
   reclassifyCalendarEvents,
 } from "@/features/calendar/api";
-import {
-  ClassificationEmptyState,
-  ClassificationFilters,
-  ClassificationPagination,
-  ClassificationRow,
-  ClassificationStats,
-  ClassificationToolbar,
-} from "@/features/calendar/components";
+import { ClassificationEmptyState } from "@/features/calendar/components/ClassificationEmptyState";
+import { ClassificationFilters } from "@/features/calendar/components/ClassificationFilters";
+import { ClassificationPagination } from "@/features/calendar/components/ClassificationPagination";
+import { ClassificationRow } from "@/features/calendar/components/ClassificationRow";
+import { ClassificationStats } from "@/features/calendar/components/ClassificationStats";
+import { ClassificationToolbar } from "@/features/calendar/components/ClassificationToolbar";
 import type { FormApiFor } from "@/features/calendar/form-types";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { ClassificationEntry, FormValues } from "@/features/calendar/schemas";
@@ -265,5 +263,4 @@ function CalendarClassificationPage() {
     </div>
   );
 }
-
-export default CalendarClassificationPage;
+export { CalendarClassificationPage };

@@ -1,12 +1,11 @@
 import { Link } from "@tanstack/react-router";
 
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
-import ServiceTemplateGallery from "@/features/services/components/ServiceTemplateGallery";
+import { ServiceTemplateGallery } from "@/features/services/components/ServiceTemplateGallery";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
-
-export default function ServicesTemplatesContent() {
+export function ServicesTemplatesContent() {
   const { applyTemplate, canManage } = useServicesOverview();
 
   return (

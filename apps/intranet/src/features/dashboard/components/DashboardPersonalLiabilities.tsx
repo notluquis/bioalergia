@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import dayjs from "dayjs";
 import { CreditCard, TrendingDown } from "lucide-react";
 
 import { personalFinanceQueries } from "@/features/personal-finance/queries";
@@ -16,12 +17,21 @@ export function DashboardPersonalLiabilities() {
   // Assuming 'nextPaymentDate' or similar is on the credit object,
   // or we need to look at installments. For summary, total debt is key.
 
+  const today = dayjs().startOf("day");
+  type ActiveCredit = (typeof activeCredits)[number];
+  type CreditWithNextPayment = ActiveCredit & { nextPaymentDate: string };
+
   const upcomingPayments = [...activeCredits]
-    .filter((c) => c.nextPaymentDate && new Date(c.nextPaymentDate) >= new Date())
-    .toSorted((a, b) => {
-      // biome-ignore lint/style/noNonNullAssertion: filtered above
-      return new Date(a.nextPaymentDate!).getTime() - new Date(b.nextPaymentDate!).getTime();
-    });
+    .filter((credit): credit is CreditWithNextPayment => Boolean(credit.nextPaymentDate))
+    .filter((credit) => {
+      const due = dayjs(credit.nextPaymentDate, "YYYY-MM-DD").startOf("day");
+      return due.valueOf() >= today.valueOf();
+    })
+    .toSorted(
+      (a, b) =>
+        dayjs(a.nextPaymentDate, "YYYY-MM-DD").valueOf() -
+        dayjs(b.nextPaymentDate, "YYYY-MM-DD").valueOf(),
+    );
 
   const nextPayment = upcomingPayments[0];
 

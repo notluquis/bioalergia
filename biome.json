@@ -134,6 +134,90 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["**/*.stories.*"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDefaultExport": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "**/*.d.ts",
+        "**/vite.config.*",
+        "**/vitest.config.*",
+        "**/lint-staged.config.*",
+        "**/.storybook/**/*"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDefaultExport": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/db/src/zenstack/schema.ts"],
+      "linter": {
+        "rules": {
+          "security": {
+            "noSecrets": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/db/src/zenstack/schema-lite.ts"],
+      "linter": {
+        "rules": {
+          "security": {
+            "noSecrets": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/api/src/config.ts",
+        "apps/api/src/lib/mercadopago/mercadopago-scheduler.ts"
+      ],
+      "linter": {
+        "rules": {
+          "security": {
+            "noSecrets": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/intranet/src/features/finance/mercadopago/components/SettlementReleaseColumns.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "security": {
+            "noSecrets": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/db/src/client.ts", "packages/db/src/input.ts"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noBarrelFile": "off",
+            "noReExportAll": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "double",

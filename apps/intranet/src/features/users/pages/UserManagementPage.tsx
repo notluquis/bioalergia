@@ -7,8 +7,8 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { Key, Shield, UserCog, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -22,8 +22,7 @@ import "dayjs/locale/es";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
-
-export default function UserManagementPage() {
+export function UserManagementPage() {
   const client = useClientQueries(schemaLite);
 
   const { can } = useAuth(); // Keep context mounted

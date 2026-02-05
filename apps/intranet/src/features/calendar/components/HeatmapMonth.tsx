@@ -370,8 +370,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
     </Card>
   );
 }
-
-export default HeatmapMonthComponent;
+export { HeatmapMonthComponent as HeatmapMonth };
 
 function formatTypeBreakdown(typeCounts: Record<string, number>) {
   return Object.entries(typeCounts)

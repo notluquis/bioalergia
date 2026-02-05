@@ -174,6 +174,3 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
     </div>
   );
 }
-
-// Default export for lazy loading
-export default { DistributionChart, TemporalChart };

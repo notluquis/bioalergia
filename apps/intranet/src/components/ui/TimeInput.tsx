@@ -9,8 +9,7 @@ interface TimeInputProps {
   placeholder?: string;
   value: string;
 }
-
-export default function TimeInput({
+export function TimeInput({
   className,
   disabled,
   onBlur,

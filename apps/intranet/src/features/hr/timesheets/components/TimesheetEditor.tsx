@@ -1,39 +1,39 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { lazy, Suspense, useState } from "react";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { useToast } from "@/context/ToastContext";
 import {
   bulkUpsertTimesheets,
   deleteTimesheet,
   fetchTimesheetDetail,
-  prepareTimesheetEmail } from
-"@/features/hr/timesheets/api";
-import EmailPreviewModal from "@/features/hr/timesheets/components/EmailPreviewModal";
-import TimesheetDetailTable from "@/features/hr/timesheets/components/TimesheetDetailTable";
+  prepareTimesheetEmail,
+} from "@/features/hr/timesheets/api";
+import { EmailPreviewModal } from "@/features/hr/timesheets/components/EmailPreviewModal";
+import { TimesheetDetailTable } from "@/features/hr/timesheets/components/TimesheetDetailTable";
 import { generateTimesheetPdfBase64 } from "@/features/hr/timesheets/pdf-utils";
 import type {
   BulkRow,
   TimesheetSummaryRow,
-  TimesheetUpsertEntry } from
-"@/features/hr/timesheets/types";
+  TimesheetUpsertEntry,
+} from "@/features/hr/timesheets/types";
 import {
   buildBulkRows,
   formatDateLabel,
   hasRowData,
   isRowDirty,
   isValidTimeString,
-  parseDuration } from
-"@/features/hr/timesheets/utils";
-import { formatISO } from "@/lib/dates";
-
+  parseDuration,
+} from "@/features/hr/timesheets/utils";
 import type { Employee } from "../../employees/types";
 
 const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
 
-const TimesheetExportPDF = lazy(
-  () => import("@/features/hr/timesheets/components/TimesheetExportPDF")
+const TimesheetExportPDF = lazy(() =>
+  import("@/features/hr/timesheets/components/TimesheetExportPDF").then((m) => ({
+    default: m.TimesheetExportPDF,
+  })),
 );
 
 interface TimesheetEditorProps {
@@ -43,20 +43,19 @@ interface TimesheetEditorProps {
   readonly monthLabel: string;
   readonly selectedEmployee: Employee;
   readonly summaryRow: null | TimesheetSummaryRow;
-}export
-
-function TimesheetEditor({
+}
+export function TimesheetEditor({
   activeEmployees,
   employeeId,
   month,
   monthLabel,
   selectedEmployee,
-  summaryRow
+  summaryRow,
 }: TimesheetEditorProps) {
   // --- Query ---
   const { data: detailData, dataUpdatedAt } = useSuspenseQuery({
     queryFn: () => fetchTimesheetDetail(employeeId, formatMonthString(month)),
-    queryKey: ["timesheet-detail", employeeId, month]
+    queryKey: ["timesheet-detail", employeeId, month],
   });
 
   const initialRows = buildBulkRows(formatMonthString(month), detailData.entries);
@@ -70,9 +69,9 @@ function TimesheetEditor({
       month={month}
       monthLabel={monthLabel}
       selectedEmployee={selectedEmployee}
-      summaryRow={summaryRow} />);
-
-
+      summaryRow={summaryRow}
+    />
+  );
 }
 
 function TimesheetEditorInner({
@@ -82,8 +81,8 @@ function TimesheetEditorInner({
   month,
   monthLabel,
   selectedEmployee,
-  summaryRow
-}: TimesheetEditorProps & {initialRows: BulkRow[];}) {
+  summaryRow,
+}: TimesheetEditorProps & { initialRows: BulkRow[] }) {
   const queryClient = useQueryClient();
   const { success: toastSuccess } = useToast();
   const detailQueryKey = ["timesheet-detail", employeeId, month];
@@ -112,7 +111,7 @@ function TimesheetEditorInner({
     onSuccess: () => {
       void queryClient.refetchQueries({ queryKey: detailQueryKey });
       void queryClient.refetchQueries({ queryKey: summaryQueryKey });
-    }
+    },
   });
 
   const deleteMutation = useMutation({
@@ -126,7 +125,7 @@ function TimesheetEditorInner({
       void queryClient.refetchQueries({ queryKey: detailQueryKey });
       void queryClient.refetchQueries({ queryKey: summaryQueryKey });
       toastSuccess("Registro eliminado");
-    }
+    },
   });
 
   // Email Mutation
@@ -136,13 +135,13 @@ function TimesheetEditorInner({
       const message = err instanceof Error ? err.message : "Error al preparar el email";
       setErrorLocal(message);
       setEmailPrepareStatus(null);
-    }
+    },
   });
 
   // --- Handlers ---
 
   const generatePdfBase64 = () =>
-  buildPdfBase64({ bulkRows, monthLabel, selectedEmployee, summaryRow });
+    buildPdfBase64({ bulkRows, monthLabel, selectedEmployee, summaryRow });
 
   const handlePrepareEmail = createHandlePrepareEmail({
     emailHasError: emailMutation.isError,
@@ -154,7 +153,7 @@ function TimesheetEditorInner({
     setEmailPrepareStatus,
     setErrorLocal,
     summaryRow,
-    toastSuccess
+    toastSuccess,
   });
 
   const handleRowChange = createHandleRowChange(setBulkRows);
@@ -168,7 +167,7 @@ function TimesheetEditorInner({
     initialRows,
     isUpsertPending,
     toastSuccess,
-    upsertMutate
+    upsertMutate,
   });
 
   const handleSalidaBlur = createHandleSalidaBlur(saveRowImmediately);
@@ -182,7 +181,7 @@ function TimesheetEditorInner({
     initialRows,
     setErrorLocal,
     toastSuccess,
-    upsertMutate
+    upsertMutate,
   });
 
   const pendingCount = bulkRows.filter((row) => !row.entryId && hasRowData(row)).length;
@@ -199,8 +198,8 @@ function TimesheetEditorInner({
           setEmailPrepareStatus(null);
         }}
         selectedEmployee={selectedEmployee}
-        summaryRow={summaryRow} />
-      
+        summaryRow={summaryRow}
+      />
 
       {errorLocal && <Alert variant="error">{errorLocal}</Alert>}
 
@@ -217,8 +216,8 @@ function TimesheetEditorInner({
         onSalidaBlur={handleSalidaBlur}
         pendingCount={pendingCount}
         saving={upsertMutation.isPending}
-        selectedEmployee={selectedEmployee} />
-      
+        selectedEmployee={selectedEmployee}
+      />
 
       <TimesheetEditorEmailModal
         emailModalOpen={emailModalOpen}
@@ -231,10 +230,10 @@ function TimesheetEditorInner({
         }}
         onPrepare={handlePrepareEmail}
         selectedEmployee={selectedEmployee}
-        summaryRow={summaryRow} />
-      
-    </>);
-
+        summaryRow={summaryRow}
+      />
+    </>
+  );
 }
 
 function TimesheetHeaderActions({
@@ -243,15 +242,15 @@ function TimesheetHeaderActions({
   monthLabel,
   onOpenEmailModal,
   selectedEmployee,
-  summaryRow
-
-
-
-
-
-
-
-}: {bulkRows: BulkRow[];employeeEmail: null | string;monthLabel: string;onOpenEmailModal: () => void;selectedEmployee: Employee;summaryRow: null | TimesheetSummaryRow;}) {
+  summaryRow,
+}: {
+  bulkRows: BulkRow[];
+  employeeEmail: null | string;
+  monthLabel: string;
+  onOpenEmailModal: () => void;
+  selectedEmployee: Employee;
+  summaryRow: null | TimesheetSummaryRow;
+}) {
   return (
     <div className="mb-4 flex justify-end gap-2">
       <Button
@@ -259,35 +258,35 @@ function TimesheetHeaderActions({
         disabled={!summaryRow || !employeeEmail}
         onClick={onOpenEmailModal}
         title={
-        employeeEmail ?
-        "Preparar boleta para enviar por email" :
-        "El empleado no tiene email registrado"
+          employeeEmail
+            ? "Preparar boleta para enviar por email"
+            : "El empleado no tiene email registrado"
         }
         type="button"
-        variant="secondary">
-        
+        variant="secondary"
+      >
         ✉️ Preparar email
       </Button>
       <Suspense
         fallback={
-        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Button className="cursor-wait bg-primary/70" disabled variant="primary">
               Cargando exportador...
             </Button>
           </div>
-        }>
-        
+        }
+      >
         <TimesheetExportPDF
           bulkRows={bulkRows}
           columns={["date", "entrada", "salida", "worked", "overtime"]}
           employee={selectedEmployee}
           logoUrl={"/logo.png"}
           monthLabel={monthLabel}
-          summary={summaryRow || null} />
-        
+          summary={summaryRow || null}
+        />
       </Suspense>
-    </div>);
-
+    </div>
+  );
 }
 
 function TimesheetEditorTable({
@@ -303,26 +302,26 @@ function TimesheetEditorTable({
   onSalidaBlur,
   pendingCount,
   saving,
-  selectedEmployee
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-}: {activeEmployees: Employee[];bulkRows: BulkRow[];initialRows: BulkRow[];modifiedCount: number;monthLabel: string;onBulkSave: () => void;onRemoveEntry: (row: BulkRow) => void;onResetRow: (index: number) => void;onRowChange: (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => void;onSalidaBlur: (index: number) => void;pendingCount: number;saving: boolean;selectedEmployee: Employee;}) {
+  selectedEmployee,
+}: {
+  activeEmployees: Employee[];
+  bulkRows: BulkRow[];
+  initialRows: BulkRow[];
+  modifiedCount: number;
+  monthLabel: string;
+  onBulkSave: () => void;
+  onRemoveEntry: (row: BulkRow) => void;
+  onResetRow: (index: number) => void;
+  onRowChange: (
+    index: number,
+    field: keyof Omit<BulkRow, "date" | "entryId">,
+    value: string,
+  ) => void;
+  onSalidaBlur: (index: number) => void;
+  pendingCount: number;
+  saving: boolean;
+  selectedEmployee: Employee;
+}) {
   return (
     <TimesheetDetailTable
       bulkRows={bulkRows}
@@ -338,9 +337,9 @@ function TimesheetEditorTable({
       onSalidaBlur={onSalidaBlur}
       pendingCount={pendingCount}
       saving={saving}
-      selectedEmployee={selectedEmployee} />);
-
-
+      selectedEmployee={selectedEmployee}
+    />
+  );
 }
 
 function TimesheetEditorEmailModal({
@@ -351,17 +350,17 @@ function TimesheetEditorEmailModal({
   onClose,
   onPrepare,
   selectedEmployee,
-  summaryRow
-
-
-
-
-
-
-
-
-
-}: {emailModalOpen: boolean;emailPrepareStatus: null | string;month: string;monthLabel: string;onClose: () => void;onPrepare: () => void;selectedEmployee: Employee;summaryRow: null | TimesheetSummaryRow;}) {
+  summaryRow,
+}: {
+  emailModalOpen: boolean;
+  emailPrepareStatus: null | string;
+  month: string;
+  monthLabel: string;
+  onClose: () => void;
+  onPrepare: () => void;
+  selectedEmployee: Employee;
+  summaryRow: null | TimesheetSummaryRow;
+}) {
   return (
     <EmailPreviewModal
       employee={selectedEmployee}
@@ -371,22 +370,22 @@ function TimesheetEditorEmailModal({
       onClose={onClose}
       onPrepare={onPrepare}
       prepareStatus={emailPrepareStatus}
-      summary={summaryRow ?? null} />);
-
-
+      summary={summaryRow ?? null}
+    />
+  );
 }
 
 function buildPdfBase64({
   bulkRows,
   monthLabel,
   selectedEmployee,
-  summaryRow
-
-
-
-
-
-}: {bulkRows: BulkRow[];monthLabel: string;selectedEmployee: Employee;summaryRow: null | TimesheetSummaryRow;}): Promise<null | string> {
+  summaryRow,
+}: {
+  bulkRows: BulkRow[];
+  monthLabel: string;
+  selectedEmployee: Employee;
+  summaryRow: null | TimesheetSummaryRow;
+}): Promise<null | string> {
   if (!summaryRow) {
     return Promise.resolve(null);
   }
@@ -403,21 +402,21 @@ function createHandlePrepareEmail({
   setEmailPrepareStatus,
   setErrorLocal,
   summaryRow,
-  toastSuccess
-
-
-
-
-
-
-
-
-
-
-
-
-
-}: {emailHasError: boolean;emailMutateAsync: (args: Parameters<typeof prepareTimesheetEmail>[0]) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmail>>>;generatePdfBase64: () => Promise<null | string>;month: string;monthLabel: string;selectedEmployee: Employee;setEmailPrepareStatus: (value: null | string) => void;setErrorLocal: (value: null | string) => void;summaryRow: null | TimesheetSummaryRow;toastSuccess: (message: string) => void;}) {
+  toastSuccess,
+}: {
+  emailHasError: boolean;
+  emailMutateAsync: (
+    args: Parameters<typeof prepareTimesheetEmail>[0],
+  ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmail>>>;
+  generatePdfBase64: () => Promise<null | string>;
+  month: string;
+  monthLabel: string;
+  selectedEmployee: Employee;
+  setEmailPrepareStatus: (value: null | string) => void;
+  setErrorLocal: (value: null | string) => void;
+  summaryRow: null | TimesheetSummaryRow;
+  toastSuccess: (message: string) => void;
+}) {
   return async () => {
     if (!summaryRow || !month) {
       return;
@@ -433,7 +432,7 @@ function createHandlePrepareEmail({
         monthLabel,
         selectedEmployee,
         setEmailPrepareStatus,
-        summaryRow
+        summaryRow,
       });
       setEmailPrepareStatus("done");
       toastSuccess(`Archivo descargado: ${filename}`);
@@ -454,18 +453,18 @@ async function runPrepareEmail({
   monthLabel,
   selectedEmployee,
   setEmailPrepareStatus,
-  summaryRow
-
-
-
-
-
-
-
-
-
-
-}: {emailMutateAsync: (args: Parameters<typeof prepareTimesheetEmail>[0]) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmail>>>;generatePdfBase64: () => Promise<null | string>;month: string;monthLabel: string;selectedEmployee: Employee;setEmailPrepareStatus: (value: null | string) => void;summaryRow: TimesheetSummaryRow;}) {
+  summaryRow,
+}: {
+  emailMutateAsync: (
+    args: Parameters<typeof prepareTimesheetEmail>[0],
+  ) => Promise<Awaited<ReturnType<typeof prepareTimesheetEmail>>>;
+  generatePdfBase64: () => Promise<null | string>;
+  month: string;
+  monthLabel: string;
+  selectedEmployee: Employee;
+  setEmailPrepareStatus: (value: null | string) => void;
+  summaryRow: TimesheetSummaryRow;
+}) {
   const pdfBase64 = await generatePdfBase64();
   if (!pdfBase64) {
     throw new Error("No se pudo generar el PDF");
@@ -478,7 +477,7 @@ async function runPrepareEmail({
     monthLabel,
     pdfBase64,
     selectedEmployee,
-    summaryRow
+    summaryRow,
   });
 
   const data = await emailMutateAsync(payload);
@@ -492,14 +491,14 @@ function buildPrepareEmailPayload({
   monthLabel,
   pdfBase64,
   selectedEmployee,
-  summaryRow
-
-
-
-
-
-
-}: {month: string;monthLabel: string;pdfBase64: string;selectedEmployee: Employee;summaryRow: TimesheetSummaryRow;}) {
+  summaryRow,
+}: {
+  month: string;
+  monthLabel: string;
+  pdfBase64: string;
+  selectedEmployee: Employee;
+  summaryRow: TimesheetSummaryRow;
+}) {
   return {
     employeeEmail: selectedEmployee.person?.email ?? "",
     employeeId: selectedEmployee.id,
@@ -507,7 +506,7 @@ function buildPrepareEmailPayload({
     month,
     monthLabel,
     pdfBase64,
-    summary: buildEmailSummary(summaryRow)
+    summary: buildEmailSummary(summaryRow),
   };
 }
 
@@ -521,7 +520,7 @@ function buildEmailSummary(summaryRow: TimesheetSummaryRow) {
     retentionRate: summaryRow.retentionRate,
     role: summaryRow.role,
     subtotal: summaryRow.subtotal,
-    workedMinutes: summaryRow.workedMinutes
+    workedMinutes: summaryRow.workedMinutes,
   };
 }
 
@@ -533,7 +532,7 @@ function ensurePrepareEmailSuccess(data: Awaited<ReturnType<typeof prepareTimesh
 
 function downloadEmlFile(emlBase64: string, filename: string) {
   const emlBlob = new Blob([Uint8Array.from(atob(emlBase64), (c) => c.codePointAt(0) ?? 0)], {
-    type: "message/rfc822"
+    type: "message/rfc822",
   });
   const url = URL.createObjectURL(emlBlob);
   const link = document.createElement("a");
@@ -546,23 +545,23 @@ function downloadEmlFile(emlBase64: string, filename: string) {
 }
 
 function createHandleRowChange(
-setBulkRows: (rows: BulkRow[] | ((prev: BulkRow[]) => BulkRow[])) => void)
-{
+  setBulkRows: (rows: BulkRow[] | ((prev: BulkRow[]) => BulkRow[])) => void,
+) {
   return (index: number, field: keyof Omit<BulkRow, "date" | "entryId">, value: string) => {
     setBulkRows((prev) => {
       const currentRow = prev[index];
       if (!currentRow || currentRow[field] === value) {
         return prev;
       }
-      return prev.map((row, i) => i === index ? { ...row, [field]: value } : row);
+      return prev.map((row, i) => (i === index ? { ...row, [field]: value } : row));
     });
   };
 }
 
 function createHandleResetRow(
-setBulkRows: (rows: BulkRow[] | ((prev: BulkRow[]) => BulkRow[])) => void,
-initialRows: BulkRow[])
-{
+  setBulkRows: (rows: BulkRow[] | ((prev: BulkRow[]) => BulkRow[])) => void,
+  initialRows: BulkRow[],
+) {
   return (index: number) => {
     setBulkRows((prev) => {
       const next = [...prev];
@@ -610,7 +609,7 @@ function buildImmediateSaveEntry(row: BulkRow): null | TimesheetUpsertEntry {
     end_time: row.salida || null,
     overtime_minutes: overtime,
     start_time: row.entrada || null,
-    work_date: row.date
+    work_date: dayjs(row.date).format("YYYY-MM-DD"),
   };
 }
 
@@ -620,19 +619,19 @@ function createSaveRowImmediately({
   initialRows,
   isUpsertPending,
   toastSuccess,
-  upsertMutate
-
-
-
-
-
-
-
-
-
-
-
-}: {bulkRows: BulkRow[];employeeId: number;initialRows: BulkRow[];isUpsertPending: boolean;toastSuccess: (message: string) => void;upsertMutate: (args: {employeeId: number;entries: TimesheetUpsertEntry[];removeIds: number[];}) => Promise<unknown>;}) {
+  upsertMutate,
+}: {
+  bulkRows: BulkRow[];
+  employeeId: number;
+  initialRows: BulkRow[];
+  isUpsertPending: boolean;
+  toastSuccess: (message: string) => void;
+  upsertMutate: (args: {
+    employeeId: number;
+    entries: TimesheetUpsertEntry[];
+    removeIds: number[];
+  }) => Promise<unknown>;
+}) {
   return async (index: number) => {
     if (isUpsertPending) {
       return;
@@ -655,13 +654,13 @@ function createSaveRowImmediately({
       await upsertMutate({
         employeeId,
         entries: [entry],
-        removeIds: []
+        removeIds: [],
       });
       toastSuccess(`Guardado: ${formatDateLabel(row.date)}`);
     } catch {
-
       // Handled in mutation
-    }};
+    }
+  };
 }
 
 function createHandleSalidaBlur(saveRowImmediately: (index: number) => Promise<void>) {
@@ -685,9 +684,9 @@ function createHandleRemoveEntry(deleteMutate: (entryId: number) => void) {
 }
 
 function processBulkRow(
-row: BulkRow,
-initial: BulkRow)
-: {entry?: TimesheetUpsertEntry;error?: string;removeId?: number;} {
+  row: BulkRow,
+  initial: BulkRow,
+): { entry?: TimesheetUpsertEntry; error?: string; removeId?: number } {
   if (!isRowDirty(row, initial)) {
     return {};
   }
@@ -717,8 +716,8 @@ initial: BulkRow)
       end_time: salida || null,
       overtime_minutes: overtime,
       start_time: entrada || null,
-      work_date: row.date
-    }
+      work_date: dayjs(row.date).format("YYYY-MM-DD"),
+    },
   };
 }
 
@@ -752,19 +751,19 @@ function createHandleBulkSave({
   initialRows,
   setErrorLocal,
   toastSuccess,
-  upsertMutate
-
-
-
-
-
-
-
-
-
-
-
-}: {bulkRows: BulkRow[];employeeId: number;initialRows: BulkRow[];setErrorLocal: (value: null | string) => void;toastSuccess: (message: string) => void;upsertMutate: (args: {employeeId: number;entries: TimesheetUpsertEntry[];removeIds: number[];}) => Promise<unknown>;}) {
+  upsertMutate,
+}: {
+  bulkRows: BulkRow[];
+  employeeId: number;
+  initialRows: BulkRow[];
+  setErrorLocal: (value: null | string) => void;
+  toastSuccess: (message: string) => void;
+  upsertMutate: (args: {
+    employeeId: number;
+    entries: TimesheetUpsertEntry[];
+    removeIds: number[];
+  }) => Promise<unknown>;
+}) {
   return async () => {
     setErrorLocal(null);
 
@@ -783,13 +782,13 @@ function createHandleBulkSave({
       await upsertMutate({
         employeeId,
         entries,
-        removeIds
+        removeIds,
       });
       toastSuccess("Cambios guardados correctamente");
     } catch {
-
       // Handled in mutation
-    }};
+    }
+  };
 }
 
 // Utility to ensure month is always YYYY-MM

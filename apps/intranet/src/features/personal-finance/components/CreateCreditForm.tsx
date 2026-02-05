@@ -1,12 +1,13 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { Select, SelectItem } from "@/components/ui/Select";
 
 import { personalFinanceApi } from "../api";
@@ -37,7 +38,7 @@ export function CreateCreditForm() {
       creditNumber: "",
       currency: "CLP" as const,
       description: "",
-      startDate: new Date(),
+      startDate: dayjs().format("YYYY-MM-DD"),
       totalAmount: 0,
       totalInstallments: 1,
     } as CreateCreditInput,
@@ -196,14 +197,10 @@ export function CreateCreditForm() {
                     label="Fecha Inicio"
                     onBlur={field.handleBlur}
                     onChange={(e) => {
-                      field.handleChange(new Date(e.target.value));
+                      field.handleChange(e.target.value);
                     }}
                     type="date"
-                    value={
-                      field.state.value
-                        ? new Date(field.state.value).toISOString().split("T")[0]
-                        : ""
-                    }
+                    value={field.state.value || ""}
                   />
                 </div>
               )}

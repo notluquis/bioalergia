@@ -19,4 +19,4 @@ i18n
     console.error("[i18n] init error", error);
   });
 
-export { default } from "i18next";
+export { i18n };

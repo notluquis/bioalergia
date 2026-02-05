@@ -6,11 +6,11 @@ import isoWeek from "dayjs/plugin/isoWeek";
 import { BarChart2, BarChart3, Calendar, Clock, Filter, List, TrendingUp, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { Select, SelectItem } from "@/components/ui/Select";
 
-import StatCard from "@/components/ui/StatCard";
+import { StatCard } from "@/components/ui/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { EmployeeMultiSelectPopover } from "@/features/hr/components/EmployeeMultiSelectPopover";
 import { employeeKeys } from "@/features/hr/employees/queries";
@@ -42,13 +42,12 @@ const DATE_FORMAT = "YYYY-MM-DD";
 interface RawTimesheetEntry {
   employee_id: number;
   overtime_minutes: number;
-  work_date: Date;
+  work_date: string; // YYYY-MM-DD
   worked_minutes: number;
 }
 
 type ViewMode = "all" | "month" | "range";
-
-export default function ReportsPage() {
+export function ReportsPage() {
   const { can } = useAuth();
   const canView = can("read", "Report");
 
@@ -540,6 +539,7 @@ function ReportsResultsPanel({
               title="TOTAL HORAS"
               value={stats?.totalHours ?? 0}
             />
+
             <StatCard
               className="text-secondary"
               icon={BarChart3}
@@ -547,6 +547,7 @@ function ReportsResultsPanel({
               title="PROMEDIO"
               value={stats?.averageHours ?? 0}
             />
+
             <StatCard
               className="text-accent"
               icon={Calendar}
@@ -554,6 +555,7 @@ function ReportsResultsPanel({
               title="DÍAS TRAB."
               value={reportData.reduce((acc, e) => acc + e.totalDays, 0)}
             />
+
             <StatCard
               className="text-success"
               icon={TrendingUp}
@@ -664,17 +666,17 @@ function processRawEntries(
     data.totalOvertimeMinutes += entry.overtime_minutes;
 
     // Daily
-    const dateKey = dayjs(entry.work_date).format(DATE_FORMAT);
+    const dateKey = dayjs(entry.work_date, DATE_FORMAT).format(DATE_FORMAT);
     const currentDaily = data.dailyBreakdown[dateKey] ?? 0;
     Object.assign(data.dailyBreakdown, { [dateKey]: currentDaily + entry.worked_minutes });
 
     // Weekly
-    const weekKey = dayjs(entry.work_date).startOf("isoWeek").format(DATE_FORMAT);
+    const weekKey = dayjs(entry.work_date, DATE_FORMAT).startOf("isoWeek").format(DATE_FORMAT);
     const currentWeekly = data.weeklyBreakdown[weekKey] ?? 0;
     Object.assign(data.weeklyBreakdown, { [weekKey]: currentWeekly + entry.worked_minutes });
 
     // Monthly
-    const monthKey = dayjs(entry.work_date).format("YYYY-MM");
+    const monthKey = dayjs(entry.work_date, DATE_FORMAT).format("YYYY-MM");
     const currentMonthly = data.monthlyBreakdown[monthKey] ?? 0;
     Object.assign(data.monthlyBreakdown, { [monthKey]: currentMonthly + entry.worked_minutes });
   }

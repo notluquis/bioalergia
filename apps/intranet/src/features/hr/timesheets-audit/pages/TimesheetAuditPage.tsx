@@ -9,8 +9,8 @@ import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { ChevronDown, Users, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
@@ -31,8 +31,10 @@ import { cn } from "@/lib/utils";
 
 import "dayjs/locale/es";
 
-const TimesheetAuditCalendar = lazy(
-  () => import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar"),
+const TimesheetAuditCalendar = lazy(() =>
+  import("@/features/hr/timesheets-audit/components/TimesheetAuditCalendar").then((m) => ({
+    default: m.TimesheetAuditCalendar,
+  })),
 );
 
 dayjs.extend(isoWeek);
@@ -65,8 +67,7 @@ const QUICK_RANGES: { id: QuickRange; label: string }[] = [
 ];
 
 const MAX_EMPLOYEES = 5;
-
-export default function TimesheetAuditPage() {
+export function TimesheetAuditPage() {
   useAuth();
 
   // Data state

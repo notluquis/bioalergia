@@ -1,9 +1,13 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 
-const CreateServicePage = lazy(() => import("@/features/services/pages/CreateServicePage"));
+const CreateServicePage = lazy(() =>
+  import("@/features/services/pages/CreateServicePage").then((m) => ({
+    default: m.ServicesCreatePage,
+  })),
+);
 
 export const Route = createFileRoute("/_authed/services/create")({
   beforeLoad: ({ context }) => {

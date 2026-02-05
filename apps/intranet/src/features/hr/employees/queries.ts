@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import * as api from "./api";
+import { fetchEmployees } from "./api";
 
 const defaultFilter = { includeInactive: false };
 
@@ -13,7 +13,7 @@ export const employeeKeys = {
     }),
   list: (filters: { includeInactive: boolean } = defaultFilter) =>
     queryOptions({
-      queryFn: () => api.fetchEmployees(filters.includeInactive),
+      queryFn: () => fetchEmployees(filters.includeInactive),
       queryKey: ["employees", "list", filters],
     }),
 };

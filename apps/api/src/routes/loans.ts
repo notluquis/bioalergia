@@ -190,4 +190,4 @@ app.post("/:id/schedules", async (c) => {
   return reply(c, { status: "ok", loan: updatedLoan });
 });
 
-export default app;
+export const loanRoutes = app;

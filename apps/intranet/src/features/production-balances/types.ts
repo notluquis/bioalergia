@@ -38,7 +38,7 @@ export interface DailyBalanceEntry {
   consultas: number;
   controles: number;
   createdAt?: Date;
-  date: Date;
+  date: string; // YYYY-MM-DD
   efectivo: number;
   gastos: number;
   id?: number;

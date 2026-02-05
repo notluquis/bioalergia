@@ -2,11 +2,12 @@ import { Chip } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
+import dayjs from "dayjs";
 import { ArrowLeftIcon } from "lucide-react";
 import { Suspense } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Badge } from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { formatCurrency } from "@/lib/utils";
 
@@ -25,7 +26,7 @@ const installmentColumns = (
   },
   {
     accessorKey: "dueDate",
-    cell: ({ row }) => new Date(row.original.dueDate).toLocaleDateString(),
+    cell: ({ row }) => dayjs(row.original.dueDate, "YYYY-MM-DD").format("DD/MM/YYYY"),
     header: "Vencimiento",
   },
   {
@@ -33,6 +34,7 @@ const installmentColumns = (
     cell: ({ row }) => (
       <div className="text-right">{formatCurrency(Number(row.original.amount), currency)}</div>
     ),
+
     header: ({ column: _column }) => <div className="text-right">Monto</div>,
   },
   {
@@ -44,6 +46,7 @@ const installmentColumns = (
         </Badge>
       </div>
     ),
+
     header: "Estado",
   },
   {
@@ -54,6 +57,7 @@ const installmentColumns = (
         )}
       </div>
     ),
+
     header: ({ column: _column }) => <div className="text-right">Acción</div>,
     id: "actions",
   },
@@ -138,8 +142,7 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
     </div>
   );
 }
-
-export default function PersonalCreditDetailsPageWrapper() {
+export function PersonalCreditDetailsPageWrapper() {
   const params = useParams({ from: "/_authed/finanzas/personal-credits/$creditId" });
 
   return (

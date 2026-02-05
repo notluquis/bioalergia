@@ -6,9 +6,9 @@ import dayjs from "dayjs";
 import { ArrowRight, Calendar, Search, User, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { CardContent } from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { PatientListSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER_RELAXED, TITLE_LG } from "@/lib/styles";
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authed/patients/")({
 interface Patient {
   id: number;
   personId: number;
-  birthDate: Date;
+  birthDate: string;
   bloodType?: string;
   notes?: string;
   person: {
@@ -90,12 +90,12 @@ function PatientsListPage() {
         header: "EDAD",
         cell: ({ row }) => {
           const patient = row.original;
-          const age = dayjs().diff(dayjs(patient.birthDate), "year");
+          const age = dayjs().diff(dayjs(patient.birthDate, "YYYY-MM-DD"), "year");
           return (
             <div className="flex flex-col">
               <span className="text-default-700 text-sm">{age} años</span>
               <span className="text-[10px] text-default-400">
-                {dayjs(patient.birthDate).format("DD/MM/YYYY")}
+                {dayjs(patient.birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")}
               </span>
             </div>
           );
@@ -128,6 +128,7 @@ function PatientsListPage() {
         ),
       },
     ],
+
     [],
   );
 

@@ -1,7 +1,7 @@
 import { Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { today } from "@/lib/dates";
 import { currencyFormatter } from "@/lib/format";
 
@@ -56,8 +56,7 @@ const statusClasses: Record<ServiceSchedule["status"], string> = {
   PENDING: "bg-warning/20 text-warning",
   SKIPPED: "bg-default-50 text-default-500",
 };
-
-export default function ServicesUnifiedAgenda({
+export function ServicesUnifiedAgenda({
   canManage,
   error,
   items,

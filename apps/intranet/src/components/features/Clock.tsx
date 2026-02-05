@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-
-export default function Clock() {
+export function Clock() {
   const [time, setTime] = useState(new Date());
   const lastMinuteRef = useRef(time.getMinutes());
 

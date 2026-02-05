@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import PageLoader from "@/components/ui/PageLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 import { personalFinanceQueries } from "@/features/personal-finance/queries";
 
-const PersonalCreditsPage = lazy(
-  () => import("@/features/personal-finance/pages/PersonalCreditsPage"),
+const PersonalCreditsPage = lazy(() =>
+  import("@/features/personal-finance/pages/PersonalCreditsPage").then((m) => ({
+    default: m.PersonalCreditsPage,
+  })),
 );
 
 export const Route = createFileRoute("/_authed/finanzas/personal-credits")({
@@ -24,6 +26,7 @@ export const Route = createFileRoute("/_authed/finanzas/personal-credits")({
       <PersonalCreditsPage />
     </Suspense>
   ),
+
   loader: async ({ context: { queryClient } }) => {
     await queryClient.ensureQueryData(personalFinanceQueries.list());
   },

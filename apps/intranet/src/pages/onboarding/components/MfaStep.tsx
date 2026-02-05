@@ -1,8 +1,8 @@
 import { Separator } from "@heroui/react";
 import { Fingerprint, Loader2, Smartphone } from "lucide-react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 interface MfaSecretData {
   qrCodeUrl: string;

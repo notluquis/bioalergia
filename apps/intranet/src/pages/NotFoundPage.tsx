@@ -1,8 +1,7 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { AlertTriangle, ArrowLeft, Home } from "lucide-react";
-import Button from "@/components/ui/Button";
-
-export default function NotFoundPage() {
+import { Button } from "@/components/ui/Button";
+export function NotFoundPage() {
   const location = useLocation();
   const navigate = useNavigate();
 

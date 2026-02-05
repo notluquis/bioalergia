@@ -6,10 +6,10 @@ import Papa from "papaparse";
 import { useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import FileInput from "@/components/ui/FileInput";
+import { FileInput } from "@/components/ui/FileInput";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
@@ -106,6 +106,7 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "address", required: false, type: "string" },
       { name: "personType", required: false, type: "enum" },
     ],
+
     label: "Personas",
     value: "people",
   },
@@ -126,6 +127,7 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "bankAccountType", required: false, type: "string" },
       { name: "bankAccountNumber", required: false, type: "string" },
     ],
+
     label: "Trabajadores",
     value: "employees",
   },
@@ -135,6 +137,7 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "category", required: false, type: "enum" },
       { name: "notes", required: false, type: "string" },
     ],
+
     label: "Contrapartes",
     value: "counterparts",
   },
@@ -149,6 +152,7 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "destination", required: false, type: "string" },
       { name: "category", required: false, type: "string" },
     ],
+
     label: "Transacciones",
     value: "transactions",
   },
@@ -158,6 +162,7 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "amount", required: true, type: "number" },
       { name: "note", required: false, type: "string" },
     ],
+
     label: "Saldos diarios",
     value: "daily_balances",
   },
@@ -179,6 +184,7 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "status", required: false, type: "enum" },
       { name: "changeReason", required: false, type: "string" },
     ],
+
     label: "Saldos Producción",
     value: "daily_production_balances",
   },
@@ -201,6 +207,7 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "bankAccountType", required: false, type: "string" },
       { name: "bankAccountNumber", required: false, type: "string" },
     ],
+
     label: "Retiros (MercadoPago)",
     value: "withdrawals",
   },
@@ -212,6 +219,7 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "serviceType", required: true, type: "enum" },
       { name: "defaultAmount", required: true, type: "number" },
     ],
+
     label: "Servicios Recurrentes",
     value: "services",
   },
@@ -226,6 +234,7 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "currentStock", required: false, type: "number" },
       { name: "price", required: false, type: "number" },
     ],
+
     label: "Inventario",
     value: "inventory_items",
   },
@@ -241,6 +250,7 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "commissionAmount", required: false, type: "number" },
       { name: "advanceAmount", required: false, type: "number" },
     ],
+
     label: "Libro Remuneraciones",
     value: "employee_timesheets",
   },
@@ -537,6 +547,7 @@ function buildMappingColumns({
           )}
         </div>
       ),
+
       header: "Campo BD",
     },
     {
@@ -546,6 +557,7 @@ function buildMappingColumns({
           {row.original.type}
         </Chip>
       ),
+
       header: "Tipo",
     },
     {
@@ -571,6 +583,7 @@ function buildMappingColumns({
           ))}
         </Select>
       ),
+
       header: "Columna CSV",
       id: "mapping",
     },
@@ -590,8 +603,7 @@ function buildMappingColumns({
 }
 
 // --- Main Page Component ---
-
-export default function CSVUploadPage() {
+export function CSVUploadPage() {
   const { can } = useAuth();
   const { error: showError, success } = useToast();
   const [selectedTable, setSelectedTable] = useState<string>("");

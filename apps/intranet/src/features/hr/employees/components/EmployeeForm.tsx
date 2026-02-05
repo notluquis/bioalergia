@@ -1,14 +1,14 @@
-import { getRetentionRateForYear } from "@shared/retention";
 import { useMutation } from "@tanstack/react-query";
 import type React from "react";
 import { useEffect, useState } from "react";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { formatRut, normalizeRut, validateRut } from "@/lib/rut";
 import type { EmployeeSalaryType } from "@/types/schema";
+import { getRetentionRateForYear } from "~/shared/retention";
 import { createEmployee, updateEmployee } from "../api";
 import type { Employee, EmployeePayload, EmployeeUpdatePayload } from "../types";
 
@@ -17,8 +17,7 @@ interface EmployeeFormProps {
   onCancel: () => void;
   onSave: () => void;
 }
-
-export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFormProps) {
+export function EmployeeForm({ employee, onCancel, onSave }: EmployeeFormProps) {
   const { can } = useAuth();
   const { error: toastError, success: toastSuccess } = useToast();
 
@@ -299,6 +298,7 @@ function EmployeeFormContent({
           type="text"
           value={form.fullName}
         />
+
         <Input
           label="Cargo"
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -308,6 +308,7 @@ function EmployeeFormContent({
           type="text"
           value={form.role}
         />
+
         <Input
           label="Correo"
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -317,6 +318,7 @@ function EmployeeFormContent({
           type="email"
           value={form.email}
         />
+
         <Input
           error={rutError || undefined}
           label="RUT"
@@ -326,6 +328,7 @@ function EmployeeFormContent({
           type="text"
           value={form.rut}
         />
+
         <Input
           label="Banco"
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -335,6 +338,7 @@ function EmployeeFormContent({
           type="text"
           value={form.bankName}
         />
+
         <Input
           label="Tipo de cuenta"
           list="bank-account-type-options"
@@ -345,6 +349,7 @@ function EmployeeFormContent({
           type="text"
           value={form.bankAccountType}
         />
+
         <datalist id="bank-account-type-options">
           <option value="RUT" />
           <option value="VISTA" />
@@ -360,6 +365,7 @@ function EmployeeFormContent({
           type="text"
           value={form.bankAccountNumber}
         />
+
         <Input
           disabled={form.salaryType !== "HOURLY"}
           label="Valor hora (CLP)"
@@ -372,6 +378,7 @@ function EmployeeFormContent({
           type="number"
           value={form.hourlyRate}
         />
+
         {form.salaryType === "FIXED" && (
           <Input
             inputMode="numeric"
@@ -396,6 +403,7 @@ function EmployeeFormContent({
           type="number"
           value={form.overtimeRate}
         />
+
         <Input
           helper="Dejar vacío para usar tasa por año: 2025=14,5% | 2026=15,25%. Si se ingresa un valor, este se aplica para TODOS los años."
           inputMode="decimal"

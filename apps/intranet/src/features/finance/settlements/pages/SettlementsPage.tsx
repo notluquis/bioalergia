@@ -5,12 +5,11 @@ import { Search } from "lucide-react";
 import { type ChangeEvent, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { financeKeys } from "@/features/finance/queries";
 
 import { columns } from "../components/SettlementColumns";
-
-export default function SettlementsPage() {
+export function SettlementsPage() {
   const [page, setPage] = useState(0); // 0-indexed for TanStack
   const [pageSize, setPageSize] = useState(50);
   const [searchInput, setSearchInput] = useState("");

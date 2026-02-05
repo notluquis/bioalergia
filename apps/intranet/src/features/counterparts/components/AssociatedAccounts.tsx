@@ -4,10 +4,10 @@ import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { fetchTransactions } from "@/features/finance/api";
 import type { Transaction } from "@/features/finance/types";
@@ -197,6 +197,7 @@ const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRan
       activeRange.from,
       activeRange.to,
     ],
+
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -339,7 +340,6 @@ const useAssociatedAccountsModel = ({
       // Error handled by mutation onError
     }
   };
-
   const handleSuggestionClick = (suggestion: CounterpartAccountSuggestion) => {
     setAccountForm({
       accountIdentifier: suggestion.accountIdentifier,
@@ -435,8 +435,7 @@ const useAssociatedAccountsModel = ({
     updateAccountForm,
   };
 };
-
-export default function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
+export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
   const {
     accountForm,
     accountGroupColumns,
@@ -600,6 +599,7 @@ function QuickViewSection({
           type="date"
           value={summaryRange.from}
         />
+
         <Input
           className="w-36"
           label="Hasta"
@@ -609,6 +609,7 @@ function QuickViewSection({
           type="date"
           value={summaryRange.to}
         />
+
         <Button
           onClick={() => {
             onSummaryRangeChange({
@@ -750,6 +751,7 @@ function AddAccountModal({
           type="text"
           value={accountForm.accountIdentifier}
         />
+
         {renderSuggestions}
         <div className="grid gap-3 md:grid-cols-2">
           <Input
@@ -759,6 +761,7 @@ function AddAccountModal({
             type="text"
             value={accountForm.bankName}
           />
+
           <Input
             label="Número de cuenta"
             onChange={updateAccountForm("bankAccountNumber")}
@@ -766,6 +769,7 @@ function AddAccountModal({
             type="text"
             value={accountForm.bankAccountNumber}
           />
+
           <Input
             label="Titular"
             onChange={updateAccountForm("holder")}
@@ -773,6 +777,7 @@ function AddAccountModal({
             type="text"
             value={accountForm.holder}
           />
+
           <Input
             label="Concepto"
             onChange={updateAccountForm("concept")}
@@ -780,6 +785,7 @@ function AddAccountModal({
             type="text"
             value={accountForm.concept}
           />
+
           <Input
             label="Tipo de cuenta"
             onChange={updateAccountForm("accountType")}

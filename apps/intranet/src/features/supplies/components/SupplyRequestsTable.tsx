@@ -9,11 +9,7 @@ interface SupplyRequestsTableProps {
   onStatusChange: (requestId: number, newStatus: SupplyRequest["status"]) => void;
   requests: SupplyRequest[];
 }
-
-export default function SupplyRequestsTable({
-  onStatusChange,
-  requests,
-}: SupplyRequestsTableProps) {
+export function SupplyRequestsTable({ onStatusChange, requests }: SupplyRequestsTableProps) {
   const { can } = useAuth();
   const isAdmin = can("update", "SupplyRequest");
 

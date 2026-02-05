@@ -1,7 +1,7 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { z } from "zod";
 
-import LoginPage from "@/features/auth/pages/LoginPage";
+import { LoginPage } from "@/features/auth/pages/LoginPage";
 
 // Search params schema for redirect handling
 const loginSearchSchema = z.object({

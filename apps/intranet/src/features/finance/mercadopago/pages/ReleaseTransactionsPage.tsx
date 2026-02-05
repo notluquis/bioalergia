@@ -8,8 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { today } from "@/lib/dates";
 
 import { getReleaseColumns } from "../components/ReleaseColumns";
-
-export default function ReleaseTransactionsPage() {
+export function ReleaseTransactionsPage() {
   const client = useClientQueries(schemaLite);
 
   const [draftFilters, setDraftFilters] = useState({
@@ -29,8 +28,8 @@ export default function ReleaseTransactionsPage() {
     orderBy: { date: "desc" },
     where: {
       date: {
-        gte: appliedFilters.from ? new Date(appliedFilters.from) : undefined,
-        lte: appliedFilters.to ? new Date(appliedFilters.to) : undefined,
+        gte: appliedFilters.from ? dayjs(appliedFilters.from, "YYYY-MM-DD").toDate() : undefined,
+        lte: appliedFilters.to ? dayjs(appliedFilters.to, "YYYY-MM-DD").toDate() : undefined,
       },
     },
   });

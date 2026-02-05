@@ -218,4 +218,4 @@ async function shouldLogUnmappedSubjects() {
   return true;
 }
 
-export default app;
+export const roleRoutes = app;

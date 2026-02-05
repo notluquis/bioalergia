@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { zDateString } from "@/lib/api-validate";
 
 export const DailyBalanceDaySchema = z.strictObject({
-  date: z.coerce.date(),
+  date: zDateString,
   difference: z.number().nullable(),
   expectedBalance: z.number().nullable(),
   hasCashback: z.boolean(),
@@ -14,16 +15,16 @@ export const DailyBalanceDaySchema = z.strictObject({
 
 export const BalancesApiResponseSchema = z.strictObject({
   days: z.array(DailyBalanceDaySchema),
-  from: z.coerce.date(),
+  from: zDateString,
   previous: z
     .strictObject({
       balance: z.number(),
-      date: z.coerce.date(),
+      date: zDateString,
       note: z.string().nullable(),
     })
     .nullable(),
   status: z.literal("ok"),
-  to: z.coerce.date(),
+  to: zDateString,
 });
 
 export const StatusResponseSchema = z.strictObject({ status: z.literal("ok") });

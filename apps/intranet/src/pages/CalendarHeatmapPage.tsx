@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
-import HeatmapMonth from "@/features/calendar/components/HeatmapMonth";
+import { HeatmapMonth } from "@/features/calendar/components/HeatmapMonth";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import type { CalendarSummary } from "@/features/calendar/types";
 import { useDisclosure } from "@/hooks/use-disclosure";
@@ -195,5 +195,4 @@ function CalendarHeatmapPage() {
     </section>
   );
 }
-
-export default CalendarHeatmapPage;
+export { CalendarHeatmapPage };

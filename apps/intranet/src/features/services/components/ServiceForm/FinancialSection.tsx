@@ -1,6 +1,6 @@
 import type { ChangeEvent } from "react";
 
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 
 import type { ServiceAmountIndexation, ServiceLateFeeMode } from "../../types";
@@ -47,6 +47,7 @@ export function FinancialSection({
         type="number"
         value={defaultAmount ?? 0}
       />
+
       <Select
         // errorMessage={errors.amountIndexation?.message} // Removed as errors is not defined
         // isInvalid={!!errors.amountIndexation} // Removed as errors is not defined
@@ -81,6 +82,7 @@ export function FinancialSection({
             type="number"
             value={lateFeeValue ?? ""}
           />
+
           <Input
             label="Días de gracia"
             max={31}

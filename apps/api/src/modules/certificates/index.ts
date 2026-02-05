@@ -4,11 +4,21 @@ import os from "node:os";
 import path from "node:path";
 import type { User } from "@finanzas/db";
 import { db } from "@finanzas/db";
+import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
 import { Hono } from "hono";
 import { zValidator } from "../../lib/zod-validator";
 import { uploadCertificateToDrive } from "../../services/certificates-drive.js";
 import { medicalCertificateSchema } from "./certificate.schema.js";
 import { generateMedicalCertificatePdf, generateQRCode, signPdf } from "./certificate.service.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TIMEZONE = "America/Santiago";
+
+const parseDateOnly = (value: string) => dayjs.tz(value, "YYYY-MM-DD", TIMEZONE).toDate();
 
 export type Variables = {
   user: User;
@@ -64,13 +74,13 @@ certificates.post("/medical", zValidator("json", medicalCertificateSchema), asyn
           id: certificateId,
           patientName: input.patientName,
           patientRut: input.rut,
-          birthDate: new Date(input.birthDate),
+          birthDate: parseDateOnly(input.birthDate),
           address: input.address,
           diagnosis: input.diagnosis,
           symptoms: input.symptoms,
           restDays: input.restDays,
-          restStartDate: input.restStartDate ? new Date(input.restStartDate) : null,
-          restEndDate: input.restEndDate ? new Date(input.restEndDate) : null,
+          restStartDate: input.restStartDate ? parseDateOnly(input.restStartDate) : null,
+          restEndDate: input.restEndDate ? parseDateOnly(input.restEndDate) : null,
           purpose: input.purpose,
           purposeDetail: input.purposeDetail,
           issuedBy: userId,
@@ -157,4 +167,4 @@ certificates.get("/health", (c) => {
   return c.json({ status: "ok", module: "certificates" });
 });
 
-export default certificates;
+export const certificatesRoutes = certificates;

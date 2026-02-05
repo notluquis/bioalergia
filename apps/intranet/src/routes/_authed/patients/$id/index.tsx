@@ -20,8 +20,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import Button from "@/components/ui/Button";
-import NewAttachmentModal from "@/features/patients/components/NewAttachmentModal";
+import { Button } from "@/components/ui/Button";
+import { NewAttachmentModal } from "@/features/patients/components/NewAttachmentModal";
 import { PatientDetailSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 
@@ -37,7 +37,7 @@ interface Person {
 
 interface Consultation {
   id: number;
-  date: Date;
+  date: string;
   reason: string;
   diagnosis?: string;
   treatment?: string;
@@ -46,7 +46,7 @@ interface Consultation {
 
 interface MedicalCertificate {
   id: string;
-  issuedAt: Date;
+  issuedAt: string;
   diagnosis: string;
 }
 
@@ -73,7 +73,7 @@ interface Budget {
 interface PatientPayment {
   id: number;
   amount: number;
-  paymentDate: Date;
+  paymentDate: string;
   paymentMethod: string;
   reference?: string;
   notes?: string;
@@ -90,7 +90,7 @@ interface PatientAttachment {
 interface Patient {
   id: number;
   personId: number;
-  birthDate: Date;
+  birthDate: string;
   bloodType?: string;
   notes?: string;
   createdAt: Date;
@@ -156,7 +156,7 @@ function PatientDetailsPage() {
     );
   }
 
-  const age = dayjs().diff(dayjs(patient.birthDate), "year");
+  const age = dayjs().diff(dayjs(patient.birthDate, "YYYY-MM-DD"), "year");
   const person = patient.person;
 
   return (
@@ -206,7 +206,7 @@ function PatientDetailsPage() {
                   patientName: person.names,
                   rut: person.rut,
                   address: person.address || "",
-                  birthDate: dayjs(patient.birthDate).format("YYYY-MM-DD"),
+                  birthDate: patient.birthDate,
                 },
               })
             }
@@ -405,11 +405,13 @@ function PatientDetailsPage() {
                       label="Apellidos"
                       value={`${person.fatherName} ${person.motherName}`}
                     />
+
                     <DetailRow label="RUT" value={person.rut} />
                     <DetailRow
                       label="Fecha Nacimiento"
-                      value={dayjs(patient.birthDate).format("DD/MM/YYYY")}
+                      value={dayjs(patient.birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")}
                     />
+
                     <DetailRow label="Email" value={person.email || "N/A"} />
                     <DetailRow label="Teléfono" value={person.phone || "N/A"} />
                     <DetailRow
@@ -455,7 +457,7 @@ const consultationColumns: ColumnDef<Consultation>[] = [
   {
     header: "Fecha",
     accessorKey: "date",
-    cell: ({ row }) => dayjs(row.original.date).format("DD/MM/YYYY"),
+    cell: ({ row }) => dayjs(row.original.date, "YYYY-MM-DD").format("DD/MM/YYYY"),
   },
   {
     header: "Motivo",
@@ -514,7 +516,7 @@ const paymentColumns: ColumnDef<PatientPayment>[] = [
   {
     header: "Fecha",
     accessorKey: "paymentDate",
-    cell: ({ row }) => dayjs(row.original.paymentDate).format("DD/MM/YYYY"),
+    cell: ({ row }) => dayjs(row.original.paymentDate, "YYYY-MM-DD").format("DD/MM/YYYY"),
   },
   {
     header: "Monto",
@@ -568,7 +570,7 @@ const certificateColumns: ColumnDef<MedicalCertificate>[] = [
   {
     header: "Fecha",
     accessorKey: "issuedAt",
-    cell: ({ row }) => dayjs(row.original.issuedAt).format("DD/MM/YYYY"),
+    cell: ({ row }) => dayjs(row.original.issuedAt, "YYYY-MM-DD").format("DD/MM/YYYY"),
   },
   {
     header: "Diagnóstico",

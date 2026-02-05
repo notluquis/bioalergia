@@ -1,6 +1,7 @@
 import type { Event } from "@finanzas/db";
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
+import dayjs from "dayjs";
 
 import { useMemo } from "react";
 import type { DateRange, FinancialSummary, IncomeCategoryGroup, IncomeItem } from "../types";
@@ -16,8 +17,8 @@ export function useFinancialSummary(dateRange: DateRange) {
   const { data: events, isLoading } = client.event.useFindMany({
     where: {
       AND: [
-        { startDate: { gte: new Date(dateRange.from) } },
-        { startDate: { lte: new Date(dateRange.to) } },
+        { startDate: { gte: dayjs(dateRange.from, "YYYY-MM-DD").toDate() } },
+        { startDate: { lte: dayjs(dateRange.to, "YYYY-MM-DD").toDate() } },
         { amountPaid: { gt: 0 } },
       ],
     },
@@ -82,7 +83,7 @@ function mapEventToIncomeItem(event: EventForIncome): IncomeItem {
 
   return {
     id: event.externalEventId || String(event.id),
-    date: event.startDate ? new Date(event.startDate) : new Date(),
+    date: event.startDate ? dayjs(event.startDate, "YYYY-MM-DD").toDate() : dayjs().toDate(),
     summary: event.summary || "Sin título",
     category,
     amount: event.amountPaid || 0,

@@ -1,8 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import Button from "@/components/ui/Button";
-
-export default function ShortcutCard({
+import { Button } from "@/components/ui/Button";
+export function ShortcutCard({
   accent,
   description,
   title,

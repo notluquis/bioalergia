@@ -7,7 +7,7 @@ export interface CreateLoanPayload {
   interestType: "COMPOUND" | "SIMPLE";
   notes?: null | string;
   principalAmount: number;
-  startDate: Date;
+  startDate: string; // YYYY-MM-DD
   title: string;
   totalInstallments: number;
 }
@@ -32,13 +32,13 @@ export interface LoanListResponse {
 
 export interface LoanPaymentPayload {
   paidAmount: number;
-  paidDate: Date;
+  paidDate: string; // YYYY-MM-DD
   transactionId: number;
 }
 
 export interface LoanSchedule {
   created_at: Date;
-  due_date: Date;
+  due_date: string;
   expected_amount: number;
   expected_interest: number;
   expected_principal: number;
@@ -46,7 +46,7 @@ export interface LoanSchedule {
   installment_number: number;
   loan_id: number;
   paid_amount: null | number;
-  paid_date: null | Date;
+  paid_date: null | string;
   status: "OVERDUE" | "PAID" | "PARTIAL" | "PENDING" | "SKIPPED";
   transaction?: null | {
     amount: null | number;
@@ -72,7 +72,7 @@ export interface LoanSummary {
   principal_amount: number;
   public_id: string;
   remaining_amount: number;
-  start_date: Date;
+  start_date: string;
   status: "ACTIVE" | "COMPLETED" | "DEFAULTED";
   title: string;
   total_expected: number;
@@ -84,6 +84,6 @@ export interface LoanSummary {
 export interface RegenerateSchedulePayload {
   frequency?: "BIWEEKLY" | "MONTHLY" | "WEEKLY";
   interestRate?: number;
-  startDate?: Date;
+  startDate?: string; // YYYY-MM-DD
   totalInstallments?: number;
 }

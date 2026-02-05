@@ -3,7 +3,6 @@
  * Optimized for production use with memoization and efficient algorithms
  */
 
-import dayjs from "dayjs";
 import type { OverlapInfo, TimesheetEntryWithEmployee } from "../types";
 
 /**
@@ -21,21 +20,19 @@ export function calculateDurationHours(start: string, end: string): number {
  */
 export function detectAllOverlaps(entries: TimesheetEntryWithEmployee[]): Map<string, OverlapInfo> {
   const overlapsByDate = new Map<string, OverlapInfo>();
-  const uniqueDates = new Set(entries.map((e) => dayjs(e.work_date).format("YYYY-MM-DD")));
+  const uniqueDates = new Set(entries.map((e) => e.work_date));
 
   for (const workDateKey of uniqueDates) {
     const overlaps = detectOverlapsForDate(entries, workDateKey);
     if (overlaps.length > 0) {
-      const dateEntries = entries.filter(
-        (e) => dayjs(e.work_date).format("YYYY-MM-DD") === workDateKey,
-      );
+      const dateEntries = entries.filter((e) => e.work_date === workDateKey);
       const employeeIds = new Set(dateEntries.map((e) => e.employee_id));
 
       overlapsByDate.set(workDateKey, {
         employee_count: employeeIds.size,
         employee_ids: [...employeeIds],
         total_overlapping_pairs: overlaps.length,
-        work_date: dayjs(workDateKey).toDate(),
+        work_date: workDateKey,
       });
     }
   }
@@ -54,9 +51,7 @@ export function detectOverlapsForDate(
   names: [string, string];
   pair: [number, number];
 }[] {
-  const dateEntries = entries.filter(
-    (e) => dayjs(e.work_date).format("YYYY-MM-DD") === workDateKey,
-  );
+  const dateEntries = entries.filter((e) => e.work_date === workDateKey);
   const overlaps: {
     names: [string, string];
     pair: [number, number];
@@ -106,10 +101,9 @@ export function formatDuration(hours: number): string {
  */
 export function getOverlappingEmployeesForDate(
   entries: TimesheetEntryWithEmployee[],
-  workDate: Date,
+  workDateKey: string,
 ): number[] {
-  const dateKey = dayjs(workDate).format("YYYY-MM-DD");
-  const dateEntries = entries.filter((e) => dayjs(e.work_date).format("YYYY-MM-DD") === dateKey);
+  const dateEntries = entries.filter((e) => e.work_date === workDateKey);
   const overlappingIds = new Set<number>();
 
   for (let i = 0; i < dateEntries.length; i += 1) {

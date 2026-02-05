@@ -1,6 +1,5 @@
 import { Loader2 } from "lucide-react";
-
-export default function PageLoader() {
+export function PageLoader() {
   return (
     <div className="flex min-h-[50vh] w-full flex-col items-center justify-center gap-4">
       <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-default-50/50 shadow-inner">

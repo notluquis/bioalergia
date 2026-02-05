@@ -21,8 +21,8 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<null | string>(null);
 
-  const handleDraftChange = (date: Date, patch: Partial<BalanceDraft>) => {
-    const dateKey = dayjs(date).format("YYYY-MM-DD");
+  const handleDraftChange = (date: string, patch: Partial<BalanceDraft>) => {
+    const dateKey = dayjs(date, "YYYY-MM-DD").format("YYYY-MM-DD");
     setDrafts((prev) => {
       const previous = prev[dateKey] ?? { note: "", value: "" };
       return {
@@ -35,11 +35,11 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
     });
   };
 
-  const handleSave = async (date: Date) => {
+  const handleSave = async (date: string) => {
     if (!canEdit) {
       return;
     }
-    const dateKey = dayjs(date).format("YYYY-MM-DD");
+    const dateKey = dayjs(date, "YYYY-MM-DD").format("YYYY-MM-DD");
     const draft = drafts[dateKey];
     if (!draft) {
       return;

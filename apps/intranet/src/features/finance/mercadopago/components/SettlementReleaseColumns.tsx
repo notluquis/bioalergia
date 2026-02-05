@@ -3,8 +3,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { useState } from "react";
 
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { fmtCLP } from "@/lib/format";
 
 const amountFields = new Set<string>([
@@ -240,6 +240,7 @@ const buildStandardColumn = (
       cell: ({ getValue }) => (
         <span className="font-medium text-foreground">{formatDate(getValue())}</span>
       ),
+
       header: getHeader(key),
     };
   }

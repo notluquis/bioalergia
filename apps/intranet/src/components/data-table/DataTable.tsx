@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { DataTablePagination } from "./DataTablePagination";
 import { type DataTableFilterOption, DataTableToolbar } from "./DataTableToolbar";
 
-interface DataTableProps<TData, TValue> {
+interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMeta<TData>> {
   readonly columns: ColumnDef<TData, TValue>[];
   readonly columnVisibility?: VisibilityState;
   readonly data: TData[];
@@ -82,7 +82,7 @@ interface DataTableProps<TData, TValue> {
   /**
    * Metadata to pass to table instance (useful for actions)
    */
-  readonly meta?: TableMeta<TData>;
+  readonly meta?: TMeta;
   /**
    * Custom message when no data is available
    */
@@ -382,7 +382,7 @@ function DataTableContent<TData, TValue>({
   );
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableMeta<TData>>({
   columns,
   columnVisibility: controlledColumnVisibility,
   containerVariant = "default",
@@ -408,7 +408,7 @@ export function DataTable<TData, TValue>({
   pagination,
   renderSubComponent,
   rowSelection: controlledRowSelection,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData, TValue, TMeta>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [internalColumnVisibility, setInternalColumnVisibility] = useState<VisibilityState>({});
   const [internalRowSelection, setInternalRowSelection] = useState({});

@@ -6,15 +6,14 @@ import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { employeeKeys } from "@/features/hr/employees/queries";
 import { fetchTimesheetSummary } from "@/features/hr/timesheets/api";
-import TimesheetEditor from "@/features/hr/timesheets/components/TimesheetEditor";
-import TimesheetSummaryTable from "@/features/hr/timesheets/components/TimesheetSummaryTable";
+import { TimesheetEditor } from "@/features/hr/timesheets/components/TimesheetEditor";
+import { TimesheetSummaryTable } from "@/features/hr/timesheets/components/TimesheetSummaryTable";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import { PAGE_CONTAINER, TITLE_LG } from "@/lib/styles";
 
 const MONTH_STRING_REGEX = /^\d{4}-\d{2}$/;
-
-export default function TimesheetsPage() {
+export function TimesheetsPage() {
   useWakeLock();
   useAuth();
 

@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { Bell, CheckCheck, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import {
   clearAll,

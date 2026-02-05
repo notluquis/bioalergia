@@ -3,9 +3,9 @@ import { FileUp, Save, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { AttachmentSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
@@ -15,12 +15,7 @@ interface NewAttachmentModalProps {
   onClose: () => void;
   patientId: string;
 }
-
-export default function NewAttachmentModal({
-  isOpen,
-  onClose,
-  patientId,
-}: NewAttachmentModalProps) {
+export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachmentModalProps) {
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState("");

@@ -248,4 +248,4 @@ app.get("/progress", async (c) => {
   });
 });
 
-export default app;
+export const backupRoutes = app;

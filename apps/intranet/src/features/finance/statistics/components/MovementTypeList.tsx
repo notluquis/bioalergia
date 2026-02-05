@@ -12,8 +12,7 @@ import type { MovementTypeData } from "../types";
 interface MovementTypeListProps {
   readonly data: MovementTypeData[];
 }
-
-export default function MovementTypeList({ data }: MovementTypeListProps) {
+export function MovementTypeList({ data }: MovementTypeListProps) {
   if (data.length === 0) {
     return (
       <div className="py-6 text-center text-default-500 text-sm">

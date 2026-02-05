@@ -5,12 +5,11 @@ import { Search } from "lucide-react";
 import { type ChangeEvent, useState } from "react";
 
 import { DataTable } from "@/components/data-table/DataTable";
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { financeKeys } from "@/features/finance/queries";
 
 import { columns } from "../components/ReleaseColumns";
-
-export default function ReleasesPage() {
+export function ReleasesPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
   const [searchInput, setSearchInput] = useState("");

@@ -1,6 +1,5 @@
 import { Outlet } from "@tanstack/react-router";
-
-export default function SettingsLayout() {
+export function SettingsLayout() {
   return (
     <div className="flex flex-col gap-6 lg:gap-10 lg:pt-0">
       <main className="min-w-0 flex-1 pb-32 md:pb-0">

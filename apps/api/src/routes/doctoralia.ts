@@ -2,7 +2,12 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth.js";
-import * as doctoraliaClient from "../lib/doctoralia/doctoralia-client.js";
+import {
+  bookSlot,
+  cancelBooking,
+  getBookings,
+  getSlots,
+} from "../lib/doctoralia/doctoralia-client.js";
 import { isDoctoraliaConfigured } from "../lib/doctoralia/doctoralia-core.js";
 import { zValidator } from "../lib/zod-validator";
 import {
@@ -158,7 +163,7 @@ doctoraliaRoutes.get(
     const { start, end } = c.req.valid("query");
 
     try {
-      const data = await doctoraliaClient.getSlots(facilityId, doctorId, addressId, start, end);
+      const data = await getSlots(facilityId, doctorId, addressId, start, end);
       return reply(c, { status: "ok", slots: data._items });
     } catch (error) {
       console.error("[Doctoralia] getSlots error:", error);
@@ -181,7 +186,7 @@ doctoraliaRoutes.get(
     const { start, end } = c.req.valid("query");
 
     try {
-      const data = await doctoraliaClient.getBookings(facilityId, doctorId, addressId, start, end, {
+      const data = await getBookings(facilityId, doctorId, addressId, start, end, {
         withPatient: true,
       });
       return reply(c, {
@@ -224,13 +229,7 @@ doctoraliaRoutes.post(
     const body = await c.req.json(); // Book slot body structure varies, keep loose or define strict if known
 
     try {
-      const booking = await doctoraliaClient.bookSlot(
-        facilityId,
-        doctorId,
-        addressId,
-        slotStart,
-        body,
-      );
+      const booking = await bookSlot(facilityId, doctorId, addressId, slotStart, body);
       return reply(c, { status: "ok", booking }, 201);
     } catch (error) {
       console.error("[Doctoralia] bookSlot error:", error);
@@ -263,7 +262,7 @@ doctoraliaRoutes.delete(
     const body = c.req.valid("json");
 
     try {
-      await doctoraliaClient.cancelBooking(facilityId, doctorId, addressId, bookingId, body.reason);
+      await cancelBooking(facilityId, doctorId, addressId, bookingId, body.reason);
       return reply(c, { status: "ok" }, 204);
     } catch (error) {
       console.error("[Doctoralia] cancelBooking error:", error);

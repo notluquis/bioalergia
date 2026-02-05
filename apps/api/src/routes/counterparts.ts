@@ -169,4 +169,4 @@ app.put("/accounts/:accountId", async (c) => {
   return reply(c, result);
 });
 
-export default app;
+export const counterpartRoutes = app;

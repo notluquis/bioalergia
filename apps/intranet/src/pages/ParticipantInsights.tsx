@@ -1,8 +1,8 @@
 import { DataTable } from "@/components/data-table/DataTable";
-import Alert from "@/components/ui/Alert";
-import Button from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
+import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import {
   getCounterpartsColumns,
@@ -11,8 +11,7 @@ import {
 } from "@/features/participants/components/ParticipantColumns";
 import { useParticipantInsightsData } from "@/features/participants/hooks/use-participant-insights-data";
 import { PAGE_CONTAINER } from "@/lib/styles";
-
-export default function ParticipantInsightsPage() {
+export function ParticipantInsightsPage() {
   const {
     counterparts,
     detailError,
@@ -69,6 +68,7 @@ export default function ParticipantInsightsPage() {
               type="text"
               value={participantId}
             />
+
             <Select
               label="Rango rápido"
               onChange={(value) => {
@@ -89,6 +89,7 @@ export default function ParticipantInsightsPage() {
               type="date"
               value={from}
             />
+
             <Input
               disabled={quickMonth !== "custom"}
               label="Hasta"
@@ -98,6 +99,7 @@ export default function ParticipantInsightsPage() {
               type="date"
               value={to}
             />
+
             <div className="flex justify-end lg:col-span-4">
               <Button disabled={detailLoading} isLoading={detailLoading} type="submit">
                 Consultar

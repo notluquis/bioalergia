@@ -141,4 +141,4 @@ app.get("/:id", async (c) => {
   return c.json({ status: "ok", data: transaction });
 });
 
-export default app;
+export const settlementTransactionRoutes = app;

@@ -4,7 +4,7 @@ import type { AnyRoute } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
 import { Plus, RotateCw, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
@@ -23,8 +23,7 @@ import type { NavConfig } from "@/types/navigation";
 import type { Permission, Role } from "@/types/roles";
 
 // --- Page Component ---
-
-export default function RolesSettingsPage() {
+export function RolesSettingsPage() {
   const { impersonate } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -244,6 +243,7 @@ export default function RolesSettingsPage() {
             updatingRoleId={updatingVariables?.roleId}
             viewModeRole={viewModeRole}
           />
+
           {unmappedSubjects.length > 0 && (
             <div className="border-default-200 border-t px-6 py-3 text-default-500 text-xs">
               Subjects sin ruta: {unmappedSubjects.slice(0, 8).join(", ")}

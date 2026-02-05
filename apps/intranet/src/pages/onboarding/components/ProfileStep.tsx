@@ -1,7 +1,7 @@
 import { User } from "lucide-react";
 
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { formatRut, validateRut } from "@/lib/rut";
 
 interface ProfileStepProps {
@@ -46,6 +46,7 @@ export function ProfileStep(props: ProfileStepProps) {
           required
           value={profile.names}
         />
+
         <Input
           label="RUT"
           error={error?.includes("RUT") ? "RUT inválido" : undefined}
@@ -55,22 +56,26 @@ export function ProfileStep(props: ProfileStepProps) {
           required
           value={profile.rut}
         />
+
         <Input
           label="Primer apellido"
           onChange={(e) => onProfileChange("fatherName", e.target.value)}
           value={profile.fatherName}
         />
+
         <Input
           label="Segundo apellido"
           onChange={(e) => onProfileChange("motherName", e.target.value)}
           value={profile.motherName}
         />
+
         <Input
           label="Teléfono"
           onChange={(e) => onProfileChange("phone", e.target.value)}
           type="tel"
           value={profile.phone}
         />
+
         <div className="md:col-span-2">
           <Input
             label="Dirección"

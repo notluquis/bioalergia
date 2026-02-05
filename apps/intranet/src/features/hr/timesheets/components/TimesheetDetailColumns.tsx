@@ -1,14 +1,14 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import {
   DropdownMenu,
   DropdownMenuItem,
   DropdownPopover,
   HeroDropdownMenu,
 } from "@/components/ui/DropdownMenu";
-import TimeInput from "@/components/ui/TimeInput";
+import { TimeInput } from "@/components/ui/TimeInput";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 import type { BulkRow } from "../types";
@@ -347,6 +347,7 @@ export const getTimesheetDetailColumns = () => [
     cell: ({ row, table }) => (
       <DateCell meta={table.options.meta as TimesheetTableMeta} row={row.original} />
     ),
+
     header: "Fecha",
     maxSize: 200,
     minSize: 160,
@@ -361,6 +362,7 @@ export const getTimesheetDetailColumns = () => [
         row={row.original}
       />
     ),
+
     header: "Entrada",
     maxSize: 130,
     minSize: 100,
@@ -375,6 +377,7 @@ export const getTimesheetDetailColumns = () => [
         row={row.original}
       />
     ),
+
     header: "Salida",
     maxSize: 130,
     minSize: 100,
@@ -384,6 +387,7 @@ export const getTimesheetDetailColumns = () => [
     cell: ({ row, table }) => (
       <WorkedCell meta={table.options.meta as TimesheetTableMeta} row={row.original} />
     ),
+
     header: "Trabajadas",
     id: "trabajadas",
     maxSize: 120,
@@ -398,6 +402,7 @@ export const getTimesheetDetailColumns = () => [
         row={row.original}
       />
     ),
+
     header: "Extras",
     maxSize: 120,
     minSize: 90,
@@ -411,6 +416,7 @@ export const getTimesheetDetailColumns = () => [
         row={row.original}
       />
     ),
+
     header: "Estado",
     id: "status",
     maxSize: 140,
@@ -425,6 +431,7 @@ export const getTimesheetDetailColumns = () => [
         row={row.original}
       />
     ),
+
     header: "Acciones",
     id: "actions",
     maxSize: 120,

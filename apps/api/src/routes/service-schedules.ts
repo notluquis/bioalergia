@@ -48,4 +48,4 @@ app.post("/:id/unlink", async (c) => {
   return reply(c, { status: "error", message: "ServiceSchedule feature not yet implemented" }, 501);
 });
 
-export default app;
+export const serviceScheduleRoutes = app;
