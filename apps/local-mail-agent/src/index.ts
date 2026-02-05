@@ -16,6 +16,7 @@ const DEFAULT_PORT = 3333;
 const DEFAULT_ALLOWED_ORIGINS = ["https://intranet.bioalergia.cl", "http://localhost"];
 const TLS_KEY_PATH = process.env.LOCAL_AGENT_TLS_KEY_PATH;
 const TLS_CERT_PATH = process.env.LOCAL_AGENT_TLS_CERT_PATH;
+const BASE64_PATTERN = /^[A-Za-z0-9+/=]+$/;
 
 const AttachmentSchema = z.object({
   filename: z.string().min(1),
@@ -58,7 +59,30 @@ function isLikelyBase64(base64: string) {
   if (clean.length === 0 || clean.length % 4 !== 0) {
     return false;
   }
-  return /^[A-Za-z0-9+/=]+$/.test(clean);
+  return BASE64_PATTERN.test(clean);
+}
+
+function formatSmtpError(error: unknown) {
+  if (error && typeof error === "object") {
+    const maybeError = error as {
+      code?: string;
+      command?: string;
+      message?: string;
+      responseCode?: number;
+    };
+    return {
+      code: maybeError.code ?? "UNKNOWN",
+      command: maybeError.command ?? "UNKNOWN",
+      message: maybeError.message ?? "SMTP error",
+      responseCode: maybeError.responseCode ?? null,
+    };
+  }
+  return {
+    code: "UNKNOWN",
+    command: "UNKNOWN",
+    message: "SMTP error",
+    responseCode: null,
+  };
 }
 
 async function loadSecrets() {
@@ -75,6 +99,9 @@ async function createTransport(smtpUser: string, smtpPass: string) {
     host: SMTP_HOST,
     port: SMTP_PORT,
     secure: SMTP_SECURE,
+    connectionTimeout: 20_000,
+    greetingTimeout: 20_000,
+    socketTimeout: 60_000,
     auth: {
       user: smtpUser,
       pass: smtpPass,
@@ -99,6 +126,31 @@ app.use("*", async (c, next) => {
 });
 
 app.get("/health", (c) => c.json({ status: "ok" }));
+
+app.get("/health/smtp", async (c) => {
+  let secrets: Awaited<ReturnType<typeof loadSecrets>>;
+  try {
+    secrets = await loadSecrets();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Keychain error";
+    return c.json({ status: "error", message }, 500);
+  }
+
+  const token = c.req.header("X-Local-Agent-Token");
+  if (!token || token !== secrets.agentToken) {
+    return c.json({ status: "error", message: "Unauthorized" }, 401);
+  }
+
+  try {
+    const transporter = await createTransport(secrets.smtpUser, secrets.smtpPass);
+    await transporter.verify();
+    return c.json({ status: "ok", smtp: "ready" });
+  } catch (error) {
+    const smtpError = formatSmtpError(error);
+    console.error("[mail-agent] SMTP verify failed:", smtpError);
+    return c.json({ status: "error", message: smtpError.message, code: smtpError.code }, 502);
+  }
+});
 
 app.post("/send", async (c) => {
   let secrets: Awaited<ReturnType<typeof loadSecrets>>;
@@ -156,8 +208,9 @@ app.post("/send", async (c) => {
     );
     return c.json({ status: "ok" });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "SMTP error";
-    return c.json({ status: "error", message }, 502);
+    const smtpError = formatSmtpError(error);
+    console.error("[mail-agent] SMTP send failed:", smtpError);
+    return c.json({ status: "error", message: smtpError.message, code: smtpError.code }, 502);
   }
 });
 

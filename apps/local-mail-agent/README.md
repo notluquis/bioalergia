@@ -37,7 +37,10 @@ mkcert 127.0.0.1 localhost
 2) Arranca el agente con TLS:
 
 ```bash
-LOCAL_AGENT_TLS_KEY_PATH=\"./127.0.0.1+1-key.pem\" \\\nLOCAL_AGENT_TLS_CERT_PATH=\"./127.0.0.1+1.pem\" \\\nPORT=3333 \\\npnpm --filter @finanzas/local-mail-agent dev
+LOCAL_AGENT_TLS_KEY_PATH="./127.0.0.1+1-key.pem" \
+LOCAL_AGENT_TLS_CERT_PATH="./127.0.0.1+1.pem" \
+PORT=3333 \
+pnpm --filter @finanzas/local-mail-agent dev
 ```
 
 Luego en la intranet usa `https://127.0.0.1:3333`.
@@ -48,4 +51,26 @@ Puedes permitir orígenes adicionales con:
 
 ```bash
 LOCAL_AGENT_ALLOWED_ORIGINS="https://intranet.bioalergia.cl,http://localhost" pnpm --filter @finanzas/local-mail-agent dev
+```
+
+## Verificación SMTP
+
+El agente expone un chequeo de conectividad SMTP con auth:
+
+```bash
+curl -k -H "X-Local-Agent-Token: <TOKEN_LOCAL>" https://127.0.0.1:3333/health/smtp
+```
+
+Respuesta esperada:
+
+```json
+{"status":"ok","smtp":"ready"}
+```
+
+## Test de envío a tu mismo correo
+
+Este comando hace `verify()` y envía un correo de prueba desde `smtp_user` hacia `smtp_user`:
+
+```bash
+pnpm --filter @finanzas/local-mail-agent test:send-self
 ```

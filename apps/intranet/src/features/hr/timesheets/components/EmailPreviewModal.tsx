@@ -52,6 +52,7 @@ export function EmailPreviewModal({
   const [agentUrl, setAgentUrl] = useState(DEFAULT_LOCAL_AGENT_URL);
   const [agentStatus, setAgentStatus] = useState<null | string>(null);
   const [checkingAgent, setCheckingAgent] = useState(false);
+  const [checkingSmtp, setCheckingSmtp] = useState(false);
   const isHttpsPage = typeof window !== "undefined" && window.location.protocol === "https:";
   const isHttpAgent = agentUrl.startsWith("http://");
 
@@ -166,6 +167,32 @@ export function EmailPreviewModal({
                     variant="secondary"
                   >
                     {checkingAgent ? "Verificando..." : "Verificar agente"}
+                  </Button>
+                  <Button
+                    disabled={checkingSmtp || !agentToken}
+                    onClick={async () => {
+                      setCheckingSmtp(true);
+                      setAgentStatus(null);
+                      try {
+                        const response = await fetch(`${agentUrl}/health/smtp`, {
+                          headers: {
+                            "X-Local-Agent-Token": agentToken,
+                          },
+                        });
+                        if (!response.ok) {
+                          setAgentStatus("SMTP no disponible o token inválido");
+                        } else {
+                          setAgentStatus("SMTP listo");
+                        }
+                      } catch {
+                        setAgentStatus("No se pudo verificar SMTP");
+                      } finally {
+                        setCheckingSmtp(false);
+                      }
+                    }}
+                    variant="secondary"
+                  >
+                    {checkingSmtp ? "Validando SMTP..." : "Verificar SMTP"}
                   </Button>
                   {agentStatus && <span className="text-default-600 text-xs">{agentStatus}</span>}
                 </div>
