@@ -1,4 +1,6 @@
-import { db } from "@finanzas/db";
+import { db, type JsonValue } from "@finanzas/db";
+
+type NonNullJsonValue = Exclude<JsonValue, null>;
 
 export async function createMpSyncLogEntry(params: {
   triggerSource: string;
@@ -14,11 +16,11 @@ export async function createMpSyncLogEntry(params: {
       startedAt: new Date(),
     },
   });
-  return Number(log.id);
+  return log.id;
 }
 
 export async function finalizeMpSyncLogEntry(
-  id: number,
+  id: bigint,
   data: {
     status: "SUCCESS" | "ERROR";
     inserted?: number;
@@ -26,7 +28,7 @@ export async function finalizeMpSyncLogEntry(
     skipped?: number;
     excluded?: number;
     errorMessage?: string;
-    changeDetails?: Record<string, unknown>;
+    changeDetails?: NonNullJsonValue;
   },
 ) {
   await db.syncLog.update({
@@ -39,7 +41,7 @@ export async function finalizeMpSyncLogEntry(
       skipped: data.skipped,
       excluded: data.excluded,
       errorMessage: data.errorMessage,
-      changeDetails: data.changeDetails,
+      changeDetails: data.changeDetails ?? undefined,
     },
   });
 }

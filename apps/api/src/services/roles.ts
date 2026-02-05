@@ -1,5 +1,5 @@
-import type { RoleCreateArgs, RoleUpdateArgs } from "@finanzas/db";
 import { db, schema } from "@finanzas/db";
+import type { RoleCreateArgs, RoleUpdateArgs } from "@finanzas/db/input";
 
 // Extract input types from Zenstack args
 type RoleCreateInput = NonNullable<RoleCreateArgs["data"]>;

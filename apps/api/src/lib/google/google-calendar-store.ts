@@ -106,8 +106,8 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
             dosageValue: event.dosageValue,
             dosageUnit: event.dosageUnit,
             treatmentStage: event.treatmentStage,
-            controlIncluded: event.controlIncluded,
-            isDomicilio: event.isDomicilio,
+            controlIncluded: event.controlIncluded ?? false,
+            isDomicilio: event.isDomicilio ?? false,
             lastSyncedAt: new Date(),
           };
 

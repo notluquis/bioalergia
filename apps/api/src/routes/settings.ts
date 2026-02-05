@@ -6,7 +6,7 @@ import { cacheControl } from "../lib/cache-control";
 import { reply } from "../utils/reply";
 
 export type Variables = {
-  user: Awaited<ReturnType<typeof getSessionUser>>;
+  user: NonNullable<Awaited<ReturnType<typeof getSessionUser>>>;
 };
 
 export const settingsRoutes = new Hono<{ Variables: Variables }>();

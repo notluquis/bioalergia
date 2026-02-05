@@ -263,7 +263,7 @@ doctoraliaRoutes.delete(
 
     try {
       await cancelBooking(facilityId, doctorId, addressId, bookingId, body.reason);
-      return reply(c, { status: "ok" }, 204);
+      return reply(c, { status: "ok" }, 200);
     } catch (error) {
       console.error("[Doctoralia] cancelBooking error:", error);
       return reply(c, { status: "error", message: "Error al cancelar reserva" }, 500);

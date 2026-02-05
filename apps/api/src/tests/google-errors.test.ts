@@ -1,4 +1,4 @@
-import { GaxiosError } from "gaxios";
+import { GaxiosError, type GaxiosOptionsPrepared, type GaxiosResponse } from "gaxios";
 import { describe, expect, it, vi } from "vitest";
 import { GoogleApiError, parseGoogleError, retryGoogleCall } from "../lib/google/google-errors";
 
@@ -8,31 +8,26 @@ type MinimalResponse = {
   headers?: Record<string, string>;
 };
 
-type GaxiosResponseLike = {
-  status: number;
-  statusText: string;
-  data: unknown;
-  headers: Record<string, string>;
-  config: { url: string; method: string };
-};
-
 function buildGaxiosError(message: string, response: MinimalResponse) {
-  const responseLike: GaxiosResponseLike = {
-    status: response.status,
-    statusText: "",
-    data: response.data ?? null,
-    headers: response.headers ?? {},
-    config: { url: "https://example.com", method: "GET" },
+  const config: GaxiosOptionsPrepared = {
+    headers: new Headers(),
+    method: "GET",
+    url: new URL("https://example.com"),
   };
-  const error = Object.create(GaxiosError.prototype) as GaxiosError & {
-    response?: GaxiosResponseLike;
-    config?: { url: string; method: string };
-  };
-  error.name = "GaxiosError";
-  error.message = message;
+
+  const responseLike = Object.assign(
+    new Response(null, {
+      status: response.status,
+      headers: response.headers ?? {},
+    }),
+    {
+      config,
+      data: response.data ?? null,
+    },
+  ) as GaxiosResponse;
+
+  const error = new GaxiosError(message, config, responseLike);
   error.code = String(response.status);
-  error.config = responseLike.config;
-  error.response = responseLike;
   return error;
 }
 

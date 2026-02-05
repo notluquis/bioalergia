@@ -52,7 +52,6 @@ app.post("/", async (c) => {
   const loan = await createLoan({
     ...parsed.data,
     status: "ACTIVE",
-    createdAt: new Date(),
   });
 
   return reply(c, { status: "ok", loan });

@@ -128,8 +128,15 @@ app.post("/", async (c) => {
 
   // Map schema 'date' to 'balanceDate'
   const payload = {
-    ...parsed.data,
     balanceDate: parsed.data.date,
+    ingresoTarjetas: parsed.data.ingresoTarjetas,
+    ingresoTransferencias: parsed.data.ingresoTransferencias,
+    ingresoEfectivo: parsed.data.ingresoEfectivo,
+    gastosDiarios: parsed.data.gastosDiarios,
+    otrosAbonos: parsed.data.otrosAbonos,
+    comentarios: parsed.data.comentarios ?? null,
+    status: parsed.data.status,
+    changeReason: parsed.data.reason ?? null,
     consultasMonto: parsed.data.consultas,
     controlesMonto: parsed.data.controles,
     testsMonto: parsed.data.tests,
@@ -174,8 +181,15 @@ app.put("/:id", async (c) => {
   }
 
   const payload = {
-    ...parsed.data,
     balanceDate: parsed.data.date,
+    ingresoTarjetas: parsed.data.ingresoTarjetas,
+    ingresoTransferencias: parsed.data.ingresoTransferencias,
+    ingresoEfectivo: parsed.data.ingresoEfectivo,
+    gastosDiarios: parsed.data.gastosDiarios,
+    otrosAbonos: parsed.data.otrosAbonos,
+    comentarios: parsed.data.comentarios ?? null,
+    status: parsed.data.status,
+    changeReason: parsed.data.reason ?? null,
     consultasMonto: parsed.data.consultas,
     controlesMonto: parsed.data.controles,
     testsMonto: parsed.data.tests,

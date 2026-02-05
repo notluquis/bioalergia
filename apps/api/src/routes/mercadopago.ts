@@ -255,7 +255,7 @@ mercadopagoRoutes.post("/process-report", async (c) => {
     return reply(c, { status: "error", message: "Missing fileName or reportType" }, 400);
   }
 
-  let logId: number | null = null;
+  let logId: bigint | null = null;
   try {
     console.log(
       `[MP Process] Manual processing triggered for ${fileName} (${reportType}) by ${auth.email}`,

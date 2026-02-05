@@ -1,14 +1,38 @@
-import type {
-  CounterpartAccountUpdateArgs,
-  CounterpartCreateArgs,
-  CounterpartUpdateArgs,
-} from "@finanzas/db";
-import { db, type Person } from "@finanzas/db";
+import { type CounterpartCategory, db, type Person, type PersonType } from "@finanzas/db";
+import type { CounterpartAccountUpdateArgs } from "@finanzas/db/input";
 
-// Extract input types from Zenstack args
-type CounterpartCreateInput = NonNullable<CounterpartCreateArgs["data"]>;
-type CounterpartUpdateInput = NonNullable<CounterpartUpdateArgs["data"]>;
 type CounterpartAccountUpdateInput = NonNullable<CounterpartAccountUpdateArgs["data"]>;
+
+export type CounterpartPayload = {
+  category?: CounterpartCategory;
+  email?: string | null;
+  employeeEmail?: string | null;
+  employeeId?: number | null;
+  name: string;
+  notes?: string | null;
+  personType?: "PERSON" | "COMPANY" | "OTHER";
+  rut?: string | null;
+};
+
+export type CounterpartUpdatePayload = Partial<CounterpartPayload>;
+
+const mapPersonType = (value?: CounterpartPayload["personType"]): PersonType | undefined => {
+  if (!value) {
+    return undefined;
+  }
+  if (value === "COMPANY") {
+    return "JURIDICAL";
+  }
+  return "NATURAL";
+};
+
+const normalizeRut = (rut?: string | null): string | undefined => {
+  if (!rut) {
+    return undefined;
+  }
+  const trimmed = rut.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
 
 export async function listCounterparts() {
   return await db.counterpart.findMany({
@@ -39,31 +63,26 @@ export async function getCounterpartById(id: number) {
   };
 }
 
-export async function createCounterpart(
-  data: CounterpartCreateInput & {
-    name?: string;
-    rut?: string;
-    email?: string;
-    personType?: string;
-  },
-) {
+export async function createCounterpart(data: CounterpartPayload) {
   // Use transaction to upsert Person and create Counterpart
   return await db.$transaction(async (tx) => {
     // Upsert Person by RUT if provided, otherwise create new
     let person: Person | null = null;
-    if (data.rut && data.rut.trim() !== "") {
+    const rut = normalizeRut(data.rut);
+    const personType = mapPersonType(data.personType);
+    if (rut) {
       person = await tx.person.upsert({
-        where: { rut: data.rut },
+        where: { rut },
         update: {
           names: data.name,
-          email: data.email,
-          personType: data.personType,
+          email: data.email ?? undefined,
+          personType,
         },
         create: {
-          rut: data.rut,
+          rut,
           names: data.name,
-          email: data.email,
-          personType: data.personType,
+          email: data.email ?? undefined,
+          personType,
         },
       });
     } else {
@@ -72,12 +91,13 @@ export async function createCounterpart(
       // If no RUT, we must create a Person. But we can't upsert without unique.
       // For now, let's assume we create a new Person if no RUT matches,
       // OR we just create.
+      const fallbackRut = `TEMP-${Date.now()}`;
       person = await tx.person.create({
         data: {
-          rut: data.rut || `TEMP-${Date.now()}`, // Fallback if required
+          rut: fallbackRut, // Fallback if required
           names: data.name,
-          email: data.email,
-          personType: data.personType,
+          email: data.email ?? undefined,
+          personType,
         },
       });
     }
@@ -93,15 +113,7 @@ export async function createCounterpart(
   });
 }
 
-export async function updateCounterpart(
-  id: number,
-  data: CounterpartUpdateInput & {
-    name?: string;
-    rut?: string;
-    email?: string;
-    personType?: string;
-  },
-) {
+export async function updateCounterpart(id: number, data: CounterpartUpdatePayload) {
   return await db.$transaction(async (tx) => {
     const counterpart = await tx.counterpart.findUnique({ where: { id } });
     if (!counterpart) {
@@ -109,13 +121,14 @@ export async function updateCounterpart(
     }
 
     if (data.rut || data.name || data.email || data.personType) {
+      const personType = mapPersonType(data.personType);
       await tx.person.update({
         where: { id: counterpart.personId },
         data: {
-          rut: data.rut,
+          rut: normalizeRut(data.rut),
           names: data.name,
-          email: data.email,
-          personType: data.personType,
+          email: data.email ?? undefined,
+          personType,
         },
       });
     }

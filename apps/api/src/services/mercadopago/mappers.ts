@@ -1,4 +1,5 @@
-import type { db } from "@finanzas/db";
+import type { db, JsonValue } from "@finanzas/db";
+import { Decimal } from "decimal.js";
 
 // Infer Input types from the db client
 type SettlementManyArgs = Parameters<typeof db.settlementTransaction.createMany>[0];
@@ -11,178 +12,246 @@ type SettlementTransactionInput = ExtractDataInput<SettlementManyArgs>;
 type ReleaseTransactionInput = ExtractDataInput<ReleaseManyArgs>;
 
 // Type for raw MercadoPago CSV rows
-type MercadoPagoRowRaw = Record<string, unknown>;
+export type RawValue = string | number | null | undefined;
+export type MercadoPagoRowRaw = Record<string, RawValue>;
+type NonNullJsonValue = Exclude<JsonValue, null>;
+
+const toStringValue = (value: RawValue): string | undefined => {
+  if (value == null) {
+    return undefined;
+  }
+  return typeof value === "string" ? value : String(value);
+};
+
+const toText = (value: RawValue, fallback = ""): string => toStringValue(value) ?? fallback;
+
+const toNullableString = (value: RawValue): string | null => {
+  const str = toStringValue(value);
+  return str && str.length > 0 ? str : null;
+};
+
+const toInt = (value: RawValue): number | null => {
+  const str = toStringValue(value);
+  if (!str) {
+    return null;
+  }
+  const parsed = Number.parseInt(str, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+};
 
 // Helper parsers
-export function parseDate(val: string) {
-  if (!val) {
+export function parseDateRequired(value: RawValue): Date {
+  const str = toStringValue(value);
+  if (!str) {
     return new Date();
   }
-  return new Date(val);
+  const parsed = new Date(str);
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
-export function parseDecimal(val: unknown): number | string {
-  if (!val) {
-    return 0;
+export function parseDateOptional(value: RawValue): Date | null {
+  const str = toStringValue(value);
+  if (!str) {
+    return null;
   }
-  if (typeof val === "string") {
-    return val.replace(",", ".");
-  }
-  if (typeof val === "number") {
-    return val;
-  }
-  return 0;
+  const parsed = new Date(str);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-export function parseBigInt(val: string): bigint | undefined {
-  if (!val) {
+export function parseDecimal(value: RawValue, fallback: string | number | Decimal): Decimal;
+export function parseDecimal(
+  value: RawValue,
+  fallback?: string | number | Decimal,
+): Decimal | undefined;
+export function parseDecimal(value: RawValue, fallback?: string | number | Decimal) {
+  const toDecimal = (input: string | number | Decimal) =>
+    input instanceof Decimal ? input : new Decimal(input);
+  if (value == null || value === "") {
+    return fallback === undefined ? undefined : toDecimal(fallback);
+  }
+  if (typeof value === "number") {
+    return new Decimal(value);
+  }
+  if (typeof value === "string") {
+    const normalized = value.replace(",", ".");
+    if (!normalized.trim()) {
+      return fallback === undefined ? undefined : toDecimal(fallback);
+    }
+    return new Decimal(normalized);
+  }
+  return fallback === undefined ? undefined : toDecimal(fallback);
+}
+
+export function parseBigInt(value: RawValue): bigint | undefined {
+  const str = toStringValue(value);
+  if (!str) {
     return undefined;
   }
   try {
-    return BigInt(val);
+    return BigInt(str);
   } catch {
     return undefined;
   }
 }
 
-export function parseJson(val: unknown): Record<string, unknown> | undefined {
-  if (!val) {
+export function parseJson(value: unknown): NonNullJsonValue | undefined {
+  if (value == null) {
     return undefined;
   }
-  try {
-    if (typeof val === "string") {
-      return JSON.parse(val) as Record<string, unknown>;
+  if (typeof value === "string") {
+    if (!value.trim()) {
+      return undefined;
     }
-    if (typeof val === "object" && val !== null) {
-      return val as Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(value) as JsonValue;
+      return parsed === null ? undefined : (parsed as NonNullJsonValue);
+    } catch {
+      return undefined;
     }
-    return undefined;
-  } catch {
-    return undefined;
   }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "object") {
+    return value as NonNullJsonValue;
+  }
+  return undefined;
 }
+
+const parseBoolean = (value: RawValue): boolean | null => {
+  const str = toStringValue(value);
+  if (!str) {
+    return null;
+  }
+  const normalized = str.trim().toLowerCase();
+  if (["true", "1", "yes", "y"].includes(normalized)) {
+    return true;
+  }
+  if (["false", "0", "no", "n"].includes(normalized)) {
+    return false;
+  }
+  return null;
+};
 
 // Mapper for Settlement Report
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy mapper
 export function mapRowToSettlementTransaction(row: MercadoPagoRowRaw): SettlementTransactionInput {
   return {
-    sourceId: row.SOURCE_ID || "", // Empty = will be skipped as invalid
-    transactionDate: parseDate(row.TRANSACTION_DATE),
-    settlementDate: parseDate(row.SETTLEMENT_DATE),
-    moneyReleaseDate: parseDate(row.MONEY_RELEASE_DATE),
-    externalReference: row.EXTERNAL_REFERENCE || null,
-    userId: row.USER_ID || null,
-    paymentMethodType: row.PAYMENT_METHOD_TYPE || null,
-    paymentMethod: row.PAYMENT_METHOD || null,
-    site: row.SITE || null,
-    transactionType: row.TRANSACTION_TYPE || "Unknown",
-    transactionAmount: parseDecimal(row.TRANSACTION_AMOUNT),
-    transactionCurrency: row.TRANSACTION_CURRENCY || "ARS",
+    sourceId: toText(row.SOURCE_ID), // Empty = will be skipped as invalid
+    transactionDate: parseDateRequired(row.TRANSACTION_DATE),
+    settlementDate: parseDateOptional(row.SETTLEMENT_DATE),
+    moneyReleaseDate: parseDateOptional(row.MONEY_RELEASE_DATE),
+    externalReference: toNullableString(row.EXTERNAL_REFERENCE),
+    userId: toNullableString(row.USER_ID),
+    paymentMethodType: toNullableString(row.PAYMENT_METHOD_TYPE),
+    paymentMethod: toNullableString(row.PAYMENT_METHOD),
+    site: toNullableString(row.SITE),
+    transactionType: toText(row.TRANSACTION_TYPE, "Unknown"),
+    transactionAmount: parseDecimal(row.TRANSACTION_AMOUNT, 0),
+    transactionCurrency: toText(row.TRANSACTION_CURRENCY, "ARS"),
     sellerAmount: parseDecimal(row.SELLER_AMOUNT),
     feeAmount: parseDecimal(row.FEE_AMOUNT),
     settlementNetAmount: parseDecimal(row.SETTLEMENT_NET_AMOUNT),
-    settlementCurrency: row.SETTLEMENT_CURRENCY || null,
+    settlementCurrency: toNullableString(row.SETTLEMENT_CURRENCY),
     realAmount: parseDecimal(row.REAL_AMOUNT),
     couponAmount: parseDecimal(row.COUPON_AMOUNT),
-    metadata: parseJson(row.METADATA) || undefined, // Strict undefined
+    metadata: parseJson(row.METADATA),
     mkpFeeAmount: parseDecimal(row.MKP_FEE_AMOUNT),
     financingFeeAmount: parseDecimal(row.FINANCING_FEE_AMOUNT),
     shippingFeeAmount: parseDecimal(row.SHIPPING_FEE_AMOUNT),
     taxesAmount: parseDecimal(row.TAXES_AMOUNT),
-    installments: Number.parseInt(row.INSTALLMENTS || "0", 10) || null,
-    taxDetail: row.TAX_DETAIL || null,
-    taxesDisaggregated: parseJson(row.TAXES_DISAGGREGATED) || undefined,
-    description: row.DESCRIPTION || null,
-    cardInitialNumber: row.CARD_INITIAL_NUMBER || null,
-    operationTags: parseJson(row.OPERATION_TAGS) || undefined,
-    businessUnit: row.BUSINESS_UNIT || null,
-    subUnit: row.SUB_UNIT || null,
-    productSku: row.PRODUCT_SKU || null,
-    saleDetail: row.SALE_DETAIL || null,
-    transactionIntentId: row.TRANSACTION_INTENT_ID || null,
-    franchise: row.FRANCHISE || null,
-    issuerName: row.ISSUER_NAME || null,
-    lastFourDigits: row.LAST_FOUR_DIGITS || null,
-    orderMp: row.ORDER_MP || null,
-    invoicingPeriod: row.INVOICING_PERIOD || null,
-    payBankTransferId: row.PAY_BANK_TRANSFER_ID || null,
-    isReleased: String(row.IS_RELEASED).toUpperCase() === "TRUE",
+    installments: toInt(row.INSTALLMENTS),
+    taxDetail: toNullableString(row.TAX_DETAIL),
+    taxesDisaggregated: parseJson(row.TAXES_DISAGGREGATED),
+    description: toNullableString(row.DESCRIPTION),
+    cardInitialNumber: toNullableString(row.CARD_INITIAL_NUMBER),
+    operationTags: parseJson(row.OPERATION_TAGS),
+    businessUnit: toNullableString(row.BUSINESS_UNIT),
+    subUnit: toNullableString(row.SUB_UNIT),
+    productSku: toNullableString(row.PRODUCT_SKU),
+    saleDetail: toNullableString(row.SALE_DETAIL),
+    transactionIntentId: toNullableString(row.TRANSACTION_INTENT_ID),
+    franchise: toNullableString(row.FRANCHISE),
+    issuerName: toNullableString(row.ISSUER_NAME),
+    lastFourDigits: toNullableString(row.LAST_FOUR_DIGITS),
+    orderMp: toNullableString(row.ORDER_MP),
+    invoicingPeriod: toNullableString(row.INVOICING_PERIOD),
+    payBankTransferId: toNullableString(row.PAY_BANK_TRANSFER_ID),
+    isReleased: parseBoolean(row.IS_RELEASED),
     tipAmount: parseDecimal(row.TIP_AMOUNT),
-    purchaseId: row.PURCHASE_ID || null,
+    purchaseId: toNullableString(row.PURCHASE_ID),
     totalCouponAmount: parseDecimal(row.TOTAL_COUPON_AMOUNT),
-    posId: row.POS_ID || null,
-    posName: row.POS_NAME || null,
-    externalPosId: row.EXTERNAL_POS_ID || null,
-    storeId: row.STORE_ID || null,
-    storeName: row.STORE_NAME || null,
-    externalStoreId: row.EXTERNAL_STORE_ID || null,
-    poiId: row.POI_ID || null,
+    posId: toNullableString(row.POS_ID),
+    posName: toNullableString(row.POS_NAME),
+    externalPosId: toNullableString(row.EXTERNAL_POS_ID),
+    storeId: toNullableString(row.STORE_ID),
+    storeName: toNullableString(row.STORE_NAME),
+    externalStoreId: toNullableString(row.EXTERNAL_STORE_ID),
+    poiId: toNullableString(row.POI_ID),
     orderId: parseBigInt(row.ORDER_ID),
     shippingId: parseBigInt(row.SHIPPING_ID),
-    shipmentMode: row.SHIPMENT_MODE || null,
+    shipmentMode: toNullableString(row.SHIPMENT_MODE),
     packId: parseBigInt(row.PACK_ID),
-    shippingOrderId: row.SHIPPING_ORDER_ID || null,
-    poiWalletName: row.POI_WALLET_NAME || null,
-    poiBankName: row.POI_BANK_NAME || null,
+    shippingOrderId: toNullableString(row.SHIPPING_ORDER_ID),
+    poiWalletName: toNullableString(row.POI_WALLET_NAME),
+    poiBankName: toNullableString(row.POI_BANK_NAME),
   };
 }
 
 // Mapper for Release Report
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy mapper
 export function mapRowToReleaseTransaction(row: MercadoPagoRowRaw): ReleaseTransactionInput {
   return {
-    sourceId: row.SOURCE_ID || "", // Empty = will be skipped as invalid
-    date: parseDate(row.DATE),
-    externalReference: row.EXTERNAL_REFERENCE || null,
-    recordType: row.RECORD_TYPE || null,
-    description: row.DESCRIPTION || null,
+    sourceId: toText(row.SOURCE_ID), // Empty = will be skipped as invalid
+    date: parseDateRequired(row.DATE),
+    externalReference: toNullableString(row.EXTERNAL_REFERENCE),
+    recordType: toNullableString(row.RECORD_TYPE),
+    description: toNullableString(row.DESCRIPTION),
     netCreditAmount: parseDecimal(row.NET_CREDIT_AMOUNT),
     netDebitAmount: parseDecimal(row.NET_DEBIT_AMOUNT),
-    grossAmount: parseDecimal(row.GROSS_AMOUNT),
+    grossAmount: parseDecimal(row.GROSS_AMOUNT, 0),
     sellerAmount: parseDecimal(row.SELLER_AMOUNT),
     mpFeeAmount: parseDecimal(row.MP_FEE_AMOUNT),
     financingFeeAmount: parseDecimal(row.FINANCING_FEE_AMOUNT),
     shippingFeeAmount: parseDecimal(row.SHIPPING_FEE_AMOUNT),
     taxesAmount: parseDecimal(row.TAXES_AMOUNT),
     couponAmount: parseDecimal(row.COUPON_AMOUNT),
-    installments: Number.parseInt(row.INSTALLMENTS || "0", 10) || null,
-    paymentMethod: row.PAYMENT_METHOD || null,
-    taxDetail: row.TAX_DETAIL || null,
+    installments: toInt(row.INSTALLMENTS),
+    paymentMethod: toNullableString(row.PAYMENT_METHOD),
+    taxDetail: toNullableString(row.TAX_DETAIL),
     taxAmountTelco: parseDecimal(row.TAX_AMOUNT_TELCO),
-    transactionApprovalDate: parseDate(row.TRANSACTION_APPROVAL_DATE),
-    posId: row.POS_ID || null,
-    posName: row.POS_NAME || null,
-    externalPosId: row.EXTERNAL_POS_ID || null,
-    storeId: row.STORE_ID || null,
-    storeName: row.STORE_NAME || null,
-    externalStoreId: row.EXTERNAL_STORE_ID || null,
-    currency: row.CURRENCY || "ARS",
-    taxesDisaggregated: parseJson(row.TAXES_DISAGGREGATED) || undefined,
+    transactionApprovalDate: parseDateOptional(row.TRANSACTION_APPROVAL_DATE),
+    posId: toNullableString(row.POS_ID),
+    posName: toNullableString(row.POS_NAME),
+    externalPosId: toNullableString(row.EXTERNAL_POS_ID),
+    storeId: toNullableString(row.STORE_ID),
+    storeName: toNullableString(row.STORE_NAME),
+    externalStoreId: toNullableString(row.EXTERNAL_STORE_ID),
+    currency: toNullableString(row.CURRENCY),
+    taxesDisaggregated: parseJson(row.TAXES_DISAGGREGATED),
     shippingId: parseBigInt(row.SHIPPING_ID),
-    shipmentMode: row.SHIPMENT_MODE || null,
+    shipmentMode: toNullableString(row.SHIPMENT_MODE),
     orderId: parseBigInt(row.ORDER_ID),
     packId: parseBigInt(row.PACK_ID),
-    metadata: parseJson(row.METADATA) || undefined,
+    metadata: parseJson(row.METADATA),
     effectiveCouponAmount: parseDecimal(row.EFFECTIVE_COUPON_AMOUNT),
-    poiId: row.POI_ID || null,
-    cardInitialNumber: row.CARD_INITIAL_NUMBER || null,
-    operationTags: parseJson(row.OPERATION_TAGS) || undefined,
-    itemId: row.ITEM_ID || null,
-    poiBankName: row.POI_BANK_NAME || null,
-    poiWalletName: row.POI_WALLET_NAME || null,
-    businessUnit: row.BUSINESS_UNIT || null,
-    subUnit: row.SUB_UNIT || null,
+    poiId: toNullableString(row.POI_ID),
+    cardInitialNumber: toNullableString(row.CARD_INITIAL_NUMBER),
+    operationTags: parseJson(row.OPERATION_TAGS),
+    itemId: toNullableString(row.ITEM_ID),
+    poiBankName: toNullableString(row.POI_BANK_NAME),
+    poiWalletName: toNullableString(row.POI_WALLET_NAME),
+    businessUnit: toNullableString(row.BUSINESS_UNIT),
+    subUnit: toNullableString(row.SUB_UNIT),
     balanceAmount: parseDecimal(row.BALANCE_AMOUNT),
-    payoutBankAccountNumber: row.PAYOUT_BANK_ACCOUNT_NUMBER || null,
-    productSku: row.PRODUCT_SKU || null,
-    saleDetail: row.SALE_DETAIL || null,
-    paymentMethodType: row.PAYMENT_METHOD_TYPE || null,
-    transactionIntentId: row.TRANSACTION_INTENT_ID || null,
-    franchise: row.FRANCHISE || null,
-    issuerName: row.ISSUER_NAME || null,
-    lastFourDigits: row.LAST_FOUR_DIGITS || null,
-    orderMp: row.ORDER_MP || null,
-    purchaseId: row.PURCHASE_ID || null,
-    shippingOrderId: row.SHIPPING_ORDER_ID || null,
+    payoutBankAccountNumber: toNullableString(row.PAYOUT_BANK_ACCOUNT_NUMBER),
+    productSku: toNullableString(row.PRODUCT_SKU),
+    saleDetail: toNullableString(row.SALE_DETAIL),
+    paymentMethodType: toNullableString(row.PAYMENT_METHOD_TYPE),
+    transactionIntentId: toNullableString(row.TRANSACTION_INTENT_ID),
+    franchise: toNullableString(row.FRANCHISE),
+    issuerName: toNullableString(row.ISSUER_NAME),
+    lastFourDigits: toNullableString(row.LAST_FOUR_DIGITS),
+    orderMp: toNullableString(row.ORDER_MP),
+    purchaseId: toNullableString(row.PURCHASE_ID),
+    shippingOrderId: toNullableString(row.SHIPPING_ORDER_ID),
   };
 }

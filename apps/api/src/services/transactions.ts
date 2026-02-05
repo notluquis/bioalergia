@@ -311,10 +311,10 @@ export async function getParticipantInsight(
     .orderBy("month", "desc");
 
   if (from) {
-    monthlyQuery = monthlyQuery.where("transactionDate", ">=", from);
+    monthlyQuery = monthlyQuery.where("transactionDate", ">=", from.toISOString());
   }
   if (to) {
-    monthlyQuery = monthlyQuery.where("transactionDate", "<=", to);
+    monthlyQuery = monthlyQuery.where("transactionDate", "<=", to.toISOString());
   }
 
   const monthlyStats = await monthlyQuery.execute();
@@ -367,10 +367,10 @@ export async function getParticipantInsight(
     .orderBy("outgoingAmount", "desc");
 
   if (from) {
-    counterpartsQuery = counterpartsQuery.where("transactionDate", ">=", from);
+    counterpartsQuery = counterpartsQuery.where("transactionDate", ">=", from.toISOString());
   }
   if (to) {
-    counterpartsQuery = counterpartsQuery.where("transactionDate", "<=", to);
+    counterpartsQuery = counterpartsQuery.where("transactionDate", "<=", to.toISOString());
   }
 
   const counterparts = await counterpartsQuery.execute();
