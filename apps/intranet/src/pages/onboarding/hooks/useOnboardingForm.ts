@@ -93,7 +93,9 @@ function useMfaVerifyMutation(
 ) {
   return useMutation({
     mutationFn: async (code: string) => {
-      if (!mfaSecret) throw new Error("MFA secret no configurado");
+      if (!mfaSecret) {
+        throw new Error("MFA secret no configurado");
+      }
       return enableMfa({
         secret: mfaSecret.secret,
         token: code,
@@ -113,7 +115,9 @@ function usePasskeyRegisterMutation(setError: (error: string | null) => void) {
   return useMutation({
     mutationFn: async () => {
       const options = await fetchPasskeyRegistrationOptions();
-      if (!options?.challenge) throw new Error("No se pudieron obtener opciones de passkey");
+      if (!options?.challenge) {
+        throw new Error("No se pudieron obtener opciones de passkey");
+      }
 
       const { startRegistration } = await import("@simplewebauthn/browser");
       const attResp = await startRegistration({ optionsJSON: options });
@@ -267,11 +271,15 @@ function createHandlers(
   return {
     handleNext: useCallback(() => {
       setError(null);
-      if (currentStep < 5) setCurrentStep((prev) => prev + 1);
+      if (currentStep < 5) {
+        setCurrentStep((prev) => prev + 1);
+      }
     }, [currentStep, setError, setCurrentStep]),
     handlePrev: useCallback(() => {
       setError(null);
-      if (currentStep > 0) setCurrentStep((prev) => prev - 1);
+      if (currentStep > 0) {
+        setCurrentStep((prev) => prev - 1);
+      }
     }, [currentStep, setError, setCurrentStep]),
     handleProfileChange: useCallback(
       (field: string, value: string) => {

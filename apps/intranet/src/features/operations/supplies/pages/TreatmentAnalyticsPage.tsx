@@ -168,7 +168,7 @@ export default function TreatmentAnalyticsPage() {
   ].filter((d) => d.value > 0);
 
   return (
-    <div className="space-y-6 max-w-400 mx-auto pb-10">
+    <div className="mx-auto max-w-400 space-y-6 pb-10">
       <AnalyticsHeader
         period={period}
         isFilterOpen={isFilterOpen}
@@ -187,7 +187,7 @@ export default function TreatmentAnalyticsPage() {
       )}
 
       {isLoading && !data ? (
-        <div className="h-64 flex items-center justify-center">
+        <div className="flex h-64 items-center justify-center">
           <Spinner size="lg" color="current" className="text-default-300" />
         </div>
       ) : (
@@ -223,11 +223,11 @@ function AnalyticsCharts({
   period: "day" | "week" | "month";
 }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr,1fr]">
       {/* Trend Chart */}
-      <Card className="shadow-sm border-default-200">
+      <Card className="border-default-200 shadow-sm">
         <Card.Header className="pb-2">
-          <h3 className="text-base font-semibold text-foreground">Tendencia de Actividad</h3>
+          <h3 className="font-semibold text-base text-foreground">Tendencia de Actividad</h3>
         </Card.Header>
         <Card.Content>
           <div className="h-60 min-h-[240px] w-full">
@@ -315,9 +315,9 @@ function PieChartCard({
   colors: string[];
 }) {
   return (
-    <Card className="shadow-sm border-default-200 flex-1">
+    <Card className="flex-1 border-default-200 shadow-sm">
       <Card.Header className="pb-0">
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <h3 className="font-semibold text-foreground text-sm">{title}</h3>
       </Card.Header>
       <Card.Content>
         <div className="h-32 min-h-[128px] w-full">
@@ -368,14 +368,14 @@ const CustomTooltip = ({
 }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-content1 border border-default-200 p-3 rounded-lg shadow-lg text-xs">
-        <p className="font-semibold text-foreground mb-2">
+      <div className="rounded-lg border border-default-200 bg-content1 p-3 text-xs shadow-lg">
+        <p className="mb-2 font-semibold text-foreground">
           {dayjs(label).isValid() ? dayjs(label).format("DD MMM YYYY") : label}
         </p>
         <div className="space-y-1">
           {payload.map((p) => (
             <div key={p.name} className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
               <span className="text-default-500 capitalize">{p.name}:</span>
               <span className="font-medium text-foreground">
                 {p.name.includes("Ingresos") ? formatCurrency(p.value) : p.value}
@@ -403,7 +403,9 @@ function AnalyticsDetailTable({
       cell: ({ row }) => {
         // Safe access as we defined interface
         const val = (period === "day" ? row.original.date : row.original.label) || "";
-        if (period === "day") return dayjs(val).format("dddd DD MMM");
+        if (period === "day") {
+          return dayjs(val).format("dddd DD MMM");
+        }
         return val;
       },
       enableSorting: false,
@@ -433,7 +435,7 @@ function AnalyticsDetailTable({
         const val = row.original.domicilioCount || 0;
         return val > 0 ? (
           <div className="flex items-center gap-1.5 text-secondary">
-            <Home className="w-3.5 h-3.5" />
+            <Home className="h-3.5 w-3.5" />
             <span>{val}</span>
           </div>
         ) : (
@@ -444,9 +446,9 @@ function AnalyticsDetailTable({
   ];
 
   return (
-    <Card className="shadow-sm border-default-200">
+    <Card className="border-default-200 shadow-sm">
       <Card.Header className="pb-2">
-        <h3 className="text-base font-semibold text-foreground">Detalle del Periodo</h3>
+        <h3 className="font-semibold text-base text-foreground">Detalle del Periodo</h3>
       </Card.Header>
       <Card.Content>
         <DataTable
@@ -479,24 +481,24 @@ function AnalyticsHeader({
   onRefresh: () => void;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
       <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+        <h1 className="flex items-center gap-2 font-bold text-2xl text-foreground">
           Análisis de Tratamientos
           {isLoading && <Spinner size="sm" color="current" />}
         </h1>
-        <p className="text-small text-default-500">
+        <p className="text-default-500 text-small">
           Visualiza el rendimiento operativo y financiero
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <div className="bg-default-100 rounded-lg p-1 flex items-center">
+        <div className="flex items-center rounded-lg bg-default-100 p-1">
           {(["day", "week", "month"] as const).map((p) => (
             <button
               type="button"
               key={p}
               onClick={() => onSetPeriod(p)}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+              className={`rounded-md px-3 py-1 font-medium text-xs transition-colors ${
                 period === p
                   ? "bg-background text-foreground shadow-sm"
                   : "text-default-500 hover:text-foreground"
@@ -513,10 +515,10 @@ function AnalyticsHeader({
           onPress={onToggleFilter}
           className={isFilterOpen ? "bg-primary/10 text-primary" : ""}
         >
-          <CalendarIcon className="w-4 h-4" />
+          <CalendarIcon className="h-4 w-4" />
         </Button>
         <Button isIconOnly variant="ghost" size="sm" onPress={onRefresh}>
-          <RefreshCcw className="w-4 h-4" />
+          <RefreshCcw className="h-4 w-4" />
         </Button>
       </div>
     </div>
@@ -533,29 +535,29 @@ function AnalyticsFilters({
   onQuickRange: (range: { from: string; to: string }) => void;
 }) {
   return (
-    <Card className="bg-content2/50 border-default-100">
-      <Card.Content className="p-4 flex flex-col sm:flex-row gap-4 items-end">
-        <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <Card className="border-default-100 bg-content2/50">
+      <Card.Content className="flex flex-col items-end gap-4 p-4 sm:flex-row">
+        <div className="grid w-full flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="date-from" className="text-xs text-default-500">
+            <label htmlFor="date-from" className="text-default-500 text-xs">
               Desde
             </label>
             <input
               id="date-from"
               type="date"
-              className="bg-default-100 rounded-md px-3 py-2 text-sm text-foreground"
+              className="rounded-md bg-default-100 px-3 py-2 text-foreground text-sm"
               value={filters.from || ""}
               onChange={(e) => onDateChange(e.target.value, filters.to || "")}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="date-to" className="text-xs text-default-500">
+            <label htmlFor="date-to" className="text-default-500 text-xs">
               Hasta
             </label>
             <input
               id="date-to"
               type="date"
-              className="bg-default-100 rounded-md px-3 py-2 text-sm text-foreground"
+              className="rounded-md bg-default-100 px-3 py-2 text-foreground text-sm"
               value={filters.to || ""}
               onChange={(e) => onDateChange(filters.from || "", e.target.value)}
             />
@@ -589,7 +591,7 @@ function AnalyticsKpiGrid({
   domicilioCount: number;
 }) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       <KpiCard
         title="Tratamientos"
         value={totalTreatmentCount}
@@ -635,15 +637,15 @@ function KpiCard({
   value: string | number;
 }) {
   return (
-    <Card className="shadow-sm border-default-200">
-      <Card.Content className="p-4 flex items-center justify-between">
+    <Card className="border-default-200 shadow-sm">
+      <Card.Content className="flex items-center justify-between p-4">
         <div>
-          <p className="text-xs text-default-500 font-medium uppercase">{title}</p>
-          <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
-          <p className="text-xs text-default-400 mt-1">{trend}</p>
+          <p className="font-medium text-default-500 text-xs uppercase">{title}</p>
+          <p className="mt-1 font-bold text-2xl text-foreground">{value}</p>
+          <p className="mt-1 text-default-400 text-xs">{trend}</p>
         </div>
-        <div className={`p-2 rounded-lg bg-${color}/10 text-${color}`}>
-          <Icon className="w-5 h-5" />
+        <div className={`rounded-lg p-2 bg-${color}/10 text-${color}`}>
+          <Icon className="h-5 w-5" />
         </div>
       </Card.Content>
     </Card>

@@ -88,7 +88,7 @@ export default function ServicesOverviewContent() {
   if (showInitialLoading) {
     return (
       <div className="flex min-h-60 items-center justify-center">
-        <div className="text-default-600 flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-3 text-default-600 text-sm">
           <Spinner size="md" />
           <span>Cargando servicios...</span>
         </div>
@@ -116,8 +116,8 @@ export default function ServicesOverviewContent() {
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {stats.map((stat) => (
               <div className="space-y-1" key={stat.title}>
-                <p className="text-default-500 text-xs font-medium uppercase">{stat.title}</p>
-                <p className="text-primary text-lg font-bold">{stat.value}</p>
+                <p className="font-medium text-default-500 text-xs uppercase">{stat.title}</p>
+                <p className="font-bold text-lg text-primary">{stat.value}</p>
                 {stat.helper && <p className="text-default-400 text-xs">{stat.helper}</p>}
               </div>
             ))}
@@ -128,7 +128,7 @@ export default function ServicesOverviewContent() {
       <div className={CARD_COMPACT}>
         <div className="card-body">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-foreground text-sm font-semibold">Filtros</p>
+            <p className="font-semibold text-foreground text-sm">Filtros</p>
             {activeFiltersCount > 0 && (
               <Chip color="accent" size="sm" variant="primary">
                 {activeFiltersCount} activos
@@ -145,7 +145,7 @@ export default function ServicesOverviewContent() {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-foreground text-base font-semibold">
+          <h2 className="font-semibold text-base text-foreground">
             Servicios{" "}
             {filteredServices.length !== services.length && `(${filteredServices.length})`}
           </h2>
@@ -177,7 +177,7 @@ export default function ServicesOverviewContent() {
         <div className="card-body">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <p className="text-foreground text-sm font-semibold">Agenda unificada</p>
+              <p className="font-semibold text-foreground text-sm">Agenda unificada</p>
               <p className="text-default-500 text-xs">Próximos pagos programados</p>
             </div>
             <Link to="/services/agenda">
@@ -207,7 +207,7 @@ export default function ServicesOverviewContent() {
           submitLabel="Crear servicio"
         />
         {createError && (
-          <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
+          <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
             {createError}
           </p>
         )}
@@ -263,7 +263,7 @@ export default function ServicesOverviewContent() {
               value={paymentForm.note}
             />
             {paymentError && (
-              <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
+              <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
                 {paymentError}
               </p>
             )}

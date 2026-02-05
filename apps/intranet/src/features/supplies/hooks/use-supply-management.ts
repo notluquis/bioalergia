@@ -26,7 +26,9 @@ export function useSupplyManagement(): UseSupplyManagementResult {
   // 3. Process Data (Memoization handled by React 19 Compiler or fast enough for now)
   const structuredSupplies: StructuredSupplies = commonSupplies.reduce<StructuredSupplies>(
     (acc, supply) => {
-      if (!supply.name) return acc;
+      if (!supply.name) {
+        return acc;
+      }
       if (!acc[supply.name]) {
         acc[supply.name] = {};
       }

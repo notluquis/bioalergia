@@ -31,7 +31,9 @@ export async function cleanupStaleSyncLogs(forceAll = false) {
     select: { id: true, startedAt: true },
   });
 
-  if (staleLogs.length === 0) return 0;
+  if (staleLogs.length === 0) {
+    return 0;
+  }
 
   console.warn(
     `⚠ Cleaning up ${staleLogs.length} stale/interrupted sync logs (forceAll=${forceAll})`,

@@ -30,8 +30,12 @@ interface SyncProgressPanelProps {
 type SyncProgressStatus = "completed" | "error" | "in_progress" | "pending";
 
 const formatDuration = (value: number) => {
-  if (!value) return null;
-  if (value >= 1000) return `${(value / 1000).toFixed(1)} s`;
+  if (!value) {
+    return null;
+  }
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)} s`;
+  }
   return `${Math.round(value)} ms`;
 };
 
@@ -86,7 +90,9 @@ export function SyncProgressPanel({
     const parts: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- details can be null/undefined
     for (const [key, rawValue] of Object.entries(details ?? {})) {
-      if (rawValue == null) continue;
+      if (rawValue == null) {
+        continue;
+      }
       const label = detailLabels[key] ?? key; // eslint-disable-line security/detect-object-injection
       if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
         parts.push(`${label}: ${numberFormatter.format(rawValue)}`);
@@ -100,28 +106,36 @@ export function SyncProgressPanel({
   };
 
   return (
-    <Card className="rounded-2xl shadow-md p-5">
+    <Card className="rounded-2xl p-5 shadow-md">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="bg-default-100/60 rounded-xl px-3 py-2">
-            <p className="text-foreground text-sm font-semibold">
+          <div className="rounded-xl bg-default-100/60 px-3 py-2">
+            <p className="font-semibold text-foreground text-sm">
               {(() => {
-                if (syncError) return "Error al sincronizar";
-                if (syncing) return "Sincronizando calendario";
+                if (syncError) {
+                  return "Error al sincronizar";
+                }
+                if (syncing) {
+                  return "Sincronizando calendario";
+                }
                 return "Sincronización completada";
               })()}
             </p>
             <p className="text-foreground-500 text-xs">
               {(() => {
-                if (syncing) return "Consultando eventos y actualizando la base.";
-                if (syncError) return "Vuelve a intentar más tarde.";
+                if (syncing) {
+                  return "Consultando eventos y actualizando la base.";
+                }
+                if (syncError) {
+                  return "Vuelve a intentar más tarde.";
+                }
                 return "Última ejecución completada correctamente.";
               })()}
             </p>
           </div>
           {syncing && <Spinner size="sm" aria-label="Sincronizando" />}
           {syncError && (
-            <span className="text-danger text-xs font-semibold">Revisa los detalles abajo.</span>
+            <span className="font-semibold text-danger text-xs">Revisa los detalles abajo.</span>
           )}
           {!syncing && syncDurationMs != null && !syncError && (
             <Chip size="sm" variant="soft" className="text-xs">
@@ -130,7 +144,7 @@ export function SyncProgressPanel({
           )}
         </div>
         <div className="flex gap-2">
-          <Chip size="sm" variant="soft" className="text-xs text-foreground-600">
+          <Chip size="sm" variant="soft" className="text-foreground-600 text-xs">
             {lastSyncInfo && !syncing && !syncError
               ? dayjs(lastSyncInfo.fetchedAt).format("DD MMM YYYY · HH:mm")
               : dayjs().format("DD MMM YYYY · HH:mm")}
@@ -140,7 +154,7 @@ export function SyncProgressPanel({
               isDisabled={syncing}
               onPress={onSyncNow}
               size="sm"
-              className="bg-secondary text-white font-medium"
+              className="bg-secondary font-medium text-white"
             >
               {syncing ? "Sincronizando..." : "Sincronizar ahora"}
             </Button>
@@ -149,13 +163,13 @@ export function SyncProgressPanel({
       </div>
 
       {showLastSyncInfo && lastSyncInfo && !syncing && !syncError && (
-        <div className="text-foreground mt-4 grid gap-2 text-xs md:grid-cols-2">
+        <div className="mt-4 grid gap-2 text-foreground text-xs md:grid-cols-2">
           <p>
-            <span className="text-foreground font-semibold">Nuevas:</span>{" "}
+            <span className="font-semibold text-foreground">Nuevas:</span>{" "}
             {numberFormatter.format(lastSyncInfo.inserted)}
           </p>
           <p>
-            <span className="text-foreground font-semibold">Actualizadas:</span>{" "}
+            <span className="font-semibold text-foreground">Actualizadas:</span>{" "}
             {numberFormatter.format(lastSyncInfo.updated)}
           </p>
           <p className="text-foreground-500 md:col-span-2">
@@ -164,7 +178,7 @@ export function SyncProgressPanel({
         </div>
       )}
 
-      {syncError && <p className="text-danger mt-3 text-xs">{syncError}</p>}
+      {syncError && <p className="mt-3 text-danger text-xs">{syncError}</p>}
 
       {syncProgress.length > 0 && (
         <ul className="mt-4 space-y-3">
@@ -174,25 +188,25 @@ export function SyncProgressPanel({
             const duration = formatDuration(step.durationMs);
             return (
               <li
-                className="border-default-200/60 bg-content1/70 rounded-2xl border px-4 py-3"
+                className="rounded-2xl border border-default-200/60 bg-content1/70 px-4 py-3"
                 key={step.id}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className={`h-2.5 w-2.5 rounded-full ${dotClass[step.status]}`} />
-                    <p className="text-foreground text-sm font-semibold">{step.label}</p>
+                    <p className="font-semibold text-foreground text-sm">{step.label}</p>
                   </div>
                   <Chip
                     size="sm"
                     variant="soft"
                     color={getStatusColor(step.status)}
-                    className="text-xs font-semibold"
+                    className="font-semibold text-xs"
                   >
                     {status}
                   </Chip>
                 </div>
                 {(details || duration) && (
-                  <p className="text-foreground-500 mt-2 text-xs">
+                  <p className="mt-2 text-foreground-500 text-xs">
                     {details}
                     {details && duration ? " · " : ""}
                     {duration ? `Tiempo: ${duration}` : ""}

@@ -132,7 +132,9 @@ export default function CounterpartsPage() {
     const normalizedRut = normalizeRut(payload.rut ?? null);
 
     try {
-      if (!payload.name) throw new Error("El nombre es obligatorio");
+      if (!payload.name) {
+        throw new Error("El nombre es obligatorio");
+      }
 
       let savedId = selectedId;
       let isNew = false;
@@ -229,7 +231,7 @@ export default function CounterpartsPage() {
         <div className="space-y-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-default-500 text-xs font-semibold tracking-[0.4em] uppercase">
+              <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.4em]">
                 Filtros rápidos
               </p>
               <p className="text-default-600 text-sm">
@@ -249,7 +251,7 @@ export default function CounterpartsPage() {
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
-              <p className="text-default-500 text-xs font-semibold tracking-[0.3em] uppercase">
+              <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.3em]">
                 Tipo de persona
               </p>
               <div className="flex flex-wrap gap-2">
@@ -268,7 +270,7 @@ export default function CounterpartsPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <p className="text-default-500 text-xs font-semibold tracking-[0.3em] uppercase">
+              <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.3em]">
                 Clasificación
               </p>
               <div className="flex flex-wrap gap-2">

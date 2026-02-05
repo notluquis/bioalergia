@@ -20,11 +20,11 @@ export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
   if (data.length === 0) {
     return (
       <Card className="p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
-          <TrendingUp className="text-primary h-5 w-5" />
+        <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
+          <TrendingUp className="h-5 w-5 text-primary" />
           Flujo mensual
         </h2>
-        <div className="text-default-500 py-8 text-center text-sm">
+        <div className="py-8 text-center text-default-500 text-sm">
           No hay datos para mostrar en el rango seleccionado
         </div>
       </Card>
@@ -33,8 +33,8 @@ export default function MonthlyFlowChart({ data }: MonthlyFlowChartProps) {
 
   return (
     <Card className="p-6">
-      <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
-        <TrendingUp className="text-primary h-5 w-5" />
+      <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
+        <TrendingUp className="h-5 w-5 text-primary" />
         Flujo mensual
       </h2>
       <Suspense

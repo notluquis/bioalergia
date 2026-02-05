@@ -24,7 +24,9 @@ const classifySearchSchema = z.object({
     .union([z.string(), z.array(z.string())])
     .optional()
     .transform((val) => {
-      if (!val) return undefined;
+      if (!val) {
+        return undefined;
+      }
       return Array.isArray(val) ? val : [val];
     }),
 });

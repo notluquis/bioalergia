@@ -15,7 +15,7 @@ export interface InventoryTableMeta {
 export const columns: ColumnDef<InventoryItem>[] = [
   {
     accessorKey: "name",
-    cell: ({ row }) => <span className="text-foreground font-medium">{row.original.name}</span>,
+    cell: ({ row }) => <span className="font-medium text-foreground">{row.original.name}</span>,
     header: "Nombre",
   },
   {
@@ -42,7 +42,7 @@ export const columns: ColumnDef<InventoryItem>[] = [
       const item = row.original;
 
       return (
-        <div className="flex justify-end gap-3 px-4 py-3 text-right text-xs font-semibold tracking-wide uppercase">
+        <div className="flex justify-end gap-3 px-4 py-3 text-right font-semibold text-xs uppercase tracking-wide">
           <Button
             disabled={!canAdjust}
             onClick={() => {

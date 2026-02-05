@@ -99,7 +99,9 @@ inventoryRoutes.get("/categories", cacheControl(300), async (c) => {
 // POST /api/inventory/categories
 inventoryRoutes.post("/categories", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canManageSettings = await hasPermission(user.id, "update", "InventorySetting");
   if (!canManageSettings) {
@@ -130,7 +132,9 @@ inventoryRoutes.post("/categories", async (c) => {
 // DELETE /api/inventory/categories/:id
 inventoryRoutes.delete("/categories/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canManageSettings = await hasPermission(user.id, "update", "InventorySetting");
   if (!canManageSettings) {

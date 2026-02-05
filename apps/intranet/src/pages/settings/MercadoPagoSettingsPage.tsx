@@ -1,5 +1,11 @@
 import { Tabs, Tooltip } from "@heroui/react";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  type QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import type { ColumnDef, PaginationState, VisibilityState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { CheckCircle2, Clock, FileText, Plus } from "lucide-react";
@@ -28,6 +34,91 @@ import {
 const REPORT_PENDING_REGEX = /processing|pending|in_progress|waiting|generating|queued|creating/i;
 
 type MpTab = MpReportType | "sync";
+type ToastFn = (message: string, title?: string) => void;
+
+type ReportActions = {
+  downloadPending: boolean;
+  handleDownload: (event: React.MouseEvent, fileName: string) => void;
+  handleProcess: (event: React.MouseEvent, fileName: string) => void;
+  processPending: boolean;
+  processingFile: null | string;
+};
+
+const useReportActions = ({
+  queryClient,
+  reportType,
+  setLastImportStats,
+  showError,
+  showSuccess,
+}: {
+  queryClient: QueryClient;
+  reportType: MpReportType;
+  setLastImportStats: React.Dispatch<React.SetStateAction<ImportStats | null>>;
+  showError: ToastFn;
+  showSuccess: ToastFn;
+}): ReportActions => {
+  const [processingFile, setProcessingFile] = useState<null | string>(null);
+
+  const downloadMutation = useMutation({
+    mutationFn: (fileName: string) => MPService.downloadReport(fileName, reportType),
+    onError: (error: Error) => {
+      showError(`Error al descargar: ${error.message}`);
+    },
+    onSuccess: (blob, fileName) => {
+      const url = globalThis.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.append(anchor);
+      anchor.click();
+      globalThis.URL.revokeObjectURL(url);
+      anchor.remove();
+      showSuccess(`Descargando ${fileName}`);
+    },
+  });
+
+  const processMutation = useMutation({
+    mutationFn: (fileName: string) => MPService.processReport(fileName, reportType),
+    onError: (error: Error) => {
+      showError(`Error al procesar: ${error.message}`);
+      setProcessingFile(null);
+    },
+    onSuccess: (stats) => {
+      setLastImportStats(stats);
+      showSuccess(
+        `Reporte procesado: ${stats.insertedRows} insertados, ${stats.duplicateRows} duplicados`,
+      );
+      setProcessingFile(null);
+      void queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
+    },
+  });
+
+  const handleDownload = (event: React.MouseEvent, fileName: string) => {
+    event.preventDefault();
+    downloadMutation.mutate(fileName);
+  };
+
+  const handleProcess = (event: React.MouseEvent, fileName: string) => {
+    event.preventDefault();
+    if (
+      confirm(
+        `¿Estás seguro de sincronizar el reporte ${fileName}? Esto podría duplicar datos si no se detecta correctamente.`,
+      )
+    ) {
+      setProcessingFile(fileName);
+      setLastImportStats(null);
+      processMutation.mutate(fileName);
+    }
+  };
+
+  return {
+    downloadPending: downloadMutation.isPending,
+    handleDownload,
+    handleProcess,
+    processPending: processMutation.isPending,
+    processingFile,
+  };
+};
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: large settings page with multiple sections
 export default function MercadoPagoSettingsPage() {
@@ -79,67 +170,20 @@ export default function MercadoPagoSettingsPage() {
   const syncLogs = syncResponse?.logs ?? [];
   const syncTotal = syncResponse?.total ?? syncLogs.length;
 
-  // Mutations
-
-  const downloadMutation = useMutation({
-    mutationFn: (fileName: string) => MPService.downloadReport(fileName, reportType),
-    onError: (e: Error) => {
-      showError(`Error al descargar: ${e.message}`);
-    },
-    onSuccess: (blob, fileName) => {
-      const url = globalThis.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.append(a);
-      a.click();
-      globalThis.URL.revokeObjectURL(url);
-      a.remove();
-      showSuccess(`Descargando ${fileName}`);
-    },
-  });
-
-  const handleDownload = (e: React.MouseEvent, fileName: string) => {
-    e.preventDefault();
-    downloadMutation.mutate(fileName);
-  };
-
-  const [processingFile, setProcessingFile] = useState<null | string>(null);
-
-  const processMutation = useMutation({
-    mutationFn: (fileName: string) => MPService.processReport(fileName, reportType),
-    onError: (e: Error) => {
-      showError(`Error al procesar: ${e.message}`);
-      setProcessingFile(null);
-    },
-    onSuccess: (stats) => {
-      setLastImportStats(stats);
-      showSuccess(
-        `Reporte procesado: ${stats.insertedRows} insertados, ${stats.duplicateRows} duplicados`,
-      );
-      setProcessingFile(null);
-      void queryClient.invalidateQueries({ queryKey: ["mp-reports", reportType] });
-    },
-  });
-
-  const handleProcess = (e: React.MouseEvent, fileName: string) => {
-    e.preventDefault();
-    if (
-      confirm(
-        `¿Estás seguro de sincronizar el reporte ${fileName}? Esto podría duplicar datos si no se detecta correctamente.`,
-      )
-    ) {
-      setProcessingFile(fileName);
-      setLastImportStats(null);
-      processMutation.mutate(fileName);
-    }
-  };
+  const { downloadPending, handleDownload, handleProcess, processPending, processingFile } =
+    useReportActions({
+      queryClient,
+      reportType,
+      setLastImportStats,
+      showError,
+      showSuccess,
+    });
 
   const columns = getMpReportColumns(
     handleDownload,
     handleProcess,
-    downloadMutation.isPending,
-    processMutation.isPending,
+    downloadPending,
+    processPending,
     processingFile,
   );
   const reportPageCount = Math.max(1, Math.ceil(reportTotal / reportPagination.pageSize));
@@ -159,7 +203,7 @@ export default function MercadoPagoSettingsPage() {
           className="w-full sm:w-auto"
         >
           <Tabs.ListContainer>
-            <Tabs.List aria-label="Tipo de reporte" className="bg-default-50/50 rounded-lg p-1">
+            <Tabs.List aria-label="Tipo de reporte" className="rounded-lg bg-default-50/50 p-1">
               <Tabs.Tab id="release">
                 Liberación
                 <Tabs.Indicator />
@@ -202,44 +246,44 @@ export default function MercadoPagoSettingsPage() {
       >
         {lastImportStats && (
           <div className="space-y-4">
-            <div className="text-success flex items-center gap-2">
+            <div className="flex items-center gap-2 text-success">
               <CheckCircle2 className="h-5 w-5" />
               <span className="font-medium">Procesamiento completado</span>
             </div>
 
-            <div className="bg-default-50/50 grid grid-cols-2 gap-3 rounded-lg p-4 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 rounded-lg bg-default-50/50 p-4 sm:grid-cols-3">
               <div className="text-center">
-                <p className="text-2xl font-bold">{lastImportStats.totalRows}</p>
+                <p className="font-bold text-2xl">{lastImportStats.totalRows}</p>
                 <p className="text-default-500 text-xs">Total filas</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold">{lastImportStats.validRows}</p>
+                <p className="font-bold text-2xl">{lastImportStats.validRows}</p>
                 <p className="text-default-500 text-xs">Válidas</p>
               </div>
               <div className="text-center">
-                <p className="text-success text-2xl font-bold">{lastImportStats.insertedRows}</p>
+                <p className="font-bold text-2xl text-success">{lastImportStats.insertedRows}</p>
                 <p className="text-success/70 text-xs">Insertadas</p>
               </div>
               <div className="text-center">
-                <p className="text-warning text-2xl font-bold">{lastImportStats.duplicateRows}</p>
+                <p className="font-bold text-2xl text-warning">{lastImportStats.duplicateRows}</p>
                 <p className="text-warning/70 text-xs">Duplicados</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold">{lastImportStats.skippedRows}</p>
+                <p className="font-bold text-2xl">{lastImportStats.skippedRows}</p>
                 <p className="text-default-500 text-xs">Omitidas</p>
               </div>
               {lastImportStats.errors.length > 0 && (
                 <div className="text-center">
-                  <p className="text-danger text-2xl font-bold">{lastImportStats.errors.length}</p>
+                  <p className="font-bold text-2xl text-danger">{lastImportStats.errors.length}</p>
                   <p className="text-danger/70 text-xs">Errores</p>
                 </div>
               )}
             </div>
 
             {lastImportStats.errors.length > 0 && (
-              <div className="bg-danger/10 rounded-lg p-3 text-sm">
-                <p className="text-danger mb-2 font-medium">Errores encontrados:</p>
-                <ul className="text-danger/80 list-inside list-disc space-y-1 text-xs">
+              <div className="rounded-lg bg-danger/10 p-3 text-sm">
+                <p className="mb-2 font-medium text-danger">Errores encontrados:</p>
+                <ul className="list-inside list-disc space-y-1 text-danger/80 text-xs">
                   {lastImportStats.errors.slice(0, 5).map((err, i) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: static list
                     <li key={i}>{err}</li>
@@ -268,26 +312,28 @@ export default function MercadoPagoSettingsPage() {
       {activeTab !== "sync" && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Last Report Card */}
-          <article className="bg-background border-default-200 rounded-2xl border p-6 shadow-sm">
+          <article className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-default-500 flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase">
+                <p className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
                   Último Reporte
                 </p>
-                <h3 className="mt-2 line-clamp-1 text-lg font-semibold">
+                <h3 className="mt-2 line-clamp-1 font-semibold text-lg">
                   {(() => {
                     const lastReport = reports[0];
-                    if (!lastReport) return "N/A";
+                    if (!lastReport) {
+                      return "N/A";
+                    }
                     const date = lastReport.date_created ?? lastReport.begin_date;
                     return date ? dayjs(date).format("D MMM, HH:mm") : "N/A";
                   })()}
                 </h3>
               </div>
-              <div className="bg-primary/10 text-primary rounded-lg p-2">
+              <div className="rounded-lg bg-primary/10 p-2 text-primary">
                 <Clock className="h-5 w-5" />
               </div>
             </div>
-            <p className="text-default-400 border-default-200/50 mt-4 truncate border-t pt-4 text-xs">
+            <p className="mt-4 truncate border-default-200/50 border-t pt-4 text-default-400 text-xs">
               {reports[0]?.file_name ?? "Sin reportes recientes"}
             </p>
           </article>
@@ -309,9 +355,9 @@ export default function MercadoPagoSettingsPage() {
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2">
-              <FileText className="text-primary h-4 w-4" />
+              <FileText className="h-4 w-4 text-primary" />
               <div>
-                <h3 className="text-lg font-semibold">Historial de Reportes</h3>
+                <h3 className="font-semibold text-lg">Historial de Reportes</h3>
                 <p className="text-default-500 text-xs">Total: {reportTotal}</p>
               </div>
             </div>
@@ -356,9 +402,9 @@ export default function MercadoPagoSettingsPage() {
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2">
-              <Clock className="text-primary h-4 w-4" />
+              <Clock className="h-4 w-4 text-primary" />
               <div>
-                <h3 className="text-lg font-semibold">Historial de Sync</h3>
+                <h3 className="font-semibold text-lg">Historial de Sync</h3>
                 <p className="text-default-500 text-xs">Total: {syncTotal}</p>
               </div>
             </div>
@@ -413,7 +459,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
       cell: ({ row }) => (
         <span
           className={cn(
-            "rounded-full px-2 py-0.5 text-xs font-semibold",
+            "rounded-full px-2 py-0.5 font-semibold text-xs",
             row.original.status === "SUCCESS" && "bg-success/10 text-success",
             row.original.status === "ERROR" && "bg-danger/10 text-danger",
             row.original.status === "RUNNING" && "bg-warning/10 text-warning",
@@ -432,7 +478,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
       accessorKey: "triggerSource",
       header: "Fuente",
       cell: ({ row }) => (
-        <span className="text-default-500 text-xs font-mono">{row.original.triggerSource}</span>
+        <span className="font-mono text-default-500 text-xs">{row.original.triggerSource}</span>
       ),
     },
     {
@@ -452,12 +498,12 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
               {reportTypes.length > 0 && (
                 <div className="flex items-center gap-1">
                   {reportTypes.includes("release") && (
-                    <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">
                       Liberación
                     </span>
                   )}
                   {reportTypes.includes("settlement") && (
-                    <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                    <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
                       Conciliación
                     </span>
                   )}
@@ -468,7 +514,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                   <div className="flex items-center gap-1" key={label}>
                     <span
                       className={cn(
-                        "rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase",
+                        "rounded px-1.5 py-0.5 font-semibold text-[11px] uppercase",
                         tone === "release" && "bg-primary/10 text-primary",
                         tone === "settlement" && "bg-warning/10 text-warning",
                       )}
@@ -477,7 +523,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                     </span>
                     <Tooltip delay={0}>
                       <Tooltip.Trigger>
-                        <span className="bg-default-100 text-default-600 rounded px-1.5 py-0.5">
+                        <span className="rounded bg-default-100 px-1.5 py-0.5 text-default-600">
                           T{stats.totalRows}
                         </span>
                       </Tooltip.Trigger>
@@ -487,7 +533,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                     </Tooltip>
                     <Tooltip delay={0}>
                       <Tooltip.Trigger>
-                        <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">
                           V{stats.validRows}
                         </span>
                       </Tooltip.Trigger>
@@ -497,7 +543,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                     </Tooltip>
                     <Tooltip delay={0}>
                       <Tooltip.Trigger>
-                        <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
+                        <span className="rounded bg-success/10 px-1.5 py-0.5 text-success">
                           +{stats.insertedRows}
                         </span>
                       </Tooltip.Trigger>
@@ -507,7 +553,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                     </Tooltip>
                     <Tooltip delay={0}>
                       <Tooltip.Trigger>
-                        <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                        <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
                           D{stats.duplicateRows}
                         </span>
                       </Tooltip.Trigger>
@@ -517,7 +563,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                     </Tooltip>
                     <Tooltip delay={0}>
                       <Tooltip.Trigger>
-                        <span className="bg-default-100 text-default-500 rounded px-1.5 py-0.5">
+                        <span className="rounded bg-default-100 px-1.5 py-0.5 text-default-500">
                           S{stats.skippedRows}
                         </span>
                       </Tooltip.Trigger>
@@ -528,7 +574,7 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
                     {stats.errorCount > 0 && (
                       <Tooltip delay={0}>
                         <Tooltip.Trigger>
-                          <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
+                          <span className="rounded bg-danger/10 px-1.5 py-0.5 text-danger">
                             E{stats.errorCount}
                           </span>
                         </Tooltip.Trigger>
@@ -549,32 +595,32 @@ function buildSyncColumns(): ColumnDef<MpSyncLog>[] {
             {reportTypes.length > 0 && (
               <div className="flex items-center gap-1">
                 {reportTypes.includes("release") && (
-                  <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">
                     Liberación
                   </span>
                 )}
                 {reportTypes.includes("settlement") && (
-                  <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+                  <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
                     Conciliación
                   </span>
                 )}
               </div>
             )}
-            <span className="bg-success/10 text-success rounded px-1.5 py-0.5">
+            <span className="rounded bg-success/10 px-1.5 py-0.5 text-success">
               +{row.original.inserted ?? 0}
             </span>
             {row.original.skipped != null && (
-              <span className="bg-warning/10 text-warning rounded px-1.5 py-0.5">
+              <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
                 !{row.original.skipped}
               </span>
             )}
             {row.original.updated != null && row.original.updated > 0 && (
-              <span className="bg-info/10 text-info rounded px-1.5 py-0.5">
+              <span className="rounded bg-info/10 px-1.5 py-0.5 text-info">
                 ~{row.original.updated}
               </span>
             )}
             {row.original.excluded != null && row.original.excluded > 0 && (
-              <span className="bg-danger/10 text-danger rounded px-1.5 py-0.5">
+              <span className="rounded bg-danger/10 px-1.5 py-0.5 text-danger">
                 -{row.original.excluded}
               </span>
             )}
@@ -607,14 +653,20 @@ function getMpReportsRefetchInterval(query: { state: { data?: { reports?: MPRepo
 }
 
 function isReportPending(status?: string) {
-  if (!status) return false;
+  if (!status) {
+    return false;
+  }
   return REPORT_PENDING_REGEX.test(status);
 }
 
 function getSyncImportStats(details?: MpSyncChangeDetails | null) {
-  if (!details || typeof details !== "object") return null;
+  if (!details || typeof details !== "object") {
+    return null;
+  }
   const raw = details.importStats;
-  if (!raw || typeof raw !== "object") return null;
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
   const toNumber = (value: unknown) => {
     const num = Number(value);
     return Number.isFinite(num) ? num : 0;
@@ -631,7 +683,9 @@ function getSyncImportStats(details?: MpSyncChangeDetails | null) {
 
 function getSyncImportStatsByType(log: MpSyncLog) {
   const details = log.changeDetails;
-  if (!details || typeof details !== "object") return null;
+  if (!details || typeof details !== "object") {
+    return null;
+  }
   const raw = details.importStatsByType;
   const toNumber = (value: unknown) => {
     const num = Number(value);
@@ -639,7 +693,9 @@ function getSyncImportStatsByType(log: MpSyncLog) {
   };
 
   const buildStats = (stats?: MpSyncImportStats | null) => {
-    if (!stats) return null;
+    if (!stats) {
+      return null;
+    }
     return {
       totalRows: toNumber(stats.totalRows),
       validRows: toNumber(stats.validRows),
@@ -658,10 +714,13 @@ function getSyncImportStatsByType(log: MpSyncLog) {
 
   if (raw && typeof raw === "object") {
     const releaseStats = buildStats(raw.release ?? null);
-    if (releaseStats) entries.push({ label: "Liberación", stats: releaseStats, tone: "release" });
+    if (releaseStats) {
+      entries.push({ label: "Liberación", stats: releaseStats, tone: "release" });
+    }
     const settlementStats = buildStats(raw.settlement ?? null);
-    if (settlementStats)
+    if (settlementStats) {
       entries.push({ label: "Conciliación", stats: settlementStats, tone: "settlement" });
+    }
   }
 
   if (entries.length > 0) {
@@ -670,7 +729,9 @@ function getSyncImportStatsByType(log: MpSyncLog) {
 
   const fallback = getSyncImportStats(details);
   const reportTypes = getSyncReportTypes(log);
-  if (!fallback || reportTypes.length !== 1) return null;
+  if (!fallback || reportTypes.length !== 1) {
+    return null;
+  }
 
   return [
     {

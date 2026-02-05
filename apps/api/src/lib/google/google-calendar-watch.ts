@@ -172,7 +172,9 @@ export async function registerWatchChannel(
  * Check if the error is a 404 Not Found from Google API
  */
 function is404Error(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
+  if (!error || typeof error !== "object") {
+    return false;
+  }
 
   const e = error as {
     code?: number;

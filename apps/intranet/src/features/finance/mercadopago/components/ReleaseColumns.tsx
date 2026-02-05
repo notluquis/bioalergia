@@ -8,7 +8,7 @@ export const getReleaseColumns = (): ColumnDef<ReleaseTransaction>[] => [
   {
     accessorKey: "date",
     cell: ({ row }) => (
-      <span className="text-foreground font-medium">
+      <span className="font-medium text-foreground">
         {dayjs(row.getValue("date")).format("DD/MM/YYYY")}
       </span>
     ),

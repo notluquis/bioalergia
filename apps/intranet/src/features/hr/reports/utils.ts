@@ -15,7 +15,9 @@ dayjs.extend(isoWeek);
  * @param periodCount Cantidad de periodos (días, semanas, meses) en el rango
  */
 export function calculateStats(data: EmployeeWorkData[], periodCount = 1) {
-  if (data.length === 0) return null;
+  if (data.length === 0) {
+    return null;
+  }
 
   const totalHours = data.reduce((sum, emp) => sum + emp.totalMinutes, 0) / 60;
 
@@ -24,7 +26,9 @@ export function calculateStats(data: EmployeeWorkData[], periodCount = 1) {
   const averageHours = totalHours / (data.length * Math.max(periodCount, 1));
 
   const firstEmployee = data[0];
-  if (!firstEmployee) return null;
+  if (!firstEmployee) {
+    return null;
+  }
 
   const maxEmployee = data.reduce(
     (max, emp) => (emp.totalMinutes > max.totalMinutes ? emp : max),
@@ -126,7 +130,9 @@ export function prepareComparisonData(
   employees: EmployeeWorkData[],
   granularity: ReportGranularity,
 ) {
-  if (employees.length === 0) return [];
+  if (employees.length === 0) {
+    return [];
+  }
 
   const breakdownKeyMap = {
     day: "dailyBreakdown",
@@ -138,7 +144,9 @@ export function prepareComparisonData(
   // Obtener todas las fechas/semanas/meses
   const allPeriods = new Set<string>();
   for (const emp of employees) {
-    for (const period of Object.keys(emp[breakdown])) allPeriods.add(period);
+    for (const period of Object.keys(emp[breakdown])) {
+      allPeriods.add(period);
+    }
   }
 
   const periods = [...allPeriods].toSorted((a, b) => a.localeCompare(b));

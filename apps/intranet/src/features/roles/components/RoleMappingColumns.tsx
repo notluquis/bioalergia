@@ -30,7 +30,9 @@ export const getColumns = (
           placeholder="Seleccionar rol..."
           selectedKey={mapping.app_role}
           onSelectionChange={(key) => {
-            if (key) onRoleChange(mapping.employee_role, key.toString());
+            if (key) {
+              onRoleChange(mapping.employee_role, key.toString());
+            }
           }}
         >
           <Select.Trigger>

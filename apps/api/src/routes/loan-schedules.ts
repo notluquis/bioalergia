@@ -8,10 +8,14 @@ const app = new Hono();
 // POST /:id/pay - Register payment on a loan schedule (mark as PAID)
 app.post("/:id/pay", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Loan");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
@@ -37,10 +41,14 @@ app.post("/:id/pay", async (c) => {
 // POST /:id/unlink - Unlink payment from a loan schedule (mark as PENDING)
 app.post("/:id/unlink", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Loan");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {

@@ -56,7 +56,9 @@ export function UpdateNotification() {
   };
 
   const handleCleanUpdate = async () => {
-    if (isUpdating) return;
+    if (isUpdating) {
+      return;
+    }
     setIsUpdating(true);
     setNeedRefresh(false);
     try {
@@ -72,16 +74,18 @@ export function UpdateNotification() {
   // Removed automatic reload on controllerchange to prevent data loss.
   // The updateServiceWorker call below will handle the reload when the user clicks "Update".
 
-  if (!needRefresh) return null;
+  if (!needRefresh) {
+    return null;
+  }
 
   return (
     <>
-      <div className="animate-in slide-in-from-bottom-5 fade-in fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+6rem)] z-50 max-w-sm md:bottom-4">
-        <div className="border-primary/20 bg-background rounded-2xl border p-4 shadow-2xl">
+      <div className="slide-in-from-bottom-5 fade-in fixed right-4 bottom-[calc(env(safe-area-inset-bottom)+6rem)] z-50 max-w-sm animate-in md:bottom-4">
+        <div className="rounded-2xl border border-primary/20 bg-background p-4 shadow-2xl">
           <div className="flex items-start gap-3">
-            <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
               <svg
-                className="text-primary h-6 w-6"
+                className="h-6 w-6 text-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -96,8 +100,8 @@ export function UpdateNotification() {
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="text-foreground text-sm font-semibold">Nueva versión disponible</h3>
-              <p className="text-default-600 mt-1 text-xs">
+              <h3 className="font-semibold text-foreground text-sm">Nueva versión disponible</h3>
+              <p className="mt-1 text-default-600 text-xs">
                 Actualiza cuando estés listo. No perderás tu progreso.
               </p>
               <div className="mt-3 flex gap-2">

@@ -80,7 +80,9 @@ export function startMercadoPagoScheduler() {
   cron.schedule(
     OFF_PEAK_CRON,
     async () => {
-      if (isPeakWindow()) return;
+      if (isPeakWindow()) {
+        return;
+      }
       await runMercadoPagoAutoSync({ trigger: `cron:${OFF_PEAK_CRON}` });
     },
     { timezone },
@@ -286,9 +288,13 @@ async function processReadyReports(
   const readyReports = reports
     .filter((report) => report.file_name && isReportReady(report.status))
     .filter((report) => {
-      if (!lastProcessedAt) return true;
+      if (!lastProcessedAt) {
+        return true;
+      }
       const createdAt = parseDate(report.date_created);
-      if (!createdAt) return true;
+      if (!createdAt) {
+        return true;
+      }
       return createdAt.getTime() > lastProcessedAt.getTime();
     })
     .sort((a, b) => (a.date_created ?? "").localeCompare(b.date_created ?? ""));
@@ -296,9 +302,13 @@ async function processReadyReports(
   let newestProcessedAt: Date | null = lastProcessedAt;
 
   for (const report of readyReports) {
-    if (processedCount >= MAX_PROCESS_PER_RUN) break;
+    if (processedCount >= MAX_PROCESS_PER_RUN) {
+      break;
+    }
     const fileName = report.file_name;
-    if (!fileName || processedSet.has(fileName)) continue;
+    if (!fileName || processedSet.has(fileName)) {
+      continue;
+    }
 
     updateJobProgress(jobId, 3 + processedCount, `Procesando ${type}: ${fileName}`);
 
@@ -331,17 +341,25 @@ async function processPendingWebhooks(
   importStatsByType: Record<ReportType, ImportStatsAggregate>,
 ) {
   const pending = await loadPendingWebhooks();
-  if (pending.length === 0) return 0;
+  if (pending.length === 0) {
+    return 0;
+  }
 
   const processed = await loadProcessedFiles("webhook");
   let processedCount = 0;
 
   for (const payload of pending) {
-    if (!payload.files?.length) continue;
+    if (!payload.files?.length) {
+      continue;
+    }
 
     for (const file of payload.files) {
-      if (processed.has(file.name)) continue;
-      if (!isCsvWebhookFile(file)) continue;
+      if (processed.has(file.name)) {
+        continue;
+      }
+      if (!isCsvWebhookFile(file)) {
+        continue;
+      }
 
       const type = resolveWebhookReportType(payload.report_type);
       const processedOk = await processWebhookFile({
@@ -352,7 +370,9 @@ async function processPendingWebhooks(
         importStatsByType,
         processed,
       });
-      if (processedOk) processedCount += 1;
+      if (processedOk) {
+        processedCount += 1;
+      }
     }
   }
 
@@ -401,28 +421,38 @@ async function processWebhookFile({
 
 async function isAutoSyncEnabled() {
   const raw = await getSetting(SETTINGS_KEYS.autoSyncEnabled);
-  if (raw == null || raw === "") return true;
+  if (raw == null || raw === "") {
+    return true;
+  }
   return raw === "true";
 }
 
 async function loadProcessedFiles(type: ProcessedFilesKey) {
   const raw = await getSetting(SETTINGS_KEYS.processedFiles(type));
-  if (!raw) return new Set<string>();
+  if (!raw) {
+    return new Set<string>();
+  }
   try {
     const parsed = JSON.parse(raw) as Array<string | { name: string; at?: string }>;
     const now = Date.now();
     const ttlMs = PROCESSED_TTL_DAYS * 24 * 60 * 60 * 1000;
     const entries = parsed
       .map((item) => {
-        if (typeof item === "string") return { name: item, at: null };
+        if (typeof item === "string") {
+          return { name: item, at: null };
+        }
         return { name: item.name, at: item.at ?? null };
       })
       .filter((item) => item.name);
 
     const filtered = entries.filter((entry) => {
-      if (!entry.at) return true;
+      if (!entry.at) {
+        return true;
+      }
       const timestamp = Date.parse(entry.at);
-      if (Number.isNaN(timestamp)) return true;
+      if (Number.isNaN(timestamp)) {
+        return true;
+      }
       return now - timestamp <= ttlMs;
     });
 
@@ -442,26 +472,36 @@ async function persistProcessedFiles(type: ProcessedFilesKey, processed: Set<str
 
 async function getLastProcessedAt(type: ReportType) {
   const raw = await getSetting(SETTINGS_KEYS.lastProcessedAt(type));
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   const parsed = new Date(raw);
-  if (Number.isNaN(parsed.getTime())) return null;
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
   return parsed;
 }
 
 function isReportReady(status?: string) {
-  if (!status) return false;
+  if (!status) {
+    return false;
+  }
   return REPORT_READY_REGEX.test(status);
 }
 
 function reportCoversDate(report: MPReportSummary, targetDate: Date) {
   const begin = parseDate(report.begin_date);
   const end = parseDate(report.end_date);
-  if (!begin || !end) return false;
+  if (!begin || !end) {
+    return false;
+  }
   return begin.getTime() <= targetDate.getTime() && targetDate.getTime() <= end.getTime();
 }
 
 function parseDate(value?: string) {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
@@ -531,7 +571,9 @@ function accumulateImportStats(target: ImportStatsAggregate, stats: ImportStats)
 
 async function getValidSettingDate(key: string) {
   const raw = await getSetting(key);
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) {
     logWarn("mp.autoSync.settingInvalid", { key, value: raw });
@@ -548,7 +590,9 @@ async function getValidSettingDate(key: string) {
 
 async function jitterDelay() {
   const delay = Math.floor(Math.random() * JITTER_MAX_MS);
-  if (delay <= 0) return;
+  if (delay <= 0) {
+    return;
+  }
   await new Promise((resolve) => {
     setTimeout(resolve, delay);
   });
@@ -578,7 +622,9 @@ export async function releaseSchedulerLock() {
 
 async function loadPendingWebhooks() {
   const raw = await getSetting(SETTINGS_KEYS.pendingWebhooks);
-  if (!raw) return [];
+  if (!raw) {
+    return [];
+  }
   try {
     return JSON.parse(raw) as Array<{
       transaction_id: string;

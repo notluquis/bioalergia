@@ -89,21 +89,25 @@ export default function RoleMappingManager() {
 
   const handleSave = async () => {
     const changedMappings = mappings.filter((m) => m.isNew || m.isModified);
-    if (changedMappings.length === 0) return;
+    if (changedMappings.length === 0) {
+      return;
+    }
     saveMutation.mutate(changedMappings);
   };
 
   const saveErrorMessage = (() => {
-    if (saveMutation.error instanceof Error) return saveMutation.error.message;
+    if (saveMutation.error instanceof Error) {
+      return saveMutation.error.message;
+    }
     return null;
   })();
 
   const isSaving = saveMutation.isPending;
 
   return (
-    <div className="bg-background space-y-4 rounded-xl p-6 shadow-sm">
+    <div className="space-y-4 rounded-xl bg-background p-6 shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-foreground text-lg font-bold">Mapeo de Roles (Cargo → Rol App)</h3>
+        <h3 className="font-bold text-foreground text-lg">Mapeo de Roles (Cargo → Rol App)</h3>
         {saveErrorMessage && <span className="text-danger text-sm">{saveErrorMessage}</span>}
       </div>
 

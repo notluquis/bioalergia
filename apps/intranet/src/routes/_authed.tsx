@@ -102,9 +102,13 @@ function AuthedLayout() {
   };
 
   const buildLabel = React.useMemo(() => {
-    if (!BUILD_TIMESTAMP) return "Desconocido";
+    if (!BUILD_TIMESTAMP) {
+      return "Desconocido";
+    }
     const parsed = new Date(BUILD_TIMESTAMP);
-    if (Number.isNaN(parsed.getTime())) return BUILD_TIMESTAMP;
+    if (Number.isNaN(parsed.getTime())) {
+      return BUILD_TIMESTAMP;
+    }
     return parsed.toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
   }, []);
 
@@ -126,9 +130,13 @@ function AuthedLayout() {
       const launchQueue = (globalThis as unknown as { launchQueue: LaunchQueue }).launchQueue;
 
       launchQueue.setConsumer(async (launchParams) => {
-        if (launchParams.files.length === 0) return;
+        if (launchParams.files.length === 0) {
+          return;
+        }
         const fileHandle = launchParams.files[0];
-        if (!fileHandle) return;
+        if (!fileHandle) {
+          return;
+        }
         await fileHandle.getFile();
       });
     }
@@ -137,7 +145,7 @@ function AuthedLayout() {
   return (
     <>
       {impersonatedRole && (
-        <div className="bg-warning text-warning-foreground sticky top-0 z-100 flex h-10 w-full items-center justify-center gap-4 px-4 text-xs font-bold shadow-md">
+        <div className="sticky top-0 z-100 flex h-10 w-full items-center justify-center gap-4 bg-warning px-4 font-bold text-warning-foreground text-xs shadow-md">
           <span>VISTA PREVIA: {impersonatedRole.name}</span>
           <Button
             size="sm"
@@ -150,19 +158,19 @@ function AuthedLayout() {
         </div>
       )}
       {isNavigating && (
-        <div className="bg-default-50 fixed top-0 right-0 left-0 z-50 h-1 overflow-hidden shadow-lg">
+        <div className="fixed top-0 right-0 left-0 z-50 h-1 overflow-hidden bg-default-50 shadow-lg">
           <div className="nav-progress__indicator" />
         </div>
       )}
       {/* Layout Shell: Main Flex Container - Height constrained to dynamic viewport */}
-      <div className="layout-shell text-foreground relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 transition-all duration-300 md:gap-4 md:p-4">
+      <div className="layout-shell relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 text-foreground transition-all duration-300 md:gap-4 md:p-4">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
         <button
           aria-controls="app-sidebar"
           aria-expanded={sidebarOpen}
           aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
           aria-pressed={sidebarOpen}
-          className="border-default-200/70 bg-background/85 text-foreground focus-visible:ring-primary/60 fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none md:hidden"
+          className="fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border border-default-200/70 bg-background/85 px-3 py-2 font-semibold text-foreground text-sm shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 md:hidden"
           onClick={toggleSidebar}
           type="button"
         >
@@ -183,7 +191,7 @@ function AuthedLayout() {
               }`}
             />
           </span>
-          <span className="text-xs font-medium tracking-wide uppercase">
+          <span className="font-medium text-xs uppercase tracking-wide">
             {sidebarOpen ? "Cerrar" : "Menú"}
           </span>
         </button>
@@ -196,14 +204,14 @@ function AuthedLayout() {
           <Header />
 
           <main className="flex-1 overflow-hidden rounded-3xl transition-all duration-300">
-            <div className="surface-recessed border-default-100/50 bg-background/50 h-full w-full overflow-hidden rounded-3xl border shadow-inner">
-              <div className="h-full w-full overflow-x-hidden overflow-y-auto p-3 md:p-5">
+            <div className="surface-recessed h-full w-full overflow-hidden rounded-3xl border border-default-100/50 bg-background/50 shadow-inner">
+              <div className="h-full w-full overflow-y-auto overflow-x-hidden p-3 md:p-5">
                 <Outlet />
               </div>
             </div>
           </main>
 
-          <footer className="surface-elevated text-foreground hidden items-center justify-between px-6 py-3 text-sm md:flex">
+          <footer className="surface-elevated hidden items-center justify-between px-6 py-3 text-foreground text-sm md:flex">
             <div className="flex items-center gap-3 text-xs">
               <span className="text-default-500">Build: {buildLabel}</span>
               <span className="text-default-400">
@@ -214,11 +222,11 @@ function AuthedLayout() {
             <div className="flex items-center gap-3">
               <PerformanceIndicator />
               <Tooltip content="Sistema operativo">
-                <div className="text-default-600 flex cursor-help items-center gap-2 text-xs">
+                <div className="flex cursor-help items-center gap-2 text-default-600 text-xs">
                   <span
                     role="img"
                     aria-label="Sistema operativo"
-                    className="bg-success/70 inline-flex h-2 w-2 rounded-full"
+                    className="inline-flex h-2 w-2 rounded-full bg-success/70"
                   />
                 </div>
               </Tooltip>

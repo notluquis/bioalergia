@@ -22,10 +22,14 @@ const querySchema = z.object({
 
 async function requireIntegrationRead(c: Context) {
   const user = await getSessionUser(c);
-  if (!user) return c.json({ status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return c.json({ status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Integration");
-  if (!canRead) return c.json({ status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return c.json({ status: "error", message: "Forbidden" }, 403);
+  }
 
   return user;
 }
@@ -36,8 +40,12 @@ function buildSettlementWhere(input: z.infer<typeof querySchema>): SettlementTra
 
   if (from || to) {
     const dateFilter: Record<string, Date> = {};
-    if (from) dateFilter.gte = new Date(from);
-    if (to) dateFilter.lte = new Date(to);
+    if (from) {
+      dateFilter.gte = new Date(from);
+    }
+    if (to) {
+      dateFilter.lte = new Date(to);
+    }
     whereConditions.push({ transactionDate: dateFilter });
   }
 
@@ -62,18 +70,26 @@ function buildSettlementWhere(input: z.infer<typeof querySchema>): SettlementTra
     });
   }
 
-  if (whereConditions.length === 1) return whereConditions[0];
-  if (whereConditions.length > 1) return { AND: whereConditions };
+  if (whereConditions.length === 1) {
+    return whereConditions[0];
+  }
+  if (whereConditions.length > 1) {
+    return { AND: whereConditions };
+  }
   return {};
 }
 
 // GET /api/settlement-transactions
 app.get("/", async (c) => {
   const user = await requireIntegrationRead(c);
-  if (user instanceof Response) return user;
+  if (user instanceof Response) {
+    return user;
+  }
 
   const parsed = querySchema.safeParse(c.req.query());
-  if (!parsed.success) return c.json({ status: "error", message: "Invalid params" }, 400);
+  if (!parsed.success) {
+    return c.json({ status: "error", message: "Invalid params" }, 400);
+  }
 
   const { page, pageSize } = parsed.data;
   const offset = (page - 1) * pageSize;
@@ -106,7 +122,9 @@ app.get("/", async (c) => {
 // GET /api/settlement-transactions/:id
 app.get("/:id", async (c) => {
   const user = await requireIntegrationRead(c);
-  if (user instanceof Response) return user;
+  if (user instanceof Response) {
+    return user;
+  }
 
   const id = Number(c.req.param("id"));
 

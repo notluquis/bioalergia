@@ -36,7 +36,9 @@ export function useServicesOverview() {
   };
 
   const handleRegenerate = async (overrides: RegenerateServicePayload) => {
-    if (!details.selectedService) return;
+    if (!details.selectedService) {
+      return;
+    }
     await mutations.regenerateService(details.selectedService.public_id, overrides);
   };
 

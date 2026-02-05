@@ -19,10 +19,10 @@ export const Default: Story = {
       "Equipo clínico dedicado a diagnóstico preciso, tratamientos personalizados y seguimiento continuo.",
     children: (
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-(--surface) p-4 text-(--ink-muted)">
+        <div className="rounded-2xl border border-border bg-surface p-4 text-(--ink-muted)">
           Evaluación integral de alergias
         </div>
-        <div className="rounded-2xl border border-border bg-(--surface) p-4 text-(--ink-muted)">
+        <div className="rounded-2xl border border-border bg-surface p-4 text-(--ink-muted)">
           Programas de inmunoterapia
         </div>
       </div>

@@ -24,14 +24,14 @@ export function ServicesGrid({ children }: { children: ReactNode }) {
 
 export function ServicesHero({ actions, description, title, breadcrumbs }: ServicesHeroProps) {
   return (
-    <header className="flex flex-col gap-4 rounded-[28px] bg-background p-6 shadow-xl lg:flex-row lg:items-center lg:justify-between border border-default-100">
+    <header className="flex flex-col gap-4 rounded-[28px] border border-default-100 bg-background p-6 shadow-xl lg:flex-row lg:items-center lg:justify-between">
       <div className="space-y-3">
         {breadcrumbs && breadcrumbs.length > 0 && (
           <Breadcrumbs>
             {breadcrumbs.map((crumb) => (
               <Breadcrumbs.Item key={crumb.label}>
                 {crumb.to ? (
-                  <Link className="text-primary font-medium" to={crumb.to}>
+                  <Link className="font-medium text-primary" to={crumb.to}>
                     {crumb.label}
                   </Link>
                 ) : (
@@ -42,7 +42,7 @@ export function ServicesHero({ actions, description, title, breadcrumbs }: Servi
           </Breadcrumbs>
         )}
         <div className="space-y-1.5">
-          <h1 className="text-foreground text-2xl font-semibold drop-shadow-sm lg:text-3xl">
+          <h1 className="font-semibold text-2xl text-foreground drop-shadow-sm lg:text-3xl">
             {title}
           </h1>
           <p className="text-default-600 text-sm">{description}</p>

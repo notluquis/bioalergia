@@ -7,18 +7,18 @@ export function PerformanceIndicator() {
 
   return (
     <div
-      className="border-default-200/60 bg-default-50/50 flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs"
+      className="flex items-center gap-1.5 rounded-full border border-default-200/60 bg-default-50/50 px-2.5 py-1 text-xs"
       title={`Modo: ${mode === "high" ? "Alto rendimiento" : "Rendimiento optimizado"} - ${reason}`}
     >
       {mode === "high" ? (
         <>
-          <Zap className="text-success h-3.5 w-3.5" />
-          <span className="text-success font-medium">Alto rendimiento</span>
+          <Zap className="h-3.5 w-3.5 text-success" />
+          <span className="font-medium text-success">Alto rendimiento</span>
         </>
       ) : (
         <>
-          <ZapOff className="text-warning h-3.5 w-3.5" />
-          <span className="text-warning font-medium">Optimizado</span>
+          <ZapOff className="h-3.5 w-3.5 text-warning" />
+          <span className="font-medium text-warning">Optimizado</span>
         </>
       )}
     </div>

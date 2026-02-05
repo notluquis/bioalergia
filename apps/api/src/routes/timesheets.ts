@@ -130,7 +130,9 @@ const emailBodySchema = z.object({
 // GET /summary - Get monthly summary for all employees or filtered
 app.get("/summary", zValidator("query", monthQuerySchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
@@ -166,7 +168,9 @@ app.get("/summary", zValidator("query", monthQuerySchema), async (c) => {
 // GET / - List all timesheets (Global Range for Reports)
 app.get("/", zValidator("query", rangeQuerySchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
@@ -190,7 +194,9 @@ app.get("/", zValidator("query", rangeQuerySchema), async (c) => {
 // GET /months - Get available months
 app.get("/months", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
@@ -225,7 +231,9 @@ app.get("/months", async (c) => {
 // GET /multi-month - Get timesheets for multiple employees across multiple months
 app.get("/multi-month", zValidator("query", multiMonthQuerySchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
@@ -273,7 +281,9 @@ app.get("/multi-month", zValidator("query", multiMonthQuerySchema), async (c) =>
 // GET /multi-detail - Get timesheet entries for multiple employees in a date range
 app.get("/multi-detail", zValidator("query", multiDetailQuerySchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");
@@ -331,7 +341,9 @@ app.get(
   zValidator("query", rangeParamQuerySchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
 
     const canRead = await hasPermission(user.id, "read", "Timesheet");
     const canReadList = await hasPermission(user.id, "read", "TimesheetList");
@@ -375,7 +387,9 @@ app.get(
   zValidator("query", detailMonthQuerySchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
 
     const canRead = await hasPermission(user.id, "read", "Timesheet");
     const canReadList = await hasPermission(user.id, "read", "TimesheetList");
@@ -416,10 +430,14 @@ app.get(
 // POST / - Create or update timesheet entry
 app.post("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canCreate = await hasPermission(user.id, "create", "Timesheet");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   try {
     const body = await c.req.json();
@@ -436,10 +454,14 @@ app.post("/", async (c) => {
 // POST /bulk - Bulk upsert timesheet entries
 app.post("/bulk", zValidator("json", bulkBodySchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canCreate = await hasPermission(user.id, "create", "Timesheet");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   try {
     const { employee_id, entries, remove_ids } = c.req.valid("json");
@@ -474,10 +496,14 @@ app.post("/bulk", zValidator("json", bulkBodySchema), async (c) => {
 // PUT /:id - Update timesheet entry
 app.put("/:id", zValidator("param", idParamSchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Timesheet");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const { id } = c.req.valid("param");
 
@@ -495,10 +521,14 @@ app.put("/:id", zValidator("param", idParamSchema), async (c) => {
 // DELETE /:id - Delete timesheet entry
 app.delete("/:id", zValidator("param", idParamSchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canDelete = await hasPermission(user.id, "delete", "Timesheet");
-  if (!canDelete) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canDelete) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const { id } = c.req.valid("param");
 
@@ -515,7 +545,9 @@ app.delete("/:id", zValidator("param", idParamSchema), async (c) => {
 // POST /prepare-email - Prepare email with PDF attachment
 app.post("/prepare-email", zValidator("json", emailBodySchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Timesheet");
   const canReadList = await hasPermission(user.id, "read", "TimesheetList");

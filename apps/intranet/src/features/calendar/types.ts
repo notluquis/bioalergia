@@ -11,7 +11,9 @@ export const calendarSearchSchema = z.object({
     .union([z.string(), z.array(z.string())])
     .optional()
     .transform((val) => {
-      if (!val) return [];
+      if (!val) {
+        return [];
+      }
       return Array.isArray(val) ? val : [val];
     })
     .catch([]),
@@ -250,7 +252,9 @@ export const calendarClassificationSchema = z.object({
     .trim()
     .optional()
     .transform((value) => {
-      if (!value) return null;
+      if (!value) {
+        return null;
+      }
       const parsed = Number.parseInt(value.replaceAll(/\D/g, ""), 10);
       return Number.isNaN(parsed) ? null : parsed;
     }),
@@ -259,7 +263,9 @@ export const calendarClassificationSchema = z.object({
     .trim()
     .optional()
     .transform((value) => {
-      if (!value) return null;
+      if (!value) {
+        return null;
+      }
       const parsed = Number.parseInt(value.replaceAll(/\D/g, ""), 10);
       return Number.isNaN(parsed) ? null : parsed;
     }),

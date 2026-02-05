@@ -8,7 +8,9 @@ const doctoraliaUrl =
 function useDoctoraliaScript() {
   useEffect(() => {
     const existing = document.getElementById("zl-widget-s");
-    if (existing) return;
+    if (existing) {
+      return;
+    }
 
     const script = document.createElement("script");
     script.id = "zl-widget-s";
@@ -27,9 +29,9 @@ export function DoctoraliaBookingWidget() {
       className="overflow-hidden rounded-3xl border border-border bg-surface shadow-[0_24px_70px_rgba(0,0,0,0.18)]"
       variant="tertiary"
     >
-      <Card.Header className="flex flex-col gap-4 items-start justify-start px-4 pt-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:pt-5 md:px-6 md:pt-6">
-        <div className="min-w-0 space-y-2 flex-1">
-          <div className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">
+      <Card.Header className="flex flex-col items-start justify-start gap-4 px-4 pt-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:pt-5 md:px-6 md:pt-6">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.28em]">
             Reserva online
           </div>
           <Card.Title className="text-lg sm:text-xl md:text-2xl">
@@ -85,9 +87,9 @@ export function DoctoraliaCertificate() {
       className="h-full overflow-hidden rounded-3xl border border-border bg-surface"
       variant="default"
     >
-      <Card.Header className="flex flex-col gap-4 items-start justify-start px-4 pt-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:pt-5 md:px-6 md:pt-6">
-        <div className="min-w-0 space-y-2 flex-1">
-          <div className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">
+      <Card.Header className="flex flex-col items-start justify-start gap-4 px-4 pt-4 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:pt-5 md:px-6 md:pt-6">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.28em]">
             Pacientes satisfechos
           </div>
           <Card.Title className="text-lg sm:text-xl md:text-2xl">Certificado Doctoralia</Card.Title>

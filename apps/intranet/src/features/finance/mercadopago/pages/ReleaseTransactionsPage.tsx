@@ -46,14 +46,14 @@ export default function ReleaseTransactionsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <h1 className="typ-title text-foreground">Liberaciones de Dinero</h1>
-          <p className="typ-body text-default-600 max-w-2xl">
+          <p className="typ-body max-w-2xl text-default-600">
             Reporte de liberaciones de fondos desde Mercado Pago según fecha.
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
             <TextField>
-              <Label className="text-xs font-semibold uppercase">Desde</Label>
+              <Label className="font-semibold text-xs uppercase">Desde</Label>
               <Input
                 className="input-sm"
                 onChange={(e) => {
@@ -66,7 +66,7 @@ export default function ReleaseTransactionsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <TextField>
-              <Label className="text-xs font-semibold uppercase">Hasta</Label>
+              <Label className="font-semibold text-xs uppercase">Hasta</Label>
               <Input
                 className="input-sm"
                 onChange={(e) => {

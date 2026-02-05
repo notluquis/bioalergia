@@ -27,7 +27,9 @@ export default function AccountSettingsPage() {
   const [isMfaEnabled, setIsMfaEnabled] = useState(user?.mfaEnabled ?? false);
 
   useEffect(() => {
-    if (user) setIsMfaEnabled(user.mfaEnabled ?? false);
+    if (user) {
+      setIsMfaEnabled(user.mfaEnabled ?? false);
+    }
   }, [user]);
 
   // --- MFA Handlers ---
@@ -35,8 +37,9 @@ export default function AccountSettingsPage() {
   const setupMfaMutation = useMutation({
     mutationFn: () =>
       setupMfa().then((res) => {
-        if (res.status !== "ok")
+        if (res.status !== "ok") {
           throw new Error(res.message ?? "Error al iniciar configuración MFA");
+        }
         return res;
       }),
     onError: (err) => {
@@ -51,7 +54,9 @@ export default function AccountSettingsPage() {
   const enableMfaMutation = useMutation({
     mutationFn: (token: string) =>
       enableMfa({ token, userId: user?.id }).then((res) => {
-        if (res.status !== "ok") throw new Error(res.message ?? "Código incorrecto");
+        if (res.status !== "ok") {
+          throw new Error(res.message ?? "Código incorrecto");
+        }
         return res;
       }),
     onError: (err) => {
@@ -69,7 +74,9 @@ export default function AccountSettingsPage() {
   const disableMfaMutation = useMutation({
     mutationFn: () =>
       disableMfa().then((res) => {
-        if (res.status !== "ok") throw new Error("No se pudo desactivar MFA");
+        if (res.status !== "ok") {
+          throw new Error("No se pudo desactivar MFA");
+        }
         return res;
       }),
     onError: () => {
@@ -87,8 +94,9 @@ export default function AccountSettingsPage() {
       !confirm(
         "¿Estás seguro de desactivar la autenticación de dos factores? Tu cuenta será menos segura.",
       )
-    )
+    ) {
       return;
+    }
     disableMfaMutation.mutate();
   };
 
@@ -97,7 +105,9 @@ export default function AccountSettingsPage() {
   const registerPasskeyMutation = useMutation({
     mutationFn: async () => {
       const options = await fetchPasskeyRegistrationOptions();
-      if (options.status === "error") throw new Error(options.message);
+      if (options.status === "error") {
+        throw new Error(options.message);
+      }
 
       const attResp = await startRegistration({ optionsJSON: options });
 
@@ -105,8 +115,9 @@ export default function AccountSettingsPage() {
         body: attResp,
         challenge: options.challenge,
       });
-      if (verifyData.status !== "ok")
+      if (verifyData.status !== "ok") {
         throw new Error(verifyData.message ?? "Error al verificar passkey");
+      }
 
       return verifyData;
     },
@@ -123,7 +134,9 @@ export default function AccountSettingsPage() {
   const deletePasskeyMutation = useMutation({
     mutationFn: () =>
       removePasskey().then((res) => {
-        if (res.status !== "ok") throw new Error(res.message ?? "Error al eliminar passkey");
+        if (res.status !== "ok") {
+          throw new Error(res.message ?? "Error al eliminar passkey");
+        }
         return res;
       }),
     onError: (err) => {
@@ -140,15 +153,16 @@ export default function AccountSettingsPage() {
       !confirm(
         "¿Estás seguro de eliminar tu passkey? Tendrás que usar tu contraseña para iniciar sesión.",
       )
-    )
+    ) {
       return;
+    }
     deletePasskeyMutation.mutate();
   };
 
   return (
     <div className="space-y-6">
       <div className="space-y-1 px-6 pt-6">
-        <h2 className="text-primary text-lg font-semibold drop-shadow-sm">
+        <h2 className="font-semibold text-lg text-primary drop-shadow-sm">
           Seguridad de la cuenta
         </h2>
         <p className="text-default-600 text-sm">
@@ -159,19 +173,19 @@ export default function AccountSettingsPage() {
       {/* MFA Section */}
       <section className="bg-background p-6">
         <div className="flex items-start gap-4">
-          <div className="bg-primary/10 text-primary rounded-full p-3">
+          <div className="rounded-full bg-primary/10 p-3 text-primary">
             <Smartphone className="size-6" />
           </div>
           <div className="flex-1 space-y-4">
             <div>
-              <h3 className="text-foreground font-semibold">Autenticación de dos factores (MFA)</h3>
+              <h3 className="font-semibold text-foreground">Autenticación de dos factores (MFA)</h3>
               <p className="text-default-600 text-sm">
                 Añade una capa extra de seguridad usando una app como Google Authenticator o Authy.
               </p>
             </div>
 
             {isMfaEnabled ? (
-              <div className="bg-success/10 text-success-foreground flex items-center gap-2 rounded-lg px-4 py-3 text-sm">
+              <div className="flex items-center gap-2 rounded-lg bg-success/10 px-4 py-3 text-sm text-success-foreground">
                 <Check className="size-4" />
                 <span className="font-medium">MFA está activado en tu cuenta.</span>
                 <div className="ml-auto">
@@ -189,9 +203,9 @@ export default function AccountSettingsPage() {
             ) : (
               <div className="space-y-4">
                 {qrCodeUrl ? (
-                  <div className="border-default-200 bg-default-50/50 rounded-xl border p-4">
+                  <div className="rounded-xl border border-default-200 bg-default-50/50 p-4">
                     <div className="mb-4 text-center">
-                      <p className="mb-2 text-sm font-medium">
+                      <p className="mb-2 font-medium text-sm">
                         1. Escanea este código QR con tu app de autenticación:
                       </p>
                       <img
@@ -201,11 +215,11 @@ export default function AccountSettingsPage() {
                         loading="lazy"
                         src={qrCodeUrl}
                       />
-                      <p className="text-default-400 mt-2 text-xs">Secreto: {mfaSecret}</p>
+                      <p className="mt-2 text-default-400 text-xs">Secreto: {mfaSecret}</p>
                     </div>
 
                     <div className="mx-auto max-w-xs space-y-3">
-                      <p className="text-sm font-medium">2. Ingresa el código de 6 dígitos:</p>
+                      <p className="font-medium text-sm">2. Ingresa el código de 6 dígitos:</p>
                       <div className="flex gap-2">
                         <Input
                           autoComplete="one-time-code"
@@ -231,7 +245,7 @@ export default function AccountSettingsPage() {
                         </Button>
                       </div>
                       <Button
-                        className="text-default-400 w-full"
+                        className="w-full text-default-400"
                         onClick={() => {
                           setQrCodeUrl(null);
                           setMfaSecret(null);
@@ -265,12 +279,12 @@ export default function AccountSettingsPage() {
       {/* Passkey Section */}
       <section className="bg-background p-6">
         <div className="flex items-start gap-4">
-          <div className="bg-secondary/10 text-secondary rounded-full p-3">
+          <div className="rounded-full bg-secondary/10 p-3 text-secondary">
             <Fingerprint className="size-6" />
           </div>
           <div className="flex-1 space-y-4">
             <div>
-              <h3 className="text-foreground font-semibold">Passkeys / biometría</h3>
+              <h3 className="font-semibold text-foreground">Passkeys / biometría</h3>
               <p className="text-default-600 text-sm">
                 Inicia sesión sin contraseña usando tu huella dactilar, reconocimiento facial o PIN
                 del dispositivo.
@@ -278,7 +292,7 @@ export default function AccountSettingsPage() {
             </div>
 
             {(user as unknown as { hasPasskey: boolean })?.hasPasskey ? (
-              <div className="bg-success/10 text-success-foreground flex items-center gap-2 rounded-lg px-4 py-3 text-sm">
+              <div className="flex items-center gap-2 rounded-lg bg-success/10 px-4 py-3 text-sm text-success-foreground">
                 <Check className="size-4" />
                 <span className="font-medium">Passkey configurado.</span>
                 <div className="ml-auto flex gap-2">

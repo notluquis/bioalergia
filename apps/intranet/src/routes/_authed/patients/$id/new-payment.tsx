@@ -119,7 +119,7 @@ function NewPaymentPage() {
           Volver
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Registrar Pago de Paciente</h1>
+          <h1 className="font-bold text-2xl text-foreground">Registrar Pago de Paciente</h1>
           <p className="text-default-500 text-sm">Registro de ingresos financieros por servicios</p>
         </div>
       </header>
@@ -164,7 +164,9 @@ function NewPaymentPage() {
                   label="Método de Pago"
                   selectedKey={field.state.value}
                   onSelectionChange={(key) => {
-                    if (key) field.handleChange(key as PaymentForm["paymentMethod"]);
+                    if (key) {
+                      field.handleChange(key as PaymentForm["paymentMethod"]);
+                    }
                   }}
                 >
                   <SelectItem key="Transferencia" textValue="Transferencia">
@@ -237,7 +239,7 @@ function NewPaymentPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-default-100">
+          <div className="flex justify-end gap-3 border-default-100 border-t pt-4">
             <Button
               type="button"
               variant="ghost"

@@ -96,10 +96,10 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
 
       return (
         <div>
-          <div className="text-sm font-medium">
+          <div className="font-medium text-sm">
             {bankAccountHolder || counterpart || "(desconocido)"}
           </div>
-          <div className="text-default-500 mt-0.5 text-xs">{formattedRut || "-"}</div>
+          <div className="mt-0.5 text-default-500 text-xs">{formattedRut || "-"}</div>
         </div>
       );
     },
@@ -121,19 +121,25 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
 
       // Format bank info
       const bankParts: string[] = [];
-      if (bankName) bankParts.push(bankName);
+      if (bankName) {
+        bankParts.push(bankName);
+      }
       if (bankAccountNumber) {
         const accountLabel = bankAccountType
           ? `${bankAccountType} · ${bankAccountNumber}`
           : bankAccountNumber;
         bankParts.push(accountLabel);
       }
-      if (bankBranch) bankParts.push(bankBranch);
+      if (bankBranch) {
+        bankParts.push(bankBranch);
+      }
       const bankSummary = bankParts.join(" · ");
 
       // Format metadata
       const metadataParts: string[] = [];
-      if (withdrawId) metadataParts.push(withdrawId);
+      if (withdrawId) {
+        metadataParts.push(withdrawId);
+      }
       if (identificationType && identificationNumber) {
         metadataParts.push(`${identificationType} ${identificationNumber}`);
       } else if (identificationNumber) {
@@ -155,7 +161,7 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
   {
     cell: ({ row }) => (
       <div className="whitespace-nowrap">
-        <div className="text-sm font-medium">{fmtCLP(row.original.outgoingAmount)}</div>
+        <div className="font-medium text-sm">{fmtCLP(row.original.outgoingAmount)}</div>
         <div className="text-default-500 text-xs">{row.original.outgoingCount} txs</div>
       </div>
     ),

@@ -21,8 +21,8 @@ export default function Clock() {
   }, []);
 
   return (
-    <div className="border-default-200/60 bg-background/80 text-foreground inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-xs shadow-sm backdrop-blur">
-      <span aria-hidden="true" className="bg-primary/70 inline-block h-1.5 w-1.5 rounded-full" />
+    <div className="inline-flex items-center gap-2 rounded-full border border-default-200/60 bg-background/80 px-3 py-1 font-mono text-foreground text-xs shadow-sm backdrop-blur">
+      <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-primary/70" />
       <span>
         {time.toLocaleTimeString("es-CL", {
           hour: "2-digit",

@@ -64,9 +64,15 @@ export function formatSaveTime(date: Date): string {
   const diffMs = now.getTime() - date.getTime();
   const diffSec = Math.floor(diffMs / 1000);
 
-  if (diffSec < 5) return "ahora";
-  if (diffSec < 60) return `${diffSec}s`;
-  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m`;
+  if (diffSec < 5) {
+    return "ahora";
+  }
+  if (diffSec < 60) {
+    return `${diffSec}s`;
+  }
+  if (diffSec < 3600) {
+    return `${Math.floor(diffSec / 60)}m`;
+  }
   return `${Math.floor(diffSec / 3600)}h`;
 }
 

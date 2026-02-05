@@ -79,8 +79,11 @@ export default function ReportsPage() {
   }, [months, selectedMonth]);
 
   useEffect(() => {
-    if (viewMode === "month") setGranularity("week");
-    else if (viewMode === "all") setGranularity("month");
+    if (viewMode === "month") {
+      setGranularity("week");
+    } else if (viewMode === "all") {
+      setGranularity("month");
+    }
   }, [viewMode]);
 
   const { data: employees } = useSuspenseQuery({
@@ -103,7 +106,9 @@ export default function ReportsPage() {
     let end = endDate;
 
     if (viewMode === "month") {
-      if (!selectedMonth) return null;
+      if (!selectedMonth) {
+        return null;
+      }
       start = dayjs(`${selectedMonth}-01`).startOf("month").format(DATE_FORMAT);
       end = dayjs(`${selectedMonth}-01`).endOf("month").format(DATE_FORMAT);
     } else if (viewMode === "all") {
@@ -148,7 +153,9 @@ export default function ReportsPage() {
 
   const handleEmployeeToggle = (employeeId: number) => {
     setSelectedEmployeeIds((prev) => {
-      if (prev.includes(employeeId)) return prev.filter((id) => id !== employeeId);
+      if (prev.includes(employeeId)) {
+        return prev.filter((id) => id !== employeeId);
+      }
       return [...prev, employeeId];
     });
   };
@@ -164,7 +171,9 @@ export default function ReportsPage() {
   const chartData = reportData.length > 0 ? prepareComparisonData(reportData, granularity) : [];
 
   const periodCount = (() => {
-    if (!dateParams) return 1;
+    if (!dateParams) {
+      return 1;
+    }
     const start = dayjs(dateParams.start);
     const end = dayjs(dateParams.end);
     let count = 1;
@@ -285,10 +294,10 @@ function ReportsFiltersPanel({
 
   return (
     <div className="space-y-6 lg:col-span-4">
-      <div className="bg-background border-default-100 space-y-6 rounded-2xl border p-5 shadow-sm">
-        <div className="border-default-100 flex items-center gap-2 border-b pb-2">
-          <Filter className="text-primary h-5 w-5" />
-          <h2 className="text-lg font-semibold">Configuración</h2>
+      <div className="space-y-6 rounded-2xl border border-default-100 bg-background p-5 shadow-sm">
+        <div className="flex items-center gap-2 border-default-100 border-b pb-2">
+          <Filter className="h-5 w-5 text-primary" />
+          <h2 className="font-semibold text-lg">Configuración</h2>
         </div>
 
         <Tabs
@@ -298,7 +307,7 @@ function ReportsFiltersPanel({
           className="w-full"
         >
           <Tabs.ListContainer>
-            <Tabs.List aria-label="Vista del reporte" className="bg-default-50/50 rounded-lg p-1">
+            <Tabs.List aria-label="Vista del reporte" className="rounded-lg bg-default-50/50 p-1">
               <Tabs.Tab id="month">
                 Mensual
                 <Tabs.Indicator />
@@ -382,7 +391,9 @@ function ReportsFiltersPanel({
               className="w-full"
               selectedKey={granularity}
               onSelectionChange={(key) => {
-                if (key) setGranularity(key.toString() as ReportGranularity);
+                if (key) {
+                  setGranularity(key.toString() as ReportGranularity);
+                }
               }}
             >
               <SelectItem id="day" key="day">
@@ -402,7 +413,7 @@ function ReportsFiltersPanel({
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Empleados ({selectedEmployeeIds.length})</span>
+            <span className="font-medium text-sm">Empleados ({selectedEmployeeIds.length})</span>
             <Button
               size="sm"
               variant="ghost"
@@ -417,7 +428,9 @@ function ReportsFiltersPanel({
             <div className="custom-scrollbar flex max-h-32 flex-wrap gap-1.5 overflow-y-auto p-1">
               {selectedEmployeeIds.slice(0, 10).map((id) => {
                 const emp = activeEmployees.find((e) => e.id === id);
-                if (!emp) return null;
+                if (!emp) {
+                  return null;
+                }
                 return (
                   <Chip
                     className="gap-1 py-3 text-xs"
@@ -461,7 +474,7 @@ function ReportsFiltersPanel({
         </div>
 
         <Button
-          className="shadow-primary/20 mt-4 w-full shadow-md"
+          className="mt-4 w-full shadow-md shadow-primary/20"
           disabled={selectedEmployeeIds.length === 0 || loading}
           onClick={handleGenerateReport}
           variant="primary"
@@ -508,12 +521,12 @@ function ReportsResultsPanel({
   return (
     <div className="space-y-6 lg:col-span-8">
       {reportData.length === 0 && !loading ? (
-        <div className="border-default-200 bg-default-50/50 flex min-h-65 flex-col items-center justify-center rounded-3xl border-2 border-dashed p-6 text-center sm:min-h-100 sm:p-8">
-          <div className="bg-default-50 mb-5 flex h-16 w-16 items-center justify-center rounded-full sm:mb-6 sm:h-20 sm:w-20">
-            <BarChart2 className="text-default-200 h-9 w-9 sm:h-10 sm:w-10" />
+        <div className="flex min-h-65 flex-col items-center justify-center rounded-3xl border-2 border-default-200 border-dashed bg-default-50/50 p-6 text-center sm:min-h-100 sm:p-8">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-default-50 sm:mb-6 sm:h-20 sm:w-20">
+            <BarChart2 className="h-9 w-9 text-default-200 sm:h-10 sm:w-10" />
           </div>
-          <h3 className="text-foreground text-lg font-bold sm:text-xl">Sin datos para mostrar</h3>
-          <p className="text-default-500 mt-2 max-w-sm text-sm sm:text-base">
+          <h3 className="font-bold text-foreground text-lg sm:text-xl">Sin datos para mostrar</h3>
+          <p className="mt-2 max-w-sm text-default-500 text-sm sm:text-base">
             Selecciona el periodo y los empleados que deseas analizar para generar gráficas y
             estadísticas detalladas.
           </p>
@@ -548,7 +561,9 @@ function ReportsResultsPanel({
               suffix="h"
               title="PROM. DIARIO"
               value={(() => {
-                if (reportData.length === 0) return 0;
+                if (reportData.length === 0) {
+                  return 0;
+                }
                 const avg =
                   reportData.reduce((acc, e) => acc + e.avgDailyMinutes, 0) /
                   reportData.length /
@@ -560,7 +575,7 @@ function ReportsResultsPanel({
 
           <Suspense
             fallback={
-              <div className="bg-background border-default-100 flex h-96 items-center justify-center rounded-3xl border shadow-sm">
+              <div className="flex h-96 items-center justify-center rounded-3xl border border-default-100 bg-background shadow-sm">
                 <Spinner className="text-primary" color="current" size="lg" />
               </div>
             }
@@ -575,7 +590,7 @@ function ReportsResultsPanel({
           <div className="grid gap-6 lg:grid-cols-2">
             <Suspense
               fallback={
-                <div className="bg-background border-default-100 flex h-80 items-center justify-center rounded-3xl border shadow-sm">
+                <div className="flex h-80 items-center justify-center rounded-3xl border border-default-100 bg-background shadow-sm">
                   <Spinner className="text-secondary" color="current" size="md" />
                 </div>
               }
@@ -585,12 +600,12 @@ function ReportsResultsPanel({
 
             <div
               className={cn(
-                "bg-background border-default-100 flex flex-col rounded-3xl border p-6 shadow-sm",
+                "flex flex-col rounded-3xl border border-default-100 bg-background p-6 shadow-sm",
                 reportData.length <= 1 && "lg:col-span-2",
               )}
             >
-              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold">
-                <List className="text-accent h-5 w-5" />
+              <h3 className="mb-4 flex items-center gap-2 font-bold text-lg">
+                <List className="h-5 w-5 text-accent" />
                 Detalle Numérico
               </h3>
               <DataTable
@@ -639,7 +654,9 @@ function processRawEntries(
   }
 
   for (const entry of entries) {
-    if (!map.has(entry.employee_id)) continue;
+    if (!map.has(entry.employee_id)) {
+      continue;
+    }
     // biome-ignore lint/style/noNonNullAssertion: checked by map.has
     const data = map.get(entry.employee_id)!;
 

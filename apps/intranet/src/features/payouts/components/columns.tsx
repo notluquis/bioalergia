@@ -10,7 +10,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "date",
     cell: ({ row }) => (
-      <span className="text-foreground font-medium whitespace-nowrap">
+      <span className="whitespace-nowrap font-medium text-foreground">
         {dayjs(row.original.date).format("DD MMM YYYY HH:mm")}
       </span>
     ),
@@ -19,7 +19,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "externalReference",
     cell: ({ row }) => (
-      <span className="text-default-600 font-mono text-xs">
+      <span className="font-mono text-default-600 text-xs">
         {row.original.externalReference || "-"}
       </span>
     ),
@@ -47,9 +47,11 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
     accessorKey: "netDebitAmount",
     cell: ({ row }) => {
       const amount = row.original.netDebitAmount;
-      if (!amount) return <div className="text-right">-</div>;
+      if (!amount) {
+        return <div className="text-right">-</div>;
+      }
       return (
-        <div className="text-danger flex items-center justify-end gap-1 font-medium">
+        <div className="flex items-center justify-end gap-1 font-medium text-danger">
           {fmtCLP(String(amount))}
           <ArrowDownLeft className="h-3 w-3" />
         </div>
@@ -61,9 +63,11 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
     accessorKey: "netCreditAmount",
     cell: ({ row }) => {
       const amount = row.original.netCreditAmount;
-      if (!amount) return <div className="text-right">-</div>;
+      if (!amount) {
+        return <div className="text-right">-</div>;
+      }
       return (
-        <div className="text-success flex items-center justify-end gap-1 font-medium">
+        <div className="flex items-center justify-end gap-1 font-medium text-success">
           {fmtCLP(String(amount))}
           <ArrowUpRight className="h-3 w-3" />
         </div>
@@ -74,7 +78,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "balanceAmount",
     cell: ({ row }) => (
-      <div className="text-foreground text-right font-bold">
+      <div className="text-right font-bold text-foreground">
         {row.original.balanceAmount ? fmtCLP(String(row.original.balanceAmount)) : "-"}
       </div>
     ),
@@ -83,7 +87,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
   {
     accessorKey: "payoutBankAccountNumber",
     cell: ({ row }) => (
-      <span className="text-default-600 font-mono text-xs">
+      <span className="font-mono text-default-600 text-xs">
         {row.original.payoutBankAccountNumber || "-"}
       </span>
     ),

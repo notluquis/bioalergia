@@ -17,7 +17,7 @@ export const Basic: Story = {
     const [value, setValue] = useState("08:30");
 
     return (
-      <div className="max-w-[140px]">
+      <div className="max-w-35">
         <TimeInput value={value} onChange={setValue} />
       </div>
     );
@@ -29,7 +29,7 @@ export const Empty: Story = {
     const [value, setValue] = useState("");
 
     return (
-      <div className="max-w-[140px]">
+      <div className="max-w-35">
         <TimeInput value={value} onChange={setValue} />
       </div>
     );

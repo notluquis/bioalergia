@@ -49,11 +49,11 @@ const DateCell = ({ meta, row }: { meta: TimesheetTableMeta; row: BulkRow }) => 
 
   return (
     <div className={`flex items-center gap-2 ${isMarkedNotWorked ? "opacity-60" : ""}`}>
-      <span className="text-default-600 whitespace-nowrap text-xs sm:text-sm">
+      <span className="whitespace-nowrap text-default-600 text-xs sm:text-sm">
         {formatDateLabel(row.date)}
       </span>
       <span
-        className={`rounded px-1.5 py-0.5 text-xs font-semibold uppercase ${
+        className={`rounded px-1.5 py-0.5 font-semibold text-xs uppercase ${
           isSun ? "bg-default-100 text-default-400" : "bg-default-50 text-default-500"
         }`}
       >
@@ -123,7 +123,9 @@ const OvertimeCell = ({
   const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
   const isOvertimeOpen = meta.openOvertimeEditors.has(dateKey);
 
-  if (isMarkedNotWorked) return <span className="opacity-60">—</span>;
+  if (isMarkedNotWorked) {
+    return <span className="opacity-60">—</span>;
+  }
 
   if (!row.overtime?.trim() && !isOvertimeOpen) {
     if (canEditRow) {
@@ -131,9 +133,11 @@ const OvertimeCell = ({
         <Tooltip content="Agregar horas extra">
           <Button
             aria-label="Agregar horas extra"
-            className="border-default-200 bg-default-50 text-primary hover:bg-default-50 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-default-200 bg-default-50 text-primary shadow hover:bg-default-50"
             onClick={() => {
-              if (row.date) meta.onOpenOvertime(row.date);
+              if (row.date) {
+                meta.onOpenOvertime(row.date);
+              }
             }}
             size="sm"
             type="button"
@@ -154,7 +158,9 @@ const OvertimeCell = ({
       onChange={(value) => {
         meta.onRowChange(index, "overtime", value);
         if (!value.trim()) {
-          if (row.date) meta.onCloseOvertime(row.date);
+          if (row.date) {
+            meta.onCloseOvertime(row.date);
+          }
         }
       }}
       placeholder="HH:MM"
@@ -199,8 +205,12 @@ const StatusCell = ({
     ? "text-danger hover:text-danger/80"
     : "text-primary hover:text-primary/80";
   const tooltipParts: string[] = [];
-  if (showWarning && warningText) tooltipParts.push(warningText);
-  if (hasComment) tooltipParts.push(`Comentario: ${row.comment.trim()}`);
+  if (showWarning && warningText) {
+    tooltipParts.push(warningText);
+  }
+  if (hasComment) {
+    tooltipParts.push(`Comentario: ${row.comment.trim()}`);
+  }
 
   const tooltipContent = (
     <div className="max-w-xs space-y-1 text-xs">
@@ -213,14 +223,18 @@ const StatusCell = ({
   );
 
   const statusColor = (() => {
-    if (status === "Registrado") return "text-success";
-    if (status === "Sin guardar") return "text-warning";
+    if (status === "Registrado") {
+      return "text-success";
+    }
+    if (status === "Sin guardar") {
+      return "text-warning";
+    }
     return "text-default-400";
   })();
 
   return (
     <div
-      className={`flex items-center gap-1 text-xs font-semibold tracking-wide uppercase ${statusColor} ${isMarkedNotWorked ? "opacity-60" : ""}`}
+      className={`flex items-center gap-1 font-semibold text-xs uppercase tracking-wide ${statusColor} ${isMarkedNotWorked ? "opacity-60" : ""}`}
     >
       {status}
       {showBang && (
@@ -254,7 +268,9 @@ const ActionsCell = ({
   const dateKey = row.date ? dayjs(row.date).format("YYYY-MM-DD") : "";
   const isMarkedNotWorked = meta.notWorkedDays.has(dateKey);
 
-  if (!canEditRow) return <span className="text-default-400 text-xs">—</span>;
+  if (!canEditRow) {
+    return <span className="text-default-400 text-xs">—</span>;
+  }
 
   return (
     <DropdownMenu>
@@ -293,9 +309,14 @@ const ActionsCell = ({
             onPress={() => {
               meta.setNotWorkedDays((prev) => {
                 const next = new Set(prev);
-                if (!dateKey) return next;
-                if (next.has(dateKey)) next.delete(dateKey);
-                else next.add(dateKey);
+                if (!dateKey) {
+                  return next;
+                }
+                if (next.has(dateKey)) {
+                  next.delete(dateKey);
+                } else {
+                  next.add(dateKey);
+                }
                 return next;
               });
             }}

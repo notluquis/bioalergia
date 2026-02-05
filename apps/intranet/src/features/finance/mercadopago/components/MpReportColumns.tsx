@@ -18,7 +18,7 @@ export const getMpReportColumns = (
   {
     accessorKey: "id",
     cell: ({ row }) => (
-      <span className="text-default-500 font-mono text-xs">#{row.original.id}</span>
+      <span className="font-mono text-default-500 text-xs">#{row.original.id}</span>
     ),
     header: "ID",
   },
@@ -27,7 +27,7 @@ export const getMpReportColumns = (
     cell: ({ row }) => {
       const date = row.original.date_created ?? row.original.begin_date;
       return (
-        <span className="text-sm whitespace-nowrap">
+        <span className="whitespace-nowrap text-sm">
           {date ? dayjs(date).format("DD/MM/YY HH:mm") : "-"}
         </span>
       );
@@ -38,7 +38,7 @@ export const getMpReportColumns = (
   {
     accessorKey: "begin_date",
     cell: ({ row }) => (
-      <span className="text-default-600 text-sm whitespace-nowrap">
+      <span className="whitespace-nowrap text-default-600 text-sm">
         {row.original.begin_date ? dayjs(row.original.begin_date).format("DD/MM/YYYY") : "-"}
       </span>
     ),
@@ -47,7 +47,7 @@ export const getMpReportColumns = (
   {
     accessorKey: "end_date",
     cell: ({ row }) => (
-      <span className="text-default-600 text-sm whitespace-nowrap">
+      <span className="whitespace-nowrap text-default-600 text-sm">
         {row.original.end_date ? dayjs(row.original.end_date).format("DD/MM/YYYY") : "-"}
       </span>
     ),
@@ -57,7 +57,7 @@ export const getMpReportColumns = (
     accessorKey: "file_name",
     cell: ({ row }) => (
       <div
-        className="text-default-600 max-w-40 truncate font-mono text-xs"
+        className="max-w-40 truncate font-mono text-default-600 text-xs"
         title={row.original.file_name}
       >
         {row.original.file_name ?? <span className="opacity-50">-</span>}
@@ -88,7 +88,7 @@ export const getMpReportColumns = (
         </Chip>
       ) : (
         <Chip className="gap-1.5" color="success" size="sm" variant="soft">
-          <span className="bg-success h-1.5 w-1.5 rounded-full" />
+          <span className="h-1.5 w-1.5 rounded-full bg-success" />
           Disponible
         </Chip>
       ),
@@ -104,7 +104,9 @@ export const getMpReportColumns = (
             className="h-9 w-9 p-0 transition-opacity sm:opacity-70 sm:group-hover:opacity-100"
             disabled={downloadPending || pending || !report.file_name}
             onClick={(e) => {
-              if (report.file_name) handleDownload(e, report.file_name);
+              if (report.file_name) {
+                handleDownload(e, report.file_name);
+              }
             }}
             title={pending ? "Reporte aún generándose" : "Descargar"}
             variant="ghost"
@@ -119,13 +121,15 @@ export const getMpReportColumns = (
             className="h-9 w-9 p-0 transition-opacity sm:opacity-70 sm:group-hover:opacity-100"
             disabled={processPending || pending || !report.file_name}
             onClick={(e) => {
-              if (report.file_name) handleProcess(e, report.file_name);
+              if (report.file_name) {
+                handleProcess(e, report.file_name);
+              }
             }}
             title={pending ? "Reporte aún generándose" : "Sincronizar a BD"}
             variant="ghost"
           >
             {processPending && processingFile === (report.file_name ?? null) ? (
-              <Loader2 className="text-primary h-5 w-5 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
             ) : (
               <RefreshCw className="h-5 w-5" />
             )}
@@ -139,6 +143,8 @@ export const getMpReportColumns = (
 ];
 
 function isReportPending(status?: string) {
-  if (!status) return false;
+  if (!status) {
+    return false;
+  }
   return REPORT_PENDING_REGEX.test(status);
 }

@@ -24,13 +24,13 @@ export function FAQSection() {
                 className="rounded-2xl border border-border bg-(--surface-2) px-5 py-3"
               >
                 <Accordion.Heading>
-                  <Accordion.Trigger className="items-center text-left text-base font-medium sm:text-lg">
+                  <Accordion.Trigger className="items-center text-left font-medium text-base sm:text-lg">
                     {item.question}
                     <Accordion.Indicator className="size-5 text-(--ink-muted)" />
                   </Accordion.Trigger>
                 </Accordion.Heading>
                 <Accordion.Panel>
-                  <Accordion.Body className="pt-2 text-sm leading-relaxed text-(--ink-muted) sm:text-base">
+                  <Accordion.Body className="pt-2 text-(--ink-muted) text-sm leading-relaxed sm:text-base">
                     {item.answer}
                   </Accordion.Body>
                 </Accordion.Panel>

@@ -93,7 +93,9 @@ export default function FinanzasStatsPage() {
 
   const handleQuickRangeChange = (value: string) => {
     setQuickRange(value);
-    if (value === "custom") return;
+    if (value === "custom") {
+      return;
+    }
 
     const match = QUICK_MONTHS.find((month) => month.value === value);
     if (match) {
@@ -128,12 +130,12 @@ export default function FinanzasStatsPage() {
     <section className={PAGE_CONTAINER}>
       {/* Date Range Filters */}
       <form
-        className="bg-background border-default-100 grid gap-4 rounded-2xl border p-6 shadow-sm sm:grid-cols-5"
+        className="grid gap-4 rounded-2xl border border-default-100 bg-background p-6 shadow-sm sm:grid-cols-5"
         onSubmit={handleSubmit}
       >
         <div className="form-control">
           <TextField className="w-full">
-            <Label className="text-xs font-medium">Desde</Label>
+            <Label className="font-medium text-xs">Desde</Label>
             <Input
               id="from-date"
               onChange={(e) => {
@@ -148,7 +150,7 @@ export default function FinanzasStatsPage() {
 
         <div className="form-control">
           <TextField className="w-full">
-            <Label className="text-xs font-medium">Hasta</Label>
+            <Label className="font-medium text-xs">Hasta</Label>
             <Input
               id="to-date"
               onChange={(e) => {
@@ -167,7 +169,7 @@ export default function FinanzasStatsPage() {
             selectedKey={quickRange}
             onSelectionChange={(key) => handleQuickRangeChange(key as string)}
           >
-            <Label className="text-xs font-medium">Intervalo rápido</Label>
+            <Label className="font-medium text-xs">Intervalo rápido</Label>
             <Select.Trigger>
               <Select.Value />
             </Select.Trigger>
@@ -250,8 +252,8 @@ export default function FinanzasStatsPage() {
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Movement Types */}
             <Card className="p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
-                <Calendar className="text-secondary h-5 w-5" />
+              <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
+                <Calendar className="h-5 w-5 text-secondary" />
                 Por tipo de movimiento
               </h2>
               <MovementTypeList data={data.byType} />
@@ -259,8 +261,8 @@ export default function FinanzasStatsPage() {
 
             {/* Top Participants Preview */}
             <Card className="p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
-                <TrendingUp className="text-accent h-5 w-5" />
+              <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
+                <TrendingUp className="h-5 w-5 text-accent" />
                 Resumen rápido
               </h2>
               <div className="space-y-3 text-sm">
@@ -279,7 +281,7 @@ export default function FinanzasStatsPage() {
                 <div className="divider my-2" />
                 <div className="flex items-center justify-between">
                   <span className="text-default-600">Promedio mensual:</span>
-                  <span className="text-primary font-mono font-semibold">
+                  <span className="font-mono font-semibold text-primary">
                     $
                     {data.monthly.length > 0
                       ? Math.round(totals.net / data.monthly.length).toLocaleString("es-CL")

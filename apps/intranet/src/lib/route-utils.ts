@@ -180,8 +180,12 @@ export function extractPermissionsFromRoutes(routeTree: RouteTreeNode): RoutePer
 }
 
 function getRouteChildren(children: RouteTreeNode["children"]): RouteTreeNode[] {
-  if (!children) return [];
-  if (Array.isArray(children)) return children;
+  if (!children) {
+    return [];
+  }
+  if (Array.isArray(children)) {
+    return children;
+  }
   if (typeof children === "object") {
     return Object.values(children as Record<string, RouteTreeNode>);
   }

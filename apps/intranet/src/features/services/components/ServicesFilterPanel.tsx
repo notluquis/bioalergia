@@ -67,16 +67,16 @@ export default function ServicesFilterPanel({
   };
 
   return (
-    <section className="border-default-200 text-foreground bg-background flex flex-col gap-4 border p-4 text-sm">
+    <section className="flex flex-col gap-4 border border-default-200 bg-background p-4 text-foreground text-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-foreground text-sm font-semibold">Filtros rápidos</p>
+          <p className="font-semibold text-foreground text-sm">Filtros rápidos</p>
           <p className="text-default-400 text-xs">
             Filtra por estado, tipo o busca por nombre/detalle.
           </p>
         </div>
         <Button
-          className="text-primary text-xs font-semibold tracking-wide uppercase hover:underline"
+          className="font-semibold text-primary text-xs uppercase tracking-wide hover:underline"
           onClick={resetFilters}
           size="sm"
           type="button"
@@ -99,11 +99,11 @@ export default function ServicesFilterPanel({
         </div>
 
         <div>
-          <p className="text-default-500 text-xs font-semibold tracking-wide uppercase">Estado</p>
+          <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">Estado</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {STATUS_ORDER.map((status) => (
               <Button
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
+                className={`rounded-full border px-3 py-1 font-semibold text-xs transition-all ${
                   filters.statuses.size === 0 || filters.statuses.has(status)
                     ? "border-primary/40 bg-primary/10 text-primary"
                     : "border-default-200 bg-default-50 text-default-500 hover:border-primary/35 hover:text-primary"
@@ -123,7 +123,7 @@ export default function ServicesFilterPanel({
         </div>
 
         <div>
-          <p className="text-default-500 text-xs font-semibold tracking-wide uppercase">
+          <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">
             Tipo de servicio
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -131,7 +131,7 @@ export default function ServicesFilterPanel({
               const isActive = filters.types.size === 0 || filters.types.has(type);
               return (
                 <Button
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
+                  className={`rounded-full border px-3 py-1 font-semibold text-xs transition-all ${
                     isActive
                       ? "border-secondary/40 bg-secondary/10 text-secondary"
                       : "border-default-200 bg-default-50 text-default-500 hover:border-secondary/35 hover:text-secondary"

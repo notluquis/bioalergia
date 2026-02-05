@@ -25,7 +25,9 @@ function RoutesAuditPage() {
   });
 
   const stats = useMemo(() => {
-    if (!audit) return { valid: 0, technical: 0, error: 0, total: 0 };
+    if (!audit) {
+      return { valid: 0, technical: 0, error: 0, total: 0 };
+    }
     const errorCount = audit.missingNav.length + audit.missingPermission.length;
     return {
       valid: audit.validRoutes.length,
@@ -36,7 +38,9 @@ function RoutesAuditPage() {
   }, [audit]);
 
   const filteredRoutes = useMemo(() => {
-    if (!audit) return [];
+    if (!audit) {
+      return [];
+    }
 
     let routes: Array<{ path: string; status: "valid" | "technical" | "error"; message?: string }> =
       [];
@@ -84,13 +88,15 @@ function RoutesAuditPage() {
     return routes.sort((a, b) => a.path.localeCompare(b.path));
   }, [audit, searchTerm, filter]);
 
-  if (!audit) return <div>Loading...</div>;
+  if (!audit) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="container mx-auto space-y-6 py-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Routes Audit</h1>
+          <h1 className="font-bold text-3xl">Routes Audit</h1>
           <p className="text-muted-foreground">
             Overview of route capabilities and compliance with navigation standards
           </p>
@@ -101,40 +107,40 @@ function RoutesAuditPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Routes</CardTitle>
-            <Settings className="text-muted-foreground size-4" />
+            <CardTitle className="font-medium text-sm">Total Routes</CardTitle>
+            <Settings className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="font-bold text-2xl">{stats.total}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valid Pages</CardTitle>
-            <CheckCircle className="text-success size-4" />
+            <CardTitle className="font-medium text-sm">Valid Pages</CardTitle>
+            <CheckCircle className="size-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.valid}</div>
+            <div className="font-bold text-2xl">{stats.valid}</div>
             <p className="text-muted-foreground text-xs">With proper metadata</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Technical</CardTitle>
-            <Settings className="text-muted-foreground size-4" />
+            <CardTitle className="font-medium text-sm">Technical</CardTitle>
+            <Settings className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.technical}</div>
+            <div className="font-bold text-2xl">{stats.technical}</div>
             <p className="text-muted-foreground text-xs">Auto-excluded from nav</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Errors</CardTitle>
-            <AlertCircle className="text-danger size-4" />
+            <CardTitle className="font-medium text-sm">Errors</CardTitle>
+            <AlertCircle className="size-4 text-danger" />
           </CardHeader>
           <CardContent>
-            <div className="text-danger text-2xl font-bold">{stats.error}</div>
+            <div className="font-bold text-2xl text-danger">{stats.error}</div>
             <p className="text-muted-foreground text-xs">Missing required data</p>
           </CardContent>
         </Card>
@@ -143,7 +149,7 @@ function RoutesAuditPage() {
       <div className="space-y-4">
         <div className="flex items-center gap-4">
           <div className="relative flex-1">
-            <Search className="text-muted-foreground absolute top-2.5 left-2 size-4" />
+            <Search className="absolute top-2.5 left-2 size-4 text-muted-foreground" />
             <Input
               placeholder="Search routes..."
               className="pl-8"
@@ -175,7 +181,7 @@ function RoutesAuditPage() {
             </Badge>
             <Badge
               variant={filter === "error" ? "destructive" : "outline"}
-              className="hover:bg-danger cursor-pointer"
+              className="cursor-pointer hover:bg-danger"
               onClick={() => setFilter("error")}
             >
               Errors
@@ -184,7 +190,7 @@ function RoutesAuditPage() {
         </div>
 
         <div className="rounded-md border">
-          <div className="bg-default-50 grid grid-cols-12 gap-4 px-4 py-3 text-sm font-medium">
+          <div className="grid grid-cols-12 gap-4 bg-default-50 px-4 py-3 font-medium text-sm">
             <div className="col-span-8">Route Path</div>
             <div className="col-span-2">Status</div>
             <div className="col-span-2">Notes</div>
@@ -193,14 +199,14 @@ function RoutesAuditPage() {
             {filteredRoutes.map((route) => (
               <div
                 key={route.path}
-                className="hover:bg-background grid grid-cols-12 items-center gap-4 px-4 py-3 text-sm transition-colors"
+                className="grid grid-cols-12 items-center gap-4 px-4 py-3 text-sm transition-colors hover:bg-background"
               >
                 <div className="col-span-8 font-mono">{route.path}</div>
                 <div className="col-span-2">
                   {route.status === "valid" && (
                     <Badge
                       variant="outline"
-                      className="text-success border-success-soft-hover bg-success/10"
+                      className="border-success-soft-hover bg-success/10 text-success"
                     >
                       <CheckCircle className="mr-1 size-3" /> Valid
                     </Badge>
@@ -216,11 +222,11 @@ function RoutesAuditPage() {
                     </Badge>
                   )}
                 </div>
-                <div className="text-muted-foreground col-span-2 text-xs">{route.message}</div>
+                <div className="col-span-2 text-muted-foreground text-xs">{route.message}</div>
               </div>
             ))}
             {filteredRoutes.length === 0 && (
-              <div className="text-muted-foreground py-8 text-center">No routes found</div>
+              <div className="py-8 text-center text-muted-foreground">No routes found</div>
             )}
           </div>
         </div>

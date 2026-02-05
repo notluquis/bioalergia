@@ -62,7 +62,7 @@ function SelectBase<T extends object>({
       {...mappedProps}
     >
       {label && (
-        <Label className="text-default-600 font-semibold uppercase tracking-wider">{label}</Label>
+        <Label className="font-semibold text-default-600 uppercase tracking-wider">{label}</Label>
       )}
       <SelectTrigger>
         <SelectValue />

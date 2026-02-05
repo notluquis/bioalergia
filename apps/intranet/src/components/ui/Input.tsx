@@ -43,7 +43,7 @@ type Props =
 const createPasswordToggle = (isVisible: boolean, onToggle: () => void) => (
   <button
     aria-label="Toggle password visibility"
-    className="text-default-400 hover:text-default-600 focus:outline-none flex items-center justify-center p-1"
+    className="flex items-center justify-center p-1 text-default-400 hover:text-default-600 focus:outline-none"
     onClick={onToggle}
     type="button"
   >
@@ -118,7 +118,7 @@ const renderSelect = (
       <InputGroup>
         <select
           className={cn(
-            "input-group__input w-full bg-transparent outline-none h-full",
+            "input-group__input h-full w-full bg-transparent outline-none",
             options.size === "xs" && "text-xs",
             options.className,
             selectClassName,
@@ -152,7 +152,7 @@ const renderGroupedInput = (
 ) => (
   <TextField {...options.commonTextFieldProps}>
     {options.labelElement}
-    <InputGroup className={cn("bg-default-100", options.hasError && "bg-danger-50 border-danger")}>
+    <InputGroup className={cn("bg-default-100", options.hasError && "border-danger bg-danger-50")}>
       {options.startContent && (
         <InputGroup.Prefix className="text-default-400">{options.startContent}</InputGroup.Prefix>
       )}

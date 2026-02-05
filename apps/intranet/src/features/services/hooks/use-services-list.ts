@@ -44,7 +44,9 @@ export function useServicesList() {
         acc.totalPaid += service.total_paid;
         acc.pendingCount += service.pending_count;
         acc.overdueCount += service.overdue_count;
-        if (service.status === "ACTIVE") acc.activeCount += 1;
+        if (service.status === "ACTIVE") {
+          acc.activeCount += 1;
+        }
         return acc;
       },
       { activeCount: 0, overdueCount: 0, pendingCount: 0, totalExpected: 0, totalPaid: 0 },

@@ -61,7 +61,9 @@ export function useAuth() {
   const initializing = sessionQuery.isPending;
 
   const effectiveUser = (() => {
-    if (!realUser) return null;
+    if (!realUser) {
+      return null;
+    }
     if (impersonatedRole) {
       return { ...realUser, roles: [impersonatedRole.name] };
     }
@@ -151,8 +153,12 @@ export function useAuth() {
 
   const hasRole = useCallback(
     (...rolesToCheck: string[]) => {
-      if (!effectiveUser) return false;
-      if (rolesToCheck.length === 0) return true;
+      if (!effectiveUser) {
+        return false;
+      }
+      if (rolesToCheck.length === 0) {
+        return true;
+      }
 
       const userRoles = new Set(effectiveUser.roles.map((r) => r.toUpperCase()));
       return rolesToCheck.some((r) => userRoles.has(r.toUpperCase()));

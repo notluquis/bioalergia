@@ -14,7 +14,9 @@ export function AuthListener() {
 
   useEffect(() => {
     const sessionLoaded = sessionData !== undefined;
-    if (!sessionLoaded && !impersonatedRole) return;
+    if (!sessionLoaded && !impersonatedRole) {
+      return;
+    }
 
     const rules: RawRuleOf<AppAbility>[] = impersonatedRole
       ? impersonatedRole.permissions.map((rp) => ({
@@ -28,7 +30,9 @@ export function AuthListener() {
       .map((rule) => `${rule.action}:${String(rule.subject)}:${JSON.stringify(rule.conditions)}`)
       .join("|");
 
-    if (rulesKey === lastRulesKeyRef.current) return;
+    if (rulesKey === lastRulesKeyRef.current) {
+      return;
+    }
     lastRulesKeyRef.current = rulesKey;
 
     if (impersonatedRole) {

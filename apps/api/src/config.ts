@@ -19,12 +19,16 @@ export type GoogleCalendarConfig = {
 };
 
 function normalizePrivateKey(raw?: string | null) {
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   return raw.replace(/\\n/g, "\n");
 }
 
 function parseCalendarIds(raw?: string | null) {
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   const ids = raw
     .split(",")
     .map((value) => value.trim())

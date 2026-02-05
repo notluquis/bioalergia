@@ -21,7 +21,9 @@ export function useServiceMutations() {
     mutationFn: createService,
     onSuccess: (response) => {
       queryClient.setQueryData(serviceKeys.lists(), (old: ServiceListResponse | undefined) => {
-        if (!old) return { services: [response.service], status: "ok" };
+        if (!old) {
+          return { services: [response.service], status: "ok" };
+        }
         return { ...old, services: [...old.services, response.service] };
       });
       // Invalidate both lists and detail (unifying cache is harder without normalized cache)

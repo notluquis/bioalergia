@@ -46,7 +46,7 @@ export function MoneyInput({
       }}
       value={numericValue ?? undefined}
     >
-      <Label className="flex items-center gap-1.5 text-xs font-medium sm:text-sm">
+      <Label className="flex items-center gap-1.5 font-medium text-xs sm:text-sm">
         {icon}
         {label}
       </Label>

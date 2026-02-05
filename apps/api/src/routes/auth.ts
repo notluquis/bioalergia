@@ -378,7 +378,9 @@ function storeChallenge(key: string, challenge: string, userId?: number): void {
 
 function getChallenge(key: string): { challenge: string; userId?: number } | null {
   const entry = challengeStore.get(key);
-  if (!entry) return null;
+  if (!entry) {
+    return null;
+  }
   if (Date.now() > entry.expires) {
     challengeStore.delete(key);
     return null;

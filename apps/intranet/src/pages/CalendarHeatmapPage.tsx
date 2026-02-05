@@ -50,14 +50,18 @@ function processHeatmapData(
     ? dayjs(to).startOf("month")
     : dayjs().startOf("month").add(1, "month");
 
-  if (end.isBefore(start)) end = start.add(2, "month");
+  if (end.isBefore(start)) {
+    end = start.add(2, "month");
+  }
 
   const heatmapMonths: dayjs.Dayjs[] = [];
   let current = start;
   while (current.isBefore(end) || current.isSame(end, "month")) {
     heatmapMonths.push(current);
     current = current.add(1, "month");
-    if (heatmapMonths.length > 36) break; // Safety
+    if (heatmapMonths.length > 36) {
+      break; // Safety
+    }
   }
 
   const totals = summary?.aggregates?.byDate.map((d) => d.total) ?? [];
@@ -95,7 +99,9 @@ function CalendarHeatmapPage() {
   }, [summary, appliedFilters]);
 
   const previewCount = useMemo(() => {
-    if (!summary) return 0;
+    if (!summary) {
+      return 0;
+    }
     if (draftFilters.categories.length > 0) {
       const selected = new Set(draftFilters.categories);
       return summary.available.categories
@@ -111,7 +117,7 @@ function CalendarHeatmapPage() {
   return (
     <section className="space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm font-medium">
+        <div className="flex items-center gap-2 font-medium text-sm">
           <span className="text-default-500">Heatmap</span>
           <span className="text-default-400 text-xs">
             {rangeStartLabel} - {rangeEndLabel}
@@ -159,7 +165,7 @@ function CalendarHeatmapPage() {
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-default-500 text-sm font-semibold tracking-wide uppercase">
+          <h2 className="font-semibold text-default-500 text-sm uppercase tracking-wide">
             {tc("heatmapSection")}
           </h2>
           <span className="text-default-500 text-xs">

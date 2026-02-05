@@ -32,11 +32,21 @@ const dateFormatter = new Intl.DateTimeFormat("es-CL", {
 function computeLabel(dueDate: dayjs.Dayjs) {
   const today = dayjs().startOf("day");
   const diff = dueDate.startOf("day").diff(today, "day");
-  if (diff === 0) return "Hoy";
-  if (diff === 1) return "Mañana";
-  if (diff === -1) return "Ayer";
-  if (diff > 1 && diff <= 7) return `En ${diff} días`;
-  if (diff < -1 && diff >= -7) return `Hace ${Math.abs(diff)} días`;
+  if (diff === 0) {
+    return "Hoy";
+  }
+  if (diff === 1) {
+    return "Mañana";
+  }
+  if (diff === -1) {
+    return "Ayer";
+  }
+  if (diff > 1 && diff <= 7) {
+    return `En ${diff} días`;
+  }
+  if (diff < -1 && diff >= -7) {
+    return `Hace ${Math.abs(diff)} días`;
+  }
   return capitalize(dateFormatter.format(dueDate.toDate()));
 }
 
@@ -57,7 +67,9 @@ export default function ServicesUnifiedAgenda({
 }: ServicesUnifiedAgendaProps) {
   const skeletons = Array.from({ length: 4 }, (_, index) => index);
   const groups = (() => {
-    if (items.length === 0) return [];
+    if (items.length === 0) {
+      return [];
+    }
     const map = new Map<string, AgendaGroup>();
     for (const { schedule, service } of items) {
       const dueDate = dayjs(schedule.due_date).startOf("day");
@@ -116,31 +128,31 @@ export default function ServicesUnifiedAgenda({
 
   return (
     <section className="space-y-4">
-      <header className="surface-muted text-default-600 grid gap-4 p-4 text-sm sm:grid-cols-3">
+      <header className="surface-muted grid gap-4 p-4 text-default-600 text-sm sm:grid-cols-3">
         <div>
-          <p className="text-default-400 text-xs tracking-wide uppercase">Pagos hoy</p>
-          <p className="text-foreground text-xl font-semibold">
+          <p className="text-default-400 text-xs uppercase tracking-wide">Pagos hoy</p>
+          <p className="font-semibold text-foreground text-xl">
             {currencyFormatter.format(totals.day)}
           </p>
         </div>
         <div>
-          <p className="text-default-400 text-xs tracking-wide uppercase">Semana en curso</p>
-          <p className="text-foreground text-xl font-semibold">
+          <p className="text-default-400 text-xs uppercase tracking-wide">Semana en curso</p>
+          <p className="font-semibold text-foreground text-xl">
             {currencyFormatter.format(totals.week)}
           </p>
         </div>
         <div>
-          <p className="text-default-400 text-xs tracking-wide uppercase">Mes en curso</p>
-          <p className="text-foreground text-xl font-semibold">
+          <p className="text-default-400 text-xs uppercase tracking-wide">Mes en curso</p>
+          <p className="font-semibold text-foreground text-xl">
             {currencyFormatter.format(totals.month)}
           </p>
         </div>
       </header>
 
-      <div className="surface-recessed text-default-600 space-y-3 p-4 text-sm">
+      <div className="surface-recessed space-y-3 p-4 text-default-600 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-default-400 text-sm font-semibold tracking-wide uppercase">
+            <h2 className="font-semibold text-default-400 text-sm uppercase tracking-wide">
               Agenda unificada
             </h2>
             <p className="text-default-300 text-xs">
@@ -148,7 +160,7 @@ export default function ServicesUnifiedAgenda({
             </p>
           </div>
           {loading && (
-            <div className="text-default-300 flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-default-300 text-xs">
               <Spinner size="sm" />
               <span>Actualizando agenda…</span>
             </div>
@@ -164,7 +176,7 @@ export default function ServicesUnifiedAgenda({
           <div className="space-y-2">
             {skeletons.map((value) => (
               <div
-                className="border-default-200/60 bg-default-50/60 rounded-2xl border p-4 shadow-inner"
+                className="rounded-2xl border border-default-200/60 bg-default-50/60 p-4 shadow-inner"
                 key={value}
               >
                 <div className="flex items-center justify-between">
@@ -184,7 +196,7 @@ export default function ServicesUnifiedAgenda({
             const isExpanded = expanded[group.dateKey] ?? false;
             return (
               <article
-                className="surface-muted hover:border-primary/35 transition hover:shadow-lg"
+                className="surface-muted transition hover:border-primary/35 hover:shadow-lg"
                 key={group.dateKey}
               >
                 <Button
@@ -196,7 +208,7 @@ export default function ServicesUnifiedAgenda({
                   variant="secondary"
                 >
                   <div>
-                    <p className="text-foreground text-sm font-semibold capitalize">
+                    <p className="font-semibold text-foreground text-sm capitalize">
                       {group.label}
                     </p>
                     <p className="text-default-300 text-xs">
@@ -204,11 +216,11 @@ export default function ServicesUnifiedAgenda({
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-foreground text-sm font-semibold">
+                    <span className="font-semibold text-foreground text-sm">
                       {currencyFormatter.format(group.total)}
                     </span>
                     <span
-                      className={`border-default-200 bg-background/70 text-default-400 inline-flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-transform ${
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-default-200 bg-background/70 font-semibold text-default-400 text-xs transition-transform ${
                         isExpanded ? "rotate-180" : ""
                       }`}
                     >
@@ -217,31 +229,31 @@ export default function ServicesUnifiedAgenda({
                   </div>
                 </Button>
                 {isExpanded && (
-                  <div className="border-default-200/70 space-y-2 border-t px-4 py-3">
+                  <div className="space-y-2 border-default-200/70 border-t px-4 py-3">
                     {group.entries.map(({ schedule, service }) => {
                       const dueDate = dayjs(schedule.due_date);
                       const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
                       const isOverdue = schedule.status === "PENDING" && diffDays < 0;
                       return (
                         <div
-                          className="surface-recessed hover:border-primary/40 p-3 transition"
+                          className="surface-recessed p-3 transition hover:border-primary/40"
                           key={`${service.public_id}-${schedule.id}`}
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                              <p className="text-foreground text-sm font-semibold">
+                              <p className="font-semibold text-foreground text-sm">
                                 {service.name}
                               </p>
                               {service.detail && (
                                 <p className="text-default-300 text-xs">{service.detail}</p>
                               )}
-                              <p className="text-default-300 mt-1 text-xs">
+                              <p className="mt-1 text-default-300 text-xs">
                                 {currencyFormatter.format(schedule.expected_amount)} · Vence el{" "}
                                 {dateFormatter.format(dueDate.toDate())}
                               </p>
                             </div>
                             <span
-                              className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${
+                              className={`rounded-full px-3 py-1 font-semibold text-xs uppercase tracking-wide ${
                                 statusClasses[schedule.status]
                               }`}
                             >
@@ -290,6 +302,8 @@ export default function ServicesUnifiedAgenda({
 }
 
 function capitalize(value: string) {
-  if (value.length === 0) return value;
+  if (value.length === 0) {
+    return value;
+  }
   return value.charAt(0).toUpperCase() + value.slice(1);
 }

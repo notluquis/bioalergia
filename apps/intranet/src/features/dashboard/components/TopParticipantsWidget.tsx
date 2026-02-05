@@ -17,11 +17,11 @@ export default function TopParticipantsWidget({
   return (
     <article className="surface-recessed space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-secondary text-base font-semibold drop-shadow-sm">
+        <h3 className="font-semibold text-base text-secondary drop-shadow-sm">
           Retiros destacados
         </h3>
         <Link
-          className="border-secondary/40 bg-secondary/15 text-secondary inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-wide uppercase"
+          className="inline-flex items-center rounded-full border border-secondary/40 bg-secondary/15 px-3 py-1 font-semibold text-secondary text-xs uppercase tracking-wide"
           to="/finanzas/participants"
         >
           Ver todos
@@ -30,7 +30,7 @@ export default function TopParticipantsWidget({
       {error && <p className="text-danger text-xs">{error}</p>}
       {loading && <p className="text-foreground text-xs">Cargando...</p>}
       {!loading && data.length > 0 && (
-        <ul className="text-foreground space-y-3 text-sm">
+        <ul className="space-y-3 text-foreground text-sm">
           {data.map((item) => {
             const displayName =
               item.bankAccountHolder || item.displayName || item.participant || "Sin información";
@@ -42,19 +42,19 @@ export default function TopParticipantsWidget({
             const account = item.bankAccountNumber || item.withdrawId || "-";
             return (
               <li
-                className="border-default-200 bg-default-50 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 shadow-sm"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-default-200 bg-default-50 px-4 py-3 shadow-sm"
                 key={`${item.participant}-${item.withdrawId ?? ""}`}
               >
                 <div>
-                  <p className="text-foreground font-medium">{displayName}</p>
+                  <p className="font-medium text-foreground">{displayName}</p>
                   <p className="text-foreground/90 text-xs">
                     RUT {rut} · Cuenta {account}
                   </p>
-                  <p className="text-default-700 text-xs tracking-wide uppercase">
+                  <p className="text-default-700 text-xs uppercase tracking-wide">
                     {item.outgoingCount} retiros
                   </p>
                 </div>
-                <span className="text-default-600 text-xs font-semibold">
+                <span className="font-semibold text-default-600 text-xs">
                   {fmtCLP(item.outgoingAmount)}
                 </span>
               </li>

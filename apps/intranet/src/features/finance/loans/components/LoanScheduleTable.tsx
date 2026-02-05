@@ -27,7 +27,7 @@ export default function LoanScheduleTable({
   const columns = getColumns(actions, canManage);
 
   return (
-    <div className="border-default-200 bg-background rounded-2xl border shadow-sm">
+    <div className="rounded-2xl border border-default-200 bg-background shadow-sm">
       <DataTable
         columns={columns}
         data={schedules}

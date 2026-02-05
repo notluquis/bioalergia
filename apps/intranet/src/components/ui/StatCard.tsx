@@ -70,14 +70,14 @@ export function StatCard({
   return (
     <article
       className={cn(
-        "border-default-200 bg-background rounded-2xl border shadow-sm",
+        "rounded-2xl border border-default-200 bg-background shadow-sm",
         sizes.container,
         className,
       )}
     >
       <p
         className={cn(
-          "text-default-500 flex items-center gap-1.5 font-semibold tracking-wide uppercase",
+          "flex items-center gap-1.5 font-semibold text-default-500 uppercase tracking-wide",
           sizes.title,
         )}
       >
@@ -87,9 +87,9 @@ export function StatCard({
       {/* eslint-disable-next-line security/detect-object-injection */}
       <p className={cn("mt-2", toneClasses[tone], sizes.value)}>
         {value}
-        {suffix && <span className="text-default-400 ml-1 text-sm font-normal">{suffix}</span>}
+        {suffix && <span className="ml-1 font-normal text-default-400 text-sm">{suffix}</span>}
       </p>
-      {subtitle && <p className="text-default-400 mt-1 text-xs">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-default-400 text-xs">{subtitle}</p>}
     </article>
   );
 }

@@ -41,13 +41,19 @@ export const clpInt = z.coerce.number().int().safe().default(0);
 export const amountSchema = z
   .union([z.number(), z.string(), z.null()])
   .transform((value) => {
-    if (value == null) return null;
+    if (value == null) {
+      return null;
+    }
     if (typeof value === "number") {
-      if (!Number.isFinite(value)) return Number.NaN;
+      if (!Number.isFinite(value)) {
+        return Number.NaN;
+      }
       return Math.trunc(value);
     }
     const trimmed = value.trim();
-    if (!trimmed) return null;
+    if (!trimmed) {
+      return null;
+    }
     const parsed = Number.parseInt(trimmed, 10);
     if (Number.isNaN(parsed)) {
       return Number.NaN;

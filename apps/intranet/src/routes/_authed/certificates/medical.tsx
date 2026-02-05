@@ -104,7 +104,7 @@ function MedicalCertificatePage() {
         <div className="space-y-6">
           {/* Patient Information */}
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4">Datos del Paciente</h3>
+            <h3 className="mb-4 font-semibold text-foreground text-lg">Datos del Paciente</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <form.Field name="patientName">
                 {(field) => (
@@ -164,7 +164,7 @@ function MedicalCertificatePage() {
 
           {/* Medical Information */}
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4">Información Médica</h3>
+            <h3 className="mb-4 font-semibold text-foreground text-lg">Información Médica</h3>
             <div className="grid gap-4">
               <form.Field name="date">
                 {(field) => (
@@ -186,7 +186,7 @@ function MedicalCertificatePage() {
                   <div>
                     <label
                       htmlFor="diagnosis"
-                      className="block text-sm font-medium text-foreground mb-2"
+                      className="mb-2 block font-medium text-foreground text-sm"
                     >
                       Diagnóstico <span className="text-danger">*</span>
                     </label>
@@ -200,7 +200,7 @@ function MedicalCertificatePage() {
                       placeholder="Ej: cuadro compatible con reacción alérgica"
                     />
                     {field.state.meta.errors.length > 0 && (
-                      <p className="text-danger text-sm mt-1">
+                      <p className="mt-1 text-danger text-sm">
                         {field.state.meta.errors.join(", ")}
                       </p>
                     )}
@@ -213,7 +213,7 @@ function MedicalCertificatePage() {
                   <div>
                     <label
                       htmlFor="symptoms"
-                      className="block text-sm font-medium text-foreground mb-2"
+                      className="mb-2 block font-medium text-foreground text-sm"
                     >
                       Síntomas (opcional)
                     </label>
@@ -234,7 +234,7 @@ function MedicalCertificatePage() {
 
           {/* Rest Period */}
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4">Reposo Médico (opcional)</h3>
+            <h3 className="mb-4 font-semibold text-foreground text-lg">Reposo Médico (opcional)</h3>
             <div className="grid gap-4 sm:grid-cols-3">
               <form.Field name="restDays">
                 {(field) => (
@@ -280,14 +280,14 @@ function MedicalCertificatePage() {
 
           {/* Purpose */}
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-4">Propósito</h3>
+            <h3 className="mb-4 font-semibold text-foreground text-lg">Propósito</h3>
             <div className="grid gap-4">
               <form.Field name="purpose">
                 {(field) => (
                   <div>
                     <label
                       htmlFor="purpose"
-                      className="block text-sm font-medium text-foreground mb-2"
+                      className="mb-2 block font-medium text-foreground text-sm"
                     >
                       Para ser presentado en
                     </label>
@@ -329,7 +329,7 @@ function MedicalCertificatePage() {
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-default-200">
+          <div className="flex justify-end gap-3 border-default-200 border-t pt-4">
             <Button
               type="button"
               variant="ghost"

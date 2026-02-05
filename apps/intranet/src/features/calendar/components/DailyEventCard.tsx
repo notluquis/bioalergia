@@ -25,12 +25,12 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
   const indicatorColor = getCategoryIndicatorColor(event.category);
 
   return (
-    <Card className="group border-default-200 border transition-all hover:shadow-md h-full shadow-sm">
-      <div className="grid grid-cols-[auto_1fr_auto] gap-3 p-3 overflow-visible sm:gap-4 sm:p-4">
+    <Card className="group h-full border border-default-200 shadow-sm transition-all hover:shadow-md">
+      <div className="grid grid-cols-[auto_1fr_auto] gap-3 overflow-visible p-3 sm:gap-4 sm:p-4">
         {/* Time Column - Start, Color Bar, Duration, End */}
         <div className="flex flex-col items-center gap-0.5 text-center">
           {/* Start Time */}
-          <span className="text-sm font-bold tabular-nums">
+          <span className="font-bold text-sm tabular-nums">
             {start ? start.format("HH:mm") : "--:--"}
           </span>
 
@@ -39,13 +39,13 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
 
           {/* Duration */}
           {durationMinutes != null && durationMinutes > 0 && (
-            <span className="text-foreground-500 text-[10px] font-medium whitespace-nowrap">
+            <span className="whitespace-nowrap font-medium text-[10px] text-foreground-500">
               {formatDuration(durationMinutes)}
             </span>
           )}
 
           {/* End Time */}
-          <span className="text-foreground-500 text-xs font-medium tabular-nums">
+          <span className="font-medium text-foreground-500 text-xs tabular-nums">
             {end ? end.format("HH:mm") : "--:--"}
           </span>
         </div>
@@ -53,16 +53,16 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
         {/* Content - Center Column */}
         <div className="min-w-0 space-y-1.5">
           {/* Title */}
-          <h3 className="text-sm font-semibold leading-tight sm:text-base line-clamp-2 break-words">
+          <h3 className="line-clamp-2 break-words font-semibold text-sm leading-tight sm:text-base">
             {event.summary?.trim() ?? "(Sin título)"}
           </h3>
 
           {/* Details Row: Amounts + Attendance */}
-          <div className="text-foreground-600 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-foreground-600 text-xs">
             {event.amountExpected != null && (
               <div className="flex items-center gap-1">
                 <span className="text-[10px] uppercase opacity-60">Esperado</span>
-                <span className="text-foreground font-medium">
+                <span className="font-medium text-foreground">
                   {currencyFormatter.format(event.amountExpected)}
                 </span>
               </div>
@@ -70,7 +70,7 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
             {event.amountPaid != null && (
               <div className="flex items-center gap-1">
                 <span className="text-[10px] uppercase opacity-60">Pagado</span>
-                <span className="text-success font-medium">
+                <span className="font-medium text-success">
                   {currencyFormatter.format(event.amountPaid)}
                 </span>
               </div>
@@ -98,7 +98,7 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
             <Chip
               size="sm"
               variant="soft"
-              className="h-6 text-[10px] font-medium tracking-wide uppercase"
+              className="h-6 font-medium text-[10px] uppercase tracking-wide"
             >
               {event.category}
             </Chip>
@@ -108,7 +108,7 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
               size="sm"
               variant="soft"
               color="warning"
-              className="h-6 text-[10px] font-medium tracking-wide uppercase"
+              className="h-6 font-medium text-[10px] uppercase tracking-wide"
             >
               Control
             </Chip>
@@ -118,7 +118,7 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
               size="sm"
               variant="soft"
               color="accent"
-              className="h-6 text-[10px] font-medium tracking-wide uppercase"
+              className="h-6 font-medium text-[10px] uppercase tracking-wide"
             >
               {event.treatmentStage}
             </Chip>
@@ -128,7 +128,7 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
               size="sm"
               variant="soft"
               color="accent"
-              className="h-6 text-[10px] font-medium tracking-wide uppercase"
+              className="h-6 font-medium text-[10px] uppercase tracking-wide"
             >
               {event.dosageValue} {event.dosageUnit}
             </Chip>

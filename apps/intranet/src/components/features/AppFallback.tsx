@@ -7,7 +7,9 @@ import { type AppFallbackReason, clearAppCaches, onAppFallback } from "@/lib/app
 const PRE_MOUNT_SHELL_ID = "app-fallback";
 
 function normalizeReason(reason?: string | null): AppFallbackReason | null {
-  if (!reason) return null;
+  if (!reason) {
+    return null;
+  }
   if (reason === "chunk" || reason === "offline" || reason === "update" || reason === "unknown") {
     return reason;
   }
@@ -15,12 +17,16 @@ function normalizeReason(reason?: string | null): AppFallbackReason | null {
 }
 
 function readInitialReason(): AppFallbackReason | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined") {
+    return null;
+  }
   return normalizeReason(window.__APP_FALLBACK_REASON__);
 }
 
 function hidePreMountShell() {
-  if (typeof document === "undefined") return;
+  if (typeof document === "undefined") {
+    return;
+  }
   const shell = document.getElementById(PRE_MOUNT_SHELL_ID);
   if (shell) {
     shell.setAttribute("hidden", "");
@@ -98,7 +104,9 @@ export function AppFallback() {
   };
 
   const handleCleanReload = async () => {
-    if (isWorking) return;
+    if (isWorking) {
+      return;
+    }
     setIsWorking(true);
     try {
       await clearAppCaches();
@@ -107,7 +115,9 @@ export function AppFallback() {
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <>

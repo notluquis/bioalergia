@@ -14,7 +14,7 @@ export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
   {
     accessorKey: "id",
     cell: ({ getValue }) => (
-      <span className="text-foreground font-medium">{getValue() as number}</span>
+      <span className="font-medium text-foreground">{getValue() as number}</span>
     ),
     header: "ID",
   },
@@ -74,7 +74,9 @@ export const getSupplyRequestsColumns = (): ColumnDef<SupplyRequest>[] => [
   {
     cell: ({ row, table }) => {
       const meta = table.options.meta as SupplyRequestsTableMeta;
-      if (!meta.isAdmin) return null;
+      if (!meta.isAdmin) {
+        return null;
+      }
 
       return (
         <Select

@@ -28,7 +28,9 @@ export default function NewAttachmentModal({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!file) throw new Error("Debe seleccionar un archivo");
+      if (!file) {
+        throw new Error("Debe seleccionar un archivo");
+      }
 
       const formData = new FormData();
       formData.append("file", file);
@@ -65,10 +67,10 @@ export default function NewAttachmentModal({
     <Modal isOpen={isOpen} onClose={handleClose} title="Cargar Documento">
       <div className="space-y-6">
         <div className="space-y-4">
-          <div className="flex flex-col items-center justify-center border-2 border-dashed border-default-200 rounded-xl p-8 bg-default-50/50 hover:bg-default-50 transition-colors">
+          <div className="flex flex-col items-center justify-center rounded-xl border-2 border-default-200 border-dashed bg-default-50/50 p-8 transition-colors hover:bg-default-50">
             {file ? (
-              <div className="flex items-center gap-3 w-full">
-                <div className="bg-primary/10 p-3 rounded-lg text-primary text-sm font-bold truncate flex-1">
+              <div className="flex w-full items-center gap-3">
+                <div className="flex-1 truncate rounded-lg bg-primary/10 p-3 font-bold text-primary text-sm">
                   {file.name}
                 </div>
                 <Button variant="ghost" size="sm" isIconOnly onClick={() => setFile(null)}>
@@ -76,12 +78,12 @@ export default function NewAttachmentModal({
                 </Button>
               </div>
             ) : (
-              <label className="cursor-pointer flex flex-col items-center gap-2">
-                <div className="bg-primary/10 p-4 rounded-full text-primary">
+              <label className="flex cursor-pointer flex-col items-center gap-2">
+                <div className="rounded-full bg-primary/10 p-4 text-primary">
                   <FileUp size={32} />
                 </div>
-                <span className="text-sm font-medium">Haga clic para seleccionar un archivo</span>
-                <span className="text-xs text-default-300">PDF, Imágenes, etc.</span>
+                <span className="font-medium text-sm">Haga clic para seleccionar un archivo</span>
+                <span className="text-default-300 text-xs">PDF, Imágenes, etc.</span>
                 <input
                   type="file"
                   className="hidden"
@@ -89,7 +91,9 @@ export default function NewAttachmentModal({
                     const f = e.target.files?.[0];
                     if (f) {
                       setFile(f);
-                      if (!name) setName(f.name);
+                      if (!name) {
+                        setName(f.name);
+                      }
                     }
                   }}
                 />
@@ -108,7 +112,9 @@ export default function NewAttachmentModal({
             label="Categoría"
             selectedKey={type}
             onSelectionChange={(key) => {
-              if (key) setType(String(key));
+              if (key) {
+                setType(String(key));
+              }
             }}
           >
             <SelectItem key="CONSENT" textValue="Consentimiento">
@@ -126,7 +132,7 @@ export default function NewAttachmentModal({
           </Select>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-default-100">
+        <div className="flex justify-end gap-3 border-default-100 border-t pt-4">
           <Button variant="ghost" onClick={handleClose} isDisabled={mutation.isPending}>
             Cancelar
           </Button>

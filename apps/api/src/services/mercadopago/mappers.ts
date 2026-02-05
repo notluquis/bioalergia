@@ -15,19 +15,29 @@ type MercadoPagoRowRaw = Record<string, unknown>;
 
 // Helper parsers
 export function parseDate(val: string) {
-  if (!val) return new Date();
+  if (!val) {
+    return new Date();
+  }
   return new Date(val);
 }
 
 export function parseDecimal(val: unknown): number | string {
-  if (!val) return 0;
-  if (typeof val === "string") return val.replace(",", ".");
-  if (typeof val === "number") return val;
+  if (!val) {
+    return 0;
+  }
+  if (typeof val === "string") {
+    return val.replace(",", ".");
+  }
+  if (typeof val === "number") {
+    return val;
+  }
   return 0;
 }
 
 export function parseBigInt(val: string): bigint | undefined {
-  if (!val) return undefined;
+  if (!val) {
+    return undefined;
+  }
   try {
     return BigInt(val);
   } catch {
@@ -36,10 +46,16 @@ export function parseBigInt(val: string): bigint | undefined {
 }
 
 export function parseJson(val: unknown): Record<string, unknown> | undefined {
-  if (!val) return undefined;
+  if (!val) {
+    return undefined;
+  }
   try {
-    if (typeof val === "string") return JSON.parse(val) as Record<string, unknown>;
-    if (typeof val === "object" && val !== null) return val as Record<string, unknown>;
+    if (typeof val === "string") {
+      return JSON.parse(val) as Record<string, unknown>;
+    }
+    if (typeof val === "object" && val !== null) {
+      return val as Record<string, unknown>;
+    }
     return undefined;
   } catch {
     return undefined;

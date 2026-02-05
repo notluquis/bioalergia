@@ -84,7 +84,9 @@ export async function createCounterpart(payload: CounterpartUpsertPayload) {
 
 export async function fetchAccountSuggestions(query: string, limit = 10) {
   const params = new URLSearchParams();
-  if (query) params.set("q", query);
+  if (query) {
+    params.set("q", query);
+  }
   params.set("limit", String(limit));
   const data = await apiClient.get<{ suggestions: CounterpartAccountSuggestion[] }>(
     `/api/counterparts/suggestions?${params.toString()}`,
@@ -112,8 +114,12 @@ export async function fetchCounterpartSummary(
   params?: { from?: string; to?: string },
 ) {
   const search = new URLSearchParams();
-  if (params?.from) search.set("from", params.from);
-  if (params?.to) search.set("to", params.to);
+  if (params?.from) {
+    search.set("from", params.from);
+  }
+  if (params?.to) {
+    search.set("to", params.to);
+  }
   const queryString = search.size > 0 ? `?${search.toString()}` : "";
   const data = await apiClient.get<{ summary: CounterpartSummary }>(
     `/api/counterparts/${counterpartId}/summary${queryString}`,

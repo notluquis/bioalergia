@@ -34,7 +34,9 @@ export function useTimesheetAudit({ employeeIds, ranges }: UseTimesheetAuditOpti
   } = useQuery({
     enabled: shouldFetch,
     queryFn: async () => {
-      if (!firstDay || !lastDay) return [];
+      if (!firstDay || !lastDay) {
+        return [];
+      }
       const data = await fetchMultiEmployeeTimesheets(
         employeeIds,
         dayjs(firstDay).format("YYYY-MM-DD"),

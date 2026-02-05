@@ -33,7 +33,9 @@ const counterpartFormSchema = z.object({
 
   personType: z.enum(["NATURAL", "JURIDICAL"] as const),
   rut: z.string().refine((value) => {
-    if (!value) return true;
+    if (!value) {
+      return true;
+    }
     return validateRut(value);
   }, "RUT inválido"),
 });
@@ -107,7 +109,7 @@ export default function CounterpartForm({
   return (
     <section aria-busy={busy} className="surface-recessed relative space-y-5 p-6">
       {loading && (
-        <div className="bg-background/60 absolute inset-0 z-10 flex items-center justify-center rounded-2xl backdrop-blur-sm">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/60 backdrop-blur-sm">
           <Spinner size="lg" />
         </div>
       )}
@@ -142,7 +144,7 @@ export default function CounterpartForm({
                   value={field.state.value}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-danger mt-1 text-xs">
+                  <p className="mt-1 text-danger text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
@@ -165,7 +167,7 @@ export default function CounterpartForm({
                   value={field.state.value}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-danger mt-1 text-xs">
+                  <p className="mt-1 text-danger text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
@@ -188,7 +190,7 @@ export default function CounterpartForm({
                   <SelectItem key="JURIDICAL">Empresa</SelectItem>
                 </Select>
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-danger mt-1 text-xs">
+                  <p className="mt-1 text-danger text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
@@ -212,7 +214,7 @@ export default function CounterpartForm({
                   ))}
                 </Select>
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-danger mt-1 text-xs">
+                  <p className="mt-1 text-danger text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
@@ -240,7 +242,7 @@ export default function CounterpartForm({
                   value={field.state.value ?? ""}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-danger mt-1 text-xs">
+                  <p className="mt-1 text-danger text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
                   </p>
                 )}
@@ -264,7 +266,7 @@ export default function CounterpartForm({
                     value={field.state.value}
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-danger mt-1 text-xs">
+                    <p className="mt-1 text-danger text-xs">
                       {field.state.meta.errors.map((err) => String(err)).join(", ")}
                     </p>
                   )}
@@ -276,7 +278,7 @@ export default function CounterpartForm({
           {counterpart?.employeeId && (
             <p className="text-default-700 text-xs md:col-span-2">
               Empleado vinculado (ID #{counterpart.employeeId}).{" "}
-              <Link className="text-primary font-semibold" to="/hr/employees">
+              <Link className="font-semibold text-primary" to="/hr/employees">
                 Ver empleados
               </Link>
             </p>

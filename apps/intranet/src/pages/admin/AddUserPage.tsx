@@ -137,7 +137,7 @@ export default function AddUserPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="space-y-2">
-        <h1 className="text-primary text-3xl font-bold">Agregar usuario</h1>
+        <h1 className="font-bold text-3xl text-primary">Agregar usuario</h1>
         <p className="text-default-600">
           Crea un nuevo usuario en el sistema. Se generará una contraseña temporal y el usuario
           deberá completar su configuración de seguridad al iniciar sesión.
@@ -154,12 +154,12 @@ export default function AddUserPage() {
       >
         {/* Opción de vincular a persona existente */}
         {availablePeople.length > 0 ? (
-          <div className="border-info/20 bg-info/5 rounded-xl border p-4">
+          <div className="rounded-xl border border-info/20 bg-info/5 p-4">
             <div className="flex items-start gap-3">
-              <Users className="text-info mt-0.5 h-5 w-5" />
+              <Users className="mt-0.5 h-5 w-5 text-info" />
               <div className="flex-1 space-y-3">
                 <div>
-                  <p className="text-info font-medium">Vincular a persona existente</p>
+                  <p className="font-medium text-info">Vincular a persona existente</p>
                   <p className="text-default-600 text-xs">
                     Si esta persona ya existe en el sistema, puedes vincular el usuario
                     directamente.
@@ -200,11 +200,13 @@ export default function AddUserPage() {
         <div className="grid gap-6 md:grid-cols-2">
           <form.Subscribe selector={(state) => [state.values.personId]}>
             {([personId]) => {
-              if (personId) return null;
+              if (personId) {
+                return null;
+              }
               return (
                 <>
                   <div className="md:col-span-2">
-                    <h3 className="text-foreground mb-4 font-semibold">Datos personales</h3>
+                    <h3 className="mb-4 font-semibold text-foreground">Datos personales</h3>
                   </div>
                   <form.Field name="names">
                     {(field) => (
@@ -257,7 +259,7 @@ export default function AddUserPage() {
           </form.Subscribe>
 
           <div className="md:col-span-2">
-            <h3 className="text-foreground mt-2 mb-4 font-semibold">Datos de cuenta</h3>
+            <h3 className="mt-2 mb-4 font-semibold text-foreground">Datos de cuenta</h3>
           </div>
 
           <div className="md:col-span-2">
@@ -319,11 +321,11 @@ export default function AddUserPage() {
           </form.Subscribe>
         </div>
 
-        <div className="border-primary/20 bg-primary/5 rounded-xl border p-4">
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
           <div className="flex items-start gap-3">
-            <Shield className="text-primary mt-0.5 h-5 w-5" />
+            <Shield className="mt-0.5 h-5 w-5 text-primary" />
             <div className="space-y-1">
-              <p className="text-primary font-medium">Seguridad reforzada</p>
+              <p className="font-medium text-primary">Seguridad reforzada</p>
               <p className="text-default-600 text-xs">
                 Si activas esta opción, el usuario estará <strong>obligado</strong> a configurar
                 Passkey o MFA (Google Authenticator) antes de poder usar el sistema.

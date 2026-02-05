@@ -21,9 +21,15 @@ export default function ServicesAgendaContent() {
   const totals = unifiedAgendaItems.reduce(
     (acc, item) => {
       const dueDate = dayjs(item.schedule.due_date);
-      if (dueDate.isSame(dayjs(), "day")) acc.day += item.schedule.expected_amount;
-      if (dueDate.isSame(dayjs(), "week")) acc.week += item.schedule.expected_amount;
-      if (dueDate.isSame(dayjs(), "month")) acc.month += item.schedule.expected_amount;
+      if (dueDate.isSame(dayjs(), "day")) {
+        acc.day += item.schedule.expected_amount;
+      }
+      if (dueDate.isSame(dayjs(), "week")) {
+        acc.week += item.schedule.expected_amount;
+      }
+      if (dueDate.isSame(dayjs(), "month")) {
+        acc.month += item.schedule.expected_amount;
+      }
       return acc;
     },
     { day: 0, month: 0, week: 0 },
@@ -43,7 +49,7 @@ export default function ServicesAgendaContent() {
         />
 
         <ServicesSurface className="flex min-h-64 items-center justify-center">
-          <div className="text-default-600 flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-3 text-default-600 text-sm">
             <Spinner size="md" />
             <span>Cargando agenda consolidada...</span>
           </div>

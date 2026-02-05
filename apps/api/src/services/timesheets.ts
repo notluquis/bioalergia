@@ -66,7 +66,9 @@ export interface ListTimesheetOptions {
  * Convert time string (HH:MM or HH:MM:SS) to minutes since midnight.
  */
 function timeToMinutes(time: string): number {
-  if (!time) throw new Error("Time string is required");
+  if (!time) {
+    throw new Error("Time string is required");
+  }
   const d = dayjs(time);
   if (d.isValid() && (time.includes("T") || time.includes("-"))) {
     return d.hour() * 60 + d.minute();
@@ -93,7 +95,9 @@ function timeToMinutes(time: string): number {
  * For ISO timestamps, converts to America/Santiago timezone and extracts time
  */
 function normalizeTimeString(time: string): string | null {
-  if (!time) return null;
+  if (!time) {
+    return null;
+  }
 
   // Check if it's an ISO timestamp (contains 'T' or '-')
   const d = dayjs(time);
@@ -108,7 +112,9 @@ function normalizeTimeString(time: string): string | null {
 
   // Match HH:MM or HH:MM:SS format
   const match = time.match(TIME_EXTRACT_PATTERN);
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
 
   const [, hours, minutes, seconds = "00"] = match;
   // biome-ignore lint/style/noNonNullAssertion: regex match guarantee
@@ -118,7 +124,9 @@ function normalizeTimeString(time: string): string | null {
   const s = Number.parseInt(seconds, 10);
 
   // Validate ranges
-  if (h < 0 || h > 23 || m < 0 || m >= 60 || s < 0 || s >= 60) return null;
+  if (h < 0 || h > 23 || m < 0 || m >= 60 || s < 0 || s >= 60) {
+    return null;
+  }
 
   // Return as HH:MM:SS
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
@@ -130,7 +138,9 @@ function normalizeTimeString(time: string): string | null {
  * ZenStack/Prisma extracts only TIME component for PostgreSQL TIME columns
  */
 function timeStringToDate(time: string | null | undefined, referenceDate: Date = new Date()): Date {
-  if (!time) throw new Error("Time string is required for date conversion");
+  if (!time) {
+    throw new Error("Time string is required for date conversion");
+  }
 
   // Format reference date as YYYY-MM-DD in Santiago timezone
   const refDateStr = dayjs(referenceDate).tz(TIMEZONE).format("YYYY-MM-DD");
@@ -171,7 +181,9 @@ function timeStringToDate(time: string | null | undefined, referenceDate: Date =
  * Format Date object from ZenStack to "HH:MM" string for API responses
  */
 function dateToTimeString(date: Date | string | null): string | null {
-  if (!date) return null;
+  if (!date) {
+    return null;
+  }
 
   // If it's already a string in HH:MM or HH:MM:SS format, extract just HH:MM
   if (typeof date === "string") {
@@ -190,7 +202,9 @@ function dateToTimeString(date: Date | string | null): string | null {
   }
 
   const d = dayjs(date);
-  if (!d.isValid()) return null;
+  if (!d.isValid()) {
+    return null;
+  }
   return d.format("HH:mm");
 }
 
@@ -198,7 +212,9 @@ function dateToTimeString(date: Date | string | null): string | null {
  * Map timesheet to TimesheetEntry type.
  */
 function mapTimesheetEntry(entry: EmployeeTimesheet): TimesheetEntry {
-  if (!entry) throw new Error("Entry is null");
+  if (!entry) {
+    throw new Error("Entry is null");
+  }
   return {
     id: Number(entry.id),
     employee_id: entry.employeeId,
@@ -217,7 +233,9 @@ export async function getTimesheetEntryById(id: number): Promise<TimesheetEntry>
   const entry = await db.employeeTimesheet.findUnique({
     where: { id: BigInt(id) },
   });
-  if (!entry) throw new Error("Registro no encontrado");
+  if (!entry) {
+    throw new Error("Registro no encontrado");
+  }
   return mapTimesheetEntry(entry);
 }
 
@@ -434,7 +452,9 @@ async function buildTimesheetUpdateData(
   const existing = await db.employeeTimesheet.findUnique({
     where: { id: BigInt(id) },
   });
-  if (!existing) throw new Error("Registro no encontrado");
+  if (!existing) {
+    throw new Error("Registro no encontrado");
+  }
 
   const referenceDate = existing.workDate;
 
@@ -550,23 +570,26 @@ export function computePayDate(role: string, periodStart: string): string {
   const startDate = new Date(periodStart);
   const nextMonthFirstDay = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
 
-  const roleUpper = role.toUpperCase();
+  const roleUpper = role
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .trim();
 
-  // Técnico en Enfermería Nivel Superior: día 5 calendario del mes siguiente
-  if (
-    roleUpper.includes("TÉCNICO EN ENFERMERÍA NIVEL SUPERIOR") ||
-    roleUpper.includes("TECNICO EN ENFERMERIA NIVEL SUPERIOR")
-  ) {
+  const isTens = roleUpper.includes("TENS") || roleUpper.includes("TECNICO EN ENFERMERIA");
+  const isEnfermeroUniversitario =
+    roleUpper.includes("ENFERMERO UNIVERSITARIO") || roleUpper.includes("ENFERMERA UNIVERSITARIA");
+
+  // TENS: día 5 calendario del mes siguiente
+  if (isTens) {
     return formatDateOnly(
       new Date(nextMonthFirstDay.getFullYear(), nextMonthFirstDay.getMonth(), 5),
     );
   }
 
   // Enfermero Universitario: 5to día hábil del mes siguiente
-  if (
-    roleUpper.includes("ENFERMERO UNIVERSITARIO") ||
-    roleUpper.includes("ENFERMERA UNIVERSITARIA")
-  ) {
+  if (isEnfermeroUniversitario) {
     return formatDateOnly(getNthBusinessDay(nextMonthFirstDay, 5));
   }
 
@@ -711,7 +734,9 @@ export async function buildMonthlySummary(from: string, to: string, employeeId?:
 
   for (const row of summaryData) {
     const employee = employeeMap.get(row.employeeId);
-    if (!employee) continue;
+    if (!employee) {
+      continue;
+    }
     employeesWithTimesheets.add(row.employeeId);
     const summary = buildEmployeeSummary(employee, {
       workedMinutes: Number(row._sum.workedMinutes ?? 0),

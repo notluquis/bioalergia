@@ -71,7 +71,9 @@ export function CalendarFilterPanel({
 
   // Calculate preview count based on current selection
   const liveApplyCount = React.useMemo(() => {
-    if (!filters.categories.length) return applyCount;
+    if (!filters.categories.length) {
+      return applyCount;
+    }
     const selectedSet = new Set(filters.categories);
     return availableCategories
       .filter((c) => selectedSet.has(c.category ?? NULL_CATEGORY_VALUE))
@@ -86,7 +88,7 @@ export function CalendarFilterPanel({
   // If layout is dropdown, use the new specific vertical design
   if (isDropdownLayout) {
     return (
-      <form onSubmit={handleSubmit} className={cn("p-4 space-y-5", formClassName, className)}>
+      <form onSubmit={handleSubmit} className={cn("space-y-5 p-4", formClassName, className)}>
         {/* Categories Select */}
         <div className="space-y-1.5">
           <MultiSelectFilter
@@ -112,7 +114,7 @@ export function CalendarFilterPanel({
               onChange={(e) => onFilterChange("search", e.target.value)}
               startContent={<Search className="text-default-400" size={18} />}
               containerClassName="h-[44px] rounded-xl"
-              className="bg-default-100/50 hover:bg-default-100 border-default-200"
+              className="border-default-200 bg-default-100/50 hover:bg-default-100"
             />
           </div>
         )}
@@ -120,7 +122,7 @@ export function CalendarFilterPanel({
         {/* Date Range (if enabled) - matching style */}
         {showDateRange && (
           <div className="space-y-1.5">
-            <span className="text-[10px] font-semibold text-default-600 uppercase tracking-wider block mb-1.5">
+            <span className="mb-1.5 block font-semibold text-[10px] text-default-600 uppercase tracking-wider">
               Rango de Fechas
             </span>
             <div className="flex gap-2">
@@ -159,7 +161,7 @@ export function CalendarFilterPanel({
             variant="ghost"
             size="sm"
             onClick={onReset}
-            className="text-default-400 hover:text-foreground px-3 font-medium h-10 rounded-xl"
+            className="h-10 rounded-xl px-3 font-medium text-default-400 hover:text-foreground"
             startContent={<RotateCcw size={14} />}
           >
             Limpiar
@@ -168,7 +170,7 @@ export function CalendarFilterPanel({
           <Button
             type="submit"
             variant="primary"
-            className="font-semibold h-10 px-6 rounded-xl shadow-md shadow-primary/20"
+            className="h-10 rounded-xl px-6 font-semibold shadow-md shadow-primary/20"
           >
             {applyLabel}
           </Button>

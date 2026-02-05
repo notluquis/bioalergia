@@ -17,7 +17,9 @@ export function ClassificationPagination({
   loading,
   onPageChange,
 }: ClassificationPaginationProps) {
-  if (totalCount <= pageSize) return null;
+  if (totalCount <= pageSize) {
+    return null;
+  }
 
   return (
     <div className="flex items-center justify-center gap-2 pt-4">
@@ -64,9 +66,9 @@ export function ClassificationPagination({
           <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
         </svg>
       </Button>
-      <div className="bg-default-50 flex items-center gap-2 rounded-lg px-4 py-2 text-sm">
+      <div className="flex items-center gap-2 rounded-lg bg-default-50 px-4 py-2 text-sm">
         <span className="text-default-500">Página</span>
-        <span className="text-foreground font-semibold tabular-nums">{page + 1}</span>
+        <span className="font-semibold text-foreground tabular-nums">{page + 1}</span>
         <span className="text-default-500">de {totalPages}</span>
       </div>
       <Button

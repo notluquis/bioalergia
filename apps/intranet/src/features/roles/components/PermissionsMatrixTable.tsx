@@ -75,23 +75,23 @@ export function PermissionsMatrixTable({
   const gridTemplateColumns = `320px repeat(${displayRoles.length}, minmax(140px, 1fr))`;
 
   return (
-    <div className="border-default-200 w-full overflow-x-auto border-t">
+    <div className="w-full overflow-x-auto border-default-200 border-t">
       <div className="min-w-fit" style={{ display: "grid", gridTemplateColumns }}>
         {/* Header Row */}
-        <div className="bg-background border-default-200 sticky top-0 left-0 z-20 border-r border-b px-6 py-4 text-left font-bold">
+        <div className="sticky top-0 left-0 z-20 border-default-200 border-r border-b bg-background px-6 py-4 text-left font-bold">
           Permiso / acción
         </div>
         {displayRoles.map((role) => (
           <div
-            className="group hover:bg-default-50/50 border-default-200 relative flex flex-col items-center justify-start border-b p-4 text-center align-top"
+            className="group relative flex flex-col items-center justify-start border-default-200 border-b p-4 text-center align-top hover:bg-default-50/50"
             key={role.id}
           >
             <div className="flex flex-col items-center gap-1">
-              <span className="line-clamp-2 text-base leading-tight font-bold" title={role.name}>
+              <span className="line-clamp-2 font-bold text-base leading-tight" title={role.name}>
                 {role.name}
               </span>
               <span
-                className="line-clamp-2 text-xs font-normal opacity-70"
+                className="line-clamp-2 font-normal text-xs opacity-70"
                 title={role.description || ""}
               >
                 {role.description || "Sin descripción"}
@@ -150,9 +150,9 @@ export function PermissionsMatrixTable({
           <Fragment key={section.title}>
             {/* Section Title & Bulk Toggle */}
             {/* Section Title & Bulk Toggle */}
-            <div className="border-default-200 sticky left-0 z-10 flex border-r border-b">
+            <div className="sticky left-0 z-10 flex border-default-200 border-r border-b">
               <button
-                className="bg-default-50/50 hover:bg-default-50/70 flex flex-1 cursor-pointer items-center gap-2 py-3 pl-4 text-xs font-bold tracking-widest uppercase transition-colors"
+                className="flex flex-1 cursor-pointer items-center gap-2 bg-default-50/50 py-3 pl-4 font-bold text-xs uppercase tracking-widest transition-colors hover:bg-default-50/70"
                 onClick={() => {
                   toggleSection(section.title);
                 }}
@@ -168,7 +168,7 @@ export function PermissionsMatrixTable({
             </div>
             {displayRoles.map((role) => (
               <div
-                className="bg-default-50/50 hover:bg-default-50/70 border-default-200 flex items-center justify-center border-b p-0 transition-colors"
+                className="flex items-center justify-center border-default-200 border-b bg-default-50/50 p-0 transition-colors hover:bg-default-50/70"
                 key={role.id}
               >
                 <BulkToggleCell
@@ -193,15 +193,15 @@ export function PermissionsMatrixTable({
                   if (hasMultiple) {
                     return (
                       <Fragment key={item.label}>
-                        <div className="border-default-200 sticky left-0 z-10 flex border-r border-b">
+                        <div className="sticky left-0 z-10 flex border-default-200 border-r border-b">
                           <button
-                            className="bg-background/50 hover:bg-default-50/20 flex flex-1 cursor-pointer items-center gap-2 py-3 pl-8 text-sm font-semibold transition-colors"
+                            className="flex flex-1 cursor-pointer items-center gap-2 bg-background/50 py-3 pl-8 font-semibold text-sm transition-colors hover:bg-default-50/20"
                             onClick={() => {
                               toggleItem(itemKey);
                             }}
                             type="button"
                           >
-                            <div className="text-default-300 flex h-4 w-4 items-center justify-center">
+                            <div className="flex h-4 w-4 items-center justify-center text-default-300">
                               {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                             </div>
                             <item.icon className="h-4 w-4 opacity-70" />
@@ -210,7 +210,7 @@ export function PermissionsMatrixTable({
                         </div>
                         {displayRoles.map((role) => (
                           <div
-                            className="bg-background/50 hover:bg-default-50/20 border-default-200 flex items-center justify-center border-b p-0 transition-colors"
+                            className="flex items-center justify-center border-default-200 border-b bg-background/50 p-0 transition-colors hover:bg-default-50/20"
                             key={role.id}
                           >
                             <BulkToggleCell
@@ -241,7 +241,9 @@ export function PermissionsMatrixTable({
                   }
 
                   const perm = item.relatedPermissions[0];
-                  if (!perm) return null;
+                  if (!perm) {
+                    return null;
+                  }
 
                   const actionMap: Record<string, string> = {
                     create: "Crear",
@@ -254,12 +256,12 @@ export function PermissionsMatrixTable({
 
                   return (
                     <Fragment key={perm.id}>
-                      <div className="bg-background border-default-200 sticky left-0 z-10 flex flex-col justify-center border-r border-b py-3 pl-8">
-                        <span className="flex items-center gap-2 text-sm font-medium">
+                      <div className="sticky left-0 z-10 flex flex-col justify-center border-default-200 border-r border-b bg-background py-3 pl-8">
+                        <span className="flex items-center gap-2 font-medium text-sm">
                           <item.icon className="h-4 w-4 opacity-70" />
                           {displayLabel}
                         </span>
-                        <span className="text-default-500 pl-6 font-mono text-[10px]">
+                        <span className="pl-6 font-mono text-[10px] text-default-500">
                           {perm.action} • {perm.subject}
                         </span>
                       </div>
@@ -311,11 +313,11 @@ function PermissionCell({
         type="button"
       >
         {hasAccess ? (
-          <div className="bg-primary hover:bg-primary-focus flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
+          <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary shadow-sm transition-transform hover:bg-primary-focus active:scale-95">
             <Check className="text-primary-foreground" size={12} />
           </div>
         ) : (
-          <div className="border-default-200 bg-background group-hover:border-primary/50 group-hover:bg-primary/5 h-5 w-5 rounded-md border-2 transition-colors" />
+          <div className="h-5 w-5 rounded-md border-2 border-default-200 bg-background transition-colors group-hover:border-primary/50 group-hover:bg-primary/5" />
         )}
       </button>
     </div>
@@ -345,9 +347,9 @@ function PermissionRow({
 
   return (
     <div className="contents">
-      <div className="bg-background border-default-200 sticky left-0 z-10 flex flex-col justify-center border-r border-b py-2 pl-16 text-sm">
+      <div className="sticky left-0 z-10 flex flex-col justify-center border-default-200 border-r border-b bg-background py-2 pl-16 text-sm">
         <span className="flex items-center gap-2 font-medium">{actionLabel}</span>
-        <span className="text-default-500 font-mono text-[10px]">
+        <span className="font-mono text-[10px] text-default-500">
           {perm.action} • {perm.subject}
         </span>
       </div>

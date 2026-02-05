@@ -10,10 +10,14 @@ const app = new Hono();
 
 app.get("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Loan");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const loans = await listLoans();
   return reply(c, { status: "ok", loans });
@@ -21,10 +25,14 @@ app.get("/", async (c) => {
 
 app.post("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canCreate = await hasPermission(user.id, "create", "Loan");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const body = await c.req.json();
   const parsed = loanCreateSchema.safeParse(body);
@@ -52,10 +60,14 @@ app.post("/", async (c) => {
 
 app.get("/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Loan");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
@@ -72,10 +84,14 @@ app.get("/:id", async (c) => {
 
 app.put("/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Loan");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
@@ -103,10 +119,14 @@ app.put("/:id", async (c) => {
 
 app.delete("/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canDelete = await hasPermission(user.id, "delete", "Loan");
-  if (!canDelete) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canDelete) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
@@ -120,10 +140,14 @@ app.delete("/:id", async (c) => {
 // POST /:id/schedules - Regenerate loan schedules
 app.post("/:id/schedules", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Loan");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {

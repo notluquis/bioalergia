@@ -14,7 +14,9 @@ export const personalFinanceRoutes = new Hono();
 async function getAuthDb(c: Context) {
   const user = await getSessionUser(c);
   const authContext = createAuthContext(user);
-  if (!authContext) throw new Error("Unauthorized");
+  if (!authContext) {
+    throw new Error("Unauthorized");
+  }
   return authDb.$setAuth(authContext);
 }
 
@@ -79,7 +81,9 @@ personalFinanceRoutes.get("/credits/:id", async (c) => {
     },
   });
 
-  if (!credit) return reply(c, { error: "Credit not found" }, 404);
+  if (!credit) {
+    return reply(c, { error: "Credit not found" }, 404);
+  }
   return reply(c, credit);
 });
 

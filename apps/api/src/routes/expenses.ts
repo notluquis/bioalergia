@@ -10,10 +10,14 @@ const app = new Hono();
 // GET / - List monthly expenses
 app.get("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Expense");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   // Return empty list - feature not implemented
   return reply(c, { status: "ok", expenses: [] });
@@ -22,10 +26,14 @@ app.get("/", async (c) => {
 // GET /stats - Get expense statistics
 app.get("/stats", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Expense");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   return reply(c, { status: "ok", stats: [] });
 });
@@ -33,10 +41,14 @@ app.get("/stats", async (c) => {
 // GET /:publicId - Get expense detail
 app.get("/:publicId", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Expense");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   return reply(c, { status: "error", message: "MonthlyExpense feature not yet implemented" }, 501);
 });
@@ -44,10 +56,14 @@ app.get("/:publicId", async (c) => {
 // POST / - Create expense
 app.post("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canCreate = await hasPermission(user.id, "create", "Expense");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   return reply(c, { status: "error", message: "MonthlyExpense feature not yet implemented" }, 501);
 });
@@ -55,10 +71,14 @@ app.post("/", async (c) => {
 // PUT /:publicId - Update expense
 app.put("/:publicId", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Expense");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   return reply(c, { status: "error", message: "MonthlyExpense feature not yet implemented" }, 501);
 });
@@ -66,10 +86,14 @@ app.put("/:publicId", async (c) => {
 // POST /:publicId/link - Link transaction to expense
 app.post("/:publicId/link", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Expense");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   return reply(c, { status: "error", message: "MonthlyExpense feature not yet implemented" }, 501);
 });
@@ -77,10 +101,14 @@ app.post("/:publicId/link", async (c) => {
 // POST /:publicId/unlink - Unlink transaction from expense
 app.post("/:publicId/unlink", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Expense");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   return reply(c, { status: "error", message: "MonthlyExpense feature not yet implemented" }, 501);
 });

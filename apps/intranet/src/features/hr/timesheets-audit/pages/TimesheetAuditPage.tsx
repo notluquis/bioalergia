@@ -118,7 +118,9 @@ export default function TimesheetAuditPage() {
     }
 
     // Custom: use selected weeks
-    if (selectedWeekKeys.length === 0 || !selectedMonth) return [];
+    if (selectedWeekKeys.length === 0 || !selectedMonth) {
+      return [];
+    }
 
     return selectedWeekKeys
       .map((key) => {
@@ -176,7 +178,9 @@ export default function TimesheetAuditPage() {
 
   // Format range summary
   const rangeSummary = (() => {
-    if (effectiveRanges.length === 0) return "";
+    if (effectiveRanges.length === 0) {
+      return "";
+    }
     const first = dayjs(effectiveRanges[0]?.start);
     const last = dayjs(effectiveRanges.at(-1)?.end);
     return `${first.format("D MMM")} → ${last.format("D MMM YYYY")}`;
@@ -274,13 +278,13 @@ function PeriodSelectionPanel({
   weeksForMonth: WeekDefinition[];
 }) {
   return (
-    <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
+    <div className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-3">
         <Chip color="accent" size="lg" variant="primary">
           1
         </Chip>
-        <h2 className="text-foreground text-lg font-semibold">Selecciona el periodo</h2>
-        {rangeSummary && <span className="text-default-500 ml-auto text-sm">({rangeSummary})</span>}
+        <h2 className="font-semibold text-foreground text-lg">Selecciona el periodo</h2>
+        {rangeSummary && <span className="ml-auto text-default-500 text-sm">({rangeSummary})</span>}
       </div>
 
       <div className="overflow-x-auto pb-2">
@@ -301,7 +305,7 @@ function PeriodSelectionPanel({
       </div>
 
       {quickRange === "custom" && (
-        <div className="bg-default-50/50 mt-4 rounded-xl">
+        <div className="mt-4 rounded-xl bg-default-50/50">
           <Button
             className="w-full justify-between px-4 py-3"
             onPress={() => setCustomWeeksOpen(!customWeeksOpen)}
@@ -366,14 +370,14 @@ function PeriodSelectionPanel({
                       onPress={() => handleWeekToggle(week.key)}
                       variant="ghost"
                     >
-                      <div className="text-sm font-medium">{week.label}</div>
+                      <div className="font-medium text-sm">{week.label}</div>
                     </Button>
                   );
                 })}
               </div>
 
               {selectedWeekKeys.length === 0 && (
-                <p className="text-warning text-sm">Selecciona al menos una semana</p>
+                <p className="text-sm text-warning">Selecciona al menos una semana</p>
               )}
             </div>
           </SmoothCollapse>
@@ -401,13 +405,13 @@ function EmployeeSelectionPanel({
   setSelectedEmployeeIds: (ids: number[]) => void;
 }) {
   return (
-    <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
+    <div className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-3">
         <Chip color="accent" size="lg" variant="primary">
           2
         </Chip>
-        <h2 className="text-foreground text-lg font-semibold">Selecciona empleados</h2>
-        <span className="text-default-500 ml-auto text-sm">
+        <h2 className="font-semibold text-foreground text-lg">Selecciona empleados</h2>
+        <span className="ml-auto text-default-500 text-sm">
           {selectedEmployeeIds.length}/{MAX_EMPLOYEES}
         </span>
       </div>
@@ -416,7 +420,9 @@ function EmployeeSelectionPanel({
         <div className="mb-4 flex flex-wrap gap-2">
           {selectedEmployeeIds.map((id) => {
             const emp = activeEmployees.find((e) => e.id === id);
-            if (!emp) return null;
+            if (!emp) {
+              return null;
+            }
             return (
               <Chip className="gap-2 px-3 py-2" color="accent" key={id} variant="primary">
                 <span>{emp.full_name}</span>
@@ -459,13 +465,13 @@ function EmployeeSelectionPanel({
       )}
 
       {selectedEmployeeIds.length === 0 && (
-        <p className="text-warning mt-2 text-sm">
+        <p className="mt-2 text-sm text-warning">
           Selecciona al menos 1 empleado para ver la auditoría
         </p>
       )}
 
       {isMaxEmployees && (
-        <p className="text-default-500 mt-2 text-sm">
+        <p className="mt-2 text-default-500 text-sm">
           Máximo {MAX_EMPLOYEES} empleados simultáneos
         </p>
       )}
@@ -486,37 +492,39 @@ function ResultsSummaryPanel({
   totalOverlapDays: number;
   totalOverlapPairs: number;
 }) {
-  if (!canShowCalendar) return null;
+  if (!canShowCalendar) {
+    return null;
+  }
   return (
-    <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
+    <div className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
       <div className="mb-6 flex items-center gap-3">
         <Chip color="accent" size="lg" variant="primary">
           3
         </Chip>
-        <h2 className="text-foreground text-lg font-semibold">Resultados del análisis</h2>
+        <h2 className="font-semibold text-foreground text-lg">Resultados del análisis</h2>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="border-default-200 bg-background rounded-xl border p-4">
+        <div className="rounded-xl border border-default-200 bg-background p-4">
           <div className="text-default-600 text-sm">Periodos</div>
-          <div className="text-primary mt-2 text-2xl font-bold">{rangesCount}</div>
+          <div className="mt-2 font-bold text-2xl text-primary">{rangesCount}</div>
         </div>
-        <div className="border-default-200 bg-background rounded-xl border p-4">
+        <div className="rounded-xl border border-default-200 bg-background p-4">
           <div className="text-default-600 text-sm">Registros</div>
-          <div className="text-foreground mt-2 text-2xl font-bold">{entriesCount}</div>
+          <div className="mt-2 font-bold text-2xl text-foreground">{entriesCount}</div>
         </div>
-        <div className="border-default-200 bg-background rounded-xl border p-4">
+        <div className="rounded-xl border border-default-200 bg-background p-4">
           <div className="text-default-600 text-sm">Días con alertas</div>
           <div
-            className={`mt-2 text-2xl font-bold ${totalOverlapDays > 0 ? "text-warning" : "text-success"}`}
+            className={`mt-2 font-bold text-2xl ${totalOverlapDays > 0 ? "text-warning" : "text-success"}`}
           >
             {totalOverlapDays}
           </div>
         </div>
-        <div className="border-default-200 bg-background rounded-xl border p-4">
+        <div className="rounded-xl border border-default-200 bg-background p-4">
           <div className="text-default-600 text-sm">Conflictos</div>
           <div
-            className={`mt-2 text-2xl font-bold ${totalOverlapPairs > 0 ? "text-danger" : "text-success"}`}
+            className={`mt-2 font-bold text-2xl ${totalOverlapPairs > 0 ? "text-danger" : "text-success"}`}
           >
             {totalOverlapPairs}
           </div>
@@ -537,9 +545,9 @@ function AuditEmptyState({
     return (
       <Card className="shadow-sm">
         <CardContent className="flex flex-col items-center py-16 text-center">
-          <Users className="text-default-200 mb-4 h-12 w-12" />
-          <h3 className="text-default-600 text-lg font-semibold">Selecciona empleados</h3>
-          <p className="text-default-400 max-w-md text-sm">
+          <Users className="mb-4 h-12 w-12 text-default-200" />
+          <h3 className="font-semibold text-default-600 text-lg">Selecciona empleados</h3>
+          <p className="max-w-md text-default-400 text-sm">
             Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar
             solapamientos
           </p>
@@ -570,10 +578,12 @@ function CalendarPanel({
   focusDate: Date | null;
   selectedEmployeeIds: number[];
 }) {
-  if (!canShowCalendar) return null;
+  if (!canShowCalendar) {
+    return null;
+  }
   return (
-    <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
-      <h2 className="text-foreground mb-6 text-lg font-semibold">Calendario de auditoría</h2>
+    <div className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
+      <h2 className="mb-6 font-semibold text-foreground text-lg">Calendario de auditoría</h2>
       <Suspense
         fallback={
           <div className="flex h-64 items-center justify-center">
@@ -604,9 +614,11 @@ function LegendPanel({
   onToggle: () => void;
   show: boolean;
 }) {
-  if (!show || entriesCount === 0) return null;
+  if (!show || entriesCount === 0) {
+    return null;
+  }
   return (
-    <div className="border-default-200 bg-background rounded-2xl border shadow-sm">
+    <div className="rounded-2xl border border-default-200 bg-background shadow-sm">
       <Button className="w-full justify-between px-4 py-3" onPress={onToggle} variant="ghost">
         <span>📋 Guía de interpretación</span>
         <ChevronDown
@@ -618,30 +630,30 @@ function LegendPanel({
         <div className="px-4 pt-0 pb-4">
           <div className="grid gap-6 pt-4 sm:grid-cols-2">
             <div className="flex items-start gap-3">
-              <div className="bg-success mt-1 h-4 w-4 shrink-0 rounded" />
+              <div className="mt-1 h-4 w-4 shrink-0 rounded bg-success" />
               <div>
-                <p className="text-foreground font-semibold">Sin conflicto</p>
+                <p className="font-semibold text-foreground">Sin conflicto</p>
                 <p className="text-default-600 text-sm">Turnos sin solapamiento</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <div className="bg-danger mt-1 h-4 w-4 shrink-0 rounded" />
+              <div className="mt-1 h-4 w-4 shrink-0 rounded bg-danger" />
               <div>
-                <p className="text-foreground font-semibold">Conflicto detectado</p>
+                <p className="font-semibold text-foreground">Conflicto detectado</p>
                 <p className="text-default-600 text-sm">Horarios traslapados entre empleados</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-lg">👩‍⚕️</span>
               <div>
-                <p className="text-foreground font-semibold">Compatibles</p>
+                <p className="font-semibold text-foreground">Compatibles</p>
                 <p className="text-default-600 text-sm">Enfermero + TENS pueden coexistir</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-lg">⌛</span>
               <div>
-                <p className="text-foreground font-semibold">Tooltip</p>
+                <p className="font-semibold text-foreground">Tooltip</p>
                 <p className="text-default-600 text-sm">
                   Pasa el cursor o toca un bloque para ver detalles del conflicto
                 </p>

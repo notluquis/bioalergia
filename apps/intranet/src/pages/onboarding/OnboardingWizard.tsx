@@ -28,26 +28,26 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
   return (
     <div className="mb-4 p-4">
       <div className="relative mx-auto flex max-w-4xl items-center justify-between px-4">
-        <div className="bg-default-100 absolute top-1/2 left-0 z-0 h-0.5 w-full -translate-y-1/2" />
+        <div className="absolute top-1/2 left-0 z-0 h-0.5 w-full -translate-y-1/2 bg-default-100" />
         <div
-          className="bg-primary absolute top-1/2 left-0 z-0 h-0.5 -translate-y-1/2 transition-all duration-500"
+          className="absolute top-1/2 left-0 z-0 h-0.5 -translate-y-1/2 bg-primary transition-all duration-500"
           style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
         />
         {STEPS.map((step, idx) => (
           <div className="relative z-10 flex flex-col items-center gap-2 px-1" key={step.id}>
             <div
               className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full border-4 text-xs font-bold transition-all duration-300 sm:h-10 sm:w-10 sm:text-sm",
+                "flex h-8 w-8 items-center justify-center rounded-full border-4 font-bold text-xs transition-all duration-300 sm:h-10 sm:w-10 sm:text-sm",
                 idx <= currentStep
-                  ? "bg-primary text-primary-foreground border-primary shadow-primary/30 scale-110 shadow-lg"
-                  : "bg-background text-default-400 border-default-100",
+                  ? "scale-110 border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                  : "border-default-100 bg-background text-default-400",
               )}
             >
               {idx < currentStep ? <Check size={14} strokeWidth={3} /> : idx + 1}
             </div>
             <span
               className={cn(
-                "absolute top-full mt-2 text-[10px] font-medium tracking-wider whitespace-nowrap uppercase transition-colors",
+                "absolute top-full mt-2 whitespace-nowrap font-medium text-[10px] uppercase tracking-wider transition-colors",
                 idx <= currentStep ? "text-primary" : "text-default-500",
                 "hidden sm:block",
                 idx === currentStep && "block",
@@ -70,7 +70,9 @@ function StepContent({
   currentStep: number;
   logic: ReturnType<typeof useOnboardingForm>;
 }) {
-  if (!logic.profile) return null;
+  if (!logic.profile) {
+    return null;
+  }
   type M = { mutate: (x?: string) => void };
   const mf = logic.mutations.mfaSetup as unknown as M;
   const mv = logic.mutations.mfaVerify as unknown as M;
@@ -154,8 +156,8 @@ export default function OnboardingWizard() {
   }, [logic.mutations.finalSubmit.isSuccess, navigate]);
 
   return (
-    <div className="bg-default-50 flex min-h-screen items-center justify-center p-4">
-      <div className="bg-background flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl shadow-xl">
+    <div className="flex min-h-screen items-center justify-center bg-default-50 p-4">
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-background shadow-xl">
         <ProgressBar currentStep={logic.currentStep} />
         <div className="flex-1 overflow-y-auto p-6 sm:p-8">
           <StepContent currentStep={logic.currentStep} logic={logic} />

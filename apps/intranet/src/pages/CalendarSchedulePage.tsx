@@ -107,7 +107,7 @@ function CalendarSchedulePage() {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
-                className="text-[11px] font-medium uppercase tracking-wide"
+                className="font-medium text-[11px] uppercase tracking-wide"
                 isDisabled={isCurrentWeek}
                 onPress={goToThisWeek}
                 variant="tertiary"
@@ -125,7 +125,7 @@ function CalendarSchedulePage() {
               </Button>
             </ButtonGroup>
             <div className="hidden items-center gap-2 text-sm sm:flex">
-              <span className="text-default-600 font-medium">{rangeLabel}</span>
+              <span className="font-medium text-default-600">{rangeLabel}</span>
               {isNextWeek && (
                 <Chip size="sm" variant="secondary" color="default" className="text-[11px]">
                   Próxima semana
@@ -184,7 +184,7 @@ function CalendarSchedulePage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs sm:hidden">
-          <span className="text-default-500 font-medium">{rangeLabel}</span>
+          <span className="font-medium text-default-500">{rangeLabel}</span>
           {isNextWeek && (
             <Chip size="sm" variant="secondary" color="default" className="text-[11px]">
               Próxima semana

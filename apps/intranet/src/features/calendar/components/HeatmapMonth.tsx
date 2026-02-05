@@ -30,21 +30,35 @@ const INTENSITY_COLORS = {
 };
 
 function getIntensity(count: number, max: number): 0 | 1 | 2 | 3 | 4 {
-  if (count === 0) return 0;
+  if (count === 0) {
+    return 0;
+  }
 
   // For small max values, map directly to preserve distinctness
   if (max < 10) {
-    if (count <= 2) return 1;
-    if (count <= 4) return 2;
-    if (count <= 6) return 3;
+    if (count <= 2) {
+      return 1;
+    }
+    if (count <= 4) {
+      return 2;
+    }
+    if (count <= 6) {
+      return 3;
+    }
     return 4;
   }
 
   // For larger datasets, use quartiles
   const ratio = count / max;
-  if (ratio > 0.8) return 4;
-  if (ratio > 0.5) return 3;
-  if (ratio > 0.2) return 2;
+  if (ratio > 0.8) {
+    return 4;
+  }
+  if (ratio > 0.5) {
+    return 3;
+  }
+  if (ratio > 0.2) {
+    return 2;
+  }
   return 1;
 }
 
@@ -74,7 +88,9 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
   const [tooltipTrigger, setTooltipTrigger] = useState<"focus" | "hover">("hover");
 
   useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
     const isTouch = window.matchMedia("(hover: none)").matches;
     setTooltipTrigger(isTouch ? "focus" : "hover");
   }, []);
@@ -163,17 +179,17 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
   }, [dates]);
 
   return (
-    <Card className="border-default-200 flex flex-col overflow-hidden rounded-2xl border shadow-sm">
-      <div className="border-default-200/50 bg-content1/50 flex items-center justify-between border-b px-4 py-3 backdrop-blur-sm">
-        <h3 className="text-foreground text-sm font-bold capitalize">{month.format("MMMM")}</h3>
-        <span className="text-foreground-500 text-xs font-medium">{month.format("YYYY")}</span>
+    <Card className="flex flex-col overflow-hidden rounded-2xl border border-default-200 shadow-sm">
+      <div className="flex items-center justify-between border-default-200/50 border-b bg-content1/50 px-4 py-3 backdrop-blur-sm">
+        <h3 className="font-bold text-foreground text-sm capitalize">{month.format("MMMM")}</h3>
+        <span className="font-medium text-foreground-500 text-xs">{month.format("YYYY")}</span>
       </div>
 
       <div className="grid grid-cols-7 gap-1 p-4">
         {/* Weekday headers */}
         {WEEKDAYS.map((d) => (
           <div
-            className="text-foreground-400 py-2 text-center text-[10px] font-bold tracking-widest uppercase select-none"
+            className="select-none py-2 text-center font-bold text-[10px] text-foreground-400 uppercase tracking-widest"
             key={d}
           >
             {d}
@@ -189,7 +205,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
           const cellButton = (
             <Button
               className={clsx(
-                "relative flex h-full w-full min-h-0 min-w-0 aspect-square cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
+                "relative flex aspect-square h-full min-h-0 w-full min-w-0 cursor-default flex-col items-center justify-center overflow-hidden rounded-md transition-all duration-200",
                 // Default empty state
                 "bg-default-100/50 text-foreground-500",
                 // Intensity colors
@@ -198,11 +214,11 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                 {
                   "cursor-pointer font-semibold": cell.total > 0,
                   // TODAY indicator
-                  "ring-warning ring-offset-content1 shadow-warning/40 z-10 shadow-lg ring-2 ring-offset-2":
+                  "z-10 shadow-lg shadow-warning/40 ring-2 ring-warning ring-offset-2 ring-offset-content1":
                     cell.isToday,
                 },
                 !cell.isToday &&
-                  "hover:ring-primary hover:ring-offset-content1 hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-offset-2",
+                  "hover:z-10 hover:scale-110 hover:shadow-lg hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-content1",
               )}
               size="sm"
               variant="ghost"
@@ -211,7 +227,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
               <span
                 className={clsx(
                   "absolute top-0.5 left-1 text-[10px] leading-none opacity-60",
-                  cell.total > 0 && "text-[9px] font-normal opacity-80",
+                  cell.total > 0 && "font-normal text-[9px] opacity-80",
                 )}
               >
                 {cell.dayNumber}
@@ -219,7 +235,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
 
               {/* Event Count */}
               {cell.total > 0 && (
-                <span className="mt-1 text-sm font-bold tracking-tight shadow-sm drop-shadow-sm">
+                <span className="mt-1 font-bold text-sm tracking-tight shadow-sm drop-shadow-sm">
                   {cell.total}
                 </span>
               )}
@@ -228,7 +244,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
 
           const cellDetails =
             cell.total > 0 ? (
-              <div className="bg-content1 text-foreground border-default-200 rounded-lg border p-3 text-xs shadow-xl">
+              <div className="rounded-lg border border-default-200 bg-content1 p-3 text-foreground text-xs shadow-xl">
                 <p className="mb-1 font-bold">{cell.date.format("dddd DD MMMM")}</p>
                 <div className="space-y-0.5">
                   <p>
@@ -271,21 +287,21 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
       </div>
 
       {/* Footer Summary */}
-      <div className="bg-content1/30 border-default-200/50 border-t px-4 py-2 text-[10px]">
-        <div className="text-foreground-500 flex flex-wrap items-center justify-between gap-2">
+      <div className="border-default-200/50 border-t bg-content1/30 px-4 py-2 text-[10px]">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-foreground-500">
           <span className="font-semibold">Σ {monthTotals.events} eventos</span>
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
               <Tooltip.Trigger>
                 <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Esperado:{" "}
-                  <span className="text-foreground font-medium">
+                  <span className="font-medium text-foreground">
                     {fmtCLP(monthTotals.expected)}
                   </span>
                 </Button>
               </Tooltip.Trigger>
               <Tooltip.Content
-                className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs"
+                className="max-w-[min(90vw,220px)] rounded-lg border border-default-200 bg-content1 p-2 text-foreground text-xs"
                 showArrow
               >
                 Total esperado del mes completo
@@ -295,11 +311,11 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
               <Tooltip.Trigger>
                 <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Pagado:{" "}
-                  <span className="text-foreground font-medium">{fmtCLP(monthTotals.paid)}</span>
+                  <span className="font-medium text-foreground">{fmtCLP(monthTotals.paid)}</span>
                 </Button>
               </Tooltip.Trigger>
               <Tooltip.Content
-                className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs"
+                className="max-w-[min(90vw,220px)] rounded-lg border border-default-200 bg-content1 p-2 text-foreground text-xs"
                 showArrow
               >
                 Total pagado del mes completo
@@ -309,7 +325,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
               <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
                 <Tooltip.Trigger>
                   <Button
-                    className="text-warning h-auto min-w-0 px-0 text-[10px]"
+                    className="h-auto min-w-0 px-0 text-[10px] text-warning"
                     size="sm"
                     variant="ghost"
                   >
@@ -318,7 +334,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
                   </Button>
                 </Tooltip.Trigger>
                 <Tooltip.Content
-                  className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs"
+                  className="max-w-[min(90vw,220px)] rounded-lg border border-default-200 bg-content1 p-2 text-foreground text-xs"
                   showArrow
                 >
                   Eventos pasados que no fueron cobrados (no asistieron, cancelaron, etc.)
@@ -329,13 +345,13 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
               <Tooltip.Trigger>
                 <Button className="h-auto min-w-0 px-0 text-[10px]" size="sm" variant="ghost">
                   Restante:{" "}
-                  <span className="text-foreground font-medium">
+                  <span className="font-medium text-foreground">
                     {fmtCLP(monthTotals.remaining)}
                   </span>
                 </Button>
               </Tooltip.Trigger>
               <Tooltip.Content
-                className="bg-content1 text-foreground border-default-200 max-w-[min(90vw,220px)] rounded-lg border p-2 text-xs"
+                className="max-w-[min(90vw,220px)] rounded-lg border border-default-200 bg-content1 p-2 text-foreground text-xs"
                 showArrow
               >
                 Lo que falta pagar desde hoy en adelante (solo eventos futuros)
@@ -344,7 +360,7 @@ function HeatmapMonthComponent({ maxValue, month, statsByDate }: Readonly<Heatma
           </div>
         </div>
         {formatTypeBreakdown(monthTotals.byType).length > 0 && (
-          <div className="text-default-400 mt-2 flex flex-wrap gap-x-3 gap-y-1">
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-default-400">
             {formatTypeBreakdown(monthTotals.byType).map((line) => (
               <span key={line}>{line}</span>
             ))}

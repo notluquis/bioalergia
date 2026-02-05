@@ -36,10 +36,14 @@ export function useDailyBalanceManagement({ loadBalances }: UseDailyBalanceManag
   };
 
   const handleSave = async (date: Date) => {
-    if (!canEdit) return;
+    if (!canEdit) {
+      return;
+    }
     const dateKey = dayjs(date).format("YYYY-MM-DD");
     const draft = drafts[dateKey];
-    if (!draft) return;
+    if (!draft) {
+      return;
+    }
 
     const parsedValue = parseBalanceInput(draft.value);
     if (parsedValue == null) {

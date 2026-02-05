@@ -8,8 +8,12 @@ interface RangeParams {
 export function resolveRange(quickValue: string, fromValue: string, toValue: string): RangeParams {
   if (quickValue === "custom") {
     const range: RangeParams = {};
-    if (fromValue) range.from = fromValue;
-    if (toValue) range.to = toValue;
+    if (fromValue) {
+      range.from = fromValue;
+    }
+    if (toValue) {
+      range.to = toValue;
+    }
     return range;
   }
 

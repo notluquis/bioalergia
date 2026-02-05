@@ -83,14 +83,22 @@ export async function listTransactions(
 
   if (filters.from || filters.to) {
     where.transactionDate = {};
-    if (filters.from) where.transactionDate.gte = filters.from;
-    if (filters.to) where.transactionDate.lte = filters.to;
+    if (filters.from) {
+      where.transactionDate.gte = filters.from;
+    }
+    if (filters.to) {
+      where.transactionDate.lte = filters.to;
+    }
   }
 
   if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
     where.transactionAmount = {};
-    if (filters.minAmount !== undefined) where.transactionAmount.gte = filters.minAmount;
-    if (filters.maxAmount !== undefined) where.transactionAmount.lte = filters.maxAmount;
+    if (filters.minAmount !== undefined) {
+      where.transactionAmount.gte = filters.minAmount;
+    }
+    if (filters.maxAmount !== undefined) {
+      where.transactionAmount.lte = filters.maxAmount;
+    }
   }
 
   if (filters.status) {
@@ -302,10 +310,12 @@ export async function getParticipantInsight(
     .groupBy("month")
     .orderBy("month", "desc");
 
-  // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-  if (from) monthlyQuery = monthlyQuery.where("transactionDate", ">=", from as any);
-  // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-  if (to) monthlyQuery = monthlyQuery.where("transactionDate", "<=", to as any);
+  if (from) {
+    monthlyQuery = monthlyQuery.where("transactionDate", ">=", from);
+  }
+  if (to) {
+    monthlyQuery = monthlyQuery.where("transactionDate", "<=", to);
+  }
 
   const monthlyStats = await monthlyQuery.execute();
 
@@ -356,10 +366,12 @@ export async function getParticipantInsight(
     ])
     .orderBy("outgoingAmount", "desc");
 
-  // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-  if (from) counterpartsQuery = counterpartsQuery.where("transactionDate", ">=", from as any);
-  // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-  if (to) counterpartsQuery = counterpartsQuery.where("transactionDate", "<=", to as any);
+  if (from) {
+    counterpartsQuery = counterpartsQuery.where("transactionDate", ">=", from);
+  }
+  if (to) {
+    counterpartsQuery = counterpartsQuery.where("transactionDate", "<=", to);
+  }
 
   const counterparts = await counterpartsQuery.execute();
 

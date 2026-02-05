@@ -108,16 +108,16 @@ function AddPatientPage() {
         }}
         className="space-y-6"
       >
-        <Card className="border-none bg-background shadow-sm overflow-visible">
-          <CardContent className="p-6 space-y-8">
+        <Card className="overflow-visible border-none bg-background shadow-sm">
+          <CardContent className="space-y-8 p-6">
             {/* Sección: Datos Personales */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold border-b border-default-100 pb-2">
+              <div className="flex items-center gap-2 border-default-100 border-b pb-2 font-semibold text-primary">
                 <UserPlus size={18} />
                 <h3>Información Personal</h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <form.Field
                   name="rut"
                   validators={{
@@ -204,12 +204,12 @@ function AddPatientPage() {
 
             {/* Sección: Contacto y Ubicación */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold border-b border-default-100 pb-2">
+              <div className="flex items-center gap-2 border-default-100 border-b pb-2 font-semibold text-primary">
                 <User size={18} />
                 <h3>Contacto y Ubicación</h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <form.Field name="email">
                   {(field) => (
                     <Input
@@ -250,7 +250,7 @@ function AddPatientPage() {
 
             {/* Sección: Notas Clínicas */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold border-b border-default-100 pb-2">
+              <div className="flex items-center gap-2 border-default-100 border-b pb-2 font-semibold text-primary">
                 <Save size={18} />
                 <h3>Información Adicional</h3>
               </div>
@@ -280,7 +280,7 @@ function AddPatientPage() {
               <Button
                 type="submit"
                 variant="primary"
-                className="shadow-md min-w-37.5"
+                className="min-w-37.5 shadow-md"
                 disabled={!canSubmit || createPatientMutation.isPending}
                 isLoading={isSubmitting || createPatientMutation.isPending}
               >

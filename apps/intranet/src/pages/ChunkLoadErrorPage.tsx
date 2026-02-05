@@ -25,14 +25,14 @@ import Button from "@/components/ui/Button";
 
 export default function ChunkLoadErrorPage() {
   return (
-    <div className="bg-default-50 flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-default-50 p-4">
       <div className="w-full max-w-md space-y-6 text-center">
         {/* Icon */}
         <div className="flex justify-center">
-          <div className="bg-warning/10 flex h-20 w-20 items-center justify-center rounded-full">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-warning/10">
             <svg
               aria-hidden="true"
-              className="text-warning h-10 w-10"
+              className="h-10 w-10 text-warning"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -50,17 +50,17 @@ export default function ChunkLoadErrorPage() {
 
         {/* Title */}
         <div>
-          <h1 className="text-foreground text-3xl font-bold">Actualización Necesaria</h1>
-          <p className="text-default-600 mt-2 text-sm">
+          <h1 className="font-bold text-3xl text-foreground">Actualización Necesaria</h1>
+          <p className="mt-2 text-default-600 text-sm">
             Se ha detectado una nueva versión de la aplicación. Por favor, recarga la página para
             continuar.
           </p>
         </div>
 
         {/* Details */}
-        <div className="bg-background/50 rounded-lg p-4 text-left">
-          <p className="text-default-500 mb-2 font-mono text-xs">Detalles técnicos:</p>
-          <ul className="text-default-400 space-y-1 text-xs">
+        <div className="rounded-lg bg-background/50 p-4 text-left">
+          <p className="mb-2 font-mono text-default-500 text-xs">Detalles técnicos:</p>
+          <ul className="space-y-1 text-default-400 text-xs">
             <li>• Falló al cargar un módulo dinámico</li>
             <li>• La versión anterior ya no está disponible</li>
             <li>• Usa el botón de abajo para actualizar</li>

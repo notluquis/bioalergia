@@ -27,7 +27,9 @@ const ACTION_CONFIG: Record<
 
 function ChangeGroup({ action, items }: Readonly<{ action: string; items: ChangeDetail[] }>) {
   const cfg = ACTION_CONFIG[action] || ACTION_CONFIG.unknown;
-  if (!cfg) return null;
+  if (!cfg) {
+    return null;
+  }
   const Icon = cfg.icon;
 
   return (
@@ -35,7 +37,7 @@ function ChangeGroup({ action, items }: Readonly<{ action: string; items: Change
       <div className="flex items-center gap-2">
         <span
           className={cn(
-            "text-xs font-bold uppercase tracking-wider",
+            "font-bold text-xs uppercase tracking-wider",
             cfg.color === "success" && "text-success",
             cfg.color === "primary" && "text-info",
             cfg.color === "danger" && "text-danger",
@@ -45,7 +47,7 @@ function ChangeGroup({ action, items }: Readonly<{ action: string; items: Change
         >
           {cfg.label}
         </span>
-        <div className="bg-default-100 h-px flex-1" />
+        <div className="h-px flex-1 bg-default-100" />
       </div>
       <div className="space-y-4">
         {items.map((item, i) => (
@@ -70,7 +72,7 @@ function ChangeGroup({ action, items }: Readonly<{ action: string; items: Change
                   {item.fields.map((field) => (
                     <span
                       key={field}
-                      className="bg-default-100 text-foreground-500 rounded px-1.5 py-0.5 text-[10px] font-medium"
+                      className="rounded bg-default-100 px-1.5 py-0.5 font-medium text-[10px] text-foreground-500"
                     >
                       {field}
                     </span>
@@ -130,7 +132,9 @@ const groupDetailsByAction = (details: ChangeDetail[]) => {
 };
 
 export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
-  if (!data) return null;
+  if (!data) {
+    return null;
+  }
 
   const rawDetails = data as {
     excluded?: string[];
@@ -142,7 +146,7 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
 
   if (details.length === 0) {
     return (
-      <div className="bg-default-100/30 flex items-center justify-center rounded-lg border border-dashed p-4 text-xs italic text-foreground-500">
+      <div className="flex items-center justify-center rounded-lg border border-dashed bg-default-100/30 p-4 text-foreground-500 text-xs italic">
         No hay detalles de cambios registrados.
       </div>
     );
@@ -152,13 +156,13 @@ export const ChangeDetailsViewer = ({ data }: { data: unknown }) => {
 
   return (
     <Accordion
-      className="bg-content1/50 border-default-200 overflow-hidden rounded-xl border p-0 shadow-none transition-all duration-200"
+      className="overflow-hidden rounded-xl border border-default-200 bg-content1/50 p-0 shadow-none transition-all duration-200"
       hideSeparator
       variant="default"
     >
       <Accordion.Item key="change-details" aria-label="Detalle de Cambios" className="px-0">
         <Accordion.Heading>
-          <Accordion.Trigger className="hover:bg-default-100/50 px-4 py-3 transition-colors data-[hover=true]:bg-default-100/50">
+          <Accordion.Trigger className="px-4 py-3 transition-colors hover:bg-default-100/50 data-[hover=true]:bg-default-100/50">
             <span className="font-medium text-sm">Detalle de Cambios</span>
             <Accordion.Indicator className="text-foreground-400" />
           </Accordion.Trigger>

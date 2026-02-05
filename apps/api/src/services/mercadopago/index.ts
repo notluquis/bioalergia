@@ -46,7 +46,9 @@ export const MercadoPagoService = {
       headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
     });
 
-    if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+    if (!res.ok) {
+      throw new Error(`Download failed: ${res.status}`);
+    }
     return res;
   },
 
@@ -82,9 +84,15 @@ export function formatMpDate(date: Date) {
 
 function appendReportRange(baseUrl: string, range: { begin_date: string; end_date: string }) {
   const params = new URLSearchParams();
-  if (range.begin_date) params.set("begin_date", range.begin_date);
-  if (range.end_date) params.set("end_date", range.end_date);
+  if (range.begin_date) {
+    params.set("begin_date", range.begin_date);
+  }
+  if (range.end_date) {
+    params.set("end_date", range.end_date);
+  }
   const query = params.toString();
-  if (!query) return baseUrl;
+  if (!query) {
+    return baseUrl;
+  }
   return `${baseUrl}?${query}`;
 }

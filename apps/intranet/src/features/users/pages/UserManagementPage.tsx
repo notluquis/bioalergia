@@ -45,7 +45,9 @@ export default function UserManagementPage() {
 
   // Transform to frontend User view model (with computed properties)
   const users: User[] = useMemo(() => {
-    if (!usersData) return [];
+    if (!usersData) {
+      return [];
+    }
     return usersData
       .filter((u) => !u.email?.includes("test") && !u.email?.includes("debug"))
       .map(
@@ -155,7 +157,9 @@ export default function UserManagementPage() {
   const columns = useMemo(() => getColumns(actions), [actions]);
 
   const handleSaveRole = async () => {
-    if (!editingUser || !selectedRole) return;
+    if (!editingUser || !selectedRole) {
+      return;
+    }
 
     const selectedRoleObj = roles.find((r) => r.name === selectedRole);
     if (!selectedRoleObj) {
@@ -187,7 +191,9 @@ export default function UserManagementPage() {
 
   // Filter users based on role filter (client side)
   const filteredUsers = useMemo(() => {
-    if (roleFilter === "ALL") return users;
+    if (roleFilter === "ALL") {
+      return users;
+    }
     return users.filter(
       (u) => u.role === roleFilter || (u.role || "").toUpperCase() === roleFilter.toUpperCase(),
     );
@@ -201,11 +207,11 @@ export default function UserManagementPage() {
           <div className="card bg-background shadow-sm">
             <div className="card-body">
               <div className="flex items-center gap-3">
-                <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <UserCog size={24} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{users.length}</p>
+                  <p className="font-bold text-2xl">{users.length}</p>
                   <p className="text-default-500 text-sm">Usuarios totales</p>
                 </div>
               </div>
@@ -215,11 +221,11 @@ export default function UserManagementPage() {
           <div className="card bg-background shadow-sm">
             <div className="card-body">
               <div className="flex items-center gap-3">
-                <div className="bg-success/10 text-success flex h-12 w-12 items-center justify-center rounded-full">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
                   <Shield size={24} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{users.filter((u) => u.mfaEnabled).length}</p>
+                  <p className="font-bold text-2xl">{users.filter((u) => u.mfaEnabled).length}</p>
                   <p className="text-default-500 text-sm">Con MFA activo</p>
                 </div>
               </div>
@@ -229,11 +235,11 @@ export default function UserManagementPage() {
           <div className="card bg-background shadow-sm">
             <div className="card-body">
               <div className="flex items-center gap-3">
-                <div className="bg-info/10 text-info flex h-12 w-12 items-center justify-center rounded-full">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-info/10 text-info">
                   <Key size={24} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{users.filter((u) => u.hasPasskey).length}</p>
+                  <p className="font-bold text-2xl">{users.filter((u) => u.hasPasskey).length}</p>
                   <p className="text-default-500 text-sm">Con passkey</p>
                 </div>
               </div>
@@ -255,7 +261,9 @@ export default function UserManagementPage() {
               className="w-full"
               selectedKey={roleFilter}
               onSelectionChange={(key) => {
-                if (key) setRoleFilter(key.toString());
+                if (key) {
+                  setRoleFilter(key.toString());
+                }
               }}
             >
               <SelectItem id="ALL" textValue="Todos los roles">
@@ -312,7 +320,9 @@ export default function UserManagementPage() {
               placeholder="Seleccionar rol"
               selectedKey={selectedRole}
               onSelectionChange={(key) => {
-                if (key) setSelectedRole(key.toString());
+                if (key) {
+                  setSelectedRole(key.toString());
+                }
               }}
             >
               {roles?.map((role: { id: number; name: string }) => (

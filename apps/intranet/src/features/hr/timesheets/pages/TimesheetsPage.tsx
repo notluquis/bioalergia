@@ -44,12 +44,16 @@ export default function TimesheetsPage() {
   });
 
   const employeeSummaryRow = (() => {
-    if (!summaryData || !selectedEmployee) return null;
+    if (!summaryData || !selectedEmployee) {
+      return null;
+    }
     return summaryData.employees.find((e) => e.employeeId === selectedEmployee.id) ?? null;
   })();
 
   const monthLabel = (() => {
-    if (!month) return "";
+    if (!month) {
+      return "";
+    }
     const [year, monthStr] = month.split("-");
     const d = dayjs(`${year}-${monthStr}-01`);
     return d.isValid() ? d.format("MMMM YYYY") : month;
@@ -95,7 +99,9 @@ export default function TimesheetsPage() {
               label="Periodo"
               selectedKey={month}
               onSelectionChange={(key) => {
-                if (key) setMonth(key.toString());
+                if (key) {
+                  setMonth(key.toString());
+                }
               }}
             >
               {groupedMonths.flatMap((group) => [
@@ -144,8 +150,12 @@ export default function TimesheetsPage() {
 
 // Utility to ensure month is always YYYY-MM
 function formatMonthString(m: string): string {
-  if (MONTH_STRING_REGEX.test(m)) return m;
+  if (MONTH_STRING_REGEX.test(m)) {
+    return m;
+  }
   const d = dayjs(m, ["YYYY-MM", "YYYY/MM", "MM/YYYY", "YYYY-MM-DD", "DD/MM/YYYY"]);
-  if (d.isValid()) return d.format("YYYY-MM");
+  if (d.isValid()) {
+    return d.format("YYYY-MM");
+  }
   return dayjs().format("YYYY-MM");
 }

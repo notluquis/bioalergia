@@ -23,7 +23,9 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
   // Fetch All Details (Aggregated)
   const { data: allDetails } = useSuspenseQuery({
     queryFn: async () => {
-      if (services.length === 0 || !canView) return {};
+      if (services.length === 0 || !canView) {
+        return {};
+      }
       const results = await Promise.allSettled(
         services.map((service) => fetchServiceDetail(service.public_id)),
       );

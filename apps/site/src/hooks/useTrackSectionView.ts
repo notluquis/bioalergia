@@ -11,7 +11,9 @@ export function useTrackSectionView(sectionId: string, sectionName: string) {
   const hasTrackedRef = useRef(false);
 
   useEffect(() => {
-    if (!elementRef.current || !posthog || hasTrackedRef.current) return;
+    if (!elementRef.current || !posthog || hasTrackedRef.current) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {

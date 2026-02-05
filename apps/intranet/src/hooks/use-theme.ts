@@ -7,7 +7,9 @@ export function useTheme() {
   // Initialize state from localStorage or default to 'system'
   const [theme, setTheme] = React.useState<Theme>(() => {
     try {
-      if (typeof window === "undefined") return "system";
+      if (typeof window === "undefined") {
+        return "system";
+      }
       const raw = localStorage.getItem(THEME_KEY);
       return (raw as null | Theme) ?? "system";
     } catch {
@@ -17,13 +19,17 @@ export function useTheme() {
 
   // Helper to determining system preference
   const getPreferredThemeFromSystem = React.useCallback((): "dark" | "light" => {
-    if (typeof window === "undefined") return "light";
+    if (typeof window === "undefined") {
+      return "light";
+    }
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }, []);
 
   // Sync with system changes when in 'system' mode
   React.useEffect(() => {
-    if (theme !== "system") return;
+    if (theme !== "system") {
+      return;
+    }
 
     const handleMediaChange = () => {
       applyTheme(getPreferredThemeFromSystem());
@@ -72,7 +78,9 @@ export function useTheme() {
 
 // Side-effect function to manipulate DOM
 function applyTheme(theme: "dark" | "light") {
-  if (typeof document === "undefined") return;
+  if (typeof document === "undefined") {
+    return;
+  }
   const html = document.documentElement;
 
   // Apply Tailwind 'dark' class

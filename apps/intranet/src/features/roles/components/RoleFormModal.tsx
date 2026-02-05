@@ -110,7 +110,7 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
         <div className="max-h-32 space-y-1 overflow-y-auto">
           {userData.map((u) => (
             <div
-              className="hover:bg-default-100 flex items-center justify-between rounded p-1 text-xs"
+              className="flex items-center justify-between rounded p-1 text-xs hover:bg-default-100"
               key={u.id}
             >
               <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : "Sin nombre"}</span>
@@ -162,13 +162,13 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
 
       {/* Show affected users even if empty list, to confirm zero users */}
       {roleEntity && (
-        <div className="bg-default-100 rounded-lg p-3 text-sm">
+        <div className="rounded-lg bg-default-100 p-3 text-sm">
           <div className="mb-2 flex items-center gap-2 font-medium opacity-70">
             <UserIcon className="h-4 w-4" />
             Usuarios afectados ({userData.length})
           </div>
           {renderUsersList()}
-          <div className="text-warning mt-2 flex gap-1 text-xs">
+          <div className="mt-2 flex gap-1 text-warning text-xs">
             <AlertCircle className="h-3 w-3" />
             <span>Cualquier cambio en los permisos afectará inmediatamente a estos usuarios.</span>
           </div>

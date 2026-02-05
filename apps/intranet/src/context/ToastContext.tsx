@@ -23,8 +23,12 @@ import { addNotification } from "@/features/notifications/store/use-notification
 
 export function useToast() {
   const formatMessage = (value: unknown, fallback: string) => {
-    if (typeof value === "string") return value;
-    if (value instanceof Error) return value.message;
+    if (typeof value === "string") {
+      return value;
+    }
+    if (value instanceof Error) {
+      return value.message;
+    }
     return fallback;
   };
 

@@ -79,7 +79,7 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           })}
           {filteredColumns.length === 0 && (
             <Dropdown.Item id="empty" isDisabled textValue="No encontrado">
-              <span className="text-muted-foreground p-2 text-center text-sm">No encontrado</span>
+              <span className="p-2 text-center text-muted-foreground text-sm">No encontrado</span>
             </Dropdown.Item>
           )}
         </Dropdown.Menu>

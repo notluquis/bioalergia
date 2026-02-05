@@ -20,22 +20,30 @@ export function deriveInitialBalance(report: BalancesApiResponse): null | number
 }
 
 export function formatBalanceInput(value: number) {
-  if (!Number.isFinite(value)) return "";
+  if (!Number.isFinite(value)) {
+    return "";
+  }
   const rounded = roundCurrency(value);
   return Number.isInteger(rounded) ? String(Math.trunc(rounded)) : rounded.toFixed(2);
 }
 
 export function parseBalanceInput(value: string) {
-  if (typeof value !== "string") return null;
+  if (typeof value !== "string") {
+    return null;
+  }
   const trimmed = value.trim();
-  if (!trimmed) return null;
+  if (!trimmed) {
+    return null;
+  }
   const normalized = trimmed
     .replaceAll(/CLP/gi, "")
     .replaceAll("$", "")
     .replaceAll(/\s+/g, "")
     .replaceAll(".", "")
     .replaceAll(",", ".");
-  if (!normalized) return null;
+  if (!normalized) {
+    return null;
+  }
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : null;
 }

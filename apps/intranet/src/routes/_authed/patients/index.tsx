@@ -63,14 +63,14 @@ function PatientsListPage() {
           const patient = row.original;
           return (
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <User size={16} />
               </div>
               <div className="flex flex-col">
                 <span className="font-medium text-foreground">
                   {patient.person.names} {patient.person.fatherName} {patient.person.motherName}
                 </span>
-                <span className="text-xs text-default-500">
+                <span className="text-default-500 text-xs">
                   {patient.person.email || "Sin email"}
                 </span>
               </div>
@@ -82,7 +82,7 @@ function PatientsListPage() {
         accessorKey: "person.rut",
         header: "RUT",
         cell: ({ row }) => (
-          <span className="text-default-700 font-mono">{row.original.person.rut}</span>
+          <span className="font-mono text-default-700">{row.original.person.rut}</span>
         ),
       },
       {
@@ -121,7 +121,7 @@ function PatientsListPage() {
             to={`/patients/${row.original.id}`}
             size="sm"
             variant="ghost"
-            className="h-8 w-8 p-0 min-w-0"
+            className="h-8 w-8 min-w-0 p-0"
           >
             <ArrowRight size={16} />
           </Button>
@@ -139,7 +139,7 @@ function PatientsListPage() {
           <p className="text-default-500 text-sm">Gestión de ficha clínica y certificados</p>
         </div>
         <Link to="/patients/new">
-          <Button variant="primary" className="shadow-md w-full sm:w-auto">
+          <Button variant="primary" className="w-full shadow-md sm:w-auto">
             <UserPlus size={18} className="mr-2" />
             Registrar Paciente
           </Button>

@@ -24,8 +24,12 @@ const schema = z
 type FormData = z.infer<typeof schema>;
 
 const getFieldErrorMessage = (error: unknown) => {
-  if (!error) return undefined;
-  if (typeof error === "string") return error;
+  if (!error) {
+    return undefined;
+  }
+  if (typeof error === "string") {
+    return error;
+  }
   if (typeof error === "object" && "message" in error) {
     const message = (error as { message?: unknown }).message;
     return typeof message === "string" ? message : undefined;

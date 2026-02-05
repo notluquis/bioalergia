@@ -69,7 +69,9 @@ export function useLoginLogic(from: string) {
   });
   const mfaMutation = useMutation({
     mutationFn: async () => {
-      if (!tempUserId) throw new Error("No user");
+      if (!tempUserId) {
+        throw new Error("No user");
+      }
       await loginWithMfa(tempUserId, mfaCode);
     },
     onSuccess: () => {
@@ -85,7 +87,9 @@ export function useLoginLogic(from: string) {
   const passkeyMutation = useMutation({
     mutationFn: async () => {
       const o = await fetchPasskeyLoginOptions();
-      if (!o?.challenge) throw new Error("Invalid");
+      if (!o?.challenge) {
+        throw new Error("Invalid");
+      }
       const a = await startAuthentication({ optionsJSON: o });
       await loginWithPasskey(a, o.challenge);
     },

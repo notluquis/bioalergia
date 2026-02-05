@@ -13,8 +13,8 @@ function CertificatesLayout() {
       {/* No navigation tabs for now - single page */}
       <div className="space-y-6">
         <header>
-          <h1 className="text-2xl font-bold text-foreground">Certificados Médicos</h1>
-          <p className="text-foreground-500 text-sm mt-1">
+          <h1 className="font-bold text-2xl text-foreground">Certificados Médicos</h1>
+          <p className="mt-1 text-foreground-500 text-sm">
             Genera certificados médicos con firma digital FEA
           </p>
         </header>

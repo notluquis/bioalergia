@@ -28,14 +28,20 @@ export default function InventoryCategoryManager() {
   const createMutation = client.inventoryCategory.useCreate();
 
   const error = (() => {
-    if (queryError instanceof Error) return queryError.message;
-    if (createMutation.error instanceof Error) return createMutation.error.message;
+    if (queryError instanceof Error) {
+      return queryError.message;
+    }
+    if (createMutation.error instanceof Error) {
+      return createMutation.error.message;
+    }
     return null;
   })();
 
   function handleAddCategory(e: React.FormEvent) {
     e.preventDefault();
-    if (!newCategoryName.trim()) return;
+    if (!newCategoryName.trim()) {
+      return;
+    }
     createMutation.mutate(
       { data: { name: newCategoryName.trim() } },
       {
@@ -47,9 +53,9 @@ export default function InventoryCategoryManager() {
   }
 
   return (
-    <section className="bg-background space-y-5 p-6">
+    <section className="space-y-5 bg-background p-6">
       <div className="space-y-1">
-        <h2 className="text-secondary text-lg font-semibold drop-shadow-sm">
+        <h2 className="font-semibold text-lg text-secondary drop-shadow-sm">
           Categorías de Inventario
         </h2>
         <p className="text-default-600 text-sm">
@@ -59,7 +65,7 @@ export default function InventoryCategoryManager() {
 
       <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={handleAddCategory}>
         <label className="flex-1" htmlFor="new-category-name">
-          <span className="text-default-500 text-xs font-semibold tracking-wide uppercase">
+          <span className="font-semibold text-default-500 text-xs uppercase tracking-wide">
             Nueva Categoría
           </span>
           <Input
@@ -89,7 +95,7 @@ export default function InventoryCategoryManager() {
 
       {error && <p className="text-danger text-sm">{error}</p>}
 
-      <div className="border-default-200 bg-background max-h-60 overflow-y-auto border p-3">
+      <div className="max-h-60 overflow-y-auto border border-default-200 bg-background p-3">
         {loading && <p className="text-foreground text-sm">Cargando categorías...</p>}
         {!loading && categories.length === 0 && (
           <p className="text-foreground text-sm">No hay categorías definidas.</p>
@@ -97,7 +103,7 @@ export default function InventoryCategoryManager() {
         <ul className="space-y-2">
           {categories.map((cat: InventoryCategory) => (
             <li
-              className="border-default-200 bg-default-50 text-foreground rounded-xl border px-3 py-2 text-sm font-medium shadow-sm"
+              className="rounded-xl border border-default-200 bg-default-50 px-3 py-2 font-medium text-foreground text-sm shadow-sm"
               key={cat.id}
             >
               {cat.name}

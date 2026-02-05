@@ -58,14 +58,14 @@ export default function SettlementReleaseTransactionsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <h1 className="typ-title text-foreground">Conciliaciones + Liberaciones + Retiros</h1>
-          <p className="typ-body text-default-600 max-w-2xl">
+          <p className="typ-body max-w-2xl text-default-600">
             Unifica conciliaciones, liberaciones y retiros por ID origen (FULL OUTER JOIN).
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
             <TextField>
-              <Label className="text-xs font-semibold uppercase">Desde</Label>
+              <Label className="font-semibold text-xs uppercase">Desde</Label>
               <Input
                 className="input-sm"
                 onChange={(e) => {
@@ -78,7 +78,7 @@ export default function SettlementReleaseTransactionsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <TextField>
-              <Label className="text-xs font-semibold uppercase">Hasta</Label>
+              <Label className="font-semibold text-xs uppercase">Hasta</Label>
               <Input
                 className="input-sm"
                 onChange={(e) => {

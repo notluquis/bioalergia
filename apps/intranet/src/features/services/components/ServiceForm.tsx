@@ -110,9 +110,15 @@ const applyEmissionMode = (
   prev: ServiceFormState,
   emissionMode: ServiceFormState["emissionMode"],
 ) => {
-  if (emissionMode === "FIXED_DAY") return applyFixedDayMode(prev);
-  if (emissionMode === "DATE_RANGE") return applyDateRangeMode(prev);
-  if (emissionMode === "SPECIFIC_DATE") return applySpecificDateMode(prev);
+  if (emissionMode === "FIXED_DAY") {
+    return applyFixedDayMode(prev);
+  }
+  if (emissionMode === "DATE_RANGE") {
+    return applyDateRangeMode(prev);
+  }
+  if (emissionMode === "SPECIFIC_DATE") {
+    return applySpecificDateMode(prev);
+  }
   return prev;
 };
 
@@ -131,8 +137,12 @@ const getEmissionFields = (
 });
 
 const getLateFeeValue = (form: ServiceFormState, lateFeeMode: ServiceFormState["lateFeeMode"]) => {
-  if (lateFeeMode === "NONE") return null;
-  if (form.lateFeeValue === null || form.lateFeeValue === undefined) return null;
+  if (lateFeeMode === "NONE") {
+    return null;
+  }
+  if (form.lateFeeValue === null || form.lateFeeValue === undefined) {
+    return null;
+  }
   return Number(form.lateFeeValue);
 };
 
@@ -320,7 +330,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
         onChange={handleChange}
       />
 
-      {error && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{error}</p>}
+      {error && <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">{error}</p>}
       <div className="flex justify-end gap-3">
         <Button disabled={submitting} onClick={onCancel} type="button" variant="secondary">
           Cancelar

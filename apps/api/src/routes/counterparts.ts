@@ -19,10 +19,14 @@ const app = new Hono();
 
 app.get("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Counterpart");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const items = await listCounterparts();
   return reply(c, { status: "ok", counterparts: items });
@@ -30,16 +34,24 @@ app.get("/", async (c) => {
 
 app.get("/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Counterpart");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
-  if (Number.isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (Number.isNaN(id)) {
+    return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  }
 
   const result = await getCounterpartById(id);
-  if (!result) return reply(c, { status: "error", message: "Not found" }, 404);
+  if (!result) {
+    return reply(c, { status: "error", message: "Not found" }, 404);
+  }
 
   return reply(c, {
     status: "ok",
@@ -50,10 +62,14 @@ app.get("/:id", async (c) => {
 
 app.post("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canCreate = await hasPermission(user.id, "create", "Counterpart");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const body = await c.req.json();
   const parsed = counterpartPayloadSchema.safeParse(body);
@@ -72,13 +88,19 @@ app.post("/", async (c) => {
 
 app.put("/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Counterpart");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
-  if (Number.isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (Number.isNaN(id)) {
+    return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  }
 
   const body = await c.req.json();
   const parsed = counterpartPayloadSchema.partial().safeParse(body);
@@ -99,10 +121,14 @@ app.put("/:id", async (c) => {
 
 app.post("/:id/accounts", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Counterpart");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
   const body = await c.req.json();
@@ -122,10 +148,14 @@ app.post("/:id/accounts", async (c) => {
 
 app.put("/accounts/:accountId", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Counterpart");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const accountId = Number(c.req.param("accountId"));
   const body = await c.req.json();

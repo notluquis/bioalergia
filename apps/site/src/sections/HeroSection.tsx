@@ -33,19 +33,19 @@ export function HeroSection({ onBook }: HeroSectionProps) {
           ))}
         </div>
         <div className="space-y-4">
-          <p className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">
+          <p className="text-(--ink-muted) text-xs uppercase tracking-[0.28em]">
             {clinicOverview.subtitle}
           </p>
-          <h1 className="text-3xl font-semibold leading-tight text-(--ink) sm:text-4xl md:text-5xl lg:text-6xl">
+          <h1 className="font-semibold text-(--ink) text-3xl leading-tight sm:text-4xl md:text-5xl lg:text-6xl">
             Clínica Bioalergia
             <span
-              className="mt-2 block text-2xl font-normal text-(--ink-muted) sm:text-3xl md:text-4xl"
+              className="mt-2 block font-normal text-(--ink-muted) text-2xl sm:text-3xl md:text-4xl"
               style={{ fontFamily: '"Instrument Serif", serif' }}
             >
               Especialistas en alergias e inmunoterapia
             </span>
           </h1>
-          <p className="max-w-xl text-base text-(--ink-muted) sm:text-lg">
+          <p className="max-w-xl text-(--ink-muted) text-base sm:text-lg">
             Diagnóstico preciso, tratamientos personalizados y acompañamiento clínico para mejorar
             tu calidad de vida.
           </p>
@@ -54,11 +54,11 @@ export function HeroSection({ onBook }: HeroSectionProps) {
           <Button className="rounded-full bg-(--accent) px-6 text-white" onPress={onBook}>
             Reservar evaluación
           </Button>
-          <Link className="text-sm text-(--ink-muted) underline-offset-4" href="#servicios">
+          <Link className="text-(--ink-muted) text-sm underline-offset-4" href="#servicios">
             Ver servicios
           </Link>
           <Link
-            className="text-sm text-(--ink-muted) underline-offset-4"
+            className="text-(--ink-muted) text-sm underline-offset-4"
             href={doctoraliaLink}
             target="_blank"
             rel="noreferrer"
@@ -70,13 +70,13 @@ export function HeroSection({ onBook }: HeroSectionProps) {
         <div className="grid gap-3 sm:grid-cols-3">
           {clinicOverview.summary.map((item) => (
             <Card className="rounded-2xl" key={item} variant="secondary">
-              <Card.Content className="text-sm text-(--ink-muted)">{item}</Card.Content>
+              <Card.Content className="text-(--ink-muted) text-sm">{item}</Card.Content>
             </Card>
           ))}
         </div>
       </div>
       <div className="lg:pl-4" style={{ animation: "floatIn 0.9s ease-out" }}>
-        <Suspense fallback={<div className="h-96 animate-pulse bg-gray-200 rounded-lg" />}>
+        <Suspense fallback={<div className="h-96 animate-pulse rounded-lg bg-gray-200" />}>
           <DoctoraliaBookingWidget />
         </Suspense>
       </div>

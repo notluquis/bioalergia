@@ -18,7 +18,9 @@ const EVENT_DATE_SQL = sql<string>`
 `;
 
 const formatDateOnly = (value: string | Date | null | undefined): string => {
-  if (!value) return "";
+  if (!value) {
+    return "";
+  }
   if (value instanceof Date) {
     // Date-only values from Postgres can arrive as Date at UTC midnight.
     // Format in UTC to avoid shifting the calendar day.

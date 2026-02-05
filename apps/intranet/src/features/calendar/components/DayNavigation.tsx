@@ -33,7 +33,9 @@ export function DayNavigation({
 
   const isAllowed = useCallback(
     (date: dayjs.Dayjs) => {
-      if (!allowedSet) return true;
+      if (!allowedSet) {
+        return true;
+      }
       return allowedSet.has(date.day());
     },
     [allowedSet],
@@ -55,7 +57,9 @@ export function DayNavigation({
 
   const normalizeToAllowed = useCallback(
     (date: dayjs.Dayjs) => {
-      if (isAllowed(date)) return date;
+      if (isAllowed(date)) {
+        return date;
+      }
       return findAdjacentAllowed(date, 1);
     },
     [findAdjacentAllowed, isAllowed],
@@ -86,7 +90,7 @@ export function DayNavigation({
   return (
     <div className={cn("flex flex-col gap-4", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-bold capitalize sm:text-xl">{current.format("MMMM YYYY")}</h2>
+        <h2 className="font-bold text-lg capitalize sm:text-xl">{current.format("MMMM YYYY")}</h2>
 
         {/* Right side: optional slot + navigation buttons */}
         <div className="flex items-center gap-2">
@@ -96,7 +100,7 @@ export function DayNavigation({
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
-              className="text-[11px] font-semibold uppercase tracking-wide"
+              className="font-semibold text-[11px] uppercase tracking-wide"
               onPress={handleToday}
             >
               Hoy
@@ -110,7 +114,7 @@ export function DayNavigation({
 
       <div className="relative">
         {/* Day Strip */}
-        <div className="bg-content1 border-default-200 no-scrollbar flex min-h-16 items-center justify-between overflow-x-auto rounded-xl border p-3 shadow-sm touch-pan-x">
+        <div className="no-scrollbar flex min-h-16 touch-pan-x items-center justify-between overflow-x-auto rounded-xl border border-default-200 bg-content1 p-3 shadow-sm">
           {days.map((date) => {
             const isSelected = date.isSame(current, "day");
             const isToday = date.isSame(today, "day");
@@ -120,9 +124,9 @@ export function DayNavigation({
                 className={cn(
                   "relative mx-0.5 flex min-h-12 min-w-14 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2.5 transition-all duration-200",
                   isSelected
-                    ? "bg-primary text-primary-foreground z-10 scale-105 font-semibold shadow-md"
-                    : "hover:bg-default-100 text-foreground-500",
-                  isToday && !isSelected && "bg-default-100 text-foreground font-medium",
+                    ? "z-10 scale-105 bg-primary font-semibold text-primary-foreground shadow-md"
+                    : "text-foreground-500 hover:bg-default-100",
+                  isToday && !isSelected && "bg-default-100 font-medium text-foreground",
                 )}
                 key={date.toString()}
                 onPress={() => {
@@ -132,18 +136,18 @@ export function DayNavigation({
                 variant="ghost"
               >
                 {isToday && !isSelected && (
-                  <span className="bg-primary absolute top-1 right-1 h-1.5 w-1.5 rounded-full" />
+                  <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary" />
                 )}
                 <span
                   className={cn(
-                    "text-[10px] tracking-wider uppercase",
+                    "text-[10px] uppercase tracking-wider",
                     isSelected ? "text-primary-foreground/90" : "text-foreground-500",
                   )}
                 >
                   {date.format("ddd")}
                 </span>
                 <span
-                  className={cn("text-lg leading-none tabular-nums", isSelected && "font-bold")}
+                  className={cn("text-lg tabular-nums leading-none", isSelected && "font-bold")}
                 >
                   {date.format("D")}
                 </span>

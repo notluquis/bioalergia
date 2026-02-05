@@ -41,7 +41,9 @@ export async function sendPushNotification(
     where: { userId },
   });
 
-  if (subscriptions.length === 0) return { success: false, sent: 0 };
+  if (subscriptions.length === 0) {
+    return { success: false, sent: 0 };
+  }
 
   const notificationPayload = JSON.stringify({
     title: payload.title,

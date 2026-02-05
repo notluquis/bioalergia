@@ -103,7 +103,9 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
   const handleRutChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setForm((prev) => ({ ...prev, rut: value }));
-    if (rutError) setRutError(null);
+    if (rutError) {
+      setRutError(null);
+    }
   };
 
   const handleRutBlur = () => {
@@ -163,7 +165,9 @@ export default function EmployeeForm({ employee, onCancel, onSave }: EmployeeFor
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy form validation
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!hasPermission) return;
+    if (!hasPermission) {
+      return;
+    }
 
     // Validate RUT before submit if present
     if (form.rut && !validateRut(form.rut)) {
@@ -271,7 +275,9 @@ function EmployeeFormContent({
           <Select
             label="Tipo de salario"
             onSelectionChange={(key) => {
-              if (!key) return;
+              if (!key) {
+                return;
+              }
               setForm((prev) => ({ ...prev, salaryType: String(key) }));
             }}
             selectedKey={form.salaryType}
@@ -421,7 +427,9 @@ function formatCLP(value: number | string): string {
     typeof value === "string"
       ? Number.parseFloat(value.replaceAll(".", "").replaceAll(",", ""))
       : value;
-  if (Number.isNaN(num) || num === 0) return "";
+  if (Number.isNaN(num) || num === 0) {
+    return "";
+  }
   return num.toLocaleString("es-CL");
 }
 

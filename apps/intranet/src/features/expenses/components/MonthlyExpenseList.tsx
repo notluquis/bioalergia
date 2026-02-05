@@ -21,7 +21,7 @@ export default function MonthlyExpenseList({
     <div className="muted-scrollbar h-full overflow-y-auto pr-2">
       <div className="flex items-center justify-between pb-3">
         <div>
-          <h2 className="text-default-500 text-sm font-semibold tracking-wide uppercase">Gastos</h2>
+          <h2 className="font-semibold text-default-500 text-sm uppercase tracking-wide">Gastos</h2>
           <p className="text-default-400 text-xs">Registros de gastos mensuales y puntuales.</p>
         </div>
         {onCreateRequest && (
@@ -38,7 +38,7 @@ export default function MonthlyExpenseList({
               className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-primary/40 bg-primary/15 text-primary shadow"
-                  : "bg-background/55 text-foreground hover:border-default-200 hover:bg-default-50 border-transparent"
+                  : "border-transparent bg-background/55 text-foreground hover:border-default-200 hover:bg-default-50"
               }`}
               key={expense.publicId}
               onClick={() => {
@@ -48,18 +48,18 @@ export default function MonthlyExpenseList({
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-foreground text-sm font-semibold">{expense.name}</p>
+                  <p className="font-semibold text-foreground text-sm">{expense.name}</p>
                   {expense.category && (
-                    <p className="text-default-400 text-xs tracking-wide uppercase">
+                    <p className="text-default-400 text-xs uppercase tracking-wide">
                       {expense.category}
                     </p>
                   )}
                 </div>
-                <span className="text-foreground text-sm font-semibold">
+                <span className="font-semibold text-foreground text-sm">
                   ${expense.amountExpected.toLocaleString("es-CL")}
                 </span>
               </div>
-              <div className="text-default-400 mt-2 flex flex-wrap items-center gap-3 text-xs">
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-default-400 text-xs">
                 <span>{dayjs(expense.expenseDate).format("DD MMM YYYY")}</span>
                 <span>{expense.transactionCount} transacciones</span>
                 <span>{expense.status === "OPEN" ? "Pendiente" : "Cerrado"}</span>
@@ -68,7 +68,7 @@ export default function MonthlyExpenseList({
           );
         })}
         {expenses.length === 0 && (
-          <p className="border-default-200 bg-default-50 text-default-500 rounded-2xl border border-dashed p-4 text-xs">
+          <p className="rounded-2xl border border-default-200 border-dashed bg-default-50 p-4 text-default-500 text-xs">
             Aún no registras gastos. Crea el primero para llevar control mensual.
           </p>
         )}

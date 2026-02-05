@@ -14,7 +14,9 @@ export function getChartColors(): string[] {
   ];
 
   // Check for DOM environment
-  if (!("window" in globalThis) || !globalThis.document) return defaultColors;
+  if (!("window" in globalThis) || !globalThis.document) {
+    return defaultColors;
+  }
 
   try {
     const styles = globalThis.window.getComputedStyle(document.documentElement);

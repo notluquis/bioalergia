@@ -80,7 +80,7 @@ function NewConsultationPage() {
           Volver
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Nueva Consulta Médica</h1>
+          <h1 className="font-bold text-2xl text-foreground">Nueva Consulta Médica</h1>
           <p className="text-default-500 text-sm">Registro de atención clínica</p>
         </div>
       </header>
@@ -168,7 +168,7 @@ function NewConsultationPage() {
               )}
             </form.Field>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-default-100">
+            <div className="flex justify-end gap-3 border-default-100 border-t pt-4">
               <Button
                 type="button"
                 variant="ghost"

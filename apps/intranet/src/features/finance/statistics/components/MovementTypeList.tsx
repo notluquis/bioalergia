@@ -16,7 +16,7 @@ interface MovementTypeListProps {
 export default function MovementTypeList({ data }: MovementTypeListProps) {
   if (data.length === 0) {
     return (
-      <div className="text-default-500 py-6 text-center text-sm">
+      <div className="py-6 text-center text-default-500 text-sm">
         No hay movimientos para mostrar
       </div>
     );
@@ -33,23 +33,25 @@ export default function MovementTypeList({ data }: MovementTypeListProps) {
     title: string,
     colorClass: string,
   ) => {
-    if (items.length === 0) return null;
+    if (items.length === 0) {
+      return null;
+    }
 
     return (
       <div className="space-y-2">
-        <h3 className="flex items-center gap-2 text-sm font-semibold">
+        <h3 className="flex items-center gap-2 font-semibold text-sm">
           {icon}
           {title}
         </h3>
         <div className="space-y-1">
           {items.map((item, index) => (
             <div
-              className="hover:bg-default-50/50 flex items-center justify-between rounded-lg border border-transparent p-2 transition-colors"
+              className="flex items-center justify-between rounded-lg border border-transparent p-2 transition-colors hover:bg-default-50/50"
               // biome-ignore lint/suspicious/noArrayIndexKey: simple list
               key={index}
             >
               <span className="text-sm">{item.description ?? "Sin categoría"}</span>
-              <span className={`font-mono text-sm font-semibold ${colorClass}`}>
+              <span className={`font-mono font-semibold text-sm ${colorClass}`}>
                 {fmtCLP(item.total)}
               </span>
             </div>
@@ -63,19 +65,19 @@ export default function MovementTypeList({ data }: MovementTypeListProps) {
     <div className="space-y-6">
       {renderList(
         incomingData,
-        <ArrowUp className="text-success h-4 w-4" />,
+        <ArrowUp className="h-4 w-4 text-success" />,
         "Ingresos",
         "text-success",
       )}
       {renderList(
         outgoingData,
-        <ArrowDown className="text-danger h-4 w-4" />,
+        <ArrowDown className="h-4 w-4 text-danger" />,
         "Egresos",
         "text-danger",
       )}
       {renderList(
         neutralData,
-        <Minus className="text-default-400 h-4 w-4" />,
+        <Minus className="h-4 w-4 text-default-400" />,
         "Neutros",
         "text-default-600",
       )}

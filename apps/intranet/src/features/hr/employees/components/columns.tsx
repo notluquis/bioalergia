@@ -26,7 +26,7 @@ export const columns: ColumnDef<Employee>[] = [
   {
     accessorKey: "full_name",
     cell: ({ row }) => (
-      <span className="text-foreground font-medium">{row.original.full_name}</span>
+      <span className="font-medium text-foreground">{row.original.full_name}</span>
     ),
     header: "Nombre",
   },
@@ -57,7 +57,9 @@ export const columns: ColumnDef<Employee>[] = [
     accessorKey: "startDate",
     cell: ({ row }) => {
       const date = row.original.startDate;
-      if (!date) return <span className="text-default-500">—</span>;
+      if (!date) {
+        return <span className="text-default-500">—</span>;
+      }
       return <span className="text-default-600">{new Date(date).toLocaleDateString("es-CL")}</span>;
     },
     header: "Inicio",
@@ -77,9 +79,11 @@ export const columns: ColumnDef<Employee>[] = [
   {
     cell: ({ row }) => {
       const e = row.original;
-      if (!e.bankName) return <span className="text-default-500">—</span>;
+      if (!e.bankName) {
+        return <span className="text-default-500">—</span>;
+      }
       return (
-        <span className="text-foreground whitespace-nowrap">
+        <span className="whitespace-nowrap text-foreground">
           {e.bankName}
           {e.bankAccountType ? ` · ${e.bankAccountType}` : ""}
           {e.bankAccountNumber ? ` · ${e.bankAccountNumber}` : ""}
@@ -94,8 +98,12 @@ export const columns: ColumnDef<Employee>[] = [
     cell: ({ row }) => {
       const rate = row.getValue<number>("retentionRate") * 100;
       const formatted = (() => {
-        if (rate % 1 === 0) return rate.toFixed(1);
-        if ((rate * 10) % 1 === 0) return rate.toFixed(1);
+        if (rate % 1 === 0) {
+          return rate.toFixed(1);
+        }
+        if ((rate * 10) % 1 === 0) {
+          return rate.toFixed(1);
+        }
         return rate.toFixed(2);
       })();
       const isAuto =
@@ -137,7 +145,9 @@ export const columns: ColumnDef<Employee>[] = [
       const { canEdit, onActivate, onDeactivate, onEdit } = meta;
       const employee = row.original;
 
-      if (!canEdit) return null;
+      if (!canEdit) {
+        return null;
+      }
 
       return (
         <div className="flex justify-end gap-2 whitespace-nowrap">

@@ -139,7 +139,7 @@ export default function BackupSettingsPage() {
 
   const renderBackupListContent = () => {
     if (fullBackups.length === 0) {
-      return <div className="text-default-500 py-12 text-center">No hay backups disponibles</div>;
+      return <div className="py-12 text-center text-default-500">No hay backups disponibles</div>;
     }
 
     return (
@@ -159,23 +159,23 @@ export default function BackupSettingsPage() {
     <div className="space-y-6">
       {/* Progress Bar */}
       {isRunning && (
-        <div className="bg-default-50 rounded-xl p-6 shadow-sm">
+        <div className="rounded-xl bg-default-50 p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Loader2 className="text-primary size-5 animate-spin" />
+              <Loader2 className="size-5 animate-spin text-primary" />
               <span className="font-medium">
                 {currentBackup?.status === "running"
                   ? "Backup en progreso"
                   : "Restauración en progreso"}
               </span>
             </div>
-            <span className="text-default-500 font-mono text-sm">
+            <span className="font-mono text-default-500 text-sm">
               {currentBackup?.currentStep ?? currentRestore?.currentStep}
             </span>
           </div>
-          <div className="bg-default-100 h-2 overflow-hidden rounded-full">
+          <div className="h-2 overflow-hidden rounded-full bg-default-100">
             <div
-              className="bg-primary h-full transition-all duration-300"
+              className="h-full bg-primary transition-all duration-300"
               style={{ width: `${currentBackup?.progress ?? currentRestore?.progress ?? 0}%` }}
             />
           </div>
@@ -189,25 +189,25 @@ export default function BackupSettingsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           color="primary"
-          icon={<HardDrive className="text-primary size-5" />}
+          icon={<HardDrive className="size-5 text-primary" />}
           label="Backups completos"
           value={String(fullBackups.length)}
         />
         <StatCard
           color="info"
-          icon={<FileText className="text-info size-5" />}
+          icon={<FileText className="size-5 text-info" />}
           label="Exports incrementales"
           value={String(auditExports.length)}
         />
         <StatCard
           color="success"
-          icon={<Database className="text-success size-5" />}
+          icon={<Database className="size-5 text-success" />}
           label="Almacenamiento total"
           value={formatFileSize(totalSize)}
         />
         <StatCard
           color="warning"
-          icon={<Clock className="text-warning size-5" />}
+          icon={<Clock className="size-5 text-warning" />}
           label="Último backup"
           value={fullBackups[0] ? dayjs(fullBackups[0].createdTime).fromNow(true) : "-"}
         />
@@ -215,10 +215,10 @@ export default function BackupSettingsPage() {
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         {/* Full Backups List */}
-        <div className="bg-default-50/50 rounded-xl">
-          <div className="border-default-100 flex items-center justify-between border-b p-4">
+        <div className="rounded-xl bg-default-50/50">
+          <div className="flex items-center justify-between border-default-100 border-b p-4">
             <div>
-              <h2 className="text-lg font-semibold">Backups Completos</h2>
+              <h2 className="font-semibold text-lg">Backups Completos</h2>
               <p className="text-default-500 text-sm">Snapshots completos</p>
             </div>
             <div className="flex items-center gap-2">
@@ -232,7 +232,7 @@ export default function BackupSettingsPage() {
                 <RefreshCw className={cn("size-5")} />
               </Button>
               <Button
-                className="h-8 text-xs font-medium"
+                className="h-8 font-medium text-xs"
                 disabled={!canCreate || isRunning || backupMutation.isPending}
                 isLoading={backupMutation.isPending}
                 onClick={() => {
@@ -252,31 +252,31 @@ export default function BackupSettingsPage() {
               </Button>
             </div>
           </div>
-          <div className="divide-default-100 divide-y">{renderBackupListContent()}</div>
+          <div className="divide-y divide-default-100">{renderBackupListContent()}</div>
         </div>
 
         {/* Incremental Exports */}
-        <div className="bg-default-50/50 rounded-xl">
+        <div className="rounded-xl bg-default-50/50">
           <div className="border-default-100 border-b p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold">Exports Incrementales</h2>
+                <h2 className="font-semibold text-lg">Exports Incrementales</h2>
                 <p className="text-default-500 text-sm">Cambios por hora</p>
               </div>
-              <span className="bg-default-100 rounded-full px-2 py-1 text-xs font-medium">
+              <span className="rounded-full bg-default-100 px-2 py-1 font-medium text-xs">
                 {auditExports.length}
               </span>
             </div>
           </div>
           {auditExports.length > 0 ? (
-            <div className="divide-default-100 max-h-125 divide-y overflow-y-auto">
+            <div className="max-h-125 divide-y divide-default-100 overflow-y-auto">
               {auditExports.slice(0, 50).map((backup) => (
                 <div
-                  className="hover:bg-default-50 flex items-center justify-between px-4 py-3 text-sm transition-colors"
+                  className="flex items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-default-50"
                   key={backup.id}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="bg-info/10 text-info rounded-lg p-1.5">
+                    <div className="rounded-lg bg-info/10 p-1.5 text-info">
                       <FileText className="size-4" />
                     </div>
                     <div>
@@ -287,7 +287,7 @@ export default function BackupSettingsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="bg-background/50 rounded px-1.5 py-0.5 font-mono text-xs opacity-60">
+                    <span className="rounded bg-background/50 px-1.5 py-0.5 font-mono text-xs opacity-60">
                       {formatFileSize(Number(backup.size))}
                     </span>
                     {backup.webViewLink && (
@@ -305,7 +305,7 @@ export default function BackupSettingsPage() {
               ))}
             </div>
           ) : (
-            <div className="text-default-500 py-12 text-center text-sm">
+            <div className="py-12 text-center text-default-500 text-sm">
               No hay exports incrementales
             </div>
           )}
@@ -339,7 +339,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
   return (
     <div>
       <button
-        className="hover:bg-default-50 focus:ring-primary/20 flex w-full cursor-pointer items-center justify-between p-4 px-4 text-left transition-colors focus:ring-2 focus:outline-none focus:ring-inset"
+        className="flex w-full cursor-pointer items-center justify-between p-4 px-4 text-left transition-colors hover:bg-default-50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset"
         onClick={() => {
           setIsExpanded(!isExpanded);
         }}
@@ -347,13 +347,13 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
       >
         <div className="flex items-center gap-4">
           {isExpanded ? (
-            <ChevronDown className="text-default-300 size-4" />
+            <ChevronDown className="size-4 text-default-300" />
           ) : (
-            <ChevronRight className="text-default-300 size-4" />
+            <ChevronRight className="size-4 text-default-300" />
           )}
           <div>
             <div className="flex items-center gap-2">
-              <CheckCircle className="text-success size-4" />
+              <CheckCircle className="size-4 text-success" />
               <p className="font-medium">{backup.name}</p>
             </div>
             <p className="text-default-500 text-sm">
@@ -381,7 +381,7 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
 
       {isExpanded && (
         <div className="bg-default-100/30 px-6 py-4">
-          <div className="bg-warning/10 text-warning mb-4 flex items-start gap-2 rounded-lg p-3 text-sm">
+          <div className="mb-4 flex items-start gap-2 rounded-lg bg-warning/10 p-3 text-sm text-warning">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <span>
               La restauración sobrescribirá datos existentes. Puedes restaurar todo o seleccionar
@@ -404,12 +404,12 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
                 (canRestore ? <RotateCcw className="size-4" /> : <Lock className="size-4" />)}
               Restaurar Todo
             </Button>
-            <span className="text-default-500 self-center text-sm">
+            <span className="self-center text-default-500 text-sm">
               o selecciona tablas específicas abajo
             </span>
           </div>
 
-          <div className="bg-default-50/50 rounded-lg p-4">
+          <div className="rounded-lg bg-default-50/50 p-4">
             <Suspense
               fallback={
                 <div className="flex items-center gap-2 py-4">
@@ -461,7 +461,7 @@ function BackupTablesList({
   return (
     <>
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-medium">Seleccionar tablas</h4>
+        <h4 className="font-medium text-sm">Seleccionar tablas</h4>
         <button className="text-primary text-xs hover:underline" onClick={selectAll} type="button">
           {selectedTables.length === tables.length ? "Ninguna" : "Todas"}
         </button>
@@ -477,7 +477,7 @@ function BackupTablesList({
             // biome-ignore lint/a11y/noLabelWithoutControl: checkbox is interactive
             <label
               className={cn(
-                "border-default-200 hover:bg-default-50 flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors",
+                "flex cursor-pointer items-center gap-2 rounded-lg border border-default-200 p-2 text-sm transition-colors hover:bg-default-50",
                 selectedTables.includes(table) ? "border-primary bg-primary/5" : "",
               )}
               key={table}
@@ -530,12 +530,12 @@ function StatCard({
   };
 
   return (
-    <div className="bg-default-50/50 rounded-xl p-4">
+    <div className="rounded-xl bg-default-50/50 p-4">
       <div className="flex items-center gap-3">
         <div className={cn("rounded-lg p-2", bgColors[color])}>{icon}</div>
         <div>
           <p className="text-default-500 text-sm">{label}</p>
-          <p className="text-2xl font-bold">{value}</p>
+          <p className="font-bold text-2xl">{value}</p>
         </div>
       </div>
     </div>

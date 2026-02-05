@@ -46,7 +46,9 @@ export const addNotification = (
 export const markAsRead = (id: string) => {
   notificationStore.setState((state) => {
     const notification = state.notifications.find((n) => n.id === id);
-    if (!notification || notification.read) return state;
+    if (!notification || notification.read) {
+      return state;
+    }
 
     return {
       notifications: state.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),

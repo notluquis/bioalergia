@@ -65,7 +65,7 @@ export function ClassificationToolbar({
       >
         {isJobRunning && (
           <div
-            className="bg-primary/20 absolute inset-0 transition-all duration-300"
+            className="absolute inset-0 bg-primary/20 transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         )}
@@ -112,9 +112,9 @@ export function ClassificationToolbar({
 
       {/* Progress info pill */}
       {isJobRunning && job && (
-        <div className="bg-primary/10 border-primary/20 flex items-center gap-2 rounded-full border px-3 py-1.5">
-          <span className="text-primary/80 text-xs font-medium">{job.message}</span>
-          <span className="text-primary text-xs font-bold tabular-nums">
+        <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5">
+          <span className="font-medium text-primary/80 text-xs">{job.message}</span>
+          <span className="font-bold text-primary text-xs tabular-nums">
             {job.progress.toLocaleString("es-CL")}/{job.total.toLocaleString("es-CL")}
           </span>
         </div>

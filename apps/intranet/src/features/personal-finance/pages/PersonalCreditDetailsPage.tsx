@@ -62,7 +62,9 @@ const installmentColumns = (
 export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
   const { data: credit } = useSuspenseQuery(personalFinanceQueries.detail(creditId));
 
-  if (!credit) return null;
+  if (!credit) {
+    return null;
+  }
 
   const columns = installmentColumns(credit.currency, credit.id);
 
@@ -75,12 +77,12 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
             isIconOnly
             size="sm"
             variant="ghost"
-            className="no-animation ease-apple size-8 p-0 transition-all duration-200 hover:-translate-y-px active:translate-y-0 active:scale-[0.98]"
+            className="no-animation size-8 p-0 transition-all duration-200 ease-apple hover:-translate-y-px active:translate-y-0 active:scale-[0.98]"
           >
             <ArrowLeftIcon className="size-4" />
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="font-bold text-3xl tracking-tight">
           {credit.bankName} - {credit.description || credit.creditNumber}
         </h1>
         <Chip
@@ -94,20 +96,20 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monto Total</CardTitle>
+            <CardTitle className="font-medium text-sm">Monto Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="font-bold text-2xl">
               {formatCurrency(Number(credit.totalAmount), credit.currency)}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cuotas</CardTitle>
+            <CardTitle className="font-medium text-sm">Cuotas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="font-bold text-2xl">
               {
                 credit.installments?.filter((i: PersonalCreditInstallment) => i.status === "PAID")
                   .length

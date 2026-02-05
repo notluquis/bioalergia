@@ -136,7 +136,9 @@ export function useParticipantInsightsData() {
         selectKey: entry.selectKey,
       }))
       .toSorted((a, b) => {
-        if (b.outgoingAmount !== a.outgoingAmount) return b.outgoingAmount - a.outgoingAmount;
+        if (b.outgoingAmount !== a.outgoingAmount) {
+          return b.outgoingAmount - a.outgoingAmount;
+        }
         return b.outgoingCount - a.outgoingCount;
       });
   })();
@@ -206,8 +208,12 @@ export function useParticipantInsightsData() {
 function resolveRange(quickValue: string, fromValue: string, toValue: string): RangeParams {
   if (quickValue === "custom") {
     const range: RangeParams = {};
-    if (fromValue) range.from = fromValue;
-    if (toValue) range.to = toValue;
+    if (fromValue) {
+      range.from = fromValue;
+    }
+    if (toValue) {
+      range.to = toValue;
+    }
     return range;
   }
 

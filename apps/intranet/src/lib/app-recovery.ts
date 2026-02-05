@@ -3,14 +3,18 @@ export type AppFallbackReason = "chunk" | "offline" | "update" | "unknown";
 const FALLBACK_EVENT = "app:fallback";
 
 export function signalAppFallback(reason: AppFallbackReason) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") {
+    return;
+  }
 
   window.__APP_FALLBACK_REASON__ = reason;
   window.dispatchEvent(new CustomEvent(FALLBACK_EVENT, { detail: { reason } }));
 }
 
 export function onAppFallback(callback: (reason: AppFallbackReason) => void) {
-  if (typeof window === "undefined") return () => undefined;
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
 
   const handler = (event: Event) => {
     const detail = (event as CustomEvent).detail as { reason?: AppFallbackReason };
@@ -24,7 +28,9 @@ export function onAppFallback(callback: (reason: AppFallbackReason) => void) {
 }
 
 export async function clearAppCaches() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") {
+    return;
+  }
 
   if ("serviceWorker" in navigator) {
     const registrations = await navigator.serviceWorker.getRegistrations();

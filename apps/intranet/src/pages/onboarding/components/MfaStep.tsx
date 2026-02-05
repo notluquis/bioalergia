@@ -33,19 +33,19 @@ export function MfaStep({
   if (isLoading && !mfaSecret) {
     return (
       <div className="flex justify-center py-8">
-        <Loader2 className="text-primary animate-spin" size={40} />
+        <Loader2 className="animate-spin text-primary" size={40} />
       </div>
     );
   }
 
   if (!mfaSecret) {
     return (
-      <div className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500">
+      <div className="fade-in slide-in-from-right-4 animate-in space-y-6 duration-500">
         <div className="mb-6 text-center">
-          <div className="bg-warning/10 text-warning mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
             <Smartphone size={24} />
           </div>
-          <h2 className="text-2xl font-bold">Configurar MFA</h2>
+          <h2 className="font-bold text-2xl">Configurar MFA</h2>
           <p className="text-default-500 text-sm">
             Escanea el código con tu app de autenticación (Google Authenticator, Microsoft
             Authenticator, Apple Passwords, etc).
@@ -59,12 +59,12 @@ export function MfaStep({
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500">
+    <div className="fade-in slide-in-from-right-4 animate-in space-y-6 duration-500">
       <div className="mb-6 text-center">
-        <div className="bg-warning/10 text-warning mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
           <Smartphone size={24} />
         </div>
-        <h2 className="text-2xl font-bold">Configurar MFA</h2>
+        <h2 className="font-bold text-2xl">Configurar MFA</h2>
         <p className="text-default-500 text-sm">
           Escanea el código con tu app de autenticación (Google Authenticator, Microsoft
           Authenticator, Apple Passwords, etc).

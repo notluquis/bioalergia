@@ -20,13 +20,13 @@ export function FounderSection() {
         <Card.Content className="space-y-4 p-6">
           <div className="space-y-4">
             {visibleParagraphs.map((paragraph) => (
-              <p className="text-sm leading-6 text-(--ink-muted)" key={paragraph}>
+              <p className="text-(--ink-muted) text-sm leading-6" key={paragraph}>
                 {paragraph}
               </p>
             ))}
           </div>
           <Button
-            className="w-full rounded-full border border-(--accent) bg-transparent text-sm text-(--accent) hover:bg-(--accent) hover:text-white transition-colors"
+            className="w-full rounded-full border border-(--accent) bg-transparent text-(--accent) text-sm transition-colors hover:bg-(--accent) hover:text-white"
             onPress={() => setIsExpanded(!isExpanded)}
           >
             {isExpanded ? "Leer menos" : "Leer más"}

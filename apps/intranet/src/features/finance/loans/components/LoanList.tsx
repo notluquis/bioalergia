@@ -20,10 +20,10 @@ export function LoanList({
   selectedId,
 }: LoanListProps) {
   return (
-    <aside className="text-foreground bg-background flex h-full flex-col gap-4 p-6 text-sm">
+    <aside className="flex h-full flex-col gap-4 bg-background p-6 text-foreground text-sm">
       <header className="flex items-center justify-between">
         <div>
-          <h2 className="text-foreground/90 text-xs font-semibold tracking-wide uppercase">
+          <h2 className="font-semibold text-foreground/90 text-xs uppercase tracking-wide">
             Préstamos
           </h2>
           <p className="text-default-500 text-xs">Resumen rápido de capital y estado.</p>
@@ -50,7 +50,7 @@ export function LoanList({
               className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-default-200 bg-primary/20 text-primary"
-                  : "bg-default-50 text-foreground hover:border-default-200 hover:bg-default-50 border-transparent"
+                  : "border-transparent bg-default-50 text-foreground hover:border-default-200 hover:bg-default-50"
               }`}
               key={loan.public_id}
               onClick={() => {
@@ -60,8 +60,8 @@ export function LoanList({
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold tracking-tight">{loan.title}</p>
-                  <p className="text-default-400 text-xs tracking-wide uppercase">
+                  <p className="font-semibold text-sm tracking-tight">{loan.title}</p>
+                  <p className="text-default-400 text-xs uppercase tracking-wide">
                     {loan.borrower_name} · {loan.borrower_type === "PERSON" ? "Persona" : "Empresa"}
                   </p>
                 </div>
@@ -71,7 +71,7 @@ export function LoanList({
                 />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
-                <span className="text-foreground font-semibold">
+                <span className="font-semibold text-foreground">
                   ${loan.remaining_amount.toLocaleString("es-CL")}
                 </span>
                 <span className="text-default-500">
@@ -81,9 +81,9 @@ export function LoanList({
                   Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}
                 </span>
               </div>
-              <div className="bg-background/60 mt-2 h-2 w-full overflow-hidden rounded-full">
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-background/60">
                 <div
-                  className="bg-primary/60 h-full rounded-full"
+                  className="h-full rounded-full bg-primary/60"
                   style={{ width: `${Math.min(100, Math.round(paidRatio * 100))}%` }}
                 />
               </div>
@@ -91,7 +91,7 @@ export function LoanList({
           );
         })}
         {loans.length === 0 && (
-          <p className="border-default-200 bg-default-50 text-default-500 rounded-2xl border border-dashed p-4 text-xs">
+          <p className="rounded-2xl border border-default-200 border-dashed bg-default-50 p-4 text-default-500 text-xs">
             Aún no registras préstamos. Crea el primero para comenzar a seguir cuotas y pagos.
           </p>
         )}

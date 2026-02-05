@@ -23,8 +23,12 @@ export function subtractCurrency(a: CurrencyValue, b: CurrencyValue): number {
  * Returns Decimal(0) for null/undefined/invalid inputs.
  */
 export function toDecimal(value: CurrencyValue): Decimal {
-  if (value === null || value === undefined) return new Decimal(0);
-  if (value instanceof Decimal) return value;
+  if (value === null || value === undefined) {
+    return new Decimal(0);
+  }
+  if (value instanceof Decimal) {
+    return value;
+  }
 
   try {
     // Handle specific object cases if necessary, or rely on string conversion

@@ -68,7 +68,9 @@ export function startJob(type: string, total: number): string {
  */
 export function updateJobProgress(jobId: string, progress: number, message?: string): void {
   const job = jobs.get(jobId);
-  if (!job) return;
+  if (!job) {
+    return;
+  }
 
   job.progress = progress;
   job.updatedAt = new Date();
@@ -82,7 +84,9 @@ export function updateJobProgress(jobId: string, progress: number, message?: str
  */
 export function completeJob(jobId: string, result: unknown): void {
   const job = jobs.get(jobId);
-  if (!job) return;
+  if (!job) {
+    return;
+  }
 
   job.status = "completed";
   job.progress = job.total;
@@ -96,7 +100,9 @@ export function completeJob(jobId: string, result: unknown): void {
  */
 export function failJob(jobId: string, error: string): void {
   const job = jobs.get(jobId);
-  if (!job) return;
+  if (!job) {
+    return;
+  }
 
   job.status = "failed";
   job.error = error;

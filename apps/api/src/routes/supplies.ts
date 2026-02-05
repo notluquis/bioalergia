@@ -29,7 +29,9 @@ suppliesRoutes.get("/requests", async (c) => {
   const user = await getSessionUser(c);
   if (user) {
     const canRead = await hasPermission(user.id, "read", "SupplyRequest");
-    if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    if (!canRead) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
   }
   const requests = await getSupplyRequests();
   return reply(c, requests);
@@ -44,10 +46,14 @@ suppliesRoutes.get("/common", async (c) => {
 // POST /api/supplies/requests
 suppliesRoutes.post("/requests", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canCreate = await hasPermission(user.id, "create", "SupplyRequest");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const body = await c.req.json();
   const parsed = supplyRequestSchema.safeParse(body);
@@ -81,7 +87,9 @@ suppliesRoutes.put("/:id/status", async (c) => {
   }
 
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   // Check for permission to update supply requests
   const canUpdate = await hasPermission(user.id, "update", "SupplyRequest");

@@ -10,7 +10,7 @@ interface IncomeBreakdownProps {
 
 export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdownProps>) {
   if (isLoading || !summary) {
-    return <div className="bg-background h-64 w-full animate-pulse rounded-2xl" />;
+    return <div className="h-64 w-full animate-pulse rounded-2xl bg-background" />;
   }
 
   const columns: ColumnDef<IncomeItem>[] = [
@@ -26,7 +26,7 @@ export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdown
     },
     {
       accessorKey: "category",
-      cell: ({ row }) => <span className="text-xs font-medium">{row.original.category}</span>,
+      cell: ({ row }) => <span className="font-medium text-xs">{row.original.category}</span>,
       header: "Categoría",
       minSize: 150,
     },
@@ -43,7 +43,7 @@ export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdown
     {
       accessorKey: "amount",
       cell: ({ row }) => (
-        <div className="tabular-nums text-right text-xs font-mono">
+        <div className="text-right font-mono text-xs tabular-nums">
           ${row.original.amount.toLocaleString("es-CL")}
         </div>
       ),
@@ -65,8 +65,8 @@ export function IncomeBreakdown({ summary, isLoading }: Readonly<IncomeBreakdown
       {summary.incomesByCategory.map((group) => (
         <section key={group.category} className="space-y-4">
           <div className="flex items-center justify-between px-2">
-            <h3 className="text-lg font-semibold">{group.category}</h3>
-            <span className="text-sm font-medium opacity-70">
+            <h3 className="font-semibold text-lg">{group.category}</h3>
+            <span className="font-medium text-sm opacity-70">
               Total: ${group.total.toLocaleString("es-CL")}
             </span>
           </div>

@@ -37,7 +37,9 @@ export default function CalendarSyncHistoryPage() {
   const isLoading = isLoadingSyncLogs;
 
   const hasRunningSyncInHistory = syncLogs.some((log) => {
-    if (log.status !== "RUNNING") return false;
+    if (log.status !== "RUNNING") {
+      return false;
+    }
     const started = dayjs(log.startedAt);
     // Match backend stale timeout: 15 minutes
     return started.isValid() && Date.now() - started.valueOf() < 15 * 60 * 1000;
@@ -47,7 +49,7 @@ export default function CalendarSyncHistoryPage() {
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold">Historial de Sincronización</h1>
+        <h1 className="font-bold text-2xl">Historial de Sincronización</h1>
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => setShowConfig(!showConfig)}
@@ -75,8 +77,8 @@ export default function CalendarSyncHistoryPage() {
       </div>
 
       {showConfig && (
-        <div className="bg-background border-default-100 rounded-xl border p-4 shadow-sm animate-in slide-in-from-top-2 fade-in duration-200">
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium text-default-600">
+        <div className="slide-in-from-top-2 fade-in animate-in rounded-xl border border-default-100 bg-background p-4 shadow-sm duration-200">
+          <div className="mb-4 flex items-center gap-2 font-medium text-default-600 text-sm">
             <CalendarIcon size={16} />
             Calendarios Conectados
           </div>
@@ -95,13 +97,13 @@ export default function CalendarSyncHistoryPage() {
       />
 
       {/* Sync History Card */}
-      <div className="bg-background border-default-100 min-h-100 overflow-hidden rounded-xl border shadow-sm">
+      <div className="min-h-100 overflow-hidden rounded-xl border border-default-100 bg-background shadow-sm">
         {/* Content */}
         {(() => {
           if (isLoading) {
             return (
               <div className="flex h-64 items-center justify-center">
-                <Loader2 className="text-primary h-8 w-8 animate-spin" />
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             );
           }
@@ -120,14 +122,14 @@ export default function CalendarSyncHistoryPage() {
 
           if (syncLogs.length === 0) {
             return (
-              <div className="text-default-400 flex h-64 items-center justify-center text-sm">
+              <div className="flex h-64 items-center justify-center text-default-400 text-sm">
                 No hay registros de sincronización de calendario.
               </div>
             );
           }
 
           return (
-            <Accordion className="divide-default-100 divide-y" variant="surface">
+            <Accordion className="divide-y divide-default-100" variant="surface">
               {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: row rendering logic */}
               {syncLogs.map((log) => {
                 const duration = log.finishedAt
@@ -137,11 +139,11 @@ export default function CalendarSyncHistoryPage() {
                 return (
                   <Accordion.Item id={log.id.toString()} key={log.id.toString()}>
                     <Accordion.Heading>
-                      <Accordion.Trigger className="hover:bg-default-50/50 flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left transition-colors sm:flex-nowrap">
+                      <Accordion.Trigger className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-default-50/50 sm:flex-nowrap">
                         <StatusBadge status={log.status} />
 
                         <div className="min-w-24">
-                          <div className="text-sm font-medium">
+                          <div className="font-medium text-sm">
                             {dayjs(log.startedAt).format("DD/MM/YYYY")}
                           </div>
                           <div className="text-default-400 text-xs">
@@ -155,7 +157,7 @@ export default function CalendarSyncHistoryPage() {
                           </Chip>
                           {log.triggerLabel && (
                             <span
-                              className="text-default-500 ml-2 text-xs"
+                              className="ml-2 text-default-500 text-xs"
                               title={log.triggerLabel}
                             >
                               {log.triggerLabel.slice(0, 30)}
@@ -167,7 +169,7 @@ export default function CalendarSyncHistoryPage() {
                         <div className="flex flex-wrap gap-2 text-xs">
                           {log.inserted > 0 && (
                             <span
-                              className="bg-success/10 text-success rounded px-1.5 py-0.5"
+                              className="rounded bg-success/10 px-1.5 py-0.5 text-success"
                               title="Insertados"
                             >
                               +{log.inserted}
@@ -175,7 +177,7 @@ export default function CalendarSyncHistoryPage() {
                           )}
                           {log.updated > 0 && (
                             <span
-                              className="bg-primary/10 text-primary rounded px-1.5 py-0.5"
+                              className="rounded bg-primary/10 px-1.5 py-0.5 text-primary"
                               title="Actualizados"
                             >
                               ~{log.updated}
@@ -183,7 +185,7 @@ export default function CalendarSyncHistoryPage() {
                           )}
                           {log.excluded > 0 && (
                             <span
-                              className="bg-danger/10 text-danger rounded px-1.5 py-0.5"
+                              className="rounded bg-danger/10 px-1.5 py-0.5 text-danger"
                               title="Eliminados/Excluidos"
                             >
                               -{log.excluded}
@@ -191,7 +193,7 @@ export default function CalendarSyncHistoryPage() {
                           )}
                           {log.skipped > 0 && (
                             <span
-                              className="bg-warning/10 text-warning rounded px-1.5 py-0.5"
+                              className="rounded bg-warning/10 px-1.5 py-0.5 text-warning"
                               title="Omitidos"
                             >
                               !{log.skipped}
@@ -203,29 +205,29 @@ export default function CalendarSyncHistoryPage() {
                             log.skipped === 0 && <span className="text-default-200">-</span>}
                         </div>
 
-                        <div className="text-default-600 min-w-12 text-right text-sm">
+                        <div className="min-w-12 text-right text-default-600 text-sm">
                           {duration === null ? "-" : `${duration}s`}
                         </div>
 
-                        <Accordion.Indicator className="text-default-300 ml-auto sm:ml-0">
+                        <Accordion.Indicator className="ml-auto text-default-300 sm:ml-0">
                           <ChevronDown className="h-4 w-4" />
                         </Accordion.Indicator>
                       </Accordion.Trigger>
                     </Accordion.Heading>
                     <Accordion.Panel>
-                      <Accordion.Body className="bg-default-50/30 border-default-100 border-t px-6 py-4">
+                      <Accordion.Body className="border-default-100 border-t bg-default-50/30 px-6 py-4">
                         <div className="grid gap-6 md:grid-cols-2">
                           <div>
-                            <h4 className="mb-3 text-sm font-semibold">
+                            <h4 className="mb-3 font-semibold text-sm">
                               Resumen de la Sincronización
                             </h4>
-                            <div className="bg-background grid grid-cols-2 gap-3 rounded-lg p-3">
+                            <div className="grid grid-cols-2 gap-3 rounded-lg bg-background p-3">
                               <div>
-                                <span className="text-default-500 block text-xs">ID</span>
+                                <span className="block text-default-500 text-xs">ID</span>
                                 <span className="font-mono text-sm">{log.id.toString()}</span>
                               </div>
                               <div>
-                                <span className="text-default-500 block text-xs">Duración</span>
+                                <span className="block text-default-500 text-xs">Duración</span>
                                 <span className="text-sm">
                                   {duration !== null
                                     ? `${duration} segundos`
@@ -235,26 +237,26 @@ export default function CalendarSyncHistoryPage() {
                                 </span>
                               </div>
                               <div>
-                                <span className="text-default-500 block text-xs">Insertados</span>
-                                <span className="text-success text-lg font-bold">
+                                <span className="block text-default-500 text-xs">Insertados</span>
+                                <span className="font-bold text-lg text-success">
                                   {log.inserted}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-default-500 block text-xs">Actualizados</span>
-                                <span className="text-primary text-lg font-bold">
+                                <span className="block text-default-500 text-xs">Actualizados</span>
+                                <span className="font-bold text-lg text-primary">
                                   {log.updated}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-default-500 block text-xs">Excluidos</span>
-                                <span className="text-danger text-lg font-bold">
+                                <span className="block text-default-500 text-xs">Excluidos</span>
+                                <span className="font-bold text-danger text-lg">
                                   {log.excluded}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-default-500 block text-xs">Omitidos</span>
-                                <span className="text-warning text-lg font-bold">
+                                <span className="block text-default-500 text-xs">Omitidos</span>
+                                <span className="font-bold text-lg text-warning">
                                   {log.skipped}
                                 </span>
                               </div>
@@ -262,10 +264,10 @@ export default function CalendarSyncHistoryPage() {
 
                             {log.errorMessage && (
                               <div className="mt-4">
-                                <span className="text-danger mb-1 block text-xs font-bold">
+                                <span className="mb-1 block font-bold text-danger text-xs">
                                   Mensaje de Error
                                 </span>
-                                <div className="bg-danger/10 text-danger max-h-32 overflow-auto rounded-lg p-2 font-mono text-xs">
+                                <div className="max-h-32 overflow-auto rounded-lg bg-danger/10 p-2 font-mono text-danger text-xs">
                                   {log.errorMessage}
                                 </div>
                               </div>
@@ -292,7 +294,7 @@ export default function CalendarSyncHistoryPage() {
 function renderCalendarsList(calendars: CalendarData[]) {
   if (calendars.length === 0) {
     return (
-      <div className="text-default-400 p-4 text-center text-sm">No hay calendarios conectados</div>
+      <div className="p-4 text-center text-default-400 text-sm">No hay calendarios conectados</div>
     );
   }
 
@@ -300,17 +302,17 @@ function renderCalendarsList(calendars: CalendarData[]) {
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {calendars.map((cal: CalendarData) => (
         <div
-          className="bg-default-50/50 border-default-100 flex items-center gap-3 rounded-lg border p-3"
+          className="flex items-center gap-3 rounded-lg border border-default-100 bg-default-50/50 p-3"
           key={cal.id}
         >
           <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
           <div className="min-w-0 flex-1">
             <span className="block truncate font-medium text-sm">{cal.name}</span>
             <div className="flex items-center justify-between gap-2">
-              <p className="text-default-400 truncate text-xs">
+              <p className="truncate text-default-400 text-xs">
                 {cal.eventCount.toLocaleString()} eventos
               </p>
-              <span className="text-default-200 shrink-0 truncate font-mono text-[10px]">
+              <span className="shrink-0 truncate font-mono text-[10px] text-default-200">
                 {cal.googleId.slice(0, 8)}...
               </span>
             </div>

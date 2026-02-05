@@ -39,12 +39,16 @@ const SECONDS_IN_DAY = 24 * 60 * 60 - 1; // 23:59:59
 const SLOT_BUFFER_SECONDS = 60 * 30;
 
 function buildDateTime(date: Date, time: null | string) {
-  if (!time) return null;
+  if (!time) {
+    return null;
+  }
   return `${dayjs(date).format("YYYY-MM-DD")}T${time}`;
 }
 
 function clampSeconds(value: number) {
-  if (!Number.isFinite(value)) return 0;
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
   return Math.min(SECONDS_IN_DAY, Math.max(0, Math.floor(value)));
 }
 
@@ -78,9 +82,13 @@ function convertToCalendarEvents(
 }
 
 function normalizeTimeComponent(time: null | string | undefined) {
-  if (!time) return null;
+  if (!time) {
+    return null;
+  }
   const trimmed = time.trim();
-  if (!trimmed) return null;
+  if (!trimmed) {
+    return null;
+  }
   if (TIME_HH_MM_REGEX.test(trimmed)) {
     return `${trimmed}:00`;
   }
@@ -188,12 +196,16 @@ export default function TimesheetAuditCalendar({
 
   // Navigate to focus date when it changes
   useEffect(() => {
-    if (!focusDate) return;
+    if (!focusDate) {
+      return;
+    }
     calendarApiRef.current?.gotoDate(focusDate);
   }, [focusDate]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
     const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     setTooltipTrigger(canHover ? "hover" : "focus");
   }, []);
@@ -281,10 +293,10 @@ export default function TimesheetAuditCalendar({
   })();
 
   return (
-    <div className="bg-default-50/30 border-default-100 w-full overflow-hidden rounded-xl border p-4 sm:p-6">
+    <div className="w-full overflow-hidden rounded-xl border border-default-100 bg-default-50/30 p-4 sm:p-6">
       <div className="timesheet-audit-calendar-wrapper">
         {loading && (
-          <div className="bg-background/80 absolute inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80">
             <Spinner size="md" />
           </div>
         )}
@@ -358,13 +370,13 @@ export default function TimesheetAuditCalendar({
       </div>
 
       {/* Legend */}
-      <div className="text-default-600 mt-6 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-3 text-default-600 text-sm sm:grid-cols-2">
         <div className="flex items-center gap-3">
-          <div className="bg-success h-4 w-4 rounded" />
+          <div className="h-4 w-4 rounded bg-success" />
           <span>Sin solapamiento</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="bg-danger h-4 w-4 rounded" />
+          <div className="h-4 w-4 rounded bg-danger" />
           <span>Con solapamiento detectado</span>
         </div>
       </div>

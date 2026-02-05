@@ -133,7 +133,9 @@ const useAccountSuggestions = () => {
 };
 
 const fetchTransactionsForFilter = async (filter: AccountTransactionFilter, range: DateRange) => {
-  if (!filter.sourceId && !filter.bankAccountNumber) return [];
+  if (!filter.sourceId && !filter.bankAccountNumber) {
+    return [];
+  }
 
   const payload = await fetchTransactions({
     filters: {
@@ -507,7 +509,7 @@ function AssociatedAccountsHeader({ onAddAccount }: { onAddAccount: () => void }
   return (
     <header className="flex flex-wrap items-center justify-between gap-3">
       <div className="space-y-1">
-        <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Cuentas asociadas</h2>
+        <h2 className="font-semibold text-lg text-primary drop-shadow-sm">Cuentas asociadas</h2>
         <p className="text-foreground/90 text-xs">
           Identificadores detectados en los movimientos y asignados a esta contraparte.
         </p>
@@ -527,7 +529,7 @@ function AccountGroupsTable({
   columns: ReturnType<typeof getAccountGroupColumns>;
 }) {
   return (
-    <div className="border-default-100 bg-background overflow-hidden rounded-lg border">
+    <div className="overflow-hidden rounded-lg border border-default-100 bg-background">
       <DataTable
         columns={columns as ColumnDef<AccountGroup, unknown>[]}
         data={accountGroups}
@@ -562,7 +564,7 @@ function QuickViewSection({
 }) {
   if (!quickViewGroup) {
     return (
-      <div className="border-default-200/70 bg-background/40 text-default-500 rounded-[28px] border border-dashed p-8 text-center text-sm">
+      <div className="rounded-[28px] border border-default-200/70 border-dashed bg-background/40 p-8 text-center text-default-500 text-sm">
         Selecciona una cuenta en la tabla superior para ver su resumen y movimientos históricos.
       </div>
     );
@@ -572,23 +574,23 @@ function QuickViewSection({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-default-500 text-xs tracking-[0.3em] uppercase">Resumen mensual</p>
-          <h3 className="text-foreground text-lg font-semibold">Transferencias</h3>
+          <p className="text-default-500 text-xs uppercase tracking-[0.3em]">Resumen mensual</p>
+          <h3 className="font-semibold text-foreground text-lg">Transferencias</h3>
           <p className="text-default-500 text-xs">{quickViewGroup.label}</p>
           <p className="text-default-400 text-xs">
             {activeRange.from} – {activeRange.to}
           </p>
         </div>
         <div className="flex gap-4">
-          <div className="border-default-200/60 bg-background/60 text-default-600 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
+          <div className="rounded-2xl border border-default-200/60 bg-background/60 px-4 py-2 font-semibold text-default-600 text-xs uppercase tracking-[0.2em]">
             Movimientos {quickStats.count}
           </div>
-          <div className="border-default-200/60 bg-background/60 text-default-600 rounded-2xl border px-4 py-2 text-xs font-semibold tracking-[0.2em] uppercase">
+          <div className="rounded-2xl border border-default-200/60 bg-background/60 px-4 py-2 font-semibold text-default-600 text-xs uppercase tracking-[0.2em]">
             Total {fmtCLP(quickStats.total)}
           </div>
         </div>
       </div>
-      <div className="text-default-600 flex flex-wrap items-end gap-3 text-xs">
+      <div className="flex flex-wrap items-end gap-3 text-default-600 text-xs">
         <Input
           className="w-36"
           label="Desde"
@@ -620,8 +622,8 @@ function QuickViewSection({
           Año en curso
         </Button>
       </div>
-      <div className="surface-recessed border-default-200/70 border p-4">
-        <div className="border-default-100 overflow-hidden rounded-lg border">
+      <div className="surface-recessed border border-default-200/70 p-4">
+        <div className="overflow-hidden rounded-lg border border-default-100">
           <DataTable
             columns={columns as ColumnDef<Transaction, unknown>[]}
             data={rows}
@@ -658,13 +660,13 @@ function SuggestionList({
     );
   }
   return (
-    <div className="border-default-200 bg-background max-h-48 overflow-y-auto rounded-xl border">
+    <div className="max-h-48 overflow-y-auto rounded-xl border border-default-200 bg-background">
       {accountSuggestions.map((suggestion) => (
         <div
-          className="border-default-200 flex flex-col gap-1 border-b px-3 py-2 text-xs last:border-b-0"
+          className="flex flex-col gap-1 border-default-200 border-b px-3 py-2 text-xs last:border-b-0"
           key={suggestion.accountIdentifier}
         >
-          <span className="text-foreground font-semibold">{suggestion.accountIdentifier}</span>
+          <span className="font-semibold text-foreground">{suggestion.accountIdentifier}</span>
           <span className="text-foreground/90">{suggestion.holder ?? "(sin titular)"}</span>
           {suggestion.bankAccountNumber && (
             <span className="text-foreground/90 text-xs">

@@ -88,21 +88,31 @@ const toLabel = (field: string) =>
     .replace(LEADING_CHAR_REGEX, (match) => match.toUpperCase());
 
 const formatDate = (value: unknown) => {
-  if (!value) return "";
+  if (!value) {
+    return "";
+  }
   const parsed = dayjs(value as string | Date);
   return parsed.isValid() ? parsed.format("DD/MM/YYYY") : String(value);
 };
 
 const formatAmount = (value: unknown) => {
-  if (value === null || value === undefined || value === "") return "";
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
   const numeric = typeof value === "string" ? Number(value) : (value as number);
-  if (Number.isNaN(numeric)) return String(value);
+  if (Number.isNaN(numeric)) {
+    return String(value);
+  }
   return fmtCLP(numeric);
 };
 
 const formatJson = (value: unknown) => {
-  if (value === null || value === undefined) return "";
-  if (typeof value === "string") return value;
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
   try {
     return JSON.stringify(value, null, 2);
   } catch {
@@ -111,9 +121,13 @@ const formatJson = (value: unknown) => {
 };
 
 const isEmptyJsonObject = (value: unknown): boolean => {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== "object") {
+    return false;
+  }
   if (Array.isArray(value)) {
-    if (value.length === 0) return true;
+    if (value.length === 0) {
+      return true;
+    }
     return value.every((item) => isEmptyJsonObject(item));
   }
   return Object.keys(value).length === 0;
@@ -121,10 +135,14 @@ const isEmptyJsonObject = (value: unknown): boolean => {
 
 function MetadataCell({ value, title }: Readonly<{ value: unknown; title: string }>) {
   const [open, setOpen] = useState(false);
-  if (isEmptyJsonObject(value)) return "";
+  if (isEmptyJsonObject(value)) {
+    return "";
+  }
   const formatted = formatJson(value);
 
-  if (!formatted) return "";
+  if (!formatted) {
+    return "";
+  }
 
   return (
     <>
@@ -138,7 +156,7 @@ function MetadataCell({ value, title }: Readonly<{ value: unknown; title: string
         Ver
       </Button>
       <Modal isOpen={open} onClose={() => setOpen(false)} title={title}>
-        <pre className="whitespace-pre-wrap wrap-break-word text-xs text-foreground">
+        <pre className="wrap-break-word whitespace-pre-wrap text-foreground text-xs">
           {formatted}
         </pre>
       </Modal>
@@ -220,7 +238,7 @@ const buildStandardColumn = (
     return {
       accessorKey: key,
       cell: ({ getValue }) => (
-        <span className="text-foreground font-medium">{formatDate(getValue())}</span>
+        <span className="font-medium text-foreground">{formatDate(getValue())}</span>
       ),
       header: getHeader(key),
     };

@@ -51,7 +51,9 @@ interface DistributionChartProps {
 export function DistributionChart({ reportData }: DistributionChartProps) {
   const chartColors = getChartColors();
 
-  if (reportData.length <= 1) return null;
+  if (reportData.length <= 1) {
+    return null;
+  }
 
   const pieData = reportData.map((emp) => ({
     name: emp.fullName,
@@ -59,9 +61,9 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
   }));
 
   return (
-    <div className="bg-background border-default-100 rounded-3xl border p-4 shadow-sm sm:p-6">
-      <h3 className="mb-2 flex items-center gap-2 text-lg font-bold">
-        <PieChartIcon className="text-secondary h-5 w-5" />
+    <div className="rounded-3xl border border-default-100 bg-background p-4 shadow-sm sm:p-6">
+      <h3 className="mb-2 flex items-center gap-2 font-bold text-lg">
+        <PieChartIcon className="h-5 w-5 text-secondary" />
         Distribución Total
       </h3>
       <div className="h-64 w-full sm:h-80">
@@ -109,10 +111,10 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
   const chartColors = getChartColors();
 
   return (
-    <div className="bg-background border-default-100 rounded-3xl border p-4 shadow-sm sm:p-6">
+    <div className="rounded-3xl border border-default-100 bg-background p-4 shadow-sm sm:p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-lg font-bold">
-          <BarChart2 className="text-primary h-5 w-5" />
+        <h3 className="flex items-center gap-2 font-bold text-lg">
+          <BarChart2 className="h-5 w-5 text-primary" />
           Comparativa Temporal
         </h3>
         <Chip size="sm" variant="tertiary">

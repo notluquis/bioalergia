@@ -7,7 +7,9 @@ const app = new Hono();
 
 app.post("/subscribe", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const body = await c.req.json();
   const { subscription } = body;
@@ -22,10 +24,14 @@ app.post("/subscribe", async (c) => {
 
 app.post("/send-test", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Notification");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const result = await sendPushNotification(user.id, {
     title: "Test Notification",

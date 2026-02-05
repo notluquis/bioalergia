@@ -57,7 +57,7 @@ export const getColumns = (actions: {
       return (
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
-            <Avatar.Fallback className="text-xs font-bold">
+            <Avatar.Fallback className="font-bold text-xs">
               {getPersonInitials(user.person)}
             </Avatar.Fallback>
           </Avatar>
@@ -81,7 +81,7 @@ export const getColumns = (actions: {
   {
     accessorKey: "role",
     cell: ({ row }) => (
-      <Chip className="font-medium whitespace-nowrap" size="sm" variant="soft">
+      <Chip className="whitespace-nowrap font-medium" size="sm" variant="soft">
         {row.original.role}
       </Chip>
     ),
@@ -112,13 +112,13 @@ export const getColumns = (actions: {
         {row.original.mfaEnabled ? (
           <Tooltip content="MFA activado">
             <div>
-              <ShieldCheck className="text-success size-5" />
+              <ShieldCheck className="size-5 text-success" />
             </div>
           </Tooltip>
         ) : (
           <Tooltip content="MFA inactivo">
             <div>
-              <ShieldCheck className="text-default-100 size-5" />
+              <ShieldCheck className="size-5 text-default-100" />
             </div>
           </Tooltip>
         )}
@@ -134,13 +134,13 @@ export const getColumns = (actions: {
         {row.original.hasPasskey ? (
           <Tooltip content="Passkey configurado">
             <div>
-              <Fingerprint className="text-success size-5" />
+              <Fingerprint className="size-5 text-success" />
             </div>
           </Tooltip>
         ) : (
           <Tooltip content="Sin passkey">
             <div>
-              <Fingerprint className="text-default-100 size-5" />
+              <Fingerprint className="size-5 text-default-100" />
             </div>
           </Tooltip>
         )}

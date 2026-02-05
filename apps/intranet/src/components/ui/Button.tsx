@@ -65,7 +65,9 @@ const mapVariantToHero = (
 };
 
 const mapSizeToHero = (size: string | undefined): "sm" | "md" | "lg" | undefined => {
-  if (size === "xs") return "sm";
+  if (size === "xs") {
+    return "sm";
+  }
   return size as "sm" | "md" | "lg" | undefined;
 };
 

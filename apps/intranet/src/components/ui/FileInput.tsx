@@ -10,7 +10,7 @@ export default function FileInput({ className, label, ...props }: Readonly<FileI
   return (
     <label className="flex w-full flex-col gap-2">
       {label && (
-        <span className="text-default-600 ml-1 text-xs font-semibold tracking-wide uppercase">
+        <span className="ml-1 font-semibold text-default-600 text-xs uppercase tracking-wide">
           {label}
         </span>
       )}

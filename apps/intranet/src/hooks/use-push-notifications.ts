@@ -34,7 +34,9 @@ export function usePushNotifications() {
 
   const subscribeMutation = useMutation({
     mutationFn: async (subscription: PushSubscription) => {
-      if (!user) throw new Error("No authenticated user");
+      if (!user) {
+        throw new Error("No authenticated user");
+      }
       await subscribeToNotifications({
         subscription,
         userId: user.id,
@@ -65,7 +67,9 @@ export function usePushNotifications() {
 
   const sendTestMutation = useMutation({
     mutationFn: async () => {
-      if (!user) return;
+      if (!user) {
+        return;
+      }
       await sendTestNotificationApi({ userId: user.id });
     },
     onError: (error) => {
@@ -74,7 +78,9 @@ export function usePushNotifications() {
   });
 
   const subscribeUser = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     try {
       const registration = await navigator.serviceWorker.ready;

@@ -60,7 +60,7 @@ export default function DailyBalances() {
         <>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-primary text-xl font-semibold">Saldos diarios</h1>
+              <h1 className="font-semibold text-primary text-xl">Saldos diarios</h1>
               {derivedInitial != null && (
                 <p className="text-default-500 text-sm">
                   Saldo anterior: <strong>{formatBalanceInput(derivedInitial)}</strong>
@@ -86,9 +86,13 @@ export default function DailyBalances() {
                   selectedKey={quickRange}
                   onSelectionChange={(key) => {
                     const value = key as string;
-                    if (value === "custom") return;
+                    if (value === "custom") {
+                      return;
+                    }
                     const match = quickMonths.find((month) => month.value === value);
-                    if (!match) return;
+                    if (!match) {
+                      return;
+                    }
                     setFrom(match.from);
                     setTo(match.to);
                   }}

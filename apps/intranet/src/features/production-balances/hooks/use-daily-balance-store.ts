@@ -94,8 +94,12 @@ export function generateWeekData(centerDate: Date, entries: Record<string, numbe
 // 2. Helper Logic
 function computeStatus(data: DailyBalanceFormData, summary: BalanceSummary): DayStatus {
   const hasData = data.tarjeta > 0 || data.transferencia > 0 || data.efectivo > 0;
-  if (!hasData) return "empty";
-  if (summary.cuadra) return "balanced";
+  if (!hasData) {
+    return "empty";
+  }
+  if (summary.cuadra) {
+    return "balanced";
+  }
   return "unbalanced";
 }
 

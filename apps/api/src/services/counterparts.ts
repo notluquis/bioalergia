@@ -29,7 +29,9 @@ export async function getCounterpartById(id: number) {
     },
   });
 
-  if (!counterpart) throw new Error(`Counterpart with ID ${id} not found`);
+  if (!counterpart) {
+    throw new Error(`Counterpart with ID ${id} not found`);
+  }
 
   return {
     counterpart,
@@ -102,7 +104,9 @@ export async function updateCounterpart(
 ) {
   return await db.$transaction(async (tx) => {
     const counterpart = await tx.counterpart.findUnique({ where: { id } });
-    if (!counterpart) throw new Error("Counterpart not found");
+    if (!counterpart) {
+      throw new Error("Counterpart not found");
+    }
 
     if (data.rut || data.name || data.email || data.personType) {
       await tx.person.update({

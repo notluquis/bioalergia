@@ -17,7 +17,9 @@ let KEY: Buffer | null = null;
  * Derives a 32-byte key from the secret using SHA-256 if necessary.
  */
 async function getKey(): Promise<Buffer> {
-  if (KEY) return KEY;
+  if (KEY) {
+    return KEY;
+  }
 
   const secret = await getOrCreateTokenSecret();
   const keyBuffer = Buffer.from(secret, "hex");

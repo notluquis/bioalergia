@@ -32,7 +32,9 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
   const { can } = useCan();
 
   const handleNavigate = () => {
-    if (isMobile && onClose) onClose();
+    if (isMobile && onClose) {
+      onClose();
+    }
   };
 
   const router = useRouter();
@@ -64,8 +66,8 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
         className={cn(
           "z-50 h-full transition-[width] duration-300 ease-in-out",
           isMobile
-            ? "bg-background fixed inset-y-0 left-0 w-[min(85vw,320px)] rounded-r-3xl border-r shadow-2xl pl-[env(safe-area-inset-left)]"
-            : "bg-background border-default-100 relative w-20 rounded-2xl border shadow-xl",
+            ? "fixed inset-y-0 left-0 w-[min(85vw,320px)] rounded-r-3xl border-r bg-background pl-[env(safe-area-inset-left)] shadow-2xl"
+            : "relative w-20 rounded-2xl border border-default-100 bg-background shadow-xl",
           isMobile && (isOpen ? "translate-x-0" : "-translate-x-full"),
         )}
       >
@@ -97,21 +99,21 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
           </div>
 
           {/* Navigation Content */}
-          <div className="flex-1 space-y-6 overflow-x-hidden overflow-y-auto px-2 py-6">
+          <div className="flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-2 py-6">
             {visibleSections.map((section, index) => (
               <div className="space-y-4" key={section.title}>
                 {/* Section Separator (Desktop) */}
                 {index > 0 && !isMobile && (
                   <div
                     aria-hidden="true"
-                    className="border-default-200 mx-auto w-10 border-t pb-2"
+                    className="mx-auto w-10 border-default-200 border-t pb-2"
                   />
                 )}
 
                 {/* Section Title (Only visible on mobile) */}
                 {isMobile && (
                   <div className="flex items-center px-4 pb-1">
-                    <h3 className="text-default-400 text-[10px] font-bold tracking-[0.2em] uppercase">
+                    <h3 className="font-bold text-[10px] text-default-400 uppercase tracking-[0.2em]">
                       {section.title}
                     </h3>
                   </div>
@@ -137,7 +139,7 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
           {/* User Footer */}
           <div
             className={cn(
-              "border-default-100/50 bg-background/30 mt-auto shrink-0 border-t pt-4 pb-8 transition-all duration-300",
+              "mt-auto shrink-0 border-default-100/50 border-t bg-background/30 pt-4 pb-8 transition-all duration-300",
               isMobile ? "px-3" : "flex flex-col items-center justify-center px-0",
             )}
           >
@@ -146,24 +148,24 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                 <button
                   type="button"
                   className={cn(
-                    "hover:bg-default-50/50 group flex cursor-pointer items-center transition-all outline-none",
+                    "group flex cursor-pointer items-center outline-none transition-all hover:bg-default-50/50",
                     isMobile
                       ? "w-full gap-3 rounded-2xl px-3 py-2"
                       : "h-12 w-12 justify-center rounded-xl p-0",
                   )}
                 >
                   <Avatar className="h-10 w-10 shrink-0">
-                    <Avatar.Fallback className="bg-background text-primary font-bold">
+                    <Avatar.Fallback className="bg-background font-bold text-primary">
                       {displayName.slice(0, 2).toUpperCase()}
                     </Avatar.Fallback>
                   </Avatar>
 
                   {isMobile && (
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left transition-all duration-300">
-                      <span className="text-foreground group-hover:text-primary truncate font-semibold transition-colors">
+                      <span className="truncate font-semibold text-foreground transition-colors group-hover:text-primary">
                         {displayName}
                       </span>
-                      <span className="text-default-400 truncate text-xs">{user?.email}</span>
+                      <span className="truncate text-default-400 text-xs">{user?.email}</span>
                     </div>
                   )}
                 </button>
@@ -174,7 +176,7 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                 <HeroDropdownMenu aria-label="Menu de usuario" className="w-56">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm leading-none font-medium">{displayName}</p>
+                      <p className="font-medium text-sm leading-none">{displayName}</p>
                       <p className="text-default-500 text-xs leading-none">{user?.email}</p>
                     </div>
                   </DropdownMenuLabel>
@@ -187,7 +189,7 @@ export default function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="text-danger focus:bg-danger/10 focus:text-danger cursor-pointer"
+                    className="cursor-pointer text-danger focus:bg-danger/10 focus:text-danger"
                     onPress={() => logout()}
                   >
                     <LogOut className="mr-2 size-4" />

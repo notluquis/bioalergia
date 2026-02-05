@@ -86,7 +86,9 @@ app.use(
   cors({
     origin: (origin) => {
       // No origin = same-origin request (always allowed)
-      if (!origin) return "*";
+      if (!origin) {
+        return "*";
+      }
 
       // Explicit CORS_ORIGIN env var (production)
       if (process.env.CORS_ORIGIN && origin === process.env.CORS_ORIGIN) {

@@ -80,7 +80,7 @@ export function DataTableToolbar<TData>({
 
   return (
     <div className="flex flex-col items-start justify-between gap-4 py-4 sm:flex-row sm:items-center">
-      <div className="flex w-full flex-1 flex-col items-start space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
+      <div className="flex w-full flex-1 flex-col items-start space-y-2 sm:flex-row sm:items-center sm:space-x-2 sm:space-y-0">
         {enableGlobalFilter && (
           <Input
             className="h-9 w-full sm:w-62.5 lg:w-87.5"

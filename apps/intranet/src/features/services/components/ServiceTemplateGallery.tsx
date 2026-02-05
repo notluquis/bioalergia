@@ -99,9 +99,9 @@ export const SERVICE_TEMPLATES: ServiceTemplate[] = [
 
 export default function ServiceTemplateGallery({ onApply }: ServiceTemplateGalleryProps) {
   return (
-    <section className="border-default-200 text-foreground bg-background space-y-4 border p-4 text-sm">
+    <section className="space-y-4 border border-default-200 bg-background p-4 text-foreground text-sm">
       <div className="flex flex-col gap-1">
-        <h2 className="text-default-500 text-sm font-semibold tracking-wide uppercase">
+        <h2 className="font-semibold text-default-500 text-sm uppercase tracking-wide">
           Plantillas rápidas
         </h2>
         <p className="text-default-400 text-xs">
@@ -111,14 +111,14 @@ export default function ServiceTemplateGallery({ onApply }: ServiceTemplateGalle
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {SERVICE_TEMPLATES.map((template) => (
           <article
-            className="border-default-200 bg-default-50 hover:border-primary/45 flex h-full flex-col justify-between rounded-2xl border p-4 shadow-sm transition hover:shadow-md"
+            className="flex h-full flex-col justify-between rounded-2xl border border-default-200 bg-default-50 p-4 shadow-sm transition hover:border-primary/45 hover:shadow-md"
             key={template.id}
           >
             <div className="space-y-2">
-              <p className="text-foreground text-sm font-semibold">{template.name}</p>
+              <p className="font-semibold text-foreground text-sm">{template.name}</p>
               <p className="text-default-500 text-xs">{template.description}</p>
               {template.category && (
-                <span className="border-default-200 bg-default-50 text-default-500 inline-flex items-center rounded-full border px-2 py-1 text-xs font-semibold tracking-wide uppercase">
+                <span className="inline-flex items-center rounded-full border border-default-200 bg-default-50 px-2 py-1 font-semibold text-default-500 text-xs uppercase tracking-wide">
                   {template.category}
                 </span>
               )}

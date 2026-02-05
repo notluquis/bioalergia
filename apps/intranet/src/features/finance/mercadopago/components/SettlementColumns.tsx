@@ -9,7 +9,7 @@ const columnHelper = createColumnHelper<SettlementTransaction>();
 export const getSettlementColumns = (): ColumnDef<SettlementTransaction, unknown>[] => [
   columnHelper.accessor("transactionDate", {
     cell: ({ getValue }) => (
-      <span className="text-foreground font-medium">
+      <span className="font-medium text-foreground">
         {dayjs(getValue() as Date | string).format("DD/MM/YYYY")}
       </span>
     ),

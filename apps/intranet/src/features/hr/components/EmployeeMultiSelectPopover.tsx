@@ -41,12 +41,16 @@ export function EmployeeMultiSelectPopover({
 
   const filteredOptions = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
-    if (!query) return options;
+    if (!query) {
+      return options;
+    }
     return options.filter((opt) => opt.label.toLowerCase().includes(query));
   }, [debouncedSearch, options]);
 
   const disabledKeys = useMemo(() => {
-    if (!maxSelected || selectedIds.length < maxSelected) return undefined;
+    if (!maxSelected || selectedIds.length < maxSelected) {
+      return undefined;
+    }
     return new Set(
       options.filter((opt) => !selectedIds.includes(opt.id)).map((opt) => String(opt.id)),
     );
@@ -73,7 +77,7 @@ export function EmployeeMultiSelectPopover({
         </Popover.Trigger>
       </div>
       <Popover.Content
-        className="border-default-200 bg-background max-h-[70svh] w-[min(92vw,420px)] overflow-hidden rounded-xl border p-0 shadow-xl"
+        className="max-h-[70svh] w-[min(92vw,420px)] overflow-hidden rounded-xl border border-default-200 bg-background p-0 shadow-xl"
         offset={8}
         placement="bottom"
       >
@@ -87,7 +91,7 @@ export function EmployeeMultiSelectPopover({
           />
           <div className="max-h-72 overflow-y-auto">
             {filteredOptions.length === 0 ? (
-              <div className="text-default-400 p-3 text-center text-sm">{emptyLabel}</div>
+              <div className="p-3 text-center text-default-400 text-sm">{emptyLabel}</div>
             ) : (
               <ListBox
                 aria-label="Seleccionar empleados"
@@ -98,7 +102,7 @@ export function EmployeeMultiSelectPopover({
               >
                 {filteredOptions.map((opt) => (
                   <ListBox.Item
-                    className="data-[focus-visible=true]:ring-primary/30 flex items-center justify-between rounded-lg px-3 py-2 text-sm"
+                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm data-[focus-visible=true]:ring-primary/30"
                     id={String(opt.id)}
                     key={opt.id}
                     textValue={opt.label}

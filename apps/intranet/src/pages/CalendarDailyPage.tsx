@@ -117,12 +117,12 @@ function CalendarDailyPage() {
 
           if (!selectedDayEntry || !hasEvents) {
             return (
-              <div className="border-default-100 bg-background/50 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-12 text-center">
-                <div className="bg-default-50 mb-3 rounded-full p-3">
-                  <Filter className="text-default-200 h-6 w-6" />
+              <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-default-100 border-dashed bg-background/50 py-12 text-center">
+                <div className="mb-3 rounded-full bg-default-50 p-3">
+                  <Filter className="h-6 w-6 text-default-200" />
                 </div>
-                <h3 className="text-default-600 font-semibold">Sin eventos</h3>
-                <p className="text-default-400 mt-1 max-w-xs text-sm">
+                <h3 className="font-semibold text-default-600">Sin eventos</h3>
+                <p className="mt-1 max-w-xs text-default-400 text-sm">
                   No hay eventos para el {dayjs(currentSelectedDate).format("DD [de] MMMM")}.
                 </p>
               </div>
@@ -136,7 +136,7 @@ function CalendarDailyPage() {
               ))}
 
               {/* Footer */}
-              <div className="text-default-300 flex justify-center pt-2 text-xs">
+              <div className="flex justify-center pt-2 text-default-300 text-xs">
                 {selectedDayEntry.total} evento{selectedDayEntry.total === 1 ? "" : "s"} ·{" "}
                 {dayjs(currentSelectedDate).format("dddd, D [de] MMMM")}
               </div>

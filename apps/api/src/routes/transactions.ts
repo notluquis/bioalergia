@@ -44,7 +44,9 @@ const statsQuerySchema = z.object({
 
 app.get("/", zValidator("query", listTransactionsSchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Transaction");
   const canReadList = await hasPermission(user.id, "read", "TransactionList");
@@ -104,7 +106,9 @@ app.get("/", zValidator("query", listTransactionsSchema), async (c) => {
 
 app.get("/participants", zValidator("query", participantLeaderboardSchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Transaction");
   const canReadList = await hasPermission(user.id, "read", "TransactionList");
@@ -133,7 +137,9 @@ app.get(
   zValidator("query", participantInsightQuerySchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "Unauthorized" }, 401);
+    }
 
     const canRead = await hasPermission(user.id, "read", "Transaction");
     const canReadList = await hasPermission(user.id, "read", "TransactionList");
@@ -161,7 +167,9 @@ app.get(
 
 app.get("/stats", zValidator("query", statsQuerySchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Transaction");
   const canReadStats = await hasPermission(user.id, "read", "TransactionStats");

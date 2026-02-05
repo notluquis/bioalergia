@@ -229,16 +229,24 @@ export const MPService = {
   ): Promise<MPReportListResponse> => {
     const baseUrl = getBaseUrl(type);
     const query = new URLSearchParams();
-    if (params?.limit != null) query.set("limit", String(params.limit));
-    if (params?.offset != null) query.set("offset", String(params.offset));
+    if (params?.limit != null) {
+      query.set("limit", String(params.limit));
+    }
+    if (params?.offset != null) {
+      query.set("offset", String(params.offset));
+    }
     const response = await apiClient.get<{ reports: MPReport[]; total: number; status: string }>(
       `${baseUrl}/reports?${query.toString()}`,
       { responseSchema: MPReportListResponseSchema },
     );
     const normalizeReportStatus = (report: MPReport): MPReport => {
       const status = report.status ?? report.status_detail ?? report.state;
-      if (status) return { ...report, status };
-      if (!report.file_name) return { ...report, status: "processing" };
+      if (status) {
+        return { ...report, status };
+      }
+      if (!report.file_name) {
+        return { ...report, status: "processing" };
+      }
       return report;
     };
     return {
@@ -254,8 +262,12 @@ export const MPService = {
     total: number;
   }> => {
     const query = new URLSearchParams();
-    if (params?.limit != null) query.set("limit", String(params.limit));
-    if (params?.offset != null) query.set("offset", String(params.offset));
+    if (params?.limit != null) {
+      query.set("limit", String(params.limit));
+    }
+    if (params?.offset != null) {
+      query.set("offset", String(params.offset));
+    }
     const response = await apiClient.get<{ logs: MpSyncLog[]; status: string; total: number }>(
       `/api/mercadopago/sync/logs?${query.toString()}`,
       { responseSchema: MpSyncLogsResponseSchema },

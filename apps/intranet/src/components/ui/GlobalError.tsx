@@ -53,9 +53,9 @@ export class GlobalError extends Component<Props, State> {
 
       // Error genérico o de deploy - mostrar UI con opción de recarga
       return (
-        <div className="bg-background flex min-h-screen flex-col items-center justify-center p-4 text-center">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
           <div className="max-w-md space-y-6">
-            <div className="bg-danger/10 text-danger mx-auto flex h-20 w-20 items-center justify-center rounded-full">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-danger/10 text-danger">
               <svg
                 className="h-10 w-10"
                 fill="none"
@@ -74,7 +74,7 @@ export class GlobalError extends Component<Props, State> {
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-foreground text-3xl font-bold">
+              <h1 className="font-bold text-3xl text-foreground">
                 {isDeployIssue ? "Nueva versión disponible" : "Algo salió mal"}
               </h1>
               <p className="text-default-500">
@@ -85,8 +85,8 @@ export class GlobalError extends Component<Props, State> {
             </div>
 
             {!isDeployIssue && this.state.error && (
-              <div className="bg-default-50 rounded-xl p-4 text-left">
-                <p className="text-danger font-mono text-xs break-all whitespace-pre-wrap">
+              <div className="rounded-xl bg-default-50 p-4 text-left">
+                <p className="whitespace-pre-wrap break-all font-mono text-danger text-xs">
                   {this.state.error.toString()}
                 </p>
               </div>
@@ -115,7 +115,9 @@ export class GlobalError extends Component<Props, State> {
   }
 
   private handleAutoReload = async () => {
-    if (this.state.isReloading) return;
+    if (this.state.isReloading) {
+      return;
+    }
     this.setState({ isReloading: true });
 
     try {
@@ -141,7 +143,9 @@ async function clearCaches() {
 }
 
 function isDeployError(error: Error | null): boolean {
-  if (!error) return false;
+  if (!error) {
+    return false;
+  }
   const message = error.toString();
   return DEPLOY_ERROR_PATTERNS.some((pattern) => message.includes(pattern));
 }

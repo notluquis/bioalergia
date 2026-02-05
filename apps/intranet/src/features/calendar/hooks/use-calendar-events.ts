@@ -37,9 +37,13 @@ const STALE_SYNC_WINDOW_MS = 15 * 60 * 1000; // keep in sync with backend stale 
 // Deleted CALENDAR_SYNC_LOGS_QUERY_KEY
 
 const hasFreshRunningSync = (logs: CalendarSyncLog[] | undefined) => {
-  if (!logs?.length) return false;
+  if (!logs?.length) {
+    return false;
+  }
   return logs.some((log) => {
-    if (log.status !== "RUNNING") return false;
+    if (log.status !== "RUNNING") {
+      return false;
+    }
     const started = dayjs(log.startedAt);
     return started.isValid() && Date.now() - started.valueOf() < STALE_SYNC_WINDOW_MS;
   });
@@ -65,15 +69,14 @@ function deriveEffectiveFilters(
   const maxDays =
     Number.isFinite(maxDaysRaw) && maxDaysRaw > 0 ? Math.min(Math.floor(maxDaysRaw), 120) : 31;
 
-  const dateWindow =
-    dateParam && dateParam.isValid()
-      ? (() => {
-          const half = Math.floor((maxDays - 1) / 2);
-          const from = dateParam.subtract(half, "day").format("YYYY-MM-DD");
-          const to = dateParam.add(maxDays - half - 1, "day").format("YYYY-MM-DD");
-          return { from, to };
-        })()
-      : null;
+  const dateWindow = dateParam?.isValid()
+    ? (() => {
+        const half = Math.floor((maxDays - 1) / 2);
+        const from = dateParam.subtract(half, "day").format("YYYY-MM-DD");
+        const to = dateParam.add(maxDays - half - 1, "day").format("YYYY-MM-DD");
+        return { from, to };
+      })()
+    : null;
 
   const routeFrom = search.from ?? (dateWindow ? dateWindow.from : filters.from);
   const routeTo = search.to ?? (dateWindow ? dateWindow.to : filters.to);

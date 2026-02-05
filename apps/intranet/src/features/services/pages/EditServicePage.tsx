@@ -25,7 +25,9 @@ export default function ServiceEditPage() {
   // Keep fetchServiceDetail as it provides aggregated data with schedules
   const { data: detail } = useSuspenseQuery({
     queryFn: () => {
-      if (!id) throw new Error("ID de servicio no proporcionado");
+      if (!id) {
+        throw new Error("ID de servicio no proporcionado");
+      }
       return fetchServiceDetail(id);
     },
     queryKey: ["service-detail", id],
@@ -54,8 +56,12 @@ export default function ServiceEditPage() {
   };
 
   const updateError = (() => {
-    if (updateMutation.error instanceof Error) return updateMutation.error.message;
-    if (updateMutation.error) return String(updateMutation.error);
+    if (updateMutation.error instanceof Error) {
+      return updateMutation.error.message;
+    }
+    if (updateMutation.error) {
+      return String(updateMutation.error);
+    }
     return null;
   })();
 
@@ -63,7 +69,9 @@ export default function ServiceEditPage() {
 
   const handleSubmit = async (payload: CreateServicePayload) => {
     setSaveMessage(null);
-    if (!id) return;
+    if (!id) {
+      return;
+    }
 
     try {
       await updateMutation.mutateAsync(payload);
@@ -152,39 +160,39 @@ export default function ServiceEditPage() {
 
       <ServicesSurface className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)] lg:items-start">
-          <aside className="border-default-200/60 bg-background/80 text-foreground space-y-4 rounded-2xl border p-4 text-sm shadow-inner">
-            <h2 className="text-default-700 text-sm font-semibold tracking-wide uppercase">
+          <aside className="space-y-4 rounded-2xl border border-default-200/60 bg-background/80 p-4 text-foreground text-sm shadow-inner">
+            <h2 className="font-semibold text-default-700 text-sm uppercase tracking-wide">
               Resumen
             </h2>
             <div className="space-y-3">
               {summaryCards.map((card) => (
                 <div
-                  className="border-default-200 bg-default-50 rounded-2xl border p-3"
+                  className="rounded-2xl border border-default-200 bg-default-50 p-3"
                   key={card.label}
                 >
-                  <p className="text-default-700 text-xs font-semibold tracking-wide uppercase">
+                  <p className="font-semibold text-default-700 text-xs uppercase tracking-wide">
                     {card.label}
                   </p>
-                  <p className="text-foreground mt-1 text-lg font-semibold">{card.value}</p>
+                  <p className="mt-1 font-semibold text-foreground text-lg">{card.value}</p>
                   {card.helper && <p className="text-default-400 text-xs">{card.helper}</p>}
                 </div>
               ))}
             </div>
             <div className="space-y-2">
-              <h3 className="text-default-700 text-xs font-semibold tracking-wide uppercase">
+              <h3 className="font-semibold text-default-700 text-xs uppercase tracking-wide">
                 Historial
               </h3>
-              <ol className="text-default-500 space-y-2 text-xs">
+              <ol className="space-y-2 text-default-500 text-xs">
                 {historyItems.map((item) => (
                   <li
-                    className="border-default-200 bg-default-50 rounded-xl border p-3"
+                    className="rounded-xl border border-default-200 bg-default-50 p-3"
                     key={item.title}
                   >
-                    <p className="text-foreground font-semibold">{item.title}</p>
+                    <p className="font-semibold text-foreground">{item.title}</p>
                     {item.description && (
                       <p className="text-default-400 text-xs">{item.description}</p>
                     )}
-                    <p className="text-default-300 text-xs tracking-wide uppercase">{item.date}</p>
+                    <p className="text-default-300 text-xs uppercase tracking-wide">{item.date}</p>
                   </li>
                 ))}
               </ol>
@@ -192,8 +200,8 @@ export default function ServiceEditPage() {
           </aside>
 
           <div className="space-y-6">
-            <section className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
-              <h2 className="text-default-700 text-sm font-semibold tracking-wide uppercase">
+            <section className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
+              <h2 className="font-semibold text-default-700 text-sm uppercase tracking-wide">
                 Datos generales
               </h2>
               {initialValues && (

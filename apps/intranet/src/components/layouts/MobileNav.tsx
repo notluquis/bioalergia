@@ -29,7 +29,9 @@ export function BottomNav({ isHidden = false }: Readonly<BottomNavProps>) {
   }, []);
 
   const isActive = (path: string) => {
-    if (path === "/") return pathname === "/";
+    if (path === "/") {
+      return pathname === "/";
+    }
     return pathname.startsWith(path);
   };
 
@@ -39,12 +41,12 @@ export function BottomNav({ isHidden = false }: Readonly<BottomNavProps>) {
 
   return (
     <nav className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] left-1/2 z-50 w-[min(100%-2rem,400px)] -translate-x-1/2 md:hidden">
-      <div className="bg-background/80 border-default-100 flex items-center justify-between gap-1 rounded-4xl border p-2 shadow-2xl backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-1 rounded-4xl border border-default-100 bg-background/80 p-2 shadow-2xl backdrop-blur-xl">
         {NAV_ITEMS.map(({ icon: Icon, label, path }) => {
           const active = isActive(path);
           return (
             <button
-              className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 text-[10px] font-medium transition-all duration-300 ${
+              className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 font-medium text-[10px] transition-all duration-300 ${
                 active ? "text-primary" : "text-default-400 hover:text-default-700"
               }`}
               key={path}
@@ -56,7 +58,7 @@ export function BottomNav({ isHidden = false }: Readonly<BottomNavProps>) {
             >
               {/* Active Background Pill */}
               {active && (
-                <div aria-hidden="true" className="bg-primary/10 absolute inset-0 rounded-3xl" />
+                <div aria-hidden="true" className="absolute inset-0 rounded-3xl bg-primary/10" />
               )}
 
               <span className="relative z-10 flex flex-col items-center gap-1">
@@ -73,7 +75,7 @@ export function BottomNav({ isHidden = false }: Readonly<BottomNavProps>) {
 
               {/* Notification Dot (Pending) */}
               {pendingPath === path && !active && (
-                <span className="bg-primary shadow-primary/50 absolute top-2 right-1/4 h-2 w-2 rounded-full shadow-lg" />
+                <span className="absolute top-2 right-1/4 h-2 w-2 rounded-full bg-primary shadow-lg shadow-primary/50" />
               )}
             </button>
           );

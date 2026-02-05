@@ -42,14 +42,14 @@ export function ImmunotherapySection() {
         <Card.Content className="overflow-x-auto pb-6 sm:overflow-x-visible">
           <div className="space-y-0">
             {/* Header Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 border-b border-border pb-3 sm:pb-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted) font-semibold">
+            <div className="grid grid-cols-1 gap-6 border-border border-b pb-3 sm:grid-cols-3 sm:pb-4">
+              <div className="font-semibold text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
                 Aspecto
               </div>
-              <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted) font-semibold">
+              <div className="font-semibold text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
                 SCIT · subcutánea
               </div>
-              <div className="text-xs uppercase tracking-[0.2em] text-(--ink-muted) font-semibold">
+              <div className="font-semibold text-(--ink-muted) text-xs uppercase tracking-[0.2em]">
                 SLIT · sublingual
               </div>
             </div>
@@ -58,13 +58,13 @@ export function ImmunotherapySection() {
             {immunotherapyComparison.map((row, index) => (
               <div
                 key={row.aspect}
-                className={`grid grid-cols-1 sm:grid-cols-3 gap-6 border-b border-border py-4 px-4 -mx-4 ${
+                className={`-mx-4 grid grid-cols-1 gap-6 border-border border-b px-4 py-4 sm:grid-cols-3 ${
                   index % 2 === 0 ? "bg-(--surface-2)" : ""
                 }`}
               >
-                <div className="text-(--ink) font-semibold text-sm sm:text-base">{row.aspect}</div>
-                <div className="text-sm text-(--ink-muted)">{row.scit}</div>
-                <div className="text-sm text-(--ink-muted)">{row.slit}</div>
+                <div className="font-semibold text-(--ink) text-sm sm:text-base">{row.aspect}</div>
+                <div className="text-(--ink-muted) text-sm">{row.scit}</div>
+                <div className="text-(--ink-muted) text-sm">{row.slit}</div>
               </div>
             ))}
           </div>

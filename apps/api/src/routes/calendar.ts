@@ -32,6 +32,8 @@ import {
 } from "../services/calendar"; // Ensure calendarSyncService is exported from services/calendar OR import directly from modules/calendar/service
 import { reply } from "../utils/reply";
 
+const ISO_DATE_TIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/;
+
 export const calendarRoutes = new Hono();
 
 // Helper schemas
@@ -42,8 +44,12 @@ const dateSchema = z
   .transform((val) => (val ? dayjs(val).format("YYYY-MM-DD") : undefined));
 
 const arrayPreprocess = (val: unknown) => {
-  if (!val) return undefined;
-  if (Array.isArray(val)) return val;
+  if (!val) {
+    return undefined;
+  }
+  if (Array.isArray(val)) {
+    return val;
+  }
   return [val];
 };
 
@@ -134,7 +140,9 @@ calendarRoutes.get(
   zValidator("query", calendarQuerySchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
     const canReadHeatmap = await hasPermission(user.id, "read", "CalendarHeatmap");
@@ -171,7 +179,9 @@ calendarRoutes.get(
   zValidator("query", analyticsQuerySchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
     if (!canReadEvents) {
@@ -225,7 +235,9 @@ calendarRoutes.get(
   zValidator("query", calendarQuerySchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
     const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
@@ -246,8 +258,7 @@ calendarRoutes.get(
       endDateTime: event.endDateTime,
     }));
     const isIsoDateTime = (value: unknown) =>
-      typeof value === "string" &&
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
+      typeof value === "string" && ISO_DATE_TIME_REGEX.test(value);
     const invalidDateTimes = flatEvents
       .filter(
         (event) =>
@@ -283,7 +294,9 @@ calendarRoutes.get(
 // ============================================================
 calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canSync = await hasPermission(user.id, "update", "CalendarSetting");
   // Also allow if they can manage events broadly, though strictly it's a setting op
@@ -344,7 +357,9 @@ calendarRoutes.post("/events/sync", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canReadLogs = await hasPermission(user.id, "read", "CalendarSyncLog");
   const canReadSettings = await hasPermission(user.id, "update", "CalendarSetting"); // Settings page shows logs
@@ -380,7 +395,9 @@ calendarRoutes.get("/events/sync/logs", requireAuth, async (c: Context) => {
 // ============================================================
 calendarRoutes.get("/classification-options", async (c: Context) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   // Allow if user has ANY calendar read capability
   const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
@@ -433,7 +450,9 @@ calendarRoutes.get(
   zValidator("query", unclassifiedQuerySchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canUpdateEvents = await hasPermission(user.id, "update", "CalendarEvent");
     if (!canUpdateEvents) {
@@ -505,7 +524,9 @@ calendarRoutes.post(
   zValidator("json", updateClassificationSchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canClassify = await hasPermission(user.id, "update", "CalendarEvent");
 
@@ -537,7 +558,9 @@ calendarRoutes.post(
 // GET /api/calendar/calendars
 calendarRoutes.get("/calendars", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   // Allow if they have any broad listing/settings access
   const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
@@ -593,7 +616,9 @@ calendarRoutes.get(
   zValidator("query", listEventsSchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
     const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
@@ -833,7 +858,9 @@ calendarRoutes.post("/webhook", async (c) => {
 
 calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canReclassify = await hasPermission(user.id, "update", "CalendarEvent");
   if (!canReclassify) {
@@ -996,7 +1023,9 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
 
 calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canReclassify = await hasPermission(user.id, "update", "CalendarEvent");
   if (!canReclassify) {
@@ -1066,15 +1095,33 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
           isDomicilio: metadata.isDomicilio,
         };
 
-        if (metadata.category) fieldCounts.category++;
-        if (metadata.dosageValue !== null) fieldCounts.dosageValue++;
-        if (metadata.dosageUnit) fieldCounts.dosageUnit++;
-        if (metadata.treatmentStage) fieldCounts.treatmentStage++;
-        if (metadata.attended !== null) fieldCounts.attended++;
-        if (metadata.amountExpected !== null) fieldCounts.amountExpected++;
-        if (metadata.amountPaid !== null) fieldCounts.amountPaid++;
-        if (metadata.controlIncluded) fieldCounts.controlIncluded++;
-        if (metadata.isDomicilio) fieldCounts.isDomicilio++;
+        if (metadata.category) {
+          fieldCounts.category++;
+        }
+        if (metadata.dosageValue !== null) {
+          fieldCounts.dosageValue++;
+        }
+        if (metadata.dosageUnit) {
+          fieldCounts.dosageUnit++;
+        }
+        if (metadata.treatmentStage) {
+          fieldCounts.treatmentStage++;
+        }
+        if (metadata.attended !== null) {
+          fieldCounts.attended++;
+        }
+        if (metadata.amountExpected !== null) {
+          fieldCounts.amountExpected++;
+        }
+        if (metadata.amountPaid !== null) {
+          fieldCounts.amountPaid++;
+        }
+        if (metadata.controlIncluded) {
+          fieldCounts.controlIncluded++;
+        }
+        if (metadata.isDomicilio) {
+          fieldCounts.isDomicilio++;
+        }
 
         updates.push({ id: event.id, data: updateData });
 

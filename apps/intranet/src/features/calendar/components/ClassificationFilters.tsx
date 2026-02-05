@@ -60,12 +60,12 @@ export function ClassificationFilters({ filters, onSearchChange }: Classificatio
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <span className="text-default-400 text-xs font-medium tracking-wide uppercase">Filtrar:</span>
+      <span className="font-medium text-default-400 text-xs uppercase tracking-wide">Filtrar:</span>
       <div className="flex flex-wrap gap-2">
         {FILTER_BUTTONS.map(({ key, label }) => (
           <Button
             key={key}
-            className="text-xs font-medium"
+            className="font-medium text-xs"
             color={filters[key] ? "primary" : "default"}
             onClick={() => toggleFilter(key)}
             size="sm"
@@ -78,10 +78,10 @@ export function ClassificationFilters({ filters, onSearchChange }: Classificatio
 
         {hasActiveFilters && (
           <>
-            <div className="bg-default-200 h-4 w-px mx-1" />
+            <div className="mx-1 h-4 w-px bg-default-200" />
             <div className="flex gap-2">
               <Button
-                className="text-xs font-medium"
+                className="font-medium text-xs"
                 color={!filters.filterMode || filters.filterMode === "OR" ? "primary" : "default"}
                 onClick={() => setFilterMode(undefined)}
                 size="sm"
@@ -91,7 +91,7 @@ export function ClassificationFilters({ filters, onSearchChange }: Classificatio
                 Cualquiera
               </Button>
               <Button
-                className="text-xs font-medium"
+                className="font-medium text-xs"
                 color={filters.filterMode === "AND" ? "primary" : "default"}
                 onClick={() => setFilterMode("AND")}
                 size="sm"
@@ -102,7 +102,7 @@ export function ClassificationFilters({ filters, onSearchChange }: Classificatio
               </Button>
             </div>
             <Button
-              className="text-xs font-medium"
+              className="font-medium text-xs"
               color="danger"
               onClick={clearFilters}
               size="sm"

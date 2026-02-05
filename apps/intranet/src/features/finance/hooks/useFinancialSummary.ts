@@ -25,7 +25,9 @@ export function useFinancialSummary(dateRange: DateRange) {
   });
 
   const summary = useMemo((): FinancialSummary | null => {
-    if (!events) return null;
+    if (!events) {
+      return null;
+    }
 
     const items: IncomeItem[] = events.map(mapEventToIncomeItem);
 

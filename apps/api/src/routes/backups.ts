@@ -17,7 +17,9 @@ const app = new Hono();
 // List all backups from Google Drive
 app.get("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {
@@ -60,7 +62,9 @@ app.get("/", async (c) => {
 // Create a new backup
 app.post("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canCreate = await hasPermission(user.id, "create", "Backup");
   if (!canCreate) {
@@ -92,7 +96,9 @@ app.post("/", async (c) => {
 // Get tables from a specific backup
 app.get("/:fileId/tables", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {
@@ -120,7 +126,9 @@ app.get("/:fileId/tables", async (c) => {
 // Get backup logs
 app.get("/logs", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {
@@ -134,7 +142,9 @@ app.get("/logs", async (c) => {
 // Get backup history
 app.get("/history", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {
@@ -148,7 +158,9 @@ app.get("/history", async (c) => {
 // Restore from backup
 app.post("/:fileId/restore", zValidator("json", restoreSchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRestore = await hasPermission(user.id, "update", "Backup");
   if (!canRestore) {
@@ -197,7 +209,9 @@ app.post("/:fileId/restore", zValidator("json", restoreSchema), async (c) => {
 // SSE for progress
 app.get("/progress", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canAccess = await hasPermission(user.id, "read", "Backup");
   if (!canAccess) {

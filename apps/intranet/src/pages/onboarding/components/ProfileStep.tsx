@@ -23,18 +23,20 @@ export function ProfileStep(props: ProfileStepProps) {
   const { profile, onProfileChange, onNext, isLoading, error } = props;
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (profile.names && validateRut(profile.rut)) onNext();
+    if (profile.names && validateRut(profile.rut)) {
+      onNext();
+    }
   };
   return (
     <form
-      className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500"
+      className="fade-in slide-in-from-right-4 animate-in space-y-6 duration-500"
       onSubmit={handleSubmit}
     >
       <div className="mb-6 text-center">
-        <div className="bg-primary/10 text-primary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
           <User size={24} />
         </div>
-        <h2 className="text-2xl font-bold">Datos personales</h2>
+        <h2 className="font-bold text-2xl">Datos personales</h2>
         <p className="text-default-500 text-sm">Información básica para tu perfil.</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

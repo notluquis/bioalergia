@@ -139,7 +139,7 @@ function PatientDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="h-full w-full flex items-center justify-center p-12">
+      <div className="flex h-full w-full items-center justify-center p-12">
         <Spinner size="lg" />
       </div>
     );
@@ -148,7 +148,7 @@ function PatientDetailsPage() {
   if (!patient) {
     return (
       <div className="p-12 text-center">
-        <h2 className="text-xl font-bold">Paciente no encontrado</h2>
+        <h2 className="font-bold text-xl">Paciente no encontrado</h2>
         <Button variant="ghost" onClick={() => navigate({ to: "/patients" })} className="mt-4">
           Volver a la lista
         </Button>
@@ -161,22 +161,22 @@ function PatientDetailsPage() {
 
   return (
     <section className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             onClick={() => navigate({ to: "/patients" })}
-            className="rounded-full h-10 w-10 min-w-0 p-0"
+            className="h-10 w-10 min-w-0 rounded-full p-0"
           >
             <ChevronLeft size={24} />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="font-bold text-2xl text-foreground">
               {person.names} {person.fatherName}
             </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm font-mono text-default-500">{person.rut}</span>
-              <div className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary font-medium">
+            <div className="mt-1 flex items-center gap-2">
+              <span className="font-mono text-default-500 text-sm">{person.rut}</span>
+              <div className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs">
                 {age} años
               </div>
             </div>
@@ -217,22 +217,22 @@ function PatientDetailsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Sidebar: Info rápida */}
-        <div className="lg:col-span-1 space-y-6">
-          <Card className="border-none bg-background shadow-sm overflow-hidden">
+        <div className="space-y-6 lg:col-span-1">
+          <Card className="overflow-hidden border-none bg-background shadow-sm">
             <Card.Content className="p-0">
-              <div className="bg-primary/5 p-6 flex flex-col items-center">
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+              <div className="flex flex-col items-center bg-primary/5 p-6">
+                <div className="mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <User size={40} />
                 </div>
-                <h3 className="font-bold text-center">Ficha Clínica #{patient.id}</h3>
-                <span className="text-xs text-default-400">
+                <h3 className="text-center font-bold">Ficha Clínica #{patient.id}</h3>
+                <span className="text-default-400 text-xs">
                   Registrado el {dayjs(patient.createdAt).format("DD/MM/YYYY")}
                 </span>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="space-y-4 p-6">
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm">
                     <Mail size={16} className="text-default-300" />
@@ -240,7 +240,7 @@ function PatientDetailsPage() {
                   </div>
                   <div className="flex items-center gap-3 text-sm">
                     <Phone size={16} className="text-default-300" />
-                    <span className="text-default-700 text-sm font-mono">
+                    <span className="font-mono text-default-700 text-sm">
                       {person.phone || "Sin teléfono"}
                     </span>
                   </div>
@@ -248,7 +248,7 @@ function PatientDetailsPage() {
                     <MapPin size={16} className="text-default-300" />
                     <span className="text-default-700">{person.address || "Sin dirección"}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm border-t border-default-100 pt-3">
+                  <div className="flex items-center gap-3 border-default-100 border-t pt-3 text-sm">
                     <Clock size={16} className="text-default-300" />
                     <span className="text-default-600">Grupo Sanguíneo: </span>
                     <span className="font-bold text-primary">{patient.bloodType || "DA"}</span>
@@ -258,10 +258,10 @@ function PatientDetailsPage() {
                 <Separator className="my-2" />
 
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-default-300">
+                  <h4 className="font-bold text-default-300 text-xs uppercase tracking-wider">
                     Notas
                   </h4>
-                  <p className="text-sm text-default-600 italic bg-default-50/30 p-3 rounded-lg">
+                  <p className="rounded-lg bg-default-50/30 p-3 text-default-600 text-sm italic">
                     {patient.notes || "No hay notas clínicas registradas."}
                   </p>
                 </div>
@@ -273,33 +273,33 @@ function PatientDetailsPage() {
         {/* Main: Tabs Content */}
         <div className="lg:col-span-2">
           <Tabs aria-label="Patient details tabs">
-            <Tabs.List className="no-scrollbar flex w-full gap-4 overflow-x-auto border-b border-divider pb-1">
-              <Tabs.Tab id="history" className="gap-2 font-semibold min-w-max">
+            <Tabs.List className="no-scrollbar flex w-full gap-4 overflow-x-auto border-divider border-b pb-1">
+              <Tabs.Tab id="history" className="min-w-max gap-2 font-semibold">
                 <Calendar size={18} />
                 <span>Consultas</span>
               </Tabs.Tab>
 
-              <Tabs.Tab id="certificates" className="gap-2 font-semibold min-w-max">
+              <Tabs.Tab id="certificates" className="min-w-max gap-2 font-semibold">
                 <FileText size={18} />
                 <span>Certificados</span>
               </Tabs.Tab>
 
-              <Tabs.Tab id="budgets" className="gap-2 font-semibold min-w-max">
+              <Tabs.Tab id="budgets" className="min-w-max gap-2 font-semibold">
                 <DollarSign size={18} />
                 <span>Presupuestos</span>
               </Tabs.Tab>
 
-              <Tabs.Tab id="payments" className="gap-2 font-semibold min-w-max">
+              <Tabs.Tab id="payments" className="min-w-max gap-2 font-semibold">
                 <PlusCircle size={18} />
                 <span>Pagos</span>
               </Tabs.Tab>
 
-              <Tabs.Tab id="docs" className="gap-2 font-semibold min-w-max">
+              <Tabs.Tab id="docs" className="min-w-max gap-2 font-semibold">
                 <FileText size={18} />
                 <span>Documentos</span>
               </Tabs.Tab>
 
-              <Tabs.Tab id="info" className="gap-2 font-semibold min-w-max">
+              <Tabs.Tab id="info" className="min-w-max gap-2 font-semibold">
                 <User size={18} />
                 <span>Info Detallada</span>
               </Tabs.Tab>
@@ -325,7 +325,7 @@ function PatientDetailsPage() {
               />
             </Tabs.Panel>
 
-            <Tabs.Panel id="budgets" className="py-4 space-y-4">
+            <Tabs.Panel id="budgets" className="space-y-4 py-4">
               <div className="flex justify-end">
                 <Button
                   size="sm"
@@ -350,7 +350,7 @@ function PatientDetailsPage() {
               />
             </Tabs.Panel>
 
-            <Tabs.Panel id="payments" className="py-4 space-y-4">
+            <Tabs.Panel id="payments" className="space-y-4 py-4">
               <div className="flex justify-end">
                 <Button
                   size="sm"
@@ -375,7 +375,7 @@ function PatientDetailsPage() {
               />
             </Tabs.Panel>
 
-            <Tabs.Panel id="docs" className="py-4 space-y-4">
+            <Tabs.Panel id="docs" className="space-y-4 py-4">
               <div className="flex justify-end">
                 <Button
                   size="sm"
@@ -399,7 +399,7 @@ function PatientDetailsPage() {
             <Tabs.Panel id="info" className="py-4">
               <Card className="border-none bg-background shadow-sm">
                 <Card.Content className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <DetailRow label="Nombres" value={person.names} />
                     <DetailRow
                       label="Apellidos"
@@ -445,8 +445,8 @@ function DetailRow({
 }) {
   return (
     <div className={`space-y-1 ${className}`}>
-      <span className="text-xs font-medium text-default-400 uppercase tracking-wider">{label}</span>
-      <p className="text-foreground font-medium">{value}</p>
+      <span className="font-medium text-default-400 text-xs uppercase tracking-wider">{label}</span>
+      <p className="font-medium text-foreground">{value}</p>
     </div>
   );
 }

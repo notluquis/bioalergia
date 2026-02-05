@@ -34,13 +34,14 @@ async function getCalendarInternalId(googleId: string): Promise<number | null> {
 }
 
 export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) {
-  if (events.length === 0)
+  if (events.length === 0) {
     return {
       inserted: 0,
       updated: 0,
       skipped: 0,
       details: { inserted: [], updated: [] },
     };
+  }
 
   let inserted = 0;
   let updated = 0;
@@ -199,7 +200,9 @@ export async function removeGoogleCalendarEvents(
   events: { calendarId: string; eventId: string; summary?: string | null }[],
 ): Promise<string[]> {
   const deletedSummaries: string[] = [];
-  if (events.length === 0) return deletedSummaries;
+  if (events.length === 0) {
+    return deletedSummaries;
+  }
 
   for (const event of events) {
     const calendarInternalId = await getCalendarInternalId(event.calendarId);
@@ -278,7 +281,9 @@ function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): str
       const shortO = o.length > 30 ? `${o.slice(0, 30)}...` : o;
       const shortN = n.length > 30 ? `${n.slice(0, 30)}...` : n;
       // Only log if there is actual content to show
-      if (shortO || shortN) changes.push(`${label}: "${shortO}" -> "${shortN}"`);
+      if (shortO || shortN) {
+        changes.push(`${label}: "${shortO}" -> "${shortN}"`);
+      }
     }
   };
 
@@ -295,11 +300,15 @@ function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): str
   // Compare unified times
   const oldStart = fmtDate(existing.startDateTime || existing.startDate);
   const newStart = fmtDate(incoming.startDateTime || incoming.startDate);
-  if (oldStart !== newStart) changes.push(`Inicio: ${oldStart} -> ${newStart}`);
+  if (oldStart !== newStart) {
+    changes.push(`Inicio: ${oldStart} -> ${newStart}`);
+  }
 
   const oldEnd = fmtDate(existing.endDateTime || existing.endDate);
   const newEnd = fmtDate(incoming.endDateTime || incoming.endDate);
-  if (oldEnd !== newEnd) changes.push(`Fin: ${oldEnd} -> ${newEnd}`);
+  if (oldEnd !== newEnd) {
+    changes.push(`Fin: ${oldEnd} -> ${newEnd}`);
+  }
 
   return changes;
 }

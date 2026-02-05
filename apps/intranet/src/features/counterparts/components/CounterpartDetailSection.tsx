@@ -25,17 +25,19 @@ export default function CounterpartDetailSection({
   const { data: detail } = useSuspenseQuery(counterpartKeys.detail(counterpartId));
   const { data: summary } = useSuspenseQuery(counterpartKeys.summary(counterpartId, summaryRange));
 
-  if (!detail) return null; // Should not happen with suspense if data exists
+  if (!detail) {
+    return null; // Should not happen with suspense if data exists
+  }
 
   return (
     <div className="space-y-6">
       <ServicesSurface className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-default-500 text-xs tracking-[0.3em] uppercase">
+            <p className="text-default-500 text-xs uppercase tracking-[0.3em]">
               Contraparte activa
             </p>
-            <h3 className="text-foreground text-lg font-semibold">{detail.counterpart.name}</h3>
+            <h3 className="font-semibold text-foreground text-lg">{detail.counterpart.name}</h3>
             {detail.counterpart.rut && (
               <p className="text-default-600 text-xs">RUT {detail.counterpart.rut}</p>
             )}
@@ -53,18 +55,18 @@ export default function CounterpartDetailSection({
             Editar contraparte
           </Button>
         </div>
-        <div className="text-default-600 grid gap-3 text-xs sm:grid-cols-2">
+        <div className="grid gap-3 text-default-600 text-xs sm:grid-cols-2">
           <div>
-            <p className="text-default-500 font-semibold">Clasificación</p>
+            <p className="font-semibold text-default-500">Clasificación</p>
             <p className="text-foreground text-sm">{detail.counterpart.category ?? "—"}</p>
           </div>
           <div>
-            <p className="text-default-500 font-semibold">Tipo de persona</p>
+            <p className="font-semibold text-default-500">Tipo de persona</p>
             <p className="text-foreground text-sm">{detail.counterpart.personType}</p>
           </div>
           {detail.counterpart.email && (
             <div className="sm:col-span-2">
-              <p className="text-default-500 font-semibold">Correo electrónico</p>
+              <p className="font-semibold text-default-500">Correo electrónico</p>
               <p className="text-foreground text-sm">{detail.counterpart.email}</p>
             </div>
           )}

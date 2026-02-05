@@ -9,10 +9,14 @@ const app = new Hono();
 // This is a placeholder to prevent 400 errors until the feature is implemented.
 app.post("/:id/pay", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Service");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {
@@ -26,10 +30,14 @@ app.post("/:id/pay", async (c) => {
 // POST /:id/unlink - Unlink payment from a service schedule
 app.post("/:id/unlink", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Service");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
   if (!Number.isFinite(id)) {

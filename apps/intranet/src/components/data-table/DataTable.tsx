@@ -112,8 +112,12 @@ const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties =>
   const isPinned = column.getIsPinned();
 
   let boxShadow: string | undefined;
-  if (isPinned === "left") boxShadow = "-4px 0 4px -4px gray inset";
-  if (isPinned === "right") boxShadow = "4px 0 4px -4px gray inset";
+  if (isPinned === "left") {
+    boxShadow = "-4px 0 4px -4px gray inset";
+  }
+  if (isPinned === "right") {
+    boxShadow = "4px 0 4px -4px gray inset";
+  }
 
   return {
     backgroundColor: isPinned ? "hsl(var(--heroui-background))" : undefined,
@@ -181,7 +185,7 @@ function DataTableContent<TData, TValue>({
     if (rows.length === 0) {
       return (
         <tr>
-          <td className="text-default-500 h-24 text-center italic" colSpan={columns.length}>
+          <td className="h-24 text-center text-default-500 italic" colSpan={columns.length}>
             {noDataMessage}
           </td>
         </tr>
@@ -195,12 +199,14 @@ function DataTableContent<TData, TValue>({
         <>
           {validVirtualRows.map((virtualRow) => {
             const row = rows[virtualRow.index];
-            if (!row) return null;
+            if (!row) {
+              return null;
+            }
 
             return (
               <React.Fragment key={row.id}>
                 <tr
-                  className="group hover:bg-background/50 border-default-100/50 border-b transition-colors last:border-0"
+                  className="group border-default-100/50 border-b transition-colors last:border-0 hover:bg-background/50"
                   data-index={virtualRow.index}
                   data-state={row.getIsSelected() && "selected"}
                   ref={virtualizer.measureElement}
@@ -211,7 +217,7 @@ function DataTableContent<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
-                      className="text-foreground/90 truncate px-4 py-3 align-middle"
+                      className="truncate px-4 py-3 align-middle text-foreground/90"
                       key={cell.id}
                       style={{
                         ...getCommonPinningStyles(cell.column),
@@ -240,7 +246,7 @@ function DataTableContent<TData, TValue>({
           <React.Fragment key={row.id}>
             <tr
               className={cn(
-                "group hover:bg-background/50 data-[state=selected]:bg-primary/10 border-default-100/50 border-b transition-colors last:border-0",
+                "group border-default-100/50 border-b transition-colors last:border-0 hover:bg-background/50 data-[state=selected]:bg-primary/10",
                 onRowClick && "cursor-pointer",
               )}
               data-state={row.getIsSelected() && "selected"}
@@ -248,7 +254,7 @@ function DataTableContent<TData, TValue>({
             >
               {row.getVisibleCells().map((cell) => (
                 <td
-                  className="text-foreground/90 truncate px-4 py-3 align-middle"
+                  className="truncate px-4 py-3 align-middle text-foreground/90"
                   key={cell.id}
                   style={{
                     ...getCommonPinningStyles(cell.column),
@@ -275,12 +281,12 @@ function DataTableContent<TData, TValue>({
       className={cn(
         "relative overflow-visible",
         containerVariant === "plain"
-          ? "bg-transparent border-0 shadow-none"
-          : "border-default-200/50 bg-background rounded-2xl border shadow-sm",
+          ? "border-0 bg-transparent shadow-none"
+          : "rounded-2xl border border-default-200/50 bg-background shadow-sm",
       )}
     >
       <div
-        className="muted-scrollbar overflow-x-auto overscroll-x-contain overscroll-y-contain"
+        className="muted-scrollbar overflow-x-auto overscroll-y-contain overscroll-x-contain"
         ref={tableContainerRef}
         style={{
           maxWidth: "100%",
@@ -294,12 +300,12 @@ function DataTableContent<TData, TValue>({
             width: "100%",
           }}
         >
-          <thead className="bg-default-100 sticky top-0 z-10">
+          <thead className="sticky top-0 z-10 bg-default-100">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr className="border-default-200/50 border-b" key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
-                    className="text-default-600 group relative px-4 py-3 text-left text-xs font-semibold tracking-wide whitespace-nowrap uppercase"
+                    className="group relative whitespace-nowrap px-4 py-3 text-left font-semibold text-default-600 text-xs uppercase tracking-wide"
                     colSpan={header.colSpan}
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
@@ -323,8 +329,8 @@ function DataTableContent<TData, TValue>({
                     <button
                       type="button"
                       aria-label="Resize column"
-                      className={`bg-default-100 absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none opacity-0 select-none group-hover:opacity-100 ${
-                        header.column.getIsResizing() ? "bg-primary w-1.5 opacity-100" : ""
+                      className={`absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none select-none bg-default-100 opacity-0 group-hover:opacity-100 ${
+                        header.column.getIsResizing() ? "w-1.5 bg-primary opacity-100" : ""
                       }`}
                       onMouseDown={header.getResizeHandler()}
                       onTouchStart={header.getResizeHandler()}
@@ -353,7 +359,7 @@ function DataTableContent<TData, TValue>({
                 <tr key={footerGroup.id}>
                   {footerGroup.headers.map((header) => (
                     <td
-                      className="text-foreground px-4 py-3 align-middle"
+                      className="px-4 py-3 align-middle text-foreground"
                       key={header.id}
                       style={{
                         ...getCommonPinningStyles(header.column),

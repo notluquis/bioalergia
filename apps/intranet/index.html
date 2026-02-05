@@ -63,10 +63,11 @@
     </script>
     <script>
       (() => {
-        var THEME_KEY = "bioalergia:theme";
-        var theme = "dark";
+        const THEME_KEY = "bioalergia:theme";
+        let theme = "dark";
+        let stored = null;
         try {
-          var stored = localStorage.getItem(THEME_KEY);
+          stored = localStorage.getItem(THEME_KEY);
           if (stored === "light" || stored === "dark") {
             theme = stored;
           } else if (stored === "system" || !stored) {
@@ -79,7 +80,7 @@
         } catch (_e) {
           // Ignore storage access errors (privacy mode, blocked storage, etc.)
         }
-        var html = document.documentElement;
+        const html = document.documentElement;
         if (theme === "dark") {
           html.setAttribute("data-theme", "bioalergia-dark");
           html.classList.add("dark");

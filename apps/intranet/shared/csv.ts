@@ -1,8 +1,12 @@
 const BOM_REGEX = /^\uFEFF/;
 
 export function detectDelimiter(line: string): string {
-  if (line.includes(";")) return ";";
-  if (line.includes("|")) return "|";
+  if (line.includes(";")) {
+    return ";";
+  }
+  if (line.includes("|")) {
+    return "|";
+  }
   return ",";
 }
 

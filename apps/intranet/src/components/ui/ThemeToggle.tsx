@@ -14,18 +14,18 @@ export default function ThemeToggle() {
       aria-label={label}
       isIconOnly
       variant="ghost"
-      className={`rounded-full border-default-200/70 bg-background/80 text-foreground border shadow-sm transition-all duration-300 ${
+      className={`rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm transition-all duration-300 ${
         isDark
-          ? "hover:bg-default-50/40 hover:border-primary/60"
-          : "hover:bg-default-50/70 hover:border-primary/60"
+          ? "hover:border-primary/60 hover:bg-default-50/40"
+          : "hover:border-primary/60 hover:bg-default-50/70"
       }`}
       onPress={toggleTheme}
     >
       <span
         className={`flex h-6 w-6 items-center justify-center rounded-full transition-all duration-300 ${
           isDark
-            ? "from-base-200 via-primary/40 to-primary text-primary-foreground shadow-primary/20 bg-linear-to-br shadow-inner"
-            : "from-base-100 via-primary/10 to-primary/70 text-primary shadow-primary/10 bg-linear-to-br shadow-inner"
+            ? "bg-linear-to-br from-base-200 via-primary/40 to-primary text-primary-foreground shadow-inner shadow-primary/20"
+            : "bg-linear-to-br from-base-100 via-primary/10 to-primary/70 text-primary shadow-inner shadow-primary/10"
         }`}
       >
         {icon}

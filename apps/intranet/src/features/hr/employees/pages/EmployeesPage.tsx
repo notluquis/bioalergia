@@ -44,13 +44,17 @@ export default function EmployeesPage() {
   // ... rest of mutation logic ...
   const updateStatusMutation = client.employee.useUpdate();
   const error = (() => {
-    if (updateStatusMutation.error instanceof Error) return updateStatusMutation.error.message;
+    if (updateStatusMutation.error instanceof Error) {
+      return updateStatusMutation.error.message;
+    }
     return null;
   })();
   const isMutating = updateStatusMutation.isPending;
 
   function handleDeactivate(id: number) {
-    if (!canEdit) return;
+    if (!canEdit) {
+      return;
+    }
     updateStatusMutation.mutate(
       { data: { status: "INACTIVE" }, where: { id } },
       {
@@ -62,7 +66,9 @@ export default function EmployeesPage() {
   }
 
   function handleActivate(id: number) {
-    if (!canEdit) return;
+    if (!canEdit) {
+      return;
+    }
     updateStatusMutation.mutate(
       { data: { status: "ACTIVE" }, where: { id } },
       {
@@ -133,9 +139,9 @@ export default function EmployeesPage() {
       {error && <Alert variant="error">{error}</Alert>}
 
       {canEdit && showForm && (
-        <div className="border-default-200 bg-background rounded-2xl border p-6 shadow-sm">
+        <div className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-primary text-lg font-semibold">
+            <h2 className="font-semibold text-lg text-primary">
               {editingEmployee ? "Editar empleado" : "Agregar nuevo empleado"}
             </h2>
             <Button onClick={handleCancel} size="sm" variant="ghost">

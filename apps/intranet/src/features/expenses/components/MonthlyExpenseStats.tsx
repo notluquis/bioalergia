@@ -24,19 +24,19 @@ export default function MonthlyExpenseStats({
   }
 
   return (
-    <div className="muted-scrollbar text-default-500 max-h-64 space-y-2 overflow-y-auto pr-1 text-xs">
+    <div className="muted-scrollbar max-h-64 space-y-2 overflow-y-auto pr-1 text-default-500 text-xs">
       {stats.map((row) => (
         <article
-          className="border-default-200 bg-default-50 rounded-xl border p-3 shadow-sm"
+          className="rounded-xl border border-default-200 bg-default-50 p-3 shadow-sm"
           key={row.period}
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-foreground text-sm font-semibold">{row.period}</p>
+              <p className="font-semibold text-foreground text-sm">{row.period}</p>
               <p className="text-default-400 text-xs">{row.expenseCount} gastos registrados</p>
             </div>
             <div className="text-right">
-              <p className="text-foreground text-sm font-semibold">
+              <p className="font-semibold text-foreground text-sm">
                 Esperado {currencyFormatter.format(row.totalExpected)}
               </p>
               <p className="text-default-400 text-xs">

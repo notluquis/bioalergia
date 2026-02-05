@@ -150,14 +150,18 @@ export default function RolesSettingsPage() {
   );
 
   useEffect(() => {
-    if (unmappedSubjects.length === 0) return;
+    if (unmappedSubjects.length === 0) {
+      return;
+    }
     const payload = {
       subjects: unmappedSubjects,
       total: unmappedSubjects.length,
       timestamp: new Date().toISOString(),
     };
     const key = `roles-unmapped-${payload.subjects.join(",")}`;
-    if (sessionStorage.getItem(key)) return;
+    if (sessionStorage.getItem(key)) {
+      return;
+    }
     sessionStorage.setItem(key, "1");
 
     if (navigator.sendBeacon) {
@@ -181,8 +185,8 @@ export default function RolesSettingsPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4 border-b pb-4">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold">Listado de roles</h2>
-            <p className="text-default-600 hidden text-sm md:block">
+            <h2 className="font-semibold text-lg">Listado de roles</h2>
+            <p className="hidden text-default-600 text-sm md:block">
               Gestiona los permisos y roles del sistema
             </p>
           </div>
@@ -241,7 +245,7 @@ export default function RolesSettingsPage() {
             viewModeRole={viewModeRole}
           />
           {unmappedSubjects.length > 0 && (
-            <div className="text-default-500 border-default-200 border-t px-6 py-3 text-xs">
+            <div className="border-default-200 border-t px-6 py-3 text-default-500 text-xs">
               Subjects sin ruta: {unmappedSubjects.slice(0, 8).join(", ")}
               {unmappedSubjects.length > 8 && ` +${unmappedSubjects.length - 8} más`}
             </div>
@@ -279,7 +283,9 @@ function optimisticUpdateRole(
   roleId: number,
   permissionIds: number[],
 ): Role[] {
-  if (!oldRoles) return [];
+  if (!oldRoles) {
+    return [];
+  }
   return oldRoles.map((role) => {
     if (role.id === roleId) {
       const newPermissions = permissionIds.map((id) => ({
@@ -444,9 +450,13 @@ function buildMatrixItem({
   const uniquePermissions = [...new Map(perms.map((p) => [p.id, p])).values()].sort((a, b) =>
     a.subject.localeCompare(b.subject),
   );
-  for (const p of uniquePermissions) usedPermissionIds.add(p.id);
+  for (const p of uniquePermissions) {
+    usedPermissionIds.add(p.id);
+  }
 
-  if (uniquePermissions.length === 0) return null;
+  if (uniquePermissions.length === 0) {
+    return null;
+  }
 
   return {
     icon: item.icon,
@@ -484,8 +494,12 @@ function buildSubjectNavKeyMap(routeTreeData: RouteTreeNode, allPermissions: Per
 }
 
 function getRouteChildren(children: RouteTreeNode["children"]): RouteTreeNode[] {
-  if (!children) return [];
-  if (Array.isArray(children)) return children as RouteTreeNode[];
+  if (!children) {
+    return [];
+  }
+  if (Array.isArray(children)) {
+    return children as RouteTreeNode[];
+  }
   if (typeof children === "object") {
     return Object.values(children as Record<string, RouteTreeNode>);
   }
@@ -500,9 +514,13 @@ function addInferredAliases(mapping: Map<string, Set<string>>, allPermissions: P
   const knownSubjects = new Set(allPermissions.map((perm) => perm.subject.toLowerCase()));
 
   for (const subject of knownSubjects) {
-    if (mapping.has(subject)) continue;
+    if (mapping.has(subject)) {
+      continue;
+    }
     const best = findBestMappedSubject(subject, mappedSubjects, mappedTokenMap);
-    if (!best) continue;
+    if (!best) {
+      continue;
+    }
     const target = mapping.get(best);
     if (target) {
       mapping.set(subject, new Set(target));
@@ -531,7 +549,9 @@ function findBestMappedSubject(
     }
   }
 
-  if (!best || bestScore < 2) return null;
+  if (!best || bestScore < 2) {
+    return null;
+  }
   return best;
 }
 
@@ -548,7 +568,9 @@ function scoreCandidateSubject(
     return 1000 + candidateLower.length;
   }
 
-  if (candidateTokens.length === 0) return 0;
+  if (candidateTokens.length === 0) {
+    return 0;
+  }
 
   const matchCount = candidateTokens.filter((token) => subjectTokens.includes(token)).length;
   if (matchCount === candidateTokens.length && matchCount > 0) {

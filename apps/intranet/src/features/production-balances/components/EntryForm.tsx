@@ -21,10 +21,10 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
   return (
     <div className="space-y-4">
       {/* Ingresos por método */}
-      <section className="bg-default-50/30 border-default-100 rounded-2xl border p-4">
+      <section className="rounded-2xl border border-default-100 bg-default-50/30 p-4">
         <div className="mb-4 flex items-center gap-2">
-          <CreditCard className="text-default-500 size-5" />
-          <h3 className="text-base font-semibold">Ingresos por método</h3>
+          <CreditCard className="size-5 text-default-500" />
+          <h3 className="font-semibold text-base">Ingresos por método</h3>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <MoneyInput
@@ -58,10 +58,10 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
       </section>
 
       {/* Gastos */}
-      <section className="bg-default-50/30 border-default-100 rounded-2xl border p-4">
+      <section className="rounded-2xl border border-default-100 bg-default-50/30 p-4">
         <div className="mb-4 flex items-center gap-2">
-          <Receipt className="text-default-500 size-5" />
-          <h3 className="text-base font-semibold">Gastos</h3>
+          <Receipt className="size-5 text-default-500" />
+          <h3 className="font-semibold text-base">Gastos</h3>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <MoneyInput
@@ -74,7 +74,7 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
           />
           <div className="form-control">
             <label className="label py-1" htmlFor="input-nota">
-              <span className="label-text text-xs font-medium sm:text-sm">Nota (opcional)</span>
+              <span className="label-text font-medium text-xs sm:text-sm">Nota (opcional)</span>
             </label>
             <textarea
               className="textarea textarea-bordered textarea-sm w-full resize-none"
@@ -92,8 +92,8 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
       </section>
 
       {/* Ingresos por servicio (desglose) */}
-      <section className="bg-default-50/30 border-default-100 mt-4 rounded-2xl border p-4">
-        <h3 className="mb-4 text-base font-semibold">Desglose por servicio</h3>
+      <section className="mt-4 rounded-2xl border border-default-100 bg-default-50/30 p-4">
+        <h3 className="mb-4 font-semibold text-base">Desglose por servicio</h3>
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <MoneyInput
             disabled={disabled}

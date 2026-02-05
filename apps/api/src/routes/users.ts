@@ -21,10 +21,14 @@ export const userRoutes = new Hono();
 // Helper to get auth from cookie
 async function getAuth(c: { req: { header: (name: string) => string | undefined } }) {
   const cookieHeader = c.req.header("Cookie");
-  if (!cookieHeader) return null;
+  if (!cookieHeader) {
+    return null;
+  }
   const cookies = Object.fromEntries(cookieHeader.split(";").map((c) => c.trim().split("=")));
   const token = cookies[COOKIE_NAME];
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
   try {
     const decoded = await verifyToken(token);
     return {
@@ -93,10 +97,14 @@ const toggleMfaSchema = z.object({
 // LIST USERS
 userRoutes.get("/", zValidator("query", listUsersQuerySchema), async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canRead = await hasPermission(auth.userId, "read", "User");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const { includeTest } = c.req.valid("query");
 
@@ -143,14 +151,18 @@ userRoutes.get("/", zValidator("query", listUsersQuerySchema), async (c) => {
 
 userRoutes.get("/profile", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const user = await db.user.findUnique({
     where: { id: auth.userId },
     include: { person: { include: { employee: true } } },
   });
 
-  if (!user) return reply(c, { status: "error", message: "Usuario no encontrado" }, 404);
+  if (!user) {
+    return reply(c, { status: "error", message: "Usuario no encontrado" }, 404);
+  }
 
   return reply(c, {
     status: "ok",
@@ -175,18 +187,23 @@ userRoutes.get("/profile", async (c) => {
 
 userRoutes.post("/invite", zValidator("json", inviteUserSchema), async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canCreate = await hasPermission(auth.userId, "create", "User");
-  if (!canCreate)
+  if (!canCreate) {
     return reply(c, { status: "error", message: "No tienes permisos para crear usuarios" }, 403);
+  }
 
   const { email, role, position, mfaEnforced, personId, names, fatherName, motherName, rut } =
     c.req.valid("json");
 
   // Check if user exists
   const existing = await db.user.findUnique({ where: { email } });
-  if (existing) return reply(c, { status: "error", message: "Email ya registrado" }, 400);
+  if (existing) {
+    return reply(c, { status: "error", message: "Email ya registrado" }, 400);
+  }
 
   // Generate temp password
   const crypto = await import("node:crypto");
@@ -248,7 +265,9 @@ userRoutes.post("/invite", zValidator("json", inviteUserSchema), async (c) => {
 
 userRoutes.post("/setup", zValidator("json", setupUserSchema), async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const body = c.req.valid("json");
 
@@ -256,7 +275,9 @@ userRoutes.post("/setup", zValidator("json", setupUserSchema), async (c) => {
     where: { id: auth.userId },
     include: { person: true },
   });
-  if (!user) return reply(c, { status: "error", message: "Usuario no encontrado" }, 404);
+  if (!user) {
+    return reply(c, { status: "error", message: "Usuario no encontrado" }, 404);
+  }
 
   if (user.status !== "PENDING_SETUP") {
     return reply(c, { status: "error", message: "Cuenta ya configurada" }, 403);
@@ -308,10 +329,14 @@ userRoutes.post("/setup", zValidator("json", setupUserSchema), async (c) => {
 
 userRoutes.post("/:id/reset-password", zValidator("param", idParamSchema), async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canUpdate = await hasPermission(auth.userId, "update", "User");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const { id: targetUserId } = c.req.valid("param");
 
@@ -343,10 +368,14 @@ userRoutes.put(
   zValidator("json", updateStatusSchema),
   async (c) => {
     const auth = await getAuth(c);
-    if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!auth) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canUpdate = await hasPermission(auth.userId, "update", "User");
-    if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    if (!canUpdate) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
 
     const { id: targetUserId } = c.req.valid("param");
     const { status } = c.req.valid("json");
@@ -375,10 +404,14 @@ userRoutes.put(
   zValidator("json", updateRoleSchema),
   async (c) => {
     const auth = await getAuth(c);
-    if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!auth) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canUpdate = await hasPermission(auth.userId, "update", "User");
-    if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    if (!canUpdate) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
 
     const { id: targetUserId } = c.req.valid("param");
     const { role } = c.req.valid("json");
@@ -405,10 +438,14 @@ userRoutes.put(
 
 userRoutes.delete("/:id", zValidator("param", idParamSchema), async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canDelete = await hasPermission(auth.userId, "delete", "User");
-  if (!canDelete) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canDelete) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const { id: targetUserId } = c.req.valid("param");
 
@@ -432,10 +469,14 @@ userRoutes.post(
   zValidator("json", toggleMfaSchema),
   async (c) => {
     const auth = await getAuth(c);
-    if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!auth) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canUpdate = await hasPermission(auth.userId, "update", "User");
-    if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    if (!canUpdate) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
 
     const { id: targetUserId } = c.req.valid("param");
     const { enabled } = c.req.valid("json");
@@ -456,10 +497,14 @@ userRoutes.post(
 
 userRoutes.delete("/:id/mfa", zValidator("param", idParamSchema), async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canUpdate = await hasPermission(auth.userId, "update", "User");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const { id: targetUserId } = c.req.valid("param");
 
@@ -478,10 +523,14 @@ userRoutes.delete("/:id/mfa", zValidator("param", idParamSchema), async (c) => {
 
 userRoutes.delete("/:id/passkey", zValidator("param", idParamSchema), async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canUpdate = await hasPermission(auth.userId, "update", "User");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const { id: targetUserId } = c.req.valid("param");
 

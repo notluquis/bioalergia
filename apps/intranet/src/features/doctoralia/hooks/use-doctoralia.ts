@@ -95,7 +95,9 @@ export function useCancelBooking() {
 export function useDoctoraliaBookings(query: DoctoraliaSlotQuery | null) {
   return useSuspenseQuery({
     queryFn: async () => {
-      if (!query) return [];
+      if (!query) {
+        return [];
+      }
       return fetchDoctoraliaBookings(query);
     },
     queryKey: doctoraliaKeys.bookings(
@@ -112,7 +114,9 @@ export function useDoctoraliaBookings(query: DoctoraliaSlotQuery | null) {
 export function useDoctoraliaDoctors(facilityId: number | undefined) {
   return useSuspenseQuery({
     queryFn: async () => {
-      if (!facilityId) return [];
+      if (!facilityId) {
+        return [];
+      }
       return fetchDoctoraliaDoctors(facilityId);
     },
     queryKey: doctoraliaKeys.doctors(facilityId ?? 0),
@@ -135,7 +139,9 @@ export function useDoctoraliaFacilities() {
 export function useDoctoraliaSlots(query: DoctoraliaSlotQuery | null) {
   return useSuspenseQuery({
     queryFn: async () => {
-      if (!query) return [];
+      if (!query) {
+        return [];
+      }
       return fetchDoctoraliaSlots(query);
     },
     queryKey: doctoraliaKeys.slots(

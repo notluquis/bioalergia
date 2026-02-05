@@ -14,11 +14,17 @@ export function formatDateForDB(date: Date) {
 
 export function normalizeDate(input: string, boundary: "start" | "end") {
   const trimmed = input.trim();
-  if (!trimmed) return null;
+  if (!trimmed) {
+    return null;
+  }
   const parts = trimmed.split("-").map(Number);
-  if (parts.length !== 3) return null;
+  if (parts.length !== 3) {
+    return null;
+  }
   const [year, month, day] = parts;
-  if (!year || !month || !day) return null;
+  if (!year || !month || !day) {
+    return null;
+  }
   const date = new Date(
     year,
     month - 1,
@@ -110,11 +116,17 @@ export function iterateDateRange(start: Date, end: Date) {
 
 export function parseDateOnly(value: string) {
   const trimmed = value.trim();
-  if (!trimmed) return null;
+  if (!trimmed) {
+    return null;
+  }
   const parts = trimmed.split("-").map(Number);
-  if (parts.length !== 3) return null;
+  if (parts.length !== 3) {
+    return null;
+  }
   const [year, month, day] = parts;
-  if (!year || !month || !day) return null;
+  if (!year || !month || !day) {
+    return null;
+  }
   const date = new Date(year, month - 1, day);
   if (
     Number.isNaN(date.getTime()) ||
@@ -144,7 +156,9 @@ export function getNthBusinessDay(base: Date, n: number) {
     const day = date.getDay();
     if (day !== 0 && day !== 6) {
       count += 1;
-      if (count === n) break;
+      if (count === n) {
+        break;
+      }
     }
     date.setDate(date.getDate() + 1);
   }

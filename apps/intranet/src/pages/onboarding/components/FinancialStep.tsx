@@ -30,14 +30,14 @@ export function FinancialStep({
 
   return (
     <form
-      className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-500"
+      className="fade-in slide-in-from-right-4 animate-in space-y-6 duration-500"
       onSubmit={handleSubmit}
     >
       <div className="mb-6 text-center">
-        <div className="bg-secondary/10 text-secondary mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10 text-secondary">
           <CreditCard size={24} />
         </div>
-        <h2 className="text-2xl font-bold">Datos bancarios</h2>
+        <h2 className="font-bold text-2xl">Datos bancarios</h2>
         <p className="text-default-500 text-sm">Para gestionar tus pagos y remuneraciones.</p>
       </div>
 

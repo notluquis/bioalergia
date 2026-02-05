@@ -20,7 +20,9 @@ const FALLBACK_LOGO_PATH = "/logo192.png";
 const FALLBACK_FAVICON_PATH = "/icons/icon-192.png";
 const determineAssetMode = (value: null | string | undefined): "upload" | "url" => {
   const trimmed = (value ?? "").trim();
-  if (!trimmed) return "upload";
+  if (!trimmed) {
+    return "upload";
+  }
   return trimmed.startsWith("http") || trimmed.startsWith("/") ? "url" : "upload";
 };
 const determineLogoMode = determineAssetMode;
@@ -102,8 +104,12 @@ export default function SettingsForm() {
   // Clean up object URLs
   useEffect(() => {
     return () => {
-      if (logoPreviewRef.current) URL.revokeObjectURL(logoPreviewRef.current);
-      if (faviconPreviewRef.current) URL.revokeObjectURL(faviconPreviewRef.current);
+      if (logoPreviewRef.current) {
+        URL.revokeObjectURL(logoPreviewRef.current);
+      }
+      if (faviconPreviewRef.current) {
+        URL.revokeObjectURL(faviconPreviewRef.current);
+      }
     };
   }, []);
 
@@ -123,13 +129,17 @@ export default function SettingsForm() {
     setLogoMode(mode);
     setStatus("idle");
     setError(null);
-    if (mode === "url") resetLogoSelection();
+    if (mode === "url") {
+      resetLogoSelection();
+    }
   };
 
   const handleLogoFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     resetLogoSelection();
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     const objectUrl = URL.createObjectURL(file);
     setLogoFile(file);
@@ -142,13 +152,17 @@ export default function SettingsForm() {
     setFaviconMode(mode);
     setStatus("idle");
     setError(null);
-    if (mode === "url") resetFaviconSelection();
+    if (mode === "url") {
+      resetFaviconSelection();
+    }
   };
 
   const handleFaviconFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     resetFaviconSelection();
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     const objectUrl = URL.createObjectURL(file);
     setFaviconFile(file);
@@ -170,7 +184,9 @@ export default function SettingsForm() {
       const payload = { ...form };
 
       if (logoMode === "upload") {
-        if (!logoFile) throw new Error("Selecciona un archivo de logo antes de guardar");
+        if (!logoFile) {
+          throw new Error("Selecciona un archivo de logo antes de guardar");
+        }
         const url = await uploadMutation.mutateAsync({
           endpoint: "/api/settings/logo/upload",
           file: logoFile,
@@ -179,7 +195,9 @@ export default function SettingsForm() {
       }
 
       if (faviconMode === "upload") {
-        if (!faviconFile) throw new Error("Selecciona un archivo de favicon antes de guardar");
+        if (!faviconFile) {
+          throw new Error("Selecciona un archivo de favicon antes de guardar");
+        }
         const url = await uploadMutation.mutateAsync({
           endpoint: "/api/settings/favicon/upload",
           file: faviconFile,
@@ -189,8 +207,12 @@ export default function SettingsForm() {
 
       await updateSettings(payload);
 
-      if (logoMode === "upload") resetLogoSelection();
-      if (faviconMode === "upload") resetFaviconSelection();
+      if (logoMode === "upload") {
+        resetLogoSelection();
+      }
+      if (faviconMode === "upload") {
+        resetFaviconSelection();
+      }
 
       setStatus("success");
     } catch (error_) {
@@ -201,9 +223,9 @@ export default function SettingsForm() {
   };
 
   return (
-    <form className="bg-background space-y-6 p-6" onSubmit={handleSubmit}>
+    <form className="space-y-6 bg-background p-6" onSubmit={handleSubmit}>
       <div className="space-y-1">
-        <h2 className="text-primary text-lg font-semibold drop-shadow-sm">Configuración General</h2>
+        <h2 className="font-semibold text-lg text-primary drop-shadow-sm">Configuración General</h2>
         <p className="text-default-600 text-sm">
           Personaliza la identidad visual y la información de contacto.
         </p>
@@ -250,9 +272,9 @@ export default function SettingsForm() {
       {hasRole() && (
         <Suspense
           fallback={
-            <div className="border-default-200 bg-default-50 mt-6 rounded-lg border p-4">
-              <h3 className="text-sm font-semibold">Ajustes internos (avanzado)</h3>
-              <div className="text-default-500 mt-3 flex items-center gap-2 text-sm">
+            <div className="mt-6 rounded-lg border border-default-200 bg-default-50 p-4">
+              <h3 className="font-semibold text-sm">Ajustes internos (avanzado)</h3>
+              <div className="mt-3 flex items-center gap-2 text-default-500 text-sm">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 Cargando configuración interna...
               </div>
@@ -276,8 +298,8 @@ function GeneralSettingsFields({
   return (
     <>
       {fields.map(({ helper, key, label, type }) => (
-        <div className="text-foreground flex flex-col gap-2 text-sm" key={key}>
-          <span className="text-default-700 text-xs font-semibold tracking-wide uppercase">
+        <div className="flex flex-col gap-2 text-foreground text-sm" key={key}>
+          <span className="font-semibold text-default-700 text-xs uppercase tracking-wide">
             {label}
           </span>
           {type === "color" ? (
@@ -365,9 +387,9 @@ function LogoSection({
   previewUrl: string;
 }) {
   return (
-    <div className="border-default-200 bg-default-50 col-span-full space-y-3 rounded-2xl border p-4">
+    <div className="col-span-full space-y-3 rounded-2xl border border-default-200 bg-default-50 p-4">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-default-700 text-xs font-semibold tracking-wide uppercase">
+        <span className="font-semibold text-default-700 text-xs uppercase tracking-wide">
           Logo institucional
         </span>
         <ButtonGroup>
@@ -406,7 +428,7 @@ function LogoSection({
           />
         </div>
       ) : (
-        <div className="text-foreground space-y-3 text-sm">
+        <div className="space-y-3 text-foreground text-sm">
           <div>
             <input
               accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
@@ -425,12 +447,12 @@ function LogoSection({
             </Button>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <div className="border-default-200 bg-background flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border p-2">
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-default-200 bg-background p-2">
               <img alt="Vista previa del logo" className="brand-logo--settings" src={previewUrl} />
             </div>
             <div className="text-default-600 text-xs">
               <p>{logoPreview ? "Vista previa sin guardar" : "Logo actual"}</p>
-              <p className="text-default-500 mt-1 break-all">{logoUrl}</p>
+              <p className="mt-1 break-all text-default-500">{logoUrl}</p>
             </div>
           </div>
           <span className="text-default-500 text-xs">
@@ -463,9 +485,9 @@ function FaviconSection({
   previewUrl: string;
 }) {
   return (
-    <div className="border-default-200 bg-default-50 col-span-full space-y-3 rounded-2xl border p-4">
+    <div className="col-span-full space-y-3 rounded-2xl border border-default-200 bg-default-50 p-4">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-default-700 text-xs font-semibold tracking-wide uppercase">
+        <span className="font-semibold text-default-700 text-xs uppercase tracking-wide">
           Favicon del sitio
         </span>
         <ButtonGroup>
@@ -504,7 +526,7 @@ function FaviconSection({
           />
         </div>
       ) : (
-        <div className="text-foreground space-y-3 text-sm">
+        <div className="space-y-3 text-foreground text-sm">
           <div>
             <input
               accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,image/vnd.microsoft.icon"
@@ -523,7 +545,7 @@ function FaviconSection({
             </Button>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <div className="border-default-200 bg-background flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border p-2">
+            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-default-200 bg-background p-2">
               <img
                 alt="Vista previa del favicon"
                 className="h-full w-full object-contain"
@@ -532,7 +554,7 @@ function FaviconSection({
             </div>
             <div className="text-default-600 text-xs">
               <p>{faviconPreview ? "Vista previa sin guardar" : "Favicon actual"}</p>
-              <p className="text-default-500 mt-1 break-all">{faviconUrl}</p>
+              <p className="mt-1 break-all text-default-500">{faviconUrl}</p>
             </div>
           </div>
           <span className="text-default-500 text-xs">
@@ -561,7 +583,9 @@ function InternalSettingsSection() {
   const internalMutation = useMutation({
     mutationFn: (body: object) =>
       updateInternalSettings(body).then((res) => {
-        if (res.status !== "ok") throw new Error(res.message ?? "Error al actualizar");
+        if (res.status !== "ok") {
+          throw new Error(res.message ?? "Error al actualizar");
+        }
         return res;
       }),
     onSuccess: () => {
@@ -579,8 +603,8 @@ function InternalSettingsSection() {
   const envUpsertChunkSize = internalData.internal.envUpsertChunkSize ?? null;
 
   return (
-    <div className="border-default-200 bg-default-50 mt-6 rounded-lg border p-4">
-      <h3 className="text-sm font-semibold">Ajustes internos (avanzado)</h3>
+    <div className="mt-6 rounded-lg border border-default-200 bg-default-50 p-4">
+      <h3 className="font-semibold text-sm">Ajustes internos (avanzado)</h3>
       <p className="text-default-600 text-xs">
         Variables internas editables (prefijo BIOALERGIA_X_). Solo administradores.
       </p>
@@ -622,7 +646,7 @@ function InternalSettingsSection() {
         </div>
       </div>
       {internalMutation.isError && (
-        <div className="text-danger mt-3 text-xs">
+        <div className="mt-3 text-danger text-xs">
           {internalMutation.error instanceof Error ? internalMutation.error.message : "Error"}
         </div>
       )}

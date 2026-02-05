@@ -22,7 +22,9 @@ export function useServicePayment() {
 
   const { data: suggestedTransactions } = useSuspenseQuery({
     queryFn: async () => {
-      if (!scheduleId || expectedAmount == null) return [];
+      if (!scheduleId || expectedAmount == null) {
+        return [];
+      }
       const tolerance = Math.max(100, Math.round(expectedAmount * 0.01));
       const dueDateValue = dueDate ? dayjs(dueDate) : dayjs();
       const from = dueDateValue.clone().subtract(45, "day").format("YYYY-MM-DD");
@@ -75,9 +77,13 @@ export function useServicePayment() {
   // Actions
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!paymentSchedule) return;
+    if (!paymentSchedule) {
+      return;
+    }
     const transactionId = Number(paymentForm.transactionId);
-    if (!Number.isFinite(transactionId) || transactionId <= 0) return;
+    if (!Number.isFinite(transactionId) || transactionId <= 0) {
+      return;
+    }
 
     await paymentMutation.mutateAsync({
       body: {
@@ -91,7 +97,9 @@ export function useServicePayment() {
   };
 
   const applySuggestedTransaction = (tx: Transaction) => {
-    if (!tx.transactionAmount) return;
+    if (!tx.transactionAmount) {
+      return;
+    }
     servicesActions.updatePaymentForm({
       paidAmount: String(tx.transactionAmount),
       paidDate: tx.transactionDate ?? paymentForm.paidDate,

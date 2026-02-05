@@ -29,7 +29,9 @@ export class CalendarSyncService {
    * Initialize authenticated Google Calendar client
    */
   private async getClient(): Promise<calendar_v3.Calendar> {
-    if (this.client) return this.client;
+    if (this.client) {
+      return this.client;
+    }
 
     if (!googleCalendarConfig) {
       throw new Error("Google Calendar configuration is missing");
@@ -222,7 +224,9 @@ export class CalendarSyncService {
       );
 
       for (const item of items) {
-        if (!item.id) continue;
+        if (!item.id) {
+          continue;
+        }
 
         // Check exclusion patterns
         if (isEventExcluded(item.summary, item.description, excludePatterns)) {

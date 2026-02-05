@@ -25,7 +25,7 @@ export function FinancialDashboardPage() {
       {/* Header & Filters */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Tablero Financiero</h1>
+          <h1 className="font-bold text-2xl tracking-tight">Tablero Financiero</h1>
           <p className="text-default-500 text-sm">
             Resumen de ingresos por tratamientos y gastos operativos.
           </p>
@@ -56,9 +56,9 @@ export function FinancialDashboardPage() {
       {/* Main Content: Incomes vs Expenses */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Left: Income Breakdown (2/3 width) */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Desglose de Ingresos</h2>
+            <h2 className="font-semibold text-xl">Desglose de Ingresos</h2>
             <Chip color="success" variant="soft">
               Desde Calendario
             </Chip>
@@ -69,7 +69,7 @@ export function FinancialDashboardPage() {
         {/* Right: Expenses (1/3 width) */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Gastos</h2>
+            <h2 className="font-semibold text-xl">Gastos</h2>
             <Button size="sm" variant="ghost">
               + Nuevo Gasto
             </Button>

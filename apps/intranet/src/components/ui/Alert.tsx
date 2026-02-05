@@ -27,8 +27,8 @@ export default function Alert({
   } as const;
 
   return (
-    <HeroAlert className={cn("items-start relative", className)} color={colorMap[variant]}>
-      <div className="flex-1 mr-6">{children}</div>
+    <HeroAlert className={cn("relative items-start", className)} color={colorMap[variant]}>
+      <div className="mr-6 flex-1">{children}</div>
       {onClose && (
         <Button
           isIconOnly
@@ -36,7 +36,7 @@ export default function Alert({
           variant="ghost"
           onPress={onClose}
           aria-label="Cerrar"
-          className="absolute right-2 top-2 min-w-6 w-6 h-6 data-[hover=true]:bg-black/10 dark:data-[hover=true]:bg-white/10"
+          className="absolute top-2 right-2 h-6 w-6 min-w-6 data-[hover=true]:bg-black/10 dark:data-[hover=true]:bg-white/10"
         >
           ✕
         </Button>

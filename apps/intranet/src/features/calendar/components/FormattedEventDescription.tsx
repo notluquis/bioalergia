@@ -52,7 +52,7 @@ export function FormattedEventDescription({
   return (
     <div
       className={cn(
-        "[&_a]:text-primary text-foreground-500 text-xs leading-relaxed font-normal transition-all [&_a]:underline",
+        "font-normal text-foreground-500 text-xs leading-relaxed transition-all [&_a]:text-primary [&_a]:underline",
         className,
       )}
       // biome-ignore lint/security/noDangerouslySetInnerHtml: Sanitized with DOMPurify

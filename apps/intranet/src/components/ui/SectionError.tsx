@@ -45,7 +45,7 @@ export function SectionError({
   return (
     <div
       className={cn(
-        "flex min-h-50 w-full flex-col items-center justify-center rounded-xl border border-dashed border-danger-200 bg-danger-50/10 p-6 text-center text-default-600",
+        "flex min-h-50 w-full flex-col items-center justify-center rounded-xl border border-danger-200 border-dashed bg-danger-50/10 p-6 text-center text-default-600",
         className,
       )}
     >
@@ -53,12 +53,12 @@ export function SectionError({
         <AlertTriangle className="h-6 w-6" />
       </div>
 
-      <h3 className="mb-2 text-lg font-semibold text-foreground">{title}</h3>
-      <p className="mb-6 max-w-md text-sm text-default-500">{message}</p>
+      <h3 className="mb-2 font-semibold text-foreground text-lg">{title}</h3>
+      <p className="mb-6 max-w-md text-default-500 text-sm">{message}</p>
 
       {errorMessage && (
         <div className="mb-6 w-full max-w-md overflow-hidden rounded-lg bg-default-50 p-2 text-left">
-          <code className="block font-mono text-xs text-danger break-all whitespace-pre-wrap">
+          <code className="block whitespace-pre-wrap break-all font-mono text-danger text-xs">
             {errorMessage}
           </code>
         </div>

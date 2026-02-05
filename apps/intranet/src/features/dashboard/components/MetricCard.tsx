@@ -61,7 +61,7 @@ export default function MetricCard({
 
   return (
     <article
-      className={`relative overflow-hidden rounded-4xl bg-linear-to-br ${theme.gradient} p-6 shadow-lg ring-1 transition-all duration-300 ring-inset hover:-translate-y-1 hover:shadow-xl ${theme.ring}`}
+      className={`relative overflow-hidden rounded-4xl bg-linear-to-br ${theme.gradient} p-6 shadow-lg ring-1 ring-inset transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${theme.ring}`}
     >
       <div
         aria-hidden="true"
@@ -71,14 +71,14 @@ export default function MetricCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <div
-              className={`bg-background/50 flex h-8 w-8 items-center justify-center rounded-full ring-1 backdrop-blur-sm ring-inset ${theme.ring}`}
+              className={`flex h-8 w-8 items-center justify-center rounded-full bg-background/50 ring-1 ring-inset backdrop-blur-sm ${theme.ring}`}
             >
               <Icon className={`h-4 w-4 ${theme.iconColor}`} />
             </div>
             <h2 className="typ-caption text-default-600">{title}</h2>
           </div>
           <span
-            className={`hidden rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide uppercase lg:inline-flex ${theme.badge}`}
+            className={`hidden rounded-full px-3 py-1 font-semibold text-[11px] uppercase tracking-wide lg:inline-flex ${theme.badge}`}
           >
             {theme.badgeLabel}
           </span>

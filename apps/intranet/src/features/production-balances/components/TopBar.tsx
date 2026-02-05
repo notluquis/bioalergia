@@ -52,16 +52,16 @@ export function TopBar({ canFinalize, date, isSaving, onFinalize, onSave, status
   };
 
   return (
-    <div className="bg-background/80 border-default-100 sticky top-0 z-10 mb-4 flex items-center justify-between rounded-2xl border px-6 py-4 backdrop-blur-md">
+    <div className="sticky top-0 z-10 mb-4 flex items-center justify-between rounded-2xl border border-default-100 bg-background/80 px-6 py-4 backdrop-blur-md">
       {/* Left: Title and date */}
       <div>
-        <h1 className="text-xl font-bold">Balance diario</h1>
+        <h1 className="font-bold text-xl">Balance diario</h1>
         <div className="mt-1 flex items-center gap-2">
-          <span className="text-default-700 text-lg font-medium capitalize">
+          <span className="font-medium text-default-700 text-lg capitalize">
             {formatDateFull(date)}
           </span>
           <span
-            className={cn("rounded-full px-2 py-0.5 text-xs font-medium", statusColors[status])}
+            className={cn("rounded-full px-2 py-0.5 font-medium text-xs", statusColors[status])}
           >
             {statusLabels[status]}
           </span>
@@ -87,7 +87,7 @@ export function TopBar({ canFinalize, date, isSaving, onFinalize, onSave, status
           <Save className="size-4" />
           <span className="hidden sm:inline">Guardar</span>
           {showShortcut && (
-            <kbd className="bg-default-100 ml-1 hidden rounded px-1.5 py-0.5 text-xs sm:inline">
+            <kbd className="ml-1 hidden rounded bg-default-100 px-1.5 py-0.5 text-xs sm:inline">
               ⌘S
             </kbd>
           )}

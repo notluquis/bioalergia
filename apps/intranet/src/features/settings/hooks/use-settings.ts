@@ -116,7 +116,9 @@ const DEFAULT_RGB_BLACK = "0 0 0";
 const COLOR_FUNC_REGEX = /^(var|oklch|hsl|rgb|rgba)\(/;
 
 function colorToRgb(color: string) {
-  if (!color) return DEFAULT_RGB_BLACK;
+  if (!color) {
+    return DEFAULT_RGB_BLACK;
+  }
   if (COLOR_FUNC_REGEX.test(color)) {
     return color;
   }

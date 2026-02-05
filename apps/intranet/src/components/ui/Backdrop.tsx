@@ -18,7 +18,9 @@ export default function Backdrop({
   onClose,
   zIndex = 40,
 }: Readonly<BackdropProps>) {
-  if (!isVisible) return null;
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: backdrop div

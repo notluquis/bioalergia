@@ -49,7 +49,9 @@ export function useJobProgress(jobId: null | string, options: UseJobProgressOpti
 
   const query = useSuspenseQuery({
     queryFn: async () => {
-      if (!jobId) return null;
+      if (!jobId) {
+        return null;
+      }
       const response = await apiClient.get<{ job: JobState; status: string }>(
         `/api/calendar/events/job/${jobId}`,
         { responseSchema: JobStatusResponseSchema },
@@ -74,7 +76,9 @@ export function useJobProgress(jobId: null | string, options: UseJobProgressOpti
 
   // Handle completion/error callbacks
   useEffect(() => {
-    if (!query.data || hasNotified) return;
+    if (!query.data || hasNotified) {
+      return;
+    }
 
     if (query.data.status === "completed") {
       setHasNotified(true);

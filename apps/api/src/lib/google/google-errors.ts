@@ -108,7 +108,7 @@ function extractGaxiosDetails(error: GaxiosError): {
       message?: string;
       errors?: Array<{ reason?: string; domain?: string; message?: string }>;
       details?: Array<{
-        ["@type"]?: string;
+        "@type"?: string;
         reason?: string;
         domain?: string;
         metadata?: Record<string, string>;
@@ -204,11 +204,8 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function retryGoogleCall<T>(
-  operation: () => Promise<T>,
-  options: GoogleRetryOptions = {},
-): Promise<T> {
-  const resolved: Required<GoogleRetryOptions> = {
+function resolveRetryOptions(options: GoogleRetryOptions): Required<GoogleRetryOptions> {
+  return {
     maxAttempts: options.maxAttempts ?? 4,
     baseDelayMs: options.baseDelayMs ?? 500,
     maxDelayMs: options.maxDelayMs ?? 10_000,
@@ -230,29 +227,39 @@ export async function retryGoogleCall<T>(
     ],
     context: options.context ?? "",
   };
+}
 
-  let attempt = 0;
+function applyContext(error: GoogleApiError, context: string): GoogleApiError {
+  if (context) {
+    error.message = `${context}: ${error.message}`;
+  }
+  return error;
+}
 
-  while (true) {
+export async function retryGoogleCall<T>(
+  operation: () => Promise<T>,
+  options: GoogleRetryOptions = {},
+): Promise<T> {
+  const resolved = resolveRetryOptions(options);
+
+  for (let attempt = 0; attempt < resolved.maxAttempts; attempt += 1) {
     try {
       return await operation();
     } catch (err) {
       const parsed = parseGoogleError(err);
       const shouldRetry = isRetryableError(parsed, resolved);
-      const isLastAttempt = attempt >= resolved.maxAttempts - 1;
+      const isLastAttempt = attempt === resolved.maxAttempts - 1;
 
       if (!shouldRetry || isLastAttempt) {
-        if (resolved.context) {
-          parsed.message = `${resolved.context}: ${parsed.message}`;
-        }
-        throw parsed;
+        throw applyContext(parsed, resolved.context);
       }
 
       const delayMs = computeRetryDelayMs(attempt, parsed, resolved);
-      attempt += 1;
       await sleep(delayMs);
     }
   }
+
+  throw new Error("Retry attempts exhausted");
 }
 
 function extractAip193Info(
@@ -261,7 +268,7 @@ function extractAip193Info(
         status?: string;
         message?: string;
         details?: Array<{
-          ["@type"]?: string;
+          "@type"?: string;
           reason?: string;
           domain?: string;
           metadata?: Record<string, string>;

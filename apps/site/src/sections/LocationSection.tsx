@@ -10,7 +10,7 @@ export function LocationSection() {
     <Card className="h-full rounded-3xl" variant="secondary">
       <Card.Header className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
-          <div className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">Ubicación</div>
+          <div className="text-(--ink-muted) text-xs uppercase tracking-[0.28em]">Ubicación</div>
           <Card.Title className="text-2xl">Centro Costanera</Card.Title>
           <Card.Description className="max-w-md text-(--ink-muted)">
             {contactInfo.address}
@@ -24,7 +24,7 @@ export function LocationSection() {
         </Button>
       </Card.Header>
       <Card.Content className="p-4">
-        <div className="overflow-hidden rounded-2xl border border-border aspect-video sm:aspect-auto">
+        <div className="aspect-video overflow-hidden rounded-2xl border border-border sm:aspect-auto">
           <iframe
             title="Mapa Bioalergia"
             src={clinicMapEmbedUrl}

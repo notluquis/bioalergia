@@ -29,7 +29,9 @@ export const mercadopagoRoutes = new Hono();
 // Helper to get auth
 async function getAuth(c: Context) {
   const user = await getSessionUser(c);
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
   return { userId: user.id, email: user.email };
 }
 
@@ -40,10 +42,14 @@ async function getAuth(c: Context) {
 // List Reports
 mercadopagoRoutes.get("/reports", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canRead = await hasPermission(auth.userId, "read", "Integration");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   try {
     const limit = Number(c.req.query("limit") ?? "50");
@@ -61,10 +67,14 @@ mercadopagoRoutes.get("/reports", async (c) => {
 // Create Manual Report
 mercadopagoRoutes.post("/reports", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canCreate = await hasPermission(auth.userId, "read", "Integration");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const body = await c.req.json();
   const validationError = validateReportRange(body);
@@ -88,10 +98,14 @@ mercadopagoRoutes.post("/reports", async (c) => {
 // Download Report
 mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canRead = await hasPermission(auth.userId, "read", "Integration");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const fileName = c.req.param("fileName");
 
@@ -103,10 +117,14 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
 
     return stream(c, async (stream) => {
       const reader = res.body?.getReader();
-      if (!reader) return;
+      if (!reader) {
+        return;
+      }
       for (;;) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          break;
+        }
         await stream.write(value);
       }
     });
@@ -122,10 +140,14 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
 // List Reports
 mercadopagoRoutes.get("/settlement/reports", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canRead = await hasPermission(auth.userId, "read", "Integration");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   try {
     const limit = Number(c.req.query("limit") ?? "50");
@@ -143,10 +165,14 @@ mercadopagoRoutes.get("/settlement/reports", async (c) => {
 // Create Manual Report
 mercadopagoRoutes.post("/settlement/reports", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canCreate = await hasPermission(auth.userId, "read", "Integration");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const body = await c.req.json();
   const validationError = validateReportRange(body);
@@ -170,10 +196,14 @@ mercadopagoRoutes.post("/settlement/reports", async (c) => {
 // Download Report
 mercadopagoRoutes.get("/settlement/reports/download/:fileName", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canRead = await hasPermission(auth.userId, "read", "Integration");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const fileName = c.req.param("fileName");
 
@@ -185,10 +215,14 @@ mercadopagoRoutes.get("/settlement/reports/download/:fileName", async (c) => {
 
     return stream(c, async (stream) => {
       const reader = res.body?.getReader();
-      if (!reader) return;
+      if (!reader) {
+        return;
+      }
       for (;;) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          break;
+        }
         await stream.write(value);
       }
     });
@@ -203,10 +237,14 @@ mercadopagoRoutes.get("/settlement/reports/download/:fileName", async (c) => {
 
 mercadopagoRoutes.post("/process-report", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canCreate = await hasPermission(auth.userId, "read", "Integration");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const { fileName, reportType } = await c.req.json<{
     fileName: string;
@@ -411,10 +449,14 @@ mercadopagoRoutes.post("/webhook", async (c) => {
 
 mercadopagoRoutes.get("/sync/logs", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canRead = await hasPermission(auth.userId, "read", "Integration");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const limit = Number(c.req.query("limit") ?? "50");
   const offset = Number(c.req.query("offset") ?? "0");
@@ -427,7 +469,9 @@ mercadopagoRoutes.get("/sync/logs", async (c) => {
 async function retryAcquireSchedulerLock(maxRetries: number) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const acquired = await acquireSchedulerLock();
-    if (acquired) return true;
+    if (acquired) {
+      return true;
+    }
     if (attempt < maxRetries) {
       await sleep(200 + Math.random() * 600);
     }
@@ -456,7 +500,9 @@ async function enqueuePendingWebhook(payload: MPWebhookPayload) {
 
 async function loadPendingWebhooks() {
   const raw = await getSetting(PENDING_WEBHOOKS_KEY);
-  if (!raw) return [];
+  if (!raw) {
+    return [];
+  }
   try {
     return JSON.parse(raw) as Array<{
       transaction_id: string;
@@ -471,22 +517,30 @@ async function loadPendingWebhooks() {
 
 async function loadProcessedFiles(key: string) {
   const raw = await getSetting(key);
-  if (!raw) return new Set<string>();
+  if (!raw) {
+    return new Set<string>();
+  }
   try {
     const parsed = JSON.parse(raw) as Array<string | { name: string; at?: string }>;
     const now = Date.now();
     const ttlMs = PROCESSED_TTL_DAYS * 24 * 60 * 60 * 1000;
     const entries = parsed
       .map((item) => {
-        if (typeof item === "string") return { name: item, at: null };
+        if (typeof item === "string") {
+          return { name: item, at: null };
+        }
         return { name: item.name, at: item.at ?? null };
       })
       .filter((item) => item.name);
 
     const filtered = entries.filter((entry) => {
-      if (!entry.at) return true;
+      if (!entry.at) {
+        return true;
+      }
       const timestamp = Date.parse(entry.at);
-      if (Number.isNaN(timestamp)) return true;
+      if (Number.isNaN(timestamp)) {
+        return true;
+      }
       return now - timestamp <= ttlMs;
     });
 

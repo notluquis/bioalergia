@@ -15,7 +15,9 @@ export interface PersonNameData {
 export function extractPersonFromResponse<T extends Record<string, unknown>>(
   response: null | T | undefined,
 ): null | (T extends { person: infer P } ? P : T) {
-  if (!response) return null;
+  if (!response) {
+    return null;
+  }
   if ("person" in response && response.person !== undefined && response.person !== null) {
     return response.person as T extends { person: infer P } ? P : T;
   }
@@ -37,10 +39,14 @@ export function formatPersonDisplay(person?: null | PersonNameData): string {
  * Smart: avoids duplicating surnames if they're already in the names field
  */
 export function getPersonFullName(person?: null | PersonNameData): string {
-  if (!person) return "";
+  if (!person) {
+    return "";
+  }
 
   const names = person.names?.trim() ?? "";
-  if (!names) return "";
+  if (!names) {
+    return "";
+  }
 
   const fatherName = person.fatherName?.trim() ?? "";
   const motherName = person.motherName?.trim() ?? "";
@@ -76,7 +82,9 @@ export function getPersonFullName(person?: null | PersonNameData): string {
  * Safe: returns "?" if names is null/undefined
  */
 export function getPersonInitials(person?: null | PersonNameData): string {
-  if (!person?.names) return "?";
+  if (!person?.names) {
+    return "?";
+  }
 
   // Try to get first char of first name + first char of last name
   const firstInitial = person.names.charAt(0).toUpperCase();

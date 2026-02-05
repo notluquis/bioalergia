@@ -31,10 +31,10 @@ export default function MonthlyExpenseDetail({
   }
 
   return (
-    <section className="border-default-200 text-foreground bg-background space-y-4 border p-4 text-sm">
+    <section className="space-y-4 border border-default-200 bg-background p-4 text-foreground text-sm">
       <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-primary text-xl font-semibold break-all">{expense.name}</h2>
+          <h2 className="break-all font-semibold text-primary text-xl">{expense.name}</h2>
           <p className="text-default-400 text-xs">
             {expense.category || "Sin categoría"} ·{" "}
             {dayjs(expense.expenseDate).format("DD MMM YYYY")}
@@ -72,31 +72,31 @@ export default function MonthlyExpenseDetail({
       </div>
 
       {expense.notes && (
-        <p className="bg-background/60 text-default-500 rounded-xl p-3 text-xs">{expense.notes}</p>
+        <p className="rounded-xl bg-background/60 p-3 text-default-500 text-xs">{expense.notes}</p>
       )}
 
       <section className="space-y-2">
-        <h3 className="text-default-500 text-xs font-semibold tracking-wide uppercase">
+        <h3 className="font-semibold text-default-500 text-xs uppercase tracking-wide">
           Transacciones
         </h3>
         <div className="muted-scrollbar max-h-72 space-y-2 overflow-y-auto pr-1">
           {expense.transactions.map((tx) => (
             <article
-              className="border-default-200 bg-default-50 rounded-xl border p-3 shadow-inner"
+              className="rounded-xl border border-default-200 bg-default-50 p-3 shadow-inner"
               key={tx.transactionId}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-foreground text-sm font-semibold">ID #{tx.transactionId}</p>
+                  <p className="font-semibold text-foreground text-sm">ID #{tx.transactionId}</p>
                   <p className="text-default-400 text-xs">
                     {tx.description ?? "(sin descripción)"}
                   </p>
                 </div>
-                <span className="text-foreground text-sm font-semibold">
+                <span className="font-semibold text-foreground text-sm">
                   ${tx.amount.toLocaleString("es-CL")}
                 </span>
               </div>
-              <div className="text-default-400 mt-1 text-xs">
+              <div className="mt-1 text-default-400 text-xs">
                 {dayjs(tx.timestamp).format("DD MMM YYYY HH:mm")} · {tx.direction}
               </div>
               {canManage && (
@@ -115,7 +115,7 @@ export default function MonthlyExpenseDetail({
             </article>
           ))}
           {expense.transactions.length === 0 && (
-            <p className="border-default-200 bg-default-50 text-default-500 rounded-xl border border-dashed p-3 text-xs">
+            <p className="rounded-xl border border-default-200 border-dashed bg-default-50 p-3 text-default-500 text-xs">
               Aún no se han vinculado transacciones a este gasto.
             </p>
           )}
@@ -127,9 +127,9 @@ export default function MonthlyExpenseDetail({
 
 function DetailCard({ helper, title, value }: { helper?: string; title: string; value: string }) {
   return (
-    <article className="border-default-200 bg-default-50 rounded-xl border p-3 shadow-sm">
-      <p className="text-default-500 text-xs font-semibold tracking-wide uppercase">{title}</p>
-      <p className="text-foreground mt-1 text-lg font-semibold">{value}</p>
+    <article className="rounded-xl border border-default-200 bg-default-50 p-3 shadow-sm">
+      <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">{title}</p>
+      <p className="mt-1 font-semibold text-foreground text-lg">{value}</p>
       {helper && <p className="text-default-400 text-xs">{helper}</p>}
     </article>
   );

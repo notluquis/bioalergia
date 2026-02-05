@@ -14,6 +14,7 @@ import { Select, SelectItem } from "@/components/ui/Select";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import type { AuthContextType } from "@/features/auth/hooks/use-auth";
 import { type CsvImportPayload, importCsvData, previewCsvImport } from "@/features/data-import/api";
 import { cn } from "@/lib/utils";
 
@@ -30,13 +31,55 @@ interface FieldDefinition {
   type: string;
 }
 
+const HEADER_ALIAS_REGEX = /\(([^)]+)\)/;
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const extractHeaderAliases = (header: string) => {
-  const match = header.match(/\(([^)]+)\)/);
+  const match = header.match(HEADER_ALIAS_REGEX);
   const aliases = [header];
-  if (match?.[1]) aliases.push(match[1]);
+  if (match?.[1]) {
+    aliases.push(match[1]);
+  }
   return aliases;
+};
+
+const getAllowedTableOptions = (can: AuthContextType["can"]) =>
+  TABLE_OPTIONS.filter((table) => {
+    if (!SUPPORTED_TABLES.has(table.value)) {
+      return false;
+    }
+    const perm = PERMISSION_MAP[table.value];
+    if (!perm) {
+      return false;
+    }
+    return can(perm.action, perm.subject);
+  });
+
+const buildTransformedData = (
+  csvData: Record<string, string>[],
+  columnMapping: Record<string, string>,
+): Record<string, string | number>[] =>
+  csvData.map((row) => {
+    const transformed: Record<string, number | string> = {};
+    for (const [dbField, csvColumn] of Object.entries(columnMapping)) {
+      if (csvColumn && row[csvColumn] !== undefined) {
+        transformed[dbField] = row[csvColumn];
+      }
+    }
+    return transformed;
+  });
+
+const isValidColumnMapping = (
+  table: TableOption | undefined,
+  columnMapping: Record<string, string>,
+): boolean => {
+  if (!table) {
+    return false;
+  }
+  const requiredFields = table.fields.filter((field) => field.required);
+  return requiredFields.every(
+    (field) => columnMapping[field.name] && columnMapping[field.name] !== "",
+  );
 };
 
 const matchHeaderForField = (fieldName: string, headers: string[]) => {
@@ -258,7 +301,7 @@ function TableSelectionCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileUp className="text-primary h-5 w-5" />
+          <FileUp className="h-5 w-5 text-primary" />
           1. Seleccionar destino
         </CardTitle>
         <CardDescription>Elige la tabla donde deseas importar los datos.</CardDescription>
@@ -284,8 +327,8 @@ function TableSelectionCard({
           </div>
 
           {currentTable && (
-            <div className="bg-default-50/50 flex-1 rounded-lg p-4">
-              <h3 className="mb-2 text-xs font-bold tracking-wide uppercase opacity-70">
+            <div className="flex-1 rounded-lg bg-default-50/50 p-4">
+              <h3 className="mb-2 font-bold text-xs uppercase tracking-wide opacity-70">
                 Campos requeridos
               </h3>
               <div className="flex flex-wrap gap-2">
@@ -427,24 +470,26 @@ function ColumnMappingCard({
 }
 
 function ImportSummaryCard({ previewData }: { previewData: ImportPreviewData }) {
-  if (!previewData) return null;
+  if (!previewData) {
+    return null;
+  }
 
   return (
     <Card className="border-primary/20 bg-primary/5">
       <CardContent className="p-6">
-        <h3 className="mb-4 text-lg font-semibold">Resumen de Importación</h3>
+        <h3 className="mb-4 font-semibold text-lg">Resumen de Importación</h3>
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div className="bg-background border-default-100 rounded-lg border p-3 shadow-sm">
-            <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Insertar</div>
-            <div className="text-success text-2xl font-bold">{previewData.toInsert ?? 0}</div>
+          <div className="rounded-lg border border-default-100 bg-background p-3 shadow-sm">
+            <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Insertar</div>
+            <div className="font-bold text-2xl text-success">{previewData.toInsert ?? 0}</div>
           </div>
-          <div className="bg-background border-default-100 rounded-lg border p-3 shadow-sm">
-            <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Actualizar</div>
-            <div className="text-info text-2xl font-bold">{previewData.toUpdate ?? 0}</div>
+          <div className="rounded-lg border border-default-100 bg-background p-3 shadow-sm">
+            <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Actualizar</div>
+            <div className="font-bold text-2xl text-info">{previewData.toUpdate ?? 0}</div>
           </div>
-          <div className="bg-background border-default-100 rounded-lg border p-3 shadow-sm">
-            <div className="mb-1 text-xs tracking-wider uppercase opacity-70">Omitir</div>
-            <div className="text-warning text-2xl font-bold">{previewData.toSkip ?? 0}</div>
+          <div className="rounded-lg border border-default-100 bg-background p-3 shadow-sm">
+            <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Omitir</div>
+            <div className="font-bold text-2xl text-warning">{previewData.toSkip ?? 0}</div>
           </div>
         </div>
 
@@ -455,7 +500,7 @@ function ImportSummaryCard({ previewData }: { previewData: ImportPreviewData }) 
                 <AlertCircle className="h-4 w-4" />
                 Errores de validación ({previewData.errors.length})
               </div>
-              <ul className="bg-background/50 max-h-32 list-inside list-disc overflow-y-auto rounded p-2 text-xs opacity-90">
+              <ul className="max-h-32 list-inside list-disc overflow-y-auto rounded bg-background/50 p-2 text-xs opacity-90">
                 {previewData.errors.map((err: string, i: number) => (
                   <li key={`${i}-${err.substring(0, 20)}`}>{err}</li>
                 ))}
@@ -533,7 +578,7 @@ function buildMappingColumns({
       cell: ({ row }) => {
         const mappedColumn = columnMapping[row.original.name];
         return (
-          <span className="text-default-500 max-w-37.5 truncate font-mono text-xs">
+          <span className="max-w-37.5 truncate font-mono text-default-500 text-xs">
             {(mappedColumn && csvData[0]?.[mappedColumn]) ?? "-"}
           </span>
         );
@@ -563,12 +608,7 @@ export default function CSVUploadPage() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   // Computed
-  const allowedTableOptions = TABLE_OPTIONS.filter((t) => {
-    if (!SUPPORTED_TABLES.has(t.value)) return false;
-    const perm = PERMISSION_MAP[t.value];
-    if (!perm) return false;
-    return can(perm.action, perm.subject);
-  });
+  const allowedTableOptions = getAllowedTableOptions(can);
 
   const currentTable = allowedTableOptions.find((t) => t.value === selectedTable);
 
@@ -663,7 +703,9 @@ export default function CSVUploadPage() {
 
   const handleFileChange = (e: File | React.ChangeEvent<HTMLInputElement>) => {
     const file = e instanceof File ? e : e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     setParseStatus("parsing");
     setErrorMessage("");
@@ -682,45 +724,30 @@ export default function CSVUploadPage() {
     });
   };
 
-  const getTransformedData = () => {
-    return csvData.map((row) => {
-      const transformed: Record<string, number | string> = {};
-      for (const [dbField, csvColumn] of Object.entries(columnMapping)) {
-        if (csvColumn && row[csvColumn] !== undefined) {
-          transformed[dbField] = row[csvColumn];
-        }
-      }
-      return transformed;
-    });
-  };
-
   const handlePreview = () => {
-    if (!selectedTable || csvData.length === 0) return;
+    if (!selectedTable || csvData.length === 0) {
+      return;
+    }
     setErrorMessage("");
     previewMutate({
-      data: getTransformedData(),
+      data: selectedData,
       table: selectedTable,
     });
   };
 
   const handleImport = () => {
-    if (!selectedTable || csvData.length === 0) return;
+    if (!selectedTable || csvData.length === 0) {
+      return;
+    }
     setErrorMessage("");
     importMutate({
-      data: getTransformedData(),
+      data: selectedData,
       table: selectedTable,
     });
   };
 
-  const isValidMapping = (() => {
-    if (!currentTable) return false;
-    const requiredFields = currentTable.fields.filter((f) => f.required);
-    return requiredFields.every(
-      (field) => columnMapping[field.name] && columnMapping[field.name] !== "",
-    );
-  })();
-
-  const selectedData = getTransformedData();
+  const selectedData = buildTransformedData(csvData, columnMapping);
+  const isValidMapping = isValidColumnMapping(currentTable, columnMapping);
 
   const columns = buildMappingColumns({
     columnMapping,
@@ -777,7 +804,7 @@ export default function CSVUploadPage() {
           {previewData && <ImportSummaryCard previewData={previewData} />}
 
           {/* Action Buttons */}
-          <div className="bg-background/80 border-default-100 sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-t p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
+          <div className="sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-default-100 border-t bg-background/80 p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
             <Button
               disabled={
                 !isValidMapping || isPreviewPending || isImportPending || selectedData.length === 0

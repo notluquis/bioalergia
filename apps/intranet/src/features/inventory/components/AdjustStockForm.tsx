@@ -29,7 +29,7 @@ export default function AdjustStockForm({ item, onCancel, onSave, saving }: Adju
   return (
     <form className="space-y-4 text-sm" onSubmit={handleSubmit}>
       <div>
-        <h3 className="text-lg font-bold">{item.name}</h3>
+        <h3 className="font-bold text-lg">{item.name}</h3>
         <p className="text-default-500">Stock actual: {item.current_stock}</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

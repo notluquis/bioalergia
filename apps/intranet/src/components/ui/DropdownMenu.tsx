@@ -14,7 +14,7 @@ const DropdownMenuCheckboxItem = ({
   children?: React.ReactNode;
 }) => (
   <Dropdown.Item
-    className={cn("justify-between flex items-center gap-2", props.className)}
+    className={cn("flex items-center justify-between gap-2", props.className)}
     onPress={() => onCheckedChange?.(!checked)}
     {...props}
   >
@@ -42,7 +42,7 @@ const DropdownMenuLabel = ({
   inset,
   ...props
 }: React.ComponentProps<"div"> & { inset?: boolean }) => (
-  <div className={cn("px-2 py-1.5 text-sm font-semibold", inset && "pl-8", className)} {...props} />
+  <div className={cn("px-2 py-1.5 font-semibold text-sm", inset && "pl-8", className)} {...props} />
 );
 
 export {

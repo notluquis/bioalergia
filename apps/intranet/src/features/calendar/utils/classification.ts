@@ -61,9 +61,13 @@ export function eventKey(event: Pick<CalendarUnclassifiedEvent, "calendarId" | "
 }
 
 export function parseAmountInput(value: null | string | undefined): null | number {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   const normalized = value.replaceAll(/\D/g, "");
-  if (normalized.length === 0) return null;
+  if (normalized.length === 0) {
+    return null;
+  }
   const parsed = Number.parseInt(normalized, 10);
   return Number.isNaN(parsed) ? null : parsed;
 }

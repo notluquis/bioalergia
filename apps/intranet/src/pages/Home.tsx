@@ -37,7 +37,7 @@ export default function Home() {
 
   if (!canReadDashboard) {
     return (
-      <div className="text-default-500 p-8 text-center">
+      <div className="p-8 text-center text-default-500">
         No tienes permisos para ver el panel principal.
       </div>
     );
@@ -97,13 +97,13 @@ function DashboardSkeleton() {
   return (
     <div className="animate-pulse space-y-4">
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-default-50 h-24 rounded-xl" />
-        <div className="bg-default-50 h-24 rounded-xl" />
-        <div className="bg-default-50 h-24 rounded-xl" />
+        <div className="h-24 rounded-xl bg-default-50" />
+        <div className="h-24 rounded-xl bg-default-50" />
+        <div className="h-24 rounded-xl bg-default-50" />
       </div>
       <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-        <div className="bg-default-50 h-64 rounded-xl" />
-        <div className="bg-default-50 h-64 rounded-xl" />
+        <div className="h-64 rounded-xl bg-default-50" />
+        <div className="h-64 rounded-xl bg-default-50" />
       </div>
     </div>
   );
@@ -155,16 +155,18 @@ const QUICK_LINKS = [
 function QuickLinksSection({ can }: { can: (action: string, subject: string) => boolean }) {
   const links = QUICK_LINKS.filter((link) => can(link.action, link.subject));
 
-  if (links.length === 0) return null;
+  if (links.length === 0) {
+    return null;
+  }
 
   return (
     <div className="card card-compact bg-background shadow-sm">
       <div className="card-body">
-        <h3 className="text-foreground mb-2 text-sm font-semibold">Accesos rápidos</h3>
+        <h3 className="mb-2 font-semibold text-foreground text-sm">Accesos rápidos</h3>
         <div className="grid gap-2 sm:grid-cols-2">
           {links.map((link) => (
             <Link
-              className="group border-default-100 bg-default-50/50 hover:bg-default-50 flex items-center gap-3 rounded-lg border p-3 transition-colors"
+              className="group flex items-center gap-3 rounded-lg border border-default-100 bg-default-50/50 p-3 transition-colors hover:bg-default-50"
               key={link.to}
               to={link.to}
             >
@@ -174,10 +176,10 @@ function QuickLinksSection({ can }: { can: (action: string, subject: string) => 
                 <link.icon className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-foreground truncate text-sm font-medium">{link.title}</p>
-                <p className="text-default-600 truncate text-xs">{link.description}</p>
+                <p className="truncate font-medium text-foreground text-sm">{link.title}</p>
+                <p className="truncate text-default-600 text-xs">{link.description}</p>
               </div>
-              <ArrowUpRight className="text-default-500 h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <ArrowUpRight className="h-4 w-4 shrink-0 text-default-500 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
           ))}
         </div>

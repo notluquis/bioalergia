@@ -308,7 +308,9 @@ export function isIgnoredEvent(summary: string | null | undefined): boolean {
 
 /** Normalize event date to ISO string */
 export function normalizeEventDate(value: string | null | undefined): string | null {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   try {
     return dayjs(value).toISOString();
   } catch {
@@ -332,17 +334,25 @@ function normalizeAmountRaw(raw: string): number | null {
   });
 
   const digits = withMilExpanded.replace(/[^0-9]/g, "");
-  if (!digits) return null;
+  if (!digits) {
+    return null;
+  }
 
   // Skip phone numbers
-  if (PHONE_PATTERNS.some((p) => p.test(digits))) return null;
+  if (PHONE_PATTERNS.some((p) => p.test(digits))) {
+    return null;
+  }
 
   // Skip very long digit strings (likely RUTs, IDs, or multiple numbers merged)
   // Valid amounts are typically 2-6 digits (e.g. 20, 50, 30000, 100000)
-  if (digits.length > 8) return null;
+  if (digits.length > 8) {
+    return null;
+  }
 
   const value = Number.parseInt(digits, 10);
-  if (Number.isNaN(value) || value <= 0) return null;
+  if (Number.isNaN(value) || value <= 0) {
+    return null;
+  }
 
   // Normalize: values < 1000 are multiplied by 1000 (e.g., 50 → 50000)
   const normalized = value >= 1000 ? value : value * 1000;
@@ -367,8 +377,12 @@ function extractAmounts(summary: string, description: string) {
   while ((slashMatch = slashPattern.exec(text)) !== null) {
     const paid = normalizeAmountRaw(slashMatch[1]);
     const expected = normalizeAmountRaw(slashMatch[2]);
-    if (paid != null && amountPaid == null) amountPaid = paid;
-    if (expected != null && amountExpected == null) amountExpected = expected;
+    if (paid != null && amountPaid == null) {
+      amountPaid = paid;
+    }
+    if (expected != null && amountExpected == null) {
+      amountExpected = expected;
+    }
   }
 
   // 2. Standard pattern: (amount) including unclosed parenthesis like (30mil
@@ -376,7 +390,9 @@ function extractAmounts(summary: string, description: string) {
   let match: RegExpExecArray | null;
   while ((match = parenPattern.exec(text)) !== null) {
     let content = match[1]; // Use 'let' so we can modify it
-    if (SLASH_FORMAT_PATTERN.test(content)) continue; // Skip slash format
+    if (SLASH_FORMAT_PATTERN.test(content)) {
+      continue; // Skip slash format
+    }
 
     // Fix: Remove date patterns to avoid merging them into the amount (e.g. "pagado el 21-11/ 30")
     // Matches "21-11" or "21/11" (if surrounded by spaces or boundary)
@@ -387,10 +403,14 @@ function extractAmounts(summary: string, description: string) {
     const normalizedContent = numericPart ? numericPart[0] : content;
 
     const amount = normalizeAmountRaw(normalizedContent);
-    if (amount == null) continue;
+    if (amount == null) {
+      continue;
+    }
     if (PAGADO_KEYWORD_PATTERN.test(content)) {
       amountPaid = amount;
-      if (amountExpected == null) amountExpected = amount;
+      if (amountExpected == null) {
+        amountExpected = amount;
+      }
     } else if (amountExpected == null) {
       amountExpected = amount;
     }
@@ -408,7 +428,9 @@ function extractAmounts(summary: string, description: string) {
       // Take last 2 digits only (common amounts are 20, 30, 50, 60)
       const lastTwo = digits.length >= 2 ? digits.slice(-2) : digits;
       const amount = normalizeAmountRaw(lastTwo);
-      if (amount != null && amountExpected == null) amountExpected = amount;
+      if (amount != null && amountExpected == null) {
+        amountExpected = amount;
+      }
     }
 
     // Also match: ml(number pattern like "0,2ml(30mil"
@@ -416,7 +438,9 @@ function extractAmounts(summary: string, description: string) {
     let mlMatch: RegExpExecArray | null;
     while ((mlMatch = mlPattern.exec(text)) !== null) {
       const amount = normalizeAmountRaw(mlMatch[1]);
-      if (amount != null && amountExpected == null) amountExpected = amount;
+      if (amount != null && amountExpected == null) {
+        amountExpected = amount;
+      }
     }
   }
 
@@ -440,7 +464,9 @@ function extractAmounts(summary: string, description: string) {
     const endMatch = AMOUNT_AT_END_PATTERN.exec(text);
     if (endMatch) {
       const amount = normalizeAmountRaw(endMatch[1]);
-      if (amount != null) amountExpected = amount;
+      if (amount != null) {
+        amountExpected = amount;
+      }
     }
   }
 
@@ -451,7 +477,9 @@ function extractAmounts(summary: string, description: string) {
     const amount = normalizeAmountRaw(matchPaid[1]);
     if (amount != null) {
       amountPaid = amount;
-      if (amountExpected == null) amountExpected = amount;
+      if (amountExpected == null) {
+        amountExpected = amount;
+      }
     }
   }
 
@@ -501,21 +529,33 @@ function classifyCategory(summary: string, description: string): string | null {
   }
 
   // Priority order: Test → Injection Service (specific meds) → Subcutáneo (explicit) → Roxair → Licencia → Control → Consulta → Subcutáneo (implicit)
-  if (matchesAny(text, TEST_PATTERNS)) return "Test y exámenes";
+  if (matchesAny(text, TEST_PATTERNS)) {
+    return "Test y exámenes";
+  }
 
   // Injection service check - must come BEFORE subcutaneous to prioritize specific meds like Dupixent
-  if (matchesAny(text, INJECTION_PATTERNS)) return "Servicio de inyección";
+  if (matchesAny(text, INJECTION_PATTERNS)) {
+    return "Servicio de inyección";
+  }
 
   // Explicit Subcutaneous keywords (strong signals)
   if (matchesAny(text, SUBCUT_PATTERNS)) {
     return "Tratamiento subcutáneo";
   }
 
-  if (matchesAny(text, ROXAIR_PATTERNS)) return "Roxair";
+  if (matchesAny(text, ROXAIR_PATTERNS)) {
+    return "Roxair";
+  }
 
-  if (matchesAny(text, LICENCIA_PATTERNS)) return "Licencia médica";
-  if (matchesAny(text, CONTROL_PATTERNS)) return "Control médico";
-  if (matchesAny(text, CONSULTA_PATTERNS)) return "Consulta médica";
+  if (matchesAny(text, LICENCIA_PATTERNS)) {
+    return "Licencia médica";
+  }
+  if (matchesAny(text, CONTROL_PATTERNS)) {
+    return "Control médico";
+  }
+  if (matchesAny(text, CONSULTA_PATTERNS)) {
+    return "Consulta médica";
+  }
 
   // Implicit Subcutaneous: if it has a standalone decimal (e.g. 0,5) and wasn't caught by others, assume it's a dosage
   if (DECIMAL_DOSAGE_PATTERN.test(text)) {
@@ -541,7 +581,9 @@ const AMOUNT_START_PATTERN = /^[\d\s,./]*(?:mil)*\b/;
 function parseExplicitDosage(text: string): { value: number; unit: string } | null {
   for (const pattern of DOSAGE_PATTERNS) {
     const match = pattern.exec(text);
-    if (!match) continue;
+    if (!match) {
+      continue;
+    }
 
     const valueRaw = match[1]?.replace(",", ".") ?? "";
     const unit = match[0]
@@ -549,7 +591,9 @@ function parseExplicitDosage(text: string): { value: number; unit: string } | nu
       .trim()
       .toLowerCase();
 
-    if (!valueRaw) continue;
+    if (!valueRaw) {
+      continue;
+    }
 
     const value = Number.parseFloat(valueRaw);
     if (Number.isFinite(value)) {
@@ -567,7 +611,9 @@ function extractDosage(
 
   // 1. Try explicit dosage patterns (0.5 ml, 1 cc, etc.)
   const explicit = parseExplicitDosage(text);
-  if (explicit) return explicit;
+  if (explicit) {
+    return explicit;
+  }
 
   // 2. Pattern for clustoid+dosage format without space: "clustoid0,3", "clustoid0,1"
   const clustoidDosageMatch = CLUSTOID_DOSAGE_PATTERN.exec(text);

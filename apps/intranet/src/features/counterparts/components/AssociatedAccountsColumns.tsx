@@ -26,7 +26,7 @@ export const getAccountGroupColumns = (
         <div className="flex flex-col gap-1">
           <div className="font-mono text-xs">{group.label}</div>
           {summaryInfo && summaryInfo.count > 0 && (
-            <span className="bg-primary/15 text-primary mt-1 inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-semibold tracking-wide uppercase">
+            <span className="mt-1 inline-flex w-fit rounded-full bg-primary/15 px-2 py-0.5 font-semibold text-primary text-xs uppercase tracking-wide">
               Cuenta reconocida
             </span>
           )}

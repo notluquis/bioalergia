@@ -100,7 +100,9 @@ export default function LoansPage() {
   };
 
   const handleRegenerate = async (overrides: RegenerateSchedulePayload) => {
-    if (!selectedId) return;
+    if (!selectedId) {
+      return;
+    }
     try {
       await regenerateSchedules(selectedId, overrides);
       void queryClient.invalidateQueries({ queryKey: loanKeys.all });
@@ -125,7 +127,9 @@ export default function LoansPage() {
 
   const handlePaymentSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!paymentSchedule) return;
+    if (!paymentSchedule) {
+      return;
+    }
 
     const transactionId = Number(paymentForm.transactionId);
     const paidAmount = Number(paymentForm.paidAmount);
@@ -168,7 +172,7 @@ export default function LoansPage() {
   return (
     <section className={PAGE_CONTAINER}>
       <div className="grid gap-4 lg:grid-cols-[300px,1fr]">
-        <div className="border-default-200 bg-background min-h-[70vh] rounded-2xl border p-6 shadow-sm">
+        <div className="min-h-[70vh] rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
           <LoanList
             canManage={canManage}
             loans={loans}
@@ -180,7 +184,7 @@ export default function LoansPage() {
             selectedId={selectedId}
           />
         </div>
-        <div className="border-default-200 bg-background min-h-[70vh] rounded-2xl border p-6 shadow-sm">
+        <div className="min-h-[70vh] rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
           {!selectedId && (
             <div className="flex h-full items-center justify-center text-center">
               <p className="text-default-500 text-sm">
@@ -192,7 +196,7 @@ export default function LoansPage() {
             <Suspense
               fallback={
                 <div className="flex h-full items-center justify-center">
-                  <div className="bg-default-50 h-10 w-10 animate-spin rounded-full border-4 border-t-transparent opacity-50" />
+                  <div className="h-10 w-10 animate-spin rounded-full border-4 border-t-transparent bg-default-50 opacity-50" />
                 </div>
               }
             >
@@ -224,7 +228,7 @@ export default function LoansPage() {
           }}
         />
         {createError && (
-          <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
+          <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
             {createError}
           </p>
         )}
@@ -278,7 +282,7 @@ export default function LoansPage() {
               value={dayjs(paymentForm.paidDate).format("YYYY-MM-DD")}
             />
             {paymentError && (
-              <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
+              <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
                 {paymentError}
               </p>
             )}

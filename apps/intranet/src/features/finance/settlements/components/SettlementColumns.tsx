@@ -18,12 +18,17 @@ const moneyColumn = (
   cell: ({ row }) => {
     const amount = row.getValue(accessorKey);
     const currency = row.original.transactionCurrency;
-    if (amount == null) return <div className={`text-${align}`}>-</div>;
+    if (amount == null) {
+      return <div className={`text-${align}`}>-</div>;
+    }
 
     let className = `text-${align} tabular-nums`;
-    if (accessorKey === "settlementNetAmount" && Number(amount) > 0)
+    if (accessorKey === "settlementNetAmount" && Number(amount) > 0) {
       className += " text-success font-medium";
-    if (isNegative) className += " text-danger";
+    }
+    if (isNegative) {
+      className += " text-danger";
+    }
 
     return <div className={className}>{formatAmount(amount as number | string, currency)}</div>;
   },
@@ -38,7 +43,9 @@ const dateColumn = (
   accessorKey,
   cell: ({ row }) => {
     const val = row.getValue(accessorKey) as string | number | Date | null;
-    if (!val) return "-";
+    if (!val) {
+      return "-";
+    }
     return dayjs(val).format("DD/MM/YY HH:mm");
   },
   header,
@@ -57,7 +64,7 @@ export const columns: ColumnDef<SettlementTransaction, unknown>[] = [
           isIconOnly
           size="sm"
           variant="ghost"
-          className="hover:bg-default-50 h-6 w-6 rounded-md p-0"
+          className="h-6 w-6 rounded-md p-0 hover:bg-default-50"
         >
           {row.getIsExpanded() ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </Button>

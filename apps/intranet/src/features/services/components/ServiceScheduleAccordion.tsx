@@ -28,15 +28,21 @@ const dateFormatter = new Intl.DateTimeFormat("es-CL", {
 });
 
 function canUnlink(schedule: ServiceSchedule) {
-  if (!schedule.transaction_id) return false;
-  if (schedule.status !== "PAID") return false;
+  if (!schedule.transaction_id) {
+    return false;
+  }
+  if (schedule.status !== "PAID") {
+    return false;
+  }
   return true;
 }
 
 export default ServiceScheduleAccordion;
 
 function capitalize(value: string) {
-  if (value.length === 0) return value;
+  if (value.length === 0) {
+    return value;
+  }
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
@@ -49,7 +55,9 @@ function ServiceScheduleAccordion({
 }: ServiceScheduleAccordionProps) {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy function
   const groups = (() => {
-    if (schedules.length === 0) return [];
+    if (schedules.length === 0) {
+      return [];
+    }
 
     const sorted = [...schedules].toSorted(
       (a, b) => dayjs(a.due_date).valueOf() - dayjs(b.due_date).valueOf(),
@@ -79,9 +87,13 @@ function ServiceScheduleAccordion({
             break;
           }
           default: {
-            if (diff > 1 && diff <= 5) label = `En ${diff} días`;
-            else if (diff < -1 && diff >= -5) label = `Hace ${Math.abs(diff)} días`;
-            else label = capitalize(dateFormatter.format(dueDate.toDate()));
+            if (diff > 1 && diff <= 5) {
+              label = `En ${diff} días`;
+            } else if (diff < -1 && diff >= -5) {
+              label = `Hace ${Math.abs(diff)} días`;
+            } else {
+              label = capitalize(dateFormatter.format(dueDate.toDate()));
+            }
           }
         }
 
@@ -119,9 +131,9 @@ function ServiceScheduleAccordion({
 
   if (groups.length === 0) {
     return (
-      <section className="border-default-200 bg-default-50 text-foreground space-y-3 rounded-2xl border p-4 text-sm">
+      <section className="space-y-3 rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm">
         <header className="flex items-center justify-between">
-          <h2 className="text-default-500 text-sm font-semibold tracking-wide uppercase">
+          <h2 className="font-semibold text-default-500 text-sm uppercase tracking-wide">
             Agenda de vencimientos
           </h2>
         </header>
@@ -131,9 +143,9 @@ function ServiceScheduleAccordion({
   }
 
   return (
-    <section className="border-default-200 bg-default-50 text-foreground space-y-3 rounded-2xl border p-4 text-sm">
+    <section className="space-y-3 rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm">
       <header className="flex items-center justify-between">
-        <h2 className="text-default-500 text-sm font-semibold tracking-wide uppercase">
+        <h2 className="font-semibold text-default-500 text-sm uppercase tracking-wide">
           Agenda de vencimientos
         </h2>
         <span className="text-default-400 text-xs">
@@ -145,24 +157,24 @@ function ServiceScheduleAccordion({
           const isExpanded = expanded[group.dateKey] ?? false;
           return (
             <article
-              className="border-default-200 bg-default-50 rounded-xl border shadow-sm"
+              className="rounded-xl border border-default-200 bg-default-50 shadow-sm"
               key={group.dateKey}
             >
               <button
-                className="hover:bg-default-50 flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors"
+                className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-default-50"
                 onClick={() => {
                   toggleGroup(group.dateKey);
                 }}
                 type="button"
               >
                 <div>
-                  <p className="text-foreground text-sm font-semibold capitalize">{group.label}</p>
+                  <p className="font-semibold text-foreground text-sm capitalize">{group.label}</p>
                   <p className="text-default-400 text-xs">
                     {group.items.length} {group.items.length === 1 ? "cuota" : "cuotas"}
                   </p>
                 </div>
                 <span
-                  className={`border-default-200 bg-default-50 text-default-500 inline-flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-transform ${
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-default-200 bg-default-50 font-semibold text-default-500 text-xs transition-transform ${
                     isExpanded ? "rotate-180" : ""
                   }`}
                 >
@@ -171,7 +183,7 @@ function ServiceScheduleAccordion({
               </button>
               <div
                 className={
-                  isExpanded ? "border-default-200 space-y-2 border-t px-4 py-3" : "hidden"
+                  isExpanded ? "space-y-2 border-default-200 border-t px-4 py-3" : "hidden"
                 }
               >
                 {group.items.map((item) => {
@@ -187,12 +199,12 @@ function ServiceScheduleAccordion({
 
                   return (
                     <div
-                      className="border-default-200 bg-default-50 hover:border-primary/40 rounded-xl border p-3 shadow-inner transition"
+                      className="rounded-xl border border-default-200 bg-default-50 p-3 shadow-inner transition hover:border-primary/40"
                       key={item.id}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="text-foreground text-sm font-semibold">
+                          <p className="font-semibold text-foreground text-sm">
                             {currencyFormatter.format(item.expected_amount)}
                           </p>
                           <p className="text-default-400 text-xs">
@@ -200,7 +212,7 @@ function ServiceScheduleAccordion({
                           </p>
                         </div>
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${
+                          className={`rounded-full px-3 py-1 font-semibold text-xs uppercase tracking-wide ${
                             statusClasses[item.status]
                           }`}
                         >
@@ -209,7 +221,7 @@ function ServiceScheduleAccordion({
                             : item.status}
                         </span>
                       </div>
-                      <div className="text-default-500 mt-2 flex flex-wrap items-center gap-4 text-xs">
+                      <div className="mt-2 flex flex-wrap items-center gap-4 text-default-500 text-xs">
                         <span>
                           Periodo {dayjs(item.period_start).format("DD MMM")} –{" "}
                           {dayjs(item.period_end).format("DD MMM YYYY")}

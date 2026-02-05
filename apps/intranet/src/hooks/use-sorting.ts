@@ -36,7 +36,9 @@ export function useSorting<T extends string>({
   };
 
   const getSortIcon = (column: T): null | React.ReactElement => {
-    if (sortState.column !== column) return null;
+    if (sortState.column !== column) {
+      return null;
+    }
     const symbol = sortState.direction === "asc" ? "▲" : "▼";
     return React.createElement(
       "span",

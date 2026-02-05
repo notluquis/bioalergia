@@ -38,7 +38,7 @@ export default function Supplies() {
         <ServicesSurface>
           <div className="space-y-4">
             <div>
-              <h2 className="text-foreground text-lg font-semibold">Solicitar nuevo insumo</h2>
+              <h2 className="font-semibold text-foreground text-lg">Solicitar nuevo insumo</h2>
               <p className="text-default-500 text-xs">
                 Selecciona el insumo y añade observaciones para el equipo de compras.
               </p>
@@ -51,7 +51,7 @@ export default function Supplies() {
       <ServicesSurface>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-foreground text-lg font-semibold">{tableTitle}</h2>
+            <h2 className="font-semibold text-foreground text-lg">{tableTitle}</h2>
             <p className="text-default-500 text-xs">{requests.length} solicitudes en el periodo.</p>
           </div>
         </div>

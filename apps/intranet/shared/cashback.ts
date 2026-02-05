@@ -24,7 +24,9 @@ export function isCashbackCandidate(candidate: CashbackCandidate): boolean {
     .join(" ")
     .toLowerCase();
 
-  if (!haystack) return false;
+  if (!haystack) {
+    return false;
+  }
 
   return CASHBACK_KEYWORDS.some((keyword) => haystack.includes(keyword));
 }

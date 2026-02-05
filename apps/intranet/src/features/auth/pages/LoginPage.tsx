@@ -26,7 +26,7 @@ export default function LoginPage() {
     clearError,
   } = useLoginLogic(from);
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="fixed top-4 right-4 z-10">
         <ThemeToggle />
       </div>
@@ -102,10 +102,10 @@ function LoginHeader({ step, orgName, logoSrc, fallbackLogo }: LoginHeaderProps)
         src={logoSrc}
       />
       <div>
-        <h1 className="text-foreground text-2xl font-semibold text-balance">
+        <h1 className="text-balance font-semibold text-2xl text-foreground">
           {step === "mfa" ? "Verifica tu identidad" : "Inicia sesión"}
         </h1>
-        <p className="text-default-500 mt-1 text-sm">
+        <p className="mt-1 text-default-500 text-sm">
           {step === "passkey" && "Usa tu biometría para acceder"}
           {step === "credentials" && "Ingresa tus credenciales"}
           {step === "mfa" && "Código de 6 dígitos"}
@@ -123,7 +123,7 @@ interface PasskeyStepProps {
 
 function PasskeyStep({ isPending, handlePasskeyLogin, switchToCredentials }: PasskeyStepProps) {
   return (
-    <div className="space-y-3 w-full max-w-xs mx-auto">
+    <div className="mx-auto w-full max-w-xs space-y-3">
       <Button
         className="gap-2 text-base"
         disabled={isPending}
@@ -147,7 +147,7 @@ function PasskeyStep({ isPending, handlePasskeyLogin, switchToCredentials }: Pas
         aria-label="Usar correo electrónico y contraseña"
       >
         <Mail className="size-4" aria-hidden="true" />
-        <span className="text-sm font-medium">Usar correo y contraseña</span>
+        <span className="font-medium text-sm">Usar correo y contraseña</span>
       </Button>
     </div>
   );
@@ -174,7 +174,7 @@ function CredentialsStep({
 }: CredentialsStepProps) {
   return (
     <form className="w-full space-y-4" onSubmit={handleCredentialsSubmit}>
-      <div className="w-full max-w-xs mx-auto">
+      <div className="mx-auto w-full max-w-xs">
         <Input
           autoComplete="username"
           label="Correo electrónico"
@@ -186,7 +186,7 @@ function CredentialsStep({
           disabled={isLoading}
         />
       </div>
-      <div className="w-full max-w-xs mx-auto">
+      <div className="mx-auto w-full max-w-xs">
         <Input
           autoComplete="current-password"
           enterKeyHint="go"
@@ -199,10 +199,10 @@ function CredentialsStep({
         />
       </div>
 
-      <div className="w-full max-w-xs mx-auto">
+      <div className="mx-auto w-full max-w-xs">
         <div className="flex w-full gap-2 pt-2">
           <Button
-            className="h-14 flex-1 min-w-0"
+            className="h-14 min-w-0 flex-1"
             disabled={isLoading}
             onClick={switchToPasskey}
             type="button"
@@ -212,7 +212,7 @@ function CredentialsStep({
             Atrás
           </Button>
           <Button
-            className="h-14 flex-1 min-w-0"
+            className="h-14 min-w-0 flex-1"
             disabled={isLoading}
             type="submit"
             aria-label="Continuar con credenciales"
@@ -242,7 +242,7 @@ function MfaStep({
 }: MfaStepProps) {
   return (
     <form className="w-full space-y-4" onSubmit={handleMfaSubmit}>
-      <div className="w-full max-w-xs mx-auto">
+      <div className="mx-auto w-full max-w-xs">
         <Input
           autoComplete="one-time-code"
           className="text-center text-2xl tracking-widest"
@@ -259,10 +259,10 @@ function MfaStep({
         />
       </div>
 
-      <div className="w-full max-w-xs mx-auto">
+      <div className="mx-auto w-full max-w-xs">
         <div className="flex w-full gap-2 pt-2">
           <Button
-            className="h-14 flex-1 min-w-0"
+            className="h-14 min-w-0 flex-1"
             disabled={isLoading}
             onClick={switchToCredentialsFromMfa}
             type="button"
@@ -272,7 +272,7 @@ function MfaStep({
             Atrás
           </Button>
           <Button
-            className="h-14 flex-1 min-w-0"
+            className="h-14 min-w-0 flex-1"
             disabled={isLoading}
             type="submit"
             aria-label="Confirmar código MFA"
@@ -362,10 +362,10 @@ function LoginContent({
 function LoginSuccess() {
   return (
     <output
-      className="animate-in fade-in zoom-in flex flex-col items-center justify-center gap-4 py-8 duration-500"
+      className="fade-in zoom-in flex animate-in flex-col items-center justify-center gap-4 py-8 duration-500"
       aria-live="polite"
     >
-      <div className="bg-success-soft-hover text-success flex size-16 scale-110 items-center justify-center rounded-full transition-transform duration-700">
+      <div className="flex size-16 scale-110 items-center justify-center rounded-full bg-success-soft-hover text-success transition-transform duration-700">
         <svg
           className="size-8"
           fill="none"
@@ -379,7 +379,7 @@ function LoginSuccess() {
         </svg>
       </div>
       <div className="text-center">
-        <h2 className="text-foreground font-semibold">¡Bienvenido de nuevo!</h2>
+        <h2 className="font-semibold text-foreground">¡Bienvenido de nuevo!</h2>
         <p className="text-default-500 text-sm">Preparando tu sesión...</p>
       </div>
     </output>
@@ -389,7 +389,7 @@ function LoginSuccess() {
 function LoginError({ error }: { error: string }) {
   return (
     <div
-      className="bg-danger/10 border-danger-soft-hover text-danger mt-4 rounded-lg border p-3 text-center text-sm"
+      className="mt-4 rounded-lg border border-danger-soft-hover bg-danger/10 p-3 text-center text-danger text-sm"
       role="alert"
       aria-live="assertive"
     >
@@ -400,9 +400,9 @@ function LoginError({ error }: { error: string }) {
 
 function LoginFooter({ supportEmail }: { supportEmail: string }) {
   return (
-    <div className="text-default-500 mt-6 text-center text-xs">
+    <div className="mt-6 text-center text-default-500 text-xs">
       ¿Problemas?{" "}
-      <a className="text-primary font-semibold hover:underline" href={`mailto:${supportEmail}`}>
+      <a className="font-semibold text-primary hover:underline" href={`mailto:${supportEmail}`}>
         Contacta aquí
       </a>
     </div>

@@ -18,7 +18,9 @@ export function useReportUpload(): UseReportUploadResult {
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
-    if (!f) return;
+    if (!f) {
+      return;
+    }
     try {
       const text = await f.text();
       const rows = parseDelimited(text);

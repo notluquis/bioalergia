@@ -72,7 +72,7 @@ export function MultiSelectFilter({
     <div className={className}>
       {label && (
         <span
-          className={`block font-semibold tracking-wider text-foreground-600 uppercase ${
+          className={`block font-semibold text-foreground-600 uppercase tracking-wider ${
             isCompact ? "mb-1 text-[10px]" : "mb-1.5 text-xs"
           }`}
         >

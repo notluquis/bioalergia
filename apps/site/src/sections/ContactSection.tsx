@@ -36,13 +36,13 @@ export function ContactSection() {
     >
       <Card className="rounded-3xl" variant="secondary">
         <Card.Header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-6">
-          <div className="space-y-2 flex-1">
-            <div className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">
+          <div className="flex-1 space-y-2">
+            <div className="text-(--ink-muted) text-xs uppercase tracking-[0.28em]">
               Contacto directo
             </div>
             <button
               type="button"
-              className="text-xl sm:text-2xl font-semibold no-underline break-all text-left cursor-pointer hover:underline"
+              className="cursor-pointer break-all text-left font-semibold text-xl no-underline hover:underline sm:text-2xl"
               onClick={() => handleEmailClick(contactInfo.email)}
             >
               {contactInfo.email}
@@ -64,7 +64,7 @@ export function ContactSection() {
               ))}
             </div>
           </div>
-          <div className="flex flex-col gap-3 w-full md:w-auto">
+          <div className="flex w-full flex-col gap-3 md:w-auto">
             <Button
               className="rounded-full bg-(--accent) px-6 text-white"
               onPress={handleDoctoraliaClick}
@@ -81,12 +81,12 @@ export function ContactSection() {
         </Card.Header>
         <Card.Content className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1">
-            <div className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">Dirección</div>
-            <p className="text-sm text-(--ink-muted)">{contactInfo.address}</p>
+            <div className="text-(--ink-muted) text-xs uppercase tracking-[0.28em]">Dirección</div>
+            <p className="text-(--ink-muted) text-sm">{contactInfo.address}</p>
           </div>
           <div className="space-y-1">
-            <div className="text-xs uppercase tracking-[0.28em] text-(--ink-muted)">Agenda</div>
-            <p className="text-sm text-(--ink-muted)">
+            <div className="text-(--ink-muted) text-xs uppercase tracking-[0.28em]">Agenda</div>
+            <p className="text-(--ink-muted) text-sm">
               Reserva tu evaluación en Doctoralia y recibe confirmación inmediata.
             </p>
           </div>

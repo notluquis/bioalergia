@@ -165,9 +165,15 @@ function CalendarClassificationPage() {
   const isJobRunning = !!activeJobId && !isComplete && !isFailed;
 
   const error = (() => {
-    if (queryError instanceof Error) return queryError.message;
-    if (queryError) return String(queryError);
-    if (classifyMutation.error instanceof Error) return classifyMutation.error.message;
+    if (queryError instanceof Error) {
+      return queryError.message;
+    }
+    if (queryError) {
+      return String(queryError);
+    }
+    if (classifyMutation.error instanceof Error) {
+      return classifyMutation.error.message;
+    }
     return null;
   })();
 
@@ -200,7 +206,7 @@ function CalendarClassificationPage() {
     <div className="space-y-8">
       <ClassificationStats events={events} form={form} loading={loading} totalCount={totalCount} />
 
-      <div className="bg-default-50/50 flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4 backdrop-blur-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-default-50/50 p-4 backdrop-blur-sm">
         <ClassificationFilters filters={filters} onSearchChange={handleSearchChange} />
         <ClassificationToolbar
           isJobRunning={isJobRunning}

@@ -148,10 +148,10 @@ const router = createRouter({
     }, [error]);
 
     return (
-      <div className="p-8 flex flex-col items-center justify-center min-h-[40vh] gap-4">
-        <div className="bg-danger/10 text-danger p-6 rounded-2xl max-w-lg text-center border border-danger-soft-hover">
-          <h2 className="text-xl font-bold mb-2">Error de Navegación</h2>
-          <p className="text-sm opacity-90 whitespace-pre-wrap">
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 p-8">
+        <div className="max-w-lg rounded-2xl border border-danger-soft-hover bg-danger/10 p-6 text-center text-danger">
+          <h2 className="mb-2 font-bold text-xl">Error de Navegación</h2>
+          <p className="whitespace-pre-wrap text-sm opacity-90">
             {error instanceof Error ? error.message : "Un error inesperado ha ocurrido."}
           </p>
           <Button

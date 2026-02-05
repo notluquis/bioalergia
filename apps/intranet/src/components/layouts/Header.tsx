@@ -18,8 +18,12 @@ const getMatchLabel = (match: {
 }): string => {
   // 1. Try static data (preferred for declarative titles)
   if (match.staticData) {
-    if (typeof match.staticData.breadcrumb === "string") return match.staticData.breadcrumb;
-    if (typeof match.staticData.title === "string") return match.staticData.title;
+    if (typeof match.staticData.breadcrumb === "string") {
+      return match.staticData.breadcrumb;
+    }
+    if (typeof match.staticData.title === "string") {
+      return match.staticData.title;
+    }
     // Handle optional function in staticData if defined that way (less common in TanStack Router but possible)
     if (typeof match.staticData.breadcrumb === "function") {
       return (match.staticData.breadcrumb as (data: unknown) => string)(match.loaderData);
@@ -28,8 +32,12 @@ const getMatchLabel = (match: {
 
   // 2. Fallback to context functions (legacy or dynamic)
   const { getBreadcrumb, getTitle } = match.context;
-  if (typeof getBreadcrumb === "function") return (getBreadcrumb as () => string)();
-  if (typeof getTitle === "function") return (getTitle as () => string)();
+  if (typeof getBreadcrumb === "function") {
+    return (getBreadcrumb as () => string)();
+  }
+  if (typeof getTitle === "function") {
+    return (getTitle as () => string)();
+  }
 
   return "";
 };
@@ -124,7 +132,7 @@ export default function Header() {
               return (
                 <Breadcrumbs.Item key={crumb.to || i}>
                   {!isLast && crumb.to ? (
-                    <Link to={crumb.to} className="hover:text-foreground transition-colors">
+                    <Link to={crumb.to} className="transition-colors hover:text-foreground">
                       {crumb.label}
                     </Link>
                   ) : (
@@ -139,7 +147,7 @@ export default function Header() {
           </Breadcrumbs>
 
           {isNavigating && (
-            <span className="text-primary flex items-center gap-1 text-xs font-semibold">
+            <span className="flex items-center gap-1 font-semibold text-primary text-xs">
               <Loader2 className="h-3 w-3 animate-spin" />
             </span>
           )}
@@ -154,14 +162,14 @@ export default function Header() {
         <Button
           isIconOnly
           aria-label="Cerrar sesión"
-          className="border-default-200/70 bg-background/80 text-foreground hover:bg-danger/10 hover:border-danger/40 hover:text-danger rounded-full border shadow-sm transition-all duration-300"
+          className="rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm transition-all duration-300 hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
           onClick={() => {
             void handleLogout();
           }}
           title="Cerrar sesión"
           variant="ghost"
         >
-          <span className="bg-default-50/50 flex h-6 w-6 items-center justify-center rounded-full shadow-inner transition-all duration-300">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-default-50/50 shadow-inner transition-all duration-300">
             <LogOut className="h-4 w-4" />
           </span>
         </Button>

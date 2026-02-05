@@ -8,7 +8,9 @@ const zEventDateTime = z.preprocess((value) => {
   if (value instanceof Date) {
     return value.toISOString();
   }
-  if (value === "") return null;
+  if (value === "") {
+    return null;
+  }
   return value;
 }, z.union([zDateTime, zDateOnly]).nullable());
 

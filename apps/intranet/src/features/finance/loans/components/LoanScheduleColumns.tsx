@@ -25,7 +25,7 @@ export const getColumns = (
   {
     accessorKey: "installment_number",
     cell: ({ row }) => (
-      <span className="text-default-600 font-medium">{row.original.installment_number}</span>
+      <span className="font-medium text-default-600">{row.original.installment_number}</span>
     ),
     header: "#",
   },
@@ -110,15 +110,15 @@ export const getColumns = (
     cell: ({ row }) => {
       const schedule = row.original;
       if (!schedule.paid_amount) {
-        return <div className="text-default-200 text-right">—</div>;
+        return <div className="text-right text-default-200">—</div>;
       }
       return (
         <div className="flex flex-col items-end">
-          <span className="text-success font-bold">
+          <span className="font-bold text-success">
             {currencyFormatter.format(schedule.paid_amount)}
           </span>
           {schedule.paid_date && (
-            <span className="text-default-400 text-[10px]">
+            <span className="text-[10px] text-default-400">
               {dayjs(schedule.paid_date).format("DD MMM")}
             </span>
           )}

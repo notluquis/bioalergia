@@ -32,7 +32,9 @@ const drawLogoIfExists = async (
   label: string,
 ) => {
   try {
-    if (!fs.existsSync(logoPath)) return;
+    if (!fs.existsSync(logoPath)) {
+      return;
+    }
     const logoBytes = fs.readFileSync(logoPath);
     const logoImage = await pdfDoc.embedPng(logoBytes);
     const logoDims = logoImage.scale(options.scale);

@@ -121,7 +121,7 @@
         "useSortedClasses": "warn",
         "noFloatingPromises": "warn",
         "noImportCycles": "warn",
-        "noUnresolvedImports": "warn",
+        "noUnresolvedImports": "off",
         "noUnnecessaryConditions": "warn"
       }
     }

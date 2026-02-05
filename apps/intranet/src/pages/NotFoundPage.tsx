@@ -8,13 +8,13 @@ export default function NotFoundPage() {
 
   return (
     <div className="flex min-h-[80vh] flex-col items-center justify-center p-6 text-center">
-      <div className="bg-warning/10 text-warning mb-6 rounded-full p-6">
+      <div className="mb-6 rounded-full bg-warning/10 p-6 text-warning">
         <AlertTriangle size={48} />
       </div>
-      <h1 className="text-foreground mb-2 text-3xl font-bold">Página no encontrada</h1>
-      <p className="text-default-500 mb-8 max-w-md">
+      <h1 className="mb-2 font-bold text-3xl text-foreground">Página no encontrada</h1>
+      <p className="mb-8 max-w-md text-default-500">
         La ruta{" "}
-        <code className="bg-default-50 rounded px-2 py-1 font-mono text-sm">
+        <code className="rounded bg-default-50 px-2 py-1 font-mono text-sm">
           {location.pathname}
         </code>{" "}
         no existe o no está disponible.

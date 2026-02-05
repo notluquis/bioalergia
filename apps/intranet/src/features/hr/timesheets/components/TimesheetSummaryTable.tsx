@@ -20,12 +20,14 @@ export default function TimesheetSummaryTable({
   const columns = getTimesheetSummaryColumns();
 
   const rowSelection = (() => {
-    if (!selectedEmployeeId) return {};
+    if (!selectedEmployeeId) {
+      return {};
+    }
     return { [selectedEmployeeId]: true };
   })();
 
   return (
-    <div className="border-primary/15 bg-background overflow-hidden rounded-2xl border shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-primary/15 bg-background shadow-sm">
       <DataTable
         columns={columns}
         data={summary?.employees ?? []}

@@ -105,7 +105,9 @@ doctoraliaRoutes.get("/status", requireAuth, async (c) => {
 
 doctoraliaRoutes.get("/facilities", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "DoctoraliaFacility");
   if (!canRead) {
@@ -126,7 +128,9 @@ doctoraliaRoutes.get(
   zValidator("param", facilityParamSchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canRead = await hasPermission(user.id, "read", "DoctoraliaDoctor");
     if (!canRead) {
@@ -207,7 +211,9 @@ doctoraliaRoutes.post(
   zValidator("param", bookSlotParamSchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canCreate = await hasPermission(user.id, "create", "DoctoraliaBooking");
     if (!canCreate) {
@@ -244,7 +250,9 @@ doctoraliaRoutes.delete(
   zValidator("json", cancelBookingBodySchema),
   async (c) => {
     const user = await getSessionUser(c);
-    if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
 
     const canDelete = await hasPermission(user.id, "delete", "DoctoraliaBooking");
     if (!canDelete) {
@@ -270,7 +278,9 @@ doctoraliaRoutes.delete(
 
 doctoraliaRoutes.get("/sync/logs", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const logs = await listDoctoraliaSyncLogs(50);
   return reply(c, {
@@ -297,7 +307,9 @@ doctoraliaRoutes.get("/sync/logs", requireAuth, async (c) => {
 
 doctoraliaRoutes.post("/sync", requireAuth, async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const canSync = await hasPermission(user.id, "update", "DoctoraliaFacility");
   if (!canSync) {

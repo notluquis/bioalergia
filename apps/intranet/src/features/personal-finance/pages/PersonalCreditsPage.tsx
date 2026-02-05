@@ -35,9 +35,9 @@ const columns: ColumnDef<PersonalCredit>[] = [
       const percent = Math.min(100, Math.round((paid / total) * 100));
 
       return (
-        <div className="bg-default-50 dark:bg-base-700 h-2.5 w-full rounded-full">
+        <div className="h-2.5 w-full rounded-full bg-default-50 dark:bg-base-700">
           <div
-            className="bg-primary h-2.5 rounded-full transition-all"
+            className="h-2.5 rounded-full bg-primary transition-all"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -70,7 +70,7 @@ const columns: ColumnDef<PersonalCredit>[] = [
           as="div"
           size="sm"
           variant="ghost"
-          className="no-animation ease-apple transition-all duration-200 hover:-translate-y-px active:translate-y-0 active:scale-[0.98] pointer-events-none"
+          className="no-animation pointer-events-none transition-all duration-200 ease-apple hover:-translate-y-px active:translate-y-0 active:scale-[0.98]"
         >
           Ver Detalle
         </Button>
@@ -86,7 +86,7 @@ export function PersonalCreditsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Créditos Personales</h1>
+        <h1 className="font-bold text-3xl tracking-tight">Créditos Personales</h1>
         <CreateCreditForm />
       </div>
       <DataTable columns={columns} data={credits} />

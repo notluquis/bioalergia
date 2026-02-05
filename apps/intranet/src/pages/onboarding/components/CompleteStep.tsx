@@ -9,18 +9,18 @@ interface CompleteStepProps {
 
 export function CompleteStep({ onFinish, isLoading }: CompleteStepProps) {
   return (
-    <div className="animate-in fade-in zoom-in space-y-6 py-8 text-center duration-500">
-      <div className="bg-success/10 text-success mx-auto flex h-24 w-24 items-center justify-center rounded-full">
+    <div className="fade-in zoom-in animate-in space-y-6 py-8 text-center duration-500">
+      <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-success/10 text-success">
         <Check size={48} strokeWidth={3} />
       </div>
       <div>
-        <h1 className="text-foreground text-3xl font-bold">¡Todo listo!</h1>
-        <p className="text-default-500 mt-2">
+        <h1 className="font-bold text-3xl text-foreground">¡Todo listo!</h1>
+        <p className="mt-2 text-default-500">
           Tu perfil ha sido completado y tu cuenta está segura.
         </p>
       </div>
       <Button
-        className="shadow-primary/20 w-full max-w-xs shadow-lg"
+        className="w-full max-w-xs shadow-lg shadow-primary/20"
         disabled={isLoading}
         onClick={onFinish}
         size="lg"

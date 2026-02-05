@@ -128,7 +128,9 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
       });
 
       // Write Model Key
-      if (i > 0) writeStream.write(",");
+      if (i > 0) {
+        writeStream.write(",");
+      }
       writeStream.write(`"${modelName}":`);
 
       try {
@@ -153,14 +155,18 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
               skip: skip,
             });
 
-            if (batch.length === 0) break;
+            if (batch.length === 0) {
+              break;
+            }
 
             for (const row of batch) {
               const jsonRow = JSON.stringify(row, (_, value) =>
                 typeof value === "bigint" ? value.toString() : value,
               );
 
-              if (hasWrittenRow) writeStream.write(",");
+              if (hasWrittenRow) {
+                writeStream.write(",");
+              }
               writeStream.write(jsonRow);
 
               modelHash.update(jsonRow);
@@ -169,7 +175,9 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
             }
 
             skip += batch.length;
-            if (batch.length < BATCH_SIZE) break;
+            if (batch.length < BATCH_SIZE) {
+              break;
+            }
 
             // Optional: Give event loop a breather
             await new Promise((resolve) => setTimeout(resolve, 0));
@@ -204,7 +212,9 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
 
     // Wait for stream to finish
     await new Promise<void>((resolve, reject) => {
-      if (!writeStream) return resolve();
+      if (!writeStream) {
+        return resolve();
+      }
       writeStream.on("finish", resolve);
       writeStream.on("error", reject);
     });
@@ -288,13 +298,19 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
   } catch (error) {
     // Cleanup
     try {
-      if (writeStream && !writeStream.closed) writeStream.destroy();
-      if (statSync(filepath)) unlinkSync(filepath);
+      if (writeStream && !writeStream.closed) {
+        writeStream.destroy();
+      }
+      if (statSync(filepath)) {
+        unlinkSync(filepath);
+      }
     } catch {
       // Intentionally ignore cleanup errors
     }
     try {
-      if (statSync(jsonPath)) unlinkSync(jsonPath);
+      if (statSync(jsonPath)) {
+        unlinkSync(jsonPath);
+      }
     } catch {
       // Intentionally ignore cleanup errors
     }
@@ -363,7 +379,9 @@ export function startBackup() {
     jobs[jobId].progress = p.progress;
     jobs[jobId].status = p.step === "done" ? "uploading" : "running"; // Don't mark as done until upload finishes
     jobs[jobId].currentStep = p.message; // Expose granular step to UI
-    if (p.message) logs.push({ timestamp: new Date(), message: p.message });
+    if (p.message) {
+      logs.push({ timestamp: new Date(), message: p.message });
+    }
   })
     .then(async (res) => {
       // Deduplication Check

@@ -31,10 +31,10 @@ export function DataTablePagination<TData>({
 
   return (
     <div className="flex flex-col items-start justify-between gap-3 px-2 sm:flex-row sm:items-center">
-      <div className="flex flex-1 items-center gap-2 text-sm text-default-500">
+      <div className="flex flex-1 items-center gap-2 text-default-500 text-sm">
         {enablePageSizeSelector && normalizedOptions.length > 1 && (
           <>
-            <span className="text-xs font-medium uppercase tracking-wide">Filas</span>
+            <span className="font-medium text-xs uppercase tracking-wide">Filas</span>
             <Select
               aria-label="Filas por página"
               className="w-24"
@@ -58,7 +58,7 @@ export function DataTablePagination<TData>({
         )}
       </div>
       <div className="flex items-center space-x-6 lg:space-x-8">
-        <div className="flex items-center justify-center text-sm font-medium">
+        <div className="flex items-center justify-center font-medium text-sm">
           Página {currentPageIndex + 1} de {Math.max(1, totalPages)}
         </div>
         <div className="flex items-center space-x-2">

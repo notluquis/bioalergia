@@ -21,7 +21,9 @@ export function ScheduleCalendar({
 
   // Auto-scroll to detail panel when event is selected
   useEffect(() => {
-    if (!weekStart) return;
+    if (!weekStart) {
+      return;
+    }
     if (selectedEvent && detailPanelRef.current) {
       // Small delay to allow DOM to update
       requestAnimationFrame(() => {
@@ -46,17 +48,17 @@ export function ScheduleCalendar({
         weekStart={weekStart}
       />
 
-      {loading && <p className="text-foreground-500 text-center text-xs">Actualizando eventos…</p>}
+      {loading && <p className="text-center text-foreground-500 text-xs">Actualizando eventos…</p>}
 
       {/* Event Detail Panel - Uses same card as Daily view */}
       {selectedEvent && (
         <div
-          className="animate-in slide-in-from-bottom-2 relative scroll-mt-4"
+          className="slide-in-from-bottom-2 relative animate-in scroll-mt-4"
           ref={detailPanelRef}
         >
           <Button
             aria-label="Cerrar"
-            className="bg-content1 border-default-200 text-foreground-500 hover:text-foreground hover:bg-default-100 absolute -top-2 -right-2 z-10 h-7 w-7 min-w-0 rounded-full border shadow-sm"
+            className="absolute -top-2 -right-2 z-10 h-7 w-7 min-w-0 rounded-full border border-default-200 bg-content1 text-foreground-500 shadow-sm hover:bg-default-100 hover:text-foreground"
             isIconOnly
             onPress={() => {
               setSelectedEvent(null);

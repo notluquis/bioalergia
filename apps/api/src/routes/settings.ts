@@ -26,7 +26,9 @@ settingsRoutes.get("/internal", requireAuth, cacheControl(3600), async (c) => {
   const user = c.get("user");
 
   const canRead = await hasPermission(user.id, "read", "Setting");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   // Fetch settings from DB
   const settings = await db.setting.findMany({
@@ -49,7 +51,9 @@ settingsRoutes.put("/internal", requireAuth, async (c) => {
   const user = c.get("user");
 
   const canUpdate = await hasPermission(user.id, "update", "Setting");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const body = await c.req.json();
   const { upsertChunkSize } = body; // expect object { upsertChunkSize: number | undefined }
@@ -78,7 +82,9 @@ settingsRoutes.put("/internal", requireAuth, async (c) => {
 settingsRoutes.post("/logo/upload", requireAuth, async (c) => {
   const user = c.get("user");
   const canUpdate = await hasPermission(user.id, "update", "Setting");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   // Todo: Implement upload
   return reply(c, { status: "error", message: "Not implemented yet" }, 501);
@@ -87,7 +93,9 @@ settingsRoutes.post("/logo/upload", requireAuth, async (c) => {
 settingsRoutes.post("/favicon/upload", requireAuth, async (c) => {
   const user = c.get("user");
   const canUpdate = await hasPermission(user.id, "update", "Setting");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   // Todo: Implement upload
   return reply(c, { status: "error", message: "Not implemented yet" }, 501);

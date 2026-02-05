@@ -23,10 +23,14 @@ const app = new Hono();
 
 app.get("/", cacheControl(300), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Role");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const items = await listRoles();
   return reply(c, { status: "ok", roles: items });
@@ -34,10 +38,14 @@ app.get("/", cacheControl(300), async (c) => {
 
 app.get("/permissions", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Permission");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const items = await listPermissions();
   return reply(c, { status: "ok", permissions: items });
@@ -45,10 +53,14 @@ app.get("/permissions", async (c) => {
 
 app.post("/", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canCreate = await hasPermission(user.id, "create", "Role");
-  if (!canCreate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canCreate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const body = await c.req.json();
   const parsed = roleCreateSchema.safeParse(body);
@@ -68,13 +80,19 @@ app.post("/", async (c) => {
 
 app.put("/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canUpdate = await hasPermission(user.id, "update", "Role");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
-  if (Number.isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (Number.isNaN(id)) {
+    return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  }
 
   const body = await c.req.json();
   const parsed = roleUpdateSchema.safeParse(body);
@@ -94,13 +112,19 @@ app.put("/:id", async (c) => {
 
 app.delete("/:id", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canDelete = await hasPermission(user.id, "delete", "Role");
-  if (!canDelete) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canDelete) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
-  if (Number.isNaN(id)) return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  if (Number.isNaN(id)) {
+    return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  }
 
   await deleteRole(id);
   return reply(c, { status: "ok" });
@@ -108,11 +132,15 @@ app.delete("/:id", async (c) => {
 
 app.post("/:id/permissions", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   // Updating a role's permissions is arguably 'update Role'
   const canUpdate = await hasPermission(user.id, "update", "Role");
-  if (!canUpdate) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const id = Number(c.req.param("id"));
   const body = await c.req.json();
@@ -129,11 +157,15 @@ app.post("/:id/permissions", async (c) => {
 // Sync permissions - generates CRUD permissions for all subjects
 app.post("/permissions/sync", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   try {
     const canManageRoles = await hasPermission(user.id, "update", "Role");
-    if (!canManageRoles) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    if (!canManageRoles) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
 
     const result = await syncPermissions();
     return reply(c, { status: "ok", ...result });
@@ -146,10 +178,14 @@ app.post("/permissions/sync", async (c) => {
 
 app.post("/telemetry/unmapped-subjects", async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Role");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const body = await c.req.json<{ subjects?: string[]; total?: number; timestamp?: string }>();
   const shouldLog = await shouldLogUnmappedSubjects();
@@ -173,7 +209,9 @@ async function shouldLogUnmappedSubjects() {
     const lastDate = new Date(last);
     if (!Number.isNaN(lastDate.getTime())) {
       const hoursSince = (Date.now() - lastDate.getTime()) / 3600000;
-      if (hoursSince < 12) return false;
+      if (hoursSince < 12) {
+        return false;
+      }
     }
   }
   await updateSetting(key, new Date().toISOString());

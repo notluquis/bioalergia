@@ -8,9 +8,15 @@ import type { ServiceSchedule } from "../types";
 
 // Helper for status label
 function getStatusLabel(status: ServiceSchedule["status"]) {
-  if (status === "PAID") return "Pagado";
-  if (status === "PARTIAL") return "Parcial";
-  if (status === "SKIPPED") return "Omitido";
+  if (status === "PAID") {
+    return "Pagado";
+  }
+  if (status === "PARTIAL") {
+    return "Parcial";
+  }
+  if (status === "SKIPPED") {
+    return "Omitido";
+  }
   return "Pendiente";
 }
 
@@ -24,7 +30,7 @@ export const getColumns = (
   {
     accessorKey: "period_start",
     cell: ({ row }) => (
-      <span className="text-foreground font-semibold">
+      <span className="font-semibold text-foreground">
         {dayjs(row.original.period_start).format("MMM YYYY")}
       </span>
     ),
@@ -43,7 +49,7 @@ export const getColumns = (
       const schedule = row.original;
       return (
         <div className="space-y-0.5">
-          <div className="text-foreground font-semibold">
+          <div className="font-semibold text-foreground">
             ${schedule.effective_amount.toLocaleString("es-CL")}
           </div>
           {schedule.late_fee_amount > 0 && (
@@ -77,14 +83,19 @@ export const getColumns = (
       const today = dayjs().startOf("day");
       const due = dayjs(schedule.due_date);
 
-      if (schedule.status === "PAID") color = "success";
-      else if (schedule.status === "PARTIAL") color = "warning";
-      else if (schedule.status === "SKIPPED") color = "default";
-      else if (due.isBefore(today)) color = "danger";
+      if (schedule.status === "PAID") {
+        color = "success";
+      } else if (schedule.status === "PARTIAL") {
+        color = "warning";
+      } else if (schedule.status === "SKIPPED") {
+        color = "default";
+      } else if (due.isBefore(today)) {
+        color = "danger";
+      }
 
       return (
         <Chip
-          className="font-semibold tracking-wide uppercase"
+          className="font-semibold uppercase tracking-wide"
           color={color}
           size="sm"
           variant="soft"

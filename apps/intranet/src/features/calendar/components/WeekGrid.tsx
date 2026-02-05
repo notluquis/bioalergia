@@ -48,7 +48,9 @@ function getEventPosition(event: CalendarEventDetail, startHour: number, endHour
   const start = event.startDateTime ? dayjs(event.startDateTime) : null;
   const end = event.endDateTime ? dayjs(event.endDateTime) : null;
 
-  if (!start) return null;
+  if (!start) {
+    return null;
+  }
 
   const startMinutes = start.hour() * 60 + start.minute();
   let endMinutes = end ? end.hour() * 60 + end.minute() : startMinutes + 30;
@@ -111,7 +113,9 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
   const [tooltipTrigger, setTooltipTrigger] = useState<"hover" | "focus">("hover");
 
   useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
     const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     setTooltipTrigger(canHover ? "hover" : "focus");
   }, []);
@@ -142,7 +146,9 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
     const isNowWithinBusiness = now.hour() >= businessStart && now.hour() <= businessEnd;
 
     const weekEvents = events.filter((event) => {
-      if (!event.startDateTime) return false;
+      if (!event.startDateTime) {
+        return false;
+      }
       const eventDate = dayjs(event.startDateTime);
       // Use isSameOrAfter for start of week to include events on Monday
       return eventDate.isSameOrAfter(monday.startOf("day")) && eventDate.isBefore(weekEnd);
@@ -220,16 +226,16 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
   return (
     <div
       className={cn(
-        "bg-content1 border-default-200 flex min-h-130 h-[min(100svh-220px,800px)] flex-col overflow-hidden rounded-2xl border shadow-sm",
+        "flex h-[min(100svh-220px,800px)] min-h-130 flex-col overflow-hidden rounded-2xl border border-default-200 bg-content1 shadow-sm",
         loading && "pointer-events-none opacity-50 grayscale-[0.3]",
       )}
       role="none"
     >
-      <div className="muted-scrollbar flex-1 overflow-x-auto overscroll-x-contain touch-pan-x">
+      <div className="muted-scrollbar flex-1 touch-pan-x overflow-x-auto overscroll-x-contain">
         <div className="min-w-270">
           <WeekGridHeader days={days} />
 
-          <div className="muted-scrollbar grid min-h-100 grid-cols-[52px_repeat(6,1fr)] overflow-y-auto overscroll-y-contain touch-pan-y">
+          <div className="muted-scrollbar grid min-h-100 touch-pan-y grid-cols-[52px_repeat(6,1fr)] overflow-y-auto overscroll-y-contain">
             <TimeAxis hours={hours} />
 
             {days.map((day) => (
@@ -257,7 +263,7 @@ function WeekGridHeader({ days }: { days: DayInfo[] }) {
   return (
     // biome-ignore lint/a11y/useSemanticElements: grid layout
     <div
-      className="border-default-200 bg-content2/60 grid grid-cols-[52px_repeat(6,1fr)] border-b backdrop-blur-md"
+      className="grid grid-cols-[52px_repeat(6,1fr)] border-default-200 border-b bg-content2/60 backdrop-blur-md"
       role="row"
       tabIndex={0}
     >
@@ -267,24 +273,24 @@ function WeekGridHeader({ days }: { days: DayInfo[] }) {
         <div
           aria-current={day.isToday ? "date" : undefined}
           className={cn(
-            "border-default-200 flex flex-col items-center justify-center gap-1 border-r px-1 py-3 text-center last:border-r-0 sm:py-4",
-            day.isToday && "bg-primary/20 border-t-4 border-primary relative",
+            "flex flex-col items-center justify-center gap-1 border-default-200 border-r px-1 py-3 text-center last:border-r-0 sm:py-4",
+            day.isToday && "relative border-primary border-t-4 bg-primary/20",
           )}
           key={day.key}
           role="columnheader"
           tabIndex={0}
         >
           <abbr
-            className="text-foreground-400 text-[0.65rem] font-bold uppercase tracking-wider"
+            className="font-bold text-[0.65rem] text-foreground-400 uppercase tracking-wider"
             title={day.fullDayName}
           >
             {day.dayName}
           </abbr>
           <time
             className={cn(
-              "text-foreground text-xl font-extrabold leading-none sm:text-2xl",
+              "font-extrabold text-foreground text-xl leading-none sm:text-2xl",
               day.isToday &&
-                "bg-primary text-primary-foreground grid size-10 place-items-center rounded-full text-xl font-black shadow-lg shadow-primary/40",
+                "grid size-10 place-items-center rounded-full bg-primary font-black text-primary-foreground text-xl shadow-lg shadow-primary/40",
             )}
             dateTime={day.isoDate}
           >
@@ -298,13 +304,13 @@ function WeekGridHeader({ days }: { days: DayInfo[] }) {
 
 function TimeAxis({ hours }: { hours: number[] }) {
   return (
-    <div className="border-default-200 bg-content2/40 border-r">
+    <div className="border-default-200 border-r bg-content2/40">
       {hours.map((hour) => (
         <div
-          className="border-default-100 flex h-13 items-start justify-end border-b pr-2"
+          className="flex h-13 items-start justify-end border-default-100 border-b pr-2"
           key={hour}
         >
-          <span className="text-foreground-500 -translate-y-1/2 text-[0.7rem] font-medium tabular-nums">
+          <span className="-translate-y-1/2 font-medium text-[0.7rem] text-foreground-500 tabular-nums">
             {String(hour).padStart(2, "0")}:00
           </span>
         </div>
@@ -335,17 +341,17 @@ function DayColumn({
   return (
     <div
       className={cn(
-        "border-default-100 relative min-h-full overflow-hidden border-r last:border-r-0",
+        "relative min-h-full overflow-hidden border-default-100 border-r last:border-r-0",
         day.isToday && "bg-primary/5",
       )}
     >
       {/* Hour grid lines */}
       {hours.map((hour) => (
-        <div className="border-default-200/50 h-13 border-b" key={hour} />
+        <div className="h-13 border-default-200/50 border-b" key={hour} />
       ))}
 
       {/* Events */}
-      <div className="absolute inset-0 z-5 isolate overflow-visible px-0.5">
+      <div className="absolute inset-0 isolate z-5 overflow-visible px-0.5">
         {calculateEventLayout(events).map((event) => (
           <EventItem
             endHour={endHour}
@@ -375,9 +381,15 @@ interface EventItemProps {
 type DisplayMode = "compact" | "detailed" | "minimal" | "normal";
 
 function getDisplayMode(durationMinutes: number): DisplayMode {
-  if (durationMinutes < 20) return "minimal";
-  if (durationMinutes < 45) return "compact";
-  if (durationMinutes < 90) return "normal";
+  if (durationMinutes < 20) {
+    return "minimal";
+  }
+  if (durationMinutes < 45) {
+    return "compact";
+  }
+  if (durationMinutes < 90) {
+    return "normal";
+  }
   return "detailed";
 }
 
@@ -421,7 +433,7 @@ function buildEventTooltipContent({
 }) {
   return (
     <div className="space-y-1 text-xs">
-      <p className="text-foreground font-semibold">{title}</p>
+      <p className="font-semibold text-foreground">{title}</p>
       <p className="text-default-600">
         {timeStr} - {endTimeStr}
       </p>
@@ -469,13 +481,13 @@ function EventButtonContent({
           {title}
         </span>
         {controlFlag && displayMode !== "minimal" && (
-          <span className="shrink-0 rounded-full bg-warning-500/20 px-1 text-[0.5rem] font-bold uppercase text-warning-700">
+          <span className="shrink-0 rounded-full bg-warning-500/20 px-1 font-bold text-[0.5rem] text-warning-700 uppercase">
             Ctrl
           </span>
         )}
       </span>
       {displayMode === "detailed" && amountExpected != null && (
-        <span className="text-success-600 mt-auto overflow-hidden text-ellipsis whitespace-nowrap text-[0.6rem] font-bold">
+        <span className="mt-auto overflow-hidden text-ellipsis whitespace-nowrap font-bold text-[0.6rem] text-success-600">
           {currencyFormatter.format(amountExpected)}
         </span>
       )}
@@ -485,7 +497,9 @@ function EventButtonContent({
 
 function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: EventItemProps) {
   const position = getEventPosition(event, startHour, endHour);
-  if (!position) return null;
+  if (!position) {
+    return null;
+  }
 
   const { durationMinutes, endTimeStr, timeStr } = getEventDisplayTimes(event);
   const displayMode = getDisplayMode(durationMinutes);
@@ -549,7 +563,9 @@ function sortEventsForLayout(events: CalendarEventDetail[]) {
     const { start: startA, end: endA } = getEventTimes(a);
     const { start: startB, end: endB } = getEventTimes(b);
     const startDiff = startA - startB;
-    if (startDiff !== 0) return startDiff;
+    if (startDiff !== 0) {
+      return startDiff;
+    }
     return endB - startB - (endA - startA);
   });
 }
@@ -566,7 +582,9 @@ function buildOverlapClusters(sortedEvents: CalendarEventDetail[]) {
         break;
       }
     }
-    if (!added) clusters.push([event]);
+    if (!added) {
+      clusters.push([event]);
+    }
   }
 
   return clusters;
@@ -626,7 +644,9 @@ function eventsOverlap(a: CalendarEventDetail, b: CalendarEventDetail): boolean 
 }
 
 function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] {
-  if (events.length === 0) return [];
+  if (events.length === 0) {
+    return [];
+  }
 
   const sorted = sortEventsForLayout(events);
   const clusters = buildOverlapClusters(sorted);
@@ -636,7 +656,9 @@ function calculateEventLayout(events: CalendarEventDetail[]): EventWithLayout[] 
 // Get category color class
 function getCategoryClass(category: null | string | undefined): string {
   const baseClasses = "border-l-3";
-  if (!category) return cn(baseClasses, "bg-content2 border-divider text-foreground");
+  if (!category) {
+    return cn(baseClasses, "bg-content2 border-divider text-foreground");
+  }
 
   const cat = category.toLowerCase();
 
@@ -694,16 +716,18 @@ function NowIndicator({ endHour, startHour }: Readonly<{ endHour: number; startH
 
   const position = ((currentMinutes - gridStartMinutes) / totalMinutes) * 100;
 
-  if (position < 0 || position > 100) return null;
+  if (position < 0 || position > 100) {
+    return null;
+  }
 
   return (
     <div
-      className="absolute inset-x-0 z-20 flex items-center pointer-events-none"
+      className="pointer-events-none absolute inset-x-0 z-20 flex items-center"
       style={{ top: `${position}%` }}
       title={`Hora actual: ${now.format("HH:mm")}`}
     >
-      <div className="bg-danger shadow-danger/50 -ml-1.25 size-2.5 animate-pulse rounded-full shadow-[0_0_8px]" />
-      <div className="bg-danger h-0.5 flex-1" />
+      <div className="-ml-1.25 size-2.5 animate-pulse rounded-full bg-danger shadow-[0_0_8px] shadow-danger/50" />
+      <div className="h-0.5 flex-1 bg-danger" />
     </div>
   );
 }

@@ -96,7 +96,7 @@ function NewBudgetPage() {
           Volver
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Nuevo Presupuesto</h1>
+          <h1 className="font-bold text-2xl text-foreground">Nuevo Presupuesto</h1>
           <p className="text-default-500 text-sm">Cruce de servicios y valores estimados</p>
         </div>
       </header>
@@ -109,7 +109,7 @@ function NewBudgetPage() {
         }}
         className="space-y-6"
       >
-        <Card className="p-6 space-y-4">
+        <Card className="space-y-4 p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <form.Field name="title">
               {(field) => (
@@ -151,8 +151,8 @@ function NewBudgetPage() {
         </Card>
 
         <Card className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Ítems del Presupuesto</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-semibold text-lg">Ítems del Presupuesto</h2>
             <Button
               size="sm"
               variant="outline"
@@ -171,7 +171,7 @@ function NewBudgetPage() {
                   {field.state.value.map((item, index) => (
                     <div
                       key={item.clientId ?? `item-${index}`}
-                      className="grid grid-cols-12 gap-3 items-end border-b border-default-100 pb-4 last:border-0 last:pb-0"
+                      className="grid grid-cols-12 items-end gap-3 border-default-100 border-b pb-4 last:border-0 last:pb-0"
                     >
                       <div className="col-span-12 sm:col-span-6">
                         <form.Field name={`items[${index}].description`}>
@@ -209,7 +209,7 @@ function NewBudgetPage() {
                           )}
                         </form.Field>
                       </div>
-                      <div className="col-span-2 sm:col-span-1 flex justify-center pb-2">
+                      <div className="col-span-2 flex justify-center pb-2 sm:col-span-1">
                         <Button
                           variant="ghost"
                           size="sm"

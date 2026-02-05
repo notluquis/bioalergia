@@ -30,14 +30,20 @@ export class ApiError extends Error {
 // Helper for building query strings with custom array handling (preserved for safety)
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: url building logic
 function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
-  if (!query) return url;
+  if (!query) {
+    return url;
+  }
 
   const params = new URLSearchParams();
   for (const [key, rawValue] of Object.entries(query)) {
-    if (rawValue === undefined || rawValue === null) continue;
+    if (rawValue === undefined || rawValue === null) {
+      continue;
+    }
     if (Array.isArray(rawValue)) {
       for (const value of rawValue) {
-        if (value === undefined || value === null) continue;
+        if (value === undefined || value === null) {
+          continue;
+        }
         params.append(key, String(value));
       }
       continue;
@@ -46,7 +52,9 @@ function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
   }
 
   const queryString = params.toString();
-  if (!queryString) return url;
+  if (!queryString) {
+    return url;
+  }
 
   return url.includes("?") ? `${url}&${queryString}` : `${url}?${queryString}`;
 }

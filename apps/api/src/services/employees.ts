@@ -31,8 +31,12 @@ type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string
 
 // Helper to convert metadata to compatible JSON
 function toJsonValue(value: Record<string, unknown> | null | undefined): JsonValue | undefined {
-  if (value === undefined) return undefined;
-  if (value === null) return null;
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === null) {
+    return null;
+  }
   return value as unknown as JsonValue;
 }
 
@@ -131,7 +135,9 @@ export async function getEmployeeById(id: number) {
     where: { id },
     include: { person: true },
   });
-  if (!employee) throw new Error(`Employee with ID ${id} not found`);
+  if (!employee) {
+    throw new Error(`Employee with ID ${id} not found`);
+  }
   return employee;
 }
 
@@ -232,8 +238,12 @@ export async function listEmployeeTimesheets(employeeId: number, from?: Date, to
 
   if (from || to) {
     where.workDate = {};
-    if (from) where.workDate.gte = from;
-    if (to) where.workDate.lte = to;
+    if (from) {
+      where.workDate.gte = from;
+    }
+    if (to) {
+      where.workDate.lte = to;
+    }
   }
 
   return await db.employeeTimesheet.findMany({

@@ -41,9 +41,13 @@ export async function processReportUrl(url: string, reportType: string): Promise
       headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
     });
 
-    if (!res.ok) throw new Error(`Download failed: ${res.status} - ${res.statusText}`);
+    if (!res.ok) {
+      throw new Error(`Download failed: ${res.status} - ${res.statusText}`);
+    }
     const body = res.body;
-    if (!body) throw new Error("Empty response body");
+    if (!body) {
+      throw new Error("Empty response body");
+    }
 
     // Convert Web Stream to Node Stream
     const nodeStream = Readable.fromWeb(body as import("stream/web").ReadableStream);
@@ -56,7 +60,9 @@ export async function processReportUrl(url: string, reportType: string): Promise
     };
 
     const flushBatch = async () => {
-      if (batchState.batch.length === 0) return;
+      if (batchState.batch.length === 0) {
+        return;
+      }
       const inserted = await insertBatch(reportType, batchState.batch);
       stats.insertedRows += inserted;
       stats.duplicateRows += Math.max(batchState.batchValid - inserted, 0);
@@ -134,7 +140,9 @@ const logFirstRow = (
   cleanRow: Record<string, string | undefined>,
   isFirstRow: { value: boolean },
 ) => {
-  if (!isFirstRow.value) return;
+  if (!isFirstRow.value) {
+    return;
+  }
   console.log("[MP Ingest] First row keys:", Object.keys(cleanRow));
   console.log("[MP Ingest] First row SOURCE_ID:", cleanRow.SOURCE_ID);
   isFirstRow.value = false;
@@ -152,7 +160,9 @@ const enqueueBatchRecord = async (
   batchState.batchValid += 1;
   stats.validRows += 1;
 
-  if (batchState.batch.length < BATCH_SIZE) return;
+  if (batchState.batch.length < BATCH_SIZE) {
+    return;
+  }
 
   nodeStream.pause();
   batchState.flushPromise = batchState.flushPromise
@@ -197,7 +207,9 @@ const handleCsvRow = (
 };
 
 async function insertBatch(reportType: string, rows: ReportRowInput[]) {
-  if (rows.length === 0) return 0;
+  if (rows.length === 0) {
+    return 0;
+  }
 
   const type = reportType.toLowerCase();
 

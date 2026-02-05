@@ -13,7 +13,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
   return (
     <Link
       activeOptions={{ exact: item.to === "/" }}
-      className="group outline-none select-none"
+      className="group select-none outline-none"
       onClick={() => {
         onNavigate();
       }}
@@ -36,15 +36,15 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
               "relative flex items-center rounded-xl transition-all duration-200 ease-in-out",
               isMobile ? "w-full justify-start px-4 py-3" : "mx-auto h-12 w-12 justify-center p-0",
               isActive
-                ? "bg-primary/10 text-primary font-semibold"
-                : "text-default-500 hover:text-foreground hover:bg-default-50",
+                ? "bg-primary/10 font-semibold text-primary"
+                : "text-default-500 hover:bg-default-50 hover:text-foreground",
             )}
           >
             {/* Active Indicator */}
             {isActive && (
               <span
                 className={cn(
-                  "bg-primary absolute rounded-full transition-all duration-300",
+                  "absolute rounded-full bg-primary transition-all duration-300",
                   isMobile ? "top-1/2 left-0 h-6 w-1 -translate-y-1/2" : "top-2 right-0 h-7 w-1",
                 )}
               />
@@ -57,7 +57,7 @@ export function SidebarItem({ isMobile, item, onNavigate }: SidebarItemProps) {
             />
 
             {/* Label (Mobile only, hidden on Slim Desktop) */}
-            {isMobile && <span className="ml-4 text-sm font-medium">{item.label}</span>}
+            {isMobile && <span className="ml-4 font-medium text-sm">{item.label}</span>}
           </div>
         </Tooltip>
       )}

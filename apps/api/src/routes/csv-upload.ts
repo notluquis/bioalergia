@@ -112,10 +112,14 @@ interface CSVRow {
 // Helper to get auth
 async function getAuth(c: { req: { header: (name: string) => string | undefined } }) {
   const cookieHeader = c.req.header("Cookie");
-  if (!cookieHeader) return null;
+  if (!cookieHeader) {
+    return null;
+  }
   const cookies = Object.fromEntries(cookieHeader.split(";").map((c) => c.trim().split("=")));
   const token = cookies[COOKIE_NAME];
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
   try {
     const decoded = await verifyToken(token);
     return { userId: Number(decoded.sub), email: String(decoded.email) };
@@ -134,7 +138,9 @@ async function findPersonByRut(rut: string) {
 
 // Clean amount string (removes $, commas, dots for thousands)
 function cleanAmount(value: unknown): number {
-  if (value == null || value === "") return 0;
+  if (value == null || value === "") {
+    return 0;
+  }
   const str = String(value)
     .trim()
     .replace(CURRENCY_DOLLAR_REGEX, "") // Remove $
@@ -146,7 +152,9 @@ function cleanAmount(value: unknown): number {
 
 // Parse date from DD/M/YYYY or DD/MM/YYYY format
 function parseFlexibleDate(value: unknown): string | null {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   const str = String(value).trim();
 
   // Try DD/M/YYYY or DD/MM/YYYY format
@@ -184,7 +192,9 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy csv preview
 csvUploadRoutes.post("/preview", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const { table, data } = await c.req.json<{
     table: TableName;
@@ -199,7 +209,9 @@ csvUploadRoutes.post("/preview", async (c) => {
   const required = TABLE_PERMISSIONS[table];
   if (required) {
     const hasPerm = await hasPermission(auth.userId, required.action, required.subject);
-    if (!hasPerm) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    if (!hasPerm) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
   }
 
   const errors: string[] = [];
@@ -213,25 +225,35 @@ csvUploadRoutes.post("/preview", async (c) => {
     try {
       if (table === "people" && row.rut) {
         const exists = await findPersonByRut(String(row.rut));
-        if (exists) toUpdate++;
-        else toInsert++;
+        if (exists) {
+          toUpdate++;
+        } else {
+          toInsert++;
+        }
       } else if ((table === "employees" || table === "counterparts") && row.rut) {
         const person = await findPersonByRut(String(row.rut));
         if (!person) {
           errors.push(`Fila ${i + 1}: Persona con RUT ${row.rut} no existe`);
           toSkip++;
         } else {
-          if (table === "employees" && person.employee) toUpdate++;
-          else if (table === "counterparts" && person.counterpart) toUpdate++;
-          else toInsert++;
+          if (table === "employees" && person.employee) {
+            toUpdate++;
+          } else if (table === "counterparts" && person.counterpart) {
+            toUpdate++;
+          } else {
+            toInsert++;
+          }
         }
       } else if (table === "daily_balances" && row.date) {
         const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
         const exists = await db.dailyBalance.findUnique({
           where: { date: new Date(dateStr) },
         });
-        if (exists) toUpdate++;
-        else toInsert++;
+        if (exists) {
+          toUpdate++;
+        } else {
+          toInsert++;
+        }
       } else if (table === "daily_production_balances") {
         const dateStr = parseFlexibleDate(row.balanceDate || row.Fecha);
         if (!dateStr) {
@@ -242,8 +264,11 @@ csvUploadRoutes.post("/preview", async (c) => {
         const exists = await db.dailyProductionBalance.findUnique({
           where: { balanceDate: new Date(dateStr) },
         });
-        if (exists) toUpdate++;
-        else toInsert++;
+        if (exists) {
+          toUpdate++;
+        } else {
+          toInsert++;
+        }
       } else if (table === "withdrawals") {
         if (!row.withdrawId) {
           errors.push(`Fila ${i + 1}: withdrawId requerido`);
@@ -253,8 +278,11 @@ csvUploadRoutes.post("/preview", async (c) => {
         const exists = await db.withdrawTransaction.findUnique({
           where: { withdrawId: String(row.withdrawId) },
         });
-        if (exists) toUpdate++;
-        else toInsert++;
+        if (exists) {
+          toUpdate++;
+        } else {
+          toInsert++;
+        }
       } else if (table === "services" && row.name) {
         // Services can have duplicate names, so just count as insert
         toInsert++;
@@ -262,8 +290,11 @@ csvUploadRoutes.post("/preview", async (c) => {
         const exists = await db.inventoryItem.findFirst({
           where: { name: String(row.name) },
         });
-        if (exists) toUpdate++;
-        else toInsert++;
+        if (exists) {
+          toUpdate++;
+        } else {
+          toInsert++;
+        }
       } else if (table === "employee_timesheets" && row.rut && row.workDate) {
         const person = await findPersonByRut(String(row.rut));
         if (!person?.employee) {
@@ -277,8 +308,11 @@ csvUploadRoutes.post("/preview", async (c) => {
               workDate: new Date(dateStr),
             },
           });
-          if (exists) toUpdate++;
-          else toInsert++;
+          if (exists) {
+            toUpdate++;
+          } else {
+            toInsert++;
+          }
         }
       } else {
         toInsert++;
@@ -304,7 +338,9 @@ csvUploadRoutes.post("/preview", async (c) => {
 
 csvUploadRoutes.post("/import", async (c) => {
   const auth = await getAuth(c);
-  if (!auth) return reply(c, { status: "error", message: "No autorizado" }, 401);
+  if (!auth) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
 
   const { table, data } = await c.req.json<{
     table: TableName;
@@ -319,7 +355,9 @@ csvUploadRoutes.post("/import", async (c) => {
   const required = TABLE_PERMISSIONS[table];
   if (required) {
     const hasPerm = await hasPermission(auth.userId, required.action, required.subject);
-    if (!hasPerm) return reply(c, { status: "error", message: "Forbidden" }, 403);
+    if (!hasPerm) {
+      return reply(c, { status: "error", message: "Forbidden" }, 403);
+    }
   }
 
   const { inserted, updated, skipped, errors } = await importCsvRows(table, data, auth);
@@ -541,7 +579,9 @@ async function importWithdrawalsRow(row: CSVRow): Promise<ImportOutcome> {
   }
 
   const parseDecimal = (value: unknown) => {
-    if (value == null || String(value).trim() === "") return null;
+    if (value == null || String(value).trim() === "") {
+      return null;
+    }
     const num = cleanAmount(value);
     return new Decimal(num.toFixed(2));
   };

@@ -8,7 +8,9 @@
  * E.g., 0.145 -> "14,5"  |  0.1525 -> "15,25"
  */
 export function formatRetentionPercent(rate: number): string {
-  if (!rate || Number.isNaN(rate)) return "0,0";
+  if (!rate || Number.isNaN(rate)) {
+    return "0,0";
+  }
   const percent = rate * 100;
   // Use 2 decimals if needed (e.g., 15.25), otherwise 1 (e.g., 14.5)
   let formatted: string;
@@ -34,7 +36,9 @@ export function getEffectiveRetentionRate(
   const yearRate = getRetentionRateForYear(year);
 
   // If employee has no rate, use year default
-  if (!employeeRate) return yearRate;
+  if (!employeeRate) {
+    return yearRate;
+  }
 
   // If employee has custom rate (different from any historical default), use it
   const isDefaultRate = employeeRate === 0.145 || employeeRate === 0.1525;
@@ -52,6 +56,8 @@ export function getEffectiveRetentionRate(
  * - 2026 and after: 15.25%
  */
 export function getRetentionRateForYear(year: number): number {
-  if (year <= 2025) return 0.145; // 14.5%
+  if (year <= 2025) {
+    return 0.145; // 14.5%
+  }
   return 0.1525; // 15.25%
 }

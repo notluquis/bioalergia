@@ -24,10 +24,10 @@ export function ServiceList({
   const skeletons = Array.from({ length: 5 }, (_, index) => index);
 
   return (
-    <aside className="border-default-200/60 bg-background/80 text-foreground flex h-full min-h-80 flex-col gap-4 rounded-2xl border p-5 text-sm shadow-inner">
+    <aside className="flex h-full min-h-80 flex-col gap-4 rounded-2xl border border-default-200/60 bg-background/80 p-5 text-foreground text-sm shadow-inner">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-default-500 text-xs font-semibold tracking-wide uppercase">
+          <h2 className="font-semibold text-default-500 text-xs uppercase tracking-wide">
             Servicios
           </h2>
           <p className="text-default-500 text-xs">Suscripciones y gastos recurrentes.</p>
@@ -43,11 +43,11 @@ export function ServiceList({
           services.length === 0 &&
           skeletons.map((value) => (
             <div
-              className="border-default-200/60 bg-default-50/60 rounded-2xl border p-4 shadow-sm"
+              className="rounded-2xl border border-default-200/60 bg-default-50/60 p-4 shadow-sm"
               key={value}
             >
               <div className="skeleton-line mb-3 w-3/4" />
-              <div className="text-default-400 flex gap-2 text-xs">
+              <div className="flex gap-2 text-default-400 text-xs">
                 <span className="skeleton-line w-20" />
                 <span className="skeleton-line w-16" />
               </div>
@@ -57,8 +57,12 @@ export function ServiceList({
           const isActive = service.public_id === selectedId;
           const overdue = service.overdue_count > 0;
           const indicatorColor = (() => {
-            if (overdue) return "bg-rose-400";
-            if (service.pending_count === 0) return "bg-emerald-400";
+            if (overdue) {
+              return "bg-rose-400";
+            }
+            if (service.pending_count === 0) {
+              return "bg-emerald-400";
+            }
             return "bg-amber-400";
           })();
 
@@ -89,7 +93,7 @@ export function ServiceList({
               className={`w-full cursor-pointer rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-default-200 bg-primary/20 text-primary"
-                  : "bg-background/45 text-foreground hover:border-default-200 hover:bg-background/65 border-transparent"
+                  : "border-transparent bg-background/45 text-foreground hover:border-default-200 hover:bg-background/65"
               }`}
               key={service.public_id}
               onClick={() => {
@@ -99,9 +103,9 @@ export function ServiceList({
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold tracking-tight">{service.name}</p>
+                  <p className="font-semibold text-sm tracking-tight">{service.name}</p>
                   {service.detail && (
-                    <p className="text-default-400 text-xs tracking-wide uppercase">
+                    <p className="text-default-400 text-xs uppercase tracking-wide">
                       {service.detail}
                     </p>
                   )}
@@ -112,24 +116,24 @@ export function ServiceList({
                 />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
-                <span className="text-foreground font-semibold">
+                <span className="font-semibold text-foreground">
                   ${service.default_amount.toLocaleString("es-CL")}
                 </span>
                 <span className="text-default-500">{frequencyLabels[service.frequency]}</span>
                 <span className="text-default-500">{typeLabels[service.service_type]}</span>
               </div>
-              <div className="text-default-400 mt-1 flex flex-wrap items-center gap-3 text-xs">
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-default-400 text-xs">
                 <span>Inicio {dayjs(service.start_date).format("DD MMM YYYY")}</span>
                 {service.counterpart_name && <span>{service.counterpart_name}</span>}
               </div>
-              <div className="text-default-400 mt-2 text-xs">
+              <div className="mt-2 text-default-400 text-xs">
                 Pendientes {service.pending_count} · Vencidos {service.overdue_count}
               </div>
             </button>
           );
         })}
         {services.length === 0 && (
-          <p className="border-default-200 bg-background/40 text-default-500 rounded-2xl border border-dashed p-4 text-xs">
+          <p className="rounded-2xl border border-default-200 border-dashed bg-background/40 p-4 text-default-500 text-xs">
             Aún no registras servicios recurrentes. Crea el primero para controlar gastos mensuales.
           </p>
         )}

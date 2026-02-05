@@ -162,17 +162,22 @@ export async function cleanupOldBackups(
     const deletedFiles: string[] = [];
 
     for (const file of files) {
+      const fileId = file.id ?? undefined;
+      const fileName = file.name ?? "Sin nombre";
+
+      if (!fileId) {
+        errors.push(`${fileName}: missing file id`);
+        continue;
+      }
+
       try {
-        // biome-ignore lint/style/noNonNullAssertion: legacy google types
-        await retryGoogleCall(
-          () => drive.files.delete({ fileId: file.id!, supportsAllDrives: true }),
-          { context: "drive.files.delete" },
-        );
-        // biome-ignore lint/style/noNonNullAssertion: legacy google types
-        deletedFiles.push(file.name!);
+        await retryGoogleCall(() => drive.files.delete({ fileId, supportsAllDrives: true }), {
+          context: "drive.files.delete",
+        });
+        deletedFiles.push(fileName);
       } catch (deleteError) {
         const parsed = parseGoogleError(deleteError);
-        errors.push(`${file.name}: ${parsed.message}`);
+        errors.push(`${fileName}: ${parsed.message}`);
       }
     }
 
@@ -199,15 +204,18 @@ export async function getBackupInfo(fileId: string): Promise<BackupFile> {
       { context: "drive.files.get" },
     );
 
+    const { id, name, createdTime, size, webViewLink } = response.data;
+
+    if (!id || !name || !createdTime) {
+      throw new Error("Incomplete backup metadata from Google Drive");
+    }
+
     return {
-      // biome-ignore lint/style/noNonNullAssertion: legacy google types
-      id: response.data.id!,
-      // biome-ignore lint/style/noNonNullAssertion: legacy google types
-      name: response.data.name!,
-      // biome-ignore lint/style/noNonNullAssertion: legacy google types
-      createdTime: response.data.createdTime!,
-      size: response.data.size || "0",
-      webViewLink: response.data.webViewLink || undefined,
+      id,
+      name,
+      createdTime,
+      size: size || "0",
+      webViewLink: webViewLink || undefined,
     };
   } catch (error) {
     if (error instanceof GoogleApiError && error.code === 404) {
@@ -274,7 +282,9 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
       const dataStream = response.data as InstanceType<typeof streamModule.Readable>;
 
       const onData = (chunk: Buffer) => {
-        if (stopped) return;
+        if (stopped) {
+          return;
+        }
         if (bytesRead < maxBytes) {
           chunks.push(chunk);
           bytesRead += chunk.length;

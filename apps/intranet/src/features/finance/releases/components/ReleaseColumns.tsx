@@ -18,9 +18,13 @@ const moneyColumn = (
   cell: ({ row }) => {
     const amount = row.getValue(accessorKey);
     const currency = row.original.currency;
-    if (!amount) return <div className={`text-${align}`}>-</div>;
+    if (!amount) {
+      return <div className={`text-${align}`}>-</div>;
+    }
     let className = `text-${align} tabular-nums`;
-    if (isNegative) className += " text-danger";
+    if (isNegative) {
+      className += " text-danger";
+    }
     return <div className={className}>{formatAmount(amount as number | string, currency)}</div>;
   },
   header,
@@ -39,7 +43,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
           isIconOnly
           size="sm"
           variant="ghost"
-          className="hover:bg-default-50 h-6 w-6 rounded-md p-0"
+          className="h-6 w-6 rounded-md p-0 hover:bg-default-50"
         >
           {row.getIsExpanded() ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </Button>
@@ -98,7 +102,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
       const val = row.original.netCreditAmount;
       if (val && Number(val) > 0) {
         return (
-          <div className="text-success flex items-center justify-end gap-1 tabular-nums">
+          <div className="flex items-center justify-end gap-1 text-success tabular-nums">
             <ArrowDownToLine className="h-3 w-3" />
             {formatAmount(val, row.original.currency)}
           </div>
@@ -115,7 +119,7 @@ export const columns: ColumnDef<ReleaseTransaction>[] = [
       const val = row.original.netDebitAmount;
       if (val && Number(val) > 0) {
         return (
-          <div className="text-danger flex items-center justify-end gap-1 tabular-nums">
+          <div className="flex items-center justify-end gap-1 text-danger tabular-nums">
             <ArrowUpFromLine className="h-3 w-3" />
             {formatAmount(val, row.original.currency)}
           </div>

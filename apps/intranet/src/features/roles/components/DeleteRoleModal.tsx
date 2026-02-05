@@ -74,7 +74,9 @@ function DeleteRoleForm({
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (hasUsers) {
-        if (!targetRoleId) throw new Error("Debes seleccionar un rol de destino");
+        if (!targetRoleId) {
+          throw new Error("Debes seleccionar un rol de destino");
+        }
         await reassignRoleUsers({ roleId: role.id, targetRoleId: Number(targetRoleId) });
       }
       await deleteRole(role.id);
@@ -106,8 +108,8 @@ function DeleteRoleForm({
         <p>¿Estás seguro que deseas eliminar este rol? Esta acción no se puede deshacer.</p>
 
         {hasUsers ? (
-          <div className="bg-warning/10 border-warning-soft-hover space-y-3 rounded-lg border p-4">
-            <div className="text-warning flex items-start gap-2">
+          <div className="space-y-3 rounded-lg border border-warning-soft-hover bg-warning/10 p-4">
+            <div className="flex items-start gap-2 text-warning">
               <AlertTriangle className="mt-0.5 h-5 w-5" />
               <div className="font-medium">Usuarios afectados</div>
             </div>
@@ -116,7 +118,7 @@ function DeleteRoleForm({
               otro rol antes de eliminarlo.
             </p>
 
-            <ul className="bg-background max-h-32 space-y-1 overflow-y-auto rounded p-2 text-xs">
+            <ul className="max-h-32 space-y-1 overflow-y-auto rounded bg-background p-2 text-xs">
               {users.map((u) => (
                 <li className="flex justify-between" key={u.id}>
                   <span>{u.person ? `${u.person.names} ${u.person.fatherName}` : u.email}</span>

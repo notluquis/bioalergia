@@ -20,9 +20,9 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
     return (
       <section className="card bg-background shadow-sm">
         <div className="card-body">
-          <h2 className="card-title text-primary text-lg">Conciliación</h2>
+          <h2 className="card-title text-lg text-primary">Conciliación</h2>
           {error && (
-            <p className="bg-background border-l-4 border-rose-300/80 px-4 py-2 text-xs text-rose-700">
+            <p className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
               {error}
             </p>
           )}
@@ -45,9 +45,9 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
     return (
       <section className="card bg-background shadow-sm">
         <div className="card-body">
-          <h2 className="card-title text-primary text-lg">Conciliación</h2>
+          <h2 className="card-title text-lg text-primary">Conciliación</h2>
           {error && (
-            <p className="bg-background border-l-4 border-rose-300/80 px-4 py-2 text-xs text-rose-700">
+            <p className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
               {error}
             </p>
           )}
@@ -63,9 +63,9 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
     return (
       <section className="card bg-background shadow-sm">
         <div className="card-body">
-          <h2 className="card-title text-primary text-lg">Conciliación</h2>
+          <h2 className="card-title text-lg text-primary">Conciliación</h2>
           {error && (
-            <p className="bg-background border-l-4 border-rose-300/80 px-4 py-2 text-xs text-rose-700">
+            <p className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
               {error}
             </p>
           )}
@@ -81,18 +81,18 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
   return (
     <section className="card bg-background shadow-sm">
       <div className="card-body">
-        <h2 className="card-title text-primary text-lg">Conciliación</h2>
+        <h2 className="card-title text-lg text-primary">Conciliación</h2>
         {error && (
-          <p className="bg-background border-l-4 border-rose-300/80 px-4 py-2 text-xs text-rose-700">
+          <p className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
             {error}
           </p>
         )}
         {/* Main content */}
-        <div className="text-foreground space-y-3 text-xs">
+        <div className="space-y-3 text-foreground text-xs">
           {report.previous && (
-            <div className="border-default-200 bg-default-50 text-foreground rounded-2xl border px-4 py-3">
+            <div className="rounded-2xl border border-default-200 bg-default-50 px-4 py-3 text-foreground">
               Saldo cierre previo ({dayjs(report.previous.date).format("DD-MM-YYYY")} 23:59)
-              <span className="text-foreground ml-2 font-semibold">
+              <span className="ml-2 font-semibold text-foreground">
                 {fmtCLP(report.previous.balance)}
               </span>
             </div>
@@ -113,9 +113,9 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
           )}
 
           {!lastRecorded && lastExpected && (
-            <div className="border-default-200 bg-default-50 text-foreground rounded-2xl border px-4 py-3">
+            <div className="rounded-2xl border border-default-200 bg-default-50 px-4 py-3 text-foreground">
               Saldo esperado del último día ({dayjs(lastExpected.date).format("DD-MM-YYYY")}):
-              <span className="text-foreground ml-2 font-semibold">
+              <span className="ml-2 font-semibold text-foreground">
                 {fmtCLP(lastExpected.expectedBalance)}
               </span>
             </div>
@@ -145,13 +145,13 @@ function MismatchSummary({ mismatchDays }: Readonly<{ mismatchDays: MismatchDay[
         Hay {mismatchDays.length} día{mismatchDays.length > 1 ? "s" : ""} con diferencias entre el
         saldo esperado y el registrado.
       </p>
-      <ul className="text-foreground space-y-1">
+      <ul className="space-y-1 text-foreground">
         {mismatchDays.slice(0, 5).map((day) => (
           <li
             className="flex flex-wrap items-center gap-2"
             key={dayjs(day.date).format("YYYY-MM-DD")}
           >
-            <span className="text-foreground font-medium">
+            <span className="font-medium text-foreground">
               {dayjs(day.date).format("DD-MM-YYYY")}
             </span>
             <span>Diferencia:</span>

@@ -27,7 +27,9 @@ export function DailyIncomePage() {
   const grouped = (events || []).reduce(
     (acc, event) => {
       const date = event.startDate ? dayjs(event.startDate).format("YYYY-MM-DD") : "Sin fecha";
-      if (!acc[date]) acc[date] = [];
+      if (!acc[date]) {
+        acc[date] = [];
+      }
       acc[date].push(event);
       return acc;
     },
@@ -38,9 +40,9 @@ export function DailyIncomePage() {
 
   return (
     <div className="space-y-6 p-6 md:p-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Detalle Diario de Ingresos</h1>
-        <div className="flex gap-2 items-center">
+      <div className="flex items-center justify-between">
+        <h1 className="font-bold text-2xl">Detalle Diario de Ingresos</h1>
+        <div className="flex items-center gap-2">
           <Input
             type="date"
             value={from}
@@ -83,8 +85,8 @@ export function DailyIncomePage() {
 
           return (
             <Card key={date} className="w-full">
-              <Card.Content className="p-4 gap-4">
-                <div className="flex justify-between items-center">
+              <Card.Content className="gap-4 p-4">
+                <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-lg capitalize">
                     {dayjs(date).format("dddd D [de] MMMM")}
                   </h3>
@@ -100,7 +102,7 @@ export function DailyIncomePage() {
                 <div className="divider my-0" />
                 <ul className="space-y-2">
                   {dayEvents.map((event: EventForDaily) => (
-                    <li key={event.id} className="flex justify-between text-sm items-center">
+                    <li key={event.id} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <span>{event.summary || "Evento sin título"}</span>
                         <Chip size="sm" variant="soft" className="h-5 text-[10px]">
@@ -109,7 +111,7 @@ export function DailyIncomePage() {
                       </div>
                       <span
                         className={
-                          event.amountPaid ? "text-success font-medium" : "text-default-400"
+                          event.amountPaid ? "font-medium text-success" : "text-default-400"
                         }
                       >
                         ${(event.amountPaid || 0).toLocaleString()}

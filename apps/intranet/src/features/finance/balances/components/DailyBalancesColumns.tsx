@@ -18,7 +18,9 @@ export interface BalanceTableMeta {
 }
 
 const formatDifference = (diff: null | number) => {
-  if (diff == null) return "—";
+  if (diff == null) {
+    return "—";
+  }
   return diff >= 0 ? fmtCLP(diff) : `-${fmtCLP(Math.abs(diff))}`;
 };
 
@@ -123,7 +125,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
   {
     accessorKey: "totalIn",
     cell: ({ row }) => (
-      <div className="text-success text-right text-xs">
+      <div className="text-right text-success text-xs">
         {fmtCLP(Math.abs(row.original.totalIn))}
       </div>
     ),
@@ -132,7 +134,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
   {
     accessorKey: "totalOut",
     cell: ({ row }) => (
-      <div className="text-danger text-right text-xs">
+      <div className="text-right text-danger text-xs">
         -{fmtCLP(Math.abs(row.original.totalOut))}
       </div>
     ),
@@ -144,7 +146,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
       const val = row.original.netChange;
       return (
         <div
-          className={`text-right text-xs font-semibold ${val >= 0 ? "text-success" : "text-danger"}`}
+          className={`text-right font-semibold text-xs ${val >= 0 ? "text-success" : "text-danger"}`}
         >
           {val >= 0 ? fmtCLP(val) : `-${fmtCLP(Math.abs(val))}`}
         </div>
@@ -171,7 +173,7 @@ export const columns: ColumnDef<DailyBalanceDay>[] = [
     cell: ({ row }) => {
       const mismatch = row.original.difference != null && Math.abs(row.original.difference) > 1;
       return (
-        <div className={`text-right text-xs font-semibold ${mismatch ? "text-danger" : ""}`}>
+        <div className={`text-right font-semibold text-xs ${mismatch ? "text-danger" : ""}`}>
           {formatDifference(row.original.difference)}
         </div>
       );

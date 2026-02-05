@@ -24,8 +24,8 @@ export default function TopParticipantsSection({
 }: TopParticipantsSectionProps) {
   return (
     <Card className="p-6">
-      <h2 className="mb-4 flex items-center gap-2 text-lg font-bold">
-        <Users2 className="text-secondary h-5 w-5" />
+      <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
+        <Users2 className="h-5 w-5 text-secondary" />
         Top Contrapartes (Egresos)
       </h2>
 
@@ -38,7 +38,7 @@ export default function TopParticipantsSection({
       {error && <Alert color="danger">{error}</Alert>}
 
       {!loading && !error && data.length === 0 && (
-        <div className="text-default-500 py-8 text-center text-sm">
+        <div className="py-8 text-center text-default-500 text-sm">
           No hay datos de contrapartes para mostrar
         </div>
       )}
@@ -60,11 +60,11 @@ export default function TopParticipantsSection({
           <div className="space-y-2">
             {data.slice(0, 10).map((participant, index) => (
               <div
-                className="hover:bg-default-50/50 flex items-center justify-between rounded-lg p-3 transition-colors"
+                className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-default-50/50"
                 key={participant.personId}
               >
                 <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 text-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary text-sm">
                     {index + 1}
                   </div>
                   <div>
@@ -76,7 +76,7 @@ export default function TopParticipantsSection({
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-mono text-sm font-semibold">
+                  <div className="font-mono font-semibold text-sm">
                     ${participant.total.toLocaleString("es-CL")}
                   </div>
                 </div>

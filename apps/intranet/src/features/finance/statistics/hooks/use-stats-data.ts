@@ -47,7 +47,9 @@ export function useStatsData(): UseStatsDataResult {
   const participantsQuery = useSuspenseQuery(statsKeys.participants(from, to));
 
   const refetch = async () => {
-    if (!canView) return;
+    if (!canView) {
+      return;
+    }
     await Promise.all([statsQuery.refetch(), balancesQuery.refetch(), participantsQuery.refetch()]);
   };
 

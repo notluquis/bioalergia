@@ -11,7 +11,9 @@ interface SyncDetailModalProps {
 }
 
 export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailModalProps>) {
-  if (!log) return null;
+  if (!log) {
+    return null;
+  }
 
   const hasChanges =
     (log.changeDetails?.inserted?.length ?? 0) > 0 ||
@@ -24,30 +26,42 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
         {/* Status Banner */}
         <div
           className={cn(
-            "flex items-center gap-3 rounded-lg p-3 text-sm font-medium",
+            "flex items-center gap-3 rounded-lg p-3 font-medium text-sm",
             (() => {
-              if (log.status === "SUCCESS") return "bg-success/10 text-success";
-              if (log.status === "ERROR") return "bg-danger/10 text-danger";
+              if (log.status === "SUCCESS") {
+                return "bg-success/10 text-success";
+              }
+              if (log.status === "ERROR") {
+                return "bg-danger/10 text-danger";
+              }
               return "bg-warning/10 text-warning";
             })(),
           )}
         >
           {(() => {
-            if (log.status === "SUCCESS") return <CheckCircle size={18} />;
-            if (log.status === "ERROR") return <XCircle size={18} />;
+            if (log.status === "SUCCESS") {
+              return <CheckCircle size={18} />;
+            }
+            if (log.status === "ERROR") {
+              return <XCircle size={18} />;
+            }
             return <AlertTriangle size={18} />;
           })()}
           <span>
             {(() => {
-              if (log.status === "SUCCESS") return "Sincronización completada exitosamente";
-              if (log.status === "ERROR") return "Error durante la sincronización";
+              if (log.status === "SUCCESS") {
+                return "Sincronización completada exitosamente";
+              }
+              if (log.status === "ERROR") {
+                return "Error durante la sincronización";
+              }
               return "Sincronización en curso";
             })()}
           </span>
         </div>
 
         {log.errorMessage && (
-          <div className="bg-danger/5 text-danger border-danger/20 rounded-lg border p-3 text-sm">
+          <div className="rounded-lg border border-danger/20 bg-danger/5 p-3 text-danger text-sm">
             <p className="font-semibold">Error reportado:</p>
             <p className="mt-1 font-mono text-xs opacity-90">{log.errorMessage}</p>
           </div>
@@ -64,11 +78,11 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
         {/* Change Details */}
         {hasChanges && log.changeDetails && (
           <div className="space-y-4">
-            <h3 className="text-foreground text-sm font-semibold">Detalle de cambios</h3>
-            <div className="bg-default-100/50 max-h-60 space-y-4 overflow-y-auto rounded-xl p-4 text-xs">
+            <h3 className="font-semibold text-foreground text-sm">Detalle de cambios</h3>
+            <div className="max-h-60 space-y-4 overflow-y-auto rounded-xl bg-default-100/50 p-4 text-xs">
               {log.changeDetails.inserted && log.changeDetails.inserted.length > 0 && (
                 <div>
-                  <h4 className="text-success mb-2 font-medium">
+                  <h4 className="mb-2 font-medium text-success">
                     Nuevos eventos ({log.changeDetails.inserted.length})
                   </h4>
                   <ul className="list-disc space-y-1 pl-4 opacity-80">
@@ -82,7 +96,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
 
               {log.changeDetails.updated && log.changeDetails.updated.length > 0 && (
                 <div>
-                  <h4 className="text-info mb-2 font-medium">
+                  <h4 className="mb-2 font-medium text-info">
                     Actualizados ({log.changeDetails.updated.length})
                   </h4>
                   <ul className="list-disc space-y-1 pl-4 opacity-80">
@@ -97,7 +111,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
 
               {log.changeDetails.excluded && log.changeDetails.excluded.length > 0 && (
                 <div>
-                  <h4 className="text-warning mb-2 font-medium">
+                  <h4 className="mb-2 font-medium text-warning">
                     Excluidos ({log.changeDetails.excluded.length})
                   </h4>
                   <ul className="list-disc space-y-1 pl-4 opacity-80">
@@ -113,7 +127,7 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
         )}
 
         {!hasChanges && log.status === "SUCCESS" && (
-          <div className="text-foreground-500 py-4 text-center text-sm italic">
+          <div className="py-4 text-center text-foreground-500 text-sm italic">
             No hubo cambios registrados en esta sincronización.
           </div>
         )}
@@ -128,11 +142,11 @@ function StatBox({
   value,
 }: Readonly<{ color?: string; label: string; value: number }>) {
   return (
-    <div className="bg-content1 border-default-200 flex flex-col items-center justify-center rounded-xl border p-3 text-center shadow-sm">
-      <span className="text-foreground-500 mb-1 text-xs font-medium tracking-wider uppercase">
+    <div className="flex flex-col items-center justify-center rounded-xl border border-default-200 bg-content1 p-3 text-center shadow-sm">
+      <span className="mb-1 font-medium text-foreground-500 text-xs uppercase tracking-wider">
         {label}
       </span>
-      <span className={cn("text-2xl font-bold", color)}>{numberFormatter.format(value)}</span>
+      <span className={cn("font-bold text-2xl", color)}>{numberFormatter.format(value)}</span>
     </div>
   );
 }

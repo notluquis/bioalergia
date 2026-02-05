@@ -47,30 +47,30 @@ export function CierrePanel({
   return (
     <aside
       className={cn(
-        "bg-default-50/50 border-default-200 sticky top-4 rounded-2xl border p-4 backdrop-blur-sm",
+        "sticky top-4 rounded-2xl border border-default-200 bg-default-50/50 p-4 backdrop-blur-sm",
         className,
       )}
     >
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Cierre</h2>
-        <span className={cn("rounded-full px-3 py-1 text-xs font-medium", statusColors[status])}>
+        <h2 className="font-semibold text-lg">Cierre</h2>
+        <span className={cn("rounded-full px-3 py-1 font-medium text-xs", statusColors[status])}>
           {statusLabels[status]}
         </span>
       </div>
 
       {/* Summary rows */}
-      <div className="bg-default-100/30 border-default-100 space-y-1 rounded-xl border p-3">
+      <div className="space-y-1 rounded-xl border border-default-100 bg-default-100/30 p-3">
         <SummaryRow label="Métodos" value={summary.totalMetodos} />
         <SummaryRow label="Servicios" value={summary.totalServicios} />
         <SummaryRow label="Gastos" muted value={summary.gastos} />
 
         {/* Diferencia - highlighted */}
-        <div className="border-default-200 mt-2 border-t pt-2">
+        <div className="mt-2 border-default-200 border-t pt-2">
           <div className="flex items-baseline justify-between">
             <span
               className={cn(
-                "text-sm font-medium",
+                "font-medium text-sm",
                 summary.cuadra ? "text-success" : "text-warning",
               )}
             >
@@ -78,7 +78,7 @@ export function CierrePanel({
             </span>
             <span
               className={cn(
-                "text-xl font-bold tabular-nums",
+                "font-bold text-xl tabular-nums",
                 summary.cuadra ? "text-success" : "text-warning",
               )}
             >
@@ -87,7 +87,7 @@ export function CierrePanel({
           </div>
 
           {!summary.cuadra && summary.totalMetodos > 0 && (
-            <p className="text-default-400 mt-1 text-xs">
+            <p className="mt-1 text-default-400 text-xs">
               {summary.diferencia > 0
                 ? "Asigna más a servicios"
                 : "Reduce servicios o aumenta métodos"}
@@ -98,7 +98,7 @@ export function CierrePanel({
 
       {/* Last saved indicator */}
       {lastSaved && (
-        <div className="text-default-300 mt-3 text-center text-xs">
+        <div className="mt-3 text-center text-default-300 text-xs">
           {isSaving ? "Guardando..." : `Guardado hace ${formatSaveTime(lastSaved)}`}
         </div>
       )}

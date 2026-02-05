@@ -32,7 +32,7 @@ export default function CounterpartList({
 }: CounterpartListProps) {
   return (
     <aside
-      className={`surface-recessed text-foreground flex h-full min-h-0 flex-col gap-4 overflow-hidden p-5 text-sm ${className ?? ""}`}
+      className={`surface-recessed flex h-full min-h-0 flex-col gap-4 overflow-hidden p-5 text-foreground text-sm ${className ?? ""}`}
     >
       <header className="flex items-center justify-between gap-3">
         <h2 className="typ-caption text-default-700">Contrapartes</h2>
@@ -54,7 +54,7 @@ export default function CounterpartList({
                 className={`group w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition-all ${
                   isActive
                     ? "border-primary/40 bg-primary/10 text-primary shadow-sm"
-                    : "bg-default-50/60 text-foreground hover:border-default-200 hover:bg-default-50 border-transparent"
+                    : "border-transparent bg-default-50/60 text-foreground hover:border-default-200 hover:bg-default-50"
                 }`}
                 onClick={() => {
                   onSelectCounterpart(item.id);
@@ -64,7 +64,7 @@ export default function CounterpartList({
                 <span className="flex items-center justify-between gap-2">
                   <span className="block font-medium tracking-tight">{item.name}</span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold tracking-wide uppercase ${
+                    className={`rounded-full px-2 py-0.5 font-semibold text-xs uppercase tracking-wide ${
                       isActive ? "bg-primary/15 text-primary" : "bg-default-100/60 text-default-500"
                     }`}
                   >
@@ -72,7 +72,7 @@ export default function CounterpartList({
                   </span>
                 </span>
                 {item.rut && (
-                  <span className="text-foreground/90 mt-1 block text-xs">
+                  <span className="mt-1 block text-foreground/90 text-xs">
                     RUT {formatRut(item.rut)}
                   </span>
                 )}
@@ -81,7 +81,7 @@ export default function CounterpartList({
           );
         })}
         {counterparts.length === 0 && (
-          <li className="border-default-200 bg-default-50 text-default-500 rounded-xl border px-3 py-2 text-xs">
+          <li className="rounded-xl border border-default-200 bg-default-50 px-3 py-2 text-default-500 text-xs">
             No hay registros aún.
           </li>
         )}

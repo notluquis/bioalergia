@@ -44,7 +44,9 @@ export function LoanDetail({
   const [regenerateError, setRegenerateError] = useState<null | string>(null);
 
   const statusBadge = (() => {
-    if (!loan) return { className: "", label: "" };
+    if (!loan) {
+      return { className: "", label: "" };
+    }
     switch (loan.status) {
       case "COMPLETED": {
         return { className: "bg-emerald-100 text-emerald-700", label: "Liquidado" };
@@ -60,7 +62,9 @@ export function LoanDetail({
 
   const handleRegenerate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!loan) return;
+    if (!loan) {
+      return;
+    }
     setRegenerating(true);
     setRegenerateError(null);
     try {
@@ -77,21 +81,21 @@ export function LoanDetail({
 
   if (!loan) {
     return (
-      <section className="text-default-500 bg-background flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm">
+      <section className="flex h-full flex-col items-center justify-center rounded-3xl bg-background p-10 text-default-500 text-sm">
         <p>Selecciona un préstamo para ver el detalle.</p>
       </section>
     );
   }
 
   return (
-    <section className="bg-background relative flex h-full flex-col gap-6 rounded-3xl p-6">
+    <section className="relative flex h-full flex-col gap-6 rounded-3xl bg-background p-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <h1 className="text-primary text-2xl font-bold drop-shadow-sm">{loan.title}</h1>
+          <h1 className="font-bold text-2xl text-primary drop-shadow-sm">{loan.title}</h1>
           <p className="text-foreground/90 text-sm">
             {loan.borrower_name} · {loan.borrower_type === "PERSON" ? "Persona natural" : "Empresa"}
           </p>
-          <div className="text-default-500 flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3 text-default-500 text-xs">
             <span>Inicio {dayjs(loan.start_date).format("DD MMM YYYY")}</span>
             <span>
               {loan.total_installments} cuotas ·{" "}
@@ -108,7 +112,7 @@ export function LoanDetail({
         </div>
         <div className="flex items-center gap-3">
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${statusBadge.className}`}
+            className={`rounded-full px-3 py-1 font-semibold text-xs uppercase tracking-wide ${statusBadge.className}`}
           >
             {statusBadge.label}
           </span>
@@ -126,28 +130,28 @@ export function LoanDetail({
         </div>
       </header>
 
-      <section className="border-default-200 bg-default-50 text-foreground grid gap-4 rounded-2xl border p-4 text-sm sm:grid-cols-4">
+      <section className="grid gap-4 rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm sm:grid-cols-4">
         <div>
-          <p className="text-default-400 text-xs tracking-wide uppercase">Capital</p>
-          <p className="text-foreground text-lg font-semibold">
+          <p className="text-default-400 text-xs uppercase tracking-wide">Capital</p>
+          <p className="font-semibold text-foreground text-lg">
             ${loan.principal_amount.toLocaleString("es-CL")}
           </p>
         </div>
         <div>
-          <p className="text-default-400 text-xs tracking-wide uppercase">Total esperado</p>
-          <p className="text-foreground text-lg font-semibold">
+          <p className="text-default-400 text-xs uppercase tracking-wide">Total esperado</p>
+          <p className="font-semibold text-foreground text-lg">
             ${(summary?.total_expected ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
         <div>
-          <p className="text-default-400 text-xs tracking-wide uppercase">Pagado</p>
-          <p className="text-success text-lg font-semibold">
+          <p className="text-default-400 text-xs uppercase tracking-wide">Pagado</p>
+          <p className="font-semibold text-lg text-success">
             ${(summary?.total_paid ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
         <div>
-          <p className="text-default-400 text-xs tracking-wide uppercase">Saldo</p>
-          <p className="text-danger text-lg font-semibold">
+          <p className="text-default-400 text-xs uppercase tracking-wide">Saldo</p>
+          <p className="font-semibold text-danger text-lg">
             ${(summary?.remaining_amount ?? 0).toLocaleString("es-CL")}
           </p>
         </div>
@@ -161,8 +165,8 @@ export function LoanDetail({
       />
 
       {loan.notes && (
-        <div className="border-default-200 bg-default-50 text-foreground rounded-2xl border p-4 text-sm">
-          <p className="text-default-400 text-xs tracking-wide uppercase">Notas</p>
+        <div className="rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm">
+          <p className="text-default-400 text-xs uppercase tracking-wide">Notas</p>
           <p>{loan.notes}</p>
         </div>
       )}
@@ -224,7 +228,7 @@ export function LoanDetail({
             <SelectItem key="MONTHLY">Mensual</SelectItem>
           </Select>
           {regenerateError && (
-            <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">
+            <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
               {regenerateError}
             </p>
           )}
@@ -247,8 +251,8 @@ export function LoanDetail({
       </Modal>
 
       {loading && (
-        <div className="bg-background/40 absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm">
-          <p className="bg-background text-primary rounded-full px-4 py-2 text-sm font-semibold shadow">
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/40 backdrop-blur-sm">
+          <p className="rounded-full bg-background px-4 py-2 font-semibold text-primary text-sm shadow">
             Cargando préstamo...
           </p>
         </div>

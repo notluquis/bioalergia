@@ -127,8 +127,12 @@ export default function TimesheetExportPDF({
       // Logo (mantener proporción)
       const resolvedLogo = settings.logoUrl || logoUrl;
       let logoDataUrl: null | string = null;
-      if (resolvedLogo) logoDataUrl = await loadLogoAsPng(resolvedLogo);
-      if (!logoDataUrl) logoDataUrl = await loadLogoAsPng("/logo.png");
+      if (resolvedLogo) {
+        logoDataUrl = await loadLogoAsPng(resolvedLogo);
+      }
+      if (!logoDataUrl) {
+        logoDataUrl = await loadLogoAsPng("/logo.png");
+      }
 
       const headerTopY = margin + 2;
       let logoBottomY = headerTopY;
@@ -240,7 +244,7 @@ export default function TimesheetExportPDF({
     <div className="flex items-center gap-2">
       <div className="relative inline-block">
         <Button
-          className="text-primary-foreground bg-primary hover:bg-primary/85 focus-visible:outline-primary/35 rounded-xl px-4 py-2 text-sm font-semibold shadow-md focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="rounded-xl bg-primary px-4 py-2 font-semibold text-primary-foreground text-sm shadow-md hover:bg-primary/85 focus-visible:outline-2 focus-visible:outline-primary/35 focus-visible:outline-offset-2"
           onClick={() => handleExport(true)}
           type="button"
           variant="primary"
@@ -251,7 +255,7 @@ export default function TimesheetExportPDF({
           <Popover.Trigger>
             <Tooltip content="Opciones">
               <Button
-                className="border-default-200 bg-background text-primary hover:bg-background/90 ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border shadow"
+                className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-default-200 bg-background text-primary shadow hover:bg-background/90"
                 size="sm"
                 type="button"
                 variant="secondary"
@@ -261,13 +265,13 @@ export default function TimesheetExportPDF({
             </Tooltip>
           </Popover.Trigger>
           <Popover.Content
-            className="bg-background border-default-200 w-64 rounded-xl border p-0 shadow-xl"
+            className="w-64 rounded-xl border border-default-200 bg-background p-0 shadow-xl"
             isNonModal
             offset={8}
             placement="bottom end"
           >
             <Popover.Dialog className="p-3">
-              <p className="text-default-700 mb-2 text-xs font-semibold">Columnas del detalle</p>
+              <p className="mb-2 font-semibold text-default-700 text-xs">Columnas del detalle</p>
               <div className="space-y-2">
                 {[...defaultCols].map((key) => (
                   <Checkbox
@@ -276,8 +280,11 @@ export default function TimesheetExportPDF({
                     onChange={(checked) => {
                       setSelectedCols((prev) => {
                         const set = new Set<TimesheetColumnKey>(prev);
-                        if (checked) set.add(key);
-                        else set.delete(key);
+                        if (checked) {
+                          set.add(key);
+                        } else {
+                          set.delete(key);
+                        }
                         return [...set];
                       });
                     }}
@@ -341,9 +348,13 @@ function blobToDataUrl(blob: Blob): Promise<null | string> {
 function computeWorked(entrada?: string, salida?: string): string {
   const s = timeToMinutes(entrada);
   const e = timeToMinutes(salida);
-  if (s == null || e == null) return "";
+  if (s == null || e == null) {
+    return "";
+  }
   let diff = e - s;
-  if (diff < 0) diff += 24 * 60;
+  if (diff < 0) {
+    diff += 24 * 60;
+  }
   const hh = String(Math.floor(diff / 60))
     .toString()
     .padStart(2, "0");
@@ -482,7 +493,9 @@ function drawSummaryTable({
 }
 
 function getLogoDimensions(logoDataUrl: null | string): Promise<null | { h: number; w: number }> {
-  if (!logoDataUrl) return Promise.resolve(null);
+  if (!logoDataUrl) {
+    return Promise.resolve(null);
+  }
   return new Promise((resolve) => {
     const img = new Image();
     img.addEventListener("load", () => {
@@ -550,7 +563,9 @@ async function loadLogoAsPng(url: string): Promise<null | string> {
       }
     }
 
-    if (!blob) return null;
+    if (!blob) {
+      return null;
+    }
 
     if (blob.type === "image/png") {
       return blobToDataUrl(blob);
@@ -570,10 +585,16 @@ async function loadLogoAsPng(url: string): Promise<null | string> {
 // === MAIN COMPONENT ===
 
 function timeToMinutes(t?: string): null | number {
-  if (!t || !TIME_HH_MM_REGEX.test(t)) return null;
+  if (!t || !TIME_HH_MM_REGEX.test(t)) {
+    return null;
+  }
   const parts = t.split(":").map(Number);
   const [h, m] = parts;
-  if (h === undefined || m === undefined) return null;
-  if (h < 0 || h > 23 || m < 0 || m >= 60) return null;
+  if (h === undefined || m === undefined) {
+    return null;
+  }
+  if (h < 0 || h > 23 || m < 0 || m >= 60) {
+    return null;
+  }
   return h * 60 + m;
 }

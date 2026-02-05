@@ -33,9 +33,13 @@ export function parseDelimited(text: string): string[][] {
 
 // src/mp/reports.ts
 export function toNumber(value?: string): number | undefined {
-  if (value == null) return undefined;
+  if (value == null) {
+    return undefined;
+  }
   const trimmed = value.trim();
-  if (!trimmed) return undefined;
+  if (!trimmed) {
+    return undefined;
+  }
 
   // Limpia el valor de cualquier carácter que no sea un dígito, coma, punto o signo negativo.
   const cleaned = trimmed
@@ -44,7 +48,9 @@ export function toNumber(value?: string): number | undefined {
     .replaceAll(/\s+/g, "")
     .replaceAll(/[^0-9,.-]/g, "");
 
-  if (!cleaned || cleaned === "-" || cleaned === "." || cleaned === ",") return undefined;
+  if (!cleaned || cleaned === "-" || cleaned === "." || cleaned === ",") {
+    return undefined;
+  }
 
   // Heurística para normalizar números con separadores de miles y decimales.
   // Si hay ambos, asumimos que el punto es separador de miles.

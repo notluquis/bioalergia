@@ -7,7 +7,11 @@ export function formatAmount(direction: Movement["direction"], amount: number) {
 }
 
 export function renderDirection(direction: Movement["direction"]) {
-  if (direction === "IN") return "Ingreso";
-  if (direction === "OUT") return "Egreso";
+  if (direction === "IN") {
+    return "Ingreso";
+  }
+  if (direction === "OUT") {
+    return "Egreso";
+  }
   return "Neutro";
 }

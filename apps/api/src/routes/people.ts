@@ -26,10 +26,14 @@ const peopleParamSchema = z.object({
 // GET / - List all people
 app.get("/", zValidator("query", listPeopleQuerySchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Person");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const { includeTest } = c.req.valid("query");
 
@@ -74,10 +78,14 @@ app.get("/", zValidator("query", listPeopleQuerySchema), async (c) => {
 // GET /:id - Get person by ID
 app.get("/:id", zValidator("param", peopleParamSchema), async (c) => {
   const user = await getSessionUser(c);
-  if (!user) return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
 
   const canRead = await hasPermission(user.id, "read", "Person");
-  if (!canRead) return reply(c, { status: "error", message: "Forbidden" }, 403);
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
 
   const { id } = c.req.valid("param");
 

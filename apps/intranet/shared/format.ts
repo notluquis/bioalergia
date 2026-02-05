@@ -7,7 +7,9 @@
  * e.g. 1024 -> "1.0 KB"
  */
 export function formatFileSize(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
+  if (!Number.isFinite(bytes) || bytes < 0) {
+    return "0 B";
+  }
 
   const units = ["B", "KB", "MB", "GB", "TB"];
   let size = bytes;

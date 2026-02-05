@@ -36,7 +36,7 @@ export function WeekStrip({
 
   if (isCollapsed) {
     return (
-      <div className="bg-default-50/30 border-default-100 mb-4 flex items-center justify-between rounded-2xl border px-4 py-2">
+      <div className="mb-4 flex items-center justify-between rounded-2xl border border-default-100 bg-default-50/30 px-4 py-2">
         <span className="text-default-500 text-sm">{weekData?.weekLabel ?? "Cargando..."}</span>
         <div className="flex items-center gap-2">
           <Button isIconOnly size="sm" variant="ghost" onClick={onPrevWeek}>
@@ -51,14 +51,14 @@ export function WeekStrip({
   }
 
   return (
-    <div className="bg-default-50/30 border-default-100 mb-4 rounded-2xl border p-4">
+    <div className="mb-4 rounded-2xl border border-default-100 bg-default-50/30 p-4">
       {/* Week header */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button isIconOnly size="sm" variant="ghost" onClick={onPrevWeek}>
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="text-default-700 text-sm font-medium">
+          <span className="font-medium text-default-700 text-sm">
             SEM {weekData?.weekLabel ?? "..."}
           </span>
           <Button isIconOnly size="sm" variant="ghost" onClick={onNextWeek}>
@@ -88,7 +88,7 @@ export function WeekStrip({
         )) ??
           // Skeleton
           SKELETON_KEYS.map((key) => (
-            <div className="bg-default-100/30 h-16 animate-pulse rounded-xl" key={key} />
+            <div className="h-16 animate-pulse rounded-xl bg-default-100/30" key={key} />
           ))}
       </div>
     </div>
@@ -117,9 +117,9 @@ function DayCellButton({
     <button
       className={cn(
         "relative flex flex-col items-center justify-center rounded-xl p-2 transition-all",
-        "hover:bg-default-50 focus:ring-primary/20 focus:ring-2 focus:outline-none",
-        isSelected && "bg-default-100 ring-primary ring-2",
-        isToday && !isSelected && "ring-primary/30 ring-1",
+        "hover:bg-default-50 focus:outline-none focus:ring-2 focus:ring-primary/20",
+        isSelected && "bg-default-100 ring-2 ring-primary",
+        isToday && !isSelected && "ring-1 ring-primary/30",
       )}
       onClick={onClick}
       type="button"
@@ -128,12 +128,12 @@ function DayCellButton({
       <div className={cn("absolute top-2 right-2 size-2 rounded-full", statusColors[day.status])} />
 
       {/* Day name */}
-      <span className="text-default-500 text-xs font-medium">{day.dayName}</span>
+      <span className="font-medium text-default-500 text-xs">{day.dayName}</span>
 
       {/* Amount */}
       <span
         className={cn(
-          "mt-1 text-sm font-semibold tabular-nums",
+          "mt-1 font-semibold text-sm tabular-nums",
           day.total === 0 ? "text-default-300" : "text-foreground",
         )}
       >

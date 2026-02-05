@@ -36,12 +36,16 @@ const DoctoraliaCertificate = lazy(() =>
 
 function useThemePreference() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window === "undefined") return "light";
+    if (typeof window === "undefined") {
+      return "light";
+    }
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {
+      return;
+    }
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (event: MediaQueryListEvent) => {
       setTheme(event.matches ? "dark" : "light");
@@ -118,10 +122,10 @@ export default function App() {
 
   return (
     <div className="relative">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 pb-14 pt-6 sm:px-6 md:gap-12 lg:gap-16 lg:px-8">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 pt-6 pb-14 sm:px-6 md:gap-12 lg:gap-16 lg:px-8">
         <header className="sticky top-2 z-50 sm:top-3">
           <div className="rounded-2xl border border-border bg-(--surface)/90 shadow-[0_20px_60px_rgba(0,0,0,0.16)] backdrop-blur sm:rounded-3xl">
-            <div className="hidden flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-2 text-xs text-(--ink-muted) md:flex lg:px-5">
+            <div className="hidden flex-wrap items-center justify-between gap-3 border-border border-b px-4 py-2 text-(--ink-muted) text-xs md:flex lg:px-5">
               <span>Bienvenidos a Bioalergia · Atención especializada en Concepción</span>
               <div className="flex flex-wrap items-center gap-3">
                 {contactInfo.phones.map((phone) => (
@@ -131,7 +135,7 @@ export default function App() {
                 ))}
                 <button
                   type="button"
-                  className="no-underline cursor-pointer text-inherit hover:underline"
+                  className="cursor-pointer text-inherit no-underline hover:underline"
                   onClick={() => handleEmailClick(contactInfo.email)}
                 >
                   {contactInfo.email}
@@ -148,7 +152,7 @@ export default function App() {
                 />
                 <div className="flex items-center gap-2 md:hidden">
                   <Button
-                    className="h-8 rounded-full bg-(--accent) px-3 text-xs font-semibold text-white sm:h-9 sm:px-4 sm:text-sm"
+                    className="h-8 rounded-full bg-(--accent) px-3 font-semibold text-white text-xs sm:h-9 sm:px-4 sm:text-sm"
                     onPress={handleDoctoraliaOpen}
                   >
                     <span className="sm:hidden">Agendar</span>
@@ -167,7 +171,7 @@ export default function App() {
               </div>
               <nav
                 aria-label="Navegación principal"
-                className="flex w-full flex-wrap items-center gap-2 text-xs text-(--ink-muted) sm:gap-4 sm:text-sm md:w-auto md:flex-1 md:justify-center md:overflow-visible"
+                className="flex w-full flex-wrap items-center gap-2 text-(--ink-muted) text-xs sm:gap-4 sm:text-sm md:w-auto md:flex-1 md:justify-center md:overflow-visible"
               >
                 <Link className="no-underline transition-colors hover:text-(--ink)" href="#inicio">
                   Inicio
@@ -220,7 +224,7 @@ export default function App() {
 
           <Separator className="opacity-60" />
 
-          <Suspense fallback={<div className="h-64 animate-pulse bg-gray-200 rounded-lg" />}>
+          <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-200" />}>
             <MissionSection />
             <FounderSection />
             <ServicesSection />
@@ -244,7 +248,7 @@ export default function App() {
       </div>
       <Button
         aria-label="Escríbenos por WhatsApp"
-        className="fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_18px_40px_rgba(10,20,30,0.25)] ring-2 ring-white/80 transition hover:scale-[1.03] hover:shadow-[0_22px_45px_rgba(10,20,30,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#25D366]/35 sm:bottom-7 sm:right-7 sm:h-14 sm:w-14"
+        className="fixed right-5 bottom-5 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_18px_40px_rgba(10,20,30,0.25)] ring-2 ring-white/80 transition hover:scale-[1.03] hover:shadow-[0_22px_45px_rgba(10,20,30,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#25D366]/35 sm:right-7 sm:bottom-7 sm:h-14 sm:w-14"
         isIconOnly
         variant="primary"
         onPress={handleWhatsAppOpen}

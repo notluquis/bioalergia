@@ -25,48 +25,50 @@ export function DashboardPersonalLiabilities() {
 
   const nextPayment = upcomingPayments[0];
 
-  if (activeCredits.length === 0) return null;
+  if (activeCredits.length === 0) {
+    return null;
+  }
 
   return (
     <div className="card card-compact bg-background shadow-sm">
       <div className="card-body">
         <div className="flex items-center justify-between">
-          <h3 className="text-foreground text-sm font-semibold">Pasivos Personales</h3>
+          <h3 className="font-semibold text-foreground text-sm">Pasivos Personales</h3>
           <Link className="text-primary text-xs hover:underline" to="/finanzas/loans">
             Ver todos
           </Link>
         </div>
 
         <div className="mt-2 grid grid-cols-2 gap-4">
-          <div className="bg-danger/10 rounded-lg p-3">
+          <div className="rounded-lg bg-danger/10 p-3">
             <div className="mb-1 flex items-center gap-2">
-              <div className="bg-danger/20 text-danger rounded-md p-1.5">
+              <div className="rounded-md bg-danger/20 p-1.5 text-danger">
                 <CreditCard className="h-4 w-4" />
               </div>
-              <span className="text-default-600 text-xs font-medium">Deuda Total</span>
+              <span className="font-medium text-default-600 text-xs">Deuda Total</span>
             </div>
-            <p className="text-danger text-lg font-bold">{formatCurrency(totalDebt)}</p>
+            <p className="font-bold text-danger text-lg">{formatCurrency(totalDebt)}</p>
             <p className="text-default-500 text-xs">{activeCredits.length} créditos activos</p>
           </div>
 
           {nextPayment ? (
-            <div className="bg-default-50/50 rounded-lg p-3">
+            <div className="rounded-lg bg-default-50/50 p-3">
               <div className="mb-1 flex items-center gap-2">
-                <div className="bg-default-100 text-default-600 rounded-md p-1.5">
+                <div className="rounded-md bg-default-100 p-1.5 text-default-600">
                   <TrendingDown className="h-4 w-4" />
                 </div>
-                <span className="text-default-600 text-xs font-medium">Próximo Pago</span>
+                <span className="font-medium text-default-600 text-xs">Próximo Pago</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-semibold">
+                <span className="font-semibold text-sm">
                   {formatCurrency(nextPayment.nextPaymentAmount ?? 0)}
                 </span>
-                <span className="text-default-500 truncate text-xs">{nextPayment.institution}</span>
+                <span className="truncate text-default-500 text-xs">{nextPayment.institution}</span>
               </div>
             </div>
           ) : (
-            <div className="bg-success/10 flex flex-col justify-center rounded-lg p-3">
-              <span className="text-success text-sm font-medium">Al día 🎉</span>
+            <div className="flex flex-col justify-center rounded-lg bg-success/10 p-3">
+              <span className="font-medium text-sm text-success">Al día 🎉</span>
               <span className="text-default-500 text-xs">Sin pagos pendientes</span>
             </div>
           )}

@@ -228,7 +228,9 @@ async function getOAuthClient(): Promise<OAuth2Client> {
   // Verify the token works by getting a new access token
   try {
     const { token } = await oauth2Client.getAccessToken();
-    if (!token) throw new Error("No access token returned");
+    if (!token) {
+      throw new Error("No access token returned");
+    }
 
     logEvent("google.oauth.authenticated", {
       clientId: `${config.clientId.substring(0, 20)}...`,

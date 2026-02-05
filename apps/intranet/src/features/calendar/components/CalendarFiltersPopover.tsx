@@ -31,9 +31,9 @@ export function CalendarFiltersPopover({
         </Button>
       </Popover.Trigger>
       <Popover.Content className="w-80 p-0" offset={8}>
-        <div className="bg-content1 rounded-xl shadow-lg ring-1 ring-black/5">
-          <div className="border-default-100 flex items-center justify-between border-b px-4 py-3">
-            <h3 className="text-small font-semibold">Filtrar Vistas</h3>
+        <div className="rounded-xl bg-content1 shadow-lg ring-1 ring-black/5">
+          <div className="flex items-center justify-between border-default-100 border-b px-4 py-3">
+            <h3 className="font-semibold text-small">Filtrar Vistas</h3>
           </div>
           <CalendarFilterPanel {...panelProps} variant="plain" />
         </div>

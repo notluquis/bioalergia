@@ -125,7 +125,9 @@ export function useDailyBalanceForm() {
         return dailyBalanceApi.updateBalance(currentEntryId, payload);
       }
       // Create new
-      if (!user?.id) throw new Error("No authenticated user found");
+      if (!user?.id) {
+        throw new Error("No authenticated user found");
+      }
       return dailyBalanceApi.createBalance(payload);
     },
     onMutate: () => {
@@ -149,13 +151,17 @@ export function useDailyBalanceForm() {
   // Save function
   const { mutate: saveMutate } = saveMutation;
   const save = useCallback(() => {
-    if (!isDirty) return;
+    if (!isDirty) {
+      return;
+    }
     saveMutate(formData);
   }, [isDirty, formData, saveMutate]);
 
   // Autosave: trigger save after delay when dirty
   useEffect(() => {
-    if (!isDirty) return;
+    if (!isDirty) {
+      return;
+    }
 
     if (autosaveTimeout.current) {
       clearTimeout(autosaveTimeout.current);

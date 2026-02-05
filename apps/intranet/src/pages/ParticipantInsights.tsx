@@ -110,7 +110,7 @@ export default function ParticipantInsightsPage() {
       <div className="space-y-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold">Ranking de retiros</h2>
+            <h2 className="font-semibold text-lg">Ranking de retiros</h2>
             <p className="text-default-600 text-sm">
               Contrapartes con mayores egresos en el rango seleccionado.
             </p>
@@ -178,7 +178,7 @@ export default function ParticipantInsightsPage() {
       {visible ? (
         <div className="grid gap-6 lg:grid-cols-2">
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold">Resumen mensual</h2>
+            <h2 className="font-semibold text-lg">Resumen mensual</h2>
             <Card>
               <CardContent className="p-0">
                 <DataTable
@@ -194,7 +194,7 @@ export default function ParticipantInsightsPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold">Contrapartes</h2>
+            <h2 className="font-semibold text-lg">Contrapartes</h2>
             <Card>
               <CardContent className="p-0">
                 <DataTable
@@ -210,7 +210,7 @@ export default function ParticipantInsightsPage() {
           </section>
         </div>
       ) : (
-        <div className="text-default-400 py-12 text-center">
+        <div className="py-12 text-center text-default-400">
           {detailLoading
             ? "Buscando información del participante..."
             : "Ingresa un identificador y selecciona el rango para ver su actividad."}

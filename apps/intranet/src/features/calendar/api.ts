@@ -147,12 +147,24 @@ export async function fetchUnclassifiedCalendarEvents(
   const params = new URLSearchParams();
   params.set("limit", String(limit));
   params.set("offset", String(offset));
-  if (filters?.missingCategory) params.set("missingCategory", "true");
-  if (filters?.missingAmount) params.set("missingAmount", "true");
-  if (filters?.missingAttended) params.set("missingAttended", "true");
-  if (filters?.missingDosage) params.set("missingDosage", "true");
-  if (filters?.missingTreatmentStage) params.set("missingTreatmentStage", "true");
-  if (filters?.filterMode) params.set("filterMode", filters.filterMode);
+  if (filters?.missingCategory) {
+    params.set("missingCategory", "true");
+  }
+  if (filters?.missingAmount) {
+    params.set("missingAmount", "true");
+  }
+  if (filters?.missingAttended) {
+    params.set("missingAttended", "true");
+  }
+  if (filters?.missingDosage) {
+    params.set("missingDosage", "true");
+  }
+  if (filters?.missingTreatmentStage) {
+    params.set("missingTreatmentStage", "true");
+  }
+  if (filters?.filterMode) {
+    params.set("filterMode", filters.filterMode);
+  }
 
   const response = await apiClient.get<{
     events: CalendarUnclassifiedEvent[];
@@ -206,8 +218,12 @@ export async function fetchTreatmentAnalytics(
   filters: TreatmentAnalyticsFilters,
 ): Promise<TreatmentAnalytics> {
   const params = new URLSearchParams();
-  if (filters.from) params.set("from", filters.from);
-  if (filters.to) params.set("to", filters.to);
+  if (filters.from) {
+    params.set("from", filters.from);
+  }
+  if (filters.to) {
+    params.set("to", filters.to);
+  }
   // Use singular 'calendarId' to match backend expectation
   if (filters.calendarIds?.length) {
     // Send as multiple calendarId params (backend expects singular param name)

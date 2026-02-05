@@ -42,22 +42,22 @@ export function ClassificationRow({
     <Card className="text-sm">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 p-5 pb-2">
         <div className="flex flex-col gap-1">
-          <span className="text-secondary/70 text-xs font-semibold tracking-wide uppercase">
+          <span className="font-semibold text-secondary/70 text-xs uppercase tracking-wide">
             {event.calendarId}
           </span>
-          <h2 className="text-foreground text-lg font-semibold">
+          <h2 className="font-semibold text-foreground text-lg">
             {event.summary ?? "(Sin título)"}
           </h2>
           <span className="text-foreground-500 text-xs">{formatEventDate(event)}</span>
         </div>
-        <div className="text-foreground-500 flex flex-col items-end gap-2 text-xs">
+        <div className="flex flex-col items-end gap-2 text-foreground-500 text-xs">
           {event.eventType && (
-            <span className="bg-default-100 text-foreground rounded-full px-2 py-1 font-semibold">
+            <span className="rounded-full bg-default-100 px-2 py-1 font-semibold text-foreground">
               {event.eventType}
             </span>
           )}
           {event.category && (
-            <span className="bg-secondary/15 text-secondary rounded-full px-2 py-1 font-semibold">
+            <span className="rounded-full bg-secondary/15 px-2 py-1 font-semibold text-secondary">
               {event.category}
             </span>
           )}
@@ -65,13 +65,13 @@ export function ClassificationRow({
       </CardHeader>
       <CardContent className="space-y-4 p-5 pt-0">
         {description && (
-          <div className="bg-default-100 text-foreground rounded-xl p-3 shadow-inner">
-            <span className="text-foreground mb-1 block text-xs font-semibold">Descripción:</span>
+          <div className="rounded-xl bg-default-100 p-3 text-foreground shadow-inner">
+            <span className="mb-1 block font-semibold text-foreground text-xs">Descripción:</span>
             <FormattedEventDescription text={description} />
           </div>
         )}
 
-        <div className="text-foreground grid gap-4 text-xs md:grid-cols-6">
+        <div className="grid gap-4 text-foreground text-xs md:grid-cols-6">
           <form.Field name={`entries[${index}].category`}>
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
               <Select

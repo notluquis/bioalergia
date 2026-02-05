@@ -102,7 +102,9 @@ export function generateNavSections(routeTree: RouteTreeNode): NavSectionData[] 
 
   for (const sectionName of SECTION_ORDER) {
     const items = sectionMap.get(sectionName);
-    if (!items?.length) continue;
+    if (!items?.length) {
+      continue;
+    }
 
     // Sort by order and convert to NavItem
     const sortedItems = items
@@ -196,8 +198,12 @@ export function getNavSections(routeTree: RouteTreeNode): NavSectionData[] {
 }
 
 function getRouteChildren(children: RouteTreeNode["children"]): RouteTreeNode[] {
-  if (!children) return [];
-  if (Array.isArray(children)) return children;
+  if (!children) {
+    return [];
+  }
+  if (Array.isArray(children)) {
+    return children;
+  }
   if (typeof children === "object") {
     return Object.values(children as Record<string, RouteTreeNode>);
   }

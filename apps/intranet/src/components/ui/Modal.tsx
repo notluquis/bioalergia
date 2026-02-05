@@ -26,12 +26,12 @@ export default function Modal({ boxClassName, children, isOpen, onClose, title }
         <ModalContainer placement="center">
           <ModalDialog
             className={cn(
-              "rounded-[28px] bg-background shadow-2xl p-6 relative w-full max-w-2xl",
+              "relative w-full max-w-2xl rounded-[28px] bg-background p-6 shadow-2xl",
               boxClassName,
             )}
           >
-            <ModalHeader className="text-primary text-xl font-bold mb-4">{title}</ModalHeader>
-            <ModalBody className="max-h-[80vh] overflow-y-auto overscroll-contain mt-2 text-foreground">
+            <ModalHeader className="mb-4 font-bold text-primary text-xl">{title}</ModalHeader>
+            <ModalBody className="mt-2 max-h-[80vh] overflow-y-auto overscroll-contain text-foreground">
               {children}
             </ModalBody>
           </ModalDialog>

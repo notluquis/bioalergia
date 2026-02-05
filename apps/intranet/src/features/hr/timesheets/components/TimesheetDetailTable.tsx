@@ -88,12 +88,12 @@ export default function TimesheetDetailTable({
   };
 
   return (
-    <div className="bg-background space-y-4 p-4 sm:p-6">
+    <div className="space-y-4 bg-background p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-default-600 text-sm">
           <span className="font-semibold">{monthLabel}</span>
           {selectedEmployee && (
-            <span className="text-default-500 ml-2">· {selectedEmployee.full_name}</span>
+            <span className="ml-2 text-default-500">· {selectedEmployee.full_name}</span>
           )}
         </div>
         {canEdit && (
@@ -136,7 +136,7 @@ export default function TimesheetDetailTable({
         }}
         title={`Comentario · ${commentPreview ? formatDateLabel(commentPreview.date) : ""}`}
       >
-        <p className="text-foreground whitespace-pre-wrap">{commentPreview?.text}</p>
+        <p className="whitespace-pre-wrap text-foreground">{commentPreview?.text}</p>
       </Modal>
     </div>
   );

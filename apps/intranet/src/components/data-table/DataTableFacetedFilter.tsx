@@ -49,7 +49,7 @@ export function DataTableFacetedFilter<TData, TValue>({
           {title}
           {selectedValues.size > 0 && (
             <>
-              <div className="bg-default-100 mx-2 h-4 w-px" />
+              <div className="mx-2 h-4 w-px bg-default-100" />
               <div className="badge badge-sm badge-secondary hidden lg:flex">
                 {selectedValues.size}
               </div>
@@ -83,7 +83,7 @@ export function DataTableFacetedFilter<TData, TValue>({
         >
           {filteredOptions.length === 0 && (
             <Dropdown.Item id="empty" isDisabled textValue="No results found">
-              <span className="text-default-400 py-6 text-center text-sm">No results found.</span>
+              <span className="py-6 text-center text-default-400 text-sm">No results found.</span>
             </Dropdown.Item>
           )}
           {filteredOptions.map((option) => (

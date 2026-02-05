@@ -23,28 +23,30 @@ export function BulkToggleCell({
 
   const renderIcon = () => {
     if (isUpdating) {
-      return <Loader2 className="text-default-300 h-4 w-4 animate-spin" />;
+      return <Loader2 className="h-4 w-4 animate-spin text-default-300" />;
     }
     if (allPresent) {
       return (
-        <div className="bg-primary hover:bg-primary-focus flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
+        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary shadow-sm transition-transform hover:bg-primary-focus active:scale-95">
           <CheckCheck className="text-primary-foreground" size={12} />
         </div>
       );
     }
     if (somePresent) {
       return (
-        <div className="bg-primary/70 hover:bg-primary flex h-5 w-5 items-center justify-center rounded-md shadow-sm transition-transform active:scale-95">
+        <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/70 shadow-sm transition-transform hover:bg-primary active:scale-95">
           <Minus className="text-primary-foreground" size={12} />
         </div>
       );
     }
     return (
-      <div className="border-default-200 hover:border-primary/50 hover:bg-primary/5 h-5 w-5 rounded-md border-2 transition-colors" />
+      <div className="h-5 w-5 rounded-md border-2 border-default-200 transition-colors hover:border-primary/50 hover:bg-primary/5" />
     );
   };
 
-  if (permissionIds.length === 0) return <div className={className} />;
+  if (permissionIds.length === 0) {
+    return <div className={className} />;
+  }
 
   return (
     <div className={`flex items-center justify-center p-0 text-center ${className || ""}`}>

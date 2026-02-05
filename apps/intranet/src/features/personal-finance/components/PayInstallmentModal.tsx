@@ -71,7 +71,7 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
         }}
         title={`Pagar Cuota #${installment.installmentNumber}`}
       >
-        <div className="mb-4 text-sm text-gray-500">
+        <div className="mb-4 text-gray-500 text-sm">
           Registrar pago de la cuota vencida el {new Date(installment.dueDate).toLocaleDateString()}
           .
         </div>
@@ -98,7 +98,7 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
                   value={field.state.value}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                  <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
                 )}
               </div>
             )}
@@ -118,7 +118,7 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
                   value={field.state.value ? field.state.value.toISOString().split("T")[0] : ""}
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-danger mt-1 text-xs">{field.state.meta.errors.join(", ")}</p>
+                  <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>
                 )}
               </div>
             )}

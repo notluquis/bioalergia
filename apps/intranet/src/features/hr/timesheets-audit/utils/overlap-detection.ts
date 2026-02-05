@@ -64,11 +64,15 @@ export function detectOverlapsForDate(
 
   for (let i = 0; i < dateEntries.length; i += 1) {
     const e1 = dateEntries[i];
-    if (!e1) continue;
+    if (!e1) {
+      continue;
+    }
 
     for (let j = i + 1; j < dateEntries.length; j += 1) {
       const e2 = dateEntries[j];
-      if (!e2) continue;
+      if (!e2) {
+        continue;
+      }
 
       if (
         isTimeRangeOverlapping(e1.start_time, e1.end_time, e2.start_time, e2.end_time) &&
@@ -91,7 +95,9 @@ export function detectOverlapsForDate(
 export function formatDuration(hours: number): string {
   const h = Math.floor(hours);
   const m = Math.round((hours - h) * 60);
-  if (m === 0) return `${h}h`;
+  if (m === 0) {
+    return `${h}h`;
+  }
   return `${h}h ${m}m`;
 }
 
@@ -108,11 +114,15 @@ export function getOverlappingEmployeesForDate(
 
   for (let i = 0; i < dateEntries.length; i += 1) {
     const e1 = dateEntries[i];
-    if (!e1) continue;
+    if (!e1) {
+      continue;
+    }
 
     for (let j = i + 1; j < dateEntries.length; j += 1) {
       const e2 = dateEntries[j];
-      if (!e2) continue;
+      if (!e2) {
+        continue;
+      }
 
       if (
         isTimeRangeOverlapping(e1.start_time, e1.end_time, e2.start_time, e2.end_time) &&
@@ -150,16 +160,26 @@ export function isTimeRangeOverlapping(
 
 function isNurseRole(role: null | string | undefined): boolean {
   const normalized = normalizeRole(role);
-  if (!normalized) return false;
+  if (!normalized) {
+    return false;
+  }
   return normalized.includes("enfermer") && normalized.includes("universitar");
 }
 
 function isTensRole(role: null | string | undefined): boolean {
   const normalized = normalizeRole(role);
-  if (!normalized) return false;
-  if (normalized.includes("tens")) return true;
-  if (normalized.includes("tecnico") && normalized.includes("enfermer")) return true;
-  if (normalized.includes("tecnica") && normalized.includes("enfermer")) return true;
+  if (!normalized) {
+    return false;
+  }
+  if (normalized.includes("tens")) {
+    return true;
+  }
+  if (normalized.includes("tecnico") && normalized.includes("enfermer")) {
+    return true;
+  }
+  if (normalized.includes("tecnica") && normalized.includes("enfermer")) {
+    return true;
+  }
   return false;
 }
 

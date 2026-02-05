@@ -50,8 +50,8 @@ export default function GoogleDriveConnectWrapper() {
   return (
     <Suspense
       fallback={
-        <div className="bg-default-50/50 flex items-center justify-center rounded-xl p-8">
-          <Loader2 className="text-primary size-6 animate-spin" />
+        <div className="flex items-center justify-center rounded-xl bg-default-50/50 p-8">
+          <Loader2 className="size-6 animate-spin text-primary" />
         </div>
       }
     >
@@ -171,7 +171,7 @@ function GoogleDriveConnect() {
   };
 
   return (
-    <div className="bg-default-50/50 rounded-xl p-6">
+    <div className="rounded-xl bg-default-50/50 p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className={cn("rounded-xl p-3", getIconClassName())}>
@@ -200,7 +200,7 @@ function GoogleDriveConnect() {
                 </Button>
               )}
               <Button
-                className="hover:bg-danger/10 hover:text-danger hover:border-danger gap-2"
+                className="gap-2 hover:border-danger hover:bg-danger/10 hover:text-danger"
                 disabled={isEnv || disconnectMutation.isPending}
                 onClick={() => {
                   if (

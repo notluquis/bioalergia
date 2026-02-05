@@ -104,8 +104,12 @@ const getLateFeeLabel = (service: ServiceSummary) =>
   })[service.late_fee_mode];
 
 const getCounterpartSummary = (service: ServiceSummary) => {
-  if (service.counterpart_name) return service.counterpart_name;
-  if (service.counterpart_id) return `Contraparte #${service.counterpart_id}`;
+  if (service.counterpart_name) {
+    return service.counterpart_name;
+  }
+  if (service.counterpart_id) {
+    return `Contraparte #${service.counterpart_id}`;
+  }
   return "Sin contraparte";
 };
 
@@ -143,7 +147,9 @@ export function ServiceDetail({
 
   const handleRegenerate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!service) return;
+    if (!service) {
+      return;
+    }
     setRegenerating(true);
     setRegenerateError(null);
     try {
@@ -160,14 +166,14 @@ export function ServiceDetail({
 
   if (!service) {
     return (
-      <section className="text-default-500 bg-background flex h-full flex-col items-center justify-center rounded-3xl p-10 text-sm">
+      <section className="flex h-full flex-col items-center justify-center rounded-3xl bg-background p-10 text-default-500 text-sm">
         <p>Selecciona un servicio para ver el detalle.</p>
       </section>
     );
   }
 
   return (
-    <section className="bg-background relative flex h-full min-w-0 flex-col gap-6 rounded-3xl p-6">
+    <section className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl bg-background p-6">
       <ServiceHeader
         canManage={canManage}
         onEdit={() => navigate({ to: `/services/${service.public_id}/edit` })}
@@ -229,12 +235,12 @@ function ServiceHeader({
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="space-y-1">
-        <h1 className="text-primary text-2xl font-bold break-all drop-shadow-sm">{service.name}</h1>
+        <h1 className="break-all font-bold text-2xl text-primary drop-shadow-sm">{service.name}</h1>
         <p className="text-foreground text-sm">
           {service.detail || "Gasto"} · {getServiceTypeLabel(service.service_type)} ·{" "}
           {getOwnershipLabel(service.ownership)}
         </p>
-        <div className="text-default-500 flex flex-wrap items-center gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-3 text-default-500 text-xs">
           <span>Inicio {dayjs(service.start_date).format("DD MMM YYYY")}</span>
           <span>Frecuencia {getFrequencyLabel(service.frequency).toLowerCase()}</span>
           {service.due_day && <span>Vence día {service.due_day}</span>}
@@ -243,7 +249,7 @@ function ServiceHeader({
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
         <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase ${statusBadge.className}`}
+          className={`rounded-full px-3 py-1 font-semibold text-xs uppercase tracking-wide ${statusBadge.className}`}
         >
           {statusBadge.label}
         </span>
@@ -264,36 +270,36 @@ function ServiceHeader({
 
 function ServiceSummarySection({ service }: { service: ServiceSummary }) {
   return (
-    <section className="border-default-200 bg-default-50 text-foreground grid gap-4 rounded-2xl border p-4 text-sm sm:grid-cols-3 lg:grid-cols-5">
+    <section className="grid gap-4 rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm sm:grid-cols-3 lg:grid-cols-5">
       <div>
-        <p className="text-default-400 text-xs tracking-wide uppercase">Monto base</p>
-        <p className="text-foreground text-lg font-semibold">
+        <p className="text-default-400 text-xs uppercase tracking-wide">Monto base</p>
+        <p className="font-semibold text-foreground text-lg">
           ${service.default_amount.toLocaleString("es-CL")}
         </p>
       </div>
       <div>
-        <p className="text-default-400 text-xs tracking-wide uppercase">Pendientes</p>
-        <p className="text-foreground text-lg font-semibold">{service.pending_count}</p>
+        <p className="text-default-400 text-xs uppercase tracking-wide">Pendientes</p>
+        <p className="font-semibold text-foreground text-lg">{service.pending_count}</p>
       </div>
       <div>
-        <p className="text-default-400 text-xs tracking-wide uppercase">Vencidos</p>
-        <p className="text-lg font-semibold text-rose-600">{service.overdue_count}</p>
+        <p className="text-default-400 text-xs uppercase tracking-wide">Vencidos</p>
+        <p className="font-semibold text-lg text-rose-600">{service.overdue_count}</p>
       </div>
       <div>
-        <p className="text-default-400 text-xs tracking-wide uppercase">Total pagado</p>
-        <p className="text-lg font-semibold text-emerald-600">
+        <p className="text-default-400 text-xs uppercase tracking-wide">Total pagado</p>
+        <p className="font-semibold text-emerald-600 text-lg">
           ${Number(service.total_paid ?? 0).toLocaleString("es-CL")}
         </p>
       </div>
       <div>
-        <p className="text-default-400 text-xs tracking-wide uppercase">Modo de cálculo</p>
-        <p className="text-foreground text-sm font-semibold">
+        <p className="text-default-400 text-xs uppercase tracking-wide">Modo de cálculo</p>
+        <p className="font-semibold text-foreground text-sm">
           {getAmountModeLabel(service.amount_indexation)}
         </p>
       </div>
       <div>
-        <p className="text-default-400 text-xs tracking-wide uppercase">Recargo</p>
-        <p className="text-foreground text-sm font-semibold">{getLateFeeLabel(service)}</p>
+        <p className="text-default-400 text-xs uppercase tracking-wide">Recargo</p>
+        <p className="font-semibold text-foreground text-sm">{getLateFeeLabel(service)}</p>
         {service.late_fee_grace_days != null && service.late_fee_mode !== "NONE" && (
           <p className="text-default-400 text-xs">Tras {service.late_fee_grace_days} días</p>
         )}
@@ -304,10 +310,10 @@ function ServiceSummarySection({ service }: { service: ServiceSummary }) {
 
 function ServiceMetaSection({ service }: { service: ServiceSummary }) {
   return (
-    <section className="border-default-200 bg-default-50 text-foreground grid gap-4 rounded-2xl border p-4 text-sm md:grid-cols-3">
+    <section className="grid gap-4 rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm md:grid-cols-3">
       <div>
-        <p className="text-default-400 text-xs tracking-wide uppercase">Contraparte</p>
-        <p className="text-foreground font-semibold">{getCounterpartSummary(service)}</p>
+        <p className="text-default-400 text-xs uppercase tracking-wide">Contraparte</p>
+        <p className="font-semibold text-foreground">{getCounterpartSummary(service)}</p>
         {service.counterpart_account_identifier && (
           <p className="text-default-500 text-xs">
             Cuenta {service.counterpart_account_identifier}
@@ -321,12 +327,12 @@ function ServiceMetaSection({ service }: { service: ServiceSummary }) {
         )}
       </div>
       <div>
-        <p className="text-default-400 text-xs tracking-wide uppercase">Emisión</p>
-        <p className="text-foreground font-semibold">{getEmissionSummary(service)}</p>
+        <p className="text-default-400 text-xs uppercase tracking-wide">Emisión</p>
+        <p className="font-semibold text-foreground">{getEmissionSummary(service)}</p>
       </div>
       <div>
-        <p className="text-default-400 text-xs tracking-wide uppercase">Clasificación</p>
-        <p className="text-foreground font-semibold">
+        <p className="text-default-400 text-xs uppercase tracking-wide">Clasificación</p>
+        <p className="font-semibold text-foreground">
           {getObligationLabel(service.obligation_type)}
         </p>
         <p className="text-default-500 text-xs">{getRecurrenceLabel(service.recurrence_type)}</p>
@@ -337,8 +343,8 @@ function ServiceMetaSection({ service }: { service: ServiceSummary }) {
 
 function ServiceNotes({ notes }: { notes: string }) {
   return (
-    <div className="border-default-200 bg-default-50 text-foreground rounded-2xl border p-4 text-sm">
-      <p className="text-default-400 text-xs tracking-wide uppercase">Notas</p>
+    <div className="rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm">
+      <p className="text-default-400 text-xs uppercase tracking-wide">Notas</p>
       <p>{notes}</p>
     </div>
   );
@@ -446,7 +452,7 @@ function RegenerateServiceModal({
             value={values.emissionDay ?? service.emission_day ?? ""}
           />
         )}
-        {error && <p className="rounded-lg bg-rose-100 px-4 py-2 text-sm text-rose-700">{error}</p>}
+        {error && <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">{error}</p>}
         <div className="flex justify-end gap-3">
           <Button disabled={regenerating} onClick={onClose} type="button" variant="secondary">
             Cancelar
@@ -462,8 +468,8 @@ function RegenerateServiceModal({
 
 function ServiceLoadingOverlay() {
   return (
-    <div className="bg-background/40 absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm">
-      <p className="bg-background text-primary rounded-full px-4 py-2 text-sm font-semibold shadow">
+    <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/40 backdrop-blur-sm">
+      <p className="rounded-full bg-background px-4 py-2 font-semibold text-primary text-sm shadow">
         Cargando servicio...
       </p>
     </div>

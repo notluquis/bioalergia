@@ -60,7 +60,9 @@ export async function createService(payload: CreateServicePayload): Promise<Serv
 }
 
 export function extractErrorMessage(error: unknown): null | string {
-  if (!error) return null;
+  if (!error) {
+    return null;
+  }
   return error instanceof Error ? error.message : String(error);
 }
 

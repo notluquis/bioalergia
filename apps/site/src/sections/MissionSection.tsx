@@ -20,7 +20,7 @@ export function MissionSection() {
             <Card.Header className="gap-3">
               <Card.Title className="text-xl">{item.title}</Card.Title>
             </Card.Header>
-            <Card.Content className="text-sm text-(--ink-muted)">{item.text}</Card.Content>
+            <Card.Content className="text-(--ink-muted) text-sm">{item.text}</Card.Content>
           </Card>
         ))}
       </div>
@@ -31,7 +31,7 @@ export function MissionSection() {
             <Card.Header className="gap-2">
               <Card.Title className="text-lg">{pillar.title}</Card.Title>
             </Card.Header>
-            <Card.Content className="text-sm text-(--ink-muted)">{pillar.detail}</Card.Content>
+            <Card.Content className="text-(--ink-muted) text-sm">{pillar.detail}</Card.Content>
           </Card>
         ))}
       </div>
