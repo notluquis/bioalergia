@@ -1,4 +1,4 @@
-import { Button, Card, Spinner } from "@heroui/react";
+import { Button, Card, Chip, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -188,7 +188,7 @@ export function TreatmentAnalyticsPage() {
           }));
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 pb-10 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl space-y-3 px-4 py-4 pb-6 sm:px-6 lg:px-8">
       <AnalyticsHeader
         isMonthSelected={isMonthSelected}
         period={period}
@@ -198,6 +198,13 @@ export function TreatmentAnalyticsPage() {
         onSetPeriod={handleSetPeriod}
         onSelectMonth={handleMonthSelect}
         onRefresh={handleRefresh}
+      />
+
+      <PeriodIndicator
+        selectedMonth={selectedMonth}
+        from={resolvedRange.from}
+        to={resolvedRange.to}
+        isMonthSelected={isMonthSelected}
       />
 
       {isFilterOpen && (
@@ -553,6 +560,37 @@ function AnalyticsDetailTable({
 
 // --- Sub Components ---
 
+function PeriodIndicator({
+  selectedMonth,
+  from,
+  to,
+  isMonthSelected,
+}: {
+  selectedMonth?: string;
+  from: string;
+  to: string;
+  isMonthSelected: boolean;
+}) {
+  let displayText = "";
+
+  if (isMonthSelected && selectedMonth) {
+    const monthDate = dayjs(`${selectedMonth}-01`);
+    displayText = `Mostrando: ${monthDate.format("MMMM YYYY")}`;
+  } else {
+    const fromDate = dayjs(from).format("D MMM");
+    const toDate = dayjs(to).format("D MMM YYYY");
+    displayText = `Mostrando: ${fromDate} - ${toDate}`;
+  }
+
+  return (
+    <div className="-mt-1">
+      <Chip variant="soft" color="default" size="sm" className="font-medium text-sm">
+        {displayText}
+      </Chip>
+    </div>
+  );
+}
+
 function AnalyticsHeader({
   isMonthSelected,
   period,
@@ -577,7 +615,7 @@ function AnalyticsHeader({
   const nextMonth = dayjs().add(1, "month").format("YYYY-MM");
 
   return (
-    <div className="flex w-full flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+    <div className="flex w-full flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
       {isLoading && (
         <div className="flex items-center gap-2">
           <Spinner size="sm" color="current" />
