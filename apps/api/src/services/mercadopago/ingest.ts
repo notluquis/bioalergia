@@ -72,14 +72,13 @@ export async function processReportUrl(url: string, reportType: string): Promise
     };
 
     await new Promise<void>((resolve, reject) => {
-      // fast-csv handles BOM, encoding, and complex CSV formats automatically
-      // strictColumnHandling: false allows columns with varying counts (JSON fields with commas)
-      // quote: null + escape: null effectively disables quote processing entirely
+      // Parse CSV without header validation - manually handle headers to avoid mismatch errors
+      let headerMap: Record<number, string> | null = null;
+
       nodeStream
         .pipe(
           parse({
-            headers: true,
-            strictColumnHandling: false, // Allow variable column counts from JSON in cells
+            headers: false, // Don't validate headers - we'll handle them manually
             quote: "\x00", // Null char - won't appear in CSV
             escape: "\x00",
             delimiter: ",",
@@ -87,17 +86,25 @@ export async function processReportUrl(url: string, reportType: string): Promise
             ignoreEmpty: false,
           }),
         )
-        .on("data", (row: Record<string, string | undefined>) => {
-          handleCsvRow(
-            row,
-            reportType,
-            stats,
-            batchState,
-            flushBatch,
-            nodeStream,
-            reject,
-            isFirstRow,
-          );
+        .on("data", (row: string[] | Record<string, string | undefined>) => {
+          try {
+            handleCsvData(
+              row,
+              headerMap,
+              (map) => {
+                headerMap = map;
+              },
+              reportType,
+              stats,
+              batchState,
+              flushBatch,
+              nodeStream,
+              reject,
+              isFirstRow,
+            );
+          } catch (err) {
+            reject(err);
+          }
         })
         .on("end", async () => {
           try {
@@ -131,6 +138,64 @@ type BatchState = {
   batch: ReportRowInput[];
   batchValid: number;
   flushPromise: Promise<void>;
+};
+
+const convertRowArrayToObject = (
+  row: string[] | Record<string, string | undefined>,
+  headerMap: Record<number, string>,
+): Record<string, string | undefined> => {
+  const arrayRow = Array.isArray(row) ? row : Object.values(row);
+  const objectRow: Record<string, string | undefined> = {};
+  for (let i = 0; i < arrayRow.length; i++) {
+    const key = headerMap[i];
+    const val = arrayRow[i];
+    if (key && typeof val === "string") {
+      objectRow[key] = val;
+    }
+  }
+  return objectRow;
+};
+
+const createHeaderMap = (
+  row: string[] | Record<string, string | undefined>,
+): Record<number, string> => {
+  const headerRow = Array.isArray(row) ? row : Object.keys(row);
+  return Object.fromEntries(
+    headerRow.map((h, i) => [i, typeof h === "string" ? h.trim() : String(h)]),
+  );
+};
+
+const handleCsvData = (
+  row: string[] | Record<string, string | undefined>,
+  headerMap: Record<number, string> | null,
+  setHeaderMap: (map: Record<number, string>) => void,
+  reportType: string,
+  stats: ImportStats,
+  batchState: BatchState,
+  flushBatch: () => Promise<void>,
+  nodeStream: Readable,
+  reject: (reason?: unknown) => void,
+  isFirstRow: { value: boolean },
+): boolean => {
+  // First row is the header - create a mapping
+  if (!headerMap) {
+    setHeaderMap(createHeaderMap(row));
+    return true; // Skip header row
+  }
+
+  // Convert array to object and handle the row
+  const objectRow = convertRowArrayToObject(row, headerMap);
+  handleCsvRow(
+    objectRow,
+    reportType,
+    stats,
+    batchState,
+    flushBatch,
+    nodeStream,
+    reject,
+    isFirstRow,
+  );
+  return false;
 };
 
 const cleanCsvRow = (row: Record<string, string | undefined>) => {
