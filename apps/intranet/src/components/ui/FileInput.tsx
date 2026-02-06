@@ -1,8 +1,9 @@
-import { Button, Label } from "@heroui/react";
+import { Label } from "@heroui/react";
 import { Upload } from "lucide-react";
 import type React from "react";
 import { useRef, useState } from "react";
 
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 interface FileInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -101,7 +102,7 @@ export function FileInput({ className, label, multiple, ...props }: Readonly<Fil
           </p>
         </div>
         <Button
-          variant="soft"
+          variant="ghost"
           size="sm"
           onClick={handleClick}
           isDisabled={props.disabled}
