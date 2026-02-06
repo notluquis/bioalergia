@@ -1,4 +1,4 @@
-import { Button, Card, Chip, Spinner } from "@heroui/react";
+import { Button, Card, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -188,7 +188,7 @@ export function TreatmentAnalyticsPage() {
           }));
 
   return (
-    <div className="mx-auto max-w-7xl space-y-3 px-4 py-4 pb-6 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl space-y-3 px-4 py-3 pb-6 sm:px-6 lg:px-8">
       <AnalyticsHeader
         isMonthSelected={isMonthSelected}
         period={period}
@@ -575,18 +575,17 @@ function PeriodIndicator({
 
   if (isMonthSelected && selectedMonth) {
     const monthDate = dayjs(`${selectedMonth}-01`);
-    displayText = `Mostrando: ${monthDate.format("MMMM YYYY")}`;
+    displayText = monthDate.format("MMMM YYYY");
   } else {
     const fromDate = dayjs(from).format("D MMM");
     const toDate = dayjs(to).format("D MMM YYYY");
-    displayText = `Mostrando: ${fromDate} - ${toDate}`;
+    displayText = `${fromDate} - ${toDate}`;
   }
 
   return (
-    <div className="-mt-1">
-      <Chip variant="soft" color="default" size="sm" className="font-medium text-sm">
-        {displayText}
-      </Chip>
+    <div className="flex w-fit items-center gap-2 rounded-xl bg-primary/10 px-4 py-2.5">
+      <CalendarIcon className="h-4 w-4 text-primary" />
+      <p className="font-semibold text-foreground text-sm">{displayText}</p>
     </div>
   );
 }
@@ -749,7 +748,7 @@ function AnalyticsKpiGrid({
   domicilioCount: number;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
       <KpiCard
         title="Tratamientos"
         value={totalTreatmentCount}
