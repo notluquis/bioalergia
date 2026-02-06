@@ -73,12 +73,13 @@ export async function processReportUrl(url: string, reportType: string): Promise
 
     await new Promise<void>((resolve, reject) => {
       // fast-csv handles BOM, encoding, and complex CSV formats automatically
-      // Use rare unicode chars for quote/escape to effectively disable quote processing
-      // This handles malformed CSVs from Mercado Pago with unescaped quotes
+      // strictColumnHandling: false allows columns with varying counts (JSON fields with commas)
+      // quote: null + escape: null effectively disables quote processing entirely
       nodeStream
         .pipe(
           parse({
             headers: true,
+            strictColumnHandling: false, // Allow variable column counts from JSON in cells
             quote: "\x00", // Null char - won't appear in CSV
             escape: "\x00",
             delimiter: ",",
