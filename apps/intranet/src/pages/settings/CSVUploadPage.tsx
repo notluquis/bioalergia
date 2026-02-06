@@ -31,12 +31,22 @@ interface FieldDefinition {
   type: string;
 }
 
+interface ImportPreviewData {
+  errors?: string[];
+  inserted?: number;
+  skipped?: number;
+  toInsert?: number;
+  toSkip?: number;
+  toUpdate?: number;
+  updated?: number;
+}
+
 const HEADER_ALIAS_REGEX = /\(([^)]+)\)/;
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const extractHeaderAliases = (header: string) => {
-  const match = header.match(HEADER_ALIAS_REGEX);
   const aliases = [header];
+  const match = header.match(HEADER_ALIAS_REGEX);
   if (match?.[1]) {
     aliases.push(match[1]);
   }
@@ -446,90 +456,6 @@ function TableSelectionCard({
   );
 }
 
-interface ImportPreviewData {
-  errors?: string[];
-  inserted?: number;
-  skipped?: number;
-  toInsert?: number;
-  toSkip?: number;
-  toUpdate?: number;
-  updated?: number;
-}
-
-function FileImportCard({
-  errorMessage,
-  isImportError,
-  isImportPending,
-  isPreviewError,
-  isPreviewPending,
-  onFileChange,
-  parseStatus,
-  previewData,
-  showSuccessMessage,
-}: {
-  errorMessage: string;
-  isImportError: boolean;
-  isImportPending: boolean;
-  isPreviewError: boolean;
-  isPreviewPending: boolean;
-  onFileChange: (e: File | React.ChangeEvent<HTMLInputElement>) => void;
-  parseStatus: "error" | "idle" | "parsing";
-  previewData: ImportPreviewData | null;
-  showSuccessMessage: boolean;
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">2. Cargar archivo</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <FileInput
-          accept=".csv"
-          disabled={parseStatus === "parsing" || isPreviewPending || isImportPending}
-          label="Arrastra un archivo CSV aquí o haz clic para seleccionar"
-          onChange={onFileChange}
-        />
-
-        {parseStatus === "parsing" && (
-          <Alert>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Procesando archivo...</span>
-          </Alert>
-        )}
-
-        {parseStatus === "error" && (
-          <Alert variant="error">
-            <AlertCircle className="h-4 w-4" />
-            <span>{errorMessage}</span>
-          </Alert>
-        )}
-
-        {(isPreviewError || isImportError) && errorMessage && (
-          <Alert variant="error">
-            <AlertCircle className="h-4 w-4" />
-            <span>{errorMessage}</span>
-          </Alert>
-        )}
-
-        {showSuccessMessage && (
-          <Alert variant="success">
-            <CheckCircle className="h-4 w-4" />
-            <div className="flex flex-col gap-1">
-              <span className="font-medium">Importación completada</span>
-              {previewData && (
-                <span className="text-xs opacity-90">
-                  {previewData.inserted ?? 0} insertados · {previewData.updated ?? 0} actualizados ·{" "}
-                  {previewData.skipped ?? 0} omitidos
-                </span>
-              )}
-            </div>
-          </Alert>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 function ColumnMappingCard({
   columns,
   csvDataLength,
@@ -558,6 +484,76 @@ function ColumnMappingCard({
           enableToolbar={false}
         />
       </div>
+    </Card>
+  );
+}
+
+function FileUploadSection({
+  selectedTable,
+  parseStatus,
+  isPreviewPending,
+  isImportPending,
+  errorMessage,
+  showSuccessMessage,
+  previewData,
+  onFileChange,
+}: {
+  selectedTable: string;
+  parseStatus: "error" | "idle" | "parsing";
+  isPreviewPending: boolean;
+  isImportPending: boolean;
+  errorMessage: string;
+  showSuccessMessage: boolean;
+  previewData: ImportPreviewData | null;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  if (!selectedTable) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">2. Cargar archivo</CardTitle>
+        <CardDescription>Arrastra un archivo CSV aquí o haz clic para seleccionar</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <FileInput
+          accept=".csv"
+          disabled={parseStatus === "parsing" || isPreviewPending || isImportPending}
+          label="Arrastra un archivo CSV aquí o haz clic para seleccionar"
+          onChange={onFileChange}
+        />
+
+        {parseStatus === "parsing" && (
+          <Alert>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Procesando archivo...</span>
+          </Alert>
+        )}
+
+        {parseStatus === "error" && (
+          <Alert variant="error">
+            <AlertCircle className="h-4 w-4" />
+            <span>{errorMessage}</span>
+          </Alert>
+        )}
+
+        {showSuccessMessage && (
+          <Alert variant="success">
+            <CheckCircle className="h-4 w-4" />
+            <div className="flex flex-col gap-1">
+              <span className="font-medium">Importación completada</span>
+              {previewData && (
+                <span className="text-xs opacity-90">
+                  {previewData.inserted ?? 0} insertados · {previewData.updated ?? 0} actualizados ·{" "}
+                  {previewData.skipped ?? 0} omitidos
+                </span>
+              )}
+            </div>
+          </Alert>
+        )}
+      </CardContent>
     </Card>
   );
 }
@@ -693,26 +689,16 @@ export function CSVUploadPage() {
   const [csvData, setCsvData] = useState<Record<string, string>[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
-
-  // Parsed status
   const [parseStatus, setParseStatus] = useState<"error" | "idle" | "parsing">("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
-
   const [previewData, setPreviewData] = useState<null | ImportPreviewData>(null);
-
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  // Computed
   const allowedTableOptions = getAllowedTableOptions(can);
-
   const currentTable = allowedTableOptions.find((t) => t.value === selectedTable);
 
   // Mutations
-  const {
-    isError: isPreviewError,
-    isPending: isPreviewPending,
-    mutate: previewMutate,
-  } = useMutation({
+  const { isPending: isPreviewPending, mutate: previewMutate } = useMutation({
     mutationFn: (payload: CsvImportPayload) => previewCsvImport(payload),
     onError: (err) => {
       const message = err instanceof Error ? err.message : "Error al previsualizar datos";
@@ -724,11 +710,7 @@ export function CSVUploadPage() {
     },
   });
 
-  const {
-    isError: isImportError,
-    isPending: isImportPending,
-    mutate: importMutate,
-  } = useMutation({
+  const { isPending: isImportPending, mutate: importMutate } = useMutation({
     mutationFn: (payload: CsvImportPayload) => importCsvData(payload),
     onError: (err) => {
       const message = err instanceof Error ? err.message : "Error al importar datos";
@@ -772,51 +754,52 @@ export function CSVUploadPage() {
     resetState();
   };
 
-  const handleParseComplete = (results: Papa.ParseResult<Record<string, string>>) => {
-    if (results.errors.length > 0) {
-      setParseStatus("error");
-      setErrorMessage(`Error al parsear CSV: ${results.errors[0]?.message ?? "Error desconocido"}`);
-      return;
-    }
-
-    const headers = results.meta.fields ?? [];
-    setCsvHeaders(headers);
-    setCsvData(results.data);
-
-    if (currentTable) {
-      const autoMapping: Record<string, string> = {};
-      for (const field of currentTable.fields) {
-        const matchingHeader = matchHeaderForField(field.name, headers);
-        if (matchingHeader) {
-          autoMapping[field.name] = matchingHeader;
-        }
-      }
-      setColumnMapping(autoMapping);
-    }
-    setParseStatus("idle");
-  };
-
-  const handleFileChange = (e: File | React.ChangeEvent<HTMLInputElement>) => {
-    const file = e instanceof File ? e : e.target.files?.[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) {
       return;
     }
 
     setParseStatus("parsing");
-    setErrorMessage("");
-    setShowSuccessMessage(false);
-    setPreviewData(null);
-
-    Papa.parse(file, {
-      complete: handleParseComplete,
+    Papa.parse<Record<string, string>>(file, {
+      complete: (results) => {
+        handleParseComplete(results);
+      },
       delimitersToGuess: [",", ";", "\t", "|"],
       error: (error) => {
         setParseStatus("error");
-        setErrorMessage(`Error al leer archivo: ${error.message}`);
+        setErrorMessage(`Error al leer: ${error.message}`);
       },
       header: true,
       skipEmptyLines: true,
     });
+
+    e.target.value = "";
+  };
+
+  const handleParseComplete = (results: Papa.ParseResult<Record<string, string>>) => {
+    if (results.errors.length > 0) {
+      setParseStatus("error");
+      setErrorMessage(`Error al parsear: ${results.errors[0]?.message ?? "Error desconocido"}`);
+      return;
+    }
+
+    const headers = (results.meta.fields ?? []) as string[];
+    setCsvHeaders(headers);
+    setCsvData(results.data);
+    setParseStatus("idle");
+
+    // Auto-map headers to fields
+    if (currentTable) {
+      const mapping: Record<string, string> = {};
+      for (const field of currentTable.fields) {
+        const matched = matchHeaderForField(field.name, headers);
+        if (matched) {
+          mapping[field.name] = matched;
+        }
+      }
+      setColumnMapping(mapping);
+    }
   };
 
   const handlePreview = () => {
@@ -843,7 +826,6 @@ export function CSVUploadPage() {
 
   const selectedData = buildTransformedData(csvData, columnMapping);
   const isValidMapping = isValidColumnMapping(currentTable, columnMapping);
-
   const columns = buildMappingColumns({
     columnMapping,
     csvData,
@@ -870,19 +852,16 @@ export function CSVUploadPage() {
       />
 
       {/* 2. Upload File */}
-      {selectedTable && (
-        <FileImportCard
-          errorMessage={errorMessage}
-          isImportError={isImportError}
-          isImportPending={isImportPending}
-          isPreviewError={isPreviewError}
-          isPreviewPending={isPreviewPending}
-          onFileChange={handleFileChange}
-          parseStatus={parseStatus}
-          previewData={previewData}
-          showSuccessMessage={showSuccessMessage}
-        />
-      )}
+      <FileUploadSection
+        errorMessage={errorMessage}
+        isImportPending={isImportPending}
+        isPreviewPending={isPreviewPending}
+        onFileChange={handleFileChange}
+        parseStatus={parseStatus}
+        previewData={previewData}
+        selectedTable={selectedTable}
+        showSuccessMessage={showSuccessMessage}
+      />
 
       {/* 3. Map Columns */}
       {csvHeaders.length > 0 && currentTable && (
@@ -898,7 +877,6 @@ export function CSVUploadPage() {
         <>
           {previewData && <ImportSummaryCard previewData={previewData} />}
 
-          {/* Action Buttons */}
           <div className="sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-default-100 border-t bg-background/80 p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
             <Button
               disabled={
