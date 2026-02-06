@@ -1,3 +1,4 @@
+import { Button, Label } from "@heroui/react";
 import { Upload } from "lucide-react";
 import type React from "react";
 import { useRef, useState } from "react";
@@ -59,48 +60,58 @@ export function FileInput({ className, label, multiple, ...props }: Readonly<Fil
   };
 
   return (
-    <div className="flex w-full flex-col gap-2">
-      {label && (
-        <span className="ml-1 font-semibold text-default-600 text-xs uppercase tracking-wide">
-          {label}
-        </span>
-      )}
-      <button
-        type="button"
+    <div className="flex w-full flex-col gap-3">
+      {label && <Label className="font-semibold text-sm uppercase tracking-wide">{label}</Label>}
+      <section
+        aria-label="Área de carga de archivos"
         className={cn(
-          "relative flex min-h-32 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-default-300 border-dashed bg-default-50/50 px-6 py-8 text-left transition-colors hover:border-default-400 hover:bg-default-100/50",
-          isDragActive && "border-primary bg-primary/5",
+          "group relative flex min-h-32 w-full flex-col items-center justify-center gap-3 rounded-large border-2 border-default-300 border-dashed bg-default-50 p-6 transition-all duration-200",
+          isDragActive && "scale-[1.01] border-primary bg-primary-50/30",
+          !props.disabled && "hover:border-default-400 hover:bg-default-100",
           props.disabled && "cursor-not-allowed opacity-50",
           className,
         )}
-        onClick={handleClick}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        disabled={props.disabled}
       >
         <Upload
           className={cn(
-            "h-8 w-8 text-default-400",
-            isDragActive && "text-primary",
-            props.disabled && "text-default-300",
+            "h-10 w-10 text-default-400 transition-all duration-200",
+            isDragActive && "scale-110 text-primary",
+            !props.disabled && "group-hover:scale-105 group-hover:text-default-500",
           )}
         />
-        <div className="text-center">
-          <p className="font-medium text-default-700 text-sm">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <p
+            className={cn(
+              "font-medium text-default-700 text-sm transition-colors",
+              isDragActive && "text-primary",
+            )}
+          >
             {isDragActive
               ? "Suelta los archivos aquí"
               : multiple
-                ? "Arrastra archivos aquí o haz clic para seleccionar"
-                : "Arrastra un archivo aquí o haz clic para seleccionar"}
+                ? "Arrastra archivos aquí"
+                : "Arrastra un archivo aquí"}
           </p>
-          <p className="mt-1 text-default-500 text-xs">
-            {props.accept ? `Formatos aceptados: ${props.accept}` : "Todos los formatos"}
+          <p className="text-default-500 text-xs">
+            {props.accept ? `Formatos: ${props.accept}` : "Todos los formatos"}
           </p>
         </div>
+        <Button
+          variant="soft"
+          size="sm"
+          onClick={handleClick}
+          isDisabled={props.disabled}
+          startContent={<Upload className="h-4 w-4" />}
+        >
+          Seleccionar archivos
+        </Button>
+        {/* Hidden native input - required for file upload functionality */}
         <input ref={inputRef} className="hidden" multiple={multiple} type="file" {...props} />
-      </button>
+      </section>
     </div>
   );
 }
