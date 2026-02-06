@@ -296,7 +296,7 @@ function AnalyticsCharts({
                   tick={{ fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val) => `$${val / 1000}k`}
+                  tickFormatter={(val) => `$${(val / 1000000).toFixed(1)}m`}
                 />
 
                 <YAxis
