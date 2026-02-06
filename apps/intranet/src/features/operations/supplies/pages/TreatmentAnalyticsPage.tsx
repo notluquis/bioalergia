@@ -78,6 +78,7 @@ interface AnalyticsTrendPoint {
   year?: number;
   month?: number;
   isoWeek?: number;
+  amountExpected: number;
   amountPaid: number;
   events: number;
   dosageMl: number;
@@ -170,7 +171,8 @@ export function TreatmentAnalyticsPage() {
   };
 
   // Calculate Data
-  const totalRevenue = data?.totals.amountPaid || 0;
+  const totalExpected = data?.totals.amountExpected || 0;
+  const totalPaid = data?.totals.amountPaid || 0;
   const totalTreatmentCount = data?.totals.events || 0;
   const totalMl = data?.totals.dosageMl || 0;
   const domicilioCount = data?.totals.domicilioCount || 0;
@@ -214,7 +216,8 @@ export function TreatmentAnalyticsPage() {
         <>
           <AnalyticsKpiGrid
             totalTreatmentCount={totalTreatmentCount}
-            totalRevenue={totalRevenue}
+            totalExpected={totalExpected}
+            totalPaid={totalPaid}
             totalMl={totalMl}
             domicilioCount={domicilioCount}
           />
@@ -275,6 +278,10 @@ function AnalyticsCharts({
                     <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.1} />
                     <stop offset="95%" stopColor={COLORS.success} stopOpacity={0} />
                   </linearGradient>
+                  <linearGradient id="colorPaid" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.warning} stopOpacity={0.1} />
+                    <stop offset="95%" stopColor={COLORS.warning} stopOpacity={0} />
+                  </linearGradient>
                   <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.1} />
                     <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
@@ -313,11 +320,22 @@ function AnalyticsCharts({
                 <Area
                   yAxisId="left"
                   type="monotone"
-                  dataKey="amountPaid"
-                  name="Ingresos ($)"
+                  dataKey="amountExpected"
+                  name="Ingresos Esperado ($)"
                   stroke={COLORS.success}
                   fillOpacity={1}
                   fill="url(#colorRevenue)"
+                  strokeWidth={2}
+                />
+
+                <Area
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="amountPaid"
+                  name="Ingresos Pagado ($)"
+                  stroke={COLORS.warning}
+                  fillOpacity={0.5}
+                  fill="url(#colorPaid)"
                   strokeWidth={2}
                 />
 
@@ -481,8 +499,13 @@ function AnalyticsDetailTable({
       cell: ({ row }) => <span className="font-medium">{row.original.events}</span>,
     },
     {
+      accessorKey: "amountExpected",
+      header: "Ingresos Esperado",
+      cell: ({ row }) => formatCurrency(row.original.amountExpected),
+    },
+    {
       accessorKey: "amountPaid",
-      header: "Ingresos",
+      header: "Ingresos Pagado",
       cell: ({ row }) => formatCurrency(row.original.amountPaid),
     },
     {
@@ -676,17 +699,19 @@ function AnalyticsFilters({
 
 function AnalyticsKpiGrid({
   totalTreatmentCount,
-  totalRevenue,
+  totalExpected,
+  totalPaid,
   totalMl,
   domicilioCount,
 }: {
   totalTreatmentCount: number;
-  totalRevenue: number;
+  totalExpected: number;
+  totalPaid: number;
   totalMl: number;
   domicilioCount: number;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
       <KpiCard
         title="Tratamientos"
         value={totalTreatmentCount}
@@ -695,8 +720,16 @@ function AnalyticsKpiGrid({
       />
 
       <KpiCard
-        title="Ingresos"
-        value={formatCurrency(totalRevenue)}
+        title="Ingresos Esperado"
+        value={formatCurrency(totalExpected)}
+        icon={DollarSign}
+        trend="Esperado"
+        color="success"
+      />
+
+      <KpiCard
+        title="Ingresos Pagado"
+        value={formatCurrency(totalPaid)}
         icon={DollarSign}
         trend="Facturado"
         color="success"
