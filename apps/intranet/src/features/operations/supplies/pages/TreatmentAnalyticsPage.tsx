@@ -174,11 +174,6 @@ export function TreatmentAnalyticsPage() {
   const totalTreatmentCount = data?.totals.events || 0;
   const totalMl = data?.totals.dosageMl || 0;
   const domicilioCount = data?.totals.domicilioCount || 0;
-  const clinicCount = totalTreatmentCount - domicilioCount;
-
-  const induccionCount = data?.totals.induccionCount || 0;
-  const mantencionCount = data?.totals.mantencionCount || 0;
-  const unclassifiedCount = totalTreatmentCount - induccionCount - mantencionCount;
 
   const trendData: AnalyticsTrendPoint[] | undefined =
     period === "day"
@@ -189,17 +184,6 @@ export function TreatmentAnalyticsPage() {
             ...d,
             label: dayjs(`${d.year}-${d.month}-01`).format("MMM YYYY"),
           }));
-
-  const pieDataStage: PieChartData[] = [
-    { name: "Inducción", value: induccionCount },
-    { name: "Mantención", value: mantencionCount },
-    { name: unclassifiedCount > 0 ? "Sin Clasif." : "", value: unclassifiedCount },
-  ].filter((d) => d.value > 0);
-
-  const pieDataLocation: PieChartData[] = [
-    { name: "Domicilio", value: domicilioCount },
-    { name: "Clínica", value: clinicCount },
-  ].filter((d) => d.value > 0);
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 pb-10 sm:px-6 lg:px-8">
@@ -235,12 +219,7 @@ export function TreatmentAnalyticsPage() {
             domicilioCount={domicilioCount}
           />
 
-          <AnalyticsCharts
-            trendData={trendData || []}
-            pieDataStage={pieDataStage}
-            pieDataLocation={pieDataLocation}
-            period={period}
-          />
+          <AnalyticsCharts trendData={trendData || []} byMonth={data?.byMonth} period={period} />
 
           <AnalyticsDetailTable data={trendData || []} period={period} />
         </>
@@ -251,17 +230,34 @@ export function TreatmentAnalyticsPage() {
 
 function AnalyticsCharts({
   trendData,
-  pieDataStage,
-  pieDataLocation,
+  byMonth,
   period,
 }: {
   trendData: AnalyticsTrendPoint[];
-  pieDataStage: PieChartData[];
-  pieDataLocation: PieChartData[];
+  byMonth?: AnalyticsTrendPoint[];
   period: "day" | "week" | "month";
 }) {
+  const monthlyData = (byMonth || []).map((month) => {
+    const totalEvents = month.events || 0;
+    const unclassifiedCount =
+      totalEvents - (month.induccionCount || 0) - (month.mantencionCount || 0);
+
+    return {
+      label: dayjs(`${month.year}-${month.month}-01`).format("MMM YYYY"),
+      pieDataStage: [
+        { name: "Inducción", value: month.induccionCount || 0 },
+        { name: "Mantención", value: month.mantencionCount || 0 },
+        ...(unclassifiedCount > 0 ? [{ name: "Sin Clasif.", value: unclassifiedCount }] : []),
+      ].filter((d) => d.value > 0),
+      pieDataLocation: [
+        { name: "Domicilio", value: month.domicilioCount || 0 },
+        { name: "Clínica", value: totalEvents - (month.domicilioCount || 0) },
+      ].filter((d) => d.value > 0),
+    };
+  });
+
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr,1fr]">
+    <div className="space-y-6">
       {/* Trend Chart */}
       <Card className="border-default-200 shadow-sm">
         <Card.Header className="pb-2">
@@ -341,13 +337,40 @@ function AnalyticsCharts({
         </Card.Content>
       </Card>
 
-      {/* Distribution Charts */}
-      <div className="grid grid-cols-1 gap-4">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <PieChartCard title="Por Etapa" data={pieDataStage} colors={PIE_COLORS_STAGE} />
-          <PieChartCard title="Por Ubicación" data={pieDataLocation} colors={PIE_COLORS_LOCATION} />
-        </div>
-      </div>
+      {/* Distribution by Month */}
+      {monthlyData.length > 0 && (
+        <>
+          {/* Por Etapa - Monthly */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-foreground">Por Etapa</h3>
+            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {monthlyData.map((month) => (
+                <PieChartCard
+                  key={`etapa-${month.label}`}
+                  title={month.label}
+                  data={month.pieDataStage}
+                  colors={PIE_COLORS_STAGE}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Por Ubicación - Monthly */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-foreground">Por Ubicación</h3>
+            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {monthlyData.map((month) => (
+                <PieChartCard
+                  key={`ubicacion-${month.label}`}
+                  title={month.label}
+                  data={month.pieDataLocation}
+                  colors={PIE_COLORS_LOCATION}
+                />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -713,14 +736,14 @@ function KpiCard({
 }) {
   return (
     <Card className="border-default-200 shadow-sm">
-      <Card.Content className="flex items-center justify-between gap-3 p-3 sm:p-4">
+      <Card.Content className="flex items-center gap-3 p-3 sm:p-4">
+        <div className={`rounded-lg p-2 bg-${color}/10 text-${color} shrink-0`}>
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+        </div>
         <div>
           <p className="font-medium text-default-500 text-xs uppercase">{title}</p>
           <p className="mt-1 font-bold text-foreground text-xl sm:text-2xl">{value}</p>
           <p className="mt-0.5 text-default-400 text-xs">{trend}</p>
-        </div>
-        <div className={`rounded-lg p-2 bg-${color}/10 text-${color}`}>
-          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       </Card.Content>
     </Card>
