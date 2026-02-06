@@ -1,16 +1,21 @@
-import { db } from "@finanzas/db";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { config } from "dotenv";
+
+// Load environment variables from packages/db/.env BEFORE any db imports
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: resolve(__dirname, "../../../../packages/db/.env") });
 
 async function main() {
+  // Dynamic import AFTER env is loaded
+  const { db } = await import("@finanzas/db");
+  const { buildDangerousPermissionsWhereClause } = await import("../lib/permission-validator");
+
   console.log("🧹 Starting Security Cleanup: Purging Dangerous Permissions...");
 
-  // 1. Target the specific dangerous permission
+  // 1. Target dangerous permissions using centralized validator
   const dangerousPerms = await db.permission.findMany({
-    where: {
-      OR: [
-        { AND: [{ action: "manage" }, { subject: "all" }] },
-        { action: "manage" }, // 'manage' is overly permissive; project standard requires explicit CRUD permissions, so 'manage' is treated as dangerous and removed
-      ],
-    },
+    where: buildDangerousPermissionsWhereClause(),
   });
 
   if (dangerousPerms.length > 0) {

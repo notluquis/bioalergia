@@ -91,9 +91,6 @@ importers:
       decimal.js:
         specifier: ^10.6.0
         version: 10.6.0
-      dotenv:
-        specifier: ^17.2.4
-        version: 17.2.4
       fast-csv:
         specifier: ^5.0.5
         version: 5.0.5
@@ -164,6 +161,9 @@ importers:
       '@types/web-push':
         specifier: ^3.6.4
         version: 3.6.4
+      dotenv:
+        specifier: ^17.2.4
+        version: 17.2.4
       esbuild:
         specifier: ^0.27.3
         version: 0.27.3

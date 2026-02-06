@@ -1,5 +1,6 @@
 import { db, schema } from "@finanzas/db";
 import type { RoleCreateArgs, RoleUpdateArgs } from "@finanzas/db/input";
+import { filterSafePermissions } from "../lib/permission-validator";
 
 // Extract input types from Zenstack args
 type RoleCreateInput = NonNullable<RoleCreateArgs["data"]>;
@@ -78,9 +79,13 @@ export async function assignPermissionsToRole(roleId: number, permissionIds: num
 }
 
 export async function listPermissions() {
-  return await db.permission.findMany({
+  const allPermissions = await db.permission.findMany({
     orderBy: { subject: "asc" },
   });
+
+  // Filter out dangerous/non-standard permissions before returning
+  // See: lib/permission-validator.ts for validation logic
+  return filterSafePermissions(allPermissions);
 }
 
 /**
