@@ -1,4 +1,12 @@
-import { Button, Card, Spinner } from "@heroui/react";
+import {
+  Button,
+  Card,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Spinner,
+} from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -634,22 +642,26 @@ function AnalyticsHeader({
           </Button>
         </div>
         {isMonthSelected && (
-          <div className="flex items-center rounded-lg bg-default-100 p-1">
-            {(["week", "day"] as const).map((p) => (
-              <button
-                type="button"
-                key={p}
-                onClick={() => onSetPeriod(p)}
-                className={`rounded-md px-3 py-1 font-medium text-xs transition-colors ${
-                  period === p
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-default-500 hover:text-foreground"
-                }`}
-              >
-                {p === "day" ? "Día" : "Semana"}
-              </button>
-            ))}
-          </div>
+          <Dropdown>
+            <DropdownTrigger>
+              <Button size="sm" variant="outline">
+                Ver detalle por: {period === "day" ? "Día" : "Semana"}
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label="Seleccionar nivel de detalle"
+              selectedKeys={[period]}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys)[0] as "day" | "week";
+                if (selected === "day" || selected === "week") {
+                  onSetPeriod(selected);
+                }
+              }}
+            >
+              <DropdownItem key="week">Por Semana</DropdownItem>
+              <DropdownItem key="day">Por Día</DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
         )}
         <Button
           isIconOnly
