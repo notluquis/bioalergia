@@ -3,7 +3,6 @@ import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Download, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
 import type { MPReport } from "@/services/mercadopago";
 
 const REPORT_PENDING_REGEX = /processing|pending|in_progress|waiting|generating|queued|creating/i;
@@ -72,7 +71,7 @@ export const getMpReportColumns = (
   {
     cell: ({ row }) => (
       <Chip
-        className={cn("font-medium", row.original.created_from === "schedule" && "opacity-80")}
+        className="font-medium"
         size="sm"
         variant={row.original.created_from === "schedule" ? "tertiary" : "secondary"}
       >

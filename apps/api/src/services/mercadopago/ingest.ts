@@ -1,4 +1,4 @@
-import { Readable } from "node:stream";
+import { Readable, Transform } from "node:stream";
 import { db } from "@finanzas/db";
 import csv from "csv-parser";
 import { checkMpConfig, MP_ACCESS_TOKEN } from "./client";
@@ -71,9 +71,35 @@ export async function processReportUrl(url: string, reportType: string): Promise
     };
 
     await new Promise<void>((resolve, reject) => {
+      // BOM-stripping transform for CSV files that may have UTF-8 BOM
+      let firstChunk = true;
+      const bomStrip = new Transform({
+        transform(chunk: Buffer | string, _encoding: string, callback: () => void) {
+          if (firstChunk) {
+            // Remove UTF-8 BOM (EF BB BF) if present
+            const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+            if (
+              buffer.length >= 3 &&
+              buffer[0] === 0xef &&
+              buffer[1] === 0xbb &&
+              buffer[2] === 0xbf
+            ) {
+              this.push(buffer.slice(3));
+            } else {
+              this.push(buffer);
+            }
+            firstChunk = false;
+          } else {
+            this.push(chunk);
+          }
+          callback();
+        },
+      });
+
       nodeStream
-        // MercadoPago CSVs use semicolons as separators
-        .pipe(csv({ separator: ";" }))
+        .pipe(bomStrip)
+        // MercadoPago CSVs use commas as separators (default csv-parser separator)
+        .pipe(csv())
         .on("data", (row) => {
           handleCsvRow(
             row,
