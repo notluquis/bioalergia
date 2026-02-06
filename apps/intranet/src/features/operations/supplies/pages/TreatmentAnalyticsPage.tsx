@@ -202,7 +202,7 @@ export function TreatmentAnalyticsPage() {
   ].filter((d) => d.value > 0);
 
   return (
-    <div className="mx-auto max-w-400 space-y-6 pb-10">
+    <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 pb-10 sm:px-6 lg:px-8">
       <AnalyticsHeader
         isMonthSelected={isMonthSelected}
         period={period}
@@ -223,7 +223,7 @@ export function TreatmentAnalyticsPage() {
       )}
 
       {isLoading && !data ? (
-        <div className="flex h-64 items-center justify-center">
+        <div className="flex h-80 items-center justify-center">
           <Spinner size="lg" color="current" className="text-default-300" />
         </div>
       ) : (
@@ -531,16 +531,14 @@ function AnalyticsHeader({
   const nextMonth = dayjs().add(1, "month").format("YYYY-MM");
 
   return (
-    <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-      <div>
-        {isLoading && (
-          <div className="flex items-center gap-2">
-            <Spinner size="sm" color="current" />
-            <span className="text-default-500 text-sm">Cargando datos...</span>
-          </div>
-        )}
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex w-full flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+      {isLoading && (
+        <div className="flex items-center gap-2">
+          <Spinner size="sm" color="current" />
+          <span className="text-default-500 text-sm">Cargando datos...</span>
+        </div>
+      )}
+      <div className="ml-auto flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onPress={() => onSelectMonth(prevMonth)}>
             Mes anterior
@@ -665,7 +663,7 @@ function AnalyticsKpiGrid({
   domicilioCount: number;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       <KpiCard
         title="Tratamientos"
         value={totalTreatmentCount}
@@ -715,14 +713,14 @@ function KpiCard({
 }) {
   return (
     <Card className="border-default-200 shadow-sm">
-      <Card.Content className="flex items-center justify-between p-4">
+      <Card.Content className="flex items-center justify-between gap-3 p-3 sm:p-4">
         <div>
           <p className="font-medium text-default-500 text-xs uppercase">{title}</p>
-          <p className="mt-1 font-bold text-2xl text-foreground">{value}</p>
-          <p className="mt-1 text-default-400 text-xs">{trend}</p>
+          <p className="mt-1 font-bold text-foreground text-xl sm:text-2xl">{value}</p>
+          <p className="mt-0.5 text-default-400 text-xs">{trend}</p>
         </div>
         <div className={`rounded-lg p-2 bg-${color}/10 text-${color}`}>
-          <Icon className="h-5 w-5" />
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       </Card.Content>
     </Card>
