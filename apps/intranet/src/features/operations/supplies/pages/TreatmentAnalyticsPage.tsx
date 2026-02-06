@@ -736,11 +736,11 @@ function KpiCard({
 }) {
   return (
     <Card className="border-default-200 shadow-sm">
-      <Card.Content className="flex flex-row gap-3 p-3 sm:p-4">
+      <Card.Content className="flex flex-row items-center gap-3 p-3 sm:p-4">
         <div className={`rounded-lg p-2 bg-${color}/10 text-${color} shrink-0`}>
           <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
-        <div className="flex flex-1 flex-col justify-center gap-1">
+        <div className="flex flex-col justify-center gap-1">
           <p className="font-medium text-default-500 text-xs uppercase">{title}</p>
           <p className="font-bold text-foreground text-xl sm:text-2xl">{value}</p>
           <p className="text-default-400 text-xs">{trend}</p>
