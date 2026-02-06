@@ -77,9 +77,17 @@ export function parseDecimal(value: RawValue, fallback?: string | number | Decim
     if (!normalized.trim()) {
       return fallback === undefined ? undefined : toDecimal(fallback);
     }
-    return new Decimal(normalized);
+    try {
+      return new Decimal(normalized);
+    } catch (err) {
+      console.error(
+        `[parseDecimal] Error parsing value "${value}" (normalized: "${normalized}"):`,
+        err,
+      );
+      throw err;
+    }
   }
-  return fallback === undefined ? undefined : toDecimal(fallback);
+  throw new Error(`parseDecimal: Unexpected value type: ${typeof value}`);
 }
 
 export function parseBigInt(value: RawValue): bigint | undefined {

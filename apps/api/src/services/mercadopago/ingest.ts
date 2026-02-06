@@ -1,11 +1,58 @@
+import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
 import { db } from "@finanzas/db";
-import { parse } from "fast-csv";
 import { checkMpConfig, MP_ACCESS_TOKEN } from "./client";
 import { mapRowToReleaseTransaction, mapRowToSettlementTransaction } from "./mappers";
 
 // Batch size for insertions
 const BATCH_SIZE = 100;
+
+/**
+ * Parse a CSV line respecting quoted values that may contain commas
+ */
+function parseCSVLine(line: string): string[] {
+  const fields: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < line.length) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+
+    if (char === '"') {
+      // Check if this is an escaped quote (two quotes in a row)
+      if (nextChar === '"') {
+        current += '"';
+        i += 2; // Skip both quotes
+        continue;
+      }
+      // Toggle quote mode
+      inQuotes = !inQuotes;
+      i++;
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      // This is a field separator
+      fields.push(current.trim());
+      current = "";
+      i++;
+      continue;
+    }
+
+    // Regular character
+    current += char;
+    i++;
+  }
+
+  // Don't forget the last field
+  if (current || fields.length > 0) {
+    fields.push(current.trim());
+  }
+
+  return fields;
+}
 
 /**
  * Statistics returned after processing a MercadoPago report
@@ -72,54 +119,51 @@ export async function processReportUrl(url: string, reportType: string): Promise
     };
 
     await new Promise<void>((resolve, reject) => {
-      // Parse CSV without header validation - manually handle headers to avoid mismatch errors
+      // Use readline to process CSV line by line with proper quote handling
       let headerMap: Record<number, string> | null = null;
+      const rl = createInterface({
+        input: nodeStream,
+        crlfDelay: Number.POSITIVE_INFINITY,
+      });
 
-      nodeStream
-        .pipe(
-          parse({
-            headers: false, // Don't validate headers - we'll handle them manually
-            quote: "\x00", // Null char - won't appear in CSV
-            escape: "\x00",
-            delimiter: ",",
-            trim: true, // Trim whitespace from fields
-            ignoreEmpty: false,
-          }),
-        )
-        .on("data", (row: string[] | Record<string, string | undefined>) => {
-          try {
-            handleCsvData(
-              row,
-              headerMap,
-              (map) => {
-                headerMap = map;
-              },
-              reportType,
-              stats,
-              batchState,
-              flushBatch,
-              nodeStream,
-              reject,
-              isFirstRow,
-            );
-          } catch (err) {
-            reject(err);
-          }
-        })
-        .on("end", async () => {
-          try {
-            await batchState.flushPromise;
-            await flushBatch();
-            console.log(`[MP Ingest] Finished processing CSV for ${reportType}. Stats:`, stats);
-            resolve();
-          } catch (err) {
-            reject(err);
-          }
-        })
-        .on("error", (err: Error) => {
-          console.error("[MP Ingest] CSV Stream error:", err);
+      rl.on("line", (line: string) => {
+        try {
+          // Parse line using our custom CSV parser that respects quotes
+          const row = parseCSVLine(line);
+          handleCsvData(
+            row,
+            headerMap,
+            (map) => {
+              headerMap = map;
+            },
+            reportType,
+            stats,
+            batchState,
+            flushBatch,
+            nodeStream,
+            reject,
+            isFirstRow,
+          );
+        } catch (err) {
           reject(err);
-        });
+        }
+      });
+
+      rl.on("close", async () => {
+        try {
+          await batchState.flushPromise;
+          await flushBatch();
+          console.log(`[MP Ingest] Finished processing CSV for ${reportType}. Stats:`, stats);
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      });
+
+      rl.on("error", (err: Error) => {
+        console.error("[MP Ingest] Readline error:", err);
+        reject(err);
+      });
     });
   } catch (e) {
     console.error(`[MP Webhook] Failed to process CSV ${url}:`, e);
@@ -144,13 +188,32 @@ const convertRowArrayToObject = (
   row: string[] | Record<string, string | undefined>,
   headerMap: Record<number, string>,
 ): Record<string, string | undefined> => {
+  // Use our custom CSV parser for better quote handling if we detect issues
   const arrayRow = Array.isArray(row) ? row : Object.values(row);
   const objectRow: Record<string, string | undefined> = {};
+
+  // Debug: Log column count mismatch
+  const headerCount = Object.keys(headerMap).length;
+  if (arrayRow.length !== headerCount) {
+    console.warn(
+      `[MP Ingest] Column count mismatch: headerMap has ${headerCount} cols, row has ${arrayRow.length} cols`,
+    );
+    // If row has more columns than headers, it's likely due to quotes being split
+    // Log the extra columns for debugging
+    if (arrayRow.length > headerCount) {
+      const extraCols = arrayRow.slice(headerCount);
+      console.warn(`[MP Ingest] Extra columns: ${extraCols.slice(0, 3).join(" | ")}`);
+    }
+  }
+
   for (let i = 0; i < arrayRow.length; i++) {
     const key = headerMap[i];
     const val = arrayRow[i];
     if (key && typeof val === "string") {
       objectRow[key] = val;
+    } else if (!key && i < 5) {
+      // Log missing headers only for first few columns
+      console.warn(`[MP Ingest] Missing header for column ${i}, value: "${val}"`);
     }
   }
   return objectRow;
@@ -160,9 +223,11 @@ const createHeaderMap = (
   row: string[] | Record<string, string | undefined>,
 ): Record<number, string> => {
   const headerRow = Array.isArray(row) ? row : Object.keys(row);
-  return Object.fromEntries(
+  const map = Object.fromEntries(
     headerRow.map((h, i) => [i, typeof h === "string" ? h.trim() : String(h)]),
   );
+  console.log(`[MP Ingest] Created header map with ${Object.keys(map).length} columns`);
+  return map;
 };
 
 const handleCsvData = (
@@ -208,10 +273,23 @@ const cleanCsvRow = (row: Record<string, string | undefined>) => {
 };
 
 const mapReportRow = (reportType: string, row: Record<string, string | undefined>) => {
-  const record = reportType.toLowerCase().includes("settlement")
-    ? mapRowToSettlementTransaction(row)
-    : mapRowToReleaseTransaction(row);
-  return record.sourceId ? record : null;
+  try {
+    const record = reportType.toLowerCase().includes("settlement")
+      ? mapRowToSettlementTransaction(row)
+      : mapRowToReleaseTransaction(row);
+    return record.sourceId ? record : null;
+  } catch (err) {
+    // Log the row data that caused the error (first 10 keys for readability)
+    const sampleKeys = Object.keys(row).slice(0, 10);
+    const sampleData = Object.fromEntries(
+      sampleKeys.map((k) => [k, row[k]?.substring?.(0, 50) || row[k]]),
+    );
+    console.error(
+      `[mapReportRow] Error mapping row with keys ${Object.keys(row).length}, sample data:`,
+      sampleData,
+    );
+    throw err;
+  }
 };
 
 const logFirstRow = (
