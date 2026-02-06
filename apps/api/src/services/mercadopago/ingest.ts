@@ -89,6 +89,12 @@ export async function processReportUrl(url: string, reportType: string): Promise
       headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
     });
 
+    // Handle 404 gracefully - report doesn't exist yet
+    if (res.status === 404) {
+      console.log(`[MP Ingest] Report not found (404): ${url}`);
+      return stats; // Return empty stats - nothing to process
+    }
+
     if (!res.ok) {
       throw new Error(`Download failed: ${res.status} - ${res.statusText}`);
     }
