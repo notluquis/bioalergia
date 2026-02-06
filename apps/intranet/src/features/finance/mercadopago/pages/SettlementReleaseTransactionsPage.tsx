@@ -1,3 +1,4 @@
+/*
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { Alert, Button, Card, Input, Label, TextField } from "@heroui/react";
 import type { PaginationState, VisibilityState } from "@tanstack/react-table";
@@ -123,6 +124,26 @@ export function SettlementReleaseTransactionsPage() {
       ) : (
         <Alert color="danger">No tienes permisos para ver conciliaciones.</Alert>
       )}
+    </section>
+  );
+}
+*/
+
+// Temporarily disabled due to SettlementReleaseTransaction view removal
+// Re-enable when view is restored or replaced with alternative implementation
+import { Card } from "@heroui/react";
+import { Alert } from "@/components/ui/Alert";
+
+export function SettlementReleaseTransactionsPage() {
+  return (
+    <section className="mx-auto w-full max-w-none space-y-4 p-4">
+      <Card>
+        <Alert variant="warning">
+          <span>
+            Esta sección está temporalmente deshabilitada mientras se restaura la vista de datos.
+          </span>
+        </Alert>
+      </Card>
     </section>
   );
 }

@@ -31,7 +31,9 @@ type TableName =
   | "withdrawals"
   | "services"
   | "inventory_items"
-  | "employee_timesheets";
+  | "employee_timesheets"
+  | "dte_purchases"
+  | "dte_sales";
 
 type AuthContext = {
   email: string;
@@ -183,6 +185,8 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
   services: { action: "create", subject: "Service" },
   inventory_items: { action: "create", subject: "InventoryItem" },
   employee_timesheets: { action: "create", subject: "Timesheet" },
+  dte_purchases: { action: "create", subject: "DTEPurchase" },
+  dte_sales: { action: "create", subject: "DTESale" },
 };
 
 // ============================================================
@@ -314,6 +318,48 @@ csvUploadRoutes.post("/preview", async (c) => {
             toInsert++;
           }
         }
+      } else if (table === "dte_purchases" && row.period && row.providerRUT && row.folio) {
+        // DTE Purchases are identified by period + providerRUT + folio + documentDate
+        const dateStr = parseFlexibleDate(row.documentDate);
+        if (!dateStr) {
+          errors.push(`Fila ${i + 1}: Fecha de documento inválida`);
+          toSkip++;
+          continue;
+        }
+        const exists = await db.dtePurchaseDetail.findFirst({
+          where: {
+            period: String(row.period),
+            providerRUT: String(row.providerRUT),
+            folio: String(row.folio),
+            documentDate: new Date(dateStr),
+          },
+        });
+        if (exists) {
+          toUpdate++;
+        } else {
+          toInsert++;
+        }
+      } else if (table === "dte_sales" && row.period && row.clientRUT && row.folio) {
+        // DTE Sales are identified by period + clientRUT + folio + documentDate
+        const dateStr = parseFlexibleDate(row.documentDate);
+        if (!dateStr) {
+          errors.push(`Fila ${i + 1}: Fecha de documento inválida`);
+          toSkip++;
+          continue;
+        }
+        const exists = await db.dteSaleDetail.findFirst({
+          where: {
+            period: String(row.period),
+            clientRUT: String(row.clientRUT),
+            folio: String(row.folio),
+            documentDate: new Date(dateStr),
+          },
+        });
+        if (exists) {
+          toUpdate++;
+        } else {
+          toInsert++;
+        }
       } else {
         toInsert++;
       }
@@ -433,6 +479,8 @@ const importRowHandlers: Record<TableName, ImportRowHandler> = {
   services: (row) => importServicesRow(row),
   inventory_items: (row) => importInventoryItemsRow(row),
   employee_timesheets: (row) => importEmployeeTimesheetsRow(row),
+  dte_purchases: (row) => importDtePurchaseRow(row),
+  dte_sales: (row) => importDteSaleRow(row),
 };
 
 async function importCsvRow(
@@ -742,4 +790,205 @@ async function importEmployeeTimesheetsRow(row: CSVRow): Promise<ImportOutcome> 
 
   await db.employeeTimesheet.create({ data: timesheetData });
   return { inserted: 1, updated: 0, skipped: 0 };
+}
+async function importDtePurchaseRow(row: CSVRow): Promise<ImportOutcome> {
+  // Validate required fields
+  if (!row.period || !row.providerRUT || !row.folio) {
+    throw new Error("Campos requeridos faltantes: period, providerRUT, folio");
+  }
+
+  const documentDateStr = parseFlexibleDate(row.documentDate);
+  const receiptDateStr = parseFlexibleDate(row.receiptDate);
+
+  if (!documentDateStr || !receiptDateStr) {
+    throw new Error("Fechas inválidas: documentDate o receiptDate");
+  }
+
+  const documentDate = new Date(documentDateStr);
+  const receiptDate = new Date(receiptDateStr);
+
+  const purchaseData = buildDtePurchaseData(row, documentDate, receiptDate);
+
+  const existing = await db.dtePurchaseDetail.findFirst({
+    where: {
+      period: purchaseData.period,
+      providerRUT: purchaseData.providerRUT,
+      folio: purchaseData.folio,
+      documentDate: purchaseData.documentDate,
+    },
+  });
+
+  if (existing) {
+    await db.dtePurchaseDetail.update({
+      where: { id: existing.id },
+      data: purchaseData,
+    });
+    return { inserted: 0, updated: 1, skipped: 0 };
+  }
+
+  await db.dtePurchaseDetail.create({ data: purchaseData });
+  return { inserted: 1, updated: 0, skipped: 0 };
+}
+
+function buildDtePurchaseData(row: CSVRow, documentDate: Date, receiptDate: Date) {
+  const acknowledgeDate = row.acknowledgeDate
+    ? new Date(parseFlexibleDate(row.acknowledgeDate) || "")
+    : null;
+
+  return {
+    period: String(row.period),
+    registerNumber: Number(row.registerNumber) || 0,
+    documentType: Number(row.documentType) || 33,
+    purchaseType: String(row.purchaseType || "Compras del Giro"),
+    providerRUT: String(row.providerRUT),
+    providerName: String(row.providerName || ""),
+    folio: String(row.folio),
+    documentDate,
+    receiptDate,
+    acknowledgeDate,
+    exemptAmount: new Decimal(cleanAmount(row.exemptAmount)),
+    netAmount: new Decimal(cleanAmount(row.netAmount)),
+    recoverableIVA: new Decimal(cleanAmount(row.recoverableIVA)),
+    nonRecoverableIVA: new Decimal(cleanAmount(row.nonRecoverableIVA)),
+    nonRecoverableIVACode: row.nonRecoverableIVACode ? String(row.nonRecoverableIVACode) : null,
+    totalAmount: new Decimal(cleanAmount(row.totalAmount)),
+    fixedAssetNetAmount: new Decimal(cleanAmount(row.fixedAssetNetAmount)),
+    commonUseIVA: new Decimal(cleanAmount(row.commonUseIVA)),
+    nonCreditableTax: new Decimal(cleanAmount(row.nonCreditableTax)),
+    nonRetainedIVA: new Decimal(cleanAmount(row.nonRetainedIVA)),
+    referenceDocNote: row.referenceDocNote ? String(row.referenceDocNote) : null,
+    notes: row.notes ? String(row.notes) : null,
+  };
+}
+
+async function importDteSaleRow(row: CSVRow): Promise<ImportOutcome> {
+  // Validate required fields
+  if (!row.period || !row.clientRUT || !row.folio) {
+    throw new Error("Campos requeridos faltantes: period, clientRUT, folio");
+  }
+
+  const documentDateStr = parseFlexibleDate(row.documentDate);
+  const receiptDateStr = parseFlexibleDate(row.receiptDate);
+
+  if (!documentDateStr || !receiptDateStr) {
+    throw new Error("Fechas inválidas: documentDate o receiptDate");
+  }
+
+  const documentDate = new Date(documentDateStr);
+  const receiptDate = new Date(receiptDateStr);
+
+  const saleData = buildDteSaleData(row, documentDate, receiptDate);
+
+  const existing = await db.dteSaleDetail.findFirst({
+    where: {
+      period: saleData.period,
+      clientRUT: saleData.clientRUT,
+      folio: saleData.folio,
+      documentDate: saleData.documentDate,
+    },
+  });
+
+  if (existing) {
+    await db.dteSaleDetail.update({
+      where: { id: existing.id },
+      data: saleData,
+    });
+    return { inserted: 0, updated: 1, skipped: 0 };
+  }
+
+  await db.dteSaleDetail.create({ data: saleData });
+  return { inserted: 1, updated: 0, skipped: 0 };
+}
+
+function buildDteSaleData(row: CSVRow, documentDate: Date, receiptDate: Date) {
+  const receiptAcknowledgeDate = row.receiptAcknowledgeDate
+    ? new Date(parseFlexibleDate(row.receiptAcknowledgeDate) || "")
+    : null;
+  const claimDate = row.claimDate ? new Date(parseFlexibleDate(row.claimDate) || "") : null;
+
+  return {
+    // Identifiers
+    period: String(row.period),
+    registerNumber: Number(row.registerNumber) || 0,
+    documentType: Number(row.documentType) || 41,
+    saleType: String(row.saleType || "Del Giro"),
+    clientRUT: String(row.clientRUT),
+    clientName: String(row.clientName || ""),
+    folio: String(row.folio),
+    documentDate,
+    receiptDate,
+    receiptAcknowledgeDate,
+    claimDate,
+    // Main amounts
+    exemptAmount: new Decimal(cleanAmount(row.exemptAmount)),
+    netAmount: new Decimal(cleanAmount(row.netAmount)),
+    ivaAmount: new Decimal(cleanAmount(row.ivaAmount)),
+    totalAmount: new Decimal(cleanAmount(row.totalAmount)),
+    // IVA details
+    ...buildDteSaleIvaFields(row),
+    // Commission
+    ...buildDteSaleCommissionFields(row),
+    // References
+    referenceDocType: row.referenceDocType ? String(row.referenceDocType) : null,
+    referenceDocFolio: row.referenceDocFolio ? String(row.referenceDocFolio) : null,
+    // Foreign buyer
+    ...buildDteSaleForeignBuyerFields(row),
+    // Special conditions
+    ...buildDteSaleSpecialFields(row),
+    // Metadata
+    ...buildDteSaleMetadataFields(row),
+  };
+}
+
+function buildDteSaleForeignBuyerFields(row: CSVRow) {
+  return {
+    foreignBuyerIdentifier: row.foreignBuyerIdentifier ? String(row.foreignBuyerIdentifier) : null,
+    foreignBuyerNationality: row.foreignBuyerNationality
+      ? String(row.foreignBuyerNationality)
+      : null,
+  };
+}
+
+function buildDteSaleMetadataFields(row: CSVRow) {
+  return {
+    internalNumber: row.internalNumber ? Number(row.internalNumber) : null,
+    branchCode: row.branchCode ? String(row.branchCode) : null,
+    purchaseId: row.purchaseId ? String(row.purchaseId) : null,
+    shippingOrderId: row.shippingOrderId ? String(row.shippingOrderId) : null,
+    origin: row.origin ? String(row.origin) : null,
+    informativeNote: row.informativeNote ? String(row.informativeNote) : null,
+    paymentNote: row.paymentNote ? String(row.paymentNote) : null,
+    notes: row.notes ? String(row.notes) : null,
+  };
+}
+
+function buildDteSaleIvaFields(row: CSVRow) {
+  return {
+    totalRetainedIVA: new Decimal(cleanAmount(row.totalRetainedIVA)),
+    partialRetainedIVA: new Decimal(cleanAmount(row.partialRetainedIVA)),
+    nonRetainedIVA: new Decimal(cleanAmount(row.nonRetainedIVA)),
+    ownIVA: new Decimal(cleanAmount(row.ownIVA)),
+    thirdPartyIVA: new Decimal(cleanAmount(row.thirdPartyIVA)),
+    lateIVA: new Decimal(cleanAmount(row.lateIVA)),
+  };
+}
+
+function buildDteSaleCommissionFields(row: CSVRow) {
+  return {
+    emitterRUT: row.emitterRUT ? String(row.emitterRUT) : null,
+    commissionNetAmount: new Decimal(cleanAmount(row.commissionNetAmount)),
+    commissionExemptAmount: new Decimal(cleanAmount(row.commissionExemptAmount)),
+    commissionIVA: new Decimal(cleanAmount(row.commissionIVA)),
+  };
+}
+
+function buildDteSaleSpecialFields(row: CSVRow) {
+  return {
+    constructorCreditAmount: new Decimal(cleanAmount(row.constructorCreditAmount)),
+    freeTradeZoneAmount: new Decimal(cleanAmount(row.freeTradeZoneAmount)),
+    containerGuaranteeAmount: new Decimal(cleanAmount(row.containerGuaranteeAmount)),
+    nonBillableAmount: new Decimal(cleanAmount(row.nonBillableAmount)),
+    transportPassageAmount: new Decimal(cleanAmount(row.transportPassageAmount)),
+    internationalTransportAmount: new Decimal(cleanAmount(row.internationalTransportAmount)),
+  };
 }

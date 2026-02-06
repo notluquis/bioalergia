@@ -463,87 +463,6 @@ export type WithdrawTransactionGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "WithdrawTransaction", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "WithdrawTransaction", Args, Options>;
-export type SettlementReleaseTransactionFindManyArgs = $FindManyArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionFindUniqueArgs = $FindUniqueArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionFindFirstArgs = $FindFirstArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionExistsArgs = $ExistsArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionCreateArgs = $CreateArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionCreateManyArgs = $CreateManyArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionUpdateArgs = $UpdateArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionUpdateManyArgs = $UpdateManyArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionUpsertArgs = $UpsertArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionDeleteArgs = $DeleteArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionDeleteManyArgs = $DeleteManyArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionCountArgs = $CountArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionAggregateArgs = $AggregateArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionGroupByArgs = $GroupByArgs<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionWhereInput = $WhereInput<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionSelect = $SelectInput<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionInclude = $IncludeInput<
-  $Schema,
-  "SettlementReleaseTransaction"
->;
-export type SettlementReleaseTransactionOmit = $OmitInput<$Schema, "SettlementReleaseTransaction">;
-export type SettlementReleaseTransactionGetPayload<
-  Args extends $SelectIncludeOmit<$Schema, "SettlementReleaseTransaction", true>,
-  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
-> = $Result<$Schema, "SettlementReleaseTransaction", Args, Options>;
 export type DailyBalanceFindManyArgs = $FindManyArgs<$Schema, "DailyBalance">;
 export type DailyBalanceFindUniqueArgs = $FindUniqueArgs<$Schema, "DailyBalance">;
 export type DailyBalanceFindFirstArgs = $FindFirstArgs<$Schema, "DailyBalance">;
@@ -1645,3 +1564,87 @@ export type PatientAttachmentGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "PatientAttachment", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "PatientAttachment", Args, Options>;
+export type DTEPeriodFindManyArgs = $FindManyArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodFindUniqueArgs = $FindUniqueArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodFindFirstArgs = $FindFirstArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodExistsArgs = $ExistsArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodCreateArgs = $CreateArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodCreateManyArgs = $CreateManyArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodCreateManyAndReturnArgs = $CreateManyAndReturnArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodUpdateArgs = $UpdateArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodUpdateManyArgs = $UpdateManyArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodUpsertArgs = $UpsertArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodDeleteArgs = $DeleteArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodDeleteManyArgs = $DeleteManyArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodCountArgs = $CountArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodAggregateArgs = $AggregateArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodGroupByArgs = $GroupByArgs<$Schema, "DTEPeriod">;
+export type DTEPeriodWhereInput = $WhereInput<$Schema, "DTEPeriod">;
+export type DTEPeriodSelect = $SelectInput<$Schema, "DTEPeriod">;
+export type DTEPeriodInclude = $IncludeInput<$Schema, "DTEPeriod">;
+export type DTEPeriodOmit = $OmitInput<$Schema, "DTEPeriod">;
+export type DTEPeriodGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "DTEPeriod", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "DTEPeriod", Args, Options>;
+export type DTEPurchaseDetailFindManyArgs = $FindManyArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailFindUniqueArgs = $FindUniqueArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailFindFirstArgs = $FindFirstArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailExistsArgs = $ExistsArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailCreateArgs = $CreateArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailCreateManyArgs = $CreateManyArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "DTEPurchaseDetail"
+>;
+export type DTEPurchaseDetailUpdateArgs = $UpdateArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailUpdateManyArgs = $UpdateManyArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "DTEPurchaseDetail"
+>;
+export type DTEPurchaseDetailUpsertArgs = $UpsertArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailDeleteArgs = $DeleteArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailDeleteManyArgs = $DeleteManyArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailCountArgs = $CountArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailAggregateArgs = $AggregateArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailGroupByArgs = $GroupByArgs<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailWhereInput = $WhereInput<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailSelect = $SelectInput<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailInclude = $IncludeInput<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailOmit = $OmitInput<$Schema, "DTEPurchaseDetail">;
+export type DTEPurchaseDetailGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "DTEPurchaseDetail", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "DTEPurchaseDetail", Args, Options>;
+export type DTESaleDetailFindManyArgs = $FindManyArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailFindUniqueArgs = $FindUniqueArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailFindFirstArgs = $FindFirstArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailExistsArgs = $ExistsArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailCreateArgs = $CreateArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailCreateManyArgs = $CreateManyArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "DTESaleDetail"
+>;
+export type DTESaleDetailUpdateArgs = $UpdateArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailUpdateManyArgs = $UpdateManyArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "DTESaleDetail"
+>;
+export type DTESaleDetailUpsertArgs = $UpsertArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailDeleteArgs = $DeleteArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailDeleteManyArgs = $DeleteManyArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailCountArgs = $CountArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailAggregateArgs = $AggregateArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailGroupByArgs = $GroupByArgs<$Schema, "DTESaleDetail">;
+export type DTESaleDetailWhereInput = $WhereInput<$Schema, "DTESaleDetail">;
+export type DTESaleDetailSelect = $SelectInput<$Schema, "DTESaleDetail">;
+export type DTESaleDetailInclude = $IncludeInput<$Schema, "DTESaleDetail">;
+export type DTESaleDetailOmit = $OmitInput<$Schema, "DTESaleDetail">;
+export type DTESaleDetailGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "DTESaleDetail", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "DTESaleDetail", Args, Options>;

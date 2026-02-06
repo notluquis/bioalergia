@@ -1861,229 +1861,6 @@ export class SchemaType implements SchemaDef {
         withdrawId: { type: "String" },
       },
     },
-    SettlementReleaseTransaction: {
-      name: "SettlementReleaseTransaction",
-      fields: {
-        id: {
-          name: "id",
-          type: "String",
-          id: true,
-          unique: true,
-        },
-        sourceId: {
-          name: "sourceId",
-          type: "String",
-        },
-        origin: {
-          name: "origin",
-          type: "String",
-        },
-        effectiveDate: {
-          name: "effectiveDate",
-          type: "DateTime",
-        },
-        settlementExternalReference: {
-          name: "settlementExternalReference",
-          type: "String",
-          optional: true,
-        },
-        settlementPaymentMethodType: {
-          name: "settlementPaymentMethodType",
-          type: "String",
-          optional: true,
-        },
-        settlementPaymentMethod: {
-          name: "settlementPaymentMethod",
-          type: "String",
-          optional: true,
-        },
-        settlementTransactionType: {
-          name: "settlementTransactionType",
-          type: "String",
-          optional: true,
-        },
-        settlementTransactionAmount: {
-          name: "settlementTransactionAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementFeeAmount: {
-          name: "settlementFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementSettlementNetAmount: {
-          name: "settlementSettlementNetAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementRealAmount: {
-          name: "settlementRealAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementFinancingFeeAmount: {
-          name: "settlementFinancingFeeAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        settlementInstallments: {
-          name: "settlementInstallments",
-          type: "Int",
-          optional: true,
-        },
-        settlementBusinessUnit: {
-          name: "settlementBusinessUnit",
-          type: "String",
-          optional: true,
-        },
-        settlementSubUnit: {
-          name: "settlementSubUnit",
-          type: "String",
-          optional: true,
-        },
-        settlementPayBankTransferId: {
-          name: "settlementPayBankTransferId",
-          type: "String",
-          optional: true,
-        },
-        settlementMetadata: {
-          name: "settlementMetadata",
-          type: "Json",
-          optional: true,
-        },
-        releaseExternalReference: {
-          name: "releaseExternalReference",
-          type: "String",
-          optional: true,
-        },
-        releaseDescription: {
-          name: "releaseDescription",
-          type: "String",
-          optional: true,
-        },
-        releaseNetDebitAmount: {
-          name: "releaseNetDebitAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        releaseGrossAmount: {
-          name: "releaseGrossAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        releaseBalanceAmount: {
-          name: "releaseBalanceAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        releasePayoutBankAccountNumber: {
-          name: "releasePayoutBankAccountNumber",
-          type: "String",
-          optional: true,
-        },
-        releaseBusinessUnit: {
-          name: "releaseBusinessUnit",
-          type: "String",
-          optional: true,
-        },
-        releaseIssuerName: {
-          name: "releaseIssuerName",
-          type: "String",
-          optional: true,
-        },
-        releaseMetadata: {
-          name: "releaseMetadata",
-          type: "Json",
-          optional: true,
-        },
-        withdrawId: {
-          name: "withdrawId",
-          type: "String",
-          optional: true,
-        },
-        withdrawDateCreated: {
-          name: "withdrawDateCreated",
-          type: "DateTime",
-          optional: true,
-        },
-        withdrawStatus: {
-          name: "withdrawStatus",
-          type: "String",
-          optional: true,
-        },
-        withdrawStatusDetail: {
-          name: "withdrawStatusDetail",
-          type: "String",
-          optional: true,
-        },
-        withdrawAmount: {
-          name: "withdrawAmount",
-          type: "Decimal",
-          optional: true,
-        },
-        withdrawFee: {
-          name: "withdrawFee",
-          type: "Decimal",
-          optional: true,
-        },
-        withdrawActivityUrl: {
-          name: "withdrawActivityUrl",
-          type: "String",
-          optional: true,
-        },
-        withdrawPayoutDesc: {
-          name: "withdrawPayoutDesc",
-          type: "String",
-          optional: true,
-        },
-        withdrawBankAccountHolder: {
-          name: "withdrawBankAccountHolder",
-          type: "String",
-          optional: true,
-        },
-        withdrawIdentificationType: {
-          name: "withdrawIdentificationType",
-          type: "String",
-          optional: true,
-        },
-        withdrawIdentificationNumber: {
-          name: "withdrawIdentificationNumber",
-          type: "String",
-          optional: true,
-        },
-        withdrawBankId: {
-          name: "withdrawBankId",
-          type: "String",
-          optional: true,
-        },
-        withdrawBankName: {
-          name: "withdrawBankName",
-          type: "String",
-          optional: true,
-        },
-        withdrawBankBranch: {
-          name: "withdrawBankBranch",
-          type: "String",
-          optional: true,
-        },
-        withdrawBankAccountType: {
-          name: "withdrawBankAccountType",
-          type: "String",
-          optional: true,
-        },
-        withdrawBankAccountNumber: {
-          name: "withdrawBankAccountNumber",
-          type: "String",
-          optional: true,
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "String" },
-      },
-      isView: true,
-    },
     DailyBalance: {
       name: "DailyBalance",
       fields: {
@@ -4501,6 +4278,491 @@ export class SchemaType implements SchemaDef {
         id: { type: "String" },
       },
     },
+    DTEPeriod: {
+      name: "DTEPeriod",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          default: ExpressionUtils.call("uuid"),
+        },
+        period: {
+          name: "period",
+          type: "String",
+          unique: true,
+        },
+        year: {
+          name: "year",
+          type: "Int",
+        },
+        month: {
+          name: "month",
+          type: "Int",
+        },
+        type: {
+          name: "type",
+          type: "DTEType",
+        },
+        purchaseCount: {
+          name: "purchaseCount",
+          type: "Int",
+          default: 0,
+        },
+        saleCount: {
+          name: "saleCount",
+          type: "Int",
+          default: 0,
+        },
+        totalPurchases: {
+          name: "totalPurchases",
+          type: "Decimal",
+          default: 0,
+        },
+        totalSales: {
+          name: "totalSales",
+          type: "Decimal",
+          default: 0,
+        },
+        importedAt: {
+          name: "importedAt",
+          type: "DateTime",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          default: ExpressionUtils.call("now"),
+        },
+        purchases: {
+          name: "purchases",
+          type: "DTEPurchaseDetail",
+          array: true,
+          relation: { opposite: "dtePeriod" },
+        },
+        sales: {
+          name: "sales",
+          type: "DTESaleDetail",
+          array: true,
+          relation: { opposite: "dtePeriod" },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+        period: { type: "String" },
+      },
+    },
+    DTEPurchaseDetail: {
+      name: "DTEPurchaseDetail",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          default: ExpressionUtils.call("uuid"),
+        },
+        period: {
+          name: "period",
+          type: "String",
+          foreignKeyFor: ["dtePeriod"],
+        },
+        registerNumber: {
+          name: "registerNumber",
+          type: "Int",
+        },
+        documentType: {
+          name: "documentType",
+          type: "Int",
+          default: 33,
+        },
+        purchaseType: {
+          name: "purchaseType",
+          type: "String",
+        },
+        providerRUT: {
+          name: "providerRUT",
+          type: "String",
+        },
+        providerName: {
+          name: "providerName",
+          type: "String",
+        },
+        folio: {
+          name: "folio",
+          type: "String",
+        },
+        documentDate: {
+          name: "documentDate",
+          type: "DateTime",
+        },
+        receiptDate: {
+          name: "receiptDate",
+          type: "DateTime",
+        },
+        acknowledgeDate: {
+          name: "acknowledgeDate",
+          type: "DateTime",
+          optional: true,
+        },
+        exemptAmount: {
+          name: "exemptAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        netAmount: {
+          name: "netAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        recoverableIVA: {
+          name: "recoverableIVA",
+          type: "Decimal",
+          default: 0,
+        },
+        nonRecoverableIVA: {
+          name: "nonRecoverableIVA",
+          type: "Decimal",
+          default: 0,
+        },
+        nonRecoverableIVACode: {
+          name: "nonRecoverableIVACode",
+          type: "String",
+          optional: true,
+        },
+        totalAmount: {
+          name: "totalAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        fixedAssetNetAmount: {
+          name: "fixedAssetNetAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        commonUseIVA: {
+          name: "commonUseIVA",
+          type: "Decimal",
+          default: 0,
+        },
+        nonCreditableTax: {
+          name: "nonCreditableTax",
+          type: "Decimal",
+          default: 0,
+        },
+        nonRetainedIVA: {
+          name: "nonRetainedIVA",
+          type: "Decimal",
+          default: 0,
+        },
+        pureTobacco: {
+          name: "pureTobacco",
+          type: "Decimal",
+          default: 0,
+        },
+        cigaretteTobacco: {
+          name: "cigaretteTobacco",
+          type: "Decimal",
+          default: 0,
+        },
+        elaboratedTobacco: {
+          name: "elaboratedTobacco",
+          type: "Decimal",
+          default: 0,
+        },
+        otherTaxCode: {
+          name: "otherTaxCode",
+          type: "String",
+          optional: true,
+        },
+        otherTaxAmount: {
+          name: "otherTaxAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        otherTaxRate: {
+          name: "otherTaxRate",
+          type: "Decimal",
+          optional: true,
+        },
+        referenceDocNote: {
+          name: "referenceDocNote",
+          type: "String",
+          optional: true,
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          default: ExpressionUtils.call("now"),
+        },
+        dtePeriod: {
+          name: "dtePeriod",
+          type: "DTEPeriod",
+          optional: true,
+          relation: { opposite: "purchases", fields: ["period"], references: ["period"] },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+      },
+    },
+    DTESaleDetail: {
+      name: "DTESaleDetail",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          default: ExpressionUtils.call("uuid"),
+        },
+        period: {
+          name: "period",
+          type: "String",
+          foreignKeyFor: ["dtePeriod"],
+        },
+        registerNumber: {
+          name: "registerNumber",
+          type: "Int",
+        },
+        documentType: {
+          name: "documentType",
+          type: "Int",
+        },
+        saleType: {
+          name: "saleType",
+          type: "String",
+        },
+        clientRUT: {
+          name: "clientRUT",
+          type: "String",
+        },
+        clientName: {
+          name: "clientName",
+          type: "String",
+        },
+        folio: {
+          name: "folio",
+          type: "String",
+        },
+        documentDate: {
+          name: "documentDate",
+          type: "DateTime",
+        },
+        receiptDate: {
+          name: "receiptDate",
+          type: "DateTime",
+        },
+        receiptAcknowledgeDate: {
+          name: "receiptAcknowledgeDate",
+          type: "DateTime",
+          optional: true,
+        },
+        claimDate: {
+          name: "claimDate",
+          type: "DateTime",
+          optional: true,
+        },
+        exemptAmount: {
+          name: "exemptAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        netAmount: {
+          name: "netAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        ivaAmount: {
+          name: "ivaAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        totalAmount: {
+          name: "totalAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        totalRetainedIVA: {
+          name: "totalRetainedIVA",
+          type: "Decimal",
+          default: 0,
+        },
+        partialRetainedIVA: {
+          name: "partialRetainedIVA",
+          type: "Decimal",
+          default: 0,
+        },
+        nonRetainedIVA: {
+          name: "nonRetainedIVA",
+          type: "Decimal",
+          default: 0,
+        },
+        ownIVA: {
+          name: "ownIVA",
+          type: "Decimal",
+          default: 0,
+        },
+        thirdPartyIVA: {
+          name: "thirdPartyIVA",
+          type: "Decimal",
+          default: 0,
+        },
+        lateIVA: {
+          name: "lateIVA",
+          type: "Decimal",
+          default: 0,
+        },
+        emitterRUT: {
+          name: "emitterRUT",
+          type: "String",
+          optional: true,
+        },
+        commissionNetAmount: {
+          name: "commissionNetAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        commissionExemptAmount: {
+          name: "commissionExemptAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        commissionIVA: {
+          name: "commissionIVA",
+          type: "Decimal",
+          default: 0,
+        },
+        referenceDocType: {
+          name: "referenceDocType",
+          type: "String",
+          optional: true,
+        },
+        referenceDocFolio: {
+          name: "referenceDocFolio",
+          type: "String",
+          optional: true,
+        },
+        foreignBuyerIdentifier: {
+          name: "foreignBuyerIdentifier",
+          type: "String",
+          optional: true,
+        },
+        foreignBuyerNationality: {
+          name: "foreignBuyerNationality",
+          type: "String",
+          optional: true,
+        },
+        constructorCreditAmount: {
+          name: "constructorCreditAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        freeTradeZoneAmount: {
+          name: "freeTradeZoneAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        containerGuaranteeAmount: {
+          name: "containerGuaranteeAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        nonBillableAmount: {
+          name: "nonBillableAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        transportPassageAmount: {
+          name: "transportPassageAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        internationalTransportAmount: {
+          name: "internationalTransportAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        internalNumber: {
+          name: "internalNumber",
+          type: "Int",
+          optional: true,
+        },
+        branchCode: {
+          name: "branchCode",
+          type: "String",
+          optional: true,
+        },
+        purchaseId: {
+          name: "purchaseId",
+          type: "String",
+          optional: true,
+        },
+        shippingOrderId: {
+          name: "shippingOrderId",
+          type: "String",
+          optional: true,
+        },
+        origin: {
+          name: "origin",
+          type: "String",
+          optional: true,
+        },
+        informativeNote: {
+          name: "informativeNote",
+          type: "String",
+          optional: true,
+        },
+        paymentNote: {
+          name: "paymentNote",
+          type: "String",
+          optional: true,
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          default: ExpressionUtils.call("now"),
+        },
+        dtePeriod: {
+          name: "dtePeriod",
+          type: "DTEPeriod",
+          optional: true,
+          relation: { opposite: "sales", fields: ["period"], references: ["period"] },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+      },
+    },
   } as const;
   enums = {
     PersonType: {
@@ -4623,6 +4885,13 @@ export class SchemaType implements SchemaDef {
         EXAM: "EXAM",
         RECIPE: "RECIPE",
         OTHER: "OTHER",
+      },
+    },
+    DTEType: {
+      name: "DTEType",
+      values: {
+        PURCHASE: "PURCHASE",
+        SALE: "SALE",
       },
     },
   } as const;

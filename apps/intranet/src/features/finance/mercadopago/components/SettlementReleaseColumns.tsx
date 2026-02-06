@@ -1,3 +1,6 @@
+// Temporarily disabled due to SettlementReleaseTransaction view removal
+// Re-enable when view is restored or replaced with alternative implementation
+/*
 import type { SettlementReleaseTransaction } from "@finanzas/db/models";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -271,4 +274,7 @@ export const getSettlementReleaseColumns = (): ColumnDef<SettlementReleaseTransa
   allFields.map((field) => {
     const custom = columnBuilders[field];
     return custom ? custom() : buildStandardColumn(field);
-  });
+  });*/
+
+// Placeholder export while SettlementReleaseTransaction is disabled
+export const getSettlementReleaseColumns = () => [];
