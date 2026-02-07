@@ -79,7 +79,7 @@ export function ClassificationRow({
                 onChange={(key) => {
                   field.handleChange(key as string);
                 }}
-                value={field.state.value ?? ""}
+                value={field.state.value ?? event.category ?? ""}
               >
                 <SelectItem key="">Sin clasificación</SelectItem>
                 {categoryChoices.map((option: string) => (
