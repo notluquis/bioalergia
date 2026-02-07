@@ -1,12 +1,4 @@
-import {
-  Button,
-  Card,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownTrigger,
-  Spinner,
-} from "@heroui/react";
+import { Button, Card, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -624,14 +616,62 @@ function AnalyticsHeader({
   const nextMonth = dayjs().add(1, "month").format("YYYY-MM");
 
   return (
-    <div className="flex w-full flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-      {isLoading && (
-        <div className="flex items-center gap-2">
-          <Spinner size="sm" color="current" />
-          <span className="text-default-500 text-sm">Cargando datos...</span>
+    <div className="space-y-3">
+      <div className="flex w-full items-center justify-between">
+        {isLoading && (
+          <div className="flex items-center gap-2">
+            <Spinner size="sm" color="current" />
+            <span className="text-default-500 text-sm">Cargando datos...</span>
+          </div>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          <Button isIconOnly variant="ghost" size="sm" onPress={onRefresh}>
+            <RefreshCcw className="h-4 w-4" />
+          </Button>
+          <Button
+            isIconOnly
+            variant="ghost"
+            size="sm"
+            onPress={onToggleFilter}
+            className={isFilterOpen ? "bg-primary/10 text-primary" : ""}
+          >
+            <CalendarIcon className="h-4 w-4" />
+          </Button>
         </div>
-      )}
-      <div className="ml-auto flex flex-wrap items-center gap-2">
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1 rounded-lg bg-default-100 p-1">
+          <Button
+            size="sm"
+            variant={period === "week" ? "primary" : "ghost"}
+            onPress={() => {
+              if (isMonthSelected) {
+                onSetPeriod("week");
+              } else {
+                onSelectMonth(currentMonth);
+              }
+            }}
+            className="text-xs"
+          >
+            Por Semana
+          </Button>
+          <Button
+            size="sm"
+            variant={period === "day" ? "primary" : "ghost"}
+            onPress={() => {
+              if (isMonthSelected) {
+                onSetPeriod("day");
+              } else {
+                onSelectMonth(currentMonth);
+              }
+            }}
+            className="text-xs"
+          >
+            Por Día
+          </Button>
+        </div>
+
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onPress={() => onSelectMonth(prevMonth)}>
             Mes anterior
@@ -643,40 +683,6 @@ function AnalyticsHeader({
             Mes siguiente
           </Button>
         </div>
-        {isMonthSelected && (
-          <Dropdown>
-            <DropdownTrigger>
-              <Button size="sm" variant="outline">
-                Ver detalle por: {period === "day" ? "Día" : "Semana"}
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu
-              aria-label="Seleccionar nivel de detalle"
-              selectedKeys={[period]}
-              onSelectionChange={(keys) => {
-                const selected = Array.from(keys)[0] as "day" | "week";
-                if (selected === "day" || selected === "week") {
-                  onSetPeriod(selected);
-                }
-              }}
-            >
-              <DropdownItem key="week">Por Semana</DropdownItem>
-              <DropdownItem key="day">Por Día</DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-        )}
-        <Button
-          isIconOnly
-          variant="ghost"
-          size="sm"
-          onPress={onToggleFilter}
-          className={isFilterOpen ? "bg-primary/10 text-primary" : ""}
-        >
-          <CalendarIcon className="h-4 w-4" />
-        </Button>
-        <Button isIconOnly variant="ghost" size="sm" onPress={onRefresh}>
-          <RefreshCcw className="h-4 w-4" />
-        </Button>
       </div>
     </div>
   );
