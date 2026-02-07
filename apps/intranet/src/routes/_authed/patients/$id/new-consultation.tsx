@@ -3,15 +3,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ChevronLeft, Save } from "lucide-react";
-import { toast } from "sonner";
 import { z } from "zod";
-
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { ConsultationSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER } from "@/lib/styles";
+import { toast } from "@/lib/toast-interceptor";
 
 export const Route = createFileRoute("/_authed/patients/$id/new-consultation")({
   staticData: {

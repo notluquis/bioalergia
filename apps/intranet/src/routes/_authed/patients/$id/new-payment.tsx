@@ -3,9 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { ChevronLeft, Save } from "lucide-react";
-import { toast } from "sonner";
 import { z } from "zod";
-
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -15,6 +13,7 @@ import { PatientBudgetListSchema, PatientPaymentSchema } from "@/features/patien
 import { apiClient } from "@/lib/api-client";
 import { zDateString } from "@/lib/api-validate";
 import { PAGE_CONTAINER } from "@/lib/styles";
+import { toast } from "@/lib/toast-interceptor";
 
 export const Route = createFileRoute("/_authed/patients/$id/new-payment")({
   staticData: {

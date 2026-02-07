@@ -331,7 +331,7 @@ const MAINTENANCE_FALLBACK_PATTERN = /0[.,]5(\s*ml)?\b/i;
 
 const NormalizedTextSchema = z
   .string()
-  .optional()
+  .nullish()
   .transform((value) => (value ?? "").normalize("NFC"));
 
 const CalendarEventTextSchema = z.object({

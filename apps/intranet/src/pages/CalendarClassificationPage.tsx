@@ -2,7 +2,6 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { Alert } from "@/components/ui/Alert";
 import {
   classifyCalendarEvent,
@@ -27,6 +26,7 @@ import {
   type ParsedPayload,
 } from "@/features/calendar/utils/classification";
 import { useJobProgress } from "@/hooks/use-job-progress";
+import { toast } from "@/lib/toast-interceptor";
 
 const routeApi = getRouteApi("/_authed/calendar/classify");
 import "dayjs/locale/es";

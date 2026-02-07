@@ -71,7 +71,7 @@ export function ClassificationRow({
           </div>
         )}
 
-        <div className="grid gap-4 text-foreground text-xs md:grid-cols-6">
+        <div className="grid grid-cols-1 gap-4 text-xs text-foreground sm:grid-cols-2 lg:grid-cols-3">
           <form.Field name={`entries[${index}].category`}>
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
               <Select
@@ -79,7 +79,7 @@ export function ClassificationRow({
                 onChange={(key) => {
                   field.handleChange(key as string);
                 }}
-                value={field.state.value ?? event.category ?? ""}
+                value={field.state.value ?? ""}
               >
                 <SelectItem key="">Sin clasificación</SelectItem>
                 {categoryChoices.map((option: string) => (
@@ -153,7 +153,7 @@ export function ClassificationRow({
 
           <form.Field name={`entries[${index}].attended`}>
             {(field: { handleChange: (v: boolean) => void; state: { value: boolean } }) => (
-              <div className="flex items-end">
+              <div className="flex items-center pt-2">
                 <Checkbox
                   checked={field.state.value}
                   label="Asistió / llegó"
@@ -166,7 +166,7 @@ export function ClassificationRow({
           </form.Field>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 pt-2">
           <Button
             disabled={isSaving}
             onClick={() => {

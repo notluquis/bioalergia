@@ -1,14 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileUp, Save, X } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
-
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { AttachmentSchema } from "@/features/patients/schemas";
 import { apiClient } from "@/lib/api-client";
+import { toast } from "@/lib/toast-interceptor";
 
 interface NewAttachmentModalProps {
   isOpen: boolean;

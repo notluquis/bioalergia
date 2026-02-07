@@ -17,7 +17,7 @@ export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
     amountExpected: event.amountExpected == null ? "" : String(event.amountExpected),
     amountPaid: event.amountPaid == null ? "" : String(event.amountPaid),
     attended: event.attended ?? false,
-    category: event.category ?? "",
+    category: event.category ? event.category.trim() : "",
     dosageValue: event.dosageValue != null ? String(event.dosageValue) : "",
     dosageUnit: event.dosageUnit ?? "",
     treatmentStage: event.treatmentStage ?? "",

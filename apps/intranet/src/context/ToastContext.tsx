@@ -1,75 +1,49 @@
 import type { ReactNode } from "react";
-import { Toaster, toast } from "sonner";
-
-export interface ToastOptions {
-  duration?: number;
-  message: string;
-  title?: string;
-  variant?: ToastVariant;
-}
-
-export type ToastVariant = "error" | "info" | "success";
+import { Toaster } from "sonner";
+import { toast } from "@/lib/toast-interceptor";
 
 export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <>
       {children}
-      <Toaster richColors position="bottom-right" />
+      <Toaster
+        closeButton
+        position="bottom-right"
+        richColors
+        style={{
+          zIndex: 9999,
+        }}
+        toastOptions={{
+          style: {
+            zIndex: 9999,
+          },
+        }}
+      />
     </>
   );
 }
 
-import { addNotification } from "@/features/notifications/store/use-notification-store";
-
+/**
+ * Legacy useToast hook - now uses the global toast interceptor internally.
+ * Maps legacy function-based API to the modern options-based API.
+ * Kept for backward compatibility with existing code.
+ */
 export function useToast() {
-  const formatMessage = (value: unknown, fallback: string) => {
-    if (typeof value === "string") {
-      return value;
-    }
-    if (value instanceof Error) {
-      return value.message;
-    }
-    return fallback;
-  };
-
-  const showToast = ({ duration, message, title, variant = "info" }: ToastOptions) => {
-    // Add to persistent history
-    addNotification({
-      type: variant === "success" ? "success" : variant === "error" ? "error" : "info",
-      message,
-      title,
-    });
-
-    const opts = { duration, description: title };
-    switch (variant) {
-      case "success":
-        toast.success(message, opts);
-        break;
-      case "error":
-        toast.error(message, opts);
-        break;
-      default:
-        toast.info(message, opts);
-        break;
-    }
-  };
-
-  const success = (message: string, title = "Éxito") => {
-    showToast({ message, title, variant: "success" });
-  };
-
-  const error = (message: unknown, title = "Error") => {
-    showToast({ message: formatMessage(message, title), title, variant: "error" });
-  };
-
-  const info = (message: string, title = "Información") => {
-    showToast({ message, title, variant: "info" });
-  };
-
   return {
-    success,
-    error,
-    info,
-    showToast,
+    success: (message: string, title = "Éxito") => {
+      toast.success(message, { description: title });
+    },
+    error: (message: unknown, title = "Error") => {
+      const msg =
+        typeof message === "string"
+          ? message
+          : message instanceof Error
+            ? message.message
+            : String(message);
+      toast.error(msg, { description: title });
+    },
+    info: (message: string, title = "Información") => {
+      toast.info(message, { description: title });
+    },
   };
 }

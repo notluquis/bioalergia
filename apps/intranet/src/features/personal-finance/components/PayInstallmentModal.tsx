@@ -2,11 +2,10 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { toast } from "sonner";
-
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { toast } from "@/lib/toast-interceptor";
 
 import { personalFinanceApi } from "../api";
 import { personalFinanceKeys } from "../queries";

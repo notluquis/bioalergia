@@ -284,7 +284,7 @@ const HALF_ML_PATTERN = /0[.,]5(\s*ml)?\b/i; // 0.5 ml indicator for maintenance
 
 const NormalizedTextSchema = z
   .string()
-  .optional()
+  .nullish()
   .transform((value) => (value ?? "").normalize("NFC"));
 
 const CalendarEventTextSchema = z.object({

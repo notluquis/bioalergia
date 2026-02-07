@@ -2,13 +2,12 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { toast } from "sonner";
 import { z } from "zod";
-
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { apiClient } from "@/lib/api-client";
+import { toast } from "@/lib/toast-interceptor";
 
 const medicalCertificateSearchSchema = z.object({
   patientName: z.string().optional(),
