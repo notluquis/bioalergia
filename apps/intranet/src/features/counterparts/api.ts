@@ -6,7 +6,6 @@ import type {
   CounterpartAccount,
   CounterpartAccountSuggestion,
   CounterpartCategory,
-  CounterpartPersonType,
   CounterpartSummary,
 } from "./types";
 
@@ -34,27 +33,18 @@ const SummaryResponseSchema = z.object({
 const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
 
 export interface CounterpartUpsertPayload {
-  category: CounterpartCategory;
-  email?: null | string;
-  employeeEmail?: null | string;
-  name: string;
+  identificationNumber: string;
+  bankAccountHolder: string;
+  category?: CounterpartCategory;
   notes?: null | string;
-  personType: CounterpartPersonType;
-  rut?: null | string;
 }
 
 export async function addCounterpartAccount(
   counterpartId: number,
   payload: {
-    accountIdentifier: string;
+    accountNumber: string;
     accountType?: null | string;
     bankName?: null | string;
-    concept?: null | string;
-    holder?: null | string;
-    metadata?: null | {
-      bankAccountNumber?: null | string;
-      withdrawId?: null | string;
-    };
   },
 ) {
   const data = await apiClient.post<{ accounts: CounterpartAccount[] }>(
@@ -141,8 +131,6 @@ export async function updateCounterpartAccount(
   payload: Partial<{
     accountType: null | string;
     bankName: null | string;
-    concept: null | string;
-    holder: null | string;
   }>,
 ) {
   await apiClient.put(`/api/counterparts/accounts/${accountId}`, payload, {

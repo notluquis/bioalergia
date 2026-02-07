@@ -1,43 +1,23 @@
 import { Spinner } from "@heroui/react";
-import { useForm, useStore } from "@tanstack/react-form";
-import { Link } from "@tanstack/react-router";
+import { useForm } from "@tanstack/react-form";
 import { useEffect } from "react";
 import { z } from "zod";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
-import { formatRut, validateRut } from "@/lib/rut";
 import { GRID_2_COL_MD } from "@/lib/styles";
-import type { CounterpartCategory, PersonType } from "@/types/schema";
+import type { CounterpartCategory } from "@/types/schema";
 
 import type { CounterpartUpsertPayload } from "../api";
 import { CATEGORY_OPTIONS, EMPTY_FORM } from "../constants";
 import type { Counterpart } from "../types";
 
 const counterpartFormSchema = z.object({
-  category: z.enum([
-    "SUPPLIER",
-    "PATIENT",
-    "EMPLOYEE",
-    "PARTNER",
-    "RELATED",
-    "OTHER",
-    "CLIENT",
-    "LENDER",
-    "OCCASIONAL",
-  ] as const),
-  email: z.email().optional().or(z.literal("")),
-  name: z.string().min(1, "El nombre es requerido"),
+  identificationNumber: z.string().min(1, "El RUT es requerido"),
+  bankAccountHolder: z.string().min(1, "El nombre del titular es requerido"),
+  category: z.enum(["SUPPLIER", "CLIENT", "EMPLOYEE", "PARTNER", "LENDER", "OTHER"] as const),
   notes: z.string(),
-
-  personType: z.enum(["NATURAL", "JURIDICAL"] as const),
-  rut: z.string().refine((value) => {
-    if (!value) {
-      return true;
-    }
-    return validateRut(value);
-  }, "RUT inválido"),
 });
 
 interface CounterpartFormProps {
@@ -58,22 +38,17 @@ export function CounterpartForm({
 }: Readonly<CounterpartFormProps>) {
   const form = useForm({
     defaultValues: {
-      category: "OTHER" as CounterpartCategory,
-      email: "",
-      name: "",
+      category: "SUPPLIER" as CounterpartCategory,
+      identificationNumber: "",
+      bankAccountHolder: "",
       notes: "",
-      personType: "NATURAL" as PersonType,
-      rut: "",
     } as CounterpartFormValues,
     onSubmit: async ({ value }) => {
       const payload: CounterpartUpsertPayload = {
+        identificationNumber: value.identificationNumber,
+        bankAccountHolder: value.bankAccountHolder,
         category: value.category,
-        email: value.email ?? null,
-        employeeEmail: value.email ?? null,
-        name: value.name,
         notes: value.notes || null,
-        personType: value.personType,
-        rut: value.rut || null,
       };
       await onSave(payload);
     },
@@ -86,24 +61,19 @@ export function CounterpartForm({
   useEffect(() => {
     if (counterpart) {
       form.reset({
+        identificationNumber: counterpart.identificationNumber,
+        bankAccountHolder: counterpart.bankAccountHolder,
         category: counterpart.category,
-        email: counterpart.email ?? "",
-        name: counterpart.name,
         notes: counterpart.notes ?? "",
-        personType: counterpart.personType,
-        rut: formatRut(counterpart.rut ?? ""),
       });
     } else {
       form.reset({
         ...EMPTY_FORM,
-        personType: "NATURAL",
-      } as CounterpartFormValues);
+      });
     }
   }, [counterpart, form]);
 
   const busy = loading || saving || form.state.isSubmitting;
-  const categoryValue = useStore(form.store, (state) => state.values.category);
-  const rutValue = useStore(form.store, (state) => state.values.rut);
 
   return (
     <section aria-busy={busy} className="surface-recessed relative space-y-5 p-6">
@@ -117,7 +87,7 @@ export function CounterpartForm({
           {counterpart ? "Editar contraparte" : "Nueva contraparte"}
         </h1>
         <p className="text-default-600 text-sm">
-          Completa los datos principales para sincronizar la información de pagos y retiros.
+          Ingresa el RUT y nombre del titular para registrar una contraparte.
         </p>
       </div>
       <form
@@ -128,17 +98,16 @@ export function CounterpartForm({
         }}
       >
         <fieldset className="contents" disabled={busy}>
-          <form.Field name="rut">
+          <form.Field name="identificationNumber">
             {(field) => (
               <div>
                 <Input
-                  helper={rutValue ? formatRut(rutValue) : undefined}
                   label="RUT"
                   onBlur={field.handleBlur}
                   onChange={(e) => {
                     field.handleChange(e.target.value);
                   }}
-                  placeholder="12.345.678-9"
+                  placeholder="12345678-9"
                   type="text"
                   value={field.state.value}
                 />
@@ -152,44 +121,21 @@ export function CounterpartForm({
             )}
           </form.Field>
 
-          <form.Field name="name">
+          <form.Field name="bankAccountHolder">
             {(field) => (
               <div>
                 <Input
-                  label="Nombre"
+                  label="Nombre del titular"
                   onBlur={field.handleBlur}
                   onChange={(e) => {
                     field.handleChange(e.target.value);
                   }}
-                  placeholder="Allos Chile Spa"
+                  placeholder="Juan Pérez"
                   required
                   type="text"
                   value={field.state.value}
                 />
 
-                {field.state.meta.errors.length > 0 && (
-                  <p className="mt-1 text-danger text-xs">
-                    {field.state.meta.errors.map((err) => String(err)).join(", ")}
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-
-          <form.Field name="personType">
-            {(field) => (
-              <div>
-                <Select
-                  label="Tipo de persona"
-                  onBlur={field.handleBlur}
-                  onChange={(key) => {
-                    field.handleChange(key as PersonType);
-                  }}
-                  value={field.state.value}
-                >
-                  <SelectItem key="NATURAL">Persona natural</SelectItem>
-                  <SelectItem key="JURIDICAL">Empresa</SelectItem>
-                </Select>
                 {field.state.meta.errors.length > 0 && (
                   <p className="mt-1 text-danger text-xs">
                     {field.state.meta.errors.map((err) => String(err)).join(", ")}
@@ -223,35 +169,6 @@ export function CounterpartForm({
             )}
           </form.Field>
 
-          {categoryValue === "EMPLOYEE" && (
-            <p className="text-default-700 text-xs md:col-span-2">
-              Se vinculará como empleado utilizando el correo electrónico ingresado.
-            </p>
-          )}
-
-          <form.Field name="email">
-            {(field) => (
-              <div>
-                <Input
-                  label="Correo electrónico"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder="contacto@empresa.cl"
-                  type="email"
-                  value={field.state.value ?? ""}
-                />
-
-                {field.state.meta.errors.length > 0 && (
-                  <p className="mt-1 text-danger text-xs">
-                    {field.state.meta.errors.map((err) => String(err)).join(", ")}
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-
           {!counterpart && (
             <form.Field name="notes">
               {(field) => (
@@ -263,7 +180,7 @@ export function CounterpartForm({
                     onChange={(e) => {
                       field.handleChange(e.target.value);
                     }}
-                    placeholder="Información adicional, persona de contacto, etc."
+                    placeholder="Información adicional..."
                     rows={4}
                     value={field.state.value}
                   />
@@ -276,15 +193,6 @@ export function CounterpartForm({
                 </div>
               )}
             </form.Field>
-          )}
-
-          {counterpart?.employeeId && (
-            <p className="text-default-700 text-xs md:col-span-2">
-              Empleado vinculado (ID #{counterpart.employeeId}).{" "}
-              <Link className="font-semibold text-primary" to="/hr/employees">
-                Ver empleados
-              </Link>
-            </p>
           )}
 
           <div className="flex flex-col gap-3 md:col-span-2">

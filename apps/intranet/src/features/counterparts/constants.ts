@@ -1,32 +1,24 @@
-import type { CounterpartCategory, CounterpartPersonType } from "./types";
+import type { CounterpartCategory } from "./types";
 
 export const EMPTY_FORM = {
   category: "SUPPLIER" as CounterpartCategory,
-  email: "",
-  name: "",
+  identificationNumber: "",
+  bankAccountHolder: "",
   notes: "",
-  personType: "COMPANY" as CounterpartPersonType,
-  rut: "",
 };
 
 export const ACCOUNT_FORM_DEFAULT = {
   accountIdentifier: "",
   accountType: "",
-  bankAccountNumber: "",
   bankName: "",
-  concept: "",
-  holder: "",
 };
 
 export const CATEGORY_OPTIONS: { label: string; value: CounterpartCategory }[] = [
   { label: "Proveedor", value: "SUPPLIER" },
-  { label: "Paciente", value: "PATIENT" },
+  { label: "Cliente", value: "CLIENT" },
   { label: "Empleado", value: "EMPLOYEE" },
   { label: "Socio", value: "PARTNER" },
-  { label: "Relacionado a socio", value: "RELATED" },
-  { label: "Cliente", value: "CLIENT" },
   { label: "Prestamista", value: "LENDER" },
-  { label: "Ocasional", value: "OCCASIONAL" },
   { label: "Otro", value: "OTHER" },
 ];
 

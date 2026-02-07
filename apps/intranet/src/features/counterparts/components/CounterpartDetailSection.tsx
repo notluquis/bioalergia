@@ -36,9 +36,13 @@ export function CounterpartDetailSection({
             <p className="text-default-500 text-xs uppercase tracking-[0.3em]">
               Contraparte activa
             </p>
-            <h3 className="font-semibold text-foreground text-lg">{detail.counterpart.name}</h3>
-            {detail.counterpart.rut && (
-              <p className="text-default-600 text-xs">RUT {detail.counterpart.rut}</p>
+            <h3 className="font-semibold text-foreground text-lg">
+              {detail.counterpart.bankAccountHolder}
+            </h3>
+            {detail.counterpart.identificationNumber && (
+              <p className="text-default-600 text-xs">
+                RUT {detail.counterpart.identificationNumber}
+              </p>
             )}
           </div>
           <Button
@@ -59,16 +63,6 @@ export function CounterpartDetailSection({
             <p className="font-semibold text-default-500">Clasificación</p>
             <p className="text-foreground text-sm">{detail.counterpart.category ?? "—"}</p>
           </div>
-          <div>
-            <p className="font-semibold text-default-500">Tipo de persona</p>
-            <p className="text-foreground text-sm">{detail.counterpart.personType}</p>
-          </div>
-          {detail.counterpart.email && (
-            <div className="sm:col-span-2">
-              <p className="font-semibold text-default-500">Correo electrónico</p>
-              <p className="text-foreground text-sm">{detail.counterpart.email}</p>
-            </div>
-          )}
         </div>
       </ServicesSurface>
 

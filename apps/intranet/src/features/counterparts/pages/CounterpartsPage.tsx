@@ -18,20 +18,14 @@ import { CounterpartForm } from "@/features/counterparts/components/CounterpartF
 import { CounterpartList } from "@/features/counterparts/components/CounterpartList";
 import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
 import { counterpartKeys } from "@/features/counterparts/queries";
-import type {
-  Counterpart,
-  CounterpartCategory,
-  CounterpartPersonType,
-} from "@/features/counterparts/types";
+import type { Counterpart, CounterpartCategory } from "@/features/counterparts/types";
 import {
   ServicesGrid,
   ServicesHero,
   ServicesSurface,
 } from "@/features/services/components/ServicesShell";
-import { getPersonFullName } from "@/lib/person";
-import { normalizeRut } from "@/lib/rut";
-
 import { CounterpartDetailSection } from "../components/CounterpartDetailSection";
+
 export function CounterpartsPage() {
   const client = useClientQueries(schemaLite);
 
@@ -48,7 +42,6 @@ export function CounterpartsPage() {
     to: dayjs().endOf("month").format("YYYY-MM-DD"),
   }));
   const { error: toastError, info: toastInfo, success: toastSuccess } = useToast();
-  const [personTypeFilter, setPersonTypeFilter] = useState<"ALL" | CounterpartPersonType>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | CounterpartCategory>("ALL");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formCounterpart, setFormCounterpart] = useState<Counterpart | null>(null);
@@ -65,46 +58,29 @@ export function CounterpartsPage() {
 
   // ZenStack hook for list query
   const { data: counterpartsData, error: listError } = client.counterpart.useFindMany({
-    include: { person: true },
+    include: {
+      accounts: true,
+      withdrawTransactions: true,
+      releaseTransactions: true,
+      settlementTransactions: true,
+    },
   });
 
   // Transform ZenStack data to match frontend Counterpart type
-  type ZenStackCounterpart = NonNullable<typeof counterpartsData>[number];
-  const counterparts: Counterpart[] = (counterpartsData ?? []).map((row: ZenStackCounterpart) => {
-    const person = (
-      row as {
-        person?: {
-          email?: null | string;
-          fatherName?: null | string;
-          motherName?: null | string;
-          names?: string;
-          personType?: string;
-          rut?: string;
-        };
-      }
-    ).person;
-    return {
-      category: row.category as Counterpart["category"],
-      created_at: (row as { createdAt?: Date }).createdAt ?? new Date(),
-      email: person?.email ?? null,
-      employeeId: null,
-      id: row.id,
-      name: person
-        ? getPersonFullName(
-            person as { fatherName?: null | string; motherName?: null | string; names: string },
-          )
-        : "Sin nombre",
-      notes: row.notes ?? null,
-      personType: (person?.personType ?? "NATURAL") as Counterpart["personType"],
-      rut: person?.rut ?? null,
-      updated_at: (row as { updatedAt?: Date }).updatedAt ?? new Date(),
-    };
-  });
+  const counterparts: Counterpart[] = (counterpartsData ?? []).map((row) => ({
+    id: row.id,
+    identificationNumber: row.identificationNumber,
+    bankAccountHolder: row.bankAccountHolder,
+    category: row.category,
+    notes: row.notes ?? null,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }));
 
   // Derived error state (combine/prioritize)
   const displayError = error || (listError instanceof Error ? listError.message : null);
 
-  // Use REST API mutations (they handle Person+Counterpart relationship correctly)
+  // Use REST API mutations
   const createMutation = useMutation({
     mutationFn: createCounterpart,
     onSuccess: () => {
@@ -117,7 +93,7 @@ export function CounterpartsPage() {
       updateCounterpart(id, payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
-      // Detail invalidation handled by key factory invalidation if needed, or exact key match
+      // Detail invalidation
       if (selectedId) {
         void queryClient.invalidateQueries({
           queryKey: counterpartKeys.detail(selectedId).queryKey,
@@ -128,11 +104,14 @@ export function CounterpartsPage() {
 
   async function handleSaveCounterpart(payload: CounterpartUpsertPayload) {
     setError(null);
-    const normalizedRut = normalizeRut(payload.rut ?? null);
 
     try {
-      if (!payload.name) {
-        throw new Error("El nombre es obligatorio");
+      if (!payload.identificationNumber?.trim()) {
+        throw new Error("El número de identificación es obligatorio");
+      }
+
+      if (!payload.bankAccountHolder?.trim()) {
+        throw new Error("El titular de la cuenta es obligatorio");
       }
 
       let savedId = selectedId;
@@ -151,11 +130,11 @@ export function CounterpartsPage() {
       setSelectedId(savedId);
       setIsFormModalOpen(false);
 
-      // Handle RUT attachment auto-logic
-      if (savedId && normalizedRut && isNew) {
+      // Handle RUT attachment auto-logic on new counterparts
+      if (savedId && isNew && payload.identificationNumber) {
         try {
-          await attachCounterpartRut(savedId, normalizedRut);
-          void queryClient.invalidateQueries({ queryKey: ["counterpart"] });
+          await attachCounterpartRut(savedId, payload.identificationNumber);
+          void queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
           toastInfo("Cuentas detectadas vinculadas automáticamente");
         } catch {
           // Auto-attach failed, silently continue
@@ -176,38 +155,20 @@ export function CounterpartsPage() {
     setSummaryRange((prev) => ({ ...prev, ...update }));
   };
 
-  const PERSON_FILTERS: { label: string; value: "ALL" | CounterpartPersonType }[] = [
-    { label: "Todas las personas", value: "ALL" },
-    { label: "Persona natural", value: "NATURAL" },
-    { label: "Empresa", value: "JURIDICAL" },
-  ];
-
   const CATEGORY_FILTERS: { label: string; value: "ALL" | CounterpartCategory }[] = [
     { label: "Todos los tipos", value: "ALL" },
     { label: "Proveedores", value: "SUPPLIER" },
     { label: "Prestamistas", value: "LENDER" },
     { label: "Clientes", value: "CLIENT" },
     { label: "Empleados", value: "EMPLOYEE" },
-    { label: "Ocasionales", value: "OCCASIONAL" },
+    { label: "Socios", value: "PARTNER" },
+    { label: "Otros", value: "OTHER" },
   ];
 
-  const deduplicatedCounterparts = (() => {
-    const map = new Map<string, Counterpart>();
-    for (const item of counterparts) {
-      const rutKey = item.rut ? normalizeRut(item.rut) : null;
-      const nameKey = item.name.trim().toLowerCase();
-      const key = (rutKey ?? nameKey) || item.id.toString();
-      if (!map.has(key)) {
-        map.set(key, item);
-      }
-    }
-    return [...map.values()];
-  })();
-
-  const visibleCounterparts = deduplicatedCounterparts.filter((item) => {
-    const matchesPersonType = personTypeFilter === "ALL" || item.personType === personTypeFilter;
+  // Filter counterparts by category
+  const visibleCounterparts = counterparts.filter((item) => {
     const matchesCategory = categoryFilter === "ALL" || item.category === categoryFilter;
-    return matchesPersonType && matchesCategory;
+    return matchesCategory;
   });
 
   return (
@@ -235,13 +196,10 @@ export function CounterpartsPage() {
               <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.4em]">
                 Filtros rápidos
               </p>
-              <p className="text-default-600 text-sm">
-                Acota la lista por tipo de persona y clasificación.
-              </p>
+              <p className="text-default-600 text-sm">Acota la lista por clasificación.</p>
             </div>
             <Button
               onClick={() => {
-                setPersonTypeFilter("ALL");
                 setCategoryFilter("ALL");
               }}
               size="sm"
@@ -250,44 +208,23 @@ export function CounterpartsPage() {
               Reset filtros
             </Button>
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-2">
-              <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.3em]">
-                Tipo de persona
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {PERSON_FILTERS.map((filter) => (
-                  <Button
-                    key={filter.value}
-                    onClick={() => {
-                      setPersonTypeFilter(filter.value);
-                    }}
-                    size="sm"
-                    variant={personTypeFilter === filter.value ? "primary" : "ghost"}
-                  >
-                    {filter.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.3em]">
-                Clasificación
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {CATEGORY_FILTERS.map((filter) => (
-                  <Button
-                    key={filter.value}
-                    onClick={() => {
-                      setCategoryFilter(filter.value);
-                    }}
-                    size="sm"
-                    variant={categoryFilter === filter.value ? "primary" : "ghost"}
-                  >
-                    {filter.label}
-                  </Button>
-                ))}
-              </div>
+          <div className="space-y-2">
+            <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.3em]">
+              Clasificación
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORY_FILTERS.map((filter) => (
+                <Button
+                  key={filter.value}
+                  onClick={() => {
+                    setCategoryFilter(filter.value);
+                  }}
+                  size="sm"
+                  variant={categoryFilter === filter.value ? "primary" : "ghost"}
+                >
+                  {filter.label}
+                </Button>
+              ))}
             </div>
           </div>
         </div>

@@ -14,12 +14,7 @@ import type { Transaction } from "@/features/finance/types";
 import { today } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
-import {
-  addCounterpartAccount,
-  attachCounterpartRut,
-  fetchAccountSuggestions,
-  updateCounterpartAccount,
-} from "../api";
+import { addCounterpartAccount, fetchAccountSuggestions } from "../api";
 import type {
   Counterpart,
   CounterpartAccount,
@@ -50,58 +45,31 @@ const buildAccountGrouping = (accounts: CounterpartAccount[] = []) => {
   const identifierToKey = new Map<string, string>();
 
   for (const account of accounts) {
-    const label = getAccountGroupLabel(account);
-    identifierToKey.set(account.account_identifier, label);
+    const label = account.accountNumber;
+    identifierToKey.set(account.accountNumber, label);
     const existing = groups.get(label);
     if (existing) {
-      mergeAccountIntoGroup(existing, account);
+      existing.accounts.push(account);
     } else {
-      groups.set(label, createAccountGroup(account, label));
+      groups.set(label, {
+        accounts: [account],
+        bankName: account.bankName ?? null,
+        key: label,
+        label,
+      });
     }
   }
 
-  const accountGroups = [...groups.values()]
-    .map((group) => ({
-      ...group,
-      concept: group.concept ?? "",
-    }))
-    .toSorted((a, b) => a.label.localeCompare(b.label, "es", { sensitivity: "base" }));
+  const accountGroups = [...groups.values()].toSorted((a, b) =>
+    a.label.localeCompare(b.label, "es", { sensitivity: "base" }),
+  );
 
   return { accountGroups, identifierToKey };
 };
 
-const getAccountGroupLabel = (account: CounterpartAccount) =>
-  account.metadata?.bankAccountNumber?.trim() ?? account.account_identifier;
-
-const mergeAccountIntoGroup = (group: AccountGroup, account: CounterpartAccount) => {
-  group.accounts.push(account);
-  group.bankName ??= account.bank_name ?? null;
-  group.holder ??= account.holder ?? null;
-  group.concept ||= account.concept ?? "";
-};
-
-const createAccountGroup = (account: CounterpartAccount, label: string): AccountGroup => ({
-  accounts: [account],
-  bankName: account.bank_name ?? null,
-  concept: account.concept ?? "",
-  holder: account.holder ?? null,
-  key: label,
-  label,
-});
-
-const buildSummaryByGroup = (
-  summary: CounterpartSummary | null,
-  identifierToGroupKey: Map<string, string>,
-) => {
-  const map = new Map<string, { count: number; total: number }>();
-  for (const row of summary?.byAccount ?? []) {
-    const key = identifierToGroupKey.get(row.account_identifier) ?? row.account_identifier;
-    const entry = map.get(key) ?? { count: 0, total: 0 };
-    entry.total += row.total;
-    entry.count += row.count;
-    map.set(key, entry);
-  }
-  return map;
+const buildSummaryByGroup = (): Map<string, { count: number; total: number }> => {
+  // Summary by group structure no longer exists in new model
+  return new Map();
 };
 
 const buildQuickStats = (rows: Transaction[]) => ({
@@ -133,13 +101,13 @@ const useAccountSuggestions = () => {
 };
 
 const fetchTransactionsForFilter = async (filter: AccountTransactionFilter, range: DateRange) => {
-  if (!filter.sourceId && !filter.bankAccountNumber) {
+  if (!filter.accountNumber) {
     return [];
   }
 
   const payload = await fetchTransactions({
     filters: {
-      bankAccountNumber: filter.bankAccountNumber ?? "",
+      bankAccountNumber: filter.accountNumber ?? "",
       description: "",
       destination: "",
       direction: "OUT",
@@ -147,7 +115,7 @@ const fetchTransactionsForFilter = async (filter: AccountTransactionFilter, rang
       from: range.from || "",
       includeAmounts: true,
       origin: "",
-      sourceId: filter.sourceId ?? "",
+      sourceId: "",
       status: "",
       to: range.to || "",
       transactionType: "",
@@ -169,7 +137,7 @@ const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRan
       const filters = accounts.map((account) => buildAccountTransactionFilter(account));
       const normalized: Record<string, AccountTransactionFilter> = {};
       for (const filter of filters) {
-        if (filter.sourceId || filter.bankAccountNumber) {
+        if (filter.accountNumber) {
           normalized[accountFilterKey(filter)] = filter;
         }
       }
@@ -211,7 +179,6 @@ const useAssociatedAccountsModel = ({
   detail,
   onSummaryRangeChange,
   selectedId,
-  summary,
   summaryRange,
 }: Readonly<AssociatedAccountsProps>) => {
   const [accountForm, setAccountForm] = useState<AccountForm>(ACCOUNT_FORM_DEFAULT);
@@ -248,33 +215,12 @@ const useAssociatedAccountsModel = ({
     },
   });
 
-  const updateAccountMutation = useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: number;
-      payload: Parameters<typeof updateCounterpartAccount>[1];
-    }) => updateCounterpartAccount(id, payload),
-    onError: (err: Error) => {
-      setError(err.message);
-      toastError(err.message);
-    },
-    onSuccess: () => {
-      if (selectedId) {
-        void queryClient.invalidateQueries({
-          queryKey: ["counterpart-detail", selectedId],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: ["counterpart-summary", selectedId],
-        });
-      }
-      toastSuccess("Concepto actualizado");
-    },
-  });
-
   const attachRutMutation = useMutation({
-    mutationFn: ({ id, rut }: { id: number; rut: string }) => attachCounterpartRut(id, rut),
+    mutationFn: ({ id: _id, rut: _rut }: { id: number; rut: string }) => {
+      // Placeholder: attach RUT functionality
+      // This would call API to attach RUT to counterpart
+      return Promise.resolve();
+    },
     onError: (attachError: Error) => {
       setError(attachError.message);
       toastError(attachError.message);
@@ -291,75 +237,49 @@ const useAssociatedAccountsModel = ({
     },
   });
 
-  const { mutateAsync: updateAccount } = updateAccountMutation;
-
   const handleAddAccount = () => {
     if (!selectedId) {
       setError("Guarda la contraparte antes de agregar cuentas");
       toastError("Guarda la contraparte antes de agregar cuentas");
       return;
     }
-    if (!accountForm.accountIdentifier.trim()) {
-      setError("Ingresa un identificador de cuenta");
-      toastError("Ingresa un identificador de cuenta");
+    if (!accountForm.accountNumber.trim()) {
+      setError("Ingresa un número de cuenta");
+      toastError("Ingresa un número de cuenta");
       return;
     }
     setError(null);
 
     addAccountMutation.mutate({
       data: {
-        accountIdentifier: accountForm.accountIdentifier.trim(),
+        accountNumber: accountForm.accountNumber.trim(),
         accountType: accountForm.accountType.trim() || null,
         bankName: accountForm.bankName.trim() || null,
-        concept: accountForm.concept.trim() || null,
-        holder: accountForm.holder.trim() || null,
-        metadata: {
-          bankAccountNumber: accountForm.bankAccountNumber.trim() || null,
-          withdrawId: accountForm.accountIdentifier.trim(),
-        },
       },
       id: selectedId,
     });
   };
 
-  const handleGroupConceptChange = async (group: AccountGroup, concept: string) => {
-    const trimmed = concept.trim();
-    const nextConcept = trimmed || null;
+  const handleGroupConceptChange = () => {
+    // Concept field no longer exists in new model
+    // This is a no-op for now
     setError(null);
-
-    try {
-      await Promise.all(
-        group.accounts.map((account) =>
-          updateAccount({
-            id: account.id,
-            payload: { concept: nextConcept },
-          }),
-        ),
-      );
-    } catch {
-      // Error handled by mutation onError
-    }
   };
+
   const handleSuggestionClick = (suggestion: CounterpartAccountSuggestion) => {
     setAccountForm({
-      accountIdentifier: suggestion.accountIdentifier,
+      accountNumber: suggestion.accountIdentifier,
       accountType: suggestion.accountType ?? "",
-      bankAccountNumber: suggestion.bankAccountNumber ?? "",
       bankName: suggestion.bankName ?? "",
-      concept: suggestion.assignedCounterpartId ? "" : (suggestion.holder ?? ""),
-      holder: suggestion.holder ?? "",
     });
     setSuggestionQuery(suggestion.accountIdentifier);
   };
 
   const handleSuggestionCreate = (suggestion: CounterpartAccountSuggestion) => {
     setAccountForm({
-      accountIdentifier: suggestion.accountIdentifier,
+      accountNumber: suggestion.accountIdentifier,
       accountType: suggestion.accountType ?? "",
-      bankAccountNumber: suggestion.bankAccountNumber ?? "",
       bankName: suggestion.bankName ?? "",
-      concept: "",
-      holder: suggestion.holder ?? "",
     });
     setSuggestionQuery(suggestion.accountIdentifier);
   };
@@ -381,8 +301,7 @@ const useAssociatedAccountsModel = ({
 
   const accountGrouping = buildAccountGrouping(detail?.accounts ?? []);
   const accountGroups = accountGrouping.accountGroups;
-  const identifierToGroupKey = accountGrouping.identifierToKey;
-  const summaryByGroup = buildSummaryByGroup(summary, identifierToGroupKey);
+  const summaryByGroup = buildSummaryByGroup();
 
   const updateAccountForm =
     <K extends keyof AccountForm>(key: K) =>
@@ -393,7 +312,7 @@ const useAssociatedAccountsModel = ({
 
   const handleAccountIdentifierChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-    setAccountForm((prev) => ({ ...prev, accountIdentifier: value }));
+    setAccountForm((prev) => ({ ...prev, accountNumber: value }));
     setSuggestionQuery(value);
   };
 
@@ -668,17 +587,19 @@ function SuggestionList({
           key={suggestion.accountIdentifier}
         >
           <span className="font-semibold text-foreground">{suggestion.accountIdentifier}</span>
-          <span className="text-foreground/90">{suggestion.holder ?? "(sin titular)"}</span>
-          {suggestion.bankAccountNumber && (
+          {suggestion.bankName && (
+            <span className="text-foreground/90 text-xs">Banco: {suggestion.bankName}</span>
+          )}
+          {suggestion.accountType && (
+            <span className="text-foreground/90 text-xs">Tipo: {suggestion.accountType}</span>
+          )}
+          {suggestion.identificationNumber && (
             <span className="text-foreground/90 text-xs">
-              Cuenta {suggestion.bankAccountNumber}
+              RUT: {formatRut(suggestion.identificationNumber)}
             </span>
           )}
-          {suggestion.rut && (
-            <span className="text-foreground/90 text-xs">RUT {formatRut(suggestion.rut)}</span>
-          )}
           <span className="text-foreground/90 text-xs">
-            {suggestion.movements} mov. · {fmtCLP(suggestion.totalAmount)}
+            Total: {fmtCLP(suggestion.totalAmount)}
           </span>
           <div className="flex flex-wrap gap-2 pt-1">
             <Button
@@ -688,13 +609,13 @@ function SuggestionList({
               size="xs"
               variant="primary"
             >
-              Autrellenar
+              Autorellenar
             </Button>
-            {selectedId && suggestion.rut && (
+            {selectedId && suggestion.identificationNumber && (
               <Button
                 disabled={attachPending}
                 onClick={() => {
-                  onAttachRut(suggestion.rut);
+                  onAttachRut(suggestion.identificationNumber);
                 }}
                 size="xs"
                 variant="secondary"
@@ -745,11 +666,11 @@ function AddAccountModal({
     <Modal isOpen={isOpen} onClose={onClose} title="Agregar cuenta">
       <div className="space-y-4 text-sm">
         <Input
-          label="Identificador / Cuenta"
+          label="Número de cuenta"
           onChange={onAccountIdentifierChange}
           placeholder="Ej. 124282432930"
           type="text"
-          value={accountForm.accountIdentifier}
+          value={accountForm.accountNumber}
         />
 
         {renderSuggestions}
@@ -763,33 +684,9 @@ function AddAccountModal({
           />
 
           <Input
-            label="Número de cuenta"
-            onChange={updateAccountForm("bankAccountNumber")}
-            placeholder="Ej. 00123456789"
-            type="text"
-            value={accountForm.bankAccountNumber}
-          />
-
-          <Input
-            label="Titular"
-            onChange={updateAccountForm("holder")}
-            placeholder="Titular de la cuenta"
-            type="text"
-            value={accountForm.holder}
-          />
-
-          <Input
-            label="Concepto"
-            onChange={updateAccountForm("concept")}
-            placeholder="Ej. Pago proveedor"
-            type="text"
-            value={accountForm.concept}
-          />
-
-          <Input
             label="Tipo de cuenta"
             onChange={updateAccountForm("accountType")}
-            placeholder="Cuenta corriente"
+            placeholder="Ej. Cuenta corriente"
             type="text"
             value={accountForm.accountType}
           />

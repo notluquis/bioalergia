@@ -40,7 +40,6 @@ model Person {
   personType   PersonType    @default(NATURAL) @map("person_type")
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
-  counterpart  Counterpart?
   employee     Employee?
   transactions Transaction[]
   user         User?

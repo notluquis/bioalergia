@@ -1,11 +1,11 @@
 export interface Counterpart {
   accounts?: CounterpartAccount[];
+  bankAccountHolder: string;
   category: CounterpartCategory;
   createdAt: Date;
   id: number;
+  identificationNumber: string;
   notes?: null | string;
-  person?: Person;
-  personId: number;
   updatedAt: Date;
 }
 export interface CounterpartAccount {
@@ -19,11 +19,8 @@ export type CounterpartCategory =
   | "CLIENT"
   | "EMPLOYEE"
   | "LENDER"
-  | "OCCASIONAL"
   | "OTHER"
   | "PARTNER"
-  | "PATIENT"
-  | "RELATED"
   | "SUPPLIER";
 export interface Employee {
   bankAccountNumber?: null | string;

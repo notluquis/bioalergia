@@ -100,6 +100,7 @@ export function TreatmentAnalyticsPage() {
   const navigate = routeApi.useNavigate();
   const searchParams = routeApi.useSearch();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [dateRangeError, setDateRangeError] = useState<null | string>(null);
 
   const selectedMonth = searchParams.month;
   const isMonthSelected = Boolean(selectedMonth);
@@ -127,9 +128,20 @@ export function TreatmentAnalyticsPage() {
   const { data, isLoading, refetch } = useQuery({
     ...calendarQueries.treatmentAnalytics(filters, granularity),
     enabled: hasValidDates,
+    staleTime: 1000 * 60 * 2, // 2 minutos
+    gcTime: 1000 * 60 * 5, // 5 minutos (antes cacheTime)
   });
 
   const handleDateChange = (from: string, to: string) => {
+    // Validar si ambas fechas están presentes
+    if (from && to) {
+      if (dayjs(from).isAfter(dayjs(to))) {
+        setDateRangeError("La fecha 'desde' debe ser anterior a 'hasta'");
+        return;
+      }
+      setDateRangeError(null);
+    }
+
     void navigate({
       search: (prev) => ({
         ...prev,
@@ -210,6 +222,7 @@ export function TreatmentAnalyticsPage() {
 
       {isFilterOpen && (
         <AnalyticsFilters
+          dateRangeError={dateRangeError}
           filters={filters}
           onDateChange={handleDateChange}
           onMonthSelect={handleMonthSelect}
@@ -485,7 +498,7 @@ const CustomTooltip = ({
         <p className="mb-1.5 font-semibold text-foreground text-xs">
           {dayjs(label).isValid() ? dayjs(label).format("DD MMM YYYY") : label}
         </p>
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           {payload.map((p) => (
             <div key={p.name} className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: p.color }} />
@@ -654,9 +667,12 @@ function AnalyticsHeader({
             variant="ghost"
             size="sm"
             onPress={onRefresh}
-            className={isRefetching ? "opacity-50" : ""}
           >
-            <RefreshCcw className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
+            {isRefetching ? (
+              <Spinner size="sm" color="current" />
+            ) : (
+              <RefreshCcw className="h-4 w-4" />
+            )}
           </Button>
           <Button
             isIconOnly
@@ -719,65 +735,134 @@ function AnalyticsHeader({
 }
 
 function AnalyticsFilters({
+  dateRangeError,
   filters,
   onDateChange,
   onMonthSelect,
 }: {
+  dateRangeError: null | string;
   filters: TreatmentAnalyticsFilters;
   onDateChange: (from: string, to: string) => void;
   onMonthSelect: (month: string) => void;
 }) {
+  const applyQuickRange = (days: number) => {
+    const to = dayjs().endOf("day");
+    const from = to.subtract(days, "day").startOf("day");
+    onDateChange(from.format("YYYY-MM-DD"), to.format("YYYY-MM-DD"));
+  };
   return (
     <Card className="border-default-100 bg-content2/50">
-      <Card.Content className="flex flex-col items-end gap-3 p-3 sm:flex-row sm:gap-4 sm:p-4">
-        <div className="grid w-full flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="date-from" className="text-default-500 text-xs">
-              Desde
-            </label>
-            <input
-              id="date-from"
-              type="date"
-              className="rounded-md bg-default-100 px-2.5 py-1.5 text-foreground text-sm"
-              value={filters.from || ""}
-              onChange={(e) => onDateChange(e.target.value, filters.to || "")}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="date-to" className="text-default-500 text-xs">
-              Hasta
-            </label>
-            <input
-              id="date-to"
-              type="date"
-              className="rounded-md bg-default-100 px-2.5 py-1.5 text-foreground text-sm"
-              value={filters.to || ""}
-              onChange={(e) => onDateChange(filters.from || "", e.target.value)}
-            />
+      <Card.Content className="space-y-4 p-3 sm:p-4">
+        {/* Current Range Indicator */}
+        <div className="rounded-lg bg-default-50 p-2.5">
+          <p className="text-default-500 text-xs">
+            <span className="font-semibold">Rango actual:</span>{" "}
+            {dayjs(filters.from).format("D MMM")} - {dayjs(filters.to).format("D MMM YYYY")}
+          </p>
+        </div>
+
+        {/* Quick Range Presets */}
+        <div className="space-y-2">
+          <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+            Rangos rápidos
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onPress={() => applyQuickRange(7)}
+              className="text-xs"
+            >
+              Últimos 7 días
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onPress={() => applyQuickRange(30)}
+              className="text-xs"
+            >
+              Últimas 4 semanas
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onPress={() => applyQuickRange(90)}
+              className="text-xs"
+            >
+              Últimos 3 meses
+            </Button>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onPress={() => onMonthSelect(dayjs().subtract(1, "month").format("YYYY-MM"))}
-          >
-            Mes anterior
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onPress={() => onMonthSelect(dayjs().format("YYYY-MM"))}
-          >
-            Mes actual
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onPress={() => onMonthSelect(dayjs().add(1, "month").format("YYYY-MM"))}
-          >
-            Mes siguiente
-          </Button>
+
+        {/* Date Inputs */}
+        <div className="space-y-3">
+          <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+            Rango personalizado
+          </p>
+          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="date-from" className="text-default-500 text-xs">
+                Desde
+              </label>
+              <input
+                id="date-from"
+                type="date"
+                className="rounded-md bg-default-100 px-2.5 py-1.5 text-foreground text-sm"
+                value={filters.from || ""}
+                onChange={(e) => onDateChange(e.target.value, filters.to || "")}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="date-to" className="text-default-500 text-xs">
+                Hasta
+              </label>
+              <input
+                id="date-to"
+                type="date"
+                className="rounded-md bg-default-100 px-2.5 py-1.5 text-foreground text-sm"
+                value={filters.to || ""}
+                onChange={(e) => onDateChange(filters.from || "", e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {dateRangeError && (
+            <p className="rounded-md bg-danger/10 p-2 text-danger text-xs">{dateRangeError}</p>
+          )}
+        </div>
+
+        {/* Month Shortcuts */}
+        <div className="space-y-2 border-default-200 border-t pt-3">
+          <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+            Atajos de mes
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onPress={() => onMonthSelect(dayjs().subtract(1, "month").format("YYYY-MM"))}
+              className="text-xs"
+            >
+              Mes anterior
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onPress={() => onMonthSelect(dayjs().format("YYYY-MM"))}
+              className="text-xs"
+            >
+              Mes actual
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onPress={() => onMonthSelect(dayjs().add(1, "month").format("YYYY-MM"))}
+              className="text-xs"
+            >
+              Mes siguiente
+            </Button>
+          </div>
         </div>
       </Card.Content>
     </Card>

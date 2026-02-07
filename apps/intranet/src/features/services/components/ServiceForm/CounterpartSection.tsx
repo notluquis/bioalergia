@@ -52,7 +52,7 @@ export function CounterpartSection({
       >
         <SelectItem key="">Sin contraparte</SelectItem>
         {counterparts.map((counterpart) => (
-          <SelectItem key={counterpart.id}>{counterpart.name}</SelectItem>
+          <SelectItem key={counterpart.id}>{counterpart.bankAccountHolder}</SelectItem>
         ))}
       </Select>
       <Select
@@ -67,8 +67,8 @@ export function CounterpartSection({
         <SelectItem key="">Sin cuenta específica</SelectItem>
         {accounts.map((account) => (
           <SelectItem key={account.id}>
-            {account.account_identifier}
-            {account.bank_name ? ` · ${account.bank_name}` : ""}
+            {account.accountNumber}
+            {account.bankName ? ` · ${account.bankName}` : ""}
           </SelectItem>
         ))}
       </Select>

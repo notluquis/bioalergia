@@ -118,12 +118,6 @@ export class SchemaType implements SchemaDef {
           ],
           default: ExpressionUtils.call("now"),
         },
-        counterpart: {
-          name: "counterpart",
-          type: "Counterpart",
-          optional: true,
-          relation: { opposite: "person" },
-        },
         employee: {
           name: "employee",
           type: "Employee",
@@ -1582,15 +1576,29 @@ export class SchemaType implements SchemaDef {
           ],
           default: ExpressionUtils.call("autoincrement"),
         },
-        personId: {
-          name: "personId",
-          type: "Int",
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
           unique: true,
           attributes: [
             { name: "@unique" },
-            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
           ],
-          foreignKeyFor: ["person"],
+        },
+        bankAccountHolder: {
+          name: "bankAccountHolder",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_account_holder") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] },
+          ],
         },
         category: {
           name: "category",
@@ -1640,31 +1648,23 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "counterpart" },
         },
-        person: {
-          name: "person",
-          type: "Person",
-          attributes: [
-            {
-              name: "@relation",
-              args: [
-                {
-                  name: "fields",
-                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]),
-                },
-                {
-                  name: "references",
-                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
-                },
-                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
-              ],
-            },
-          ],
-          relation: {
-            opposite: "counterpart",
-            fields: ["personId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
+        withdrawTransactions: {
+          name: "withdrawTransactions",
+          type: "WithdrawTransaction",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
+        releaseTransactions: {
+          name: "releaseTransactions",
+          type: "ReleaseTransaction",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
+        settlementTransactions: {
+          name: "settlementTransactions",
+          type: "SettlementTransaction",
+          array: true,
+          relation: { opposite: "counterpart" },
         },
         services: {
           name: "services",
@@ -1714,7 +1714,7 @@ export class SchemaType implements SchemaDef {
       idFields: ["id"],
       uniqueFields: {
         id: { type: "Int" },
-        personId: { type: "Int" },
+        identificationNumber: { type: "String" },
       },
     },
     CounterpartAccount: {
@@ -2896,6 +2896,19 @@ export class SchemaType implements SchemaDef {
             { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] },
           ],
         },
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+          foreignKeyFor: ["counterpart"],
+        },
         transactionDate: {
           name: "transactionDate",
           type: "DateTime",
@@ -3602,6 +3615,35 @@ export class SchemaType implements SchemaDef {
           ],
           default: ExpressionUtils.call("now"),
         },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "settlementTransactions",
+            fields: ["identificationNumber"],
+            references: ["identificationNumber"],
+          },
+        },
       },
       attributes: [
         {
@@ -3702,6 +3744,19 @@ export class SchemaType implements SchemaDef {
             { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_id") }] },
             { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] },
           ],
+        },
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+          foreignKeyFor: ["counterpart"],
         },
         date: {
           name: "date",
@@ -4336,6 +4391,35 @@ export class SchemaType implements SchemaDef {
           ],
           default: ExpressionUtils.call("now"),
         },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "releaseTransactions",
+            fields: ["identificationNumber"],
+            references: ["identificationNumber"],
+          },
+        },
       },
       attributes: [
         {
@@ -4552,6 +4636,7 @@ export class SchemaType implements SchemaDef {
             },
             { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
           ],
+          foreignKeyFor: ["counterpart"],
         },
         bankId: {
           name: "bankId",
@@ -4632,6 +4717,35 @@ export class SchemaType implements SchemaDef {
             },
           ],
           default: ExpressionUtils.call("now"),
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "withdrawTransactions",
+            fields: ["identificationNumber"],
+            references: ["identificationNumber"],
+          },
         },
       },
       attributes: [
@@ -12722,14 +12836,11 @@ export class SchemaType implements SchemaDef {
       name: "CounterpartCategory",
       values: {
         SUPPLIER: "SUPPLIER",
-        PATIENT: "PATIENT",
+        CLIENT: "CLIENT",
         EMPLOYEE: "EMPLOYEE",
         PARTNER: "PARTNER",
-        RELATED: "RELATED",
-        OTHER: "OTHER",
-        CLIENT: "CLIENT",
         LENDER: "LENDER",
-        OCCASIONAL: "OCCASIONAL",
+        OTHER: "OTHER",
       },
     },
     EmployeeStatus: {

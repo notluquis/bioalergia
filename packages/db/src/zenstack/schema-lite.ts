@@ -70,12 +70,6 @@ export class SchemaType implements SchemaDef {
           updatedAt: true,
           default: ExpressionUtils.call("now"),
         },
-        counterpart: {
-          name: "counterpart",
-          type: "Counterpart",
-          optional: true,
-          relation: { opposite: "person" },
-        },
         employee: {
           name: "employee",
           type: "Employee",
@@ -666,11 +660,14 @@ export class SchemaType implements SchemaDef {
           id: true,
           default: ExpressionUtils.call("autoincrement"),
         },
-        personId: {
-          name: "personId",
-          type: "Int",
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
           unique: true,
-          foreignKeyFor: ["person"],
+        },
+        bankAccountHolder: {
+          name: "bankAccountHolder",
+          type: "String",
         },
         category: {
           name: "category",
@@ -699,15 +696,23 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "counterpart" },
         },
-        person: {
-          name: "person",
-          type: "Person",
-          relation: {
-            opposite: "counterpart",
-            fields: ["personId"],
-            references: ["id"],
-            onDelete: "Cascade",
-          },
+        withdrawTransactions: {
+          name: "withdrawTransactions",
+          type: "WithdrawTransaction",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
+        releaseTransactions: {
+          name: "releaseTransactions",
+          type: "ReleaseTransaction",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
+        settlementTransactions: {
+          name: "settlementTransactions",
+          type: "SettlementTransaction",
+          array: true,
+          relation: { opposite: "counterpart" },
         },
         services: {
           name: "services",
@@ -719,7 +724,7 @@ export class SchemaType implements SchemaDef {
       idFields: ["id"],
       uniqueFields: {
         id: { type: "Int" },
-        personId: { type: "Int" },
+        identificationNumber: { type: "String" },
       },
     },
     CounterpartAccount: {
@@ -1166,6 +1171,12 @@ export class SchemaType implements SchemaDef {
           type: "String",
           unique: true,
         },
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
+          optional: true,
+          foreignKeyFor: ["counterpart"],
+        },
         transactionDate: {
           name: "transactionDate",
           type: "DateTime",
@@ -1458,6 +1469,16 @@ export class SchemaType implements SchemaDef {
           updatedAt: true,
           default: ExpressionUtils.call("now"),
         },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          relation: {
+            opposite: "settlementTransactions",
+            fields: ["identificationNumber"],
+            references: ["identificationNumber"],
+          },
+        },
       },
       idFields: ["id"],
       uniqueFields: {
@@ -1478,6 +1499,12 @@ export class SchemaType implements SchemaDef {
           name: "sourceId",
           type: "String",
           unique: true,
+        },
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
+          optional: true,
+          foreignKeyFor: ["counterpart"],
         },
         date: {
           name: "date",
@@ -1748,6 +1775,16 @@ export class SchemaType implements SchemaDef {
           updatedAt: true,
           default: ExpressionUtils.call("now"),
         },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          relation: {
+            opposite: "releaseTransactions",
+            fields: ["identificationNumber"],
+            references: ["identificationNumber"],
+          },
+        },
       },
       idFields: ["id"],
       uniqueFields: {
@@ -1817,6 +1854,7 @@ export class SchemaType implements SchemaDef {
           name: "identificationNumber",
           type: "String",
           optional: true,
+          foreignKeyFor: ["counterpart"],
         },
         bankId: {
           name: "bankId",
@@ -1853,6 +1891,16 @@ export class SchemaType implements SchemaDef {
           type: "DateTime",
           updatedAt: true,
           default: ExpressionUtils.call("now"),
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          relation: {
+            opposite: "withdrawTransactions",
+            fields: ["identificationNumber"],
+            references: ["identificationNumber"],
+          },
         },
       },
       idFields: ["id"],
@@ -4757,14 +4805,11 @@ export class SchemaType implements SchemaDef {
       name: "CounterpartCategory",
       values: {
         SUPPLIER: "SUPPLIER",
-        PATIENT: "PATIENT",
+        CLIENT: "CLIENT",
         EMPLOYEE: "EMPLOYEE",
         PARTNER: "PARTNER",
-        RELATED: "RELATED",
-        OTHER: "OTHER",
-        CLIENT: "CLIENT",
         LENDER: "LENDER",
-        OCCASIONAL: "OCCASIONAL",
+        OTHER: "OTHER",
       },
     },
     EmployeeStatus: {

@@ -1,9 +1,7 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import type { FocusEvent } from "react";
 
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import type { Transaction } from "@/features/finance/types";
 import { fmtCLP } from "@/lib/format";
 
@@ -15,7 +13,7 @@ const accountGroupHelper = createColumnHelper<AccountGroup>();
 
 export const getAccountGroupColumns = (
   summaryByGroup: Map<string, { count: number; total: number }>,
-  onConceptChange: (group: AccountGroup, concept: string) => void,
+  _onConceptChange: (group: AccountGroup) => void,
   onQuickView: (group: AccountGroup) => void,
 ) => [
   accountGroupHelper.accessor("label", {
@@ -32,7 +30,7 @@ export const getAccountGroupColumns = (
           )}
           {group.accounts.length > 1 && (
             <div className="text-foreground/90 text-xs">
-              {group.accounts.length} identificadores vinculados
+              {group.accounts.length} cuentas vinculadas
             </div>
           )}
         </div>
@@ -43,33 +41,6 @@ export const getAccountGroupColumns = (
   accountGroupHelper.accessor("bankName", {
     cell: ({ getValue }) => getValue() ?? "-",
     header: "Banco",
-  }),
-  accountGroupHelper.accessor("holder", {
-    cell: ({ getValue }) => getValue() ?? "-",
-    header: "Titular",
-  }),
-  accountGroupHelper.accessor("concept", {
-    cell: ({ row }) => {
-      const group = row.original;
-      const summaryInfo = summaryByGroup.get(group.key);
-
-      if (!summaryInfo || summaryInfo.count === 0) {
-        return <span className="text-default-500 text-xs italic">Sin movimientos</span>;
-      }
-
-      return (
-        <Input
-          className="w-full"
-          defaultValue={group.concept}
-          onBlur={(event: FocusEvent<HTMLInputElement>) => {
-            onConceptChange(group, event.target.value);
-          }}
-          placeholder="Concepto (ej. Compra de vacunas)"
-          type="text"
-        />
-      );
-    },
-    header: "Concepto",
   }),
   accountGroupHelper.display({
     cell: ({ row }) => {

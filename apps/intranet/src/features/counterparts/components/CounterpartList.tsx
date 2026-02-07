@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/Button";
-import { formatRut } from "@/lib/rut";
 
 import type { Counterpart, CounterpartCategory } from "../types";
 
@@ -12,10 +11,10 @@ interface CounterpartListProps {
 
 const CATEGORY_OPTIONS: { label: string; value: CounterpartCategory }[] = [
   { label: "Proveedor", value: "SUPPLIER" },
-  { label: "Paciente", value: "PATIENT" },
+  { label: "Cliente", value: "CLIENT" },
   { label: "Empleado", value: "EMPLOYEE" },
   { label: "Socio", value: "PARTNER" },
-  { label: "Relacionado a socio", value: "RELATED" },
+  { label: "Prestamista", value: "LENDER" },
   { label: "Otro", value: "OTHER" },
 ];
 
@@ -61,7 +60,7 @@ export function CounterpartList({
                 type="button"
               >
                 <span className="flex items-center justify-between gap-2">
-                  <span className="block font-medium tracking-tight">{item.name}</span>
+                  <span className="block font-medium tracking-tight">{item.bankAccountHolder}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 font-semibold text-xs uppercase tracking-wide ${
                       isActive ? "bg-primary/15 text-primary" : "bg-default-100/60 text-default-500"
@@ -70,9 +69,9 @@ export function CounterpartList({
                     {CATEGORY_LABELS[item.category] ?? item.category}
                   </span>
                 </span>
-                {item.rut && (
+                {item.identificationNumber && (
                   <span className="mt-1 block text-foreground/90 text-xs">
-                    RUT {formatRut(item.rut)}
+                    RUT {item.identificationNumber}
                   </span>
                 )}
               </button>

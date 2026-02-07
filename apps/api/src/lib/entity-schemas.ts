@@ -107,29 +107,13 @@ export const serviceUpdateSchema = serviceBaseSchema.partial();
 
 // --- Counterpart Schemas ---
 
-const rutSchema = z.string().trim().max(64).optional().nullable(); // Validation logic removed for simplicity in migration, can add custom refine later
-
 export const counterpartPayloadSchema = z.object({
-  rut: rutSchema,
-  name: z.string().min(1).max(191),
-  personType: z.enum(["PERSON", "COMPANY", "OTHER"]).default("OTHER"),
+  identificationNumber: z.string().trim().min(1).max(50),
+  bankAccountHolder: z.string().min(1).max(255),
   category: z
-    .enum([
-      "SUPPLIER",
-      "PATIENT",
-      "EMPLOYEE",
-      "PARTNER",
-      "RELATED",
-      "OTHER",
-      "CLIENT",
-      "LENDER",
-      "OCCASIONAL",
-    ])
+    .enum(["SUPPLIER", "CLIENT", "EMPLOYEE", "PARTNER", "LENDER", "OTHER"])
     .optional()
     .default("SUPPLIER"),
-  email: z.string().email().optional().nullable(),
-  employeeEmail: z.string().email().optional().nullable(),
-  employeeId: z.coerce.number().int().positive().optional().nullable(),
   notes: z.string().max(500).optional().nullable(),
 });
 
