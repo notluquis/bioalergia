@@ -329,7 +329,7 @@ const TABLE_OPTIONS: TableOption[] = [
   },
   {
     fields: [
-      { name: "period", required: true, type: "string" },
+      { name: "period", required: false, type: "string" },
       { name: "documentDate", required: true, type: "date" },
       { name: "receiptDate", required: true, type: "date" },
       { name: "providerRUT", required: true, type: "string" },
@@ -361,7 +361,7 @@ const TABLE_OPTIONS: TableOption[] = [
   },
   {
     fields: [
-      { name: "period", required: true, type: "string" },
+      { name: "period", required: false, type: "string" },
       { name: "documentDate", required: true, type: "date" },
       { name: "receiptDate", required: true, type: "date" },
       { name: "clientRUT", required: true, type: "string" },
@@ -392,12 +392,13 @@ const TABLE_OPTIONS: TableOption[] = [
       { name: "freeTradeZoneAmount", required: false, type: "number" },
       { name: "containerGuaranteeAmount", required: false, type: "number" },
       { name: "nonBillableAmount", required: false, type: "number" },
-      { name: "transportPassageAmount", required: false, type: "number" },
       { name: "internationalTransportAmount", required: false, type: "number" },
+      { name: "nationalTransportPassageAmount", required: false, type: "number" },
+      { name: "nonCostSaleIndicator", required: false, type: "number" },
+      { name: "periodicServiceIndicator", required: false, type: "number" },
+      { name: "totalPeriodAmount", required: false, type: "number" },
       { name: "internalNumber", required: false, type: "number" },
       { name: "branchCode", required: false, type: "string" },
-      { name: "purchaseId", required: false, type: "string" },
-      { name: "shippingOrderId", required: false, type: "string" },
       { name: "origin", required: false, type: "string" },
       { name: "informativeNote", required: false, type: "string" },
       { name: "paymentNote", required: false, type: "string" },
