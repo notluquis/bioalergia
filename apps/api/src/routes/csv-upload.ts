@@ -333,10 +333,9 @@ csvUploadRoutes.post("/preview", async (c) => {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
 
-  const { table, data, period } = await c.req.json<{
+  const { table, data } = await c.req.json<{
     table: TableName;
     data: object[];
-    period?: string;
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
@@ -352,10 +351,7 @@ csvUploadRoutes.post("/preview", async (c) => {
     }
   }
 
-  // Log preview request with period if provided
-  if (period) {
-    console.log(`[CSV Preview] Table: ${table}, Period: ${period}, Rows: ${data.length}`);
-  }
+  console.log(`[CSV Preview] Table: ${table}, Rows: ${data.length}`);
 
   const errors: string[] = [];
   let toInsert = 0;
@@ -525,10 +521,9 @@ csvUploadRoutes.post("/import", async (c) => {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
 
-  const { table, data, period } = await c.req.json<{
+  const { table, data } = await c.req.json<{
     table: TableName;
     data: object[];
-    period?: string;
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
@@ -551,7 +546,6 @@ csvUploadRoutes.post("/import", async (c) => {
     auth.email,
     ":",
     table,
-    period ? `[Period: ${period}]` : "",
     "- inserted:",
     inserted,
     "updated:",
