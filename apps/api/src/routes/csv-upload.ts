@@ -185,8 +185,8 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
   services: { action: "create", subject: "Service" },
   inventory_items: { action: "create", subject: "InventoryItem" },
   employee_timesheets: { action: "create", subject: "Timesheet" },
-  dte_purchases: { action: "create", subject: "DTEPurchase" },
-  dte_sales: { action: "create", subject: "DTESale" },
+  dte_purchases: { action: "create", subject: "DTEPurchaseDetail" },
+  dte_sales: { action: "create", subject: "DTESaleDetail" },
 };
 
 // ============================================================
