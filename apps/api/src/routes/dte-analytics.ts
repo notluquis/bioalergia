@@ -42,7 +42,7 @@ dteAnalyticsRoutes.get("/purchases/summary", zValidator("query", periodParamsSch
     return reply(c, { status: "error", message: "Unauthorized" }, 401);
   }
 
-  const canRead = await hasPermission(user.id, "read", "dte");
+  const canRead = await hasPermission(user.id, "read", "DTEPurchaseDetail");
   if (!canRead) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
@@ -308,12 +308,7 @@ dteAnalyticsRoutes.get(
 
       return reply(c, {
         status: "success",
-        data: {
-          year1,
-          year2,
-          type,
-          comparison,
-        },
+        data: comparison,
       });
     } catch (error) {
       console.error("Error fetching yearly comparison:", error);

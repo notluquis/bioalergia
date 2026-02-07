@@ -47,8 +47,11 @@ function SelectBase<T extends object>({
   // Map legacy value/onChange to HeroUI selectedKey/onSelectionChange if provided
   const { value, onChange, ...restProps } = props;
   const mappedProps: HeroSelectProps<T> = { ...restProps };
-  if (value !== undefined) {
+  if (value !== undefined && value !== "") {
     mappedProps.selectedKey = value;
+  } else if (value === "" || value === undefined) {
+    // For empty or undefined values, pass null to selectedKey to show placeholder
+    mappedProps.selectedKey = null;
   }
   if (onChange) {
     mappedProps.onSelectionChange = onChange;

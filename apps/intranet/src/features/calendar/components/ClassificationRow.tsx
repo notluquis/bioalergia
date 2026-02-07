@@ -51,7 +51,7 @@ export function ClassificationRow({
           <span className="text-foreground-500 text-xs">{formatEventDate(event)}</span>
         </div>
         <div className="flex flex-col items-end gap-2 text-foreground-500 text-xs">
-          {event.eventType && (
+          {event.eventType && event.eventType !== "default" && (
             <span className="rounded-full bg-default-100 px-2 py-1 font-semibold text-foreground">
               {event.eventType}
             </span>
@@ -71,22 +71,29 @@ export function ClassificationRow({
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-4 text-xs text-foreground sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 text-foreground text-xs sm:grid-cols-2 lg:grid-cols-3">
           <form.Field name={`entries[${index}].category`}>
-            {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
-              <Select
-                label="Clasificación"
-                onChange={(key) => {
-                  field.handleChange(key as string);
-                }}
-                value={field.state.value ?? ""}
-              >
-                <SelectItem key="">Sin clasificación</SelectItem>
-                {categoryChoices.map((option: string) => (
-                  <SelectItem key={option}>{option}</SelectItem>
-                ))}
-              </Select>
-            )}
+            {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => {
+              // Validate that the value exists in available choices to prevent React Aria ID leak
+              const validatedValue =
+                field.state.value && categoryChoices.includes(field.state.value)
+                  ? field.state.value
+                  : "";
+              return (
+                <Select
+                  label="Clasificación"
+                  onChange={(key) => {
+                    field.handleChange(key as string);
+                  }}
+                  value={validatedValue}
+                >
+                  <SelectItem key="">Sin clasificación</SelectItem>
+                  {categoryChoices.map((option: string) => (
+                    <SelectItem key={option}>{option}</SelectItem>
+                  ))}
+                </Select>
+              );
+            }}
           </form.Field>
 
           <form.Field name={`entries[${index}].amountExpected`}>
@@ -168,6 +175,7 @@ export function ClassificationRow({
 
         <div className="flex flex-wrap items-center gap-2 pt-2">
           <Button
+            variant="primary"
             disabled={isSaving}
             onClick={() => {
               onSave(event, index);

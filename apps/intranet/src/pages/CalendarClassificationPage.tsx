@@ -232,7 +232,7 @@ function CalendarClassificationPage() {
       <ClassificationEmptyState error={error} eventsCount={events.length} loading={loading} />
 
       {events.length > 0 && (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {events.map((event, index) => {
             const key = eventKey(event);
             return (
