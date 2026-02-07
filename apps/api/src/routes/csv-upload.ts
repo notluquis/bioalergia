@@ -244,6 +244,36 @@ function parseOptionalNumber(value: unknown): number | undefined {
   return Number.isNaN(num) ? undefined : num;
 }
 
+/**
+ * Parse required string from CSV
+ * Throws error if value is missing or empty
+ */
+function parseRequiredString(value: unknown, fieldName: string): string {
+  if (value == null || value === "") {
+    throw new Error(`${fieldName} es requerido`);
+  }
+  const str = String(value).trim();
+  if (str.length === 0) {
+    throw new Error(`${fieldName} no puede estar vacío`);
+  }
+  return str;
+}
+
+/**
+ * Parse required number from CSV
+ * Throws error if value is missing or invalid
+ */
+function parseRequiredNumber(value: unknown, fieldName: string): number {
+  if (value == null || value === "") {
+    throw new Error(`${fieldName} es requerido`);
+  }
+  const num = Number(value);
+  if (Number.isNaN(num)) {
+    throw new Error(`${fieldName} debe ser un número válido`);
+  }
+  return num;
+}
+
 // Helper to get auth
 async function getAuth(c: { req: { header: (name: string) => string | undefined } }) {
   const cookieHeader = c.req.header("Cookie");
@@ -328,127 +358,168 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy csv preview
 csvUploadRoutes.post("/preview", async (c) => {
-  const auth = await getAuth(c);
-  if (!auth) {
-    return reply(c, { status: "error", message: "No autorizado" }, 401);
-  }
-
-  const { table, data, period } = await c.req.json<{
-    table: TableName;
-    data: object[];
-    period?: string;
-  }>();
-
-  if (!table || !data || !Array.isArray(data)) {
-    return reply(c, { status: "error", message: "Table and data array required" }, 400);
-  }
-
-  // Check permissions
-  const required = TABLE_PERMISSIONS[table];
-  if (required) {
-    const hasPerm = await hasPermission(auth.userId, required.action, required.subject);
-    if (!hasPerm) {
-      return reply(c, { status: "error", message: "Forbidden" }, 403);
+  try {
+    const auth = await getAuth(c);
+    if (!auth) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
     }
-  }
 
-  // Log preview request with period if provided
-  if (period) {
-    console.log(`[CSV Preview] Table: ${table}, Period: ${period}, Rows: ${data.length}`);
-  }
-
-  const errors: string[] = [];
-  let toInsert = 0;
-  let toUpdate = 0;
-  let toSkip = 0;
-
-  for (let i = 0; i < data.length; i++) {
-    const row = data[i] as CSVRow;
-
+    let jsonData: { table: TableName; data: object[]; period?: string };
     try {
-      if (table === "people" && row.rut) {
-        const exists = await findPersonByRut(String(row.rut));
-        if (exists) {
-          toUpdate++;
-        } else {
-          toInsert++;
-        }
-      } else if ((table === "employees" || table === "counterparts") && row.rut) {
-        const person = await findPersonByRut(String(row.rut));
-        if (!person) {
-          errors.push(`Fila ${i + 1}: Persona con RUT ${row.rut} no existe`);
-          toSkip++;
-        } else {
-          if (table === "employees" && person.employee) {
-            toUpdate++;
-          } else if (table === "counterparts" && person.counterpart) {
+      jsonData = await c.req.json<{
+        table: TableName;
+        data: object[];
+        period?: string;
+      }>();
+    } catch (parseError) {
+      console.error("[CSV Preview] JSON parse error:", parseError);
+      return reply(
+        c,
+        {
+          status: "error",
+          message: `JSON parse error: ${parseError instanceof Error ? parseError.message : "Unknown error"}`,
+        },
+        400,
+      );
+    }
+
+    const { table, data, period } = jsonData;
+
+    if (!table || !data || !Array.isArray(data)) {
+      console.warn("[CSV Preview] Invalid payload - missing table or data array");
+      return reply(c, { status: "error", message: "Table and data array required" }, 400);
+    }
+
+    // Check permissions
+    const required = TABLE_PERMISSIONS[table];
+    if (required) {
+      const hasPerm = await hasPermission(auth.userId, required.action, required.subject);
+      if (!hasPerm) {
+        console.warn("[CSV Preview] Permission denied for user", auth.userId, "table", table);
+        return reply(c, { status: "error", message: "Forbidden" }, 403);
+      }
+    }
+
+    // Log preview request with period if provided
+    if (period) {
+      console.log(
+        `[CSV Preview] Table: ${table}, Period: ${period}, Rows: ${data.length}, User: ${auth.email}`,
+      );
+    }
+
+    const errors: string[] = [];
+    let toInsert = 0;
+    let toUpdate = 0;
+    let toSkip = 0;
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i] as CSVRow;
+
+      try {
+        if (table === "people" && row.rut) {
+          const exists = await findPersonByRut(String(row.rut));
+          if (exists) {
             toUpdate++;
           } else {
             toInsert++;
           }
-        }
-      } else if (table === "daily_balances" && row.date) {
-        const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
-        const exists = await db.dailyBalance.findUnique({
-          where: { date: new Date(dateStr) },
-        });
-        if (exists) {
-          toUpdate++;
-        } else {
+        } else if ((table === "employees" || table === "counterparts") && row.rut) {
+          const person = await findPersonByRut(String(row.rut));
+          if (!person) {
+            errors.push(`Fila ${i + 1}: Persona con RUT ${row.rut} no existe`);
+            toSkip++;
+          } else {
+            if (table === "employees" && person.employee) {
+              toUpdate++;
+            } else if (table === "counterparts" && person.counterpart) {
+              toUpdate++;
+            } else {
+              toInsert++;
+            }
+          }
+        } else if (table === "daily_balances" && row.date) {
+          const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
+          const exists = await db.dailyBalance.findUnique({
+            where: { date: new Date(dateStr) },
+          });
+          if (exists) {
+            toUpdate++;
+          } else {
+            toInsert++;
+          }
+        } else if (table === "daily_production_balances") {
+          const dateStr = parseFlexibleDate(row.balanceDate || row.Fecha);
+          if (!dateStr) {
+            errors.push(`Fila ${i + 1}: Fecha inválida`);
+            toSkip++;
+            continue;
+          }
+          const exists = await db.dailyProductionBalance.findUnique({
+            where: { balanceDate: new Date(dateStr) },
+          });
+          if (exists) {
+            toUpdate++;
+          } else {
+            toInsert++;
+          }
+        } else if (table === "withdrawals") {
+          if (!row.withdrawId) {
+            errors.push(`Fila ${i + 1}: withdrawId requerido`);
+            toSkip++;
+            continue;
+          }
+          const exists = await db.withdrawTransaction.findUnique({
+            where: { withdrawId: String(row.withdrawId) },
+          });
+          if (exists) {
+            toUpdate++;
+          } else {
+            toInsert++;
+          }
+        } else if (table === "services" && row.name) {
+          // Services can have duplicate names, so just count as insert
           toInsert++;
-        }
-      } else if (table === "daily_production_balances") {
-        const dateStr = parseFlexibleDate(row.balanceDate || row.Fecha);
-        if (!dateStr) {
-          errors.push(`Fila ${i + 1}: Fecha inválida`);
-          toSkip++;
-          continue;
-        }
-        const exists = await db.dailyProductionBalance.findUnique({
-          where: { balanceDate: new Date(dateStr) },
-        });
-        if (exists) {
-          toUpdate++;
-        } else {
-          toInsert++;
-        }
-      } else if (table === "withdrawals") {
-        if (!row.withdrawId) {
-          errors.push(`Fila ${i + 1}: withdrawId requerido`);
-          toSkip++;
-          continue;
-        }
-        const exists = await db.withdrawTransaction.findUnique({
-          where: { withdrawId: String(row.withdrawId) },
-        });
-        if (exists) {
-          toUpdate++;
-        } else {
-          toInsert++;
-        }
-      } else if (table === "services" && row.name) {
-        // Services can have duplicate names, so just count as insert
-        toInsert++;
-      } else if (table === "inventory_items" && row.name) {
-        const exists = await db.inventoryItem.findFirst({
-          where: { name: String(row.name) },
-        });
-        if (exists) {
-          toUpdate++;
-        } else {
-          toInsert++;
-        }
-      } else if (table === "employee_timesheets" && row.rut && row.workDate) {
-        const person = await findPersonByRut(String(row.rut));
-        if (!person?.employee) {
-          errors.push(`Fila ${i + 1}: Empleado con RUT ${row.rut} no existe`);
-          toSkip++;
-        } else {
-          const dateStr = dayjs(String(row.workDate)).format("YYYY-MM-DD");
-          const exists = await db.employeeTimesheet.findFirst({
+        } else if (table === "inventory_items" && row.name) {
+          const exists = await db.inventoryItem.findFirst({
+            where: { name: String(row.name) },
+          });
+          if (exists) {
+            toUpdate++;
+          } else {
+            toInsert++;
+          }
+        } else if (table === "employee_timesheets" && row.rut && row.workDate) {
+          const person = await findPersonByRut(String(row.rut));
+          if (!person?.employee) {
+            errors.push(`Fila ${i + 1}: Empleado con RUT ${row.rut} no existe`);
+            toSkip++;
+          } else {
+            const dateStr = dayjs(String(row.workDate)).format("YYYY-MM-DD");
+            const exists = await db.employeeTimesheet.findFirst({
+              where: {
+                employeeId: person.employee.id,
+                workDate: new Date(dateStr),
+              },
+            });
+            if (exists) {
+              toUpdate++;
+            } else {
+              toInsert++;
+            }
+          }
+        } else if (table === "dte_purchases" && row.providerRUT && row.folio) {
+          // DTE Purchases are identified by providerRUT + folio + documentDate
+          const dateStr = parseFlexibleDate(row.documentDate);
+          if (!dateStr) {
+            errors.push(`Fila ${i + 1}: Fecha de documento inválida`);
+            toSkip++;
+            continue;
+          }
+          const exists = await db.dTEPurchaseDetail.findFirst({
             where: {
-              employeeId: person.employee.id,
-              workDate: new Date(dateStr),
+              providerRUT: String(row.providerRUT),
+              folio: String(row.folio),
+              documentDate: new Date(dateStr),
             },
           });
           if (exists) {
@@ -456,63 +527,57 @@ csvUploadRoutes.post("/preview", async (c) => {
           } else {
             toInsert++;
           }
-        }
-      } else if (table === "dte_purchases" && row.providerRUT && row.folio) {
-        // DTE Purchases are identified by providerRUT + folio + documentDate
-        const dateStr = parseFlexibleDate(row.documentDate);
-        if (!dateStr) {
-          errors.push(`Fila ${i + 1}: Fecha de documento inválida`);
-          toSkip++;
-          continue;
-        }
-        const exists = await db.dTEPurchaseDetail.findFirst({
-          where: {
-            providerRUT: String(row.providerRUT),
-            folio: String(row.folio),
-            documentDate: new Date(dateStr),
-          },
-        });
-        if (exists) {
-          toUpdate++;
+        } else if (table === "dte_sales" && row.clientRUT && row.folio) {
+          // DTE Sales are identified by clientRUT + folio + documentDate
+          const dateStr = parseFlexibleDate(row.documentDate);
+          if (!dateStr) {
+            errors.push(`Fila ${i + 1}: Fecha de documento inválida`);
+            toSkip++;
+            continue;
+          }
+          const exists = await db.dTESaleDetail.findFirst({
+            where: {
+              clientRUT: String(row.clientRUT),
+              folio: String(row.folio),
+              documentDate: new Date(dateStr),
+            },
+          });
+          if (exists) {
+            toUpdate++;
+          } else {
+            toInsert++;
+          }
         } else {
           toInsert++;
         }
-      } else if (table === "dte_sales" && row.clientRUT && row.folio) {
-        // DTE Sales are identified by clientRUT + folio + documentDate
-        const dateStr = parseFlexibleDate(row.documentDate);
-        if (!dateStr) {
-          errors.push(`Fila ${i + 1}: Fecha de documento inválida`);
-          toSkip++;
-          continue;
-        }
-        const exists = await db.dTESaleDetail.findFirst({
-          where: {
-            clientRUT: String(row.clientRUT),
-            folio: String(row.folio),
-            documentDate: new Date(dateStr),
-          },
-        });
-        if (exists) {
-          toUpdate++;
-        } else {
-          toInsert++;
-        }
-      } else {
-        toInsert++;
+      } catch (error) {
+        // Only non-duplicate errors go here
+        const errorMessage =
+          error instanceof Error ? error.message : "Error de validación desconocido";
+        errors.push(`Fila ${i + 1}: ${errorMessage}`);
+        toSkip++;
       }
-    } catch (_e) {
-      errors.push(`Fila ${i + 1}: Error de validación`);
-      toSkip++;
     }
-  }
 
-  return reply(c, {
-    status: "ok",
-    toInsert,
-    toUpdate,
-    toSkip,
-    errors: errors.slice(0, 20), // Limit errors
-  });
+    return reply(c, {
+      status: "ok",
+      toInsert,
+      toUpdate,
+      toSkip,
+      errors: errors.slice(0, 20), // Limit errors
+    });
+  } catch (error) {
+    console.error("[CSV Preview] Unexpected error:", error);
+    const errorMsg = error instanceof Error ? error.message : "Unexpected error";
+    return reply(
+      c,
+      {
+        status: "error",
+        message: `Preview error: ${errorMsg}`,
+      },
+      500,
+    );
+  }
 });
 
 // ============================================================
@@ -975,23 +1040,16 @@ function buildDtePurchaseData(
   documentDate: Date,
   receiptDate: Date,
 ): Record<string, unknown> {
-  // Required fields - no defaults, throw if missing
-  if (!row.registerNumber) {
-    throw new Error("registerNumber requerido");
-  }
-  if (!row.documentType) {
-    throw new Error("documentType requerido");
-  }
-  if (!row.purchaseType) {
-    throw new Error("purchaseType requerido");
-  }
+  // Required fields validation - with clear error messages
+  const registerNumber = parseRequiredNumber(row.registerNumber, "registerNumber");
+  const documentType = parseRequiredNumber(row.documentType, "documentType");
+  const purchaseType = parseRequiredString(row.purchaseType, "purchaseType");
 
   // Build object with required + optional fields
-  // Always include required then conditionally add optional
   const data: Record<string, unknown> = {
-    registerNumber: Number(row.registerNumber),
-    documentType: Number(row.documentType),
-    purchaseType: String(row.purchaseType),
+    registerNumber,
+    documentType,
+    purchaseType,
     providerRUT: String(row.providerRUT),
     folio: String(row.folio),
     documentDate,
@@ -1064,22 +1122,16 @@ function buildDteSaleData(
   documentDate: Date,
   receiptDate: Date,
 ): Record<string, unknown> {
-  // Required fields - no defaults, throw if missing
-  if (!row.registerNumber) {
-    throw new Error("registerNumber requerido");
-  }
-  if (!row.documentType) {
-    throw new Error("documentType requerido");
-  }
-  if (!row.saleType) {
-    throw new Error("saleType requerido");
-  }
+  // Required fields validation - with clear error messages
+  const registerNumber = parseRequiredNumber(row.registerNumber, "registerNumber");
+  const documentType = parseRequiredNumber(row.documentType, "documentType");
+  const saleType = parseRequiredString(row.saleType, "saleType");
 
   // Build object with required + optional fields
   const data: Record<string, unknown> = {
-    registerNumber: Number(row.registerNumber),
-    documentType: Number(row.documentType),
-    saleType: String(row.saleType),
+    registerNumber,
+    documentType,
+    saleType,
     clientRUT: String(row.clientRUT),
     folio: String(row.folio),
     documentDate,
