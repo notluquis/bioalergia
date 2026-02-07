@@ -36,16 +36,17 @@
 
 ### 1. Zenstack (Not Direct Prisma)
 - **Location:** `/packages/db/zenstack/schema.zmodel`
-- **Generated:** Zenstack generates `~schema.prisma` automatically
-- **DO NOT edit** `~schema.prisma` - it's auto-generated
+- **Generated:** Zenstack generates internal `~schema.prisma` (auto-generated, do not edit)
+- **DO NOT edit** `~schema.prisma` - it's auto-generated and regenerated on each schema change
 - **Commands:**
   ```bash
-  pnpm db:push              # Push schema to DB
-  pnpm migrate:dev          # Create migration
-  pnpm migrate:deploy       # Apply migrations
-  pnpm generate             # Regenerate Prisma from .zmodel
+  pnpm db:push              # Push schema to DB via Zenstack
+  pnpm migrate:dev          # Create migration via Zenstack
+  pnpm migrate:deploy       # Apply migrations via Zenstack
+  pnpm generate             # Regenerate TypeScript types from .zmodel
   ```
-- **Never use** `npx prisma db push` - use Zenstack CLI instead
+- **Never use** `npx prisma db push` or `npx prisma migrate` - use Zenstack CLI instead
+- **No @prisma/client imports** - Use `@finanzas/db` exports (Kysely ORM powered)
 
 ### 2. Dosage Field Refactoring (Completed Jan 29, 2026)
 **Problem:** Dosage stored as concatenated strings ("0,5 ml") made SQL aggregation complex and didn't handle locale variations (0.5 vs 0,5)
