@@ -196,7 +196,7 @@ export function TreatmentAnalyticsPage() {
           }));
 
   return (
-    <div className="mx-auto max-w-7xl space-y-3 px-4 py-3 pb-6 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl space-y-4 px-3 py-3 pb-6 sm:px-4 lg:px-6">
       <AnalyticsHeader
         isMonthSelected={isMonthSelected}
         period={period}
@@ -278,11 +278,13 @@ function AnalyticsCharts({
     <div className="space-y-6">
       {/* Trend Chart */}
       <Card className="border-default-200 shadow-sm">
-        <Card.Header className="pb-2">
-          <h3 className="font-semibold text-base text-foreground">Tendencia de Actividad</h3>
+        <Card.Header className="pb-1.5">
+          <h3 className="font-semibold text-foreground text-sm sm:text-base">
+            Tendencia de Actividad
+          </h3>
         </Card.Header>
         <Card.Content>
-          <div className="h-60 min-h-60 w-full">
+          <div className="h-52 min-h-52 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={trendData?.toReversed() ?? []}
@@ -374,9 +376,9 @@ function AnalyticsCharts({
       {monthlyData.length > 0 && (
         <>
           {/* Por Etapa - Monthly */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-foreground">Por Etapa</h3>
-            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-2.5">
+            <h3 className="font-semibold text-foreground text-sm">Por Etapa</h3>
+            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {monthlyData.map((month) => (
                 <PieChartCard
                   key={`etapa-${month.label}`}
@@ -389,9 +391,9 @@ function AnalyticsCharts({
           </div>
 
           {/* Por Ubicación - Monthly */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-foreground">Por Ubicación</h3>
-            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-2.5">
+            <h3 className="font-semibold text-foreground text-sm">Por Ubicación</h3>
+            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {monthlyData.map((month) => (
                 <PieChartCard
                   key={`ubicacion-${month.label}`}
@@ -419,10 +421,10 @@ function PieChartCard({
 }) {
   return (
     <Card className="flex-1 border-default-200 shadow-sm">
-      <Card.Header className="pb-0">
-        <h3 className="font-semibold text-foreground text-sm">{title}</h3>
+      <Card.Header className="pb-1.5">
+        <h3 className="font-semibold text-foreground text-xs sm:text-sm">{title}</h3>
       </Card.Header>
-      <Card.Content>
+      <Card.Content className="p-2">
         <div className="h-24 min-h-24 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -466,16 +468,16 @@ const CustomTooltip = ({
 }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-lg border border-default-200 bg-content1 p-3 text-xs shadow-lg">
-        <p className="mb-2 font-semibold text-foreground">
+      <div className="rounded-lg border border-default-200 bg-content1 p-2 text-xs shadow-lg">
+        <p className="mb-1.5 font-semibold text-foreground text-xs">
           {dayjs(label).isValid() ? dayjs(label).format("DD MMM YYYY") : label}
         </p>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {payload.map((p) => (
-            <div key={p.name} className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
-              <span className="text-default-500 capitalize">{p.name}:</span>
-              <span className="font-medium text-foreground">
+            <div key={p.name} className="flex items-center gap-1.5">
+              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: p.color }} />
+              <span className="text-xs text-default-500 capitalize">{p.name}:</span>
+              <span className="font-medium text-foreground text-xs">
                 {p.name.includes("Ingresos") ? formatCurrency(p.value) : p.value}
               </span>
             </div>
@@ -550,7 +552,7 @@ function AnalyticsDetailTable({
 
   return (
     <Card className="border-default-200 shadow-sm">
-      <Card.Header className="pb-2">
+      <Card.Header className="pb-1.5">
         <h3 className="font-semibold text-base text-foreground">Detalle del Periodo</h3>
       </Card.Header>
       <Card.Content>
@@ -591,9 +593,9 @@ function PeriodIndicator({
   }
 
   return (
-    <div className="flex w-fit items-center gap-2 rounded-xl bg-primary/10 px-4 py-2.5">
-      <CalendarIcon className="h-4 w-4 text-primary" />
-      <p className="font-semibold text-foreground text-sm">{displayText}</p>
+    <div className="flex w-fit items-center gap-2 rounded-lg bg-primary/10 px-3 py-2">
+      <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+      <p className="font-semibold text-foreground text-xs sm:text-sm">{displayText}</p>
     </div>
   );
 }
@@ -691,28 +693,28 @@ function AnalyticsFilters({
 }) {
   return (
     <Card className="border-default-100 bg-content2/50">
-      <Card.Content className="flex flex-col items-end gap-4 p-4 sm:flex-row">
-        <div className="grid w-full flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
+      <Card.Content className="flex flex-col items-end gap-3 p-3 sm:flex-row sm:gap-4 sm:p-4">
+        <div className="grid w-full flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1">
             <label htmlFor="date-from" className="text-default-500 text-xs">
               Desde
             </label>
             <input
               id="date-from"
               type="date"
-              className="rounded-md bg-default-100 px-3 py-2 text-foreground text-sm"
+              className="rounded-md bg-default-100 px-2.5 py-1.5 text-foreground text-sm"
               value={filters.from || ""}
               onChange={(e) => onDateChange(e.target.value, filters.to || "")}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             <label htmlFor="date-to" className="text-default-500 text-xs">
               Hasta
             </label>
             <input
               id="date-to"
               type="date"
-              className="rounded-md bg-default-100 px-3 py-2 text-foreground text-sm"
+              className="rounded-md bg-default-100 px-2.5 py-1.5 text-foreground text-sm"
               value={filters.to || ""}
               onChange={(e) => onDateChange(filters.from || "", e.target.value)}
             />
@@ -760,7 +762,7 @@ function AnalyticsKpiGrid({
   domicilioCount: number;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
       <KpiCard
         title="Tratamientos"
         value={totalTreatmentCount}
@@ -818,13 +820,13 @@ function KpiCard({
 }) {
   return (
     <Card className="border-default-200 shadow-sm">
-      <Card.Content className="flex flex-row items-center gap-3 p-3 sm:p-4">
+      <Card.Content className="flex flex-row items-center gap-2.5 p-2.5 sm:p-3">
         <div className={`rounded-lg p-2 bg-${color}/10 text-${color} shrink-0`}>
           <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
-        <div className="flex flex-col justify-center gap-1">
+        <div className="flex flex-col justify-center gap-0.5">
           <p className="font-medium text-default-500 text-xs uppercase">{title}</p>
-          <p className="font-bold text-foreground text-xl sm:text-2xl">{value}</p>
+          <p className="font-bold text-foreground text-lg sm:text-xl">{value}</p>
           <p className="text-default-400 text-xs">{trend}</p>
         </div>
       </Card.Content>
