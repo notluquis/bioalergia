@@ -1587,6 +1587,7 @@ model DTEPurchaseDetail {
   documentDate          DateTime  @map("document_date")
   receiptDate           DateTime  @map("receipt_date")
   acknowledgeDate       DateTime? @map("acknowledge_date")
+  period                String?   @map("period") @db.VarChar(6) // Format: YYYYMM
   
   // Financial amounts
   exemptAmount          Decimal   @default(0) @map("exempt_amount") @db.Decimal(15, 2)
@@ -1638,6 +1639,7 @@ model DTESaleDetail {
   receiptDate                    DateTime  @map("receipt_date")
   receiptAcknowledgeDate         DateTime? @map("receipt_acknowledge_date")
   claimDate                      DateTime? @map("claim_date")
+  period                         String?   @map("period") @db.VarChar(6) // Format: YYYYMM
   
   // Financial amounts
   exemptAmount                   Decimal   @default(0) @map("exempt_amount") @db.Decimal(15, 2)

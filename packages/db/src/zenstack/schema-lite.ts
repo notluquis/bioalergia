@@ -4394,6 +4394,11 @@ export class SchemaType implements SchemaDef {
           type: "DateTime",
           optional: true,
         },
+        period: {
+          name: "period",
+          type: "String",
+          optional: true,
+        },
         exemptAmount: {
           name: "exemptAmount",
           type: "Decimal",
@@ -4550,6 +4555,11 @@ export class SchemaType implements SchemaDef {
         claimDate: {
           name: "claimDate",
           type: "DateTime",
+          optional: true,
+        },
+        period: {
+          name: "period",
+          type: "String",
           optional: true,
         },
         exemptAmount: {

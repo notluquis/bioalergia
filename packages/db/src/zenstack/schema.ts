@@ -11542,6 +11542,15 @@ export class SchemaType implements SchemaDef {
             },
           ],
         },
+        period: {
+          name: "period",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("period") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] },
+          ],
+        },
         exemptAmount: {
           name: "exemptAmount",
           type: "Decimal",
@@ -12054,6 +12063,15 @@ export class SchemaType implements SchemaDef {
               name: "@map",
               args: [{ name: "name", value: ExpressionUtils.literal("claim_date") }],
             },
+          ],
+        },
+        period: {
+          name: "period",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("period") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] },
           ],
         },
         exemptAmount: {
