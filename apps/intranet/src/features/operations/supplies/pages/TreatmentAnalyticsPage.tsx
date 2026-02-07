@@ -476,7 +476,7 @@ const CustomTooltip = ({
           {payload.map((p) => (
             <div key={p.name} className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: p.color }} />
-              <span className="text-xs text-default-500 capitalize">{p.name}:</span>
+              <span className="text-default-500 text-xs capitalize">{p.name}:</span>
               <span className="font-medium text-foreground text-xs">
                 {p.name.includes("Ingresos") ? formatCurrency(p.value) : p.value}
               </span>
