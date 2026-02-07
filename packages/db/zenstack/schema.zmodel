@@ -582,58 +582,60 @@ model WithdrawTransaction {
 
 // TODO: Re-enable views when Prisma feature is enabled
 // Temporarily disabled to allow other schema changes to be applied
-// view SettlementReleaseTransaction {
-//   id String @unique @map("row_id")
-//   sourceId String @map("source_id")
-//   origin String @map("origin")
-//   effectiveDate DateTime @map("effective_date")
-//   settlementExternalReference String? @map("settlement_external_reference")
-//   settlementPaymentMethodType String? @map("settlement_payment_method_type")
-//   settlementPaymentMethod String? @map("settlement_payment_method")
-//   settlementTransactionType String? @map("settlement_transaction_type")
-//   settlementTransactionAmount Decimal? @map("settlement_transaction_amount")
-//   settlementFeeAmount Decimal? @map("settlement_fee_amount")
-//   settlementSettlementNetAmount Decimal? @map("settlement_settlement_net_amount")
-//   settlementRealAmount Decimal? @map("settlement_real_amount")
-//   settlementFinancingFeeAmount Decimal? @map("settlement_financing_fee_amount")
-//   settlementInstallments Int? @map("settlement_installments")
-//   settlementBusinessUnit String? @map("settlement_business_unit")
-//   settlementSubUnit String? @map("settlement_sub_unit")
-//   settlementPayBankTransferId String? @map("settlement_pay_bank_transfer_id")
-//   settlementMetadata Json? @map("settlement_metadata")
-//   releaseExternalReference String? @map("release_external_reference")
-//   releaseDescription String? @map("release_description")
-//   releaseNetDebitAmount Decimal? @map("release_net_debit_amount")
-//   releaseGrossAmount Decimal? @map("release_gross_amount")
-//   releaseBalanceAmount Decimal? @map("release_balance_amount")
-//   releasePayoutBankAccountNumber String? @map("release_payout_bank_account_number")
-//   releaseBusinessUnit String? @map("release_business_unit")
-//   releaseIssuerName String? @map("release_issuer_name")
-//   releaseMetadata Json? @map("release_metadata")
-//   withdrawId String? @map("withdraw_id")
-//   withdrawDateCreated DateTime? @map("withdraw_date_created")
-//   withdrawStatus String? @map("withdraw_status")
-//   withdrawStatusDetail String? @map("withdraw_status_detail")
-//   withdrawAmount Decimal? @map("withdraw_amount")
-//   withdrawFee Decimal? @map("withdraw_fee")
-//   withdrawActivityUrl String? @map("withdraw_activity_url")
-//   withdrawPayoutDesc String? @map("withdraw_payout_desc")
-//   withdrawBankAccountHolder String? @map("withdraw_bank_account_holder")
-//   withdrawIdentificationType String? @map("withdraw_identification_type")
-//   withdrawIdentificationNumber String? @map("withdraw_identification_number")
-//   withdrawBankId String? @map("withdraw_bank_id")
-//   withdrawBankName String? @map("withdraw_bank_name")
-//   withdrawBankBranch String? @map("withdraw_bank_branch")
-//   withdrawBankAccountType String? @map("withdraw_bank_account_type")
-//   withdrawBankAccountNumber String? @map("withdraw_bank_account_number")
-//
-//   // Access policies
-//   @@deny('all', auth() == null)
-//   @@allow('read', true)
-//   @@allow('create,update,delete', auth().status == 'ACTIVE')
-//
-//   @@map("settlement_release_transactions")
-// }
+/*
+view SettlementReleaseTransaction {
+  id String @unique @map("row_id")
+  sourceId String @map("source_id")
+  origin String @map("origin")
+  effectiveDate DateTime @map("effective_date")
+  settlementExternalReference String? @map("settlement_external_reference")
+  settlementPaymentMethodType String? @map("settlement_payment_method_type")
+  settlementPaymentMethod String? @map("settlement_payment_method")
+  settlementTransactionType String? @map("settlement_transaction_type")
+  settlementTransactionAmount Decimal? @map("settlement_transaction_amount")
+  settlementFeeAmount Decimal? @map("settlement_fee_amount")
+  settlementSettlementNetAmount Decimal? @map("settlement_settlement_net_amount")
+  settlementRealAmount Decimal? @map("settlement_real_amount")
+  settlementFinancingFeeAmount Decimal? @map("settlement_financing_fee_amount")
+  settlementInstallments Int? @map("settlement_installments")
+  settlementBusinessUnit String? @map("settlement_business_unit")
+  settlementSubUnit String? @map("settlement_sub_unit")
+  settlementPayBankTransferId String? @map("settlement_pay_bank_transfer_id")
+  settlementMetadata Json? @map("settlement_metadata")
+  releaseExternalReference String? @map("release_external_reference")
+  releaseDescription String? @map("release_description")
+  releaseNetDebitAmount Decimal? @map("release_net_debit_amount")
+  releaseGrossAmount Decimal? @map("release_gross_amount")
+  releaseBalanceAmount Decimal? @map("release_balance_amount")
+  releasePayoutBankAccountNumber String? @map("release_payout_bank_account_number")
+  releaseBusinessUnit String? @map("release_business_unit")
+  releaseIssuerName String? @map("release_issuer_name")
+  releaseMetadata Json? @map("release_metadata")
+  withdrawId String? @map("withdraw_id")
+  withdrawDateCreated DateTime? @map("withdraw_date_created")
+  withdrawStatus String? @map("withdraw_status")
+  withdrawStatusDetail String? @map("withdraw_status_detail")
+  withdrawAmount Decimal? @map("withdraw_amount")
+  withdrawFee Decimal? @map("withdraw_fee")
+  withdrawActivityUrl String? @map("withdraw_activity_url")
+  withdrawPayoutDesc String? @map("withdraw_payout_desc")
+  withdrawBankAccountHolder String? @map("withdraw_bank_account_holder")
+  withdrawIdentificationType String? @map("withdraw_identification_type")
+  withdrawIdentificationNumber String? @map("withdraw_identification_number")
+  withdrawBankId String? @map("withdraw_bank_id")
+  withdrawBankName String? @map("withdraw_bank_name")
+  withdrawBankBranch String? @map("withdraw_bank_branch")
+  withdrawBankAccountType String? @map("withdraw_bank_account_type")
+  withdrawBankAccountNumber String? @map("withdraw_bank_account_number")
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("settlement_release_transactions")
+}
+*/
 
 model DailyBalance {
   id        Int      @id @default(autoincrement())
@@ -1625,68 +1627,71 @@ model DTEPurchaseDetail {
 }
 
 model DTESaleDetail {
-  id                           String    @id @default(uuid())
-  registerNumber               Int       @map("register_number") // Nº field from CSV
-  documentType                 Int       @map("document_type") // 41 = Boleta, 61 = Nota Crédito, etc.
-  saleType                     String    @map("sale_type") // "Del Giro", etc.
-  clientRUT                    String    @map("client_rut") @db.VarChar(20)
-  clientName                   String    @map("client_name")
-  folio                        String    @map("folio") @db.VarChar(20)
-  documentDate                 DateTime  @map("document_date")
-  receiptDate                  DateTime  @map("receipt_date")
-  receiptAcknowledgeDate       DateTime? @map("receipt_acknowledge_date")
-  claimDate                    DateTime? @map("claim_date")
+  id                             String    @id @default(uuid())
+  registerNumber                 Int       @map("register_number") // Nº field from CSV
+  documentType                   Int       @map("document_type") // 41 = Boleta, 61 = Nota Crédito, etc.
+  saleType                       String    @map("sale_type") // "Del Giro", etc.
+  clientRUT                      String    @map("client_rut") @db.VarChar(20)
+  clientName                     String    @map("client_name")
+  folio                          String    @map("folio") @db.VarChar(20)
+  documentDate                   DateTime  @map("document_date")
+  receiptDate                    DateTime  @map("receipt_date")
+  receiptAcknowledgeDate         DateTime? @map("receipt_acknowledge_date")
+  claimDate                      DateTime? @map("claim_date")
   
   // Financial amounts
-  exemptAmount                 Decimal   @default(0) @map("exempt_amount") @db.Decimal(15, 2)
-  netAmount                    Decimal   @default(0) @map("net_amount") @db.Decimal(15, 2)
-  ivaAmount                    Decimal   @default(0) @map("iva_amount") @db.Decimal(15, 2)
-  totalAmount                  Decimal   @default(0) @map("total_amount") @db.Decimal(15, 2)
+  exemptAmount                   Decimal   @default(0) @map("exempt_amount") @db.Decimal(15, 2)
+  netAmount                      Decimal   @default(0) @map("net_amount") @db.Decimal(15, 2)
+  ivaAmount                      Decimal   @default(0) @map("iva_amount") @db.Decimal(15, 2)
+  totalAmount                    Decimal   @default(0) @map("total_amount") @db.Decimal(15, 2)
   
   // IVA details
-  totalRetainedIVA             Decimal   @default(0) @map("total_retained_iva") @db.Decimal(15, 2)
-  partialRetainedIVA           Decimal   @default(0) @map("partial_retained_iva") @db.Decimal(15, 2)
-  nonRetainedIVA               Decimal   @default(0) @map("non_retained_iva") @db.Decimal(15, 2)
-  ownIVA                       Decimal   @default(0) @map("own_iva") @db.Decimal(15, 2)
-  thirdPartyIVA                Decimal   @default(0) @map("third_party_iva") @db.Decimal(15, 2)
-  lateIVA                      Decimal   @default(0) @map("late_iva") @db.Decimal(15, 2)
+  totalRetainedIVA               Decimal   @default(0) @map("total_retained_iva") @db.Decimal(15, 2)
+  partialRetainedIVA             Decimal   @default(0) @map("partial_retained_iva") @db.Decimal(15, 2)
+  nonRetainedIVA                 Decimal   @default(0) @map("non_retained_iva") @db.Decimal(15, 2)
+  ownIVA                         Decimal   @default(0) @map("own_iva") @db.Decimal(15, 2)
+  thirdPartyIVA                  Decimal   @default(0) @map("third_party_iva") @db.Decimal(15, 2)
+  lateIVA                        Decimal   @default(0) @map("late_iva") @db.Decimal(15, 2)
   
   // Commission details
-  emitterRUT                   String?   @map("emitter_rut") @db.VarChar(20)
-  commissionNetAmount          Decimal   @default(0) @map("commission_net_amount") @db.Decimal(15, 2)
-  commissionExemptAmount       Decimal   @default(0) @map("commission_exempt_amount") @db.Decimal(15, 2)
-  commissionIVA                Decimal   @default(0) @map("commission_iva") @db.Decimal(15, 2)
+  emitterRUT                     String?   @map("emitter_rut") @db.VarChar(20)
+  commissionNetAmount            Decimal   @default(0) @map("commission_net_amount") @db.Decimal(15, 2)
+  commissionExemptAmount         Decimal   @default(0) @map("commission_exempt_amount") @db.Decimal(15, 2)
+  commissionIVA                  Decimal   @default(0) @map("commission_iva") @db.Decimal(15, 2)
   
   // Reference document
-  referenceDocType             String?   @map("reference_doc_type") @db.VarChar(10)
-  referenceDocFolio            String?   @map("reference_doc_folio") @db.VarChar(20)
+  referenceDocType               String?   @map("reference_doc_type") @db.VarChar(10)
+  referenceDocFolio              String?   @map("reference_doc_folio") @db.VarChar(20)
   
   // Foreign buyer details
-  foreignBuyerIdentifier       String?   @map("foreign_buyer_identifier") @db.VarChar(20)
-  foreignBuyerNationality      String?   @map("foreign_buyer_nationality") @db.VarChar(50)
+  foreignBuyerIdentifier         String?   @map("foreign_buyer_identifier") @db.VarChar(20)
+  foreignBuyerNationality        String?   @map("foreign_buyer_nationality") @db.VarChar(50)
   
   // Special conditions
-  constructorCreditAmount      Decimal   @default(0) @map("constructor_credit_amount") @db.Decimal(15, 2)
-  freeTradeZoneAmount          Decimal   @default(0) @map("free_trade_zone_amount") @db.Decimal(15, 2)
-  containerGuaranteeAmount     Decimal   @default(0) @map("container_guarantee_amount") @db.Decimal(15, 2)
-  nonBillableAmount            Decimal   @default(0) @map("non_billable_amount") @db.Decimal(15, 2)
-  transportPassageAmount       Decimal   @default(0) @map("transport_passage_amount") @db.Decimal(15, 2)
-  internationalTransportAmount Decimal   @default(0) @map("international_transport_amount") @db.Decimal(15, 2)
+  constructorCreditAmount        Decimal   @default(0) @map("constructor_credit_amount") @db.Decimal(15, 2)
+  freeTradeZoneAmount            Decimal   @default(0) @map("free_trade_zone_amount") @db.Decimal(15, 2)
+  containerGuaranteeAmount       Decimal   @default(0) @map("container_guarantee_amount") @db.Decimal(15, 2)
+  nonBillableAmount              Decimal   @default(0) @map("non_billable_amount") @db.Decimal(15, 2)
+  internationalTransportAmount   Decimal   @default(0) @map("international_transport_amount") @db.Decimal(15, 2) // Venta Pasajes Transporte Internacional
+  
+  // Special indicators
+  nonCostSaleIndicator           Int       @default(0) @map("non_cost_sale_indicator") // Indicador Venta sin Costo
+  periodicServiceIndicator       Int       @default(0) @map("periodic_service_indicator") // Indicador Servicio Periódico
+  totalPeriodAmount              Decimal   @default(0) @map("total_period_amount") @db.Decimal(15, 2) // Total Monto Periodo
+  nationalTransportPassageAmount Decimal   @default(0) @map("national_transport_passage_amount") @db.Decimal(15, 2) // Venta Pasajes Transporte Nacional
   
   // Identifiers
-  internalNumber               Int?      @map("internal_number")
-  branchCode                   String?   @map("branch_code") @db.VarChar(20)
-  purchaseId                   String?   @map("purchase_id") @db.VarChar(50)
-  shippingOrderId              String?   @map("shipping_order_id") @db.VarChar(50)
+  internalNumber                 Int?      @map("internal_number")
+  branchCode                     String?   @map("branch_code") @db.VarChar(20)
   
   // Metadata
-  origin                       String?   @map("origin") @db.VarChar(20) // "WEB", "MANUAL", etc.
-  informativeNote              String?   @map("informative_note")
-  paymentNote                  String?   @map("payment_note")
-  notes                        String?
+  origin                         String?   @map("origin") @db.VarChar(20) // "WEB", "MANUAL", etc.
+  informativeNote                String?   @map("informative_note")
+  paymentNote                    String?   @map("payment_note")
+  notes                          String?
 
-  createdAt                    DateTime  @default(now()) @map("created_at")
-  updatedAt                    DateTime  @default(now()) @updatedAt @map("updated_at")
+  createdAt                      DateTime  @default(now()) @map("created_at")
+  updatedAt                      DateTime  @default(now()) @updatedAt @map("updated_at")
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')

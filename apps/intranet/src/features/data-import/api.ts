@@ -4,6 +4,7 @@ import { apiClient } from "@/lib/api-client";
 export interface CsvImportPayload {
   data: Record<string, number | string>[];
   table: string;
+  period?: string; // Extracted from filename (YYYYMM format)
 }
 
 export interface CsvPreviewResponse {

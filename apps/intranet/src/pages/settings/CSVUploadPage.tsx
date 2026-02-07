@@ -45,12 +45,14 @@ interface UploadedFile {
   error?: string;
   file: File;
   id: string;
+  period?: string; // Extracted from filename (YYYYMM format)
   previewData?: CsvPreviewResponse;
   rowCount: number;
   status: FileStatus;
 }
 
 const HEADER_ALIAS_REGEX = /\(([^)]+)\)/;
+const PERIOD_REGEX = /Periodo[_\s]+(\d{6})/i;
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const extractHeaderAliases = (header: string) => {
@@ -796,6 +798,12 @@ function buildMappingColumns({
 
 // --- Main Page Component ---
 
+// Helper to extract period from filename (e.g., "Periodo_202312" or "Periodo_202312.csv")
+function extractPeriodFromFilename(filename: string): string | undefined {
+  const match = filename.match(PERIOD_REGEX);
+  return match?.[1];
+}
+
 // Helper to parse a single file
 async function parseFile(
   file: File,
@@ -803,6 +811,9 @@ async function parseFile(
   selectedTable: string,
 ): Promise<UploadedFile> {
   try {
+    // Extract period from filename
+    const period = extractPeriodFromFilename(file.name);
+
     const results = await new Promise<Papa.ParseResult<Record<string, string>>>(
       (resolve, reject) => {
         Papa.parse<Record<string, string>>(file, {
@@ -823,6 +834,7 @@ async function parseFile(
         error: results.errors[0]?.message ?? "Error desconocido",
         file,
         id: crypto.randomUUID(),
+        period,
         rowCount: 0,
         status: "error",
       };
@@ -843,6 +855,7 @@ async function parseFile(
       csvHeaders: headers,
       file,
       id: crypto.randomUUID(),
+      period,
       rowCount: csvData.length,
       status: "ready",
     };
@@ -932,6 +945,7 @@ export function CSVUploadPage() {
         const transformedData = buildTransformedData(file.csvData, file.columnMapping);
         const previewData = await previewMutateAsync({
           data: transformedData,
+          period: file.period,
           table: selectedTable,
         });
 
@@ -965,7 +979,11 @@ export function CSVUploadPage() {
 
     try {
       const transformedData = buildTransformedData(file.csvData, file.columnMapping);
-      const result = await importMutateAsync({ data: transformedData, table: selectedTable });
+      const result = await importMutateAsync({
+        data: transformedData,
+        period: file.period,
+        table: selectedTable,
+      });
 
       setUploadedFiles((prev) =>
         prev.map((f) =>
