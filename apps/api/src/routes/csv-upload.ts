@@ -800,11 +800,7 @@ async function importEmployeeTimesheetsRow(row: CSVRow): Promise<ImportOutcome> 
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 async function importDtePurchaseRow(row: CSVRow): Promise<ImportOutcome> {
-  // Validate required fields
-  if (!row.period || !row.providerRUT || !row.folio) {
-    throw new Error("Campos requeridos faltantes: period, providerRUT, folio");
-  }
-
+  // Validate dates (frontend validates required fields)
   const documentDateStr = parseFlexibleDate(row.documentDate);
   const receiptDateStr = parseFlexibleDate(row.receiptDate);
 
@@ -819,7 +815,6 @@ async function importDtePurchaseRow(row: CSVRow): Promise<ImportOutcome> {
 
   const existing = await db.dtePurchaseDetail.findFirst({
     where: {
-      period: purchaseData.period,
       providerRUT: purchaseData.providerRUT,
       folio: purchaseData.folio,
       documentDate: purchaseData.documentDate,
@@ -844,7 +839,6 @@ function buildDtePurchaseData(row: CSVRow, documentDate: Date, receiptDate: Date
     : null;
 
   return {
-    period: String(row.period),
     registerNumber: Number(row.registerNumber) || 0,
     documentType: Number(row.documentType) || 33,
     purchaseType: String(row.purchaseType || "Compras del Giro"),
@@ -870,11 +864,7 @@ function buildDtePurchaseData(row: CSVRow, documentDate: Date, receiptDate: Date
 }
 
 async function importDteSaleRow(row: CSVRow): Promise<ImportOutcome> {
-  // Validate required fields
-  if (!row.period || !row.clientRUT || !row.folio) {
-    throw new Error("Campos requeridos faltantes: period, clientRUT, folio");
-  }
-
+  // Validate dates (frontend validates required fields)
   const documentDateStr = parseFlexibleDate(row.documentDate);
   const receiptDateStr = parseFlexibleDate(row.receiptDate);
 
@@ -889,7 +879,6 @@ async function importDteSaleRow(row: CSVRow): Promise<ImportOutcome> {
 
   const existing = await db.dteSaleDetail.findFirst({
     where: {
-      period: saleData.period,
       clientRUT: saleData.clientRUT,
       folio: saleData.folio,
       documentDate: saleData.documentDate,
@@ -916,7 +905,6 @@ function buildDteSaleData(row: CSVRow, documentDate: Date, receiptDate: Date) {
 
   return {
     // Identifiers
-    period: String(row.period),
     registerNumber: Number(row.registerNumber) || 0,
     documentType: Number(row.documentType) || 41,
     saleType: String(row.saleType || "Del Giro"),
