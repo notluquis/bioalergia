@@ -69,47 +69,45 @@ export function DTEAnalyticsPage() {
       </div>
 
       <Tabs aria-label="DTE Analytics Tabs" defaultSelectedKey="purchases-monthly">
-        <Tabs.ListContainer>
-          <Tabs.List
-            aria-label="Opciones de visualización"
-            className="rounded-lg bg-default-50/50 p-1"
-          >
-            <Tabs.Tab id="purchases-monthly">
-              <BarChart3 className="size-4" />
-              Compras Mensual
-            </Tabs.Tab>
-            <Tabs.Tab id="sales-monthly">
-              <BarChart3 className="size-4" />
-              Ventas Mensual
-            </Tabs.Tab>
-            <Tabs.Tab id="purchases-comparison">
-              <TrendingUp className="size-4" />
-              Compras Comparativa
-            </Tabs.Tab>
-            <Tabs.Tab id="sales-comparison">
-              <TrendingUp className="size-4" />
-              Ventas Comparativa
-            </Tabs.Tab>
-          </Tabs.List>
-        </Tabs.ListContainer>
+        <Tabs.List
+          aria-label="Opciones de visualización"
+          className="rounded-lg bg-default-50/50 p-1"
+        >
+          <Tabs.Tab id="purchases-monthly" className="gap-2">
+            <BarChart3 className="size-4" />
+            Compras Mensual
+          </Tabs.Tab>
+          <Tabs.Tab id="sales-monthly" className="gap-2">
+            <BarChart3 className="size-4" />
+            Ventas Mensual
+          </Tabs.Tab>
+          <Tabs.Tab id="purchases-comparison" className="gap-2">
+            <TrendingUp className="size-4" />
+            Compras Comparativa
+          </Tabs.Tab>
+          <Tabs.Tab id="sales-comparison" className="gap-2">
+            <TrendingUp className="size-4" />
+            Ventas Comparativa
+          </Tabs.Tab>
+        </Tabs.List>
 
-        <Tabs.Tab id="purchases-monthly">
+        <Tabs.Panel id="purchases-monthly">
           <PurchasesMonthlySummary
             selectedYear={selectedYear}
             setSelectedYear={setSelectedYear}
             yearOptions={yearOptions}
           />
-        </Tabs.Tab>
+        </Tabs.Panel>
 
-        <Tabs.Tab id="sales-monthly">
+        <Tabs.Panel id="sales-monthly">
           <SalesMonthlySummary
             selectedYear={selectedYear}
             setSelectedYear={setSelectedYear}
             yearOptions={yearOptions}
           />
-        </Tabs.Tab>
+        </Tabs.Panel>
 
-        <Tabs.Tab id="purchases-comparison">
+        <Tabs.Panel id="purchases-comparison">
           <PurchasesComparison
             comparisonYear1={comparisonYear1}
             comparisonYear2={comparisonYear2}
@@ -117,9 +115,9 @@ export function DTEAnalyticsPage() {
             setComparisonYear2={setComparisonYear2}
             yearOptions={yearOptions}
           />
-        </Tabs.Tab>
+        </Tabs.Panel>
 
-        <Tabs.Tab id="sales-comparison">
+        <Tabs.Panel id="sales-comparison">
           <SalesComparison
             comparisonYear1={comparisonYear1}
             comparisonYear2={comparisonYear2}
@@ -127,7 +125,7 @@ export function DTEAnalyticsPage() {
             setComparisonYear2={setComparisonYear2}
             yearOptions={yearOptions}
           />
-        </Tabs.Tab>
+        </Tabs.Panel>
       </Tabs>
     </div>
   );

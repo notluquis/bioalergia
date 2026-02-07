@@ -69,11 +69,11 @@ export function AddUserPage() {
     onError: (err) => {
       toastError(err instanceof Error ? err.message : "Error al crear usuario");
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      success("Usuario creado exitosamente");
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["people"] });
-      success("Usuario creado exitosamente");
-      void navigate({ to: "/settings/users" });
+      await navigate({ to: "/settings/users" });
     },
   });
 
