@@ -1038,7 +1038,6 @@ export function CSVUploadPage() {
       `Completado: ${totals.inserted} insertados, ${totals.updated} actualizados, ${totals.skipped} omitidos.`,
       "Importación",
     );
-    setTimeout(() => resetState(), 3000);
   };
 
   // Computed values
