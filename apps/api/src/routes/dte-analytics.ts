@@ -107,7 +107,7 @@ dteAnalyticsRoutes.get("/sales/summary", zValidator("query", periodParamsSchema)
     return reply(c, { status: "error", message: "Unauthorized" }, 401);
   }
 
-  const canRead = await hasPermission(user.id, "read", "dte");
+  const canRead = await hasPermission(user.id, "read", "DTEPurchaseDetail");
   if (!canRead) {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
@@ -175,7 +175,7 @@ dteAnalyticsRoutes.get(
       return reply(c, { status: "error", message: "Unauthorized" }, 401);
     }
 
-    const canRead = await hasPermission(user.id, "read", "dte");
+    const canRead = await hasPermission(user.id, "read", "DTEPurchaseDetail");
     if (!canRead) {
       return reply(c, { status: "error", message: "Forbidden" }, 403);
     }

@@ -14,11 +14,11 @@ export const Route = createFileRoute("/_authed/finanzas/dte-analytics")({
       order: 10,
       section: "Finanzas",
     },
-    permission: { action: "read", subject: "dte" },
+    permission: { action: "read", subject: "DTEPurchaseDetail" },
     title: "Análisis de DTEs",
   },
   beforeLoad: ({ context }) => {
-    if (!context.can("read", "dte")) {
+    if (!context.can("read", "DTEPurchaseDetail")) {
       const routeApi = getRouteApi("/_authed/finanzas/dte-analytics");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });

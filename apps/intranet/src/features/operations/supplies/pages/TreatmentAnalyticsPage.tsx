@@ -194,6 +194,7 @@ export function TreatmentAnalyticsPage() {
         period={period}
         isFilterOpen={isFilterOpen}
         isLoading={isLoading}
+        isRefetching={isLoading && data !== null && data !== undefined}
         onToggleFilter={() => setIsFilterOpen(!isFilterOpen)}
         onSetPeriod={handleSetPeriod}
         onSelectMonth={handleMonthSelect}
@@ -229,9 +230,27 @@ export function TreatmentAnalyticsPage() {
             domicilioCount={domicilioCount}
           />
 
-          <AnalyticsCharts trendData={trendData || []} byMonth={data?.byMonth} period={period} />
+          {data && trendData?.length === 0 ? (
+            <Card className="border-default-100">
+              <Card.Content className="p-8 text-center">
+                <p className="text-default-500">
+                  No hay datos disponibles para el período seleccionado. Intenta ajustar los filtros
+                  o seleccionar otro rango de fechas.
+                </p>
+              </Card.Content>
+            </Card>
+          ) : (
+            <>
+              <AnalyticsCharts
+                trendData={trendData || []}
+                byMonth={data?.byMonth}
+                period={period}
+                granularity={granularity}
+              />
 
-          <AnalyticsDetailTable data={trendData || []} period={period} />
+              <AnalyticsDetailTable data={trendData || []} period={period} />
+            </>
+          )}
         </>
       )}
     </div>
@@ -242,10 +261,12 @@ function AnalyticsCharts({
   trendData,
   byMonth,
   period,
+  granularity,
 }: {
-  trendData: AnalyticsTrendPoint[];
   byMonth?: AnalyticsTrendPoint[];
+  granularity: "day" | "week" | "month";
   period: "day" | "week" | "month";
+  trendData: AnalyticsTrendPoint[];
 }) {
   const monthlyData = (byMonth || []).map((month) => {
     const totalEvents = month.events || 0;
@@ -364,8 +385,8 @@ function AnalyticsCharts({
         </Card.Content>
       </Card>
 
-      {/* Distribution by Month */}
-      {monthlyData.length > 0 && (
+      {/* Distribution by Month - Only show when viewing full month */}
+      {granularity === "month" && monthlyData.length > 0 && (
         <>
           {/* Por Etapa - Monthly */}
           <div className="space-y-2.5">
@@ -597,19 +618,21 @@ function AnalyticsHeader({
   period,
   isFilterOpen,
   isLoading,
+  isRefetching,
   onToggleFilter,
   onSetPeriod,
   onSelectMonth,
   onRefresh,
 }: {
-  isMonthSelected: boolean;
-  period: "day" | "week" | "month";
   isFilterOpen: boolean;
   isLoading: boolean;
-  onToggleFilter: () => void;
-  onSetPeriod: (p: "day" | "week") => void;
-  onSelectMonth: (month: string) => void;
+  isMonthSelected: boolean;
+  isRefetching: boolean;
   onRefresh: () => void;
+  onSelectMonth: (month: string) => void;
+  onSetPeriod: (p: "day" | "week") => void;
+  onToggleFilter: () => void;
+  period: "day" | "week" | "month";
 }) {
   const prevMonth = dayjs().subtract(1, "month").format("YYYY-MM");
   const currentMonth = dayjs().format("YYYY-MM");
@@ -625,8 +648,15 @@ function AnalyticsHeader({
           </div>
         )}
         <div className="ml-auto flex items-center gap-2">
-          <Button isIconOnly variant="ghost" size="sm" onPress={onRefresh}>
-            <RefreshCcw className="h-4 w-4" />
+          <Button
+            isDisabled={isRefetching}
+            isIconOnly
+            variant="ghost"
+            size="sm"
+            onPress={onRefresh}
+            className={isRefetching ? "opacity-50" : ""}
+          >
+            <RefreshCcw className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
           </Button>
           <Button
             isIconOnly
