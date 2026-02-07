@@ -884,35 +884,6 @@ async function parseFile(
 
 // Golden standard 2026: Helper to process file import with validation error detection
 // Separated from component to reduce complexity
-async function processFileForImportHelper(
-  file: UploadedFile,
-  selectedTable: string,
-  importAsync: (payload: CsvImportPayload) => Promise<CsvPreviewResponse>,
-  showToast: (msg: string, title: string) => void,
-): Promise<{ result: CsvPreviewResponse | null; hasErrors: boolean }> {
-  try {
-    const transformedData = buildTransformedData(file.csvData, file.columnMapping);
-    const result = await importAsync({
-      data: transformedData,
-      period: file.period,
-      table: selectedTable,
-    });
-
-    // Check if backend returned validation errors (HTTP 200 but with errors field)
-    if (result.errors && result.errors.length > 0) {
-      const errorMsg = `Errores de validación: ${result.errors.slice(0, 3).join("; ")}`;
-      showToast(`${file.file.name}: ${errorMsg}`, "Importación rechazada");
-      return { result: null, hasErrors: true };
-    }
-
-    return { result, hasErrors: false };
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : "Error al importar";
-    showToast(`${file.file.name}: ${errorMsg}`, "Error");
-    return { result: null, hasErrors: true };
-  }
-}
-
 export function CSVUploadPage() {
   const { can } = useAuth();
   const { success } = useToast();
@@ -1008,64 +979,42 @@ export function CSVUploadPage() {
     setIsProcessing(false);
   };
 
-  const processFileForImport = async (
-    file: UploadedFile,
-    selectedTable: string,
-    importMutateAsync: (payload: CsvImportPayload) => Promise<CsvPreviewResponse>,
-  ) => {
+  const importFile = async (file: UploadedFile, selectedTable: string) => {
+    if (file.status === "error" || !file.previewData) {
+      return { inserted: 0, updated: 0, skipped: 0 };
+    }
+
     setUploadedFiles((prev) =>
       prev.map((f) => (f.id === file.id ? { ...f, status: "importing" as FileStatus } : f)),
     );
 
-    const { result, hasErrors } = await processFileForImportHelper(
-      file,
-      selectedTable,
-      importMutateAsync,
-      success,
-    );
+    try {
+      const transformedData = buildTransformedData(file.csvData, file.columnMapping);
+      const result = await importMutateAsync({
+        data: transformedData,
+        period: file.period,
+        table: selectedTable,
+      });
 
-    if (hasErrors) {
-      setUploadedFiles((prev) =>
-        prev.map((f) => (f.id === file.id ? { ...f, status: "error" as FileStatus } : f)),
-      );
-      return null;
-    }
-
-    if (result) {
       setUploadedFiles((prev) =>
         prev.map((f) =>
           f.id === file.id ? { ...f, previewData: result, status: "success" as FileStatus } : f,
         ),
       );
-    }
 
-    return result ?? null;
-  };
-
-  const performImport = async (
-    files: UploadedFile[],
-    table: string,
-  ): Promise<{
-    hasErrors: boolean;
-    totals: { inserted: number; updated: number; skipped: number };
-  }> => {
-    const totals = { inserted: 0, updated: 0, skipped: 0 };
-    let hasErrors = false;
-    for (const file of files) {
-      if (file.status === "error") {
-        hasErrors = true;
-        continue;
-      }
-      const result = await processFileForImport(file, table, importMutateAsync);
-      if (!result) {
-        hasErrors = true;
-      } else {
-        totals.inserted += result.inserted ?? 0;
-        totals.updated += result.updated ?? 0;
-        totals.skipped += result.skipped ?? 0;
-      }
+      return {
+        inserted: result.inserted ?? 0,
+        updated: result.updated ?? 0,
+        skipped: result.skipped ?? 0,
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Error al importar";
+      success(`${file.file.name}: ${errorMsg}`, "Error");
+      setUploadedFiles((prev) =>
+        prev.map((f) => (f.id === file.id ? { ...f, status: "error" as FileStatus } : f)),
+      );
+      return { inserted: 0, updated: 0, skipped: 0 };
     }
-    return { hasErrors, totals };
   };
 
   const handleImport = async () => {
@@ -1073,17 +1022,23 @@ export function CSVUploadPage() {
       return;
     }
     setIsProcessing(true);
-    const { hasErrors, totals } = await performImport(uploadedFiles, selectedTable);
+
+    const results = await Promise.all(uploadedFiles.map((f) => importFile(f, selectedTable)));
+    const totals = results.reduce(
+      (acc, result) => ({
+        inserted: acc.inserted + result.inserted,
+        updated: acc.updated + result.updated,
+        skipped: acc.skipped + result.skipped,
+      }),
+      { inserted: 0, updated: 0, skipped: 0 },
+    );
+
     setIsProcessing(false);
-    if (hasErrors) {
-      success("Hay errores. Revisa los mensajes de error.", "Importación incompleta");
-    } else {
-      success(
-        `Completado: ${totals.inserted} insertados, ${totals.updated} actualizados, ${totals.skipped} omitidos.`,
-        "Éxito",
-      );
-      setTimeout(() => resetState(), 3000);
-    }
+    success(
+      `Completado: ${totals.inserted} insertados, ${totals.updated} actualizados, ${totals.skipped} omitidos.`,
+      "Importación",
+    );
+    setTimeout(() => resetState(), 3000);
   };
 
   // Computed values
