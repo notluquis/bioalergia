@@ -11364,18 +11364,6 @@ export class SchemaType implements SchemaDef {
           ],
           default: ExpressionUtils.call("now"),
         },
-        purchases: {
-          name: "purchases",
-          type: "DTEPurchaseDetail",
-          array: true,
-          relation: { opposite: "dtePeriod" },
-        },
-        sales: {
-          name: "sales",
-          type: "DTESaleDetail",
-          array: true,
-          relation: { opposite: "dtePeriod" },
-        },
       },
       attributes: [
         {
@@ -11461,15 +11449,6 @@ export class SchemaType implements SchemaDef {
             { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("uuid") }] },
           ],
           default: ExpressionUtils.call("uuid"),
-        },
-        period: {
-          name: "period",
-          type: "String",
-          attributes: [
-            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("period") }] },
-            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] },
-          ],
-          foreignKeyFor: ["dtePeriod"],
         },
         registerNumber: {
           name: "registerNumber",
@@ -11894,27 +11873,6 @@ export class SchemaType implements SchemaDef {
           ],
           default: ExpressionUtils.call("now"),
         },
-        dtePeriod: {
-          name: "dtePeriod",
-          type: "DTEPeriod",
-          optional: true,
-          attributes: [
-            {
-              name: "@relation",
-              args: [
-                {
-                  name: "fields",
-                  value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]),
-                },
-                {
-                  name: "references",
-                  value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]),
-                },
-              ],
-            },
-          ],
-          relation: { opposite: "purchases", fields: ["period"], references: ["period"] },
-        },
       },
       attributes: [
         {
@@ -11964,15 +11922,6 @@ export class SchemaType implements SchemaDef {
           args: [
             {
               name: "fields",
-              value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]),
-            },
-          ],
-        },
-        {
-          name: "@@index",
-          args: [
-            {
-              name: "fields",
               value: ExpressionUtils.array("String", [ExpressionUtils.field("providerRUT")]),
             },
           ],
@@ -11983,18 +11932,6 @@ export class SchemaType implements SchemaDef {
             {
               name: "fields",
               value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("documentDate")]),
-            },
-          ],
-        },
-        {
-          name: "@@index",
-          args: [
-            {
-              name: "fields",
-              value: ExpressionUtils.array("String", [
-                ExpressionUtils.field("period"),
-                ExpressionUtils.field("providerRUT"),
-              ]),
             },
           ],
         },
@@ -12020,15 +11957,6 @@ export class SchemaType implements SchemaDef {
             { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("uuid") }] },
           ],
           default: ExpressionUtils.call("uuid"),
-        },
-        period: {
-          name: "period",
-          type: "String",
-          attributes: [
-            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("period") }] },
-            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] },
-          ],
-          foreignKeyFor: ["dtePeriod"],
         },
         registerNumber: {
           name: "registerNumber",
@@ -12507,14 +12435,16 @@ export class SchemaType implements SchemaDef {
           ],
           default: 0,
         },
-        transportPassageAmount: {
-          name: "transportPassageAmount",
+        internationalTransportAmount: {
+          name: "internationalTransportAmount",
           type: "Decimal",
           attributes: [
             { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
             {
               name: "@map",
-              args: [{ name: "name", value: ExpressionUtils.literal("transport_passage_amount") }],
+              args: [
+                { name: "name", value: ExpressionUtils.literal("international_transport_amount") },
+              ],
             },
             {
               name: "@db.Decimal",
@@ -12526,15 +12456,63 @@ export class SchemaType implements SchemaDef {
           ],
           default: 0,
         },
-        internationalTransportAmount: {
-          name: "internationalTransportAmount",
+        nonCostSaleIndicator: {
+          name: "nonCostSaleIndicator",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("non_cost_sale_indicator") }],
+            },
+          ],
+          default: 0,
+        },
+        periodicServiceIndicator: {
+          name: "periodicServiceIndicator",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("periodic_service_indicator") },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        totalPeriodAmount: {
+          name: "totalPeriodAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_period_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        nationalTransportPassageAmount: {
+          name: "nationalTransportPassageAmount",
           type: "Decimal",
           attributes: [
             { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
             {
               name: "@map",
               args: [
-                { name: "name", value: ExpressionUtils.literal("international_transport_amount") },
+                {
+                  name: "name",
+                  value: ExpressionUtils.literal("national_transport_passage_amount"),
+                },
               ],
             },
             {
@@ -12568,30 +12546,6 @@ export class SchemaType implements SchemaDef {
               args: [{ name: "name", value: ExpressionUtils.literal("branch_code") }],
             },
             { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
-          ],
-        },
-        purchaseId: {
-          name: "purchaseId",
-          type: "String",
-          optional: true,
-          attributes: [
-            {
-              name: "@map",
-              args: [{ name: "name", value: ExpressionUtils.literal("purchase_id") }],
-            },
-            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
-          ],
-        },
-        shippingOrderId: {
-          name: "shippingOrderId",
-          type: "String",
-          optional: true,
-          attributes: [
-            {
-              name: "@map",
-              args: [{ name: "name", value: ExpressionUtils.literal("shipping_order_id") }],
-            },
-            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
           ],
         },
         origin: {
@@ -12656,27 +12610,6 @@ export class SchemaType implements SchemaDef {
           ],
           default: ExpressionUtils.call("now"),
         },
-        dtePeriod: {
-          name: "dtePeriod",
-          type: "DTEPeriod",
-          optional: true,
-          attributes: [
-            {
-              name: "@relation",
-              args: [
-                {
-                  name: "fields",
-                  value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]),
-                },
-                {
-                  name: "references",
-                  value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]),
-                },
-              ],
-            },
-          ],
-          relation: { opposite: "sales", fields: ["period"], references: ["period"] },
-        },
       },
       attributes: [
         {
@@ -12726,15 +12659,6 @@ export class SchemaType implements SchemaDef {
           args: [
             {
               name: "fields",
-              value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]),
-            },
-          ],
-        },
-        {
-          name: "@@index",
-          args: [
-            {
-              name: "fields",
               value: ExpressionUtils.array("String", [ExpressionUtils.field("clientRUT")]),
             },
           ],
@@ -12745,18 +12669,6 @@ export class SchemaType implements SchemaDef {
             {
               name: "fields",
               value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("documentDate")]),
-            },
-          ],
-        },
-        {
-          name: "@@index",
-          args: [
-            {
-              name: "fields",
-              value: ExpressionUtils.array("String", [
-                ExpressionUtils.field("period"),
-                ExpressionUtils.field("clientRUT"),
-              ]),
             },
           ],
         },

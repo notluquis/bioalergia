@@ -4340,18 +4340,6 @@ export class SchemaType implements SchemaDef {
           updatedAt: true,
           default: ExpressionUtils.call("now"),
         },
-        purchases: {
-          name: "purchases",
-          type: "DTEPurchaseDetail",
-          array: true,
-          relation: { opposite: "dtePeriod" },
-        },
-        sales: {
-          name: "sales",
-          type: "DTESaleDetail",
-          array: true,
-          relation: { opposite: "dtePeriod" },
-        },
       },
       idFields: ["id"],
       uniqueFields: {
@@ -4367,11 +4355,6 @@ export class SchemaType implements SchemaDef {
           type: "String",
           id: true,
           default: ExpressionUtils.call("uuid"),
-        },
-        period: {
-          name: "period",
-          type: "String",
-          foreignKeyFor: ["dtePeriod"],
         },
         registerNumber: {
           name: "registerNumber",
@@ -4512,12 +4495,6 @@ export class SchemaType implements SchemaDef {
           updatedAt: true,
           default: ExpressionUtils.call("now"),
         },
-        dtePeriod: {
-          name: "dtePeriod",
-          type: "DTEPeriod",
-          optional: true,
-          relation: { opposite: "purchases", fields: ["period"], references: ["period"] },
-        },
       },
       idFields: ["id"],
       uniqueFields: {
@@ -4532,11 +4509,6 @@ export class SchemaType implements SchemaDef {
           type: "String",
           id: true,
           default: ExpressionUtils.call("uuid"),
-        },
-        period: {
-          name: "period",
-          type: "String",
-          foreignKeyFor: ["dtePeriod"],
         },
         registerNumber: {
           name: "registerNumber",
@@ -4690,13 +4662,28 @@ export class SchemaType implements SchemaDef {
           type: "Decimal",
           default: 0,
         },
-        transportPassageAmount: {
-          name: "transportPassageAmount",
+        internationalTransportAmount: {
+          name: "internationalTransportAmount",
           type: "Decimal",
           default: 0,
         },
-        internationalTransportAmount: {
-          name: "internationalTransportAmount",
+        nonCostSaleIndicator: {
+          name: "nonCostSaleIndicator",
+          type: "Int",
+          default: 0,
+        },
+        periodicServiceIndicator: {
+          name: "periodicServiceIndicator",
+          type: "Int",
+          default: 0,
+        },
+        totalPeriodAmount: {
+          name: "totalPeriodAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        nationalTransportPassageAmount: {
+          name: "nationalTransportPassageAmount",
           type: "Decimal",
           default: 0,
         },
@@ -4707,16 +4694,6 @@ export class SchemaType implements SchemaDef {
         },
         branchCode: {
           name: "branchCode",
-          type: "String",
-          optional: true,
-        },
-        purchaseId: {
-          name: "purchaseId",
-          type: "String",
-          optional: true,
-        },
-        shippingOrderId: {
-          name: "shippingOrderId",
           type: "String",
           optional: true,
         },
@@ -4750,12 +4727,6 @@ export class SchemaType implements SchemaDef {
           type: "DateTime",
           updatedAt: true,
           default: ExpressionUtils.call("now"),
-        },
-        dtePeriod: {
-          name: "dtePeriod",
-          type: "DTEPeriod",
-          optional: true,
-          relation: { opposite: "sales", fields: ["period"], references: ["period"] },
         },
       },
       idFields: ["id"],

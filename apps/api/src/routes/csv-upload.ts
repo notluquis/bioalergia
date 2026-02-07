@@ -41,6 +41,7 @@ type AuthContext = {
 };
 
 interface CSVRow {
+  // Generic fields
   rut?: unknown;
   names?: unknown;
   fatherName?: unknown;
@@ -109,6 +110,138 @@ interface CSVRow {
   bankBranch?: unknown;
   bankAccountType?: unknown;
   bankAccountNumber?: unknown;
+  // DTE fields (common)
+  period?: unknown;
+  registerNumber?: unknown;
+  documentType?: unknown;
+  documentDate?: unknown;
+  receiptDate?: unknown;
+  exemptAmount?: unknown;
+  netAmount?: unknown;
+  totalAmount?: unknown;
+  notes?: unknown;
+  // DTE Purchase fields
+  purchaseType?: unknown;
+  providerRUT?: unknown;
+  providerName?: unknown;
+  folio?: unknown;
+  acknowledgeDate?: unknown;
+  recoverableIVA?: unknown;
+  nonRecoverableIVA?: unknown;
+  nonRecoverableIVACode?: unknown;
+  fixedAssetNetAmount?: unknown;
+  commonUseIVA?: unknown;
+  nonCreditableTax?: unknown;
+  nonRetainedIVA?: unknown;
+  referenceDocNote?: unknown;
+  // DTE Sale fields
+  saleType?: unknown;
+  clientRUT?: unknown;
+  clientName?: unknown;
+  ivaAmount?: unknown;
+  receiptAcknowledgeDate?: unknown;
+  claimDate?: unknown;
+  referenceDocType?: unknown;
+  referenceDocFolio?: unknown;
+  foreignBuyerIdentifier?: unknown;
+  foreignBuyerNationality?: unknown;
+  internalNumber?: unknown;
+  branchCode?: unknown;
+  purchaseId?: unknown;
+  shippingOrderId?: unknown;
+  origin?: unknown;
+  informativeNote?: unknown;
+  paymentNote?: unknown;
+  totalRetainedIVA?: unknown;
+  partialRetainedIVA?: unknown;
+  ownIVA?: unknown;
+  thirdPartyIVA?: unknown;
+  lateIVA?: unknown;
+  emitterRUT?: unknown;
+  commissionNetAmount?: unknown;
+  commissionExemptAmount?: unknown;
+  commissionIVA?: unknown;
+  constructorCreditAmount?: unknown;
+  freeTradeZoneAmount?: unknown;
+  containerGuaranteeAmount?: unknown;
+  nonBillableAmount?: unknown;
+  nationalTransportPassageAmount?: unknown;
+  internationalTransportAmount?: unknown;
+  // Tobacco fields
+  pureTobacco?: unknown;
+  cigaretteTobacco?: unknown;
+  elaboratedTobacco?: unknown;
+}
+
+// ============================================================
+// Zenstack v3 Helper Functions - Only include actual CSV fields
+// ============================================================
+
+/**
+ * Build object including only defined values
+ * Per Zenstack v3: optional fields not included = database default/null
+ */
+function buildOptional(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+/**
+ * Parse amount from CSV row
+ * Returns Decimal if value exists and is non-zero, undefined otherwise
+ * NO defaults: missing amounts = undefined, not 0
+ */
+function parseDecimal(value: unknown): Decimal | undefined {
+  if (value == null || value === "") {
+    return undefined;
+  }
+  const num = cleanAmount(value);
+  if (num === 0) {
+    return undefined; // Don't store zero for missing values
+  }
+  return new Decimal(num.toFixed(2));
+}
+
+/**
+ * Parse optional date from CSV
+ * Returns Date if valid, undefined otherwise
+ * NO null values - undefined means field not provided
+ */
+function parseOptionalDate(value: unknown): Date | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const dateStr = parseFlexibleDate(value);
+  return dateStr ? new Date(dateStr) : undefined;
+}
+
+/**
+ * Parse optional string from CSV
+ * Returns string if value exists, undefined otherwise
+ */
+function parseOptionalString(value: unknown): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const str = String(value).trim();
+  return str.length > 0 ? str : undefined;
+}
+
+/**
+ * Parse optional number from CSV
+ * Returns number if value exists, undefined otherwise
+ */
+function parseOptionalNumber(value: unknown): number | undefined {
+  if (value == null || value === "") {
+    return undefined;
+  }
+  const num = Number(value);
+  return Number.isNaN(num) ? undefined : num;
 }
 
 // Helper to get auth
@@ -324,17 +457,16 @@ csvUploadRoutes.post("/preview", async (c) => {
             toInsert++;
           }
         }
-      } else if (table === "dte_purchases" && row.period && row.providerRUT && row.folio) {
-        // DTE Purchases are identified by period + providerRUT + folio + documentDate
+      } else if (table === "dte_purchases" && row.providerRUT && row.folio) {
+        // DTE Purchases are identified by providerRUT + folio + documentDate
         const dateStr = parseFlexibleDate(row.documentDate);
         if (!dateStr) {
           errors.push(`Fila ${i + 1}: Fecha de documento inválida`);
           toSkip++;
           continue;
         }
-        const exists = await db.dtePurchaseDetail.findFirst({
+        const exists = await db.dTEPurchaseDetail.findFirst({
           where: {
-            period: String(row.period),
             providerRUT: String(row.providerRUT),
             folio: String(row.folio),
             documentDate: new Date(dateStr),
@@ -345,17 +477,16 @@ csvUploadRoutes.post("/preview", async (c) => {
         } else {
           toInsert++;
         }
-      } else if (table === "dte_sales" && row.period && row.clientRUT && row.folio) {
-        // DTE Sales are identified by period + clientRUT + folio + documentDate
+      } else if (table === "dte_sales" && row.clientRUT && row.folio) {
+        // DTE Sales are identified by clientRUT + folio + documentDate
         const dateStr = parseFlexibleDate(row.documentDate);
         if (!dateStr) {
           errors.push(`Fila ${i + 1}: Fecha de documento inválida`);
           toSkip++;
           continue;
         }
-        const exists = await db.dteSaleDetail.findFirst({
+        const exists = await db.dTESaleDetail.findFirst({
           where: {
-            period: String(row.period),
             clientRUT: String(row.clientRUT),
             folio: String(row.folio),
             documentDate: new Date(dateStr),
@@ -811,56 +942,84 @@ async function importDtePurchaseRow(row: CSVRow): Promise<ImportOutcome> {
   const documentDate = new Date(documentDateStr);
   const receiptDate = new Date(receiptDateStr);
 
-  const purchaseData = buildDtePurchaseData(row, documentDate, receiptDate);
+  const purchaseData = buildDtePurchaseData(row, documentDate, receiptDate) as Record<
+    string,
+    unknown
+  >;
 
-  const existing = await db.dtePurchaseDetail.findFirst({
+  const existing = await db.dTEPurchaseDetail.findFirst({
     where: {
-      providerRUT: purchaseData.providerRUT,
-      folio: purchaseData.folio,
-      documentDate: purchaseData.documentDate,
+      providerRUT: String(purchaseData.providerRUT),
+      folio: String(purchaseData.folio),
+      documentDate: documentDate,
     },
   });
 
   if (existing) {
-    await db.dtePurchaseDetail.update({
+    await db.dTEPurchaseDetail.update({
       where: { id: existing.id },
       data: purchaseData,
     });
     return { inserted: 0, updated: 1, skipped: 0 };
   }
 
-  await db.dtePurchaseDetail.create({ data: purchaseData });
+  await db.dTEPurchaseDetail.create({
+    // biome-ignore lint/suspicious/noExplicitAny: Zenstack type narrowing
+    data: purchaseData as any,
+  });
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-function buildDtePurchaseData(row: CSVRow, documentDate: Date, receiptDate: Date) {
-  const acknowledgeDate = row.acknowledgeDate
-    ? new Date(parseFlexibleDate(row.acknowledgeDate) || "")
-    : null;
+function buildDtePurchaseData(
+  row: CSVRow,
+  documentDate: Date,
+  receiptDate: Date,
+): Record<string, unknown> {
+  // Required fields - no defaults, throw if missing
+  if (!row.registerNumber) {
+    throw new Error("registerNumber requerido");
+  }
+  if (!row.documentType) {
+    throw new Error("documentType requerido");
+  }
+  if (!row.purchaseType) {
+    throw new Error("purchaseType requerido");
+  }
 
-  return {
-    registerNumber: Number(row.registerNumber) || 0,
-    documentType: Number(row.documentType) || 33,
-    purchaseType: String(row.purchaseType || "Compras del Giro"),
+  // Build object with required + optional fields
+  // Always include required then conditionally add optional
+  const data: Record<string, unknown> = {
+    registerNumber: Number(row.registerNumber),
+    documentType: Number(row.documentType),
+    purchaseType: String(row.purchaseType),
     providerRUT: String(row.providerRUT),
-    providerName: String(row.providerName || ""),
     folio: String(row.folio),
     documentDate,
     receiptDate,
-    acknowledgeDate,
-    exemptAmount: new Decimal(cleanAmount(row.exemptAmount)),
-    netAmount: new Decimal(cleanAmount(row.netAmount)),
-    recoverableIVA: new Decimal(cleanAmount(row.recoverableIVA)),
-    nonRecoverableIVA: new Decimal(cleanAmount(row.nonRecoverableIVA)),
-    nonRecoverableIVACode: row.nonRecoverableIVACode ? String(row.nonRecoverableIVACode) : null,
-    totalAmount: new Decimal(cleanAmount(row.totalAmount)),
-    fixedAssetNetAmount: new Decimal(cleanAmount(row.fixedAssetNetAmount)),
-    commonUseIVA: new Decimal(cleanAmount(row.commonUseIVA)),
-    nonCreditableTax: new Decimal(cleanAmount(row.nonCreditableTax)),
-    nonRetainedIVA: new Decimal(cleanAmount(row.nonRetainedIVA)),
-    referenceDocNote: row.referenceDocNote ? String(row.referenceDocNote) : null,
-    notes: row.notes ? String(row.notes) : null,
   };
+
+  // Conditionally add optional fields (Zenstack v3 pattern)
+  const optionalFields = buildOptional({
+    providerName: parseOptionalString(row.providerName),
+    acknowledgeDate: parseOptionalDate(row.acknowledgeDate),
+    exemptAmount: parseDecimal(row.exemptAmount),
+    netAmount: parseDecimal(row.netAmount),
+    recoverableIVA: parseDecimal(row.recoverableIVA),
+    nonRecoverableIVA: parseDecimal(row.nonRecoverableIVA),
+    totalAmount: parseDecimal(row.totalAmount),
+    fixedAssetNetAmount: parseDecimal(row.fixedAssetNetAmount),
+    commonUseIVA: parseDecimal(row.commonUseIVA),
+    nonCreditableTax: parseDecimal(row.nonCreditableTax),
+    nonRetainedIVA: parseDecimal(row.nonRetainedIVA),
+    pureTobacco: parseDecimal(row.pureTobacco),
+    cigaretteTobacco: parseDecimal(row.cigaretteTobacco),
+    elaboratedTobacco: parseDecimal(row.elaboratedTobacco),
+    nonRecoverableIVACode: parseOptionalString(row.nonRecoverableIVACode),
+    referenceDocNote: parseOptionalString(row.referenceDocNote),
+    notes: parseOptionalString(row.notes),
+  });
+
+  return { ...data, ...optionalFields };
 }
 
 async function importDteSaleRow(row: CSVRow): Promise<ImportOutcome> {
@@ -875,116 +1034,131 @@ async function importDteSaleRow(row: CSVRow): Promise<ImportOutcome> {
   const documentDate = new Date(documentDateStr);
   const receiptDate = new Date(receiptDateStr);
 
-  const saleData = buildDteSaleData(row, documentDate, receiptDate);
+  const saleData = buildDteSaleData(row, documentDate, receiptDate) as Record<string, unknown>;
 
-  const existing = await db.dteSaleDetail.findFirst({
+  const existing = await db.dTESaleDetail.findFirst({
     where: {
-      clientRUT: saleData.clientRUT,
-      folio: saleData.folio,
-      documentDate: saleData.documentDate,
+      clientRUT: String(saleData.clientRUT),
+      folio: String(saleData.folio),
+      documentDate: documentDate,
     },
   });
 
   if (existing) {
-    await db.dteSaleDetail.update({
+    await db.dTESaleDetail.update({
       where: { id: existing.id },
       data: saleData,
     });
     return { inserted: 0, updated: 1, skipped: 0 };
   }
 
-  await db.dteSaleDetail.create({ data: saleData });
+  await db.dTESaleDetail.create({
+    // biome-ignore lint/suspicious/noExplicitAny: Zenstack type narrowing
+    data: saleData as any,
+  });
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-function buildDteSaleData(row: CSVRow, documentDate: Date, receiptDate: Date) {
-  const receiptAcknowledgeDate = row.receiptAcknowledgeDate
-    ? new Date(parseFlexibleDate(row.receiptAcknowledgeDate) || "")
-    : null;
-  const claimDate = row.claimDate ? new Date(parseFlexibleDate(row.claimDate) || "") : null;
+function buildDteSaleData(
+  row: CSVRow,
+  documentDate: Date,
+  receiptDate: Date,
+): Record<string, unknown> {
+  // Required fields - no defaults, throw if missing
+  if (!row.registerNumber) {
+    throw new Error("registerNumber requerido");
+  }
+  if (!row.documentType) {
+    throw new Error("documentType requerido");
+  }
+  if (!row.saleType) {
+    throw new Error("saleType requerido");
+  }
 
-  return {
-    // Identifiers
-    registerNumber: Number(row.registerNumber) || 0,
-    documentType: Number(row.documentType) || 41,
-    saleType: String(row.saleType || "Del Giro"),
+  // Build object with required + optional fields
+  const data: Record<string, unknown> = {
+    registerNumber: Number(row.registerNumber),
+    documentType: Number(row.documentType),
+    saleType: String(row.saleType),
     clientRUT: String(row.clientRUT),
-    clientName: String(row.clientName || ""),
     folio: String(row.folio),
     documentDate,
     receiptDate,
-    receiptAcknowledgeDate,
-    claimDate,
-    // Main amounts
-    exemptAmount: new Decimal(cleanAmount(row.exemptAmount)),
-    netAmount: new Decimal(cleanAmount(row.netAmount)),
-    ivaAmount: new Decimal(cleanAmount(row.ivaAmount)),
-    totalAmount: new Decimal(cleanAmount(row.totalAmount)),
+  };
+
+  // Conditionally add optional fields (Zenstack v3 pattern)
+  const optionalFields = buildOptional({
+    clientName: parseOptionalString(row.clientName),
+    receiptAcknowledgeDate: parseOptionalDate(row.receiptAcknowledgeDate),
+    claimDate: parseOptionalDate(row.claimDate),
+    exemptAmount: parseDecimal(row.exemptAmount),
+    netAmount: parseDecimal(row.netAmount),
+    ivaAmount: parseDecimal(row.ivaAmount),
+    totalAmount: parseDecimal(row.totalAmount),
     // IVA details
     ...buildDteSaleIvaFields(row),
-    // Commission
+    // Commission details
     ...buildDteSaleCommissionFields(row),
     // References
-    referenceDocType: row.referenceDocType ? String(row.referenceDocType) : null,
-    referenceDocFolio: row.referenceDocFolio ? String(row.referenceDocFolio) : null,
+    referenceDocType: parseOptionalString(row.referenceDocType),
+    referenceDocFolio: parseOptionalString(row.referenceDocFolio),
     // Foreign buyer
     ...buildDteSaleForeignBuyerFields(row),
     // Special conditions
     ...buildDteSaleSpecialFields(row),
     // Metadata
     ...buildDteSaleMetadataFields(row),
-  };
+  });
+
+  return { ...data, ...optionalFields };
 }
 
 function buildDteSaleForeignBuyerFields(row: CSVRow) {
-  return {
-    foreignBuyerIdentifier: row.foreignBuyerIdentifier ? String(row.foreignBuyerIdentifier) : null,
-    foreignBuyerNationality: row.foreignBuyerNationality
-      ? String(row.foreignBuyerNationality)
-      : null,
-  };
+  return buildOptional({
+    foreignBuyerIdentifier: parseOptionalString(row.foreignBuyerIdentifier),
+    foreignBuyerNationality: parseOptionalString(row.foreignBuyerNationality),
+  });
 }
 
 function buildDteSaleMetadataFields(row: CSVRow) {
-  return {
-    internalNumber: row.internalNumber ? Number(row.internalNumber) : null,
-    branchCode: row.branchCode ? String(row.branchCode) : null,
-    purchaseId: row.purchaseId ? String(row.purchaseId) : null,
-    shippingOrderId: row.shippingOrderId ? String(row.shippingOrderId) : null,
-    origin: row.origin ? String(row.origin) : null,
-    informativeNote: row.informativeNote ? String(row.informativeNote) : null,
-    paymentNote: row.paymentNote ? String(row.paymentNote) : null,
-    notes: row.notes ? String(row.notes) : null,
-  };
+  return buildOptional({
+    // Metadata fields - NOTE: purchaseId and shippingOrderId removed (not in SII CSV)
+    internalNumber: parseOptionalNumber(row.internalNumber),
+    branchCode: parseOptionalString(row.branchCode),
+    origin: parseOptionalString(row.origin),
+    informativeNote: parseOptionalString(row.informativeNote),
+    paymentNote: parseOptionalString(row.paymentNote),
+    notes: parseOptionalString(row.notes),
+  });
 }
 
 function buildDteSaleIvaFields(row: CSVRow) {
-  return {
-    totalRetainedIVA: new Decimal(cleanAmount(row.totalRetainedIVA)),
-    partialRetainedIVA: new Decimal(cleanAmount(row.partialRetainedIVA)),
-    nonRetainedIVA: new Decimal(cleanAmount(row.nonRetainedIVA)),
-    ownIVA: new Decimal(cleanAmount(row.ownIVA)),
-    thirdPartyIVA: new Decimal(cleanAmount(row.thirdPartyIVA)),
-    lateIVA: new Decimal(cleanAmount(row.lateIVA)),
-  };
+  return buildOptional({
+    totalRetainedIVA: parseDecimal(row.totalRetainedIVA),
+    partialRetainedIVA: parseDecimal(row.partialRetainedIVA),
+    nonRetainedIVA: parseDecimal(row.nonRetainedIVA),
+    ownIVA: parseDecimal(row.ownIVA),
+    thirdPartyIVA: parseDecimal(row.thirdPartyIVA),
+    lateIVA: parseDecimal(row.lateIVA),
+  });
 }
 
 function buildDteSaleCommissionFields(row: CSVRow) {
-  return {
-    emitterRUT: row.emitterRUT ? String(row.emitterRUT) : null,
-    commissionNetAmount: new Decimal(cleanAmount(row.commissionNetAmount)),
-    commissionExemptAmount: new Decimal(cleanAmount(row.commissionExemptAmount)),
-    commissionIVA: new Decimal(cleanAmount(row.commissionIVA)),
-  };
+  return buildOptional({
+    emitterRUT: parseOptionalString(row.emitterRUT),
+    commissionNetAmount: parseDecimal(row.commissionNetAmount),
+    commissionExemptAmount: parseDecimal(row.commissionExemptAmount),
+    commissionIVA: parseDecimal(row.commissionIVA),
+  });
 }
 
 function buildDteSaleSpecialFields(row: CSVRow) {
-  return {
-    constructorCreditAmount: new Decimal(cleanAmount(row.constructorCreditAmount)),
-    freeTradeZoneAmount: new Decimal(cleanAmount(row.freeTradeZoneAmount)),
-    containerGuaranteeAmount: new Decimal(cleanAmount(row.containerGuaranteeAmount)),
-    nonBillableAmount: new Decimal(cleanAmount(row.nonBillableAmount)),
-    transportPassageAmount: new Decimal(cleanAmount(row.transportPassageAmount)),
-    internationalTransportAmount: new Decimal(cleanAmount(row.internationalTransportAmount)),
-  };
+  return buildOptional({
+    constructorCreditAmount: parseDecimal(row.constructorCreditAmount),
+    freeTradeZoneAmount: parseDecimal(row.freeTradeZoneAmount),
+    containerGuaranteeAmount: parseDecimal(row.containerGuaranteeAmount),
+    nonBillableAmount: parseDecimal(row.nonBillableAmount),
+    nationalTransportPassageAmount: parseDecimal(row.nationalTransportPassageAmount),
+    internationalTransportAmount: parseDecimal(row.internationalTransportAmount),
+  });
 }
