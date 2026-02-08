@@ -1,5 +1,5 @@
-import { Card, Spinner } from "@heroui/react";
-import { useMutation } from "@tanstack/react-query";
+import { Card, Chip, Spinner } from "@heroui/react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import localeEs from "dayjs/locale/es";
 import { Check, Download, X } from "lucide-react";
@@ -11,6 +11,13 @@ import { useToast } from "@/context/ToastContext";
 import { apiClient } from "@/lib/api-client";
 
 dayjs.locale(localeEs);
+
+// Response schema for available periods
+const AvailablePeriodsSchema = z.object({
+  status: z.string(),
+  sales: z.array(z.string()),
+  purchases: z.array(z.string()),
+});
 
 // Response schema for sync results
 const SyncResultSchema = z.object({
@@ -104,6 +111,19 @@ export function HaulmerSyncPage() {
   const { error: showError, success: showSuccess } = useToast();
   const [lastSyncs, setLastSyncs] = useState<LastSyncState>({});
 
+  // Fetch available periods
+  const { data: availablePeriods, isLoading: isLoadingPeriods } = useQuery({
+    queryKey: ["haulmer-available-periods"],
+    queryFn: async () => {
+      const response = await apiClient.get<z.infer<typeof AvailablePeriodsSchema>>(
+        "/haulmer/available-periods",
+        { responseSchema: AvailablePeriodsSchema },
+      );
+      return response;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
   const periods = useMemo(() => generatePeriods(), []);
   const periodsByYear = useMemo(() => {
     const result: Record<number, MonthPeriod[] | undefined> = {};
@@ -162,6 +182,10 @@ export function HaulmerSyncPage() {
     }
   };
 
+  const hasSalesData = (period: string) => availablePeriods?.sales?.includes(period) ?? false;
+  const hasPurchasesData = (period: string) =>
+    availablePeriods?.purchases?.includes(period) ?? false;
+
   const sortedYears = Object.keys(periodsByYear)
     .map(Number)
     .sort((a, b) => b - a);
@@ -175,6 +199,16 @@ export function HaulmerSyncPage() {
           Descarga e importa registros de ventas y compras desde Haulmer
         </p>
       </div>
+
+      {/* Loading State */}
+      {isLoadingPeriods && (
+        <Card className="border-warning-100 bg-warning-50">
+          <div className="flex items-center gap-2 p-4">
+            <Spinner size="sm" />
+            <p className="text-default-700 text-sm">Cargando períodos disponibles...</p>
+          </div>
+        </Card>
+      )}
 
       {/* Info Card */}
       <Card className="border-primary-100 bg-primary-50">
@@ -208,13 +242,25 @@ export function HaulmerSyncPage() {
                   <div className="space-y-2 border-default-100 border-t pt-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Ventas</span>
-                      <SyncStatusIcon result={lastSyncs[`${period.period}-sales`]} />
+                      <div className="flex items-center gap-2">
+                        {hasSalesData(period.period) ? (
+                          <Chip color="success" size="sm">
+                            Datos
+                          </Chip>
+                        ) : (
+                          <Chip color="default" size="sm">
+                            Sin datos
+                          </Chip>
+                        )}
+                        <SyncStatusIcon result={lastSyncs[`${period.period}-sales`]} />
+                      </div>
                     </div>
                     <Button
                       size="sm"
                       variant="primary"
                       disabled={
-                        syncMutation.isPending && syncMutation.variables?.period === period.period
+                        !hasSalesData(period.period) ||
+                        (syncMutation.isPending && syncMutation.variables?.period === period.period)
                       }
                       onClick={() => {
                         handleSync(period.period, "sales");
@@ -240,13 +286,25 @@ export function HaulmerSyncPage() {
                   <div className="space-y-2 border-default-100 border-t pt-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Compras</span>
-                      <SyncStatusIcon result={lastSyncs[`${period.period}-purchases`]} />
+                      <div className="flex items-center gap-2">
+                        {hasPurchasesData(period.period) ? (
+                          <Chip color="success" size="sm">
+                            Datos
+                          </Chip>
+                        ) : (
+                          <Chip color="default" size="sm">
+                            Sin datos
+                          </Chip>
+                        )}
+                        <SyncStatusIcon result={lastSyncs[`${period.period}-purchases`]} />
+                      </div>
                     </div>
                     <Button
                       size="sm"
                       variant="primary"
                       disabled={
-                        syncMutation.isPending && syncMutation.variables?.period === period.period
+                        !hasPurchasesData(period.period) ||
+                        (syncMutation.isPending && syncMutation.variables?.period === period.period)
                       }
                       onClick={() => {
                         handleSync(period.period, "purchases");

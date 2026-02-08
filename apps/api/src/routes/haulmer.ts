@@ -5,11 +5,88 @@
 
 import { type Context, Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
+import {
+  fetchAvailablePurchasePeriods,
+  fetchAvailableSalesPeriods,
+} from "../modules/haulmer/downloader";
 import { syncPeriods } from "../modules/haulmer/service";
 import { getSetting } from "../services/settings";
 import { reply } from "../utils/reply";
+import { captureHaulmerJWT } from "../modules/haulmer/auth";
 
 export const haulmerRoutes = new Hono();
+
+/**
+ * GET /haulmer/available-periods
+ * Get available sales and purchase periods from Haulmer
+ */
+haulmerRoutes.get("/available-periods", async (c: Context) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Not authorized" }, 401);
+  }
+
+  const canRead = await hasPermission(user.id, "read", "Integration");
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  try {
+    // Get RUT from settings
+    const rut = await getSetting("haulmer.rut");
+    if (!rut) {
+      return reply(
+        c,
+        {
+          status: "error",
+          message: "Haulmer RUT not configured",
+        },
+        400,
+      );
+    }
+
+    // Get email/password from settings
+    const email = await getSetting("haulmer.email");
+    const password = await getSetting("haulmer.password");
+    const workspaceId = await getSetting("haulmer.workspace_id");
+
+    if (!email || !password) {
+      return reply(
+        c,
+        {
+          status: "error",
+          message: "Email/password not configured",
+        },
+        400,
+      );
+    }
+
+    // Get JWT token
+    const jwtResponse = await captureHaulmerJWT({
+      rut,
+      email,
+      password,
+    });
+
+    const jwt = jwtResponse.jwtToken;
+
+    // Fetch available periods in parallel
+    const [salesPeriods, purchasePeriods] = await Promise.all([
+      fetchAvailableSalesPeriods(rut, jwt, workspaceId),
+      fetchAvailablePurchasePeriods(rut, jwt, workspaceId),
+    ]);
+
+    return reply(c, {
+      status: "ok",
+      sales: salesPeriods,
+      purchases: purchasePeriods,
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("[Haulmer] Error fetching available periods:", msg);
+    return reply(c, { status: "error", message: msg }, 500);
+  }
+});
 
 /**
  * POST /haulmer/sync
