@@ -362,13 +362,13 @@ function PurchasesComparison() {
     // Group data by month across all years
     const monthYearMap = new Map<string, Array<(typeof summary)[0] & { year: string }>>();
     for (const item of summary) {
-      const [year, month] = item.period.split("-");
+      const [year = "", month = ""] = item.period.split("-");
       const monthKey = month; // 01-12
       if (!monthYearMap.has(monthKey)) {
         monthYearMap.set(monthKey, []);
       }
       const items = monthYearMap.get(monthKey);
-      if (items) {
+      if (items && year) {
         items.push({ ...item, year });
       }
     }
@@ -393,8 +393,10 @@ function PurchasesComparison() {
   const years = useMemo(() => {
     const yearSet = new Set<string>();
     for (const item of summary) {
-      const [year] = item.period.split("-");
-      yearSet.add(year);
+      const [year = ""] = item.period.split("-");
+      if (year) {
+        yearSet.add(year);
+      }
     }
     return Array.from(yearSet).sort().reverse();
   }, [summary]);
@@ -449,13 +451,13 @@ function SalesComparison() {
     // Group data by month across all years
     const monthYearMap = new Map<string, Array<(typeof summary)[0] & { year: string }>>();
     for (const item of summary) {
-      const [year, month] = item.period.split("-");
+      const [year = "", month = ""] = item.period.split("-");
       const monthKey = month; // 01-12
       if (!monthYearMap.has(monthKey)) {
         monthYearMap.set(monthKey, []);
       }
       const items = monthYearMap.get(monthKey);
-      if (items) {
+      if (items && year) {
         items.push({ ...item, year });
       }
     }
@@ -480,8 +482,10 @@ function SalesComparison() {
   const years = useMemo(() => {
     const yearSet = new Set<string>();
     for (const item of summary) {
-      const [year] = item.period.split("-");
-      yearSet.add(year);
+      const [year = ""] = item.period.split("-");
+      if (year) {
+        yearSet.add(year);
+      }
     }
     return Array.from(yearSet).sort().reverse();
   }, [summary]);
