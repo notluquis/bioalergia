@@ -226,16 +226,6 @@ export function HaulmerSyncPage() {
         </Card>
       )}
 
-      {/* Info Card */}
-      <Card className="border-primary-100 bg-primary-50">
-        <div className="p-4 text-sm">
-          <p className="text-default-700">
-            🔄 <strong>Cómo funciona:</strong> Selecciona un período (mes/año) y un tipo de
-            documento. El sistema descargará el CSV de Haulmer e importará los datos.
-          </p>
-        </div>
-      </Card>
-
       {/* By Year */}
       {sortedYears.map((year) => (
         <div key={year} className="space-y-4">
