@@ -192,6 +192,53 @@ function buildOptional(obj: Record<string, unknown>): Record<string, unknown> {
 }
 
 /**
+ * Compare two data objects, ignoring system fields (id, createdAt, updatedAt)
+ * Returns true if any content field differs, false if all are identical
+ */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: comparison logic
+function areDataDifferent(
+  existing: Record<string, unknown>,
+  newData: Record<string, unknown>,
+): boolean {
+  const systemFields = new Set(["id", "createdAt", "updatedAt"]);
+
+  for (const key of Object.keys(newData)) {
+    if (systemFields.has(key)) {
+      continue;
+    }
+
+    const existingValue = existing[key];
+    const newValue = newData[key];
+
+    // Handle Decimal comparison
+    if (existingValue instanceof Object && existingValue.constructor.name === "Decimal") {
+      if (newValue === null || newValue === undefined) {
+        return true;
+      }
+      if (String(existingValue) !== String(newValue)) {
+        return true;
+      }
+      continue;
+    }
+
+    // Handle Date comparison
+    if (existingValue instanceof Date && newValue instanceof Date) {
+      if (existingValue.getTime() !== newValue.getTime()) {
+        return true;
+      }
+      continue;
+    }
+
+    // Standard equality check
+    if (existingValue !== newValue) {
+      return true;
+    }
+  }
+
+  return false; // All content is identical
+}
+
+/**
  * Parse amount from CSV row
  * Returns Decimal if value exists and is non-zero, undefined otherwise
  * NO defaults: missing amounts = undefined, not 0
@@ -1089,7 +1136,6 @@ async function importDtePurchaseRow(
     where: {
       providerRUT: String(purchaseData.providerRUT),
       folio: String(purchaseData.folio),
-      documentDate: documentDate,
     },
   });
 
@@ -1097,11 +1143,16 @@ async function importDtePurchaseRow(
     if (mode === "insert-only") {
       return { inserted: 0, updated: 0, skipped: 1 };
     }
-    await db.dTEPurchaseDetail.update({
-      where: { id: existing.id },
-      data: purchaseData,
-    });
-    return { inserted: 0, updated: 1, skipped: 0 };
+    // Check if data is different
+    if (areDataDifferent(existing, purchaseData)) {
+      await db.dTEPurchaseDetail.update({
+        where: { id: existing.id },
+        data: purchaseData,
+      });
+      return { inserted: 0, updated: 1, skipped: 0 };
+    }
+    // Data is the same, skip update
+    return { inserted: 0, updated: 0, skipped: 1 };
   }
 
   await db.dTEPurchaseDetail.create({
@@ -1182,9 +1233,7 @@ async function importDteSaleRow(
 
   const existing = await db.dTESaleDetail.findFirst({
     where: {
-      clientRUT: String(saleData.clientRUT),
       folio: String(saleData.folio),
-      documentDate: documentDate,
     },
   });
 
@@ -1192,11 +1241,16 @@ async function importDteSaleRow(
     if (mode === "insert-only") {
       return { inserted: 0, updated: 0, skipped: 1 };
     }
-    await db.dTESaleDetail.update({
-      where: { id: existing.id },
-      data: saleData,
-    });
-    return { inserted: 0, updated: 1, skipped: 0 };
+    // Check if data is different
+    if (areDataDifferent(existing, saleData)) {
+      await db.dTESaleDetail.update({
+        where: { id: existing.id },
+        data: saleData,
+      });
+      return { inserted: 0, updated: 1, skipped: 0 };
+    }
+    // Data is the same, skip update
+    return { inserted: 0, updated: 0, skipped: 1 };
   }
 
   await db.dTESaleDetail.create({
