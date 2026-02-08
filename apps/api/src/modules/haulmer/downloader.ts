@@ -4,9 +4,6 @@
 
 import { GaxiosError, request } from "gaxios";
 
-// Regex patterns for validation
-const PERIOD_PATTERN = /^\d{6}$/; // YYYYMM format
-
 export async function downloadHaulmerCSV(
   rut: string,
   period: string,
@@ -89,7 +86,11 @@ export async function fetchAvailableSalesPeriods(
   }
 
   try {
-    const response = await request<Record<string, unknown>>({
+    const response = await request<{
+      message: string | null;
+      code: string;
+      details?: Array<{ periodo: number; emitidos: number }>;
+    }>({
       url,
       method: "GET",
       headers,
@@ -100,14 +101,16 @@ export async function fetchAvailableSalesPeriods(
       throw new Error(`HTTP ${response.status}`);
     }
 
-    // API returns object with period keys, extract the keys
-    const data = response.data as Record<string, unknown> | undefined;
-    if (!data || typeof data !== "object") {
+    // API returns { code: "OF-OK", details: [{ periodo: 202602, emitidos: 68 }, ...] }
+    const data = response.data;
+    if (!data?.details || !Array.isArray(data.details)) {
       return [];
     }
 
-    const periods = Object.keys(data)
-      .filter((key) => PERIOD_PATTERN.test(key))
+    // Extract periods where emitidos > 0
+    const periods = data.details
+      .filter((item) => item.emitidos > 0)
+      .map((item) => String(item.periodo))
       .sort();
 
     console.log(`[Haulmer] Found ${periods.length} sales periods`);
@@ -150,7 +153,11 @@ export async function fetchAvailablePurchasePeriods(
   }
 
   try {
-    const response = await request<Record<string, unknown>>({
+    const response = await request<{
+      message: string | null;
+      code: string;
+      details?: Array<{ periodo: number; recibidos: number }>;
+    }>({
       url,
       method: "GET",
       headers,
@@ -161,14 +168,16 @@ export async function fetchAvailablePurchasePeriods(
       throw new Error(`HTTP ${response.status}`);
     }
 
-    // API returns object with period keys, extract the keys
-    const data = response.data as Record<string, unknown> | undefined;
-    if (!data || typeof data !== "object") {
+    // API returns { code: "OF-OK", details: [{ periodo: 202602, recibidos: 4 }, ...] }
+    const data = response.data;
+    if (!data?.details || !Array.isArray(data.details)) {
       return [];
     }
 
-    const periods = Object.keys(data)
-      .filter((key) => PERIOD_PATTERN.test(key))
+    // Extract periods where recibidos > 0
+    const periods = data.details
+      .filter((item) => item.recibidos > 0)
+      .map((item) => String(item.periodo))
       .sort();
 
     console.log(`[Haulmer] Found ${periods.length} purchase periods`);
