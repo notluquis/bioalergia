@@ -21,28 +21,42 @@ export const haulmerRoutes = new Hono();
  * Get available sales and purchase periods from Haulmer
  */
 haulmerRoutes.get("/available-periods", async (c: Context) => {
-  const user = await getSessionUser(c);
-  if (!user) {
-    return reply(c, { status: "error", message: "Not authorized" }, 401);
-  }
-
-  const canRead = await hasPermission(user.id, "read", "Integration");
-  if (!canRead) {
-    return reply(c, { status: "error", message: "Forbidden" }, 403);
-  }
-
-  if (!haulmerConfig) {
-    return reply(
-      c,
-      {
-        status: "error",
-        message: "Haulmer not configured (missing env vars)",
-      },
-      503,
-    );
-  }
-
   try {
+    const user = await getSessionUser(c);
+    if (!user) {
+      console.warn("[Haulmer] GET /available-periods: No authenticated user");
+      return reply(c, { status: "error", message: "Not authorized" }, 401);
+    }
+
+    const canRead = await hasPermission(user.id, "read", "Integration");
+    if (!canRead) {
+      console.warn(
+        `[Haulmer] GET /available-periods: User ${user.id} lacks 'read' Integration permission`,
+      );
+      return reply(
+        c,
+        { status: "error", message: "Forbidden: missing 'read' Integration permission" },
+        403,
+      );
+    }
+
+    if (!haulmerConfig) {
+      console.warn("[Haulmer] GET /available-periods: haulmerConfig is null (missing env vars)");
+      return reply(
+        c,
+        {
+          status: "error",
+          message:
+            "Haulmer not configured (missing env vars: HAULMER_RUT, HAULMER_EMAIL, HAULMER_PASSWORD, HAULMER_WORKSPACE_ID)",
+        },
+        503,
+      );
+    }
+
+    console.log(
+      `[Haulmer] GET /available-periods: User ${user.id} authorized, fetching periods...`,
+    );
+
     // Get JWT token
     const jwtResponse = await captureHaulmerJWT({
       rut: haulmerConfig.rut,
@@ -58,6 +72,10 @@ haulmerRoutes.get("/available-periods", async (c: Context) => {
       fetchAvailablePurchasePeriods(haulmerConfig.rut, jwt, haulmerConfig.workspaceId),
     ]);
 
+    console.log(
+      `[Haulmer] GET /available-periods: Success (${salesPeriods.length} sales, ${purchasePeriods.length} purchases)`,
+    );
+
     return reply(c, {
       status: "ok",
       sales: salesPeriods,
@@ -65,7 +83,7 @@ haulmerRoutes.get("/available-periods", async (c: Context) => {
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error("[Haulmer] Error fetching available periods:", msg);
+    console.error("[Haulmer] GET /available-periods: Error:", msg);
     return reply(c, { status: "error", message: msg }, 500);
   }
 });
