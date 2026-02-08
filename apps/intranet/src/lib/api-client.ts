@@ -174,12 +174,15 @@ const buildKyOptions = (
   return kyOptions;
 };
 
-const buildSchemaErrorMessage = (error: z.ZodError) => {
+const buildSchemaErrorMessage = (error: z.ZodError, rawData?: unknown) => {
   const details = error.issues;
   const pretty = z.prettifyError(error);
   const issueSummary = formatZodIssues(details);
   return {
-    details,
+    details: {
+      issues: details,
+      received: rawData,
+    },
     message: pretty
       ? `Respuesta inválida del servidor:\n${pretty}`
       : issueSummary
@@ -212,7 +215,7 @@ async function parseResponse<T>(
     return parsed.data as T;
   }
 
-  const { details, message } = buildSchemaErrorMessage(parsed.error);
+  const { details, message } = buildSchemaErrorMessage(parsed.error, data);
   throw new ApiError(message, 500, details);
 }
 

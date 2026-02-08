@@ -215,11 +215,20 @@ export function HaulmerSyncPage() {
               {periodsError instanceof Error ? periodsError.message : "Error desconocido"}
             </p>
             <details className="mt-2">
-              <summary className="cursor-pointer font-mono text-danger text-xs">Detalles</summary>
-              <pre className="mt-1 overflow-auto rounded bg-danger-soft-hover p-2 text-danger text-xs">
-                {periodsError instanceof Error && "details" in periodsError
-                  ? JSON.stringify((periodsError as Record<string, unknown>).details, null, 2)
-                  : String(periodsError)}
+              <summary className="cursor-pointer font-mono text-danger text-xs">
+                Respuesta del servidor
+              </summary>
+              <pre className="font-mono mt-1 overflow-auto rounded bg-danger-soft-hover p-2 text-danger text-xs">
+                {(() => {
+                  if (!(periodsError instanceof Error)) {
+                    return String(periodsError);
+                  }
+                  if (!("details" in periodsError)) {
+                    return String(periodsError);
+                  }
+                  const details = (periodsError as Record<string, unknown>).details;
+                  return JSON.stringify(details, null, 2);
+                })()}
               </pre>
             </details>
           </div>
