@@ -189,7 +189,11 @@ export async function importDteSaleRow(
   mode: "insert-only" | "insert-or-update" = "insert-or-update",
 ): Promise<{ inserted: number; updated: number; skipped: number }> {
   try {
-    if (!row.folio) {
+    // Validate required field
+    if (!row.folio || String(row.folio).trim() === "") {
+      console.warn(
+        `[DTE] Sale row skipped - missing required folio. Row keys: ${Object.keys(row).join(", ")}`,
+      );
       return { inserted: 0, updated: 0, skipped: 1 };
     }
 
@@ -220,7 +224,9 @@ export async function importDteSaleRow(
     return { inserted: 1, updated: 0, skipped: 0 };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`[DTE] Failed to import sale row [folio=${row.folio}]: ${msg}`);
+    console.error(
+      `[DTE] Failed to import sale row [folio=${row.folio}, period=${row.period}]: ${msg}`,
+    );
     return { inserted: 0, updated: 0, skipped: 1 };
   }
 }
@@ -233,7 +239,17 @@ export async function importDtePurchaseRow(
   mode: "insert-only" | "insert-or-update" = "insert-or-update",
 ): Promise<{ inserted: number; updated: number; skipped: number }> {
   try {
-    if (!row.providerRUT || !row.folio) {
+    // Validate required fields
+    if (!row.providerRUT || String(row.providerRUT).trim() === "") {
+      console.warn(
+        `[DTE] Purchase row skipped - missing required providerRUT. Row keys: ${Object.keys(row).join(", ")}`,
+      );
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
+    if (!row.folio || String(row.folio).trim() === "") {
+      console.warn(
+        `[DTE] Purchase row skipped - missing required folio. Row keys: ${Object.keys(row).join(", ")}`,
+      );
       return { inserted: 0, updated: 0, skipped: 1 };
     }
 
@@ -268,7 +284,7 @@ export async function importDtePurchaseRow(
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error(
-      `[DTE] Failed to import purchase row [RUT=${row.providerRUT}, folio=${row.folio}]: ${msg}`,
+      `[DTE] Failed to import purchase row [RUT=${row.providerRUT}, folio=${row.folio}, period=${row.period}]: ${msg}`,
     );
     return { inserted: 0, updated: 0, skipped: 1 };
   }

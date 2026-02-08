@@ -1,72 +1,32 @@
 /**
  * Parse Haulmer CSV to DTE records
- * Maps Haulmer CSV headers to DTESaleDetail/DTEPurchaseDetail structure
+ * Uses PapaParse for robust CSV parsing with auto-delimiter detection
+ * Supports both semicolon (Haulmer) and comma delimiters
  */
+
+import Papa from "papaparse";
 
 export type CSVRow = Record<string, string>;
 
 /**
  * Parse CSV text to rows
- * Handles quoted fields and commas within quotes
+ * Automatically detects delimiter (semicolon for Haulmer, comma for standard)
  */
 export function parseCSVText(csvText: string): CSVRow[] {
-  const lines = csvText.split("\n");
-  if (lines.length < 2) {
-    throw new Error("CSV too short: no header row");
+  const results = Papa.parse(csvText, {
+    header: true,
+    skipEmptyLines: true,
+    // Prioritize semicolon (Haulmer) then comma (standard)
+    delimitersToGuess: [";", ",", "\t", "|"],
+  });
+
+  if (results.errors.length > 0) {
+    const firstError = results.errors[0];
+    throw new Error(`CSV parse error: ${firstError.message}`);
   }
 
-  const headerLine = lines[0];
-  const headers = parseCSVLine(headerLine);
-
-  const rows: CSVRow[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) {
-      continue;
-    }
-
-    const values = parseCSVLine(line);
-    const row: CSVRow = {};
-
-    headers.forEach((header, index) => {
-      row[header] = values[index] || "";
-    });
-
-    rows.push(row);
-  }
-
-  return rows;
-}
-
-/**
- * Parse single CSV line, respecting quoted fields
- */
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let insideQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-
-    if (char === '"') {
-      if (insideQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        insideQuotes = !insideQuotes;
-      }
-    } else if (char === "," && !insideQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-
-  result.push(current);
-  return result.map((val) => val.trim());
+  // Type assertion is safe because header:true makes Papa.parse return object arrays
+  return (results.data as CSVRow[]) || [];
 }
 
 /**

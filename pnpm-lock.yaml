@@ -12,6 +12,9 @@ importers:
       isomorphic-dompurify:
         specifier: ^3.0.0-rc.2
         version: 3.0.0-rc.2(@noble/hashes@2.0.1)
+      papaparse:
+        specifier: ^5.5.3
+        version: 5.5.3
       superjson:
         specifier: ^2.2.6
         version: 2.2.6
@@ -121,6 +124,9 @@ importers:
       otplib:
         specifier: ^13.2.1
         version: 13.2.1
+      papaparse:
+        specifier: ^5.5.3
+        version: 5.5.3
       paseto:
         specifier: ^3.1.4
         version: 3.1.4

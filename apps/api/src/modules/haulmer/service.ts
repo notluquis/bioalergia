@@ -72,24 +72,34 @@ export async function syncPeriod(
     // Parse CSV
     const rows = parseCSVText(csvText);
 
-    // Normalize column names
+    // Normalize column names and add period to each row
     for (const row of rows) {
-      for (const [key] of Object.entries(row)) {
+      // Add period field (required for import functions)
+      row.period = period;
+
+      // Normalize column names
+      const normalizedRow: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(row)) {
         const normalizedKey = normalizeColumnName(key);
-        if (normalizedKey !== key) {
-          row[normalizedKey] = row[key];
-          delete row[key];
-        }
+        normalizedRow[normalizedKey] = value;
       }
+
+      // Replace row with normalized version
+      for (const k of Object.keys(row)) {
+        delete row[k];
+      }
+      Object.assign(row, normalizedRow);
     }
 
     console.log(
       `[Haulmer Sync] Downloaded and parsed ${rows.length} rows for ${docType}/${period}`,
     );
 
-    // Log sample row columns to debug
+    // Log sample row columns after normalization to verify mapping worked
     if (rows.length > 0) {
-      console.log(`[Haulmer Sync] Sample row columns: ${Object.keys(rows[0]).join(", ")}`);
+      console.log(
+        `[Haulmer Sync] Sample normalized row columns: ${Object.keys(rows[0]).join(", ")}`,
+      );
     }
 
     // Process rows using shared library functions
