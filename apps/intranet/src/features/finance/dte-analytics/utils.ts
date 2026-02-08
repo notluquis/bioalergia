@@ -175,20 +175,7 @@ export function extractYearsFromSummary(summary: DTESummaryRaw[]): string[] {
   return Array.from(yearSet).sort().reverse();
 }
 
-/**
- * Generate year options for year selector
- * From 2020 to current year + 1 (for upcoming projections)
- */
-export function generateYearOptions(): string[] {
-  const currentYear = new Date().getFullYear();
-  const years: string[] = [];
 
-  for (let y = 2020; y <= currentYear + 1; y++) {
-    years.push(y.toString());
-  }
-
-  return years;
-}
 
 /**
  * Validate year selection against available options

@@ -32,7 +32,6 @@ import {
   extractYearsFromSummary,
   formatCurrency,
   formatNumber,
-  generateYearOptions,
   safeYearSelection,
 } from "@/features/finance/dte-analytics/utils";
 
@@ -40,7 +39,18 @@ export function DTEAnalyticsPage() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
 
-  const yearOptions = useMemo(() => generateYearOptions(), []);
+  // Load all purchases and sales data to extract years with actual data
+  const { data: allPurchases } = useSuspenseQuery(dteAnalyticsKeys.purchases());
+  const { data: allSales } = useSuspenseQuery(dteAnalyticsKeys.sales());
+
+  // Extract years from data and combine
+  const yearOptions = useMemo(() => {
+    const purchaseYears = extractYearsFromSummary(allPurchases);
+    const salesYears = extractYearsFromSummary(allSales);
+    // Combine and deduplicate
+    const allYears = new Set([...purchaseYears, ...salesYears]);
+    return Array.from(allYears).sort().reverse();
+  }, [allPurchases, allSales]);
 
   // Ensure selected year is always valid
   const validatedYear = useMemo(
