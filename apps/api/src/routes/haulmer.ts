@@ -5,6 +5,7 @@
 
 import { type Context, Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
+import { captureHaulmerJWT } from "../modules/haulmer/auth";
 import {
   fetchAvailablePurchasePeriods,
   fetchAvailableSalesPeriods,
@@ -12,7 +13,6 @@ import {
 import { syncPeriods } from "../modules/haulmer/service";
 import { getSetting } from "../services/settings";
 import { reply } from "../utils/reply";
-import { captureHaulmerJWT } from "../modules/haulmer/auth";
 
 export const haulmerRoutes = new Hono();
 
