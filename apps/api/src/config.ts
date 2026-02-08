@@ -7,6 +7,49 @@ export const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 export const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
 export const PORT = Number(process.env.PORT ?? 3000);
 
+// Haulmer Config
+export interface HaulmerEnvConfig {
+  rut: string;
+  email: string;
+  password: string;
+  workspaceId?: string;
+}
+
+const haulmerEnvMissing: string[] = [];
+const haulmerRut = process.env.HAULMER_RUT;
+if (!haulmerRut) {
+  haulmerEnvMissing.push("HAULMER_RUT");
+}
+
+const haulmerEmail = process.env.HAULMER_EMAIL;
+if (!haulmerEmail) {
+  haulmerEnvMissing.push("HAULMER_EMAIL");
+}
+
+const haulmerPassword = process.env.HAULMER_PASSWORD;
+if (!haulmerPassword) {
+  haulmerEnvMissing.push("HAULMER_PASSWORD");
+}
+
+export const haulmerConfig: HaulmerEnvConfig | null =
+  haulmerEnvMissing.length === 0
+    ? {
+        // biome-ignore lint/style/noNonNullAssertion: env var validated
+        rut: haulmerRut!,
+        // biome-ignore lint/style/noNonNullAssertion: env var validated
+        email: haulmerEmail!,
+        // biome-ignore lint/style/noNonNullAssertion: env var validated
+        password: haulmerPassword!,
+        workspaceId: process.env.HAULMER_WORKSPACE_ID,
+      }
+    : null;
+
+if (haulmerEnvMissing.length > 0) {
+  console.warn(
+    `[config] Haulmer sync deshabilitado. Variables faltantes: ${haulmerEnvMissing.join(", ")}`,
+  );
+}
+
 // Google Calendar Config
 export type GoogleCalendarConfig = {
   serviceAccountEmail: string;

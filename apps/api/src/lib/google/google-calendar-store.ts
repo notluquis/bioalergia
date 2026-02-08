@@ -132,6 +132,15 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
                 endDate: true,
                 transparency: true,
                 visibility: true,
+                category: true,
+                amountExpected: true,
+                amountPaid: true,
+                attended: true,
+                dosageValue: true,
+                dosageUnit: true,
+                treatmentStage: true,
+                controlIncluded: true,
+                isDomicilio: true,
               },
             });
 
@@ -266,6 +275,15 @@ interface DiffableEvent {
   startDate?: Date | null;
   endDateTime?: Date | null;
   endDate?: Date | null;
+  category?: string | null;
+  amountExpected?: number | null;
+  amountPaid?: number | null;
+  attended?: boolean | null;
+  dosageValue?: number | null;
+  dosageUnit?: string | null;
+  treatmentStage?: string | null;
+  controlIncluded?: boolean | null;
+  isDomicilio?: boolean | null;
 }
 
 function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): string[] {
@@ -290,6 +308,7 @@ function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): str
   const fmtDate = (d: Date | null | undefined) =>
     d ? d.toISOString().slice(0, 16).replace("T", " ") : "";
 
+  // Google Calendar Fields
   diff("Título", existing.summary, incoming.summary);
   diff("Desc", existing.description, incoming.description);
   diff("Lugar", existing.location, incoming.location);
@@ -309,6 +328,17 @@ function computeEventDiff(existing: DiffableEvent, incoming: DiffableEvent): str
   if (oldEnd !== newEnd) {
     changes.push(`Fin: ${oldEnd} -> ${newEnd}`);
   }
+
+  // Parsed/Classification Fields (really important to track!)
+  diff("Categoría", existing.category, incoming.category);
+  diff("Monto esperado", existing.amountExpected, incoming.amountExpected);
+  diff("Monto pagado", existing.amountPaid, incoming.amountPaid);
+  diff("Asistió", existing.attended, incoming.attended);
+  diff("Dosis", existing.dosageValue, incoming.dosageValue);
+  diff("Unidad dosis", existing.dosageUnit, incoming.dosageUnit);
+  diff("Etapa tratamiento", existing.treatmentStage, incoming.treatmentStage);
+  diff("Control incluido", existing.controlIncluded, incoming.controlIncluded);
+  diff("Domicilio", existing.isDomicilio, incoming.isDomicilio);
 
   return changes;
 }

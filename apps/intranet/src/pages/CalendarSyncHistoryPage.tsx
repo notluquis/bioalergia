@@ -130,13 +130,17 @@ export function CalendarSyncHistoryPage() {
           return (
             <Accordion className="divide-y divide-default-100" variant="surface">
               {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: row rendering logic */}
-              {syncLogs.map((log) => {
+              {syncLogs.map((log, index) => {
                 const duration = log.finishedAt
                   ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s")
                   : null;
 
                 return (
-                  <Accordion.Item id={log.id.toString()} key={log.id.toString()}>
+                  <Accordion.Item
+                    id={log.id.toString()}
+                    key={log.id.toString()}
+                    defaultExpanded={index === 0}
+                  >
                     <Accordion.Heading>
                       <Accordion.Trigger className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-default-50/50 sm:flex-nowrap">
                         <StatusBadge status={log.status} />

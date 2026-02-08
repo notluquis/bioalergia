@@ -112,7 +112,11 @@ export function HaulmerSyncPage() {
   const [lastSyncs, setLastSyncs] = useState<LastSyncState>({});
 
   // Fetch available periods
-  const { data: availablePeriods, isLoading: isLoadingPeriods } = useQuery({
+  const {
+    data: availablePeriods,
+    isLoading: isLoadingPeriods,
+    error: periodsError,
+  } = useQuery({
     queryKey: ["haulmer-available-periods"],
     queryFn: async () => {
       const response = await apiClient.get<z.infer<typeof AvailablePeriodsSchema>>(
@@ -192,20 +196,32 @@ export function HaulmerSyncPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="font-bold text-2xl">Sincronización Haulmer</h1>
-        <p className="mt-1 text-default-500 text-sm">
-          Descarga e importa registros de ventas y compras desde Haulmer
-        </p>
-      </div>
-
       {/* Loading State */}
       {isLoadingPeriods && (
         <Card className="border-warning-100 bg-warning-50">
           <div className="flex items-center gap-2 p-4">
             <Spinner size="sm" />
             <p className="text-default-700 text-sm">Cargando períodos disponibles...</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Error State */}
+      {periodsError && (
+        <Card className="border-danger-100 bg-danger-50">
+          <div className="p-4">
+            <h3 className="font-semibold text-danger text-sm">Error al cargar períodos</h3>
+            <p className="mt-1 text-danger text-xs">
+              {periodsError instanceof Error ? periodsError.message : "Error desconocido"}
+            </p>
+            <details className="mt-2">
+              <summary className="cursor-pointer font-mono text-danger text-xs">Detalles</summary>
+              <pre className="mt-1 overflow-auto rounded bg-danger-soft-hover p-2 text-danger text-xs">
+                {periodsError instanceof Error && "details" in periodsError
+                  ? JSON.stringify((periodsError as Record<string, unknown>).details, null, 2)
+                  : String(periodsError)}
+              </pre>
+            </details>
           </div>
         </Card>
       )}
