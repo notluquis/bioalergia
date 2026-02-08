@@ -4,6 +4,7 @@
  */
 
 import { db } from "@finanzas/db";
+import { importDtePurchaseRow, importDteSaleRow } from "../../lib/dte-import";
 import { captureHaulmerJWT, type HaulmerConfig, isJWTExpired } from "./auth";
 import { downloadHaulmerCSV } from "./downloader";
 import { normalizeColumnName, parseCSVText } from "./parser";
@@ -48,55 +49,9 @@ async function getJWT(config: HaulmerConfig) {
 }
 
 /**
- * Parse and import a CSV row into appropriate DTE table
- */
-async function importDTERow(
-  row: Record<string, unknown>,
-  docType: "sales" | "purchases",
-): Promise<{ inserted: number; updated: number; skipped: number }> {
-  try {
-    if (docType === "sales") {
-      // For sales, use specific fields
-      if (row.clientRUT && row.folio && row.documentDate) {
-        const existing = await db.dTESaleDetail.findFirst({
-          where: {
-            clientRUT: String(row.clientRUT),
-            folio: String(row.folio),
-          },
-        });
-        if (existing) {
-          return { inserted: 0, updated: 1, skipped: 0 };
-        }
-        // Create new sale detail record
-        // In a real scenario, you'd map all CSV columns properly
-        return { inserted: 1, updated: 0, skipped: 0 };
-      }
-    } else {
-      // For purchases
-      if (row.providerRUT && row.folio && row.documentDate) {
-        const existing = await db.dTEPurchaseDetail.findFirst({
-          where: {
-            providerRUT: String(row.providerRUT),
-            folio: String(row.folio),
-          },
-        });
-        if (existing) {
-          return { inserted: 0, updated: 1, skipped: 0 };
-        }
-        // Create new purchase detail record
-        return { inserted: 1, updated: 0, skipped: 0 };
-      }
-    }
-    return { inserted: 0, updated: 0, skipped: 1 };
-  } catch (error) {
-    console.warn(`[Haulmer] Skip row: ${error}`);
-    return { inserted: 0, updated: 0, skipped: 1 };
-  }
-}
-
-/**
  * Sync a single period and document type
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: error handling pattern
 export async function syncPeriod(
   rut: string,
   period: string,
@@ -132,10 +87,13 @@ export async function syncPeriod(
       `[Haulmer Sync] Downloaded and parsed ${rows.length} rows for ${docType}/${period}`,
     );
 
-    // Process rows
+    // Process rows using shared library functions
     for (const row of rows) {
       try {
-        const result = await importDTERow(row, docType);
+        const result =
+          docType === "sales"
+            ? await importDteSaleRow(row, "insert-or-update")
+            : await importDtePurchaseRow(row, "insert-or-update");
         rowsInserted += result.inserted;
         rowsUpdated += result.updated;
         rowsSkipped += result.skipped;
