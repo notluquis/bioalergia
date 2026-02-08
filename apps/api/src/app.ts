@@ -6,6 +6,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { rateLimiter } from "hono-rate-limiter";
 import { createAuthContext, getSessionUser } from "./auth";
+import { htmlSanitizerMiddleware } from "./lib/html-sanitizer";
 import { certificatesRoutes } from "./modules/certificates/index.js";
 import { patientsRoutes } from "./modules/patients/index.js";
 import { authRoutes } from "./routes/auth";
@@ -80,6 +81,11 @@ app.use("*", async (c, next) => {
 
   c.res.headers.set("Content-Security-Policy", csp);
 });
+
+// Memory leak prevention for long-running Node.js processes
+// Clears jsdom window state after each request to prevent unbounded memory growth
+// Only necessary when using isomorphic-dompurify for HTML sanitization
+app.use("*", htmlSanitizerMiddleware());
 
 // CORS for frontend (same-origin in prod, localhost in dev)
 app.use(
