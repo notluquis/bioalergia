@@ -48,7 +48,7 @@ export async function fetchAllergyOverview(): Promise<AllergyInventoryOverview[]
     "/api/inventory/allergy-overview",
     { responseSchema: InventorySchemas.AllergyOverviewResponse },
   );
-  return payload.data ?? [];
+  return payload.data;
 }
 
 export async function getInventoryCategories(): Promise<InventoryCategory[]> {

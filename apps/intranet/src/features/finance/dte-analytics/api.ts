@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
 
 export interface DTESummary {
@@ -17,15 +18,37 @@ export interface YearlyComparisonData {
   year2Count: number;
 }
 
-interface DTESummaryResponse {
-  status: "success";
-  data: DTESummary[];
-}
+// Zod schemas for runtime validation
+const DTESummarySchema = z.object({
+  period: z.string(),
+  count: z.number(),
+  totalAmount: z.number(),
+  netAmount: z.number(),
+  taxAmount: z.number(),
+  averageAmount: z.number(),
+});
 
-interface YearlyComparisonResponse {
-  status: "success";
-  data: YearlyComparisonData[];
-}
+const DTESummaryResponseSchema = z.object({
+  status: z.literal("success"),
+  data: z.array(DTESummarySchema),
+});
+
+type DTESummaryResponse = z.infer<typeof DTESummaryResponseSchema>;
+
+const YearlyComparisonDataSchema = z.object({
+  month: z.string(),
+  year1Value: z.number(),
+  year2Value: z.number(),
+  year1Count: z.number(),
+  year2Count: z.number(),
+});
+
+const YearlyComparisonResponseSchema = z.object({
+  status: z.literal("success"),
+  data: z.array(YearlyComparisonDataSchema),
+});
+
+type YearlyComparisonResponse = z.infer<typeof YearlyComparisonResponseSchema>;
 
 export async function fetchPurchasesSummary(year?: number): Promise<DTESummary[]> {
   const params = new URLSearchParams();
@@ -33,9 +56,12 @@ export async function fetchPurchasesSummary(year?: number): Promise<DTESummary[]
     params.set("year", year.toString());
   }
 
-  const result = await apiClient.getRaw<DTESummaryResponse>(
+  const result = await apiClient.get<DTESummaryResponse>(
     `/api/dte-analytics/purchases/summary?${params.toString()}`,
-    { responseType: "text" },
+    {
+      responseType: "json",
+      responseSchema: DTESummaryResponseSchema,
+    },
   );
   return result.data;
 }
@@ -46,9 +72,12 @@ export async function fetchSalesSummary(year?: number): Promise<DTESummary[]> {
     params.set("year", year.toString());
   }
 
-  const result = await apiClient.getRaw<DTESummaryResponse>(
+  const result = await apiClient.get<DTESummaryResponse>(
     `/api/dte-analytics/sales/summary?${params.toString()}`,
-    { responseType: "text" },
+    {
+      responseType: "json",
+      responseSchema: DTESummaryResponseSchema,
+    },
   );
   return result.data;
 }
@@ -64,9 +93,12 @@ export async function fetchYearlyComparison(
     type,
   });
 
-  const result = await apiClient.getRaw<YearlyComparisonResponse>(
+  const result = await apiClient.get<YearlyComparisonResponse>(
     `/api/dte-analytics/yearly-comparison?${params.toString()}`,
-    { responseType: "text" },
+    {
+      responseType: "json",
+      responseSchema: YearlyComparisonResponseSchema,
+    },
   );
   return result.data;
 }
