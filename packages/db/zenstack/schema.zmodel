@@ -1721,6 +1721,57 @@ model DTESaleDetail {
   @@map("dte_sale_details")
 }
 
+// ============================================================
+// HAULMER INTEGRATION
+// ============================================================
+
+model HaulmerSyncLog {
+  id           String   @id @default(cuid())
+  period       String   @db.VarChar(6)        // YYYYMM format
+  rut          String   @db.VarChar(20)       // Client RUT
+  docType      String   @db.VarChar(20)       // "sales" | "purchases"
+  csvHash      String?  @db.VarChar(64)       // SHA256 of CSV content
+  csvSize      Int?                           // File size bytes
+  rowsCreated  Int      @default(0) @map("rows_created")
+  rowsUpdated  Int      @default(0) @map("rows_updated")
+  rowsSkipped  Int      @default(0) @map("rows_skipped")
+  status       String   @db.VarChar(20) @default("pending")   // pending | success | partial | failed
+  errorMessage String?
+  syncedAt     DateTime @default(now()) @map("synced_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([period, rut, docType])
+  @@index([period])
+  @@index([status])
+  @@map("haulmer_sync_logs")
+}
+
+model HaulmerAuthToken {
+  id          String   @id @default(cuid())
+  rut         String   @unique @db.VarChar(20)
+  email       String   @db.VarChar(255)
+  jwtToken    String   @db.Text                        // JWT token (encrypted at rest recommended)
+  workspaceId String?  @db.VarChar(100)
+  issuedAt    DateTime @map("issued_at")
+  expiresAt   DateTime @map("expires_at")
+  capturedBy  Int?     @map("captured_by")             // User ID who triggered capture
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([expiresAt])
+  @@map("haulmer_auth_tokens")
+}
+
 enum DTEType {
   PURCHASE
   SALE

@@ -37,6 +37,7 @@ import { Route as AuthedSettingsUsersRouteImport } from "./routes/_authed/settin
 import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles"
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago"
 import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/settings/inventario"
+import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
 import { Route as AuthedSettingsCsvUploadRouteImport } from "./routes/_authed/settings/csv-upload"
 import { Route as AuthedSettingsBackupsRouteImport } from "./routes/_authed/settings/backups"
 import { Route as AuthedServicesTemplatesRouteImport } from "./routes/_authed/services/templates"
@@ -189,6 +190,11 @@ const AuthedSettingsInventarioRoute =
     path: "/inventario",
     getParentRoute: () => AuthedSettingsRoute,
   } as any)
+const AuthedSettingsHaulmerRoute = AuthedSettingsHaulmerRouteImport.update({
+  id: "/haulmer",
+  path: "/haulmer",
+  getParentRoute: () => AuthedSettingsRoute,
+} as any)
 const AuthedSettingsCsvUploadRoute = AuthedSettingsCsvUploadRouteImport.update({
   id: "/csv-upload",
   path: "/csv-upload",
@@ -454,6 +460,7 @@ export interface FileRoutesByFullPath {
   "/services/templates": typeof AuthedServicesTemplatesRoute
   "/settings/backups": typeof AuthedSettingsBackupsRoute
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
+  "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
@@ -513,6 +520,7 @@ export interface FileRoutesByTo {
   "/services/templates": typeof AuthedServicesTemplatesRoute
   "/settings/backups": typeof AuthedSettingsBackupsRoute
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
+  "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
@@ -578,6 +586,7 @@ export interface FileRoutesById {
   "/_authed/services/templates": typeof AuthedServicesTemplatesRoute
   "/_authed/settings/backups": typeof AuthedSettingsBackupsRoute
   "/_authed/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
+  "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
   "/_authed/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute
@@ -643,6 +652,7 @@ export interface FileRouteTypes {
     | "/services/templates"
     | "/settings/backups"
     | "/settings/csv-upload"
+    | "/settings/haulmer"
     | "/settings/inventario"
     | "/settings/mercadopago"
     | "/settings/roles"
@@ -702,6 +712,7 @@ export interface FileRouteTypes {
     | "/services/templates"
     | "/settings/backups"
     | "/settings/csv-upload"
+    | "/settings/haulmer"
     | "/settings/inventario"
     | "/settings/mercadopago"
     | "/settings/roles"
@@ -766,6 +777,7 @@ export interface FileRouteTypes {
     | "/_authed/services/templates"
     | "/_authed/settings/backups"
     | "/_authed/settings/csv-upload"
+    | "/_authed/settings/haulmer"
     | "/_authed/settings/inventario"
     | "/_authed/settings/mercadopago"
     | "/_authed/settings/roles"
@@ -945,6 +957,13 @@ declare module "@tanstack/react-router" {
       path: "/inventario"
       fullPath: "/settings/inventario"
       preLoaderRoute: typeof AuthedSettingsInventarioRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
+    "/_authed/settings/haulmer": {
+      id: "/_authed/settings/haulmer"
+      path: "/haulmer"
+      fullPath: "/settings/haulmer"
+      preLoaderRoute: typeof AuthedSettingsHaulmerRouteImport
       parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/csv-upload": {
@@ -1386,6 +1405,7 @@ const AuthedSettingsUsersRouteWithChildren =
 interface AuthedSettingsRouteChildren {
   AuthedSettingsBackupsRoute: typeof AuthedSettingsBackupsRoute
   AuthedSettingsCsvUploadRoute: typeof AuthedSettingsCsvUploadRoute
+  AuthedSettingsHaulmerRoute: typeof AuthedSettingsHaulmerRoute
   AuthedSettingsInventarioRoute: typeof AuthedSettingsInventarioRoute
   AuthedSettingsMercadopagoRoute: typeof AuthedSettingsMercadopagoRoute
   AuthedSettingsRolesRoute: typeof AuthedSettingsRolesRoute
@@ -1396,6 +1416,7 @@ interface AuthedSettingsRouteChildren {
 const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsBackupsRoute: AuthedSettingsBackupsRoute,
   AuthedSettingsCsvUploadRoute: AuthedSettingsCsvUploadRoute,
+  AuthedSettingsHaulmerRoute: AuthedSettingsHaulmerRoute,
   AuthedSettingsInventarioRoute: AuthedSettingsInventarioRoute,
   AuthedSettingsMercadopagoRoute: AuthedSettingsMercadopagoRoute,
   AuthedSettingsRolesRoute: AuthedSettingsRolesRoute,

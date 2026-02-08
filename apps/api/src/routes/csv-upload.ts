@@ -333,9 +333,10 @@ csvUploadRoutes.post("/preview", async (c) => {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
 
-  const { table, data } = await c.req.json<{
+  const { table, data, mode } = await c.req.json<{
     table: TableName;
     data: object[];
+    mode?: "insert-only" | "insert-or-update";
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
@@ -351,7 +352,9 @@ csvUploadRoutes.post("/preview", async (c) => {
     }
   }
 
-  console.log(`[CSV Preview] Table: ${table}, Rows: ${data.length}`);
+  console.log(
+    `[CSV Preview] Table: ${table}, Rows: ${data.length}, Mode: ${mode ?? "insert-or-update"}`,
+  );
 
   const errors: string[] = [];
   let toInsert = 0;
@@ -365,7 +368,11 @@ csvUploadRoutes.post("/preview", async (c) => {
       if (table === "people" && row.rut) {
         const exists = await findPersonByRut(String(row.rut));
         if (exists) {
-          toUpdate++;
+          if (mode === "insert-only") {
+            toSkip++;
+          } else {
+            toUpdate++;
+          }
         } else {
           toInsert++;
         }
@@ -375,12 +382,32 @@ csvUploadRoutes.post("/preview", async (c) => {
           errors.push(`Fila ${i + 1}: Persona con RUT ${row.rut} no existe`);
           toSkip++;
         } else {
-          if (table === "employees" && person.employee) {
-            toUpdate++;
-          } else if (table === "counterparts" && person.counterpart) {
-            toUpdate++;
-          } else {
-            toInsert++;
+          if (table === "employees") {
+            const existingEmployee = await db.employee.findFirst({
+              where: { personId: person.id },
+            });
+            if (existingEmployee) {
+              if (mode === "insert-only") {
+                toSkip++;
+              } else {
+                toUpdate++;
+              }
+            } else {
+              toInsert++;
+            }
+          } else if (table === "counterparts") {
+            const existingCounterpart = await db.counterpart.findFirst({
+              where: { personId: person.id },
+            });
+            if (existingCounterpart) {
+              if (mode === "insert-only") {
+                toSkip++;
+              } else {
+                toUpdate++;
+              }
+            } else {
+              toInsert++;
+            }
           }
         }
       } else if (table === "daily_balances" && row.date) {
@@ -389,7 +416,11 @@ csvUploadRoutes.post("/preview", async (c) => {
           where: { date: new Date(dateStr) },
         });
         if (exists) {
-          toUpdate++;
+          if (mode === "insert-only") {
+            toSkip++;
+          } else {
+            toUpdate++;
+          }
         } else {
           toInsert++;
         }
@@ -404,7 +435,11 @@ csvUploadRoutes.post("/preview", async (c) => {
           where: { balanceDate: new Date(dateStr) },
         });
         if (exists) {
-          toUpdate++;
+          if (mode === "insert-only") {
+            toSkip++;
+          } else {
+            toUpdate++;
+          }
         } else {
           toInsert++;
         }
@@ -418,7 +453,11 @@ csvUploadRoutes.post("/preview", async (c) => {
           where: { withdrawId: String(row.withdrawId) },
         });
         if (exists) {
-          toUpdate++;
+          if (mode === "insert-only") {
+            toSkip++;
+          } else {
+            toUpdate++;
+          }
         } else {
           toInsert++;
         }
@@ -430,25 +469,35 @@ csvUploadRoutes.post("/preview", async (c) => {
           where: { name: String(row.name) },
         });
         if (exists) {
-          toUpdate++;
+          if (mode === "insert-only") {
+            toSkip++;
+          } else {
+            toUpdate++;
+          }
         } else {
           toInsert++;
         }
       } else if (table === "employee_timesheets" && row.rut && row.workDate) {
         const person = await findPersonByRut(String(row.rut));
-        if (!person?.employee) {
+        if (!person) {
           errors.push(`Fila ${i + 1}: Empleado con RUT ${row.rut} no existe`);
           toSkip++;
         } else {
           const dateStr = dayjs(String(row.workDate)).format("YYYY-MM-DD");
           const exists = await db.employeeTimesheet.findFirst({
             where: {
-              employeeId: person.employee.id,
+              employee: {
+                person: { id: person.id },
+              },
               workDate: new Date(dateStr),
             },
           });
           if (exists) {
-            toUpdate++;
+            if (mode === "insert-only") {
+              toSkip++;
+            } else {
+              toUpdate++;
+            }
           } else {
             toInsert++;
           }
@@ -469,7 +518,11 @@ csvUploadRoutes.post("/preview", async (c) => {
           },
         });
         if (exists) {
-          toUpdate++;
+          if (mode === "insert-only") {
+            toSkip++;
+          } else {
+            toUpdate++;
+          }
         } else {
           toInsert++;
         }
@@ -489,7 +542,11 @@ csvUploadRoutes.post("/preview", async (c) => {
           },
         });
         if (exists) {
-          toUpdate++;
+          if (mode === "insert-only") {
+            toSkip++;
+          } else {
+            toUpdate++;
+          }
         } else {
           toInsert++;
         }
@@ -521,9 +578,10 @@ csvUploadRoutes.post("/import", async (c) => {
     return reply(c, { status: "error", message: "No autorizado" }, 401);
   }
 
-  const { table, data } = await c.req.json<{
+  const { table, data, mode } = await c.req.json<{
     table: TableName;
     data: object[];
+    mode?: "insert-only" | "insert-or-update";
   }>();
 
   if (!table || !data || !Array.isArray(data)) {
@@ -539,13 +597,19 @@ csvUploadRoutes.post("/import", async (c) => {
     }
   }
 
-  const { inserted, updated, skipped, errors } = await importCsvRows(table, data, auth);
+  const { inserted, updated, skipped, errors } = await importCsvRows(
+    table,
+    data,
+    auth,
+    mode ?? "insert-or-update",
+  );
 
   console.log(
     "[CSV] Import by",
     auth.email,
     ":",
     table,
+    `(${mode ?? "insert-or-update"})`,
     "- inserted:",
     inserted,
     "updated:",
@@ -580,6 +644,7 @@ async function importCsvRows(
   table: TableName,
   data: object[],
   auth: AuthContext,
+  mode: "insert-only" | "insert-or-update" = "insert-or-update",
 ): Promise<ImportResult> {
   const totals = emptyOutcome();
   const errors: string[] = [];
@@ -587,7 +652,7 @@ async function importCsvRows(
   for (let i = 0; i < data.length; i++) {
     const row = data[i] as CSVRow;
     try {
-      const outcome = await importCsvRow(table, row, auth);
+      const outcome = await importCsvRow(table, row, auth, mode);
       addOutcome(totals, outcome);
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Error desconocido";
@@ -599,33 +664,42 @@ async function importCsvRows(
   return { ...totals, errors };
 }
 
-type ImportRowHandler = (row: CSVRow, auth: AuthContext) => Promise<ImportOutcome>;
+type ImportRowHandler = (
+  row: CSVRow,
+  auth: AuthContext,
+  mode: "insert-only" | "insert-or-update",
+) => Promise<ImportOutcome>;
 
 const importRowHandlers: Record<TableName, ImportRowHandler> = {
-  people: (row) => importPeopleRow(row),
-  employees: (row) => importEmployeesRow(row),
-  counterparts: (row) => importCounterpartsRow(row),
-  daily_balances: (row) => importDailyBalancesRow(row),
-  daily_production_balances: (row, auth) => importDailyProductionBalancesRow(row, auth.userId),
+  people: (row, _, mode) => importPeopleRow(row, mode),
+  employees: (row, _, mode) => importEmployeesRow(row, mode),
+  counterparts: (row, _, mode) => importCounterpartsRow(row, mode),
+  daily_balances: (row, _, mode) => importDailyBalancesRow(row, mode),
+  daily_production_balances: (row, auth, mode) =>
+    importDailyProductionBalancesRow(row, auth.userId, mode),
   transactions: async () => ({ inserted: 0, updated: 0, skipped: 1 }),
-  withdrawals: (row) => importWithdrawalsRow(row),
+  withdrawals: (row, _, mode) => importWithdrawalsRow(row, mode),
   services: (row) => importServicesRow(row),
-  inventory_items: (row) => importInventoryItemsRow(row),
-  employee_timesheets: (row) => importEmployeeTimesheetsRow(row),
-  dte_purchases: (row) => importDtePurchaseRow(row),
-  dte_sales: (row) => importDteSaleRow(row),
+  inventory_items: (row, _, mode) => importInventoryItemsRow(row, mode),
+  employee_timesheets: (row, _, mode) => importEmployeeTimesheetsRow(row, mode),
+  dte_purchases: (row, _, mode) => importDtePurchaseRow(row, mode),
+  dte_sales: (row, _, mode) => importDteSaleRow(row, mode),
 };
 
 async function importCsvRow(
   table: TableName,
   row: CSVRow,
   auth: AuthContext,
+  mode: "insert-only" | "insert-or-update",
 ): Promise<ImportOutcome> {
   const handler = importRowHandlers[table];
-  return handler ? handler(row, auth) : { inserted: 0, updated: 0, skipped: 1 };
+  return handler ? handler(row, auth, mode) : { inserted: 0, updated: 0, skipped: 1 };
 }
 
-async function importPeopleRow(row: CSVRow): Promise<ImportOutcome> {
+async function importPeopleRow(
+  row: CSVRow,
+  mode: "insert-only" | "insert-or-update",
+): Promise<ImportOutcome> {
   const existing = await findPersonByRut(String(row.rut));
   const personData = {
     names: String(row.names || ""),
@@ -637,6 +711,9 @@ async function importPeopleRow(row: CSVRow): Promise<ImportOutcome> {
   };
 
   if (existing) {
+    if (mode === "insert-only") {
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
     await db.person.update({
       where: { id: existing.id },
       data: personData,
@@ -650,11 +727,19 @@ async function importPeopleRow(row: CSVRow): Promise<ImportOutcome> {
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-async function importEmployeesRow(row: CSVRow): Promise<ImportOutcome> {
+async function importEmployeesRow(
+  row: CSVRow,
+  mode: "insert-only" | "insert-or-update",
+): Promise<ImportOutcome> {
   const person = await findPersonByRut(String(row.rut));
   if (!person) {
     throw new Error(`Persona con RUT ${row.rut} no existe`);
   }
+
+  // Find existing employee by person relationship
+  const existingEmployee = await db.employee.findFirst({
+    where: { person: { id: person.id } },
+  });
 
   const employeeData = {
     position: row.position ? String(row.position) : "No especificado",
@@ -664,21 +749,27 @@ async function importEmployeesRow(row: CSVRow): Promise<ImportOutcome> {
     status: "ACTIVE" as const,
   };
 
-  if (person.employee) {
+  if (existingEmployee) {
+    if (mode === "insert-only") {
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
     await db.employee.update({
-      where: { id: person.employee.id },
+      where: { id: existingEmployee.id },
       data: employeeData,
     });
     return { inserted: 0, updated: 1, skipped: 0 };
   }
 
   await db.employee.create({
-    data: { ...employeeData, personId: person.id },
+    data: { ...employeeData, person: { connect: { id: person.id } } },
   });
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-async function importCounterpartsRow(row: CSVRow): Promise<ImportOutcome> {
+async function importCounterpartsRow(
+  row: CSVRow,
+  mode: "insert-only" | "insert-or-update",
+): Promise<ImportOutcome> {
   const person = await findPersonByRut(String(row.rut));
   if (!person) {
     throw new Error(`Persona con RUT ${row.rut} no existe`);
@@ -688,21 +779,33 @@ async function importCounterpartsRow(row: CSVRow): Promise<ImportOutcome> {
     category: String(row.type || "SUPPLIER") as "SUPPLIER" | "CLIENT",
   };
 
-  if (person.counterpart) {
+  // Try to find existing counterpart using cast to bypass Zenstack type constraints
+  const existingCounterpart = await db.counterpart.findFirst({
+    where: { personId: person.id },
+  } as never);
+
+  if (existingCounterpart) {
+    if (mode === "insert-only") {
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
     await db.counterpart.update({
-      where: { id: person.counterpart.id },
+      where: { id: existingCounterpart.id },
       data: counterpartData,
     });
     return { inserted: 0, updated: 1, skipped: 0 };
   }
 
+  // Create new counterpart
   await db.counterpart.create({
-    data: { ...counterpartData, personId: person.id },
+    data: { ...counterpartData, personId: person.id } as never,
   });
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-async function importDailyBalancesRow(row: CSVRow): Promise<ImportOutcome> {
+async function importDailyBalancesRow(
+  row: CSVRow,
+  mode: "insert-only" | "insert-or-update",
+): Promise<ImportOutcome> {
   const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
   const date = new Date(dateStr);
   const amountNum = Number(row.amount) || Number(row.closingBalance) || 0;
@@ -713,6 +816,9 @@ async function importDailyBalancesRow(row: CSVRow): Promise<ImportOutcome> {
 
   const existing = await db.dailyBalance.findUnique({ where: { date } });
   if (existing) {
+    if (mode === "insert-only") {
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
     await db.dailyBalance.update({ where: { date }, data: balanceData });
     return { inserted: 0, updated: 1, skipped: 0 };
   }
@@ -724,6 +830,7 @@ async function importDailyBalancesRow(row: CSVRow): Promise<ImportOutcome> {
 async function importDailyProductionBalancesRow(
   row: CSVRow,
   userId: number,
+  mode: "insert-only" | "insert-or-update",
 ): Promise<ImportOutcome> {
   const balanceDate = parseProductionBalanceDate(row);
   const productionData = buildProductionBalanceData(row);
@@ -732,6 +839,9 @@ async function importDailyProductionBalancesRow(
   });
 
   if (existing) {
+    if (mode === "insert-only") {
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
     await db.dailyProductionBalance.update({
       where: { balanceDate },
       data: productionData,
@@ -749,11 +859,7 @@ async function importDailyProductionBalancesRow(
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-async function importWithdrawalsRow(row: CSVRow): Promise<ImportOutcome> {
-  if (!row.withdrawId) {
-    throw new Error("withdrawId requerido");
-  }
-
+function buildWithdrawData(row: CSVRow) {
   const dateStr = parseFlexibleDate(row.dateCreated);
   if (!dateStr) {
     throw new Error("Fecha inválida");
@@ -769,7 +875,8 @@ async function importWithdrawalsRow(row: CSVRow): Promise<ImportOutcome> {
 
   const amountValue = parseDecimal(row.amount);
   const feeValue = parseDecimal(row.fee);
-  const withdrawData = {
+
+  return {
     dateCreated: new Date(dateStr),
     status: row.status ? String(row.status) : null,
     statusDetail: row.statusDetail ? String(row.statusDetail) : null,
@@ -786,13 +893,26 @@ async function importWithdrawalsRow(row: CSVRow): Promise<ImportOutcome> {
     bankAccountType: row.bankAccountType ? String(row.bankAccountType) : null,
     bankAccountNumber: row.bankAccountNumber ? String(row.bankAccountNumber) : null,
   };
+}
 
+async function importWithdrawalsRow(
+  row: CSVRow,
+  mode: "insert-only" | "insert-or-update",
+): Promise<ImportOutcome> {
+  if (!row.withdrawId) {
+    throw new Error("withdrawId requerido");
+  }
+
+  const withdrawData = buildWithdrawData(row);
   const withdrawId = String(row.withdrawId);
   const existing = await db.withdrawTransaction.findUnique({
     where: { withdrawId },
   });
 
   if (existing) {
+    if (mode === "insert-only") {
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
     await db.withdrawTransaction.update({
       where: { withdrawId },
       data: withdrawData,
@@ -846,21 +966,23 @@ function buildProductionBalanceData(row: CSVRow) {
 }
 
 async function importServicesRow(row: CSVRow): Promise<ImportOutcome> {
-  const person = row.rut ? await findPersonByRut(String(row.rut)) : null;
   const serviceData = {
     name: String(row.name),
     serviceType: String(row.type || "BUSINESS") as "BUSINESS" | "PERSONAL",
     frequency: String(row.frequency || "MONTHLY") as "MONTHLY" | "ONCE" | "ANNUAL",
     defaultAmount: row.defaultAmount ? new Decimal(Number(row.defaultAmount)) : new Decimal(0),
     status: String(row.status || "ACTIVE") as "ACTIVE" | "INACTIVE" | "ARCHIVED",
-    counterpartId: person?.counterpart?.id || null,
   };
 
+  // Services always insert as unique records (can have duplicate names with different counterparts)
   await db.service.create({ data: serviceData });
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-async function importInventoryItemsRow(row: CSVRow): Promise<ImportOutcome> {
+async function importInventoryItemsRow(
+  row: CSVRow,
+  mode: "insert-only" | "insert-or-update",
+): Promise<ImportOutcome> {
   const itemData = {
     name: String(row.name),
     description: row.description ? String(row.description) : null,
@@ -873,6 +995,9 @@ async function importInventoryItemsRow(row: CSVRow): Promise<ImportOutcome> {
   });
 
   if (existing) {
+    if (mode === "insert-only") {
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
     await db.inventoryItem.update({
       where: { id: existing.id },
       data: itemData,
@@ -884,9 +1009,21 @@ async function importInventoryItemsRow(row: CSVRow): Promise<ImportOutcome> {
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
-async function importEmployeeTimesheetsRow(row: CSVRow): Promise<ImportOutcome> {
+async function importEmployeeTimesheetsRow(
+  row: CSVRow,
+  mode: "insert-only" | "insert-or-update",
+): Promise<ImportOutcome> {
   const person = await findPersonByRut(String(row.rut));
-  if (!person?.employee) {
+  if (!person) {
+    throw new Error(`Empleado con RUT ${row.rut} no existe`);
+  }
+
+  // Find existing employee by person
+  const employee = await db.employee.findFirst({
+    where: { person: { id: person.id } },
+  });
+
+  if (!employee) {
     throw new Error(`Empleado con RUT ${row.rut} no existe`);
   }
 
@@ -897,7 +1034,6 @@ async function importEmployeeTimesheetsRow(row: CSVRow): Promise<ImportOutcome> 
   const endTime = row.endTime ? new Date(`1970-01-01T${row.endTime}`) : null;
 
   const timesheetData = {
-    employeeId: person.employee.id,
     workDate,
     startTime,
     endTime,
@@ -908,12 +1044,15 @@ async function importEmployeeTimesheetsRow(row: CSVRow): Promise<ImportOutcome> 
 
   const existing = await db.employeeTimesheet.findFirst({
     where: {
-      employeeId: person.employee.id,
+      employee: { id: employee.id },
       workDate,
     },
   });
 
   if (existing) {
+    if (mode === "insert-only") {
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
     await db.employeeTimesheet.update({
       where: { id: existing.id },
       data: timesheetData,
@@ -921,10 +1060,15 @@ async function importEmployeeTimesheetsRow(row: CSVRow): Promise<ImportOutcome> 
     return { inserted: 0, updated: 1, skipped: 0 };
   }
 
-  await db.employeeTimesheet.create({ data: timesheetData });
+  await db.employeeTimesheet.create({
+    data: { ...timesheetData, employee: { connect: { id: employee.id } } },
+  });
   return { inserted: 1, updated: 0, skipped: 0 };
 }
-async function importDtePurchaseRow(row: CSVRow): Promise<ImportOutcome> {
+async function importDtePurchaseRow(
+  row: CSVRow,
+  mode: "insert-only" | "insert-or-update",
+): Promise<ImportOutcome> {
   // Validate dates (frontend validates required fields)
   const documentDateStr = parseFlexibleDate(row.documentDate);
   const receiptDateStr = parseFlexibleDate(row.receiptDate);
@@ -950,6 +1094,9 @@ async function importDtePurchaseRow(row: CSVRow): Promise<ImportOutcome> {
   });
 
   if (existing) {
+    if (mode === "insert-only") {
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
     await db.dTEPurchaseDetail.update({
       where: { id: existing.id },
       data: purchaseData,
@@ -1016,7 +1163,10 @@ function buildDtePurchaseData(
   return { ...data, ...optionalFields };
 }
 
-async function importDteSaleRow(row: CSVRow): Promise<ImportOutcome> {
+async function importDteSaleRow(
+  row: CSVRow,
+  mode: "insert-only" | "insert-or-update",
+): Promise<ImportOutcome> {
   // Validate dates (frontend validates required fields)
   const documentDateStr = parseFlexibleDate(row.documentDate);
   const receiptDateStr = parseFlexibleDate(row.receiptDate);
@@ -1039,6 +1189,9 @@ async function importDteSaleRow(row: CSVRow): Promise<ImportOutcome> {
   });
 
   if (existing) {
+    if (mode === "insert-only") {
+      return { inserted: 0, updated: 0, skipped: 1 };
+    }
     await db.dTESaleDetail.update({
       where: { id: existing.id },
       data: saleData,

@@ -5,6 +5,7 @@ export interface CsvImportPayload {
   data: Record<string, number | string>[];
   table: string;
   period?: string; // Extracted from filename (YYYYMM format)
+  mode?: "insert-only" | "insert-or-update"; // Import mode: insert new only or upsert
 }
 
 export interface CsvPreviewResponse {

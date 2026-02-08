@@ -713,6 +713,83 @@ function ImportSummaryCard({ uploadedFiles }: { uploadedFiles: UploadedFile[] })
   );
 }
 
+function ImportModeCard({
+  importMode,
+  onModeChange,
+}: {
+  importMode: "insert-only" | "insert-or-update";
+  onModeChange: (mode: "insert-only" | "insert-or-update") => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CheckCircle className="h-5 w-5 text-primary" />
+          Modo de importación
+        </CardTitle>
+        <CardDescription>
+          Elige cómo deseas procesar los datos: solo nuevos o actualizar existentes
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button
+            className={cn(
+              "flex-1 rounded-lg border-2 p-4 text-left transition-colors",
+              importMode === "insert-only"
+                ? "border-primary/50 bg-primary/5"
+                : "border-default-200 hover:border-default-300",
+            )}
+            onClick={() => onModeChange("insert-only")}
+            type="button"
+          >
+            <div className="flex items-center gap-3">
+              <input
+                checked={importMode === "insert-only"}
+                className="h-4 w-4"
+                onChange={() => onModeChange("insert-only")}
+                type="radio"
+              />
+              <div className="flex-1">
+                <div className="font-semibold text-sm">Solo importar nuevos</div>
+                <div className="text-xs opacity-60">
+                  Inserta solo registros nuevos. Los existentes se omiten.
+                </div>
+              </div>
+            </div>
+          </button>
+
+          <button
+            className={cn(
+              "flex-1 rounded-lg border-2 p-4 text-left transition-colors",
+              importMode === "insert-or-update"
+                ? "border-primary/50 bg-primary/5"
+                : "border-default-200 hover:border-default-300",
+            )}
+            onClick={() => onModeChange("insert-or-update")}
+            type="button"
+          >
+            <div className="flex items-center gap-3">
+              <input
+                checked={importMode === "insert-or-update"}
+                className="h-4 w-4"
+                onChange={() => onModeChange("insert-or-update")}
+                type="radio"
+              />
+              <div className="flex-1">
+                <div className="font-semibold text-sm">Insertar o actualizar</div>
+                <div className="text-xs opacity-60">
+                  Inserta registros nuevos y actualiza los existentes.
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function buildMappingColumns({
   firstFile,
   setUploadedFiles,
@@ -879,6 +956,9 @@ export function CSVUploadPage() {
   const [selectedTable, setSelectedTable] = useState<string>("");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [importMode, setImportMode] = useState<"insert-only" | "insert-or-update">(
+    "insert-or-update",
+  );
 
   const allowedTableOptions = getAllowedTableOptions(can);
   const currentTable = allowedTableOptions.find((t) => t.value === selectedTable);
@@ -944,6 +1024,7 @@ export function CSVUploadPage() {
         const previewData = await previewMutateAsync({
           data: transformedData,
           table: selectedTable,
+          mode: importMode,
         });
 
         // Update with preview data
@@ -979,6 +1060,7 @@ export function CSVUploadPage() {
       const result = await importMutateAsync({
         data: transformedData,
         table: selectedTable,
+        mode: importMode,
       });
 
       setUploadedFiles((prev) =>
@@ -1069,7 +1151,10 @@ export function CSVUploadPage() {
       {/* 5. Preview Summary */}
       <ImportSummaryCard uploadedFiles={uploadedFiles} />
 
-      {/* 6. Actions */}
+      {/* 6. Import Mode Selection */}
+      {hasPreviewData && <ImportModeCard importMode={importMode} onModeChange={setImportMode} />}
+
+      {/* 7. Actions */}
       {uploadedFiles.length > 0 && (
         <div className="sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-default-100 border-t bg-background/80 p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
           <Button

@@ -175,8 +175,6 @@ export function extractYearsFromSummary(summary: DTESummaryRaw[]): string[] {
   return Array.from(yearSet).sort().reverse();
 }
 
-
-
 /**
  * Validate year selection against available options
  */

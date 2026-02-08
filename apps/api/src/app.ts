@@ -20,6 +20,7 @@ import { doctoraliaRoutes } from "./routes/doctoralia";
 import { dteAnalyticsRoutes } from "./routes/dte-analytics";
 import { employeeRoutes } from "./routes/employees";
 import { expenseRoutes } from "./routes/expenses";
+import { haulmerRoutes } from "./routes/haulmer";
 import { integrationRoutes } from "./routes/integrations";
 import { inventoryRoutes } from "./routes/inventory";
 import { loanScheduleRoutes } from "./routes/loan-schedules";
@@ -159,7 +160,8 @@ app.route("/api/csv-upload", csvUploadRoutes);
 
 // DTE analytics routes (visualizations, summaries, comparisons)
 app.route("/api/dte-analytics", dteAnalyticsRoutes);
-
+// Haulmer DTE sync routes (CSV downloads, imports)
+app.route("/api/haulmer", haulmerRoutes);
 // Calendar routes (events, sync, logs)
 app.route("/api/calendar", calendarRoutes);
 
