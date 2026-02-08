@@ -219,7 +219,8 @@ export async function importDteSaleRow(
     });
     return { inserted: 1, updated: 0, skipped: 0 };
   } catch (error) {
-    console.warn(`[DTE] Skip sale row: ${error}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`[DTE] Failed to import sale row [folio=${row.folio}]: ${msg}`);
     return { inserted: 0, updated: 0, skipped: 1 };
   }
 }
@@ -265,7 +266,10 @@ export async function importDtePurchaseRow(
     });
     return { inserted: 1, updated: 0, skipped: 0 };
   } catch (error) {
-    console.warn(`[DTE] Skip purchase row: ${error}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(
+      `[DTE] Failed to import purchase row [RUT=${row.providerRUT}, folio=${row.folio}]: ${msg}`,
+    );
     return { inserted: 0, updated: 0, skipped: 1 };
   }
 }

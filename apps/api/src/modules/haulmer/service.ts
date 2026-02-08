@@ -87,6 +87,11 @@ export async function syncPeriod(
       `[Haulmer Sync] Downloaded and parsed ${rows.length} rows for ${docType}/${period}`,
     );
 
+    // Log sample row columns to debug
+    if (rows.length > 0) {
+      console.log(`[Haulmer Sync] Sample row columns: ${Object.keys(rows[0]).join(", ")}`);
+    }
+
     // Process rows using shared library functions
     for (const row of rows) {
       try {
@@ -102,6 +107,10 @@ export async function syncPeriod(
         console.warn(`[Haulmer] Skip row for ${docType}:`, err);
       }
     }
+
+    console.log(
+      `[Haulmer Sync] Completed ${docType}/${period}: ${rowsInserted} inserted, ${rowsUpdated} updated, ${rowsSkipped} skipped`,
+    );
 
     const result: SyncSummary = {
       period,
