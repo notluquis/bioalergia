@@ -218,7 +218,7 @@ export function HaulmerSyncPage() {
               <summary className="cursor-pointer font-mono text-danger text-xs">
                 Respuesta del servidor
               </summary>
-              <pre className="font-mono mt-1 overflow-auto rounded bg-danger-soft-hover p-2 text-danger text-xs">
+              <pre className="mt-1 overflow-auto rounded bg-danger-soft-hover p-2 font-mono text-danger text-xs">
                 {(() => {
                   if (!(periodsError instanceof Error)) {
                     return String(periodsError);
