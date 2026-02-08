@@ -7,10 +7,6 @@ import { type Context, Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { haulmerConfig } from "../config";
 import { captureHaulmerJWT } from "../modules/haulmer/auth";
-import {
-  fetchAvailablePurchasePeriods,
-  fetchAvailableSalesPeriods,
-} from "../modules/haulmer/downloader";
 import { syncPeriods } from "../modules/haulmer/service";
 import { reply } from "../utils/reply";
 
@@ -66,11 +62,61 @@ haulmerRoutes.get("/available-periods", async (c: Context) => {
 
     const jwt = jwtResponse.jwtToken;
 
-    // Fetch available periods in parallel
-    const [salesPeriods, purchasePeriods] = await Promise.all([
-      fetchAvailableSalesPeriods(haulmerConfig.rut, jwt, haulmerConfig.workspaceId),
-      fetchAvailablePurchasePeriods(haulmerConfig.rut, jwt, haulmerConfig.workspaceId),
+    // Fetch available periods in parallel and get counts
+    const [salesResponse, purchasesResponse] = await Promise.all([
+      fetch(
+        `https://api-frontend.haulmer.com/v3/dte/core/registro/ventas/periodos/${haulmerConfig.rut}`,
+        {
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
+            Origin: "https://espacio.haulmer.com",
+            Referer: "https://espacio.haulmer.com/",
+            ...(haulmerConfig.workspaceId && {
+              workspace: haulmerConfig.workspaceId,
+              resource: haulmerConfig.workspaceId,
+            }),
+          },
+        },
+      ).then((res) => res.json()),
+      fetch(
+        `https://api-frontend.haulmer.com/v3/dte/core/registro/compras/periodos/${haulmerConfig.rut}`,
+        {
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
+            Origin: "https://espacio.haulmer.com",
+            Referer: "https://espacio.haulmer.com/",
+            ...(haulmerConfig.workspaceId && {
+              workspace: haulmerConfig.workspaceId,
+              resource: haulmerConfig.workspaceId,
+            }),
+          },
+        },
+      ).then((res) => res.json()),
     ]);
+
+    // Parse sales periods
+    const salesPeriods = (
+      (salesResponse?.details as Array<{ periodo: number; emitidos: number }>) || []
+    )
+      .filter((item) => item.emitidos > 0)
+      .map((item) => ({
+        periodo: String(item.periodo),
+        count: item.emitidos,
+      }))
+      .sort((a, b) => b.periodo.localeCompare(a.periodo));
+
+    // Parse purchase periods
+    const purchasePeriods = (
+      (purchasesResponse?.details as Array<{ periodo: number; recibidos: number }>) || []
+    )
+      .filter((item) => item.recibidos > 0)
+      .map((item) => ({
+        periodo: String(item.periodo),
+        count: item.recibidos,
+      }))
+      .sort((a, b) => b.periodo.localeCompare(a.periodo));
 
     console.log(
       `[Haulmer] GET /available-periods: Success (${salesPeriods.length} sales, ${purchasePeriods.length} purchases)`,

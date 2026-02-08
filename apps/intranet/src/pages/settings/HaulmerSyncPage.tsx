@@ -15,8 +15,18 @@ dayjs.locale(localeEs);
 // Response schema for available periods
 const AvailablePeriodsSchema = z.object({
   status: z.string(),
-  sales: z.array(z.string()),
-  purchases: z.array(z.string()),
+  sales: z.array(
+    z.object({
+      periodo: z.string(),
+      count: z.number(),
+    }),
+  ),
+  purchases: z.array(
+    z.object({
+      periodo: z.string(),
+      count: z.number(),
+    }),
+  ),
 });
 
 // Response schema for sync results
@@ -186,9 +196,15 @@ export function HaulmerSyncPage() {
     }
   };
 
-  const hasSalesData = (period: string) => availablePeriods?.sales?.includes(period) ?? false;
+  const hasSalesData = (period: string) =>
+    availablePeriods?.sales?.some((p) => p.periodo === period) ?? false;
   const hasPurchasesData = (period: string) =>
-    availablePeriods?.purchases?.includes(period) ?? false;
+    availablePeriods?.purchases?.some((p) => p.periodo === period) ?? false;
+
+  const getSalesCount = (period: string) =>
+    availablePeriods?.sales?.find((p) => p.periodo === period)?.count ?? 0;
+  const getPurchasesCount = (period: string) =>
+    availablePeriods?.purchases?.find((p) => p.periodo === period)?.count ?? 0;
 
   const sortedYears = Object.keys(periodsByYear)
     .map(Number)
@@ -259,11 +275,11 @@ export function HaulmerSyncPage() {
                       <span className="text-sm">Ventas</span>
                       <div className="flex items-center gap-2">
                         {hasSalesData(period.period) ? (
-                          <Chip color="success" size="sm">
-                            Datos
+                          <Chip color="success" size="sm" variant="secondary">
+                            {getSalesCount(period.period)} docs
                           </Chip>
                         ) : (
-                          <Chip color="default" size="sm">
+                          <Chip color="default" size="sm" variant="secondary">
                             Sin datos
                           </Chip>
                         )}
@@ -303,11 +319,11 @@ export function HaulmerSyncPage() {
                       <span className="text-sm">Compras</span>
                       <div className="flex items-center gap-2">
                         {hasPurchasesData(period.period) ? (
-                          <Chip color="success" size="sm">
-                            Datos
+                          <Chip color="success" size="sm" variant="secondary">
+                            {getPurchasesCount(period.period)} docs
                           </Chip>
                         ) : (
-                          <Chip color="default" size="sm">
+                          <Chip color="default" size="sm" variant="secondary">
                             Sin datos
                           </Chip>
                         )}
