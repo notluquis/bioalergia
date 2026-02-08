@@ -42,6 +42,7 @@ const HAULMER_COLUMN_MAP: Record<string, string> = {
   "n° registro": "registerNumber",
   "registro número": "registerNumber",
   "numero registro": "registerNumber",
+  registro: "registerNumber",
 
   // Document Type & Sale Type
   "tipo de documento": "documentType",
@@ -91,6 +92,7 @@ const HAULMER_COLUMN_MAP: Record<string, string> = {
 
   "fecha acuse recibo": "receiptAcknowledgeDate",
   "fecha acuse de recibo": "receiptAcknowledgeDate",
+  "fecha acuse": "receiptAcknowledgeDate",
   "acknowledgment date": "receiptAcknowledgeDate",
 
   "fecha reclamo": "claimDate",
@@ -115,6 +117,12 @@ const HAULMER_COLUMN_MAP: Record<string, string> = {
   iva: "ivaAmount",
   impuesto: "ivaAmount",
   "tax amount": "ivaAmount",
+
+  // Purchase-specific IVA fields
+  "monto iva recuperable": "recoverableIVA",
+  "monto iva no recuperable": "nonRecoverableIVA",
+  "código iva no recuperable": "nonRecoverableIVACode",
+  "codigo iva no recuperable": "nonRecoverableIVACode",
 
   "monto total": "totalAmount",
   monto_total: "totalAmount",
@@ -199,6 +207,19 @@ const HAULMER_COLUMN_MAP: Record<string, string> = {
   "monto no facturable": "nonBillableAmount",
   "non billable amount": "nonBillableAmount",
 
+  // Purchase-specific special amounts
+  "monto neto activo fijo": "fixedAssetNetAmount",
+  "fixed asset net amount": "fixedAssetNetAmount",
+
+  "iva uso común": "commonUseIVA",
+  "iva uso comun": "commonUseIVA",
+  "common use iva": "commonUseIVA",
+
+  "impto. sin derecho a crédito": "nonCreditableTax",
+  "impto sin derecho a credito": "nonCreditableTax",
+  "impto. sin derecho a credito": "nonCreditableTax",
+  "non creditable tax": "nonCreditableTax",
+
   // Indicators
   "indicador venta sin costo": "nonCostSaleIndicator",
   "non cost sale indicator": "nonCostSaleIndicator",
@@ -264,6 +285,11 @@ const HAULMER_COLUMN_MAP: Record<string, string> = {
   "tipo compra": "purchaseType",
   "tipo de compra": "purchaseType",
   "purchase type": "purchaseType",
+
+  // Tobacco fields
+  "tabacos puros": "pureTobacco",
+  "tabacos cigarrillos": "cigaretteTobacco",
+  "tabacos elaborados": "elaboratedTobacco",
 };
 
 export function normalizeColumnName(header: string): string {

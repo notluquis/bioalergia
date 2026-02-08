@@ -6,8 +6,10 @@
 import { db } from "@finanzas/db";
 import { Decimal } from "decimal.js";
 
-// Regex for date parsing DD/MM/YYYY
+// Regex for date parsing - multiple formats supported
 export const DATE_REGEX = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+const DATE_DASH_DOT_REGEX = /^(\d{1,2})[-.](\d{1,2})[-.](\d{4})$/;
+const DATE_ISO_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 
 /**
  * Parse currency amount from CSV (handles "$", ".", "," conversions)
@@ -25,19 +27,50 @@ export function parseAmount(value: unknown): Decimal | null {
 }
 
 /**
- * Parse date from CSV (handles DD/MM/YYYY format)
+ * Parse date from CSV (handles multiple formats: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, YYYY-MM-DD)
  */
 export function parseDate(value: unknown): Date | null {
   if (!value) {
     return null;
   }
   const str = String(value).trim();
-  const match = str.match(DATE_REGEX);
+
+  // Try DD/MM/YYYY format first
+  let match = str.match(DATE_REGEX);
   if (match) {
     const [, day, month, year] = match;
     const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
-    return date.toString() === "Invalid Date" ? null : date;
+    if (date.toString() !== "Invalid Date") {
+      console.log(`[Date Parse] "${str}" (DD/MM/YYYY) → ${date.toISOString()}`);
+      return date;
+    }
   }
+
+  // Try DD-MM-YYYY or DD.MM.YYYY format
+  match = str.match(DATE_DASH_DOT_REGEX);
+  if (match) {
+    const [, day, month, year] = match;
+    const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
+    if (date.toString() !== "Invalid Date") {
+      console.log(`[Date Parse] "${str}" (DD-MM-YYYY or DD.MM.YYYY) → ${date.toISOString()}`);
+      return date;
+    }
+  }
+
+  // Try YYYY-MM-DD format (ISO)
+  match = str.match(DATE_ISO_REGEX);
+  if (match) {
+    const [, year, month, day] = match;
+    const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
+    if (date.toString() !== "Invalid Date") {
+      console.log(`[Date Parse] "${str}" (YYYY-MM-DD) → ${date.toISOString()}`);
+      return date;
+    }
+  }
+
+  console.warn(
+    `[Date Parse] Could not parse date: "${str}" (tried DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, YYYY-MM-DD)`,
+  );
   return null;
 }
 
@@ -196,8 +229,18 @@ export async function importDteSaleRow(
       );
       return { inserted: 0, updated: 0, skipped: 1 };
     }
-
+    // Log raw date values before processing
+    const rawDocDate = row.documentDate;
+    const rawRecDate = row.receiptDate;
+    console.log(
+      `[DTE] Sale row ${row.folio} - documentDate raw: "${rawDocDate}" (type: ${typeof rawDocDate}, length: ${String(rawDocDate).length}), receiptDate raw: "${rawRecDate}" (type: ${typeof rawRecDate}, length: ${String(rawRecDate).length})`,
+    );
     const saleData = buildDteSaleDetail(row);
+
+    // Log parsed date values for debugging
+    console.log(
+      `[DTE] Sale row ${row.folio} - documentDate parsed: ${saleData.documentDate}, receiptDate parsed: ${saleData.receiptDate}`,
+    );
 
     const existing = await db.dTESaleDetail.findFirst({
       where: { folio: String(saleData.folio) },
@@ -253,7 +296,19 @@ export async function importDtePurchaseRow(
       return { inserted: 0, updated: 0, skipped: 1 };
     }
 
+    // Log raw date values before processing
+    const rawDocDate = row.documentDate;
+    const rawRecDate = row.receiptDate;
+    console.log(
+      `[DTE] Purchase row ${row.providerRUT}/${row.folio} - documentDate raw: "${rawDocDate}" (type: ${typeof rawDocDate}, length: ${String(rawDocDate).length}), receiptDate raw: "${rawRecDate}" (type: ${typeof rawRecDate}, length: ${String(rawRecDate).length})`,
+    );
+
     const purchaseData = buildDtePurchaseDetail(row);
+
+    // Log parsed date values for debugging
+    console.log(
+      `[DTE] Purchase row ${row.providerRUT}/${row.folio} - documentDate parsed: ${purchaseData.documentDate}, receiptDate parsed: ${purchaseData.receiptDate}`,
+    );
 
     const existing = await db.dTEPurchaseDetail.findFirst({
       where: {

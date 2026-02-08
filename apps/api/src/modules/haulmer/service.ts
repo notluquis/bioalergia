@@ -77,10 +77,20 @@ export async function syncPeriod(
       // Add period field (required for import functions)
       row.period = period;
 
+      // Log raw column names before normalization (first row only for debugging)
+      if (rows.indexOf(row) === 0) {
+        console.log(`[Haulmer Sync] Raw column names: ${Object.keys(row).join(", ")}`);
+      }
+
       // Normalize column names
       const normalizedRow: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(row)) {
         const normalizedKey = normalizeColumnName(key);
+        if (normalizedKey !== key) {
+          console.log(
+            `[Haulmer Sync] Normalized: "${key}" → "${normalizedKey}" (value: "${value}")`,
+          );
+        }
         normalizedRow[normalizedKey] = value;
       }
 
