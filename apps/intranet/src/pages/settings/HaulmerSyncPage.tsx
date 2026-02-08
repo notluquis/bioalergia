@@ -120,7 +120,7 @@ export function HaulmerSyncPage() {
     queryKey: ["haulmer-available-periods"],
     queryFn: async () => {
       const response = await apiClient.get<z.infer<typeof AvailablePeriodsSchema>>(
-        "/haulmer/available-periods",
+        "/api/haulmer/available-periods",
         { responseSchema: AvailablePeriodsSchema },
       );
       return response;
@@ -147,7 +147,7 @@ export function HaulmerSyncPage() {
   const syncMutation = useMutation({
     mutationFn: async (params: { period: string; docType: "sales" | "purchases" }) => {
       const response = await apiClient.post<z.infer<typeof SyncResponseSchema>>(
-        "/haulmer/sync",
+        "/api/haulmer/sync",
         {
           periods: [params.period],
           docTypes: [params.docType],
