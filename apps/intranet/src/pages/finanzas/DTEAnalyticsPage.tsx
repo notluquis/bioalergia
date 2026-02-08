@@ -1,7 +1,7 @@
 import { Tabs } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { BarChart3, TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -18,41 +18,35 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
-
-const MONTH_NAMES = [
-  "Ene",
-  "Feb",
-  "Mar",
-  "Abr",
-  "May",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dic",
-];
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("es-CL", {
-    currency: "CLP",
-    style: "currency",
-  }).format(value);
-
-const formatNumber = (value: number) => new Intl.NumberFormat("es-CL").format(value);
+import type {
+  ComparisonChartData,
+  MonthlyChartData,
+  MonthlySummaryProps,
+  YearlyTotals,
+} from "@/features/finance/dte-analytics/types";
+import { CHART_COLORS } from "@/features/finance/dte-analytics/types";
+import {
+  buildComparisonChartData,
+  buildMonthlyChartData,
+  calculateYearlyTotals,
+  extractYearsFromSummary,
+  formatCurrency,
+  formatNumber,
+  generateYearOptions,
+  safeYearSelection,
+} from "@/features/finance/dte-analytics/utils";
 
 export function DTEAnalyticsPage() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
 
-  const yearOptions = useMemo(() => {
-    const years = [];
-    for (let y = 2020; y <= currentYear + 1; y++) {
-      years.push(y.toString());
-    }
-    return years;
-  }, [currentYear]);
+  const yearOptions = useMemo(() => generateYearOptions(), []);
+
+  // Ensure selected year is always valid
+  const validatedYear = useMemo(
+    () => safeYearSelection(selectedYear, yearOptions),
+    [selectedYear, yearOptions],
+  );
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -81,7 +75,7 @@ export function DTEAnalyticsPage() {
 
         <Tabs.Panel id="purchases-monthly">
           <PurchasesMonthlySummary
-            selectedYear={selectedYear}
+            selectedYear={validatedYear}
             setSelectedYear={setSelectedYear}
             yearOptions={yearOptions}
           />
@@ -89,7 +83,7 @@ export function DTEAnalyticsPage() {
 
         <Tabs.Panel id="sales-monthly">
           <SalesMonthlySummary
-            selectedYear={selectedYear}
+            selectedYear={validatedYear}
             setSelectedYear={setSelectedYear}
             yearOptions={yearOptions}
           />
@@ -107,12 +101,10 @@ export function DTEAnalyticsPage() {
   );
 }
 
-interface MonthlySummaryProps {
-  selectedYear: string;
-  setSelectedYear: (year: string) => void;
-  yearOptions: string[];
-}
-
+/**
+ * Monthly summary component for purchases
+ * Shows single year with bar chart and KPI cards
+ */
 function PurchasesMonthlySummary({
   selectedYear,
   setSelectedYear,
@@ -120,32 +112,23 @@ function PurchasesMonthlySummary({
 }: MonthlySummaryProps) {
   const { data: summary } = useSuspenseQuery(dteAnalyticsKeys.purchases(Number(selectedYear)));
 
-  const chartData = useMemo(() => {
-    const monthMap = new Map(summary.map((s) => [s.period, s]));
-    return Array.from({ length: 12 }, (_, i) => {
-      const month = (i + 1).toString().padStart(2, "0");
-      const period = `${selectedYear}-${month}`;
-      const item = monthMap.get(period);
-      return {
-        averageAmount: item?.averageAmount ?? 0,
-        count: item?.count ?? 0,
-        month: MONTH_NAMES[i],
-        netAmount: item?.netAmount ?? 0,
-        taxAmount: item?.taxAmount ?? 0,
-        totalAmount: item?.totalAmount ?? 0,
-      };
-    });
-  }, [summary, selectedYear]);
+  // Build typed chart data
+  const chartData = useMemo<MonthlyChartData[]>(
+    () => buildMonthlyChartData(summary, selectedYear),
+    [summary, selectedYear],
+  );
 
-  const totals = useMemo(
-    () => ({
-      averageAmount: chartData.reduce((sum, d) => sum + d.averageAmount, 0) / 12,
-      count: chartData.reduce((sum, d) => sum + d.count, 0),
-      netAmount: chartData.reduce((sum, d) => sum + d.netAmount, 0),
-      taxAmount: chartData.reduce((sum, d) => sum + d.taxAmount, 0),
-      totalAmount: chartData.reduce((sum, d) => sum + d.totalAmount, 0),
-    }),
-    [chartData],
+  // Calculate totals from chart data
+  const totals = useMemo<YearlyTotals>(() => calculateYearlyTotals(chartData), [chartData]);
+
+  // Callback for year selection with type safety
+  const handleYearChange = useCallback(
+    (key: string | number | null) => {
+      if (key && typeof key === "string") {
+        setSelectedYear(key);
+      }
+    },
+    [setSelectedYear],
   );
 
   return (
@@ -155,11 +138,7 @@ function PurchasesMonthlySummary({
           label="Año"
           placeholder="Seleccionar año"
           value={selectedYear}
-          onChange={(key) => {
-            if (key) {
-              setSelectedYear(key.toString());
-            }
-          }}
+          onChange={handleYearChange}
         >
           {yearOptions.map((year) => (
             <SelectItem key={year} id={year}>
@@ -236,35 +215,27 @@ function PurchasesMonthlySummary({
   );
 }
 
+/**
+ * Monthly summary component for sales
+ * Mirrors purchases component with sales data
+ */
 function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: MonthlySummaryProps) {
   const { data: summary } = useSuspenseQuery(dteAnalyticsKeys.sales(Number(selectedYear)));
 
-  const chartData = useMemo(() => {
-    const monthMap = new Map(summary.map((s) => [s.period, s]));
-    return Array.from({ length: 12 }, (_, i) => {
-      const month = (i + 1).toString().padStart(2, "0");
-      const period = `${selectedYear}-${month}`;
-      const item = monthMap.get(period);
-      return {
-        averageAmount: item?.averageAmount ?? 0,
-        count: item?.count ?? 0,
-        month: MONTH_NAMES[i],
-        netAmount: item?.netAmount ?? 0,
-        taxAmount: item?.taxAmount ?? 0,
-        totalAmount: item?.totalAmount ?? 0,
-      };
-    });
-  }, [summary, selectedYear]);
+  const chartData = useMemo<MonthlyChartData[]>(
+    () => buildMonthlyChartData(summary, selectedYear),
+    [summary, selectedYear],
+  );
 
-  const totals = useMemo(
-    () => ({
-      averageAmount: chartData.reduce((sum, d) => sum + d.averageAmount, 0) / 12,
-      count: chartData.reduce((sum, d) => sum + d.count, 0),
-      netAmount: chartData.reduce((sum, d) => sum + d.netAmount, 0),
-      taxAmount: chartData.reduce((sum, d) => sum + d.taxAmount, 0),
-      totalAmount: chartData.reduce((sum, d) => sum + d.totalAmount, 0),
-    }),
-    [chartData],
+  const totals = useMemo<YearlyTotals>(() => calculateYearlyTotals(chartData), [chartData]);
+
+  const handleYearChange = useCallback(
+    (key: string | number | null) => {
+      if (key && typeof key === "string") {
+        setSelectedYear(key);
+      }
+    },
+    [setSelectedYear],
   );
 
   return (
@@ -274,11 +245,7 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
           label="Año"
           placeholder="Seleccionar año"
           value={selectedYear}
-          onChange={(key) => {
-            if (key) {
-              setSelectedYear(key.toString());
-            }
-          }}
+          onChange={handleYearChange}
         >
           {yearOptions.map((year) => (
             <SelectItem key={year} id={year}>
@@ -355,53 +322,19 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
   );
 }
 
+/**
+ * Multi-year comparison component for purchases
+ * Shows LineChart with all years on same axis
+ */
 function PurchasesComparison() {
   const { data: summary } = useSuspenseQuery(dteAnalyticsKeys.purchases());
 
-  const chartData = useMemo(() => {
-    // Group data by month across all years
-    const monthYearMap = new Map<string, Array<(typeof summary)[0] & { year: string }>>();
-    for (const item of summary) {
-      const [year = "", month = ""] = item.period.split("-");
-      const monthKey = month; // 01-12
-      if (!monthYearMap.has(monthKey)) {
-        monthYearMap.set(monthKey, []);
-      }
-      const items = monthYearMap.get(monthKey);
-      if (items && year) {
-        items.push({ ...item, year });
-      }
-    }
+  const chartData = useMemo<ComparisonChartData[]>(
+    () => buildComparisonChartData(summary),
+    [summary],
+  );
 
-    // Build chart data structure
-    return Array.from({ length: 12 }, (_, i) => {
-      const monthKey = (i + 1).toString().padStart(2, "0");
-      const monthItems = monthYearMap.get(monthKey) || [];
-      const dataPoint = {
-        month: MONTH_NAMES[i],
-      } as Record<string, string | number>;
-
-      // Add year columns
-      for (const item of monthItems) {
-        dataPoint[item.year] = item.totalAmount;
-      }
-
-      return dataPoint;
-    });
-  }, [summary]);
-
-  const years = useMemo(() => {
-    const yearSet = new Set<string>();
-    for (const item of summary) {
-      const [year = ""] = item.period.split("-");
-      if (year) {
-        yearSet.add(year);
-      }
-    }
-    return Array.from(yearSet).sort().reverse();
-  }, [summary]);
-
-  const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+  const years = useMemo<string[]>(() => extractYearsFromSummary(summary), [summary]);
 
   return (
     <div className="space-y-4 pt-4">
@@ -430,7 +363,7 @@ function PurchasesComparison() {
                 <Line
                   key={year}
                   dataKey={year}
-                  stroke={colors[idx % colors.length]}
+                  stroke={CHART_COLORS[idx % CHART_COLORS.length]}
                   name={year}
                   dot
                   strokeWidth={2}
@@ -444,53 +377,19 @@ function PurchasesComparison() {
   );
 }
 
+/**
+ * Multi-year comparison component for sales
+ * Mirrors purchases comparison with sales data
+ */
 function SalesComparison() {
   const { data: summary } = useSuspenseQuery(dteAnalyticsKeys.sales());
 
-  const chartData = useMemo(() => {
-    // Group data by month across all years
-    const monthYearMap = new Map<string, Array<(typeof summary)[0] & { year: string }>>();
-    for (const item of summary) {
-      const [year = "", month = ""] = item.period.split("-");
-      const monthKey = month; // 01-12
-      if (!monthYearMap.has(monthKey)) {
-        monthYearMap.set(monthKey, []);
-      }
-      const items = monthYearMap.get(monthKey);
-      if (items && year) {
-        items.push({ ...item, year });
-      }
-    }
+  const chartData = useMemo<ComparisonChartData[]>(
+    () => buildComparisonChartData(summary),
+    [summary],
+  );
 
-    // Build chart data structure
-    return Array.from({ length: 12 }, (_, i) => {
-      const monthKey = (i + 1).toString().padStart(2, "0");
-      const monthItems = monthYearMap.get(monthKey) || [];
-      const dataPoint = {
-        month: MONTH_NAMES[i],
-      } as Record<string, string | number>;
-
-      // Add year columns
-      for (const item of monthItems) {
-        dataPoint[item.year] = item.totalAmount;
-      }
-
-      return dataPoint;
-    });
-  }, [summary]);
-
-  const years = useMemo(() => {
-    const yearSet = new Set<string>();
-    for (const item of summary) {
-      const [year = ""] = item.period.split("-");
-      if (year) {
-        yearSet.add(year);
-      }
-    }
-    return Array.from(yearSet).sort().reverse();
-  }, [summary]);
-
-  const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+  const years = useMemo<string[]>(() => extractYearsFromSummary(summary), [summary]);
 
   return (
     <div className="space-y-4 pt-4">
@@ -519,7 +418,7 @@ function SalesComparison() {
                 <Line
                   key={year}
                   dataKey={year}
-                  stroke={colors[idx % colors.length]}
+                  stroke={CHART_COLORS[idx % CHART_COLORS.length]}
                   name={year}
                   dot
                   strokeWidth={2}
