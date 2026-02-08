@@ -1568,29 +1568,8 @@ enum AttachmentType {
 // ============================================================
 // DTE (Documentos Tributarios Electrónicos) - Accounting
 // ============================================================
-
-model DTEPeriod {
-  id             String    @id @default(uuid())
-  period         String    @unique @db.VarChar(6) // Format: YYYYMM (e.g., "202311")
-  year           Int
-  month          Int
-  type           DTEType                 // PURCHASE or SALE
-  purchaseCount  Int       @default(0) @map("purchase_count")
-  saleCount      Int       @default(0) @map("sale_count")
-  totalPurchases Decimal   @default(0) @map("total_purchases") @db.Decimal(18, 2)
-  totalSales     Decimal   @default(0) @map("total_sales") @db.Decimal(18, 2)
-  importedAt     DateTime? @map("imported_at")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
-
-  @@deny('all', auth() == null)
-  @@allow('read', auth().status == 'ACTIVE')
-  @@allow('create,update,delete', auth().status == 'ACTIVE')
-
-  @@index([period])
-  @@index([year, month])
-  @@map("dte_periods")
-}
+// DTE PURCHASE & SALES DETAILS
+// ============================================================
 
 model DTEPurchaseDetail {
   id                    String    @id @default(uuid())
@@ -1600,9 +1579,9 @@ model DTEPurchaseDetail {
   providerRUT           String    @map("provider_rut") @db.VarChar(20)
   providerName          String    @map("provider_name")
   folio                 String    @map("folio") @db.VarChar(20)
-  documentDate          DateTime  @map("document_date")
-  receiptDate           DateTime  @map("receipt_date")
-  acknowledgeDate       DateTime? @map("acknowledge_date")
+  documentDate          DateTime  @db.Date @map("document_date")
+  receiptDate           DateTime  @db.Date @map("receipt_date")
+  acknowledgeDate       DateTime? @db.Date @map("acknowledge_date")
   period                String?   @map("period") @db.VarChar(6) // Format: YYYYMM
   
   // Financial amounts
@@ -1638,6 +1617,7 @@ model DTEPurchaseDetail {
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
+  @@unique([providerRUT, folio])
   @@index([providerRUT])
   @@index([documentDate])
   @@map("dte_purchase_details")
@@ -1651,10 +1631,10 @@ model DTESaleDetail {
   clientRUT                      String    @map("client_rut") @db.VarChar(20)
   clientName                     String    @map("client_name")
   folio                          String    @map("folio") @db.VarChar(20)
-  documentDate                   DateTime  @map("document_date")
-  receiptDate                    DateTime  @map("receipt_date")
-  receiptAcknowledgeDate         DateTime? @map("receipt_acknowledge_date")
-  claimDate                      DateTime? @map("claim_date")
+  documentDate                   DateTime  @db.Date @map("document_date")
+  receiptDate                    DateTime  @db.Date @map("receipt_date")
+  receiptAcknowledgeDate         DateTime? @db.Date @map("receipt_acknowledge_date")
+  claimDate                      DateTime? @db.Date @map("claim_date")
   period                         String?   @map("period") @db.VarChar(6) // Format: YYYYMM
   
   // Financial amounts
@@ -1715,6 +1695,7 @@ model DTESaleDetail {
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
+  @@unique([folio])
   @@index([clientRUT])
   @@index([documentDate])
   @@index([documentType])
