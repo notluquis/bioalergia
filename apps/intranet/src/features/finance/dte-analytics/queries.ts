@@ -1,6 +1,11 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { fetchPurchasesSummary, fetchSalesSummary, fetchYearlyComparison } from "./api";
+import {
+  fetchAllYearsComparison,
+  fetchPurchasesSummary,
+  fetchSalesSummary,
+  fetchYearlyComparison,
+} from "./api";
 
 export const dteAnalyticsKeys = {
   all: ["dte-analytics"] as const,
@@ -18,5 +23,10 @@ export const dteAnalyticsKeys = {
     queryOptions({
       queryFn: () => fetchYearlyComparison(year1, year2, type),
       queryKey: ["dte-analytics", "comparison", year1, year2, type],
+    }),
+  allYearsComparison: (type: "purchases" | "sales") =>
+    queryOptions({
+      queryFn: () => fetchAllYearsComparison(type),
+      queryKey: ["dte-analytics", "allYearsComparison", type],
     }),
 };

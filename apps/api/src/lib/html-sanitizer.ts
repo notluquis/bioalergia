@@ -261,7 +261,10 @@ export function sanitizeHtmlWithOptions(html: string, options: SanitizeOptions =
  * // Result: '<p>Event <a href="...">Link</a></p>'
  * ```
  */
-export function sanitizeHtml(html: string, configType: "minimal" | "moderate" | "rich" = "rich"): string {
+export function sanitizeHtml(
+  html: string,
+  configType: "minimal" | "moderate" | "rich" = "rich",
+): string {
   const config = {
     minimal: MINIMAL_CONFIG,
     moderate: MODERATE_CONFIG,

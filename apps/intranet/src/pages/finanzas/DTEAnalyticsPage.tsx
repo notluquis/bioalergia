@@ -45,8 +45,6 @@ const formatNumber = (value: number) => new Intl.NumberFormat("es-CL").format(va
 export function DTEAnalyticsPage() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
-  const [comparisonYear1, setComparisonYear1] = useState((currentYear - 1).toString());
-  const [comparisonYear2, setComparisonYear2] = useState(currentYear.toString());
 
   const yearOptions = useMemo(() => {
     const years = [];
@@ -58,16 +56,6 @@ export function DTEAnalyticsPage() {
 
   return (
     <div className="container mx-auto space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-bold text-3xl">Análisis de DTEs</h1>
-          <p className="text-default-500 text-sm">
-            Visualización de compras y ventas con documentos tributarios electrónicos
-          </p>
-        </div>
-        <BarChart3 className="size-8 text-primary" />
-      </div>
-
       <Tabs aria-label="DTE Analytics Tabs" defaultSelectedKey="purchases-monthly">
         <Tabs.List
           aria-label="Opciones de visualización"
@@ -108,23 +96,11 @@ export function DTEAnalyticsPage() {
         </Tabs.Panel>
 
         <Tabs.Panel id="purchases-comparison">
-          <PurchasesComparison
-            comparisonYear1={comparisonYear1}
-            comparisonYear2={comparisonYear2}
-            setComparisonYear1={setComparisonYear1}
-            setComparisonYear2={setComparisonYear2}
-            yearOptions={yearOptions}
-          />
+          <PurchasesComparison />
         </Tabs.Panel>
 
         <Tabs.Panel id="sales-comparison">
-          <SalesComparison
-            comparisonYear1={comparisonYear1}
-            comparisonYear2={comparisonYear2}
-            setComparisonYear1={setComparisonYear1}
-            setComparisonYear2={setComparisonYear2}
-            yearOptions={yearOptions}
-          />
+          <SalesComparison />
         </Tabs.Panel>
       </Tabs>
     </div>
@@ -180,7 +156,6 @@ function PurchasesMonthlySummary({
           placeholder="Seleccionar año"
           value={selectedYear}
           onChange={(key) => {
-            // key is already a string | null
             if (key) {
               setSelectedYear(key.toString());
             }
@@ -300,7 +275,6 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
           placeholder="Seleccionar año"
           value={selectedYear}
           onChange={(key) => {
-            // key is already a string | null
             if (key) {
               setSelectedYear(key.toString());
             }
@@ -381,78 +355,57 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
   );
 }
 
-interface ComparisonProps {
-  comparisonYear1: string;
-  comparisonYear2: string;
-  setComparisonYear1: (year: string) => void;
-  setComparisonYear2: (year: string) => void;
-  yearOptions: string[];
-}
+function PurchasesComparison() {
+  const { data: summary } = useSuspenseQuery(dteAnalyticsKeys.purchases());
 
-function PurchasesComparison({
-  comparisonYear1,
-  comparisonYear2,
-  setComparisonYear1,
-  setComparisonYear2,
-  yearOptions,
-}: ComparisonProps) {
-  const { data: comparison } = useSuspenseQuery(
-    dteAnalyticsKeys.comparison(Number(comparisonYear1), Number(comparisonYear2), "purchases"),
-  );
+  const chartData = useMemo(() => {
+    // Group data by month across all years
+    const monthYearMap = new Map<string, Array<(typeof summary)[0] & { year: string }>>();
+    for (const item of summary) {
+      const [year, month] = item.period.split("-");
+      const monthKey = month; // 01-12
+      if (!monthYearMap.has(monthKey)) {
+        monthYearMap.set(monthKey, []);
+      }
+      const items = monthYearMap.get(monthKey);
+      if (items) {
+        items.push({ ...item, year });
+      }
+    }
 
-  const chartData = useMemo(
-    () =>
-      comparison.map((item, index) => ({
-        ...item,
-        month: MONTH_NAMES[index],
-      })),
-    [comparison],
-  );
+    // Build chart data structure
+    return Array.from({ length: 12 }, (_, i) => {
+      const monthKey = (i + 1).toString().padStart(2, "0");
+      const monthItems = monthYearMap.get(monthKey) || [];
+      const dataPoint = {
+        month: MONTH_NAMES[i],
+      } as Record<string, string | number>;
+
+      // Add year columns
+      for (const item of monthItems) {
+        dataPoint[item.year] = item.totalAmount;
+      }
+
+      return dataPoint;
+    });
+  }, [summary]);
+
+  const years = useMemo(() => {
+    const yearSet = new Set<string>();
+    for (const item of summary) {
+      const [year] = item.period.split("-");
+      yearSet.add(year);
+    }
+    return Array.from(yearSet).sort().reverse();
+  }, [summary]);
+
+  const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
   return (
     <div className="space-y-4 pt-4">
-      <div className="flex items-center gap-4">
-        <Select
-          label="Año 1"
-          placeholder="Seleccionar año"
-          value={comparisonYear1}
-          onChange={(key) => {
-            // key is already a string | null
-            if (key) {
-              setComparisonYear1(key.toString());
-            }
-          }}
-        >
-          {yearOptions.map((year) => (
-            <SelectItem key={year} id={year}>
-              {year}
-            </SelectItem>
-          ))}
-        </Select>
-        <Select
-          label="Año 2"
-          placeholder="Seleccionar año"
-          value={comparisonYear2}
-          onChange={(key) => {
-            // key is already a string | null
-            if (key) {
-              setComparisonYear2(key.toString());
-            }
-          }}
-        >
-          {yearOptions.map((year) => (
-            <SelectItem key={year} id={year}>
-              {year}
-            </SelectItem>
-          ))}
-        </Select>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>
-            Comparación de Compras: {comparisonYear1} vs {comparisonYear2}
-          </CardTitle>
+          <CardTitle>Comparación de Compras (Todos los Años)</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer height={400} width="100%">
@@ -471,20 +424,16 @@ function PurchasesComparison({
                 labelStyle={{ color: "#000" }}
               />
               <Legend />
-              <Line
-                dataKey="year1Value"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                name={comparisonYear1}
-                dot
-              />
-              <Line
-                dataKey="year2Value"
-                stroke="#10b981"
-                strokeWidth={2}
-                name={comparisonYear2}
-                dot
-              />
+              {years.map((year, idx) => (
+                <Line
+                  key={year}
+                  dataKey={year}
+                  stroke={colors[idx % colors.length]}
+                  name={year}
+                  dot
+                  strokeWidth={2}
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -493,70 +442,57 @@ function PurchasesComparison({
   );
 }
 
-function SalesComparison({
-  comparisonYear1,
-  comparisonYear2,
-  setComparisonYear1,
-  setComparisonYear2,
-  yearOptions,
-}: ComparisonProps) {
-  const { data: comparison } = useSuspenseQuery(
-    dteAnalyticsKeys.comparison(Number(comparisonYear1), Number(comparisonYear2), "sales"),
-  );
+function SalesComparison() {
+  const { data: summary } = useSuspenseQuery(dteAnalyticsKeys.sales());
 
-  const chartData = useMemo(
-    () =>
-      comparison.map((item, index) => ({
-        ...item,
-        month: MONTH_NAMES[index],
-      })),
-    [comparison],
-  );
+  const chartData = useMemo(() => {
+    // Group data by month across all years
+    const monthYearMap = new Map<string, Array<(typeof summary)[0] & { year: string }>>();
+    for (const item of summary) {
+      const [year, month] = item.period.split("-");
+      const monthKey = month; // 01-12
+      if (!monthYearMap.has(monthKey)) {
+        monthYearMap.set(monthKey, []);
+      }
+      const items = monthYearMap.get(monthKey);
+      if (items) {
+        items.push({ ...item, year });
+      }
+    }
+
+    // Build chart data structure
+    return Array.from({ length: 12 }, (_, i) => {
+      const monthKey = (i + 1).toString().padStart(2, "0");
+      const monthItems = monthYearMap.get(monthKey) || [];
+      const dataPoint = {
+        month: MONTH_NAMES[i],
+      } as Record<string, string | number>;
+
+      // Add year columns
+      for (const item of monthItems) {
+        dataPoint[item.year] = item.totalAmount;
+      }
+
+      return dataPoint;
+    });
+  }, [summary]);
+
+  const years = useMemo(() => {
+    const yearSet = new Set<string>();
+    for (const item of summary) {
+      const [year] = item.period.split("-");
+      yearSet.add(year);
+    }
+    return Array.from(yearSet).sort().reverse();
+  }, [summary]);
+
+  const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
   return (
     <div className="space-y-4 pt-4">
-      <div className="flex items-center gap-4">
-        <Select
-          label="Año 1"
-          placeholder="Seleccionar año"
-          value={comparisonYear1}
-          onChange={(key) => {
-            // key is already a string | null
-            if (key) {
-              setComparisonYear1(key.toString());
-            }
-          }}
-        >
-          {yearOptions.map((year) => (
-            <SelectItem key={year} id={year}>
-              {year}
-            </SelectItem>
-          ))}
-        </Select>
-        <Select
-          label="Año 2"
-          placeholder="Seleccionar año"
-          value={comparisonYear2}
-          onChange={(key) => {
-            // key is already a string | null
-            if (key) {
-              setComparisonYear2(key.toString());
-            }
-          }}
-        >
-          {yearOptions.map((year) => (
-            <SelectItem key={year} id={year}>
-              {year}
-            </SelectItem>
-          ))}
-        </Select>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>
-            Comparación de Ventas: {comparisonYear1} vs {comparisonYear2}
-          </CardTitle>
+          <CardTitle>Comparación de Ventas (Todos los Años)</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer height={400} width="100%">
@@ -575,20 +511,16 @@ function SalesComparison({
                 labelStyle={{ color: "#000" }}
               />
               <Legend />
-              <Line
-                dataKey="year1Value"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                name={comparisonYear1}
-                dot
-              />
-              <Line
-                dataKey="year2Value"
-                stroke="#10b981"
-                strokeWidth={2}
-                name={comparisonYear2}
-                dot
-              />
+              {years.map((year, idx) => (
+                <Line
+                  key={year}
+                  dataKey={year}
+                  stroke={colors[idx % colors.length]}
+                  name={year}
+                  dot
+                  strokeWidth={2}
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         </CardContent>

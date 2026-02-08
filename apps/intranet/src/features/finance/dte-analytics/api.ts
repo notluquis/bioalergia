@@ -82,6 +82,11 @@ export async function fetchSalesSummary(year?: number): Promise<DTESummary[]> {
   return result.data;
 }
 
+export interface AllYearsComparisonData {
+  month: string;
+  [key: string]: number | string;
+}
+
 export async function fetchYearlyComparison(
   year1: number,
   year2: number,
@@ -101,4 +106,52 @@ export async function fetchYearlyComparison(
     },
   );
   return result.data;
+}
+
+export async function fetchAllYearsComparison(
+  type: "purchases" | "sales",
+): Promise<AllYearsComparisonData[]> {
+  const currentYear = new Date().getFullYear();
+  const years = [currentYear - 4, currentYear - 3, currentYear - 2, currentYear - 1, currentYear];
+
+  const comparisons: YearlyComparisonData[][] = [];
+
+  // Fetch comparisons for consecutive year pairs
+  for (let i = 0; i < years.length - 1; i++) {
+    const y1 = years[i];
+    const y2 = years[i + 1];
+    if (y1 !== undefined && y2 !== undefined) {
+      const data = await fetchYearlyComparison(y1, y2, type);
+      comparisons.push(data);
+    }
+  }
+
+  // Combine all comparisons into a single structure
+  if (comparisons.length === 0 || !comparisons[0]) {
+    return [];
+  }
+
+  const firstComparison = comparisons[0];
+  const result = firstComparison.map((_item, monthIndex) => {
+    const combined: AllYearsComparisonData = { month: _item.month };
+    years.forEach((year, yearIndex) => {
+      if (year !== undefined) {
+        if (yearIndex === 0) {
+          const val = comparisons[0]?.[monthIndex]?.year1Value;
+          combined[`year${year}`] = val ?? 0;
+        }
+        if (yearIndex < comparisons.length) {
+          const comparison = comparisons[yearIndex];
+          const val = comparison?.[monthIndex]?.year2Value;
+          const nextYear = years[yearIndex + 1];
+          if (nextYear !== undefined) {
+            combined[`year${nextYear}`] = val ?? 0;
+          }
+        }
+      }
+    });
+    return combined;
+  });
+
+  return result;
 }
