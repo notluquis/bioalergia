@@ -57,7 +57,7 @@ dteAnalyticsRoutes.get("/purchases/summary", zValidator("query", periodParamsSch
         sql<number>`count(p.id)::int`.as("count"),
         sql<number>`coalesce(sum(p.total_amount), 0)`.as("totalAmount"),
         sql<number>`coalesce(sum(p.net_amount), 0)`.as("netAmount"),
-        sql<number>`coalesce(sum(p.recoverable_iva), 0)`.as("recoverableIva"),
+        sql<number>`coalesce(sum(p.recoverable_iva), 0)`.as("taxAmount"),
         sql<number>`coalesce(avg(p.total_amount), 0)`.as("averageAmount"),
       ])
       .groupBy(sql`to_char(p.document_date, 'YYYY-MM')`)
@@ -87,7 +87,7 @@ dteAnalyticsRoutes.get("/purchases/summary", zValidator("query", periodParamsSch
       count: Number(row.count),
       totalAmount: Number(row.totalAmount),
       netAmount: Number(row.netAmount),
-      recoverableIva: Number(row.recoverableIva),
+      taxAmount: Number(row.taxAmount),
       averageAmount: Number(row.averageAmount),
     }));
 
@@ -122,7 +122,7 @@ dteAnalyticsRoutes.get("/sales/summary", zValidator("query", periodParamsSchema)
         sql<number>`count(s.id)::int`.as("count"),
         sql<number>`coalesce(sum(s.total_amount), 0)`.as("totalAmount"),
         sql<number>`coalesce(sum(s.net_amount), 0)`.as("netAmount"),
-        sql<number>`coalesce(sum(s.iva_amount), 0)`.as("ivaAmount"),
+        sql<number>`coalesce(sum(s.iva_amount), 0)`.as("taxAmount"),
         sql<number>`coalesce(avg(s.total_amount), 0)`.as("averageAmount"),
       ])
       .groupBy(sql`to_char(s.document_date, 'YYYY-MM')`)
@@ -152,7 +152,7 @@ dteAnalyticsRoutes.get("/sales/summary", zValidator("query", periodParamsSchema)
       count: Number(row.count),
       totalAmount: Number(row.totalAmount),
       netAmount: Number(row.netAmount),
-      ivaAmount: Number(row.ivaAmount),
+      taxAmount: Number(row.taxAmount),
       averageAmount: Number(row.averageAmount),
     }));
 
