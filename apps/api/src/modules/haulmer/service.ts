@@ -112,12 +112,20 @@ export async function syncPeriod(
       rowsUpdated,
     };
 
-    // Save sync log
-    await db.haulmerSyncLog.create({
-      data: {
+    // Save sync log (upsert to handle re-syncing)
+    await db.haulmerSyncLog.upsert({
+      where: { period_rut_docType: { period, rut, docType } },
+      create: {
         period,
         rut,
         docType,
+        rowsCreated: rowsInserted,
+        rowsUpdated,
+        rowsSkipped,
+        status: "success",
+        csvSize: csvText.length,
+      },
+      update: {
         rowsCreated: rowsInserted,
         rowsUpdated,
         rowsSkipped,
@@ -131,13 +139,21 @@ export async function syncPeriod(
     const msg = error instanceof Error ? error.message : String(error);
     console.error(`[Haulmer Sync] Error for ${docType}/${period}: ${msg}`);
 
-    // Save error log
+    // Save error log (upsert to handle re-syncing)
     try {
-      await db.haulmerSyncLog.create({
-        data: {
+      await db.haulmerSyncLog.upsert({
+        where: { period_rut_docType: { period, rut, docType } },
+        create: {
           period,
           rut,
           docType,
+          rowsCreated: rowsInserted,
+          rowsUpdated,
+          rowsSkipped,
+          status: "failed",
+          errorMessage: msg,
+        },
+        update: {
           rowsCreated: rowsInserted,
           rowsUpdated,
           rowsSkipped,
