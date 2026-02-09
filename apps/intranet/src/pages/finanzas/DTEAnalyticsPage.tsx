@@ -195,7 +195,7 @@ function PurchasesMonthlySummary({
 
       <Card>
         <CardHeader>
-          <CardTitle>Compras Mensuales {selectedYear}</CardTitle>
+          <CardTitle>Compras Mensuales {selectedYear} (Neto + IVA)</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer height={400} width="100%">
@@ -212,11 +212,11 @@ function PurchasesMonthlySummary({
                   value !== undefined ? formatCurrency(value) : "N/A"
                 }
                 labelStyle={{ color: "#000" }}
+                contentStyle={{ backgroundColor: "#fff" }}
               />
               <Legend />
-              <Bar dataKey="totalAmount" fill="#3b82f6" name="Total" />
-              <Bar dataKey="netAmount" fill="#10b981" name="Neto" />
-              <Bar dataKey="taxAmount" fill="#f59e0b" name="IVA" />
+              <Bar dataKey="netAmount" stackId="total" fill="#10b981" name="Neto" />
+              <Bar dataKey="taxAmount" stackId="total" fill="#f59e0b" name="IVA" />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -302,7 +302,7 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
 
       <Card>
         <CardHeader>
-          <CardTitle>Ventas Mensuales {selectedYear}</CardTitle>
+          <CardTitle>Ventas Mensuales {selectedYear} (Neto + IVA)</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer height={400} width="100%">
@@ -319,11 +319,11 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
                   value !== undefined ? formatCurrency(value) : "N/A"
                 }
                 labelStyle={{ color: "#000" }}
+                contentStyle={{ backgroundColor: "#fff" }}
               />
               <Legend />
-              <Bar dataKey="totalAmount" fill="#3b82f6" name="Total" />
-              <Bar dataKey="netAmount" fill="#10b981" name="Neto" />
-              <Bar dataKey="taxAmount" fill="#f59e0b" name="IVA" />
+              <Bar dataKey="netAmount" stackId="total" fill="#10b981" name="Neto" />
+              <Bar dataKey="taxAmount" stackId="total" fill="#f59e0b" name="IVA" />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
