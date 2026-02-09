@@ -2,7 +2,7 @@ import { Card, Chip, Spinner } from "@heroui/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import localeEs from "dayjs/locale/es";
-import { Check, Download, X } from "lucide-react";
+import { Check, Download, RefreshCw, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 
@@ -57,6 +57,8 @@ interface MonthPeriod {
   year: number;
   month: string;
   monthNumber: number;
+  salesCount: number;
+  purchasesCount: number;
 }
 
 const MONTHS_ES = [
@@ -74,29 +76,77 @@ const MONTHS_ES = [
   "Diciembre",
 ];
 
-function generatePeriods(): MonthPeriod[] {
-  const periods: MonthPeriod[] = [];
-  const now = dayjs();
+/**
+ * Convert period string (YYYYMM) to MonthPeriod object
+ */
+function periodToMonthPeriod(
+  periodoStr: string,
+  salesCount: number = 0,
+  purchasesCount: number = 0,
+): MonthPeriod {
+  const year = Number.parseInt(periodoStr.substring(0, 4), 10);
+  const monthNumber = Number.parseInt(periodoStr.substring(4, 6), 10);
+  const monthName = MONTHS_ES[monthNumber - 1] || "Desconocido";
 
-  for (let i = 0; i < 24; i++) {
-    const date = now.subtract(i, "months");
-    const year = date.year();
-    const month = date.month() + 1;
-    const monthStr = String(month).padStart(2, "0");
-    const period = `${year}${monthStr}`;
-    const monthName = MONTHS_ES[month - 1];
+  return {
+    period: periodoStr,
+    year,
+    month: monthName,
+    monthNumber,
+    salesCount,
+    purchasesCount,
+  };
+}
 
-    if (monthName !== undefined) {
-      periods.push({
-        period,
-        year,
-        month: monthName,
-        monthNumber: month,
-      });
+interface AvailablePeriodsData extends z.infer<typeof AvailablePeriodsSchema> {}
+
+/**
+ * Extract all periods from available periods data, grouped by year
+ */
+function extractAndGroupPeriods(
+  availablePeriods: AvailablePeriodsData,
+): Record<number, MonthPeriod[]> {
+  const periodMap = new Map<string, { sales: number; purchases: number }>();
+
+  // Collect all periods with their counts
+  for (const sale of availablePeriods.sales) {
+    if (!periodMap.has(sale.periodo)) {
+      periodMap.set(sale.periodo, { sales: 0, purchases: 0 });
+    }
+    const data = periodMap.get(sale.periodo);
+    if (data) {
+      data.sales = sale.count;
     }
   }
 
-  return periods;
+  for (const purchase of availablePeriods.purchases) {
+    if (!periodMap.has(purchase.periodo)) {
+      periodMap.set(purchase.periodo, { sales: 0, purchases: 0 });
+    }
+    const data = periodMap.get(purchase.periodo);
+    if (data) {
+      data.purchases = purchase.count;
+    }
+  }
+
+  // Convert to MonthPeriod array, sorted by period descending (newest first)
+  const periods = Array.from(periodMap.entries())
+    .map(([period, counts]) => periodToMonthPeriod(period, counts.sales, counts.purchases))
+    .sort((a, b) => b.period.localeCompare(a.period));
+
+  // Group by year
+  const grouped: Record<number, MonthPeriod[]> = {};
+  for (const period of periods) {
+    if (!grouped[period.year]) {
+      grouped[period.year] = [];
+    }
+    const yearPeriods = grouped[period.year];
+    if (yearPeriods) {
+      yearPeriods.push(period);
+    }
+  }
+
+  return grouped;
 }
 
 interface LastSyncState {
@@ -117,9 +167,203 @@ function SyncStatusIcon({ result }: { result: SyncResult | null | undefined }) {
   return <span className="text-gray-500 text-xs">Pendiente</span>;
 }
 
+interface SyncAllCardProps {
+  isSyncingAll: boolean;
+  syncAllProgress: { completed: number; total: number };
+  availablePeriods: AvailablePeriodsData | undefined;
+  onSyncAll: () => void;
+}
+
+function SyncAllCard({
+  isSyncingAll,
+  syncAllProgress,
+  availablePeriods,
+  onSyncAll,
+}: SyncAllCardProps) {
+  if (!availablePeriods) {
+    return null;
+  }
+
+  const totalPeriods =
+    (availablePeriods.sales?.length ?? 0) + (availablePeriods.purchases?.length ?? 0);
+  if (totalPeriods === 0) {
+    return null;
+  }
+
+  return (
+    <Card className="border-primary-100 bg-primary-50">
+      <div className="space-y-4 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-default-700">Sincronización Masiva</h3>
+            <p className="mt-1 text-default-500 text-sm">
+              Datos disponibles: {availablePeriods.sales.length} períodos de ventas +{" "}
+              {availablePeriods.purchases.length} períodos de compras
+            </p>
+          </div>
+          <Button
+            isDisabled={isSyncingAll}
+            isLoading={isSyncingAll}
+            color="primary"
+            onClick={onSyncAll}
+            startContent={isSyncingAll ? undefined : <RefreshCw className="h-4 w-4" />}
+          >
+            {isSyncingAll ? "Sincronizando..." : "Sincronizar Todo"}
+          </Button>
+        </div>
+
+        {isSyncingAll && syncAllProgress.total > 0 && (
+          <div className="space-y-2">
+            <div className="h-2 w-full rounded bg-default-200">
+              <div
+                className="h-2 rounded bg-success-500 transition-all duration-300"
+                style={{
+                  width: `${(syncAllProgress.completed / syncAllProgress.total) * 100}%`,
+                }}
+              />
+            </div>
+            <p className="text-default-600 text-xs">
+              {syncAllProgress.completed} de {syncAllProgress.total} completados
+            </p>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+interface PeriodCardProps {
+  period: MonthPeriod;
+  lastSyncs: LastSyncState;
+  syncMutation: {
+    isPending: boolean;
+    variables?: { period: string; docType: "sales" | "purchases" };
+  };
+  onSync: (period: string, docType: "sales" | "purchases") => void;
+  hasSalesData: (period: string) => boolean;
+  hasPurchasesData: (period: string) => boolean;
+  getSalesCount: (period: string) => number;
+  getPurchasesCount: (period: string) => number;
+}
+
+function PeriodCard({
+  period,
+  lastSyncs,
+  syncMutation,
+  onSync,
+  hasSalesData,
+  hasPurchasesData,
+  getSalesCount,
+  getPurchasesCount,
+}: PeriodCardProps) {
+  return (
+    <Card key={period.period} className="border-default-100">
+      <div className="gap-4 space-y-4 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="font-medium text-base">{period.month}</h4>
+            <p className="text-default-500 text-xs">{period.period}</p>
+          </div>
+          {syncMutation.isPending && syncMutation.variables?.period === period.period && (
+            <Spinner size="sm" />
+          )}
+        </div>
+
+        {/* Sales Section */}
+        <div className="space-y-2 border-default-100 border-t pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Ventas</span>
+            <div className="flex items-center gap-2">
+              {hasSalesData(period.period) ? (
+                <Chip color="success" size="sm" variant="secondary">
+                  {getSalesCount(period.period)} docs
+                </Chip>
+              ) : (
+                <Chip color="default" size="sm" variant="secondary">
+                  Sin datos
+                </Chip>
+              )}
+              <SyncStatusIcon result={lastSyncs[`${period.period}-sales`]} />
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="primary"
+            disabled={
+              !hasSalesData(period.period) ||
+              (syncMutation.isPending && syncMutation.variables?.period === period.period)
+            }
+            onClick={() => {
+              onSync(period.period, "sales");
+            }}
+            startContent={<Download className="h-4 w-4" />}
+          >
+            Importar
+          </Button>
+          {lastSyncs[`${period.period}-sales`] && (
+            <div className="space-y-1 text-default-600 text-xs">
+              <p>Creados: {lastSyncs[`${period.period}-sales`]?.rowsInserted}</p>
+              <p>Actualizados: {lastSyncs[`${period.period}-sales`]?.rowsUpdated}</p>
+              {lastSyncs[`${period.period}-sales`]?.error && (
+                <p className="text-red-500">Error: {lastSyncs[`${period.period}-sales`]?.error}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Purchases Section */}
+        <div className="space-y-2 border-default-100 border-t pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Compras</span>
+            <div className="flex items-center gap-2">
+              {hasPurchasesData(period.period) ? (
+                <Chip color="success" size="sm" variant="secondary">
+                  {getPurchasesCount(period.period)} docs
+                </Chip>
+              ) : (
+                <Chip color="default" size="sm" variant="secondary">
+                  Sin datos
+                </Chip>
+              )}
+              <SyncStatusIcon result={lastSyncs[`${period.period}-purchases`]} />
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="primary"
+            disabled={
+              !hasPurchasesData(period.period) ||
+              (syncMutation.isPending && syncMutation.variables?.period === period.period)
+            }
+            onClick={() => {
+              onSync(period.period, "purchases");
+            }}
+            startContent={<Download className="h-4 w-4" />}
+          >
+            Importar
+          </Button>
+          {lastSyncs[`${period.period}-purchases`] && (
+            <div className="space-y-1 text-default-600 text-xs">
+              <p>Creados: {lastSyncs[`${period.period}-purchases`]?.rowsInserted}</p>
+              <p>Actualizados: {lastSyncs[`${period.period}-purchases`]?.rowsUpdated}</p>
+              {lastSyncs[`${period.period}-purchases`]?.error && (
+                <p className="text-red-500">
+                  Error: {lastSyncs[`${period.period}-purchases`]?.error}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export function HaulmerSyncPage() {
   const { error: showError, success: showSuccess } = useToast();
   const [lastSyncs, setLastSyncs] = useState<LastSyncState>({});
+  const [syncAllProgress, setSyncAllProgress] = useState({ completed: 0, total: 0 });
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
 
   // Fetch available periods
   const {
@@ -138,21 +382,13 @@ export function HaulmerSyncPage() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const periods = useMemo(() => generatePeriods(), []);
+  // Generate periods from available data (not hardcoded)
   const periodsByYear = useMemo(() => {
-    const result: Record<number, MonthPeriod[] | undefined> = {};
-    for (const period of periods) {
-      const year = period.year;
-      if (result[year] === undefined) {
-        result[year] = [];
-      }
-      const yearPeriods = result[year];
-      if (yearPeriods !== undefined) {
-        yearPeriods.push(period);
-      }
+    if (!availablePeriods) {
+      return {};
     }
-    return result;
-  }, [periods]);
+    return extractAndGroupPeriods(availablePeriods);
+  }, [availablePeriods]);
 
   const syncMutation = useMutation({
     mutationFn: async (params: { period: string; docType: "sales" | "purchases" }) => {
@@ -193,6 +429,91 @@ export function HaulmerSyncPage() {
     const message = `¿Sincronizar ${docLabel} de ${period}? Esto puede insertar o actualizar registros.`;
     if (confirm(message)) {
       syncMutation.mutate({ period, docType });
+    }
+  };
+
+  const buildSyncTasks = () => {
+    if (!availablePeriods) {
+      return [];
+    }
+
+    const tasks: Array<{ period: string; docType: "sales" | "purchases" }> = [];
+    for (const sale of availablePeriods.sales) {
+      tasks.push({ period: sale.periodo, docType: "sales" });
+    }
+    for (const purchase of availablePeriods.purchases) {
+      tasks.push({ period: purchase.periodo, docType: "purchases" });
+    }
+    return tasks;
+  };
+
+  const executeSyncBatch = async (
+    tasks: Array<{ period: string; docType: "sales" | "purchases" }>,
+  ) => {
+    const batchSize = 5;
+    for (let i = 0; i < tasks.length; i += batchSize) {
+      const batch = tasks.slice(i, i + batchSize);
+      await Promise.all(
+        batch.map((task) =>
+          apiClient
+            .post<z.infer<typeof SyncResponseSchema>>(
+              "/api/haulmer/sync",
+              {
+                periods: [task.period],
+                docTypes: [task.docType],
+              },
+              { responseSchema: SyncResponseSchema },
+            )
+            .then((response) => {
+              const result = response.results?.[0];
+              if (result) {
+                const key = `${task.period}-${task.docType}`;
+                setLastSyncs((prev) => ({
+                  ...prev,
+                  [key]: result,
+                }));
+              }
+              setSyncAllProgress((prev) => ({
+                ...prev,
+                completed: prev.completed + 1,
+              }));
+            })
+            .catch((error) => {
+              console.error(`Error syncing ${task.period}-${task.docType}:`, error);
+              setSyncAllProgress((prev) => ({
+                ...prev,
+                completed: prev.completed + 1,
+              }));
+            }),
+        ),
+      );
+    }
+  };
+
+  const handleSyncAll = async () => {
+    const syncTasks = buildSyncTasks();
+    if (syncTasks.length === 0) {
+      return;
+    }
+
+    const message = `¿Sincronizar TODOS los períodos? Se sincronizarán ${syncTasks.length} registros (${availablePeriods?.sales.length ?? 0} sales + ${availablePeriods?.purchases.length ?? 0} purchases). Esto puede tomar un tiempo.`;
+    if (!confirm(message)) {
+      return;
+    }
+
+    setIsSyncingAll(true);
+    setSyncAllProgress({ completed: 0, total: syncTasks.length });
+
+    try {
+      await executeSyncBatch(syncTasks);
+      showSuccess(`Sincronización completada: ${syncAllProgress.total} períodos procesados`);
+    } catch (error) {
+      showError(
+        `Error durante sincronización masiva: ${error instanceof Error ? error.message : "Desconocido"}`,
+      );
+    } finally {
+      setIsSyncingAll(false);
+      setSyncAllProgress({ completed: 0, total: 0 });
     }
   };
 
@@ -251,117 +572,39 @@ export function HaulmerSyncPage() {
         </Card>
       )}
 
-      {/* By Year */}
-      {sortedYears.map((year) => (
-        <div key={year} className="space-y-4">
-          <h2 className="font-semibold text-default-700 text-lg">{year}</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {(periodsByYear[year] ?? []).map((period) => (
-              <Card key={period.period} className="border-default-100">
-                <div className="gap-4 space-y-4 p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-base">{period.month}</h4>
-                      <p className="text-default-500 text-xs">{period.period}</p>
-                    </div>
-                    {syncMutation.isPending && syncMutation.variables?.period === period.period && (
-                      <Spinner size="sm" />
-                    )}
-                  </div>
+      {/* Sync All Section */}
+      {!isLoadingPeriods && !periodsError && availablePeriods && (
+        <SyncAllCard
+          isSyncingAll={isSyncingAll}
+          syncAllProgress={syncAllProgress}
+          availablePeriods={availablePeriods}
+          onSyncAll={handleSyncAll}
+        />
+      )}
 
-                  {/* Sales Section */}
-                  <div className="space-y-2 border-default-100 border-t pt-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Ventas</span>
-                      <div className="flex items-center gap-2">
-                        {hasSalesData(period.period) ? (
-                          <Chip color="success" size="sm" variant="secondary">
-                            {getSalesCount(period.period)} docs
-                          </Chip>
-                        ) : (
-                          <Chip color="default" size="sm" variant="secondary">
-                            Sin datos
-                          </Chip>
-                        )}
-                        <SyncStatusIcon result={lastSyncs[`${period.period}-sales`]} />
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      disabled={
-                        !hasSalesData(period.period) ||
-                        (syncMutation.isPending && syncMutation.variables?.period === period.period)
-                      }
-                      onClick={() => {
-                        handleSync(period.period, "sales");
-                      }}
-                      startContent={<Download className="h-4 w-4" />}
-                    >
-                      Importar
-                    </Button>
-                    {lastSyncs[`${period.period}-sales`] && (
-                      <div className="space-y-1 text-default-600 text-xs">
-                        <p>Creados: {lastSyncs[`${period.period}-sales`]?.rowsInserted}</p>
-                        <p>Actualizados: {lastSyncs[`${period.period}-sales`]?.rowsUpdated}</p>
-                        {lastSyncs[`${period.period}-sales`]?.error && (
-                          <p className="text-red-500">
-                            Error: {lastSyncs[`${period.period}-sales`]?.error}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Purchases Section */}
-                  <div className="space-y-2 border-default-100 border-t pt-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Compras</span>
-                      <div className="flex items-center gap-2">
-                        {hasPurchasesData(period.period) ? (
-                          <Chip color="success" size="sm" variant="secondary">
-                            {getPurchasesCount(period.period)} docs
-                          </Chip>
-                        ) : (
-                          <Chip color="default" size="sm" variant="secondary">
-                            Sin datos
-                          </Chip>
-                        )}
-                        <SyncStatusIcon result={lastSyncs[`${period.period}-purchases`]} />
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      disabled={
-                        !hasPurchasesData(period.period) ||
-                        (syncMutation.isPending && syncMutation.variables?.period === period.period)
-                      }
-                      onClick={() => {
-                        handleSync(period.period, "purchases");
-                      }}
-                      startContent={<Download className="h-4 w-4" />}
-                    >
-                      Importar
-                    </Button>
-                    {lastSyncs[`${period.period}-purchases`] && (
-                      <div className="space-y-1 text-default-600 text-xs">
-                        <p>Creados: {lastSyncs[`${period.period}-purchases`]?.rowsInserted}</p>
-                        <p>Actualizados: {lastSyncs[`${period.period}-purchases`]?.rowsUpdated}</p>
-                        {lastSyncs[`${period.period}-purchases`]?.error && (
-                          <p className="text-red-500">
-                            Error: {lastSyncs[`${period.period}-purchases`]?.error}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
+      {/* By Year - Scrollable Container */}
+      <div className="max-h-[calc(100vh-400px)] space-y-4 overflow-y-auto pr-2">
+        {sortedYears.map((year) => (
+          <div key={year} className="space-y-4">
+            <h2 className="font-semibold text-default-700 text-lg">{year}</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {(periodsByYear[year] ?? []).map((period) => (
+                <PeriodCard
+                  key={period.period}
+                  period={period}
+                  lastSyncs={lastSyncs}
+                  syncMutation={syncMutation}
+                  onSync={handleSync}
+                  hasSalesData={hasSalesData}
+                  hasPurchasesData={hasPurchasesData}
+                  getSalesCount={getSalesCount}
+                  getPurchasesCount={getPurchasesCount}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
