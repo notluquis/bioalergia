@@ -42,7 +42,7 @@ const HAULMER_COLUMN_MAP: Record<string, string> = {
   "n° registro": "registerNumber",
   "registro número": "registerNumber",
   "numero registro": "registerNumber",
-  registro: "registerNumber",
+  // NOTE: Do NOT map "registro" - it's a status field (Pendiente/etc), not the register number
 
   // Document Type & Sale Type
   "tipo de documento": "documentType",

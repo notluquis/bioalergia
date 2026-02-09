@@ -148,7 +148,20 @@ pnpm lint:fix  # Uses Biome
 - Normalize decimal input (0,5 or 0.5 → 0.5 number)
 - Separate concerns: numeric value, unit, and display formatting
 
-## 🔄 Backend-Frontend Sync Strategy
+## � Critical Fixes Applied
+
+### Purchase Import NaN Error (Feb 9, 2026)
+**Problem:** All 4 purchase records failed with "NaN at registerNumber"
+- Root cause: Column "Registro" (status: "Pendiente"/"Registrado") was mapped to registerNumber
+- This overwrote numeric value from "Nº" column with non-numeric status string
+- parseFloat("Pendiente") = NaN caused validation failure
+
+**Solution:** Removed `registro: "registerNumber"` from HAULMER_COLUMN_MAP
+- File: `/apps/api/src/modules/haulmer/parser.ts` (line 45)
+- Now only "Nº" column maps to registerNumber
+- Purchase import should now succeed (4 expected from 202602 period)
+
+## �🔄 Backend-Frontend Sync Strategy
 
 **When modifying types, schemas, or data models:**
 
