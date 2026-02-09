@@ -25,7 +25,7 @@ function excludeAnnulledByNCE(
   table: "DTESaleDetail" | "DTEPurchaseDetail",
 ): ReturnType<typeof sql> {
   return sql`NOT EXISTS (
-    SELECT 1 FROM "${sql.raw(`"${table}"`)} AS nce
+    SELECT 1 FROM ${sql.raw(`"${table}"`)} AS nce
     WHERE nce."document_type" = 61
     AND nce."reference_doc_type" = ${sql.raw(`${tableAlias}."document_type"`)}::varchar
     AND nce."reference_doc_folio" = ${sql.raw(`${tableAlias}."folio"`)}
