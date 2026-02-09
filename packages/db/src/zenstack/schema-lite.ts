@@ -4725,139 +4725,87 @@ export class SchemaType implements SchemaDef {
         folio: { type: "String" },
       },
     },
-    HaulmerSyncLog: {
-      name: "HaulmerSyncLog",
+    DTESyncLog: {
+      name: "DTESyncLog",
       fields: {
         id: {
           name: "id",
           type: "String",
           id: true,
-          default: ExpressionUtils.call("cuid"),
+          default: ExpressionUtils.call("uuid"),
         },
         period: {
           name: "period",
           type: "String",
         },
-        rut: {
-          name: "rut",
+        docTypes: {
+          name: "docTypes",
           type: "String",
-        },
-        docType: {
-          name: "docType",
-          type: "String",
-        },
-        csvHash: {
-          name: "csvHash",
-          type: "String",
-          optional: true,
-        },
-        csvSize: {
-          name: "csvSize",
-          type: "Int",
-          optional: true,
-        },
-        rowsCreated: {
-          name: "rowsCreated",
-          type: "Int",
-          default: 0,
-        },
-        rowsUpdated: {
-          name: "rowsUpdated",
-          type: "Int",
-          default: 0,
-        },
-        rowsSkipped: {
-          name: "rowsSkipped",
-          type: "Int",
-          default: 0,
         },
         status: {
           name: "status",
           type: "String",
-          default: "pending",
+          default: "PENDING",
+        },
+        totalProcessed: {
+          name: "totalProcessed",
+          type: "Int",
+          default: 0,
+        },
+        totalInserted: {
+          name: "totalInserted",
+          type: "Int",
+          default: 0,
+        },
+        totalUpdated: {
+          name: "totalUpdated",
+          type: "Int",
+          default: 0,
+        },
+        totalSkipped: {
+          name: "totalSkipped",
+          type: "Int",
+          default: 0,
+        },
+        salesInserted: {
+          name: "salesInserted",
+          type: "Int",
+          default: 0,
+        },
+        purchasesInserted: {
+          name: "purchasesInserted",
+          type: "Int",
+          default: 0,
         },
         errorMessage: {
           name: "errorMessage",
           type: "String",
           optional: true,
         },
-        syncedAt: {
-          name: "syncedAt",
+        triggerSource: {
+          name: "triggerSource",
+          type: "String",
+          optional: true,
+        },
+        triggerUserId: {
+          name: "triggerUserId",
+          type: "String",
+          optional: true,
+        },
+        startedAt: {
+          name: "startedAt",
           type: "DateTime",
           default: ExpressionUtils.call("now"),
         },
-        createdAt: {
-          name: "createdAt",
+        completedAt: {
+          name: "completedAt",
           type: "DateTime",
-          default: ExpressionUtils.call("now"),
+          optional: true,
         },
       },
       idFields: ["id"],
       uniqueFields: {
         id: { type: "String" },
-        period_rut_docType: {
-          period: { type: "String" },
-          rut: { type: "String" },
-          docType: { type: "String" },
-        },
-      },
-    },
-    HaulmerAuthToken: {
-      name: "HaulmerAuthToken",
-      fields: {
-        id: {
-          name: "id",
-          type: "String",
-          id: true,
-          default: ExpressionUtils.call("cuid"),
-        },
-        rut: {
-          name: "rut",
-          type: "String",
-          unique: true,
-        },
-        email: {
-          name: "email",
-          type: "String",
-        },
-        jwtToken: {
-          name: "jwtToken",
-          type: "String",
-        },
-        workspaceId: {
-          name: "workspaceId",
-          type: "String",
-          optional: true,
-        },
-        issuedAt: {
-          name: "issuedAt",
-          type: "DateTime",
-        },
-        expiresAt: {
-          name: "expiresAt",
-          type: "DateTime",
-        },
-        capturedBy: {
-          name: "capturedBy",
-          type: "Int",
-          optional: true,
-        },
-        createdAt: {
-          name: "createdAt",
-          type: "DateTime",
-          default: ExpressionUtils.call("now"),
-        },
-        updatedAt: {
-          name: "updatedAt",
-          type: "DateTime",
-          updatedAt: true,
-          default: ExpressionUtils.call("now"),
-        },
-      },
-      idFields: ["id"],
-      uniqueFields: {
-        id: { type: "String" },
-        rut: { type: "String" },
       },
     },
   } as const;

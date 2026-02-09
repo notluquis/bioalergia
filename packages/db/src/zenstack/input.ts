@@ -1624,63 +1624,27 @@ export type DTESaleDetailGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "DTESaleDetail", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "DTESaleDetail", Args, Options>;
-export type HaulmerSyncLogFindManyArgs = $FindManyArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogFindUniqueArgs = $FindUniqueArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogFindFirstArgs = $FindFirstArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogExistsArgs = $ExistsArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogCreateArgs = $CreateArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogCreateManyArgs = $CreateManyArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
-  $Schema,
-  "HaulmerSyncLog"
->;
-export type HaulmerSyncLogUpdateArgs = $UpdateArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogUpdateManyArgs = $UpdateManyArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
-  $Schema,
-  "HaulmerSyncLog"
->;
-export type HaulmerSyncLogUpsertArgs = $UpsertArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogDeleteArgs = $DeleteArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogDeleteManyArgs = $DeleteManyArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogCountArgs = $CountArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogAggregateArgs = $AggregateArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogGroupByArgs = $GroupByArgs<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogWhereInput = $WhereInput<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogSelect = $SelectInput<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogInclude = $IncludeInput<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogOmit = $OmitInput<$Schema, "HaulmerSyncLog">;
-export type HaulmerSyncLogGetPayload<
-  Args extends $SelectIncludeOmit<$Schema, "HaulmerSyncLog", true>,
+export type DTESyncLogFindManyArgs = $FindManyArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogFindUniqueArgs = $FindUniqueArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogFindFirstArgs = $FindFirstArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogExistsArgs = $ExistsArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogCreateArgs = $CreateArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogCreateManyArgs = $CreateManyArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogCreateManyAndReturnArgs = $CreateManyAndReturnArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogUpdateArgs = $UpdateArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogUpdateManyArgs = $UpdateManyArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogUpsertArgs = $UpsertArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogDeleteArgs = $DeleteArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogDeleteManyArgs = $DeleteManyArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogCountArgs = $CountArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogAggregateArgs = $AggregateArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogGroupByArgs = $GroupByArgs<$Schema, "DTESyncLog">;
+export type DTESyncLogWhereInput = $WhereInput<$Schema, "DTESyncLog">;
+export type DTESyncLogSelect = $SelectInput<$Schema, "DTESyncLog">;
+export type DTESyncLogInclude = $IncludeInput<$Schema, "DTESyncLog">;
+export type DTESyncLogOmit = $OmitInput<$Schema, "DTESyncLog">;
+export type DTESyncLogGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "DTESyncLog", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
-> = $Result<$Schema, "HaulmerSyncLog", Args, Options>;
-export type HaulmerAuthTokenFindManyArgs = $FindManyArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenFindUniqueArgs = $FindUniqueArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenFindFirstArgs = $FindFirstArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenExistsArgs = $ExistsArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenCreateArgs = $CreateArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenCreateManyArgs = $CreateManyArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
-  $Schema,
-  "HaulmerAuthToken"
->;
-export type HaulmerAuthTokenUpdateArgs = $UpdateArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenUpdateManyArgs = $UpdateManyArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
-  $Schema,
-  "HaulmerAuthToken"
->;
-export type HaulmerAuthTokenUpsertArgs = $UpsertArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenDeleteArgs = $DeleteArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenDeleteManyArgs = $DeleteManyArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenCountArgs = $CountArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenAggregateArgs = $AggregateArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenGroupByArgs = $GroupByArgs<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenWhereInput = $WhereInput<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenSelect = $SelectInput<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenInclude = $IncludeInput<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenOmit = $OmitInput<$Schema, "HaulmerAuthToken">;
-export type HaulmerAuthTokenGetPayload<
-  Args extends $SelectIncludeOmit<$Schema, "HaulmerAuthToken", true>,
-  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
-> = $Result<$Schema, "HaulmerAuthToken", Args, Options>;
+> = $Result<$Schema, "DTESyncLog", Args, Options>;

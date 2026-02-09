@@ -1703,54 +1703,35 @@ model DTESaleDetail {
 }
 
 // ============================================================
-// HAULMER INTEGRATION
+// DTE SYNC LOGS
 // ============================================================
 
-model HaulmerSyncLog {
-  id           String   @id @default(cuid())
-  period       String   @db.VarChar(6)        // YYYYMM format
-  rut          String   @db.VarChar(20)       // Client RUT
-  docType      String   @db.VarChar(20)       // "sales" | "purchases"
-  csvHash      String?  @db.VarChar(64)       // SHA256 of CSV content
-  csvSize      Int?                           // File size bytes
-  rowsCreated  Int      @default(0) @map("rows_created")
-  rowsUpdated  Int      @default(0) @map("rows_updated")
-  rowsSkipped  Int      @default(0) @map("rows_skipped")
-  status       String   @db.VarChar(20) @default("pending")   // pending | success | partial | failed
-  errorMessage String?
-  syncedAt     DateTime @default(now()) @map("synced_at")
-  createdAt    DateTime @default(now()) @map("created_at")
-
+model DTESyncLog {
+  id                String    @id @default(uuid())
+  period            String    @db.VarChar(6)                        // YYYYMM format (e.g., "202602")
+  docTypes          String    @db.VarChar(50)                       // "sales" | "purchases" | "both"
+  status            String    @default("PENDING") @db.VarChar(20)   // PENDING | SUCCESS | PARTIAL | FAILED
+  totalProcessed    Int       @default(0) @map("total_processed")   // Total rows processed across all types
+  totalInserted     Int       @default(0) @map("total_inserted")
+  totalUpdated      Int       @default(0) @map("total_updated")
+  totalSkipped      Int       @default(0) @map("total_skipped")
+  salesInserted     Int       @default(0) @map("sales_inserted")
+  purchasesInserted Int       @default(0) @map("purchases_inserted")
+  errorMessage      String?   @map("error_message")
+  triggerSource     String?   @db.VarChar(20)                       // "cron" | "manual" | "user"
+  triggerUserId     String?   @map("trigger_user_id")               // User ID if manual trigger
+  startedAt         DateTime  @default(now()) @map("started_at")
+  completedAt       DateTime? @map("completed_at")
+  
   // Access policies
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
-  @@unique([period, rut, docType])
   @@index([period])
   @@index([status])
-  @@map("haulmer_sync_logs")
-}
-
-model HaulmerAuthToken {
-  id          String   @id @default(cuid())
-  rut         String   @unique @db.VarChar(20)
-  email       String   @db.VarChar(255)
-  jwtToken    String   @db.Text                        // JWT token (encrypted at rest recommended)
-  workspaceId String?  @db.VarChar(100)
-  issuedAt    DateTime @map("issued_at")
-  expiresAt   DateTime @map("expires_at")
-  capturedBy  Int?     @map("captured_by")             // User ID who triggered capture
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-
-  // Access policies
-  @@deny('all', auth() == null)
-  @@allow('read', auth().status == 'ACTIVE')
-  @@allow('create,update,delete', auth().status == 'ACTIVE')
-
-  @@index([expiresAt])
-  @@map("haulmer_auth_tokens")
+  @@index([startedAt(sort: Desc)])
+  @@map("dte_sync_logs")
 }
 
 enum DTEType {

@@ -17,6 +17,7 @@ import { counterpartRoutes } from "./routes/counterparts";
 import { csvUploadRoutes } from "./routes/csv-upload";
 import { dailyProductionRoutes } from "./routes/daily-production-balances";
 import { doctoraliaRoutes } from "./routes/doctoralia";
+import { dteRoutes } from "./routes/dte";
 import { dteAnalyticsRoutes } from "./routes/dte-analytics";
 import { employeeRoutes } from "./routes/employees";
 import { expenseRoutes } from "./routes/expenses";
@@ -160,6 +161,10 @@ app.route("/api/csv-upload", csvUploadRoutes);
 
 // DTE analytics routes (visualizations, summaries, comparisons)
 app.route("/api/dte-analytics", dteAnalyticsRoutes);
+
+// DTE sync routes (sync history, manual trigger, cron)
+app.route("/api/dte", dteRoutes);
+
 // Haulmer DTE sync routes (CSV downloads, imports)
 app.route("/api/haulmer", haulmerRoutes);
 // Calendar routes (events, sync, logs)

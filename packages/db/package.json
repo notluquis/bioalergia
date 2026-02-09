@@ -55,7 +55,7 @@
     "@zenstackhq/plugin-policy": "^3.3.3",
     "@zenstackhq/server": "^3.3.3",
     "@zenstackhq/tanstack-query": "^3.3.3",
-    "hono": "^4.11.8",
+    "hono": "^4.11.9",
     "kysely": "^0.28.11",
     "pg": "^8.18.0",
     "pg-types": "^4.1.0",

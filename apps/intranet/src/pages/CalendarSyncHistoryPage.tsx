@@ -155,8 +155,10 @@ export function CalendarSyncHistoryPage() {
                         </div>
 
                         <div className="flex min-w-40 flex-1 flex-wrap items-center gap-2">
-                          <Chip size="sm" variant="secondary" className="font-mono text-xs">
-                            {log.triggerSource}
+                          <Chip size="sm" variant="secondary">
+                            <Chip.Label className="font-mono text-xs">
+                              {log.triggerSource}
+                            </Chip.Label>
                           </Chip>
                           {log.triggerLabel && (
                             <span

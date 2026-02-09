@@ -276,11 +276,11 @@ function PeriodCard({
             <div className="flex items-center gap-2">
               {hasSalesData(period.period) ? (
                 <Chip color="success" size="sm" variant="secondary">
-                  {getSalesCount(period.period)} docs
+                  <Chip.Label>{getSalesCount(period.period)} docs</Chip.Label>
                 </Chip>
               ) : (
                 <Chip color="default" size="sm" variant="secondary">
-                  Sin datos
+                  <Chip.Label>Sin datos</Chip.Label>
                 </Chip>
               )}
               <SyncStatusIcon result={lastSyncs[`${period.period}-sales`]} />
@@ -318,11 +318,11 @@ function PeriodCard({
             <div className="flex items-center gap-2">
               {hasPurchasesData(period.period) ? (
                 <Chip color="success" size="sm" variant="secondary">
-                  {getPurchasesCount(period.period)} docs
+                  <Chip.Label>{getPurchasesCount(period.period)} docs</Chip.Label>
                 </Chip>
               ) : (
                 <Chip color="default" size="sm" variant="secondary">
-                  Sin datos
+                  <Chip.Label>Sin datos</Chip.Label>
                 </Chip>
               )}
               <SyncStatusIcon result={lastSyncs[`${period.period}-purchases`]} />

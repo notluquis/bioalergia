@@ -619,12 +619,16 @@ function FilesListSection({
             <div className="flex gap-2 text-sm">
               {successCount > 0 && (
                 <Chip color="success" size="sm" variant="soft">
-                  {successCount} exitoso{successCount !== 1 ? "s" : ""}
+                  <Chip.Label>
+                    {successCount} exitoso{successCount !== 1 ? "s" : ""}
+                  </Chip.Label>
                 </Chip>
               )}
               {errorCount > 0 && (
                 <Chip color="danger" size="sm" variant="soft">
-                  {errorCount} con error{errorCount !== 1 ? "es" : ""}
+                  <Chip.Label>
+                    {errorCount} con error{errorCount !== 1 ? "es" : ""}
+                  </Chip.Label>
                 </Chip>
               )}
             </div>
