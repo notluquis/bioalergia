@@ -51,6 +51,30 @@ export function formatCurrency(value: number): string {
 }
 
 /**
+ * Format currency with compact notation (K/M/B) for chart axes
+ * Examples: 13495000 → "13.5M", 8500000000 → "8.5B"
+ */
+export function formatCurrencyCompact(value: number | undefined): string {
+  if (value === undefined || !Number.isFinite(value)) {
+    return "N/A";
+  }
+
+  const absValue = Math.abs(value);
+
+  if (absValue >= 1_000_000_000) {
+    return `$${(value / 1_000_000_000).toFixed(1).replace(".", ",")}B`;
+  }
+  if (absValue >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(1).replace(".", ",")}M`;
+  }
+  if (absValue >= 1_000) {
+    return `$${(value / 1_000).toFixed(0).replace(".", ",")}K`;
+  }
+
+  return `$${value.toFixed(0).replace(".", ",")}`;
+}
+
+/**
  * Format number for display in es-CL locale (no currency)
  */
 export function formatNumber(value: number): string {

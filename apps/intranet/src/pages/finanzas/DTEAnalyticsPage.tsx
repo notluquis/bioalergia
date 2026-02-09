@@ -31,6 +31,7 @@ import {
   calculateYearlyTotals,
   extractYearsFromSummary,
   formatCurrency,
+  formatCurrencyCompact,
   formatNumber,
   safeYearSelection,
 } from "@/features/finance/dte-analytics/utils";
@@ -202,11 +203,7 @@ function PurchasesMonthlySummary({
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis
-                tickFormatter={(value: number | undefined) =>
-                  value !== undefined ? formatCurrency(value) : "N/A"
-                }
-              />
+              <YAxis tickFormatter={formatCurrencyCompact} />
               <Tooltip
                 formatter={(value: number | undefined) =>
                   value !== undefined ? formatCurrency(value) : "N/A"
@@ -309,11 +306,7 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis
-                tickFormatter={(value: number | undefined) =>
-                  value !== undefined ? formatCurrency(value) : "N/A"
-                }
-              />
+              <YAxis tickFormatter={formatCurrencyCompact} />
               <Tooltip
                 formatter={(value: number | undefined) =>
                   value !== undefined ? formatCurrency(value) : "N/A"
@@ -357,11 +350,7 @@ function PurchasesComparison() {
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis
-                tickFormatter={(value: number | undefined) =>
-                  value !== undefined ? formatCurrency(value) : "N/A"
-                }
-              />
+              <YAxis tickFormatter={formatCurrencyCompact} />
               <Tooltip
                 formatter={(value: number | undefined) =>
                   value !== undefined ? formatCurrency(value) : "N/A"
@@ -412,11 +401,7 @@ function SalesComparison() {
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis
-                tickFormatter={(value: number | undefined) =>
-                  value !== undefined ? formatCurrency(value) : "N/A"
-                }
-              />
+              <YAxis tickFormatter={formatCurrencyCompact} />
               <Tooltip
                 formatter={(value: number | undefined) =>
                   value !== undefined ? formatCurrency(value) : "N/A"
