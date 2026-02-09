@@ -1230,6 +1230,35 @@ model DoctoraliaSyncLog {
 }
 
 // ============================================================
+// HAULMER INTEGRATION
+// ============================================================
+
+model HaulmerSyncLog {
+  id               String    @id @default(uuid())
+  period           String    @db.VarChar(6)                        // YYYYMM format (e.g., "202602")
+  rut              String    @db.VarChar(20)                       // Haulmer RUT
+  docType          String    @db.VarChar(20)                       // "sales" | "purchases"
+  status           String    @default("PENDING") @db.VarChar(20)   // PENDING | SUCCESS | FAILED
+  rowsCreated      Int       @default(0) @map("rows_created")
+  rowsUpdated      Int       @default(0) @map("rows_updated")
+  rowsSkipped      Int       @default(0) @map("rows_skipped")
+  csvSize          Int?      @map("csv_size")                      // Size of CSV file in bytes
+  errorMessage     String?   @map("error_message")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([period])
+  @@index([rut])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@unique([period, rut, docType])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+
+  @@map("haulmer_sync_logs")
+}
+
+// ============================================================
 // ENUMS
 // ============================================================
 

@@ -73,13 +73,14 @@ export async function syncPeriod(
     const rows = parseCSVText(csvText);
 
     // Normalize column names and add period to each row
+    let columnsNormalized = 0;
     for (const row of rows) {
       // Add period field (required for import functions)
       row.period = period;
 
       // Log raw column names before normalization (first row only for debugging)
       if (rows.indexOf(row) === 0) {
-        console.log(`[Haulmer Sync] Raw column names: ${Object.keys(row).join(", ")}`);
+        console.log(`[Haulmer Sync] Raw columns: ${Object.keys(row).join(", ")}`);
       }
 
       // Normalize column names
@@ -87,9 +88,7 @@ export async function syncPeriod(
       for (const [key, value] of Object.entries(row)) {
         const normalizedKey = normalizeColumnName(key);
         if (normalizedKey !== key) {
-          console.log(
-            `[Haulmer Sync] Normalized: "${key}" → "${normalizedKey}" (value: "${value}")`,
-          );
+          columnsNormalized++;
         }
         normalizedRow[normalizedKey] = value;
       }
@@ -102,7 +101,7 @@ export async function syncPeriod(
     }
 
     console.log(
-      `[Haulmer Sync] Downloaded and parsed ${rows.length} rows for ${docType}/${period}`,
+      `[Haulmer Sync] Downloaded and parsed ${rows.length} rows for ${docType}/${period} (normalized ${columnsNormalized} fields)`,
     );
 
     // Log sample row columns after normalization to verify mapping worked
