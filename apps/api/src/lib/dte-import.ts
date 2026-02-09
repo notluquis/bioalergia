@@ -27,7 +27,8 @@ export function parseAmount(value: unknown): Decimal | null {
 }
 
 /**
- * Parse date from CSV (handles multiple formats: DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, YYYY-MM-DD)
+ * Parse date from CSV (handles multiple formats: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, DD/MM/YYYY)
+ * Haulmer sends YYYY-MM-DD (some with timestamps), null values as "-/-/-"
  */
 export function parseDate(value: unknown): Date | null {
   if (!value) {
@@ -35,8 +36,29 @@ export function parseDate(value: unknown): Date | null {
   }
   const str = String(value).trim();
 
-  // Try DD/MM/YYYY format first
-  let match = str.match(DATE_REGEX);
+  // Detect Haulmer null marker
+  if (str === "-/-/-" || str === "-" || str === "") {
+    return null;
+  }
+
+  // Extract only date portion if timestamp exists (YYYY-MM-DD HH:MM:SS → YYYY-MM-DD)
+  const dateOnly = str.split(" ")[0];
+
+  // Try YYYY-MM-DD format first (Haulmer primary format)
+  let match = dateOnly.match(DATE_ISO_REGEX);
+  if (match) {
+    const [, year, month, day] = match;
+    const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
+    if (date.toString() !== "Invalid Date") {
+      console.log(
+        `[Date Parse] "${str}" (YYYY-MM-DD${str !== dateOnly ? " HH:MM:SS" : ""}) → ${date.toISOString()}`,
+      );
+      return date;
+    }
+  }
+
+  // Try DD/MM/YYYY format (backward compatibility)
+  match = str.match(DATE_REGEX);
   if (match) {
     const [, day, month, year] = match;
     const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
@@ -57,19 +79,8 @@ export function parseDate(value: unknown): Date | null {
     }
   }
 
-  // Try YYYY-MM-DD format (ISO)
-  match = str.match(DATE_ISO_REGEX);
-  if (match) {
-    const [, year, month, day] = match;
-    const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
-    if (date.toString() !== "Invalid Date") {
-      console.log(`[Date Parse] "${str}" (YYYY-MM-DD) → ${date.toISOString()}`);
-      return date;
-    }
-  }
-
   console.warn(
-    `[Date Parse] Could not parse date: "${str}" (tried DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY, YYYY-MM-DD)`,
+    `[Date Parse] Could not parse date: "${str}" (tried YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY)`,
   );
   return null;
 }
