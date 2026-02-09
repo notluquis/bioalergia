@@ -24,8 +24,16 @@ function excludeAnnulledByNCE(
   tableAlias: string,
   table: "DTESaleDetail" | "DTEPurchaseDetail",
 ): ReturnType<typeof sql> {
+  // Map Zenstack model names to actual database table names
+  const tableMapping: Record<string, string> = {
+    DTEPurchaseDetail: '"public"."dte_purchase_details"',
+    DTESaleDetail: '"public"."dte_sale_details"',
+  };
+
+  const tableName = tableMapping[table];
+
   return sql`NOT EXISTS (
-    SELECT 1 FROM ${sql.raw(`"${table}"`)} AS nce
+    SELECT 1 FROM ${sql.raw(tableName)} AS nce
     WHERE nce."document_type" = 61
     AND nce."reference_doc_type" = ${sql.raw(`${tableAlias}."document_type"`)}::varchar
     AND nce."reference_doc_folio" = ${sql.raw(`${tableAlias}."folio"`)}
