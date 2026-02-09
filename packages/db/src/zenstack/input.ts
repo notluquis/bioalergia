@@ -1294,6 +1294,36 @@ export type DoctoraliaSyncLogGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "DoctoraliaSyncLog", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "DoctoraliaSyncLog", Args, Options>;
+export type HaulmerSyncLogFindManyArgs = $FindManyArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogFindUniqueArgs = $FindUniqueArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogFindFirstArgs = $FindFirstArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogExistsArgs = $ExistsArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogCreateArgs = $CreateArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogCreateManyArgs = $CreateManyArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "HaulmerSyncLog"
+>;
+export type HaulmerSyncLogUpdateArgs = $UpdateArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogUpdateManyArgs = $UpdateManyArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "HaulmerSyncLog"
+>;
+export type HaulmerSyncLogUpsertArgs = $UpsertArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogDeleteArgs = $DeleteArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogDeleteManyArgs = $DeleteManyArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogCountArgs = $CountArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogAggregateArgs = $AggregateArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogGroupByArgs = $GroupByArgs<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogWhereInput = $WhereInput<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogSelect = $SelectInput<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogInclude = $IncludeInput<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogOmit = $OmitInput<$Schema, "HaulmerSyncLog">;
+export type HaulmerSyncLogGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "HaulmerSyncLog", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "HaulmerSyncLog", Args, Options>;
 export type PersonalCreditFindManyArgs = $FindManyArgs<$Schema, "PersonalCredit">;
 export type PersonalCreditFindUniqueArgs = $FindUniqueArgs<$Schema, "PersonalCredit">;
 export type PersonalCreditFindFirstArgs = $FindFirstArgs<$Schema, "PersonalCredit">;

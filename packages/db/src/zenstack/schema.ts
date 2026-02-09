@@ -9447,6 +9447,228 @@ export class SchemaType implements SchemaDef {
         id: { type: "Int" },
       },
     },
+    HaulmerSyncLog: {
+      name: "HaulmerSyncLog",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("uuid") }] },
+          ],
+          default: ExpressionUtils.call("uuid"),
+        },
+        period: {
+          name: "period",
+          type: "String",
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] },
+          ],
+        },
+        rut: {
+          name: "rut",
+          type: "String",
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        docType: {
+          name: "docType",
+          type: "String",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doc_type") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+          default: "PENDING",
+        },
+        rowsCreated: {
+          name: "rowsCreated",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("rows_created") }],
+            },
+          ],
+          default: 0,
+        },
+        rowsUpdated: {
+          name: "rowsUpdated",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("rows_updated") }],
+            },
+          ],
+          default: 0,
+        },
+        rowsSkipped: {
+          name: "rowsSkipped",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("rows_skipped") }],
+            },
+          ],
+          default: 0,
+        },
+        csvSize: {
+          name: "csvSize",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("csv_size") }] },
+          ],
+        },
+        errorMessage: {
+          name: "errorMessage",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("error_message") }],
+            },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+      },
+      attributes: [
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("rut")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("status")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]),
+            },
+          ],
+        },
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [
+                ExpressionUtils.field("period"),
+                ExpressionUtils.field("rut"),
+                ExpressionUtils.field("docType"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "!=",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("haulmer_sync_logs") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+        period_rut_docType: {
+          period: { type: "String" },
+          rut: { type: "String" },
+          docType: { type: "String" },
+        },
+      },
+    },
     PersonalCredit: {
       name: "PersonalCredit",
       fields: {

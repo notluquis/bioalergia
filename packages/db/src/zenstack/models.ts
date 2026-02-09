@@ -50,6 +50,7 @@ export type DoctoraliaSlot = $ModelResult<$Schema, "DoctoraliaSlot">;
 export type DoctoraliaBooking = $ModelResult<$Schema, "DoctoraliaBooking">;
 export type DoctoraliaCalendarBreak = $ModelResult<$Schema, "DoctoraliaCalendarBreak">;
 export type DoctoraliaSyncLog = $ModelResult<$Schema, "DoctoraliaSyncLog">;
+export type HaulmerSyncLog = $ModelResult<$Schema, "HaulmerSyncLog">;
 export type PersonalCredit = $ModelResult<$Schema, "PersonalCredit">;
 export type PersonalCreditInstallment = $ModelResult<$Schema, "PersonalCreditInstallment">;
 export type MedicalCertificate = $ModelResult<$Schema, "MedicalCertificate">;

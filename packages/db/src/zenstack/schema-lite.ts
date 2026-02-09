@@ -3649,6 +3649,79 @@ export class SchemaType implements SchemaDef {
         id: { type: "Int" },
       },
     },
+    HaulmerSyncLog: {
+      name: "HaulmerSyncLog",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          default: ExpressionUtils.call("uuid"),
+        },
+        period: {
+          name: "period",
+          type: "String",
+        },
+        rut: {
+          name: "rut",
+          type: "String",
+        },
+        docType: {
+          name: "docType",
+          type: "String",
+        },
+        status: {
+          name: "status",
+          type: "String",
+          default: "PENDING",
+        },
+        rowsCreated: {
+          name: "rowsCreated",
+          type: "Int",
+          default: 0,
+        },
+        rowsUpdated: {
+          name: "rowsUpdated",
+          type: "Int",
+          default: 0,
+        },
+        rowsSkipped: {
+          name: "rowsSkipped",
+          type: "Int",
+          default: 0,
+        },
+        csvSize: {
+          name: "csvSize",
+          type: "Int",
+          optional: true,
+        },
+        errorMessage: {
+          name: "errorMessage",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          default: ExpressionUtils.call("now"),
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+        period_rut_docType: {
+          period: { type: "String" },
+          rut: { type: "String" },
+          docType: { type: "String" },
+        },
+      },
+    },
     PersonalCredit: {
       name: "PersonalCredit",
       fields: {
