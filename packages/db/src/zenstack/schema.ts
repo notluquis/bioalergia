@@ -5,6026 +5,13023 @@
 
 /* eslint-disable */
 
-import { type SchemaDef, ExpressionUtils } from "@zenstackhq/orm/schema";
+import { ExpressionUtils, type SchemaDef } from "@zenstackhq/orm/schema";
 export class SchemaType implements SchemaDef {
-    provider = {
-        type: "postgresql"
-    } as const;
-    models = {
-        Person: {
-            name: "Person",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                rut: {
-                    name: "rut",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                names: {
-                    name: "names",
-                    type: "String"
-                },
-                fatherName: {
-                    name: "fatherName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("father_name") }] }]
-                },
-                motherName: {
-                    name: "motherName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mother_name") }] }]
-                },
-                email: {
-                    name: "email",
-                    type: "String",
-                    optional: true
-                },
-                phone: {
-                    name: "phone",
-                    type: "String",
-                    optional: true
-                },
-                address: {
-                    name: "address",
-                    type: "String",
-                    optional: true
-                },
-                personType: {
-                    name: "personType",
-                    type: "PersonType",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("NATURAL") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_type") }] }],
-                    default: "NATURAL"
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                employee: {
-                    name: "employee",
-                    type: "Employee",
-                    optional: true,
-                    relation: { opposite: "person" }
-                },
-                transactions: {
-                    name: "transactions",
-                    type: "Transaction",
-                    array: true,
-                    relation: { opposite: "people" }
-                },
-                user: {
-                    name: "user",
-                    type: "User",
-                    optional: true,
-                    relation: { opposite: "person" }
-                },
-                patient: {
-                    name: "patient",
-                    type: "Patient",
-                    optional: true,
-                    relation: { opposite: "person" }
-                }
+  provider = {
+    type: "postgresql",
+  } as const;
+  models = {
+    Person: {
+      name: "Person",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("people") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                rut: { type: "String" }
-            }
+          ],
+          default: ExpressionUtils.call("autoincrement"),
         },
-        User: {
-            name: "User",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                personId: {
-                    name: "personId",
-                    type: "Int",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] }],
-                    foreignKeyFor: [
-                        "person"
-                    ]
-                },
-                email: {
-                    name: "email",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }]
-                },
-                passwordHash: {
-                    name: "passwordHash",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("password_hash") }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "UserStatus",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING_SETUP") }] }],
-                    default: "PENDING_SETUP"
-                },
-                mfaSecret: {
-                    name: "mfaSecret",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mfa_secret") }] }]
-                },
-                mfaEnabled: {
-                    name: "mfaEnabled",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mfa_enabled") }] }],
-                    default: false
-                },
-                passkeys: {
-                    name: "passkeys",
-                    type: "Passkey",
-                    array: true,
-                    relation: { opposite: "user" }
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                mfaEnforced: {
-                    name: "mfaEnforced",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mfa_enforced") }] }],
-                    default: true
-                },
-                dailyProductionBalances: {
-                    name: "dailyProductionBalances",
-                    type: "DailyProductionBalance",
-                    array: true,
-                    relation: { opposite: "user" }
-                },
-                pushSubscriptions: {
-                    name: "pushSubscriptions",
-                    type: "PushSubscription",
-                    array: true,
-                    relation: { opposite: "user" }
-                },
-                supplyRequests: {
-                    name: "supplyRequests",
-                    type: "SupplyRequest",
-                    array: true,
-                    relation: { opposite: "user" }
-                },
-                permissionVersion: {
-                    name: "permissionVersion",
-                    type: "UserPermissionVersion",
-                    optional: true,
-                    relation: { opposite: "user" }
-                },
-                roles: {
-                    name: "roles",
-                    type: "UserRoleAssignment",
-                    array: true,
-                    relation: { opposite: "user" }
-                },
-                medicalCertificates: {
-                    name: "medicalCertificates",
-                    type: "MedicalCertificate",
-                    array: true,
-                    relation: { opposite: "issuer" }
-                },
-                patientAttachments: {
-                    name: "patientAttachments",
-                    type: "PatientAttachment",
-                    array: true,
-                    relation: { opposite: "uploader" }
-                },
-                person: {
-                    name: "person",
-                    type: "Person",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "user", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
-                }
+        rut: {
+          name: "rut",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        names: {
+          name: "names",
+          type: "String",
+        },
+        fatherName: {
+          name: "fatherName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("father_name") }],
             },
-            attributes: [
-                { name: "@@auth" },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["id"]), "==", ExpressionUtils.field("id")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("users") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                personId: { type: "Int" },
-                email: { type: "String" }
-            }
+          ],
         },
-        Passkey: {
-            name: "Passkey",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "String",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }],
-                    default: ExpressionUtils.call("cuid")
-                },
-                userId: {
-                    name: "userId",
-                    type: "Int",
-                    foreignKeyFor: [
-                        "user"
-                    ]
-                },
-                credentialId: {
-                    name: "credentialId",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("credential_id") }] }]
-                },
-                publicKey: {
-                    name: "publicKey",
-                    type: "Bytes",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("public_key") }] }]
-                },
-                counter: {
-                    name: "counter",
-                    type: "BigInt",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
-                    default: 0
-                },
-                transports: {
-                    name: "transports",
-                    type: "Json",
-                    optional: true
-                },
-                webAuthnUserID: {
-                    name: "webAuthnUserID",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("webauthn_user_id") }] }]
-                },
-                deviceType: {
-                    name: "deviceType",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("device_type") }] }]
-                },
-                backedUp: {
-                    name: "backedUp",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("backed_up") }] }],
-                    default: false
-                },
-                friendlyName: {
-                    name: "friendlyName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("friendly_name") }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                lastUsedAt: {
-                    name: "lastUsedAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_used_at") }] }]
-                },
-                user: {
-                    name: "user",
-                    type: "User",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "passkeys", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
-                }
+        motherName: {
+          name: "motherName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("mother_name") }],
             },
-            attributes: [
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,read,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["id"]), "==", ExpressionUtils.field("userId")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("passkeys") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "String" },
-                credentialId: { type: "String" }
-            }
+          ],
         },
-        Role: {
-            name: "Role",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                name: {
-                    name: "name",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }]
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                isSystem: {
-                    name: "isSystem",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_system") }] }],
-                    default: false
-                },
-                permissions: {
-                    name: "permissions",
-                    type: "RolePermission",
-                    array: true,
-                    relation: { opposite: "role" }
-                },
-                users: {
-                    name: "users",
-                    type: "UserRoleAssignment",
-                    array: true,
-                    relation: { opposite: "role" }
-                }
+        email: {
+          name: "email",
+          type: "String",
+          optional: true,
+        },
+        phone: {
+          name: "phone",
+          type: "String",
+          optional: true,
+        },
+        address: {
+          name: "address",
+          type: "String",
+          optional: true,
+        },
+        personType: {
+          name: "personType",
+          type: "PersonType",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("NATURAL") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("roles") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                name: { type: "String" }
-            }
-        },
-        Permission: {
-            name: "Permission",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                action: {
-                    name: "action",
-                    type: "String"
-                },
-                subject: {
-                    name: "subject",
-                    type: "String"
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                roles: {
-                    name: "roles",
-                    type: "RolePermission",
-                    array: true,
-                    relation: { opposite: "permission" }
-                }
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("person_type") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("action"), ExpressionUtils.field("subject")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("permissions") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                action_subject: { action: { type: "String" }, subject: { type: "String" } }
-            }
+          ],
+          default: "NATURAL",
         },
-        RolePermission: {
-            name: "RolePermission",
-            fields: {
-                roleId: {
-                    name: "roleId",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("role_id") }] }],
-                    foreignKeyFor: [
-                        "role"
-                    ]
-                },
-                permissionId: {
-                    name: "permissionId",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("permission_id") }] }],
-                    foreignKeyFor: [
-                        "permission"
-                    ]
-                },
-                conditions: {
-                    name: "conditions",
-                    type: "Json",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                permission: {
-                    name: "permission",
-                    type: "Permission",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("permissionId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "roles", fields: ["permissionId"], references: ["id"], onDelete: "Cascade" }
-                },
-                role: {
-                    name: "role",
-                    type: "Role",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("roleId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "permissions", fields: ["roleId"], references: ["id"], onDelete: "Cascade" }
-                }
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
             },
-            attributes: [
-                { name: "@@id", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("roleId"), ExpressionUtils.field("permissionId")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("role_permissions") }] }
-            ],
-            idFields: ["roleId", "permissionId"],
-            uniqueFields: {
-                roleId_permissionId: { roleId: { type: "Int" }, permissionId: { type: "Int" } }
-            }
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        UserRoleAssignment: {
-            name: "UserRoleAssignment",
-            fields: {
-                userId: {
-                    name: "userId",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] }],
-                    foreignKeyFor: [
-                        "user"
-                    ]
-                },
-                roleId: {
-                    name: "roleId",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("role_id") }] }],
-                    foreignKeyFor: [
-                        "role"
-                    ]
-                },
-                assignedAt: {
-                    name: "assignedAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("assigned_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                role: {
-                    name: "role",
-                    type: "Role",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("roleId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "users", fields: ["roleId"], references: ["id"], onDelete: "Cascade" }
-                },
-                user: {
-                    name: "user",
-                    type: "User",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "roles", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
-                }
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
             },
-            attributes: [
-                { name: "@@id", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId"), ExpressionUtils.field("roleId")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("user_role_assignments") }] }
-            ],
-            idFields: ["userId", "roleId"],
-            uniqueFields: {
-                userId_roleId: { userId: { type: "Int" }, roleId: { type: "Int" } }
-            }
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        UserPermissionVersion: {
-            name: "UserPermissionVersion",
-            fields: {
-                userId: {
-                    name: "userId",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] }],
-                    foreignKeyFor: [
-                        "user"
-                    ]
-                },
-                version: {
-                    name: "version",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(1) }] }],
-                    default: 1
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                user: {
-                    name: "user",
-                    type: "User",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "permissionVersion", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
-                }
+        employee: {
+          name: "employee",
+          type: "Employee",
+          optional: true,
+          relation: { opposite: "person" },
+        },
+        transactions: {
+          name: "transactions",
+          type: "Transaction",
+          array: true,
+          relation: { opposite: "people" },
+        },
+        user: {
+          name: "user",
+          type: "User",
+          optional: true,
+          relation: { opposite: "person" },
+        },
+        patient: {
+          name: "patient",
+          type: "Patient",
+          optional: true,
+          relation: { opposite: "person" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("user_permission_versions") }] }
-            ],
-            idFields: ["userId"],
-            uniqueFields: {
-                userId: { type: "Int" }
-            }
+          ],
         },
-        Employee: {
-            name: "Employee",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                personId: {
-                    name: "personId",
-                    type: "Int",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] }],
-                    foreignKeyFor: [
-                        "person"
-                    ]
-                },
-                position: {
-                    name: "position",
-                    type: "String"
-                },
-                department: {
-                    name: "department",
-                    type: "String",
-                    optional: true
-                },
-                startDate: {
-                    name: "startDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_date") }] }, { name: "@db.Date" }]
-                },
-                endDate: {
-                    name: "endDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_date") }] }, { name: "@db.Date" }]
-                },
-                status: {
-                    name: "status",
-                    type: "EmployeeStatus",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("ACTIVE") }] }],
-                    default: "ACTIVE"
-                },
-                salaryType: {
-                    name: "salaryType",
-                    type: "EmployeeSalaryType",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("FIXED") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("salary_type") }] }],
-                    default: "FIXED"
-                },
-                baseSalary: {
-                    name: "baseSalary",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("base_salary") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(12) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                hourlyRate: {
-                    name: "hourlyRate",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("hourly_rate") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(10) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                bankName: {
-                    name: "bankName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_name") }] }]
-                },
-                bankAccountType: {
-                    name: "bankAccountType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_account_type") }] }]
-                },
-                bankAccountNumber: {
-                    name: "bankAccountNumber",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_account_number") }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                metadata: {
-                    name: "metadata",
-                    type: "Json",
-                    optional: true
-                },
-                overtimeRate: {
-                    name: "overtimeRate",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("overtime_rate") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(10) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                retentionRate: {
-                    name: "retentionRate",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0.145) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("retention_rate") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(5) }, { name: "s", value: ExpressionUtils.literal(4) }] }],
-                    default: 0.145
-                },
-                timesheets: {
-                    name: "timesheets",
-                    type: "EmployeeTimesheet",
-                    array: true,
-                    relation: { opposite: "employee" }
-                },
-                person: {
-                    name: "person",
-                    type: "Person",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "employee", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
-                }
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("employees") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                personId: { type: "Int" }
-            }
+          ],
         },
-        Counterpart: {
-            name: "Counterpart",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                identificationNumber: {
-                    name: "identificationNumber",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                bankAccountHolder: {
-                    name: "bankAccountHolder",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_account_holder") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] }]
-                },
-                category: {
-                    name: "category",
-                    type: "CounterpartCategory",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("SUPPLIER") }] }],
-                    default: "SUPPLIER"
-                },
-                notes: {
-                    name: "notes",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                accounts: {
-                    name: "accounts",
-                    type: "CounterpartAccount",
-                    array: true,
-                    relation: { opposite: "counterpart" }
-                },
-                withdrawTransactions: {
-                    name: "withdrawTransactions",
-                    type: "WithdrawTransaction",
-                    array: true,
-                    relation: { opposite: "counterpart" }
-                },
-                releaseTransactions: {
-                    name: "releaseTransactions",
-                    type: "ReleaseTransaction",
-                    array: true,
-                    relation: { opposite: "counterpart" }
-                },
-                settlementTransactions: {
-                    name: "settlementTransactions",
-                    type: "SettlementTransaction",
-                    array: true,
-                    relation: { opposite: "counterpart" }
-                },
-                services: {
-                    name: "services",
-                    type: "Service",
-                    array: true,
-                    relation: { opposite: "counterpart" }
-                }
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("people") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        rut: { type: "String" },
+      },
+    },
+    User: {
+      name: "User",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("counterparts") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                identificationNumber: { type: "String" }
-            }
+          ],
+          default: ExpressionUtils.call("autoincrement"),
         },
-        CounterpartAccount: {
-            name: "CounterpartAccount",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                counterpartId: {
-                    name: "counterpartId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("counterpart_id") }] }],
-                    foreignKeyFor: [
-                        "counterpart"
-                    ]
-                },
-                bankName: {
-                    name: "bankName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_name") }] }]
-                },
-                accountType: {
-                    name: "accountType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("account_type") }] }]
-                },
-                accountNumber: {
-                    name: "accountNumber",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("account_number") }] }]
-                },
-                counterpart: {
-                    name: "counterpart",
-                    type: "Counterpart",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "accounts", fields: ["counterpartId"], references: ["id"], onDelete: "Cascade" }
-                }
+        personId: {
+          name: "personId",
+          type: "Int",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] },
+          ],
+          foreignKeyFor: ["person"],
+        },
+        email: {
+          name: "email",
+          type: "String",
+          unique: true,
+          attributes: [{ name: "@unique" }],
+        },
+        passwordHash: {
+          name: "passwordHash",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("password_hash") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("counterpart_accounts") }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]) }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
         },
-        EmployeeTimesheet: {
-            name: "EmployeeTimesheet",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "BigInt",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                employeeId: {
-                    name: "employeeId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("employee_id") }] }],
-                    foreignKeyFor: [
-                        "employee"
-                    ]
-                },
-                workDate: {
-                    name: "workDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("work_date") }] }, { name: "@db.Date" }]
-                },
-                startTime: {
-                    name: "startTime",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_time") }] }, { name: "@db.Time", args: [{ name: "x", value: ExpressionUtils.literal(6) }] }]
-                },
-                endTime: {
-                    name: "endTime",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_time") }] }, { name: "@db.Time", args: [{ name: "x", value: ExpressionUtils.literal(6) }] }]
-                },
-                workedMinutes: {
-                    name: "workedMinutes",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("worked_minutes") }] }]
-                },
-                overtimeMinutes: {
-                    name: "overtimeMinutes",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("overtime_minutes") }] }],
-                    default: 0
-                },
-                comment: {
-                    name: "comment",
-                    type: "String",
-                    optional: true
-                },
-                employee: {
-                    name: "employee",
-                    type: "Employee",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("employeeId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "timesheets", fields: ["employeeId"], references: ["id"], onDelete: "Cascade" }
-                }
+        status: {
+          name: "status",
+          type: "UserStatus",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("PENDING_SETUP") }],
             },
-            attributes: [
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("employeeId"), ExpressionUtils.field("workDate")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("employeeId")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("employee_timesheets") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "BigInt" },
-                employeeId_workDate: { employeeId: { type: "Int" }, workDate: { type: "DateTime" } }
-            }
+          ],
+          default: "PENDING_SETUP",
         },
-        Transaction: {
-            name: "Transaction",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("description") }] }]
-                },
-                person_id: {
-                    name: "person_id",
-                    type: "Int",
-                    optional: true,
-                    foreignKeyFor: [
-                        "people"
-                    ]
-                },
-                created_at: {
-                    name: "created_at",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                businessUnit: {
-                    name: "businessUnit",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("business_unit") }] }]
-                },
-                cardInitialNumber: {
-                    name: "cardInitialNumber",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("card_initial_number") }] }]
-                },
-                couponAmount: {
-                    name: "couponAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("coupon_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                externalPosId: {
-                    name: "externalPosId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_pos_id") }] }]
-                },
-                externalReference: {
-                    name: "externalReference",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_reference") }] }]
-                },
-                externalStoreId: {
-                    name: "externalStoreId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_store_id") }] }]
-                },
-                feeAmount: {
-                    name: "feeAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("fee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                financingFeeAmount: {
-                    name: "financingFeeAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("financing_fee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                franchise: {
-                    name: "franchise",
-                    type: "String",
-                    optional: true
-                },
-                installments: {
-                    name: "installments",
-                    type: "Int",
-                    optional: true
-                },
-                invoicingPeriod: {
-                    name: "invoicingPeriod",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("invoicing_period") }] }]
-                },
-                isReleased: {
-                    name: "isReleased",
-                    type: "Boolean",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_released") }] }]
-                },
-                issuerName: {
-                    name: "issuerName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issuer_name") }] }]
-                },
-                lastFourDigits: {
-                    name: "lastFourDigits",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_four_digits") }] }]
-                },
-                metadata: {
-                    name: "metadata",
-                    type: "Json",
-                    optional: true
-                },
-                mkpFeeAmount: {
-                    name: "mkpFeeAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mkp_fee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                moneyReleaseDate: {
-                    name: "moneyReleaseDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("money_release_date") }] }]
-                },
-                operationTags: {
-                    name: "operationTags",
-                    type: "Json",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("operation_tags") }] }]
-                },
-                orderId: {
-                    name: "orderId",
-                    type: "BigInt",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] }]
-                },
-                orderMp: {
-                    name: "orderMp",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_mp") }] }]
-                },
-                packId: {
-                    name: "packId",
-                    type: "BigInt",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pack_id") }] }]
-                },
-                payBankTransferId: {
-                    name: "payBankTransferId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pay_bank_transfer_id") }] }]
-                },
-                paymentMethod: {
-                    name: "paymentMethod",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_method") }] }]
-                },
-                paymentMethodType: {
-                    name: "paymentMethodType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_method_type") }] }]
-                },
-                poiBankName: {
-                    name: "poiBankName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_bank_name") }] }]
-                },
-                poiId: {
-                    name: "poiId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_id") }] }]
-                },
-                poiWalletName: {
-                    name: "poiWalletName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_wallet_name") }] }]
-                },
-                posId: {
-                    name: "posId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_id") }] }]
-                },
-                posName: {
-                    name: "posName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_name") }] }]
-                },
-                productSku: {
-                    name: "productSku",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("product_sku") }] }]
-                },
-                purchaseId: {
-                    name: "purchaseId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("purchase_id") }] }]
-                },
-                realAmount: {
-                    name: "realAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("real_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                saleDetail: {
-                    name: "saleDetail",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sale_detail") }] }]
-                },
-                sellerAmount: {
-                    name: "sellerAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("seller_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                settlementCurrency: {
-                    name: "settlementCurrency",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_currency") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] }]
-                },
-                settlementDate: {
-                    name: "settlementDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_date") }] }]
-                },
-                settlementNetAmount: {
-                    name: "settlementNetAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_net_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                shipmentMode: {
-                    name: "shipmentMode",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipment_mode") }] }]
-                },
-                shippingFeeAmount: {
-                    name: "shippingFeeAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipping_fee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                shippingId: {
-                    name: "shippingId",
-                    type: "BigInt",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipping_id") }] }]
-                },
-                shippingOrderId: {
-                    name: "shippingOrderId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipping_order_id") }] }]
-                },
-                site: {
-                    name: "site",
-                    type: "String",
-                    optional: true
-                },
-                sourceId: {
-                    name: "sourceId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_id") }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    optional: true
-                },
-                storeId: {
-                    name: "storeId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("store_id") }] }]
-                },
-                storeName: {
-                    name: "storeName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("store_name") }] }]
-                },
-                subUnit: {
-                    name: "subUnit",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sub_unit") }] }]
-                },
-                taxDetail: {
-                    name: "taxDetail",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tax_detail") }] }]
-                },
-                taxesAmount: {
-                    name: "taxesAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("taxes_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                taxesDisaggregated: {
-                    name: "taxesDisaggregated",
-                    type: "Json",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("taxes_disaggregated") }] }]
-                },
-                tipAmount: {
-                    name: "tipAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tip_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                totalCouponAmount: {
-                    name: "totalCouponAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_coupon_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                transactionAmount: {
-                    name: "transactionAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                transactionCurrency: {
-                    name: "transactionCurrency",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_currency") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] }]
-                },
-                transactionDate: {
-                    name: "transactionDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_date") }] }]
-                },
-                transactionIntentId: {
-                    name: "transactionIntentId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_intent_id") }] }]
-                },
-                transactionType: {
-                    name: "transactionType",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_type") }] }]
-                },
-                userId: {
-                    name: "userId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] }]
-                },
-                people: {
-                    name: "people",
-                    type: "Person",
-                    optional: true,
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("person_id")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "transactions", fields: ["person_id"], references: ["id"] }
-                }
+        mfaSecret: {
+          name: "mfaSecret",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("mfa_secret") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("sourceId"), ExpressionUtils.field("transactionType")]) }, { name: "map", value: ExpressionUtils.literal("unique_mp_tx") }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("person_id")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("transactionDate")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("status")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("transactionType")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("externalReference")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("sourceId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("transactions") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                sourceId_transactionType: { sourceId: { type: "String" }, transactionType: { type: "String" } }
-            }
+          ],
         },
-        SettlementTransaction: {
-            name: "SettlementTransaction",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                sourceId: {
-                    name: "sourceId",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_id") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] }]
-                },
-                identificationNumber: {
-                    name: "identificationNumber",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }],
-                    foreignKeyFor: [
-                        "counterpart"
-                    ]
-                },
-                transactionDate: {
-                    name: "transactionDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_date") }] }]
-                },
-                settlementDate: {
-                    name: "settlementDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_date") }] }]
-                },
-                moneyReleaseDate: {
-                    name: "moneyReleaseDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("money_release_date") }] }]
-                },
-                externalReference: {
-                    name: "externalReference",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_reference") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] }]
-                },
-                userId: {
-                    name: "userId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(19) }] }]
-                },
-                paymentMethodType: {
-                    name: "paymentMethodType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_method_type") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }]
-                },
-                paymentMethod: {
-                    name: "paymentMethod",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_method") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                site: {
-                    name: "site",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }]
-                },
-                transactionType: {
-                    name: "transactionType",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_type") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }]
-                },
-                transactionAmount: {
-                    name: "transactionAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                transactionCurrency: {
-                    name: "transactionCurrency",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_currency") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] }]
-                },
-                sellerAmount: {
-                    name: "sellerAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("seller_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                feeAmount: {
-                    name: "feeAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("fee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                settlementNetAmount: {
-                    name: "settlementNetAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_net_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                settlementCurrency: {
-                    name: "settlementCurrency",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_currency") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] }]
-                },
-                realAmount: {
-                    name: "realAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("real_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                couponAmount: {
-                    name: "couponAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("coupon_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                metadata: {
-                    name: "metadata",
-                    type: "Json",
-                    optional: true
-                },
-                mkpFeeAmount: {
-                    name: "mkpFeeAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mkp_fee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                financingFeeAmount: {
-                    name: "financingFeeAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("financing_fee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                shippingFeeAmount: {
-                    name: "shippingFeeAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipping_fee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                taxesAmount: {
-                    name: "taxesAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("taxes_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                installments: {
-                    name: "installments",
-                    type: "Int",
-                    optional: true
-                },
-                taxDetail: {
-                    name: "taxDetail",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tax_detail") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                taxesDisaggregated: {
-                    name: "taxesDisaggregated",
-                    type: "Json",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("taxes_disaggregated") }] }]
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                cardInitialNumber: {
-                    name: "cardInitialNumber",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("card_initial_number") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(8) }] }]
-                },
-                operationTags: {
-                    name: "operationTags",
-                    type: "Json",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("operation_tags") }] }]
-                },
-                businessUnit: {
-                    name: "businessUnit",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("business_unit") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] }]
-                },
-                subUnit: {
-                    name: "subUnit",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sub_unit") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] }]
-                },
-                productSku: {
-                    name: "productSku",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("product_sku") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }]
-                },
-                saleDetail: {
-                    name: "saleDetail",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sale_detail") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(500) }] }]
-                },
-                transactionIntentId: {
-                    name: "transactionIntentId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_intent_id") }] }]
-                },
-                franchise: {
-                    name: "franchise",
-                    type: "String",
-                    optional: true
-                },
-                issuerName: {
-                    name: "issuerName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issuer_name") }] }]
-                },
-                lastFourDigits: {
-                    name: "lastFourDigits",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_four_digits") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(4) }] }]
-                },
-                orderMp: {
-                    name: "orderMp",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_mp") }] }]
-                },
-                invoicingPeriod: {
-                    name: "invoicingPeriod",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("invoicing_period") }] }]
-                },
-                payBankTransferId: {
-                    name: "payBankTransferId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pay_bank_transfer_id") }] }]
-                },
-                isReleased: {
-                    name: "isReleased",
-                    type: "Boolean",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_released") }] }]
-                },
-                tipAmount: {
-                    name: "tipAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tip_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                purchaseId: {
-                    name: "purchaseId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("purchase_id") }] }]
-                },
-                totalCouponAmount: {
-                    name: "totalCouponAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_coupon_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                posId: {
-                    name: "posId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_id") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                posName: {
-                    name: "posName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_name") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }]
-                },
-                externalPosId: {
-                    name: "externalPosId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_pos_id") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] }]
-                },
-                storeId: {
-                    name: "storeId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("store_id") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                storeName: {
-                    name: "storeName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("store_name") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }]
-                },
-                externalStoreId: {
-                    name: "externalStoreId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_store_id") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] }]
-                },
-                poiId: {
-                    name: "poiId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_id") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                orderId: {
-                    name: "orderId",
-                    type: "BigInt",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] }]
-                },
-                shippingId: {
-                    name: "shippingId",
-                    type: "BigInt",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipping_id") }] }]
-                },
-                shipmentMode: {
-                    name: "shipmentMode",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipment_mode") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] }]
-                },
-                packId: {
-                    name: "packId",
-                    type: "BigInt",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pack_id") }] }]
-                },
-                shippingOrderId: {
-                    name: "shippingOrderId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipping_order_id") }] }]
-                },
-                poiWalletName: {
-                    name: "poiWalletName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_wallet_name") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }]
-                },
-                poiBankName: {
-                    name: "poiBankName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_bank_name") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                counterpart: {
-                    name: "counterpart",
-                    type: "Counterpart",
-                    optional: true,
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("identificationNumber")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("identificationNumber")]) }] }],
-                    relation: { opposite: "settlementTransactions", fields: ["identificationNumber"], references: ["identificationNumber"] }
-                }
+        mfaEnabled: {
+          name: "mfaEnabled",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("mfa_enabled") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("transactionDate")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("transactionType")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("externalReference")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("settlement_transactions") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                sourceId: { type: "String" }
-            }
+          ],
+          default: false,
         },
-        ReleaseTransaction: {
-            name: "ReleaseTransaction",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                sourceId: {
-                    name: "sourceId",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_id") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] }]
-                },
-                identificationNumber: {
-                    name: "identificationNumber",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }],
-                    foreignKeyFor: [
-                        "counterpart"
-                    ]
-                },
-                date: {
-                    name: "date",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("date") }] }]
-                },
-                externalReference: {
-                    name: "externalReference",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_reference") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] }]
-                },
-                recordType: {
-                    name: "recordType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("record_type") }] }]
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(500) }] }]
-                },
-                netCreditAmount: {
-                    name: "netCreditAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("net_credit_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                netDebitAmount: {
-                    name: "netDebitAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("net_debit_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                grossAmount: {
-                    name: "grossAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("gross_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                sellerAmount: {
-                    name: "sellerAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("seller_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                mpFeeAmount: {
-                    name: "mpFeeAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mp_fee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                financingFeeAmount: {
-                    name: "financingFeeAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("financing_fee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                shippingFeeAmount: {
-                    name: "shippingFeeAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipping_fee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                taxesAmount: {
-                    name: "taxesAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("taxes_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                couponAmount: {
-                    name: "couponAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("coupon_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                effectiveCouponAmount: {
-                    name: "effectiveCouponAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("effective_coupon_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                balanceAmount: {
-                    name: "balanceAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("balance_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                taxAmountTelco: {
-                    name: "taxAmountTelco",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tax_amount_telco") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                installments: {
-                    name: "installments",
-                    type: "Int",
-                    optional: true
-                },
-                paymentMethod: {
-                    name: "paymentMethod",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_method") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                paymentMethodType: {
-                    name: "paymentMethodType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_method_type") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }]
-                },
-                taxDetail: {
-                    name: "taxDetail",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tax_detail") }] }]
-                },
-                taxesDisaggregated: {
-                    name: "taxesDisaggregated",
-                    type: "Json",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("taxes_disaggregated") }] }]
-                },
-                transactionApprovalDate: {
-                    name: "transactionApprovalDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_approval_date") }] }]
-                },
-                transactionIntentId: {
-                    name: "transactionIntentId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("transaction_intent_id") }] }]
-                },
-                posId: {
-                    name: "posId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_id") }] }]
-                },
-                posName: {
-                    name: "posName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_name") }] }]
-                },
-                externalPosId: {
-                    name: "externalPosId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_pos_id") }] }]
-                },
-                storeId: {
-                    name: "storeId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("store_id") }] }]
-                },
-                storeName: {
-                    name: "storeName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("store_name") }] }]
-                },
-                externalStoreId: {
-                    name: "externalStoreId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_store_id") }] }]
-                },
-                currency: {
-                    name: "currency",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] }]
-                },
-                shippingId: {
-                    name: "shippingId",
-                    type: "BigInt",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipping_id") }] }]
-                },
-                shipmentMode: {
-                    name: "shipmentMode",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipment_mode") }] }]
-                },
-                shippingOrderId: {
-                    name: "shippingOrderId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("shipping_order_id") }] }]
-                },
-                orderId: {
-                    name: "orderId",
-                    type: "BigInt",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] }]
-                },
-                packId: {
-                    name: "packId",
-                    type: "BigInt",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pack_id") }] }]
-                },
-                poiId: {
-                    name: "poiId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_id") }] }]
-                },
-                itemId: {
-                    name: "itemId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("item_id") }] }]
-                },
-                metadata: {
-                    name: "metadata",
-                    type: "Json",
-                    optional: true
-                },
-                cardInitialNumber: {
-                    name: "cardInitialNumber",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("card_initial_number") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(8) }] }]
-                },
-                operationTags: {
-                    name: "operationTags",
-                    type: "Json",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("operation_tags") }] }]
-                },
-                lastFourDigits: {
-                    name: "lastFourDigits",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_four_digits") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(4) }] }]
-                },
-                franchise: {
-                    name: "franchise",
-                    type: "String",
-                    optional: true
-                },
-                issuerName: {
-                    name: "issuerName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issuer_name") }] }]
-                },
-                poiBankName: {
-                    name: "poiBankName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_bank_name") }] }]
-                },
-                poiWalletName: {
-                    name: "poiWalletName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_wallet_name") }] }]
-                },
-                businessUnit: {
-                    name: "businessUnit",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("business_unit") }] }]
-                },
-                subUnit: {
-                    name: "subUnit",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sub_unit") }] }]
-                },
-                payoutBankAccountNumber: {
-                    name: "payoutBankAccountNumber",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payout_bank_account_number") }] }]
-                },
-                productSku: {
-                    name: "productSku",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("product_sku") }] }]
-                },
-                saleDetail: {
-                    name: "saleDetail",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sale_detail") }] }]
-                },
-                orderMp: {
-                    name: "orderMp",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_mp") }] }]
-                },
-                purchaseId: {
-                    name: "purchaseId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("purchase_id") }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                counterpart: {
-                    name: "counterpart",
-                    type: "Counterpart",
-                    optional: true,
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("identificationNumber")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("identificationNumber")]) }] }],
-                    relation: { opposite: "releaseTransactions", fields: ["identificationNumber"], references: ["identificationNumber"] }
-                }
+        passkeys: {
+          name: "passkeys",
+          type: "Passkey",
+          array: true,
+          relation: { opposite: "user" },
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("date")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("sourceId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("release_transactions") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                sourceId: { type: "String" }
-            }
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        WithdrawTransaction: {
-            name: "WithdrawTransaction",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                withdrawId: {
-                    name: "withdrawId",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("withdraw_id") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(64) }] }]
-                },
-                dateCreated: {
-                    name: "dateCreated",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("date_created") }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                statusDetail: {
-                    name: "statusDetail",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("status_detail") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] }]
-                },
-                amount: {
-                    name: "amount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                fee: {
-                    name: "fee",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(17) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                activityUrl: {
-                    name: "activityUrl",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("activity_url") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(500) }] }]
-                },
-                payoutDescription: {
-                    name: "payoutDescription",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payout_desc") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(500) }] }]
-                },
-                bankAccountHolder: {
-                    name: "bankAccountHolder",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_account_holder") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] }]
-                },
-                identificationType: {
-                    name: "identificationType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("identification_type") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                identificationNumber: {
-                    name: "identificationNumber",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }],
-                    foreignKeyFor: [
-                        "counterpart"
-                    ]
-                },
-                bankId: {
-                    name: "bankId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_id") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                bankName: {
-                    name: "bankName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_name") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }]
-                },
-                bankBranch: {
-                    name: "bankBranch",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_branch") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] }]
-                },
-                bankAccountType: {
-                    name: "bankAccountType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_account_type") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                bankAccountNumber: {
-                    name: "bankAccountNumber",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_account_number") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                counterpart: {
-                    name: "counterpart",
-                    type: "Counterpart",
-                    optional: true,
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("identificationNumber")]) }, { name: "references", value: ExpressionUtils.array("String", [ExpressionUtils.field("identificationNumber")]) }] }],
-                    relation: { opposite: "withdrawTransactions", fields: ["identificationNumber"], references: ["identificationNumber"] }
-                }
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]), "?", ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]), "==", ExpressionUtils.literal("ADMIN"))) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("dateCreated")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("withdrawId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("withdraw_transactions") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                withdrawId: { type: "String" }
-            }
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        DailyBalance: {
-            name: "DailyBalance",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                date: {
-                    name: "date",
-                    type: "DateTime",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@db.Date" }]
-                },
-                amount: {
-                    name: "amount",
-                    type: "Decimal",
-                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                note: {
-                    name: "note",
-                    type: "String",
-                    optional: true
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                }
+        mfaEnforced: {
+          name: "mfaEnforced",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("mfa_enforced") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("daily_balances") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                date: { type: "DateTime" }
-            }
+          ],
+          default: true,
         },
-        Service: {
-            name: "Service",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
+        dailyProductionBalances: {
+          name: "dailyProductionBalances",
+          type: "DailyProductionBalance",
+          array: true,
+          relation: { opposite: "user" },
+        },
+        pushSubscriptions: {
+          name: "pushSubscriptions",
+          type: "PushSubscription",
+          array: true,
+          relation: { opposite: "user" },
+        },
+        supplyRequests: {
+          name: "supplyRequests",
+          type: "SupplyRequest",
+          array: true,
+          relation: { opposite: "user" },
+        },
+        permissionVersion: {
+          name: "permissionVersion",
+          type: "UserPermissionVersion",
+          optional: true,
+          relation: { opposite: "user" },
+        },
+        roles: {
+          name: "roles",
+          type: "UserRoleAssignment",
+          array: true,
+          relation: { opposite: "user" },
+        },
+        medicalCertificates: {
+          name: "medicalCertificates",
+          type: "MedicalCertificate",
+          array: true,
+          relation: { opposite: "issuer" },
+        },
+        patientAttachments: {
+          name: "patientAttachments",
+          type: "PatientAttachment",
+          array: true,
+          relation: { opposite: "uploader" },
+        },
+        person: {
+          name: "person",
+          type: "Person",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]),
                 },
-                name: {
-                    name: "name",
-                    type: "String"
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
                 },
-                counterpartId: {
-                    name: "counterpartId",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("counterpart_id") }] }],
-                    foreignKeyFor: [
-                        "counterpart"
-                    ]
-                },
-                type: {
-                    name: "type",
-                    type: "ServiceType",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("BUSINESS") }] }],
-                    default: "BUSINESS"
-                },
-                frequency: {
-                    name: "frequency",
-                    type: "ServiceFrequency",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("MONTHLY") }] }],
-                    default: "MONTHLY"
-                },
-                defaultAmount: {
-                    name: "defaultAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("default_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                status: {
-                    name: "status",
-                    type: "ServiceStatus",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("ACTIVE") }] }],
-                    default: "ACTIVE"
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                counterpart: {
-                    name: "counterpart",
-                    type: "Counterpart",
-                    optional: true,
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "services", fields: ["counterpartId"], references: ["id"] }
-                }
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("services") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
+          relation: {
+            opposite: "user",
+            fields: ["personId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
         },
-        Loan: {
-            name: "Loan",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                title: {
-                    name: "title",
-                    type: "String"
-                },
-                principalAmount: {
-                    name: "principalAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("principal_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                interestRate: {
-                    name: "interestRate",
-                    type: "Decimal",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("interest_rate") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(9) }, { name: "s", value: ExpressionUtils.literal(6) }] }]
-                },
-                startDate: {
-                    name: "startDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_date") }] }, { name: "@db.Date" }]
-                },
-                status: {
-                    name: "status",
-                    type: "LoanStatus",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("ACTIVE") }] }],
-                    default: "ACTIVE"
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                schedules: {
-                    name: "schedules",
-                    type: "LoanSchedule",
-                    array: true,
-                    relation: { opposite: "loan" }
-                }
+      },
+      attributes: [
+        { name: "@@auth" },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("loans") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
         },
-        LoanSchedule: {
-            name: "LoanSchedule",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                loanId: {
-                    name: "loanId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("loan_id") }] }],
-                    foreignKeyFor: [
-                        "loan"
-                    ]
-                },
-                installmentNumber: {
-                    name: "installmentNumber",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("installment_number") }] }]
-                },
-                dueDate: {
-                    name: "dueDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("due_date") }] }, { name: "@db.Date" }]
-                },
-                expectedAmount: {
-                    name: "expectedAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("expected_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "LoanScheduleStatus",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }],
-                    default: "PENDING"
-                },
-                loan: {
-                    name: "loan",
-                    type: "Loan",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("loanId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "schedules", fields: ["loanId"], references: ["id"], onDelete: "Cascade" }
-                }
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("update") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["id"]),
+                "==",
+                ExpressionUtils.field("id"),
+              ),
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("loanId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("loan_schedules") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
         },
-        Setting: {
-            name: "Setting",
-            fields: {
-                key: {
-                    name: "key",
-                    type: "String",
-                    id: true,
-                    attributes: [{ name: "@id" }]
-                },
-                value: {
-                    name: "value",
-                    type: "String",
-                    optional: true
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                }
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("settings") }] }
-            ],
-            idFields: ["key"],
-            uniqueFields: {
-                key: { type: "String" }
-            }
+          ],
         },
-        PushSubscription: {
-            name: "PushSubscription",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                userId: {
-                    name: "userId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] }],
-                    foreignKeyFor: [
-                        "user"
-                    ]
-                },
-                endpoint: {
-                    name: "endpoint",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }]
-                },
-                keys: {
-                    name: "keys",
-                    type: "Json"
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                user: {
-                    name: "user",
-                    type: "User",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "pushSubscriptions", fields: ["userId"], references: ["id"], onDelete: "Cascade" }
-                }
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("users") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        personId: { type: "Int" },
+        email: { type: "String" },
+      },
+    },
+    Passkey: {
+      name: "Passkey",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] },
+          ],
+          default: ExpressionUtils.call("cuid"),
+        },
+        userId: {
+          name: "userId",
+          type: "Int",
+          foreignKeyFor: ["user"],
+        },
+        credentialId: {
+          name: "credentialId",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("credential_id") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["id"]), "==", ExpressionUtils.field("userId")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("push_subscriptions") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                endpoint: { type: "String" }
-            }
+          ],
         },
-        Calendar: {
-            name: "Calendar",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                googleId: {
-                    name: "googleId",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("google_id") }] }]
-                },
-                name: {
-                    name: "name",
-                    type: "String",
-                    optional: true
-                },
-                syncToken: {
-                    name: "syncToken",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sync_token") }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                watchChannels: {
-                    name: "watchChannels",
-                    type: "CalendarWatchChannel",
-                    array: true,
-                    relation: { opposite: "calendar" }
-                },
-                events: {
-                    name: "events",
-                    type: "Event",
-                    array: true,
-                    relation: { opposite: "calendar" }
-                }
+        publicKey: {
+          name: "publicKey",
+          type: "Bytes",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("public_key") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("calendars") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                googleId: { type: "String" }
-            }
+          ],
         },
-        CalendarWatchChannel: {
-            name: "CalendarWatchChannel",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                calendarId: {
-                    name: "calendarId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("calendar_id") }] }],
-                    foreignKeyFor: [
-                        "calendar"
-                    ]
-                },
-                channelId: {
-                    name: "channelId",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("channel_id") }] }]
-                },
-                resourceId: {
-                    name: "resourceId",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("resource_id") }] }]
-                },
-                expiration: {
-                    name: "expiration",
-                    type: "DateTime"
-                },
-                webhookUrl: {
-                    name: "webhookUrl",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("webhook_url") }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                calendar: {
-                    name: "calendar",
-                    type: "Calendar",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "watchChannels", fields: ["calendarId"], references: ["id"], onDelete: "Cascade" }
-                }
+        counter: {
+          name: "counter",
+          type: "BigInt",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+          ],
+          default: 0,
+        },
+        transports: {
+          name: "transports",
+          type: "Json",
+          optional: true,
+        },
+        webAuthnUserID: {
+          name: "webAuthnUserID",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("webauthn_user_id") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("calendar_watch_channels") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                channelId: { type: "String" }
-            }
+          ],
         },
-        Event: {
-            name: "Event",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                calendarId: {
-                    name: "calendarId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("calendar_id") }] }],
-                    foreignKeyFor: [
-                        "calendar"
-                    ]
-                },
-                externalEventId: {
-                    name: "externalEventId",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_event_id") }] }]
-                },
-                eventStatus: {
-                    name: "eventStatus",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_status") }] }]
-                },
-                eventType: {
-                    name: "eventType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_type") }] }]
-                },
-                summary: {
-                    name: "summary",
-                    type: "String",
-                    optional: true
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true
-                },
-                startDate: {
-                    name: "startDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_date") }] }, { name: "@db.Date" }]
-                },
-                startDateTime: {
-                    name: "startDateTime",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_date_time") }] }]
-                },
-                startTimeZone: {
-                    name: "startTimeZone",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_time_zone") }] }]
-                },
-                endDate: {
-                    name: "endDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_date") }] }, { name: "@db.Date" }]
-                },
-                endDateTime: {
-                    name: "endDateTime",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_date_time") }] }]
-                },
-                endTimeZone: {
-                    name: "endTimeZone",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_time_zone") }] }]
-                },
-                eventCreatedAt: {
-                    name: "eventCreatedAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_created_at") }] }]
-                },
-                eventUpdatedAt: {
-                    name: "eventUpdatedAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_updated_at") }] }]
-                },
-                colorId: {
-                    name: "colorId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("color_id") }] }]
-                },
-                location: {
-                    name: "location",
-                    type: "String",
-                    optional: true
-                },
-                transparency: {
-                    name: "transparency",
-                    type: "String",
-                    optional: true
-                },
-                visibility: {
-                    name: "visibility",
-                    type: "String",
-                    optional: true
-                },
-                hangoutLink: {
-                    name: "hangoutLink",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("hangout_link") }] }]
-                },
-                category: {
-                    name: "category",
-                    type: "String",
-                    optional: true
-                },
-                amountExpected: {
-                    name: "amountExpected",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("amount_expected") }] }]
-                },
-                amountPaid: {
-                    name: "amountPaid",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("amount_paid") }] }]
-                },
-                attended: {
-                    name: "attended",
-                    type: "Boolean",
-                    optional: true
-                },
-                dosageValue: {
-                    name: "dosageValue",
-                    type: "Float",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dosage_value") }] }]
-                },
-                dosageUnit: {
-                    name: "dosageUnit",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("dosage_unit") }] }]
-                },
-                treatmentStage: {
-                    name: "treatmentStage",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("treatment_stage") }] }]
-                },
-                controlIncluded: {
-                    name: "controlIncluded",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("control_included") }] }],
-                    default: false
-                },
-                isDomicilio: {
-                    name: "isDomicilio",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_domicilio") }] }],
-                    default: false
-                },
-                rawEvent: {
-                    name: "rawEvent",
-                    type: "Json",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("raw_event") }] }]
-                },
-                lastSyncedAt: {
-                    name: "lastSyncedAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("last_synced_at") }] }]
-                },
-                calendar: {
-                    name: "calendar",
-                    type: "Calendar",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "events", fields: ["calendarId"], references: ["id"] }
-                },
-                consultations: {
-                    name: "consultations",
-                    type: "Consultation",
-                    array: true,
-                    relation: { opposite: "event" }
-                }
+        deviceType: {
+          name: "deviceType",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("device_type") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarId"), ExpressionUtils.field("externalEventId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("events") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                calendarId_externalEventId: { calendarId: { type: "Int" }, externalEventId: { type: "String" } }
-            }
+          ],
         },
-        SyncLog: {
-            name: "SyncLog",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "BigInt",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                triggerSource: {
-                    name: "triggerSource",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_source") }] }]
-                },
-                triggerUserId: {
-                    name: "triggerUserId",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_user_id") }] }]
-                },
-                triggerLabel: {
-                    name: "triggerLabel",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_label") }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("SUCCESS") }] }],
-                    default: "SUCCESS"
-                },
-                startedAt: {
-                    name: "startedAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("started_at") }] }]
-                },
-                finishedAt: {
-                    name: "finishedAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("finished_at") }] }]
-                },
-                fetchedAt: {
-                    name: "fetchedAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("fetched_at") }] }]
-                },
-                inserted: {
-                    name: "inserted",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
-                    default: 0
-                },
-                updated: {
-                    name: "updated",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
-                    default: 0
-                },
-                skipped: {
-                    name: "skipped",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
-                    default: 0
-                },
-                excluded: {
-                    name: "excluded",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
-                    default: 0
-                },
-                errorMessage: {
-                    name: "errorMessage",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_message") }] }]
-                },
-                changeDetails: {
-                    name: "changeDetails",
-                    type: "Json",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("change_details") }] }]
-                }
+        backedUp: {
+          name: "backedUp",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("backed_up") }] },
+          ],
+          default: false,
+        },
+        friendlyName: {
+          name: "friendlyName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("friendly_name") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("triggerSource")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startedAt")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("sync_logs") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "BigInt" }
-            }
+          ],
         },
-        BackupLog: {
-            name: "BackupLog",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "String",
-                    id: true,
-                    attributes: [{ name: "@id" }]
-                },
-                timestamp: {
-                    name: "timestamp",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                level: {
-                    name: "level",
-                    type: "String"
-                },
-                message: {
-                    name: "message",
-                    type: "String"
-                },
-                context: {
-                    name: "context",
-                    type: "Json",
-                    optional: true
-                },
-                jobId: {
-                    name: "jobId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("job_id") }] }]
-                }
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("timestamp")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("backup_logs") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "String" }
-            }
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        InventoryCategory: {
-            name: "InventoryCategory",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                name: {
-                    name: "name",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                items: {
-                    name: "items",
-                    type: "InventoryItem",
-                    array: true,
-                    relation: { opposite: "category" }
-                }
+        lastUsedAt: {
+          name: "lastUsedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("last_used_at") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("inventory_categories") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                name: { type: "String" }
-            }
+          ],
         },
-        InventoryItem: {
-            name: "InventoryItem",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
+        user: {
+          name: "user",
+          type: "User",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]),
                 },
-                categoryId: {
-                    name: "categoryId",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("category_id") }] }],
-                    foreignKeyFor: [
-                        "category"
-                    ]
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
                 },
-                name: {
-                    name: "name",
-                    type: "String"
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true
-                },
-                currentStock: {
-                    name: "currentStock",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("current_stock") }] }],
-                    default: 0
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                category: {
-                    name: "category",
-                    type: "InventoryCategory",
-                    optional: true,
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("categoryId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "items", fields: ["categoryId"], references: ["id"] }
-                },
-                movements: {
-                    name: "movements",
-                    type: "InventoryMovement",
-                    array: true,
-                    relation: { opposite: "item" }
-                }
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
             },
-            attributes: [
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("categoryId")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("inventory_items") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
+          relation: {
+            opposite: "passkeys",
+            fields: ["userId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
         },
-        InventoryMovement: {
-            name: "InventoryMovement",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                itemId: {
-                    name: "itemId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("item_id") }] }],
-                    foreignKeyFor: [
-                        "item"
-                    ]
-                },
-                quantityChange: {
-                    name: "quantityChange",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("quantity_change") }] }]
-                },
-                reason: {
-                    name: "reason",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                item: {
-                    name: "item",
-                    type: "InventoryItem",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("itemId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "movements", fields: ["itemId"], references: ["id"], onDelete: "Cascade" }
-                }
+      },
+      attributes: [
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,read,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["id"]),
+                "==",
+                ExpressionUtils.field("userId"),
+              ),
             },
-            attributes: [
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("itemId")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("inventory_movements") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
         },
-        DailyProductionBalance: {
-            name: "DailyProductionBalance",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                balanceDate: {
-                    name: "balanceDate",
-                    type: "DateTime",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("balance_date") }] }, { name: "@db.Date" }]
-                },
-                ingresoTarjetas: {
-                    name: "ingresoTarjetas",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ingreso_tarjetas") }] }],
-                    default: 0
-                },
-                ingresoTransferencias: {
-                    name: "ingresoTransferencias",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ingreso_transferencias") }] }],
-                    default: 0
-                },
-                ingresoEfectivo: {
-                    name: "ingresoEfectivo",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ingreso_efectivo") }] }],
-                    default: 0
-                },
-                gastosDiarios: {
-                    name: "gastosDiarios",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("gastos_diarios") }] }],
-                    default: 0
-                },
-                otrosAbonos: {
-                    name: "otrosAbonos",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("otros_abonos") }] }],
-                    default: 0
-                },
-                comentarios: {
-                    name: "comentarios",
-                    type: "String",
-                    optional: true
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("DRAFT") }] }],
-                    default: "DRAFT"
-                },
-                changeReason: {
-                    name: "changeReason",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("change_reason") }] }]
-                },
-                createdBy: {
-                    name: "createdBy",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_by") }] }],
-                    foreignKeyFor: [
-                        "user"
-                    ]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                consultasMonto: {
-                    name: "consultasMonto",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("consultas_monto") }] }],
-                    default: 0
-                },
-                controlesMonto: {
-                    name: "controlesMonto",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("controles_monto") }] }],
-                    default: 0
-                },
-                licenciasMonto: {
-                    name: "licenciasMonto",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("licencias_monto") }] }],
-                    default: 0
-                },
-                roxairMonto: {
-                    name: "roxairMonto",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("roxair_monto") }] }],
-                    default: 0
-                },
-                testsMonto: {
-                    name: "testsMonto",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("tests_monto") }] }],
-                    default: 0
-                },
-                vacunasMonto: {
-                    name: "vacunasMonto",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("vacunas_monto") }] }],
-                    default: 0
-                },
-                user: {
-                    name: "user",
-                    type: "User",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("createdBy")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "dailyProductionBalances", fields: ["createdBy"], references: ["id"] }
-                }
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "!=",
+                ExpressionUtils._null(),
+              ),
             },
-            attributes: [
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("createdBy")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("daily_production_balances") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                balanceDate: { type: "DateTime" }
-            }
+          ],
         },
-        SupplyRequest: {
-            name: "SupplyRequest",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                userId: {
-                    name: "userId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] }],
-                    foreignKeyFor: [
-                        "user"
-                    ]
-                },
-                supplyName: {
-                    name: "supplyName",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("supply_name") }] }]
-                },
-                quantity: {
-                    name: "quantity",
-                    type: "Int"
-                },
-                brand: {
-                    name: "brand",
-                    type: "String",
-                    optional: true
-                },
-                model: {
-                    name: "model",
-                    type: "String",
-                    optional: true
-                },
-                notes: {
-                    name: "notes",
-                    type: "String",
-                    optional: true
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }],
-                    default: "PENDING"
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                user: {
-                    name: "user",
-                    type: "User",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "supplyRequests", fields: ["userId"], references: ["id"] }
-                }
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]),
             },
-            attributes: [
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("supply_requests") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
         },
-        CommonSupply: {
-            name: "CommonSupply",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                name: {
-                    name: "name",
-                    type: "String"
-                },
-                brand: {
-                    name: "brand",
-                    type: "String",
-                    optional: true
-                },
-                model: {
-                    name: "model",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                }
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("passkeys") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+        credentialId: { type: "String" },
+      },
+    },
+    Role: {
+      name: "Role",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
             },
-            attributes: [
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("name"), ExpressionUtils.field("brand"), ExpressionUtils.field("model")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("common_supplies") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                name_brand_model: { name: { type: "String" }, brand: { type: "String" }, model: { type: "String" } }
-            }
+          ],
+          default: ExpressionUtils.call("autoincrement"),
         },
-        CalendarSyncLog: {
-            name: "CalendarSyncLog",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                triggerSource: {
-                    name: "triggerSource",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_source") }] }]
-                },
-                triggerUserId: {
-                    name: "triggerUserId",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_user_id") }] }]
-                },
-                triggerLabel: {
-                    name: "triggerLabel",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_label") }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }],
-                    default: "PENDING"
-                },
-                startedAt: {
-                    name: "startedAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("started_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                endedAt: {
-                    name: "endedAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ended_at") }] }]
-                },
-                fetchedAt: {
-                    name: "fetchedAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("fetched_at") }] }]
-                },
-                eventsSynced: {
-                    name: "eventsSynced",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("events_synced") }] }],
-                    default: 0
-                },
-                inserted: {
-                    name: "inserted",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
-                    default: 0
-                },
-                updated: {
-                    name: "updated",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
-                    default: 0
-                },
-                skipped: {
-                    name: "skipped",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
-                    default: 0
-                },
-                excluded: {
-                    name: "excluded",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }],
-                    default: 0
-                },
-                errorMessage: {
-                    name: "errorMessage",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_message") }] }]
-                },
-                changeDetails: {
-                    name: "changeDetails",
-                    type: "Json",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("change_details") }] }]
-                }
+        name: {
+          name: "name",
+          type: "String",
+          unique: true,
+          attributes: [{ name: "@unique" }],
+        },
+        description: {
+          name: "description",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
             },
-            attributes: [
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startedAt")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("calendar_sync_logs") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        DoctoraliaFacility: {
-            name: "DoctoraliaFacility",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_id") }] }]
-                },
-                name: {
-                    name: "name",
-                    type: "String"
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                doctors: {
-                    name: "doctors",
-                    type: "DoctoraliaDoctor",
-                    array: true,
-                    relation: { opposite: "facility" }
-                }
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_facilities") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                externalId: { type: "String" }
-            }
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        DoctoraliaDoctor: {
-            name: "DoctoraliaDoctor",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                facilityId: {
-                    name: "facilityId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("facility_id") }] }],
-                    foreignKeyFor: [
-                        "facility"
-                    ]
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_id") }] }]
-                },
-                name: {
-                    name: "name",
-                    type: "String"
-                },
-                surname: {
-                    name: "surname",
-                    type: "String"
-                },
-                profileUrl: {
-                    name: "profileUrl",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("profile_url") }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                facility: {
-                    name: "facility",
-                    type: "DoctoraliaFacility",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("facilityId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "doctors", fields: ["facilityId"], references: ["id"], onDelete: "Cascade" }
-                },
-                addresses: {
-                    name: "addresses",
-                    type: "DoctoraliaAddress",
-                    array: true,
-                    relation: { opposite: "doctor" }
-                }
+        isSystem: {
+          name: "isSystem",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_system") }] },
+          ],
+          default: false,
+        },
+        permissions: {
+          name: "permissions",
+          type: "RolePermission",
+          array: true,
+          relation: { opposite: "role" },
+        },
+        users: {
+          name: "users",
+          type: "UserRoleAssignment",
+          array: true,
+          relation: { opposite: "role" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
             },
-            attributes: [
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("facilityId"), ExpressionUtils.field("externalId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("facilityId")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_doctors") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                facilityId_externalId: { facilityId: { type: "Int" }, externalId: { type: "String" } }
-            }
+          ],
         },
-        DoctoraliaAddress: {
-            name: "DoctoraliaAddress",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                doctorId: {
-                    name: "doctorId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctor_id") }] }],
-                    foreignKeyFor: [
-                        "doctor"
-                    ]
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_id") }] }]
-                },
-                name: {
-                    name: "name",
-                    type: "String",
-                    optional: true
-                },
-                cityName: {
-                    name: "cityName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("city_name") }] }]
-                },
-                postCode: {
-                    name: "postCode",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("post_code") }] }]
-                },
-                street: {
-                    name: "street",
-                    type: "String",
-                    optional: true
-                },
-                onlineOnly: {
-                    name: "onlineOnly",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("online_only") }] }],
-                    default: false
-                },
-                calendarEnabled: {
-                    name: "calendarEnabled",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("calendar_enabled") }] }],
-                    default: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                doctor: {
-                    name: "doctor",
-                    type: "DoctoraliaDoctor",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("doctorId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "addresses", fields: ["doctorId"], references: ["id"], onDelete: "Cascade" }
-                },
-                services: {
-                    name: "services",
-                    type: "DoctoraliaService",
-                    array: true,
-                    relation: { opposite: "address" }
-                },
-                insuranceProviders: {
-                    name: "insuranceProviders",
-                    type: "DoctoraliaInsuranceProvider",
-                    array: true,
-                    relation: { opposite: "address" }
-                },
-                slots: {
-                    name: "slots",
-                    type: "DoctoraliaSlot",
-                    array: true,
-                    relation: { opposite: "address" }
-                },
-                bookings: {
-                    name: "bookings",
-                    type: "DoctoraliaBooking",
-                    array: true,
-                    relation: { opposite: "address" }
-                },
-                breaks: {
-                    name: "breaks",
-                    type: "DoctoraliaCalendarBreak",
-                    array: true,
-                    relation: { opposite: "address" }
-                }
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
             },
-            attributes: [
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("doctorId"), ExpressionUtils.field("externalId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("doctorId")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_addresses") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                doctorId_externalId: { doctorId: { type: "Int" }, externalId: { type: "String" } }
-            }
+          ],
         },
-        DoctoraliaService: {
-            name: "DoctoraliaService",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                addressId: {
-                    name: "addressId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("address_id") }] }],
-                    foreignKeyFor: [
-                        "address"
-                    ]
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_id") }] }]
-                },
-                serviceId: {
-                    name: "serviceId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("service_id") }] }]
-                },
-                name: {
-                    name: "name",
-                    type: "String"
-                },
-                price: {
-                    name: "price",
-                    type: "Int",
-                    optional: true
-                },
-                isPriceFrom: {
-                    name: "isPriceFrom",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_price_from") }] }],
-                    default: false
-                },
-                isDefault: {
-                    name: "isDefault",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_default") }] }],
-                    default: false
-                },
-                isVisible: {
-                    name: "isVisible",
-                    type: "Boolean",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_visible") }] }],
-                    default: true
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true
-                },
-                defaultDuration: {
-                    name: "defaultDuration",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("default_duration") }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                address: {
-                    name: "address",
-                    type: "DoctoraliaAddress",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "services", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
-                }
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("roles") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        name: { type: "String" },
+      },
+    },
+    Permission: {
+      name: "Permission",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
             },
-            attributes: [
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId"), ExpressionUtils.field("externalId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_services") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } }
-            }
+          ],
+          default: ExpressionUtils.call("autoincrement"),
         },
-        DoctoraliaInsuranceProvider: {
-            name: "DoctoraliaInsuranceProvider",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                addressId: {
-                    name: "addressId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("address_id") }] }],
-                    foreignKeyFor: [
-                        "address"
-                    ]
-                },
-                insuranceProviderId: {
-                    name: "insuranceProviderId",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("insurance_provider_id") }] }]
-                },
-                name: {
-                    name: "name",
-                    type: "String"
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                address: {
-                    name: "address",
-                    type: "DoctoraliaAddress",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "insuranceProviders", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
-                }
+        action: {
+          name: "action",
+          type: "String",
+        },
+        subject: {
+          name: "subject",
+          type: "String",
+        },
+        description: {
+          name: "description",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
             },
-            attributes: [
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId"), ExpressionUtils.field("insuranceProviderId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_insurance_providers") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                addressId_insuranceProviderId: { addressId: { type: "Int" }, insuranceProviderId: { type: "String" } }
-            }
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        DoctoraliaSlot: {
-            name: "DoctoraliaSlot",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                addressId: {
-                    name: "addressId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("address_id") }] }],
-                    foreignKeyFor: [
-                        "address"
-                    ]
-                },
-                startAt: {
-                    name: "startAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_at") }] }]
-                },
-                endAt: {
-                    name: "endAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_at") }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                address: {
-                    name: "address",
-                    type: "DoctoraliaAddress",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "slots", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
-                }
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
             },
-            attributes: [
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startAt")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_slots") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        DoctoraliaBooking: {
-            name: "DoctoraliaBooking",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                addressId: {
-                    name: "addressId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("address_id") }] }],
-                    foreignKeyFor: [
-                        "address"
-                    ]
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_id") }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("booked") }] }],
-                    default: "booked"
-                },
-                startAt: {
-                    name: "startAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_at") }] }]
-                },
-                endAt: {
-                    name: "endAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_at") }] }]
-                },
-                duration: {
-                    name: "duration",
-                    type: "Int"
-                },
-                bookedBy: {
-                    name: "bookedBy",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("booked_by") }] }]
-                },
-                bookedAt: {
-                    name: "bookedAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("booked_at") }] }]
-                },
-                canceledBy: {
-                    name: "canceledBy",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("canceled_by") }] }]
-                },
-                canceledAt: {
-                    name: "canceledAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("canceled_at") }] }]
-                },
-                patientName: {
-                    name: "patientName",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }] }]
-                },
-                patientSurname: {
-                    name: "patientSurname",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_surname") }] }]
-                },
-                patientEmail: {
-                    name: "patientEmail",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_email") }] }]
-                },
-                patientPhone: {
-                    name: "patientPhone",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_phone") }] }]
-                },
-                comment: {
-                    name: "comment",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                address: {
-                    name: "address",
-                    type: "DoctoraliaAddress",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "bookings", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
-                }
+        roles: {
+          name: "roles",
+          type: "RolePermission",
+          array: true,
+          relation: { opposite: "permission" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
             },
-            attributes: [
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId"), ExpressionUtils.field("externalId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startAt")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_bookings") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } }
-            }
+          ],
         },
-        DoctoraliaCalendarBreak: {
-            name: "DoctoraliaCalendarBreak",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                addressId: {
-                    name: "addressId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("address_id") }] }],
-                    foreignKeyFor: [
-                        "address"
-                    ]
-                },
-                externalId: {
-                    name: "externalId",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("external_id") }] }]
-                },
-                since: {
-                    name: "since",
-                    type: "DateTime"
-                },
-                till: {
-                    name: "till",
-                    type: "DateTime"
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                address: {
-                    name: "address",
-                    type: "DoctoraliaAddress",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "breaks", fields: ["addressId"], references: ["id"], onDelete: "Cascade" }
-                }
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
             },
-            attributes: [
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId"), ExpressionUtils.field("externalId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_calendar_breaks") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } }
-            }
+          ],
         },
-        DoctoraliaSyncLog: {
-            name: "DoctoraliaSyncLog",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                triggerSource: {
-                    name: "triggerSource",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_source") }] }]
-                },
-                triggerUserId: {
-                    name: "triggerUserId",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_user_id") }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }],
-                    default: "PENDING"
-                },
-                startedAt: {
-                    name: "startedAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("started_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                endedAt: {
-                    name: "endedAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ended_at") }] }]
-                },
-                facilitiesSynced: {
-                    name: "facilitiesSynced",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("facilities_synced") }] }],
-                    default: 0
-                },
-                doctorsSynced: {
-                    name: "doctorsSynced",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctors_synced") }] }],
-                    default: 0
-                },
-                slotsSynced: {
-                    name: "slotsSynced",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("slots_synced") }] }],
-                    default: 0
-                },
-                bookingsSynced: {
-                    name: "bookingsSynced",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bookings_synced") }] }],
-                    default: 0
-                },
-                errorMessage: {
-                    name: "errorMessage",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_message") }] }]
-                }
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [
+                ExpressionUtils.field("action"),
+                ExpressionUtils.field("subject"),
+              ]),
             },
-            attributes: [
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startedAt")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_sync_logs") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
         },
-        HaulmerSyncLog: {
-            name: "HaulmerSyncLog",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "String",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("uuid") }] }],
-                    default: ExpressionUtils.call("uuid")
-                },
-                period: {
-                    name: "period",
-                    type: "String",
-                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] }]
-                },
-                rut: {
-                    name: "rut",
-                    type: "String",
-                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                docType: {
-                    name: "docType",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doc_type") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }],
-                    default: "PENDING"
-                },
-                rowsCreated: {
-                    name: "rowsCreated",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rows_created") }] }],
-                    default: 0
-                },
-                rowsUpdated: {
-                    name: "rowsUpdated",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rows_updated") }] }],
-                    default: 0
-                },
-                rowsSkipped: {
-                    name: "rowsSkipped",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rows_skipped") }] }],
-                    default: 0
-                },
-                csvSize: {
-                    name: "csvSize",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("csv_size") }] }]
-                },
-                errorMessage: {
-                    name: "errorMessage",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_message") }] }]
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                }
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("permissions") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        action_subject: { action: { type: "String" }, subject: { type: "String" } },
+      },
+    },
+    RolePermission: {
+      name: "RolePermission",
+      fields: {
+        roleId: {
+          name: "roleId",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("role_id") }] },
+          ],
+          foreignKeyFor: ["role"],
+        },
+        permissionId: {
+          name: "permissionId",
+          type: "Int",
+          id: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("permission_id") }],
             },
-            attributes: [
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("rut")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("status")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("createdAt")]) }] },
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("period"), ExpressionUtils.field("rut"), ExpressionUtils.field("docType")]) }] },
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("haulmer_sync_logs") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "String" },
-                period_rut_docType: { period: { type: "String" }, rut: { type: "String" }, docType: { type: "String" } }
-            }
+          ],
+          foreignKeyFor: ["permission"],
         },
-        PersonalCredit: {
-            name: "PersonalCredit",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                bankName: {
-                    name: "bankName",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_name") }] }]
-                },
-                creditNumber: {
-                    name: "creditNumber",
-                    type: "String",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("credit_number") }] }]
-                },
-                description: {
-                    name: "description",
-                    type: "String",
-                    optional: true
-                },
-                totalAmount: {
-                    name: "totalAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                currency: {
-                    name: "currency",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("CLP") }] }],
-                    default: "CLP"
-                },
-                interestRate: {
-                    name: "interestRate",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("interest_rate") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(5) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                startDate: {
-                    name: "startDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_date") }] }, { name: "@db.Date" }]
-                },
-                totalInstallments: {
-                    name: "totalInstallments",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_installments") }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("ACTIVE") }] }],
-                    default: "ACTIVE"
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                installments: {
-                    name: "installments",
-                    type: "PersonalCreditInstallment",
-                    array: true,
-                    relation: { opposite: "credit" }
-                }
+        conditions: {
+          name: "conditions",
+          type: "Json",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("credits") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                creditNumber: { type: "String" }
-            }
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        PersonalCreditInstallment: {
-            name: "PersonalCreditInstallment",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
+        permission: {
+          name: "permission",
+          type: "Permission",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("permissionId")]),
                 },
-                creditId: {
-                    name: "creditId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("credit_id") }] }],
-                    foreignKeyFor: [
-                        "credit"
-                    ]
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
                 },
-                installmentNumber: {
-                    name: "installmentNumber",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("installment_number") }] }]
-                },
-                dueDate: {
-                    name: "dueDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("due_date") }] }, { name: "@db.Date" }]
-                },
-                amount: {
-                    name: "amount",
-                    type: "Decimal",
-                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                capitalAmount: {
-                    name: "capitalAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("capital_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                interestAmount: {
-                    name: "interestAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("interest_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                otherCharges: {
-                    name: "otherCharges",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("other_charges") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }],
-                    default: "PENDING"
-                },
-                paidAt: {
-                    name: "paidAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("paid_at") }] }]
-                },
-                paidAmount: {
-                    name: "paidAmount",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("paid_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                credit: {
-                    name: "credit",
-                    type: "PersonalCredit",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("creditId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "installments", fields: ["creditId"], references: ["id"], onDelete: "Cascade" }
-                }
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.literal(true) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("creditId")]) }] },
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("creditId"), ExpressionUtils.field("installmentNumber")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("credit_installments") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                creditId_installmentNumber: { creditId: { type: "Int" }, installmentNumber: { type: "Int" } }
-            }
+          ],
+          relation: {
+            opposite: "roles",
+            fields: ["permissionId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
         },
-        MedicalCertificate: {
-            name: "MedicalCertificate",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "String",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }],
-                    default: ExpressionUtils.call("cuid")
+        role: {
+          name: "role",
+          type: "Role",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("roleId")]),
                 },
-                patientName: {
-                    name: "patientName",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }] }]
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
                 },
-                patientRut: {
-                    name: "patientRut",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_rut") }] }]
-                },
-                birthDate: {
-                    name: "birthDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("birth_date") }] }, { name: "@db.Date" }]
-                },
-                address: {
-                    name: "address",
-                    type: "String"
-                },
-                diagnosis: {
-                    name: "diagnosis",
-                    type: "String"
-                },
-                symptoms: {
-                    name: "symptoms",
-                    type: "String",
-                    optional: true
-                },
-                restDays: {
-                    name: "restDays",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rest_days") }] }]
-                },
-                restStartDate: {
-                    name: "restStartDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rest_start_date") }] }, { name: "@db.Date" }]
-                },
-                restEndDate: {
-                    name: "restEndDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rest_end_date") }] }, { name: "@db.Date" }]
-                },
-                purpose: {
-                    name: "purpose",
-                    type: "String"
-                },
-                purposeDetail: {
-                    name: "purposeDetail",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("purpose_detail") }] }]
-                },
-                issuedBy: {
-                    name: "issuedBy",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issued_by") }] }],
-                    foreignKeyFor: [
-                        "issuer"
-                    ]
-                },
-                issuedAt: {
-                    name: "issuedAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issued_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                patientId: {
-                    name: "patientId",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }],
-                    foreignKeyFor: [
-                        "patient"
-                    ]
-                },
-                driveFileId: {
-                    name: "driveFileId",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("drive_file_id") }] }]
-                },
-                pdfHash: {
-                    name: "pdfHash",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pdf_hash") }] }]
-                },
-                metadata: {
-                    name: "metadata",
-                    type: "Json",
-                    optional: true
-                },
-                issuer: {
-                    name: "issuer",
-                    type: "User",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("issuedBy")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "medicalCertificates", fields: ["issuedBy"], references: ["id"] }
-                },
-                patient: {
-                    name: "patient",
-                    type: "Patient",
-                    optional: true,
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "medicalCertificates", fields: ["patientId"], references: ["id"] }
-                }
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["id"]), "==", ExpressionUtils.field("issuedBy")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "!=", ExpressionUtils._null()) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("patientRut")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("issuedAt")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("medical_certificates") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "String" }
-            }
+          ],
+          relation: {
+            opposite: "permissions",
+            fields: ["roleId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
         },
-        Patient: {
-            name: "Patient",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                personId: {
-                    name: "personId",
-                    type: "Int",
-                    unique: true,
-                    attributes: [{ name: "@unique" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] }],
-                    foreignKeyFor: [
-                        "person"
-                    ]
-                },
-                birthDate: {
-                    name: "birthDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("birth_date") }] }, { name: "@db.Date" }]
-                },
-                bloodType: {
-                    name: "bloodType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("blood_type") }] }]
-                },
-                notes: {
-                    name: "notes",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                person: {
-                    name: "person",
-                    type: "Person",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "patient", fields: ["personId"], references: ["id"], onDelete: "Cascade" }
-                },
-                consultations: {
-                    name: "consultations",
-                    type: "Consultation",
-                    array: true,
-                    relation: { opposite: "patient" }
-                },
-                medicalCertificates: {
-                    name: "medicalCertificates",
-                    type: "MedicalCertificate",
-                    array: true,
-                    relation: { opposite: "patient" }
-                },
-                budgets: {
-                    name: "budgets",
-                    type: "Budget",
-                    array: true,
-                    relation: { opposite: "patient" }
-                },
-                payments: {
-                    name: "payments",
-                    type: "PatientPayment",
-                    array: true,
-                    relation: { opposite: "patient" }
-                },
-                attachments: {
-                    name: "attachments",
-                    type: "PatientAttachment",
-                    array: true,
-                    relation: { opposite: "patient" }
-                }
+      },
+      attributes: [
+        {
+          name: "@@id",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("roleId"),
+                ExpressionUtils.field("permissionId"),
+              ]),
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("patients") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" },
-                personId: { type: "Int" }
-            }
+          ],
         },
-        Consultation: {
-            name: "Consultation",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                patientId: {
-                    name: "patientId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }],
-                    foreignKeyFor: [
-                        "patient"
-                    ]
-                },
-                eventId: {
-                    name: "eventId",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_id") }] }],
-                    foreignKeyFor: [
-                        "event"
-                    ]
-                },
-                date: {
-                    name: "date",
-                    type: "DateTime",
-                    attributes: [{ name: "@db.Date" }]
-                },
-                reason: {
-                    name: "reason",
-                    type: "String"
-                },
-                diagnosis: {
-                    name: "diagnosis",
-                    type: "String",
-                    optional: true
-                },
-                treatment: {
-                    name: "treatment",
-                    type: "String",
-                    optional: true
-                },
-                notes: {
-                    name: "notes",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                patient: {
-                    name: "patient",
-                    type: "Patient",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "consultations", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
-                },
-                event: {
-                    name: "event",
-                    type: "Event",
-                    optional: true,
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("eventId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "consultations", fields: ["eventId"], references: ["id"] }
-                }
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("eventId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("date")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("consultations") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
         },
-        Budget: {
-            name: "Budget",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                patientId: {
-                    name: "patientId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }],
-                    foreignKeyFor: [
-                        "patient"
-                    ]
-                },
-                title: {
-                    name: "title",
-                    type: "String"
-                },
-                totalAmount: {
-                    name: "totalAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                discount: {
-                    name: "discount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                finalAmount: {
-                    name: "finalAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("final_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "BudgetStatus",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("DRAFT") }] }],
-                    default: "DRAFT"
-                },
-                notes: {
-                    name: "notes",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                patient: {
-                    name: "patient",
-                    type: "Patient",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "budgets", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
-                },
-                items: {
-                    name: "items",
-                    type: "BudgetItem",
-                    array: true,
-                    relation: { opposite: "budget" }
-                },
-                payments: {
-                    name: "payments",
-                    type: "PatientPayment",
-                    array: true,
-                    relation: { opposite: "budget" }
-                }
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("budgets") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
         },
-        BudgetItem: {
-            name: "BudgetItem",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
-                },
-                budgetId: {
-                    name: "budgetId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("budget_id") }] }],
-                    foreignKeyFor: [
-                        "budget"
-                    ]
-                },
-                description: {
-                    name: "description",
-                    type: "String"
-                },
-                quantity: {
-                    name: "quantity",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(1) }] }],
-                    default: 1
-                },
-                unitPrice: {
-                    name: "unitPrice",
-                    type: "Decimal",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("unit_price") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                totalPrice: {
-                    name: "totalPrice",
-                    type: "Decimal",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_price") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                budget: {
-                    name: "budget",
-                    type: "Budget",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("budgetId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "items", fields: ["budgetId"], references: ["id"], onDelete: "Cascade" }
-                }
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("role_permissions") }],
+        },
+      ],
+      idFields: ["roleId", "permissionId"],
+      uniqueFields: {
+        roleId_permissionId: { roleId: { type: "Int" }, permissionId: { type: "Int" } },
+      },
+    },
+    UserRoleAssignment: {
+      name: "UserRoleAssignment",
+      fields: {
+        userId: {
+          name: "userId",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] },
+          ],
+          foreignKeyFor: ["user"],
+        },
+        roleId: {
+          name: "roleId",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("role_id") }] },
+          ],
+          foreignKeyFor: ["role"],
+        },
+        assignedAt: {
+          name: "assignedAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("assigned_at") }],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("budgetId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("budget_items") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        PatientPayment: {
-            name: "PatientPayment",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "Int",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }] }],
-                    default: ExpressionUtils.call("autoincrement")
+        role: {
+          name: "role",
+          type: "Role",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("roleId")]),
                 },
-                patientId: {
-                    name: "patientId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }],
-                    foreignKeyFor: [
-                        "patient"
-                    ]
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
                 },
-                budgetId: {
-                    name: "budgetId",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("budget_id") }] }],
-                    foreignKeyFor: [
-                        "budget"
-                    ]
-                },
-                amount: {
-                    name: "amount",
-                    type: "Decimal",
-                    attributes: [{ name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                paymentDate: {
-                    name: "paymentDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_date") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                paymentMethod: {
-                    name: "paymentMethod",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_method") }] }]
-                },
-                reference: {
-                    name: "reference",
-                    type: "String",
-                    optional: true
-                },
-                notes: {
-                    name: "notes",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                patient: {
-                    name: "patient",
-                    type: "Patient",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "payments", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
-                },
-                budget: {
-                    name: "budget",
-                    type: "Budget",
-                    optional: true,
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("budgetId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "payments", fields: ["budgetId"], references: ["id"] }
-                }
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("budgetId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_payments") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "Int" }
-            }
+          ],
+          relation: {
+            opposite: "users",
+            fields: ["roleId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
         },
-        PatientAttachment: {
-            name: "PatientAttachment",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "String",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] }],
-                    default: ExpressionUtils.call("cuid")
+        user: {
+          name: "user",
+          type: "User",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]),
                 },
-                patientId: {
-                    name: "patientId",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }] }],
-                    foreignKeyFor: [
-                        "patient"
-                    ]
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
                 },
-                name: {
-                    name: "name",
-                    type: "String"
-                },
-                type: {
-                    name: "type",
-                    type: "AttachmentType",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("OTHER") }] }],
-                    default: "OTHER"
-                },
-                driveFileId: {
-                    name: "driveFileId",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("drive_file_id") }] }]
-                },
-                mimeType: {
-                    name: "mimeType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mime_type") }] }]
-                },
-                uploadedBy: {
-                    name: "uploadedBy",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("uploaded_by") }] }],
-                    foreignKeyFor: [
-                        "uploader"
-                    ]
-                },
-                uploadedAt: {
-                    name: "uploadedAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("uploaded_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                patient: {
-                    name: "patient",
-                    type: "Patient",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }, { name: "onDelete", value: ExpressionUtils.literal("Cascade") }] }],
-                    relation: { opposite: "attachments", fields: ["patientId"], references: ["id"], onDelete: "Cascade" }
-                },
-                uploader: {
-                    name: "uploader",
-                    type: "User",
-                    attributes: [{ name: "@relation", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("uploadedBy")]) }, { name: "references", value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]) }] }],
-                    relation: { opposite: "patientAttachments", fields: ["uploadedBy"], references: ["id"] }
-                }
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("patient_attachments") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "String" }
-            }
+          ],
+          relation: {
+            opposite: "roles",
+            fields: ["userId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
         },
-        DTEPurchaseDetail: {
-            name: "DTEPurchaseDetail",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "String",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("uuid") }] }],
-                    default: ExpressionUtils.call("uuid")
-                },
-                registerNumber: {
-                    name: "registerNumber",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("register_number") }] }]
-                },
-                documentType: {
-                    name: "documentType",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(33) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("document_type") }] }],
-                    default: 33
-                },
-                purchaseType: {
-                    name: "purchaseType",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("purchase_type") }] }]
-                },
-                providerRUT: {
-                    name: "providerRUT",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("provider_rut") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                providerName: {
-                    name: "providerName",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("provider_name") }] }]
-                },
-                folio: {
-                    name: "folio",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("folio") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                documentDate: {
-                    name: "documentDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@db.Date" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("document_date") }] }]
-                },
-                receiptDate: {
-                    name: "receiptDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@db.Date" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("receipt_date") }] }]
-                },
-                acknowledgeDate: {
-                    name: "acknowledgeDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@db.Date" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("acknowledge_date") }] }]
-                },
-                period: {
-                    name: "period",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("period") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] }]
-                },
-                exemptAmount: {
-                    name: "exemptAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("exempt_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                netAmount: {
-                    name: "netAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("net_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                recoverableIVA: {
-                    name: "recoverableIVA",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("recoverable_iva") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                nonRecoverableIVA: {
-                    name: "nonRecoverableIVA",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("non_recoverable_iva") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                nonRecoverableIVACode: {
-                    name: "nonRecoverableIVACode",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("non_recoverable_iva_code") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] }]
-                },
-                totalAmount: {
-                    name: "totalAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                fixedAssetNetAmount: {
-                    name: "fixedAssetNetAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("fixed_asset_net_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                commonUseIVA: {
-                    name: "commonUseIVA",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("common_use_iva") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                nonCreditableTax: {
-                    name: "nonCreditableTax",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("non_creditable_tax") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                nonRetainedIVA: {
-                    name: "nonRetainedIVA",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("non_retained_iva") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                pureTobacco: {
-                    name: "pureTobacco",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pure_tobacco") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                cigaretteTobacco: {
-                    name: "cigaretteTobacco",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("cigarette_tobacco") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                elaboratedTobacco: {
-                    name: "elaboratedTobacco",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("elaborated_tobacco") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                otherTaxCode: {
-                    name: "otherTaxCode",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("other_tax_code") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] }]
-                },
-                otherTaxAmount: {
-                    name: "otherTaxAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("other_tax_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                otherTaxRate: {
-                    name: "otherTaxRate",
-                    type: "Decimal",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("other_tax_rate") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(5) }, { name: "s", value: ExpressionUtils.literal(2) }] }]
-                },
-                referenceDocNote: {
-                    name: "referenceDocNote",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reference_doc_note") }] }]
-                },
-                notes: {
-                    name: "notes",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                }
+      },
+      attributes: [
+        {
+          name: "@@id",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("userId"),
+                ExpressionUtils.field("roleId"),
+              ]),
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("providerRUT"), ExpressionUtils.field("folio")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("providerRUT")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("documentDate")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_purchase_details") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "String" },
-                providerRUT_folio: { providerRUT: { type: "String" }, folio: { type: "String" } }
-            }
+          ],
         },
-        DTESaleDetail: {
-            name: "DTESaleDetail",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "String",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("uuid") }] }],
-                    default: ExpressionUtils.call("uuid")
-                },
-                registerNumber: {
-                    name: "registerNumber",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("register_number") }] }]
-                },
-                documentType: {
-                    name: "documentType",
-                    type: "Int",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("document_type") }] }]
-                },
-                saleType: {
-                    name: "saleType",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sale_type") }] }]
-                },
-                clientRUT: {
-                    name: "clientRUT",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("client_rut") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                clientName: {
-                    name: "clientName",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("client_name") }] }]
-                },
-                folio: {
-                    name: "folio",
-                    type: "String",
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("folio") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                documentDate: {
-                    name: "documentDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@db.Date" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("document_date") }] }]
-                },
-                receiptDate: {
-                    name: "receiptDate",
-                    type: "DateTime",
-                    attributes: [{ name: "@db.Date" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("receipt_date") }] }]
-                },
-                receiptAcknowledgeDate: {
-                    name: "receiptAcknowledgeDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@db.Date" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("receipt_acknowledge_date") }] }]
-                },
-                claimDate: {
-                    name: "claimDate",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@db.Date" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("claim_date") }] }]
-                },
-                period: {
-                    name: "period",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("period") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] }]
-                },
-                exemptAmount: {
-                    name: "exemptAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("exempt_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                netAmount: {
-                    name: "netAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("net_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                ivaAmount: {
-                    name: "ivaAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("iva_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                totalAmount: {
-                    name: "totalAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                totalRetainedIVA: {
-                    name: "totalRetainedIVA",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_retained_iva") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                partialRetainedIVA: {
-                    name: "partialRetainedIVA",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("partial_retained_iva") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                nonRetainedIVA: {
-                    name: "nonRetainedIVA",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("non_retained_iva") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                ownIVA: {
-                    name: "ownIVA",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("own_iva") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                thirdPartyIVA: {
-                    name: "thirdPartyIVA",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("third_party_iva") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                lateIVA: {
-                    name: "lateIVA",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("late_iva") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                emitterRUT: {
-                    name: "emitterRUT",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("emitter_rut") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                commissionNetAmount: {
-                    name: "commissionNetAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("commission_net_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                commissionExemptAmount: {
-                    name: "commissionExemptAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("commission_exempt_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                commissionIVA: {
-                    name: "commissionIVA",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("commission_iva") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                referenceDocType: {
-                    name: "referenceDocType",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reference_doc_type") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] }]
-                },
-                referenceDocFolio: {
-                    name: "referenceDocFolio",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("reference_doc_folio") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                foreignBuyerIdentifier: {
-                    name: "foreignBuyerIdentifier",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("foreign_buyer_identifier") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                foreignBuyerNationality: {
-                    name: "foreignBuyerNationality",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("foreign_buyer_nationality") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                constructorCreditAmount: {
-                    name: "constructorCreditAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("constructor_credit_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                freeTradeZoneAmount: {
-                    name: "freeTradeZoneAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("free_trade_zone_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                containerGuaranteeAmount: {
-                    name: "containerGuaranteeAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("container_guarantee_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                nonBillableAmount: {
-                    name: "nonBillableAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("non_billable_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                internationalTransportAmount: {
-                    name: "internationalTransportAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("international_transport_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                nonCostSaleIndicator: {
-                    name: "nonCostSaleIndicator",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("non_cost_sale_indicator") }] }],
-                    default: 0
-                },
-                periodicServiceIndicator: {
-                    name: "periodicServiceIndicator",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("periodic_service_indicator") }] }],
-                    default: 0
-                },
-                totalPeriodAmount: {
-                    name: "totalPeriodAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_period_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                nationalTransportPassageAmount: {
-                    name: "nationalTransportPassageAmount",
-                    type: "Decimal",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("national_transport_passage_amount") }] }, { name: "@db.Decimal", args: [{ name: "p", value: ExpressionUtils.literal(15) }, { name: "s", value: ExpressionUtils.literal(2) }] }],
-                    default: 0
-                },
-                internalNumber: {
-                    name: "internalNumber",
-                    type: "Int",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("internal_number") }] }]
-                },
-                branchCode: {
-                    name: "branchCode",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("branch_code") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                origin: {
-                    name: "origin",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("origin") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                informativeNote: {
-                    name: "informativeNote",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("informative_note") }] }]
-                },
-                paymentNote: {
-                    name: "paymentNote",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("payment_note") }] }]
-                },
-                notes: {
-                    name: "notes",
-                    type: "String",
-                    optional: true
-                },
-                createdAt: {
-                    name: "createdAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("created_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                updatedAt: {
-                    name: "updatedAt",
-                    type: "DateTime",
-                    updatedAt: true,
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@updatedAt" }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }] }],
-                    default: ExpressionUtils.call("now")
-                }
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@unique", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("folio")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("clientRUT")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("documentDate")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("Int", [ExpressionUtils.field("documentType")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_sale_details") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "String" },
-                folio: { type: "String" }
-            }
+          ],
         },
-        DTESyncLog: {
-            name: "DTESyncLog",
-            fields: {
-                id: {
-                    name: "id",
-                    type: "String",
-                    id: true,
-                    attributes: [{ name: "@id" }, { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("uuid") }] }],
-                    default: ExpressionUtils.call("uuid")
-                },
-                period: {
-                    name: "period",
-                    type: "String",
-                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] }]
-                },
-                docTypes: {
-                    name: "docTypes",
-                    type: "String",
-                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] }]
-                },
-                status: {
-                    name: "status",
-                    type: "String",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }] }, { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }],
-                    default: "PENDING"
-                },
-                totalProcessed: {
-                    name: "totalProcessed",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_processed") }] }],
-                    default: 0
-                },
-                totalInserted: {
-                    name: "totalInserted",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_inserted") }] }],
-                    default: 0
-                },
-                totalUpdated: {
-                    name: "totalUpdated",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_updated") }] }],
-                    default: 0
-                },
-                totalSkipped: {
-                    name: "totalSkipped",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("total_skipped") }] }],
-                    default: 0
-                },
-                salesInserted: {
-                    name: "salesInserted",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sales_inserted") }] }],
-                    default: 0
-                },
-                purchasesInserted: {
-                    name: "purchasesInserted",
-                    type: "Int",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("purchases_inserted") }] }],
-                    default: 0
-                },
-                errorMessage: {
-                    name: "errorMessage",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("error_message") }] }]
-                },
-                triggerSource: {
-                    name: "triggerSource",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] }]
-                },
-                triggerUserId: {
-                    name: "triggerUserId",
-                    type: "String",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("trigger_user_id") }] }]
-                },
-                startedAt: {
-                    name: "startedAt",
-                    type: "DateTime",
-                    attributes: [{ name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] }, { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("started_at") }] }],
-                    default: ExpressionUtils.call("now")
-                },
-                completedAt: {
-                    name: "completedAt",
-                    type: "DateTime",
-                    optional: true,
-                    attributes: [{ name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("completed_at") }] }]
-                }
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
             },
-            attributes: [
-                { name: "@@deny", args: [{ name: "operation", value: ExpressionUtils.literal("all") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.call("auth"), "==", ExpressionUtils._null()) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("read") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@allow", args: [{ name: "operation", value: ExpressionUtils.literal("create,update,delete") }, { name: "condition", value: ExpressionUtils.binary(ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]), "==", ExpressionUtils.literal("ACTIVE")) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("String", [ExpressionUtils.field("status")]) }] },
-                { name: "@@index", args: [{ name: "fields", value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startedAt")]) }] },
-                { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("dte_sync_logs") }] }
-            ],
-            idFields: ["id"],
-            uniqueFields: {
-                id: { type: "String" }
-            }
-        }
-    } as const;
-    enums = {
-        PersonType: {
-            name: "PersonType",
-            values: {
-                NATURAL: "NATURAL",
-                JURIDICAL: "JURIDICAL"
-            }
+          ],
         },
-        CounterpartCategory: {
-            name: "CounterpartCategory",
-            values: {
-                SUPPLIER: "SUPPLIER",
-                CLIENT: "CLIENT",
-                EMPLOYEE: "EMPLOYEE",
-                PARTNER: "PARTNER",
-                LENDER: "LENDER",
-                OTHER: "OTHER"
-            }
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("user_role_assignments") }],
         },
-        EmployeeStatus: {
-            name: "EmployeeStatus",
-            values: {
-                ACTIVE: "ACTIVE",
-                INACTIVE: "INACTIVE",
-                TERMINATED: "TERMINATED"
-            }
+      ],
+      idFields: ["userId", "roleId"],
+      uniqueFields: {
+        userId_roleId: { userId: { type: "Int" }, roleId: { type: "Int" } },
+      },
+    },
+    UserPermissionVersion: {
+      name: "UserPermissionVersion",
+      fields: {
+        userId: {
+          name: "userId",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] },
+          ],
+          foreignKeyFor: ["user"],
         },
-        EmployeeSalaryType: {
-            name: "EmployeeSalaryType",
-            values: {
-                HOURLY: "HOURLY",
-                FIXED: "FIXED"
-            }
+        version: {
+          name: "version",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(1) }] },
+          ],
+          default: 1,
         },
-        TransactionDirection: {
-            name: "TransactionDirection",
-            values: {
-                IN: "IN",
-                OUT: "OUT",
-                NEUTRO: "NEUTRO"
-            }
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
         },
-        ServiceType: {
-            name: "ServiceType",
-            values: {
-                BUSINESS: "BUSINESS",
-                PERSONAL: "PERSONAL",
-                SUPPLIER: "SUPPLIER",
-                TAX: "TAX",
-                UTILITY: "UTILITY",
-                LEASE: "LEASE",
-                SOFTWARE: "SOFTWARE",
-                OTHER: "OTHER"
-            }
+        user: {
+          name: "user",
+          type: "User",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "permissionVersion",
+            fields: ["userId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
         },
-        ServiceFrequency: {
-            name: "ServiceFrequency",
-            values: {
-                WEEKLY: "WEEKLY",
-                BIWEEKLY: "BIWEEKLY",
-                MONTHLY: "MONTHLY",
-                BIMONTHLY: "BIMONTHLY",
-                QUARTERLY: "QUARTERLY",
-                SEMIANNUAL: "SEMIANNUAL",
-                ANNUAL: "ANNUAL",
-                ONCE: "ONCE"
-            }
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
         },
-        ServiceStatus: {
-            name: "ServiceStatus",
-            values: {
-                ACTIVE: "ACTIVE",
-                INACTIVE: "INACTIVE",
-                ARCHIVED: "ARCHIVED"
-            }
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
         },
-        LoanStatus: {
-            name: "LoanStatus",
-            values: {
-                ACTIVE: "ACTIVE",
-                COMPLETED: "COMPLETED",
-                DEFAULTED: "DEFAULTED"
-            }
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("update") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
         },
-        LoanScheduleStatus: {
-            name: "LoanScheduleStatus",
-            values: {
-                PENDING: "PENDING",
-                PARTIAL: "PARTIAL",
-                PAID: "PAID",
-                OVERDUE: "OVERDUE"
-            }
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("user_permission_versions") }],
         },
-        UserStatus: {
-            name: "UserStatus",
-            values: {
-                PENDING_SETUP: "PENDING_SETUP",
-                ACTIVE: "ACTIVE",
-                SUSPENDED: "SUSPENDED"
-            }
+      ],
+      idFields: ["userId"],
+      uniqueFields: {
+        userId: { type: "Int" },
+      },
+    },
+    Employee: {
+      name: "Employee",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
         },
-        BudgetStatus: {
-            name: "BudgetStatus",
-            values: {
-                DRAFT: "DRAFT",
-                SENT: "SENT",
-                ACCEPTED: "ACCEPTED",
-                REJECTED: "REJECTED",
-                EXPIRED: "EXPIRED"
-            }
+        personId: {
+          name: "personId",
+          type: "Int",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] },
+          ],
+          foreignKeyFor: ["person"],
         },
-        AttachmentType: {
-            name: "AttachmentType",
-            values: {
-                CONSENT: "CONSENT",
-                EXAM: "EXAM",
-                RECIPE: "RECIPE",
-                OTHER: "OTHER"
-            }
+        position: {
+          name: "position",
+          type: "String",
         },
-        DTEType: {
-            name: "DTEType",
-            values: {
-                PURCHASE: "PURCHASE",
-                SALE: "SALE"
-            }
-        }
-    } as const;
-    authType = "User" as const;
-    plugins = {};
+        department: {
+          name: "department",
+          type: "String",
+          optional: true,
+        },
+        startDate: {
+          name: "startDate",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("start_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        endDate: {
+          name: "endDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_date") }] },
+            { name: "@db.Date" },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "EmployeeStatus",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("ACTIVE") }],
+            },
+          ],
+          default: "ACTIVE",
+        },
+        salaryType: {
+          name: "salaryType",
+          type: "EmployeeSalaryType",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("FIXED") }],
+            },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("salary_type") }],
+            },
+          ],
+          default: "FIXED",
+        },
+        baseSalary: {
+          name: "baseSalary",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("base_salary") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(12) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        hourlyRate: {
+          name: "hourlyRate",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("hourly_rate") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(10) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        bankName: {
+          name: "bankName",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_name") }] },
+          ],
+        },
+        bankAccountType: {
+          name: "bankAccountType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_account_type") }],
+            },
+          ],
+        },
+        bankAccountNumber: {
+          name: "bankAccountNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_account_number") }],
+            },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        metadata: {
+          name: "metadata",
+          type: "Json",
+          optional: true,
+        },
+        overtimeRate: {
+          name: "overtimeRate",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("overtime_rate") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(10) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        retentionRate: {
+          name: "retentionRate",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0.145) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("retention_rate") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(5) },
+                { name: "s", value: ExpressionUtils.literal(4) },
+              ],
+            },
+          ],
+          default: 0.145,
+        },
+        timesheets: {
+          name: "timesheets",
+          type: "EmployeeTimesheet",
+          array: true,
+          relation: { opposite: "employee" },
+        },
+        person: {
+          name: "person",
+          type: "Person",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "employee",
+            fields: ["personId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("employees") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        personId: { type: "Int" },
+      },
+    },
+    Counterpart: {
+      name: "Counterpart",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        bankAccountHolder: {
+          name: "bankAccountHolder",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_account_holder") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] },
+          ],
+        },
+        category: {
+          name: "category",
+          type: "CounterpartCategory",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("SUPPLIER") }],
+            },
+          ],
+          default: "SUPPLIER",
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        accounts: {
+          name: "accounts",
+          type: "CounterpartAccount",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
+        withdrawTransactions: {
+          name: "withdrawTransactions",
+          type: "WithdrawTransaction",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
+        releaseTransactions: {
+          name: "releaseTransactions",
+          type: "ReleaseTransaction",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
+        settlementTransactions: {
+          name: "settlementTransactions",
+          type: "SettlementTransaction",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
+        services: {
+          name: "services",
+          type: "Service",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("counterparts") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        identificationNumber: { type: "String" },
+      },
+    },
+    CounterpartAccount: {
+      name: "CounterpartAccount",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        counterpartId: {
+          name: "counterpartId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("counterpart_id") }],
+            },
+          ],
+          foreignKeyFor: ["counterpart"],
+        },
+        bankName: {
+          name: "bankName",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_name") }] },
+          ],
+        },
+        accountType: {
+          name: "accountType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("account_type") }],
+            },
+          ],
+        },
+        accountNumber: {
+          name: "accountNumber",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("account_number") }],
+            },
+          ],
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "accounts",
+            fields: ["counterpartId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("counterpart_accounts") }],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]),
+            },
+          ],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    EmployeeTimesheet: {
+      name: "EmployeeTimesheet",
+      fields: {
+        id: {
+          name: "id",
+          type: "BigInt",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        employeeId: {
+          name: "employeeId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("employee_id") }],
+            },
+          ],
+          foreignKeyFor: ["employee"],
+        },
+        workDate: {
+          name: "workDate",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("work_date") }] },
+            { name: "@db.Date" },
+          ],
+        },
+        startTime: {
+          name: "startTime",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("start_time") }],
+            },
+            { name: "@db.Time", args: [{ name: "x", value: ExpressionUtils.literal(6) }] },
+          ],
+        },
+        endTime: {
+          name: "endTime",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_time") }] },
+            { name: "@db.Time", args: [{ name: "x", value: ExpressionUtils.literal(6) }] },
+          ],
+        },
+        workedMinutes: {
+          name: "workedMinutes",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("worked_minutes") }],
+            },
+          ],
+        },
+        overtimeMinutes: {
+          name: "overtimeMinutes",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("overtime_minutes") }],
+            },
+          ],
+          default: 0,
+        },
+        comment: {
+          name: "comment",
+          type: "String",
+          optional: true,
+        },
+        employee: {
+          name: "employee",
+          type: "Employee",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("employeeId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "timesheets",
+            fields: ["employeeId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("employeeId"),
+                ExpressionUtils.field("workDate"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("employeeId")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("employee_timesheets") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "BigInt" },
+        employeeId_workDate: { employeeId: { type: "Int" }, workDate: { type: "DateTime" } },
+      },
+    },
+    Transaction: {
+      name: "Transaction",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        description: {
+          name: "description",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("description") }],
+            },
+          ],
+        },
+        person_id: {
+          name: "person_id",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["people"],
+        },
+        created_at: {
+          name: "created_at",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        businessUnit: {
+          name: "businessUnit",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("business_unit") }],
+            },
+          ],
+        },
+        cardInitialNumber: {
+          name: "cardInitialNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("card_initial_number") }],
+            },
+          ],
+        },
+        couponAmount: {
+          name: "couponAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("coupon_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        externalPosId: {
+          name: "externalPosId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_pos_id") }],
+            },
+          ],
+        },
+        externalReference: {
+          name: "externalReference",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_reference") }],
+            },
+          ],
+        },
+        externalStoreId: {
+          name: "externalStoreId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_store_id") }],
+            },
+          ],
+        },
+        feeAmount: {
+          name: "feeAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        financingFeeAmount: {
+          name: "financingFeeAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("financing_fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        franchise: {
+          name: "franchise",
+          type: "String",
+          optional: true,
+        },
+        installments: {
+          name: "installments",
+          type: "Int",
+          optional: true,
+        },
+        invoicingPeriod: {
+          name: "invoicingPeriod",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("invoicing_period") }],
+            },
+          ],
+        },
+        isReleased: {
+          name: "isReleased",
+          type: "Boolean",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("is_released") }],
+            },
+          ],
+        },
+        issuerName: {
+          name: "issuerName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("issuer_name") }],
+            },
+          ],
+        },
+        lastFourDigits: {
+          name: "lastFourDigits",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("last_four_digits") }],
+            },
+          ],
+        },
+        metadata: {
+          name: "metadata",
+          type: "Json",
+          optional: true,
+        },
+        mkpFeeAmount: {
+          name: "mkpFeeAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("mkp_fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        moneyReleaseDate: {
+          name: "moneyReleaseDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("money_release_date") }],
+            },
+          ],
+        },
+        operationTags: {
+          name: "operationTags",
+          type: "Json",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("operation_tags") }],
+            },
+          ],
+        },
+        orderId: {
+          name: "orderId",
+          type: "BigInt",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] },
+          ],
+        },
+        orderMp: {
+          name: "orderMp",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_mp") }] },
+          ],
+        },
+        packId: {
+          name: "packId",
+          type: "BigInt",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pack_id") }] },
+          ],
+        },
+        payBankTransferId: {
+          name: "payBankTransferId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("pay_bank_transfer_id") }],
+            },
+          ],
+        },
+        paymentMethod: {
+          name: "paymentMethod",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("payment_method") }],
+            },
+          ],
+        },
+        paymentMethodType: {
+          name: "paymentMethodType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("payment_method_type") }],
+            },
+          ],
+        },
+        poiBankName: {
+          name: "poiBankName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("poi_bank_name") }],
+            },
+          ],
+        },
+        poiId: {
+          name: "poiId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_id") }] },
+          ],
+        },
+        poiWalletName: {
+          name: "poiWalletName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("poi_wallet_name") }],
+            },
+          ],
+        },
+        posId: {
+          name: "posId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_id") }] },
+          ],
+        },
+        posName: {
+          name: "posName",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_name") }] },
+          ],
+        },
+        productSku: {
+          name: "productSku",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("product_sku") }],
+            },
+          ],
+        },
+        purchaseId: {
+          name: "purchaseId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("purchase_id") }],
+            },
+          ],
+        },
+        realAmount: {
+          name: "realAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("real_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        saleDetail: {
+          name: "saleDetail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("sale_detail") }],
+            },
+          ],
+        },
+        sellerAmount: {
+          name: "sellerAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("seller_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        settlementCurrency: {
+          name: "settlementCurrency",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("settlement_currency") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] },
+          ],
+        },
+        settlementDate: {
+          name: "settlementDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("settlement_date") }],
+            },
+          ],
+        },
+        settlementNetAmount: {
+          name: "settlementNetAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("settlement_net_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        shipmentMode: {
+          name: "shipmentMode",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipment_mode") }],
+            },
+          ],
+        },
+        shippingFeeAmount: {
+          name: "shippingFeeAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipping_fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        shippingId: {
+          name: "shippingId",
+          type: "BigInt",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipping_id") }],
+            },
+          ],
+        },
+        shippingOrderId: {
+          name: "shippingOrderId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipping_order_id") }],
+            },
+          ],
+        },
+        site: {
+          name: "site",
+          type: "String",
+          optional: true,
+        },
+        sourceId: {
+          name: "sourceId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_id") }] },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          optional: true,
+        },
+        storeId: {
+          name: "storeId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("store_id") }] },
+          ],
+        },
+        storeName: {
+          name: "storeName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("store_name") }],
+            },
+          ],
+        },
+        subUnit: {
+          name: "subUnit",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sub_unit") }] },
+          ],
+        },
+        taxDetail: {
+          name: "taxDetail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("tax_detail") }],
+            },
+          ],
+        },
+        taxesAmount: {
+          name: "taxesAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("taxes_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        taxesDisaggregated: {
+          name: "taxesDisaggregated",
+          type: "Json",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("taxes_disaggregated") }],
+            },
+          ],
+        },
+        tipAmount: {
+          name: "tipAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("tip_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        totalCouponAmount: {
+          name: "totalCouponAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_coupon_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        transactionAmount: {
+          name: "transactionAmount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        transactionCurrency: {
+          name: "transactionCurrency",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_currency") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] },
+          ],
+        },
+        transactionDate: {
+          name: "transactionDate",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_date") }],
+            },
+          ],
+        },
+        transactionIntentId: {
+          name: "transactionIntentId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_intent_id") }],
+            },
+          ],
+        },
+        transactionType: {
+          name: "transactionType",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_type") }],
+            },
+          ],
+        },
+        userId: {
+          name: "userId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] },
+          ],
+        },
+        people: {
+          name: "people",
+          type: "Person",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("person_id")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: { opposite: "transactions", fields: ["person_id"], references: ["id"] },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [
+                ExpressionUtils.field("sourceId"),
+                ExpressionUtils.field("transactionType"),
+              ]),
+            },
+            { name: "map", value: ExpressionUtils.literal("unique_mp_tx") },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("person_id")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("transactionDate")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("status")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("transactionType")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("externalReference")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("sourceId")]),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("transactions") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        sourceId_transactionType: {
+          sourceId: { type: "String" },
+          transactionType: { type: "String" },
+        },
+      },
+    },
+    SettlementTransaction: {
+      name: "SettlementTransaction",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        sourceId: {
+          name: "sourceId",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_id") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] },
+          ],
+        },
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+          foreignKeyFor: ["counterpart"],
+        },
+        transactionDate: {
+          name: "transactionDate",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_date") }],
+            },
+          ],
+        },
+        settlementDate: {
+          name: "settlementDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("settlement_date") }],
+            },
+          ],
+        },
+        moneyReleaseDate: {
+          name: "moneyReleaseDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("money_release_date") }],
+            },
+          ],
+        },
+        externalReference: {
+          name: "externalReference",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_reference") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] },
+          ],
+        },
+        userId: {
+          name: "userId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(19) }] },
+          ],
+        },
+        paymentMethodType: {
+          name: "paymentMethodType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("payment_method_type") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        paymentMethod: {
+          name: "paymentMethod",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("payment_method") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        site: {
+          name: "site",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        transactionType: {
+          name: "transactionType",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_type") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        transactionAmount: {
+          name: "transactionAmount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        transactionCurrency: {
+          name: "transactionCurrency",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_currency") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] },
+          ],
+        },
+        sellerAmount: {
+          name: "sellerAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("seller_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        feeAmount: {
+          name: "feeAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        settlementNetAmount: {
+          name: "settlementNetAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("settlement_net_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        settlementCurrency: {
+          name: "settlementCurrency",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("settlement_currency") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] },
+          ],
+        },
+        realAmount: {
+          name: "realAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("real_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        couponAmount: {
+          name: "couponAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("coupon_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        metadata: {
+          name: "metadata",
+          type: "Json",
+          optional: true,
+        },
+        mkpFeeAmount: {
+          name: "mkpFeeAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("mkp_fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        financingFeeAmount: {
+          name: "financingFeeAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("financing_fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        shippingFeeAmount: {
+          name: "shippingFeeAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipping_fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        taxesAmount: {
+          name: "taxesAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("taxes_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        installments: {
+          name: "installments",
+          type: "Int",
+          optional: true,
+        },
+        taxDetail: {
+          name: "taxDetail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("tax_detail") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        taxesDisaggregated: {
+          name: "taxesDisaggregated",
+          type: "Json",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("taxes_disaggregated") }],
+            },
+          ],
+        },
+        description: {
+          name: "description",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        cardInitialNumber: {
+          name: "cardInitialNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("card_initial_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(8) }] },
+          ],
+        },
+        operationTags: {
+          name: "operationTags",
+          type: "Json",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("operation_tags") }],
+            },
+          ],
+        },
+        businessUnit: {
+          name: "businessUnit",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("business_unit") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] },
+          ],
+        },
+        subUnit: {
+          name: "subUnit",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sub_unit") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] },
+          ],
+        },
+        productSku: {
+          name: "productSku",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("product_sku") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        saleDetail: {
+          name: "saleDetail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("sale_detail") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(500) }] },
+          ],
+        },
+        transactionIntentId: {
+          name: "transactionIntentId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_intent_id") }],
+            },
+          ],
+        },
+        franchise: {
+          name: "franchise",
+          type: "String",
+          optional: true,
+        },
+        issuerName: {
+          name: "issuerName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("issuer_name") }],
+            },
+          ],
+        },
+        lastFourDigits: {
+          name: "lastFourDigits",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("last_four_digits") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(4) }] },
+          ],
+        },
+        orderMp: {
+          name: "orderMp",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_mp") }] },
+          ],
+        },
+        invoicingPeriod: {
+          name: "invoicingPeriod",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("invoicing_period") }],
+            },
+          ],
+        },
+        payBankTransferId: {
+          name: "payBankTransferId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("pay_bank_transfer_id") }],
+            },
+          ],
+        },
+        isReleased: {
+          name: "isReleased",
+          type: "Boolean",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("is_released") }],
+            },
+          ],
+        },
+        tipAmount: {
+          name: "tipAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("tip_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        purchaseId: {
+          name: "purchaseId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("purchase_id") }],
+            },
+          ],
+        },
+        totalCouponAmount: {
+          name: "totalCouponAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_coupon_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        posId: {
+          name: "posId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_id") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        posName: {
+          name: "posName",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_name") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        externalPosId: {
+          name: "externalPosId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_pos_id") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] },
+          ],
+        },
+        storeId: {
+          name: "storeId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("store_id") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        storeName: {
+          name: "storeName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("store_name") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        externalStoreId: {
+          name: "externalStoreId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_store_id") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] },
+          ],
+        },
+        poiId: {
+          name: "poiId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_id") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        orderId: {
+          name: "orderId",
+          type: "BigInt",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] },
+          ],
+        },
+        shippingId: {
+          name: "shippingId",
+          type: "BigInt",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipping_id") }],
+            },
+          ],
+        },
+        shipmentMode: {
+          name: "shipmentMode",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipment_mode") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] },
+          ],
+        },
+        packId: {
+          name: "packId",
+          type: "BigInt",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pack_id") }] },
+          ],
+        },
+        shippingOrderId: {
+          name: "shippingOrderId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipping_order_id") }],
+            },
+          ],
+        },
+        poiWalletName: {
+          name: "poiWalletName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("poi_wallet_name") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        poiBankName: {
+          name: "poiBankName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("poi_bank_name") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "settlementTransactions",
+            fields: ["identificationNumber"],
+            references: ["identificationNumber"],
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("transactionDate")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("transactionType")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("externalReference")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("settlement_transactions") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        sourceId: { type: "String" },
+      },
+    },
+    ReleaseTransaction: {
+      name: "ReleaseTransaction",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        sourceId: {
+          name: "sourceId",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("source_id") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] },
+          ],
+        },
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+          foreignKeyFor: ["counterpart"],
+        },
+        date: {
+          name: "date",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("date") }] },
+          ],
+        },
+        externalReference: {
+          name: "externalReference",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_reference") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] },
+          ],
+        },
+        recordType: {
+          name: "recordType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("record_type") }],
+            },
+          ],
+        },
+        description: {
+          name: "description",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(500) }] },
+          ],
+        },
+        netCreditAmount: {
+          name: "netCreditAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("net_credit_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        netDebitAmount: {
+          name: "netDebitAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("net_debit_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        grossAmount: {
+          name: "grossAmount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("gross_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        sellerAmount: {
+          name: "sellerAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("seller_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        mpFeeAmount: {
+          name: "mpFeeAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("mp_fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        financingFeeAmount: {
+          name: "financingFeeAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("financing_fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        shippingFeeAmount: {
+          name: "shippingFeeAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipping_fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        taxesAmount: {
+          name: "taxesAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("taxes_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        couponAmount: {
+          name: "couponAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("coupon_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        effectiveCouponAmount: {
+          name: "effectiveCouponAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("effective_coupon_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        balanceAmount: {
+          name: "balanceAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("balance_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        taxAmountTelco: {
+          name: "taxAmountTelco",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("tax_amount_telco") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        installments: {
+          name: "installments",
+          type: "Int",
+          optional: true,
+        },
+        paymentMethod: {
+          name: "paymentMethod",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("payment_method") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        paymentMethodType: {
+          name: "paymentMethodType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("payment_method_type") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        taxDetail: {
+          name: "taxDetail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("tax_detail") }],
+            },
+          ],
+        },
+        taxesDisaggregated: {
+          name: "taxesDisaggregated",
+          type: "Json",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("taxes_disaggregated") }],
+            },
+          ],
+        },
+        transactionApprovalDate: {
+          name: "transactionApprovalDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_approval_date") }],
+            },
+          ],
+        },
+        transactionIntentId: {
+          name: "transactionIntentId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("transaction_intent_id") }],
+            },
+          ],
+        },
+        posId: {
+          name: "posId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_id") }] },
+          ],
+        },
+        posName: {
+          name: "posName",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pos_name") }] },
+          ],
+        },
+        externalPosId: {
+          name: "externalPosId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_pos_id") }],
+            },
+          ],
+        },
+        storeId: {
+          name: "storeId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("store_id") }] },
+          ],
+        },
+        storeName: {
+          name: "storeName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("store_name") }],
+            },
+          ],
+        },
+        externalStoreId: {
+          name: "externalStoreId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_store_id") }],
+            },
+          ],
+        },
+        currency: {
+          name: "currency",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] },
+          ],
+        },
+        shippingId: {
+          name: "shippingId",
+          type: "BigInt",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipping_id") }],
+            },
+          ],
+        },
+        shipmentMode: {
+          name: "shipmentMode",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipment_mode") }],
+            },
+          ],
+        },
+        shippingOrderId: {
+          name: "shippingOrderId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("shipping_order_id") }],
+            },
+          ],
+        },
+        orderId: {
+          name: "orderId",
+          type: "BigInt",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_id") }] },
+          ],
+        },
+        packId: {
+          name: "packId",
+          type: "BigInt",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pack_id") }] },
+          ],
+        },
+        poiId: {
+          name: "poiId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("poi_id") }] },
+          ],
+        },
+        itemId: {
+          name: "itemId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("item_id") }] },
+          ],
+        },
+        metadata: {
+          name: "metadata",
+          type: "Json",
+          optional: true,
+        },
+        cardInitialNumber: {
+          name: "cardInitialNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("card_initial_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(8) }] },
+          ],
+        },
+        operationTags: {
+          name: "operationTags",
+          type: "Json",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("operation_tags") }],
+            },
+          ],
+        },
+        lastFourDigits: {
+          name: "lastFourDigits",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("last_four_digits") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(4) }] },
+          ],
+        },
+        franchise: {
+          name: "franchise",
+          type: "String",
+          optional: true,
+        },
+        issuerName: {
+          name: "issuerName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("issuer_name") }],
+            },
+          ],
+        },
+        poiBankName: {
+          name: "poiBankName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("poi_bank_name") }],
+            },
+          ],
+        },
+        poiWalletName: {
+          name: "poiWalletName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("poi_wallet_name") }],
+            },
+          ],
+        },
+        businessUnit: {
+          name: "businessUnit",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("business_unit") }],
+            },
+          ],
+        },
+        subUnit: {
+          name: "subUnit",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sub_unit") }] },
+          ],
+        },
+        payoutBankAccountNumber: {
+          name: "payoutBankAccountNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("payout_bank_account_number") },
+              ],
+            },
+          ],
+        },
+        productSku: {
+          name: "productSku",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("product_sku") }],
+            },
+          ],
+        },
+        saleDetail: {
+          name: "saleDetail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("sale_detail") }],
+            },
+          ],
+        },
+        orderMp: {
+          name: "orderMp",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("order_mp") }] },
+          ],
+        },
+        purchaseId: {
+          name: "purchaseId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("purchase_id") }],
+            },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "releaseTransactions",
+            fields: ["identificationNumber"],
+            references: ["identificationNumber"],
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]),
+                "?",
+                ExpressionUtils.binary(
+                  ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]),
+                  "==",
+                  ExpressionUtils.literal("ADMIN"),
+                ),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("date")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("sourceId")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("release_transactions") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        sourceId: { type: "String" },
+      },
+    },
+    WithdrawTransaction: {
+      name: "WithdrawTransaction",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        withdrawId: {
+          name: "withdrawId",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_id") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(64) }] },
+          ],
+        },
+        dateCreated: {
+          name: "dateCreated",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("date_created") }],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        statusDetail: {
+          name: "statusDetail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("status_detail") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] },
+          ],
+        },
+        amount: {
+          name: "amount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        fee: {
+          name: "fee",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(17) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        activityUrl: {
+          name: "activityUrl",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("activity_url") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(500) }] },
+          ],
+        },
+        payoutDescription: {
+          name: "payoutDescription",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("payout_desc") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(500) }] },
+          ],
+        },
+        bankAccountHolder: {
+          name: "bankAccountHolder",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_account_holder") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(255) }] },
+          ],
+        },
+        identificationType: {
+          name: "identificationType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("identification_type") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        identificationNumber: {
+          name: "identificationNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("identification_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+          foreignKeyFor: ["counterpart"],
+        },
+        bankId: {
+          name: "bankId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_id") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        bankName: {
+          name: "bankName",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_name") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        bankBranch: {
+          name: "bankBranch",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_branch") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(200) }] },
+          ],
+        },
+        bankAccountType: {
+          name: "bankAccountType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_account_type") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        bankAccountNumber: {
+          name: "bankAccountNumber",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bank_account_number") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(100) }] },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("String", [
+                    ExpressionUtils.field("identificationNumber"),
+                  ]),
+                },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "withdrawTransactions",
+            fields: ["identificationNumber"],
+            references: ["identificationNumber"],
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["roles"]),
+                "?",
+                ExpressionUtils.binary(
+                  ExpressionUtils.member(ExpressionUtils.field("role"), ["name"]),
+                  "==",
+                  ExpressionUtils.literal("ADMIN"),
+                ),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("dateCreated")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("withdrawId")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("withdraw_transactions") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        withdrawId: { type: "String" },
+      },
+    },
+    DailyBalance: {
+      name: "DailyBalance",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        date: {
+          name: "date",
+          type: "DateTime",
+          unique: true,
+          attributes: [{ name: "@unique" }, { name: "@db.Date" }],
+        },
+        amount: {
+          name: "amount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        note: {
+          name: "note",
+          type: "String",
+          optional: true,
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("daily_balances") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        date: { type: "DateTime" },
+      },
+    },
+    Service: {
+      name: "Service",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        counterpartId: {
+          name: "counterpartId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("counterpart_id") }],
+            },
+          ],
+          foreignKeyFor: ["counterpart"],
+        },
+        type: {
+          name: "type",
+          type: "ServiceType",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("BUSINESS") }],
+            },
+          ],
+          default: "BUSINESS",
+        },
+        frequency: {
+          name: "frequency",
+          type: "ServiceFrequency",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("MONTHLY") }],
+            },
+          ],
+          default: "MONTHLY",
+        },
+        defaultAmount: {
+          name: "defaultAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("default_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        status: {
+          name: "status",
+          type: "ServiceStatus",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("ACTIVE") }],
+            },
+          ],
+          default: "ACTIVE",
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: { opposite: "services", fields: ["counterpartId"], references: ["id"] },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("services") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    Loan: {
+      name: "Loan",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        title: {
+          name: "title",
+          type: "String",
+        },
+        principalAmount: {
+          name: "principalAmount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("principal_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        interestRate: {
+          name: "interestRate",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("interest_rate") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(9) },
+                { name: "s", value: ExpressionUtils.literal(6) },
+              ],
+            },
+          ],
+        },
+        startDate: {
+          name: "startDate",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("start_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "LoanStatus",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("ACTIVE") }],
+            },
+          ],
+          default: "ACTIVE",
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        schedules: {
+          name: "schedules",
+          type: "LoanSchedule",
+          array: true,
+          relation: { opposite: "loan" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("loans") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    LoanSchedule: {
+      name: "LoanSchedule",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        loanId: {
+          name: "loanId",
+          type: "Int",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("loan_id") }] },
+          ],
+          foreignKeyFor: ["loan"],
+        },
+        installmentNumber: {
+          name: "installmentNumber",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("installment_number") }],
+            },
+          ],
+        },
+        dueDate: {
+          name: "dueDate",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("due_date") }] },
+            { name: "@db.Date" },
+          ],
+        },
+        expectedAmount: {
+          name: "expectedAmount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("expected_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "LoanScheduleStatus",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }],
+            },
+          ],
+          default: "PENDING",
+        },
+        loan: {
+          name: "loan",
+          type: "Loan",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("loanId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "schedules",
+            fields: ["loanId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("update") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("loanId")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("loan_schedules") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    Setting: {
+      name: "Setting",
+      fields: {
+        key: {
+          name: "key",
+          type: "String",
+          id: true,
+          attributes: [{ name: "@id" }],
+        },
+        value: {
+          name: "value",
+          type: "String",
+          optional: true,
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("update") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("settings") }] },
+      ],
+      idFields: ["key"],
+      uniqueFields: {
+        key: { type: "String" },
+      },
+    },
+    PushSubscription: {
+      name: "PushSubscription",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        userId: {
+          name: "userId",
+          type: "Int",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] },
+          ],
+          foreignKeyFor: ["user"],
+        },
+        endpoint: {
+          name: "endpoint",
+          type: "String",
+          unique: true,
+          attributes: [{ name: "@unique" }],
+        },
+        keys: {
+          name: "keys",
+          type: "Json",
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        user: {
+          name: "user",
+          type: "User",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "pushSubscriptions",
+            fields: ["userId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["id"]),
+                "==",
+                ExpressionUtils.field("userId"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("push_subscriptions") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        endpoint: { type: "String" },
+      },
+    },
+    Calendar: {
+      name: "Calendar",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        googleId: {
+          name: "googleId",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("google_id") }] },
+          ],
+        },
+        name: {
+          name: "name",
+          type: "String",
+          optional: true,
+        },
+        syncToken: {
+          name: "syncToken",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("sync_token") }],
+            },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        watchChannels: {
+          name: "watchChannels",
+          type: "CalendarWatchChannel",
+          array: true,
+          relation: { opposite: "calendar" },
+        },
+        events: {
+          name: "events",
+          type: "Event",
+          array: true,
+          relation: { opposite: "calendar" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("calendars") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        googleId: { type: "String" },
+      },
+    },
+    CalendarWatchChannel: {
+      name: "CalendarWatchChannel",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        calendarId: {
+          name: "calendarId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("calendar_id") }],
+            },
+          ],
+          foreignKeyFor: ["calendar"],
+        },
+        channelId: {
+          name: "channelId",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("channel_id") }],
+            },
+          ],
+        },
+        resourceId: {
+          name: "resourceId",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("resource_id") }],
+            },
+          ],
+        },
+        expiration: {
+          name: "expiration",
+          type: "DateTime",
+        },
+        webhookUrl: {
+          name: "webhookUrl",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("webhook_url") }],
+            },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        calendar: {
+          name: "calendar",
+          type: "Calendar",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "watchChannels",
+            fields: ["calendarId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarId")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("calendar_watch_channels") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        channelId: { type: "String" },
+      },
+    },
+    Event: {
+      name: "Event",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        calendarId: {
+          name: "calendarId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("calendar_id") }],
+            },
+          ],
+          foreignKeyFor: ["calendar"],
+        },
+        externalEventId: {
+          name: "externalEventId",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_event_id") }],
+            },
+          ],
+        },
+        eventStatus: {
+          name: "eventStatus",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("event_status") }],
+            },
+          ],
+        },
+        eventType: {
+          name: "eventType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("event_type") }],
+            },
+          ],
+        },
+        summary: {
+          name: "summary",
+          type: "String",
+          optional: true,
+        },
+        description: {
+          name: "description",
+          type: "String",
+          optional: true,
+        },
+        startDate: {
+          name: "startDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("start_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        startDateTime: {
+          name: "startDateTime",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("start_date_time") }],
+            },
+          ],
+        },
+        startTimeZone: {
+          name: "startTimeZone",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("start_time_zone") }],
+            },
+          ],
+        },
+        endDate: {
+          name: "endDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_date") }] },
+            { name: "@db.Date" },
+          ],
+        },
+        endDateTime: {
+          name: "endDateTime",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("end_date_time") }],
+            },
+          ],
+        },
+        endTimeZone: {
+          name: "endTimeZone",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("end_time_zone") }],
+            },
+          ],
+        },
+        eventCreatedAt: {
+          name: "eventCreatedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("event_created_at") }],
+            },
+          ],
+        },
+        eventUpdatedAt: {
+          name: "eventUpdatedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("event_updated_at") }],
+            },
+          ],
+        },
+        colorId: {
+          name: "colorId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("color_id") }] },
+          ],
+        },
+        location: {
+          name: "location",
+          type: "String",
+          optional: true,
+        },
+        transparency: {
+          name: "transparency",
+          type: "String",
+          optional: true,
+        },
+        visibility: {
+          name: "visibility",
+          type: "String",
+          optional: true,
+        },
+        hangoutLink: {
+          name: "hangoutLink",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("hangout_link") }],
+            },
+          ],
+        },
+        category: {
+          name: "category",
+          type: "String",
+          optional: true,
+        },
+        amountExpected: {
+          name: "amountExpected",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("amount_expected") }],
+            },
+          ],
+        },
+        amountPaid: {
+          name: "amountPaid",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("amount_paid") }],
+            },
+          ],
+        },
+        attended: {
+          name: "attended",
+          type: "Boolean",
+          optional: true,
+        },
+        dosageValue: {
+          name: "dosageValue",
+          type: "Float",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("dosage_value") }],
+            },
+          ],
+        },
+        dosageUnit: {
+          name: "dosageUnit",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("dosage_unit") }],
+            },
+          ],
+        },
+        treatmentStage: {
+          name: "treatmentStage",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("treatment_stage") }],
+            },
+          ],
+        },
+        controlIncluded: {
+          name: "controlIncluded",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("control_included") }],
+            },
+          ],
+          default: false,
+        },
+        isDomicilio: {
+          name: "isDomicilio",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("is_domicilio") }],
+            },
+          ],
+          default: false,
+        },
+        rawEvent: {
+          name: "rawEvent",
+          type: "Json",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("raw_event") }] },
+          ],
+        },
+        lastSyncedAt: {
+          name: "lastSyncedAt",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("last_synced_at") }],
+            },
+          ],
+        },
+        calendar: {
+          name: "calendar",
+          type: "Calendar",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: { opposite: "events", fields: ["calendarId"], references: ["id"] },
+        },
+        consultations: {
+          name: "consultations",
+          type: "Consultation",
+          array: true,
+          relation: { opposite: "event" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("calendarId"),
+                ExpressionUtils.field("externalEventId"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("calendarId")]),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("events") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        calendarId_externalEventId: {
+          calendarId: { type: "Int" },
+          externalEventId: { type: "String" },
+        },
+      },
+    },
+    SyncLog: {
+      name: "SyncLog",
+      fields: {
+        id: {
+          name: "id",
+          type: "BigInt",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        triggerSource: {
+          name: "triggerSource",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("trigger_source") }],
+            },
+          ],
+        },
+        triggerUserId: {
+          name: "triggerUserId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("trigger_user_id") }],
+            },
+          ],
+        },
+        triggerLabel: {
+          name: "triggerLabel",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("trigger_label") }],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("SUCCESS") }],
+            },
+          ],
+          default: "SUCCESS",
+        },
+        startedAt: {
+          name: "startedAt",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("started_at") }],
+            },
+          ],
+        },
+        finishedAt: {
+          name: "finishedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("finished_at") }],
+            },
+          ],
+        },
+        fetchedAt: {
+          name: "fetchedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("fetched_at") }],
+            },
+          ],
+        },
+        inserted: {
+          name: "inserted",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+          ],
+          default: 0,
+        },
+        updated: {
+          name: "updated",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+          ],
+          default: 0,
+        },
+        skipped: {
+          name: "skipped",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+          ],
+          default: 0,
+        },
+        excluded: {
+          name: "excluded",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+          ],
+          default: 0,
+        },
+        errorMessage: {
+          name: "errorMessage",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("error_message") }],
+            },
+          ],
+        },
+        changeDetails: {
+          name: "changeDetails",
+          type: "Json",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("change_details") }],
+            },
+          ],
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "!=",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("triggerSource")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startedAt")]),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("sync_logs") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "BigInt" },
+      },
+    },
+    BackupLog: {
+      name: "BackupLog",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          attributes: [{ name: "@id" }],
+        },
+        timestamp: {
+          name: "timestamp",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        level: {
+          name: "level",
+          type: "String",
+        },
+        message: {
+          name: "message",
+          type: "String",
+        },
+        context: {
+          name: "context",
+          type: "Json",
+          optional: true,
+        },
+        jobId: {
+          name: "jobId",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("job_id") }] },
+          ],
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("timestamp")]),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("backup_logs") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+      },
+    },
+    InventoryCategory: {
+      name: "InventoryCategory",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        name: {
+          name: "name",
+          type: "String",
+          unique: true,
+          attributes: [{ name: "@unique" }],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        items: {
+          name: "items",
+          type: "InventoryItem",
+          array: true,
+          relation: { opposite: "category" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("inventory_categories") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        name: { type: "String" },
+      },
+    },
+    InventoryItem: {
+      name: "InventoryItem",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        categoryId: {
+          name: "categoryId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("category_id") }],
+            },
+          ],
+          foreignKeyFor: ["category"],
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        description: {
+          name: "description",
+          type: "String",
+          optional: true,
+        },
+        currentStock: {
+          name: "currentStock",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("current_stock") }],
+            },
+          ],
+          default: 0,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        category: {
+          name: "category",
+          type: "InventoryCategory",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("categoryId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: { opposite: "items", fields: ["categoryId"], references: ["id"] },
+        },
+        movements: {
+          name: "movements",
+          type: "InventoryMovement",
+          array: true,
+          relation: { opposite: "item" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("categoryId")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("inventory_items") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    InventoryMovement: {
+      name: "InventoryMovement",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        itemId: {
+          name: "itemId",
+          type: "Int",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("item_id") }] },
+          ],
+          foreignKeyFor: ["item"],
+        },
+        quantityChange: {
+          name: "quantityChange",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("quantity_change") }],
+            },
+          ],
+        },
+        reason: {
+          name: "reason",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        item: {
+          name: "item",
+          type: "InventoryItem",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("itemId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "movements",
+            fields: ["itemId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("itemId")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("inventory_movements") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    DailyProductionBalance: {
+      name: "DailyProductionBalance",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        balanceDate: {
+          name: "balanceDate",
+          type: "DateTime",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("balance_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        ingresoTarjetas: {
+          name: "ingresoTarjetas",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("ingreso_tarjetas") }],
+            },
+          ],
+          default: 0,
+        },
+        ingresoTransferencias: {
+          name: "ingresoTransferencias",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("ingreso_transferencias") }],
+            },
+          ],
+          default: 0,
+        },
+        ingresoEfectivo: {
+          name: "ingresoEfectivo",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("ingreso_efectivo") }],
+            },
+          ],
+          default: 0,
+        },
+        gastosDiarios: {
+          name: "gastosDiarios",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("gastos_diarios") }],
+            },
+          ],
+          default: 0,
+        },
+        otrosAbonos: {
+          name: "otrosAbonos",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("otros_abonos") }],
+            },
+          ],
+          default: 0,
+        },
+        comentarios: {
+          name: "comentarios",
+          type: "String",
+          optional: true,
+        },
+        status: {
+          name: "status",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("DRAFT") }],
+            },
+          ],
+          default: "DRAFT",
+        },
+        changeReason: {
+          name: "changeReason",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("change_reason") }],
+            },
+          ],
+        },
+        createdBy: {
+          name: "createdBy",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_by") }],
+            },
+          ],
+          foreignKeyFor: ["user"],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        consultasMonto: {
+          name: "consultasMonto",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("consultas_monto") }],
+            },
+          ],
+          default: 0,
+        },
+        controlesMonto: {
+          name: "controlesMonto",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("controles_monto") }],
+            },
+          ],
+          default: 0,
+        },
+        licenciasMonto: {
+          name: "licenciasMonto",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("licencias_monto") }],
+            },
+          ],
+          default: 0,
+        },
+        roxairMonto: {
+          name: "roxairMonto",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("roxair_monto") }],
+            },
+          ],
+          default: 0,
+        },
+        testsMonto: {
+          name: "testsMonto",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("tests_monto") }],
+            },
+          ],
+          default: 0,
+        },
+        vacunasMonto: {
+          name: "vacunasMonto",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("vacunas_monto") }],
+            },
+          ],
+          default: 0,
+        },
+        user: {
+          name: "user",
+          type: "User",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("createdBy")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "dailyProductionBalances",
+            fields: ["createdBy"],
+            references: ["id"],
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("createdBy")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("daily_production_balances") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        balanceDate: { type: "DateTime" },
+      },
+    },
+    SupplyRequest: {
+      name: "SupplyRequest",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        userId: {
+          name: "userId",
+          type: "Int",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("user_id") }] },
+          ],
+          foreignKeyFor: ["user"],
+        },
+        supplyName: {
+          name: "supplyName",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("supply_name") }],
+            },
+          ],
+        },
+        quantity: {
+          name: "quantity",
+          type: "Int",
+        },
+        brand: {
+          name: "brand",
+          type: "String",
+          optional: true,
+        },
+        model: {
+          name: "model",
+          type: "String",
+          optional: true,
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        status: {
+          name: "status",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }],
+            },
+          ],
+          default: "PENDING",
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        user: {
+          name: "user",
+          type: "User",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: { opposite: "supplyRequests", fields: ["userId"], references: ["id"] },
+        },
+      },
+      attributes: [
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("userId")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("supply_requests") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    CommonSupply: {
+      name: "CommonSupply",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        brand: {
+          name: "brand",
+          type: "String",
+          optional: true,
+        },
+        model: {
+          name: "model",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+      },
+      attributes: [
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [
+                ExpressionUtils.field("name"),
+                ExpressionUtils.field("brand"),
+                ExpressionUtils.field("model"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("common_supplies") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        name_brand_model: {
+          name: { type: "String" },
+          brand: { type: "String" },
+          model: { type: "String" },
+        },
+      },
+    },
+    CalendarSyncLog: {
+      name: "CalendarSyncLog",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        triggerSource: {
+          name: "triggerSource",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("trigger_source") }],
+            },
+          ],
+        },
+        triggerUserId: {
+          name: "triggerUserId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("trigger_user_id") }],
+            },
+          ],
+        },
+        triggerLabel: {
+          name: "triggerLabel",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("trigger_label") }],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }],
+            },
+          ],
+          default: "PENDING",
+        },
+        startedAt: {
+          name: "startedAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("started_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        endedAt: {
+          name: "endedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ended_at") }] },
+          ],
+        },
+        fetchedAt: {
+          name: "fetchedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("fetched_at") }],
+            },
+          ],
+        },
+        eventsSynced: {
+          name: "eventsSynced",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("events_synced") }],
+            },
+          ],
+          default: 0,
+        },
+        inserted: {
+          name: "inserted",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+          ],
+          default: 0,
+        },
+        updated: {
+          name: "updated",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+          ],
+          default: 0,
+        },
+        skipped: {
+          name: "skipped",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+          ],
+          default: 0,
+        },
+        excluded: {
+          name: "excluded",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+          ],
+          default: 0,
+        },
+        errorMessage: {
+          name: "errorMessage",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("error_message") }],
+            },
+          ],
+        },
+        changeDetails: {
+          name: "changeDetails",
+          type: "Json",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("change_details") }],
+            },
+          ],
+        },
+      },
+      attributes: [
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startedAt")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "!=",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("calendar_sync_logs") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    DoctoraliaFacility: {
+      name: "DoctoraliaFacility",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        externalId: {
+          name: "externalId",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_id") }],
+            },
+          ],
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        doctors: {
+          name: "doctors",
+          type: "DoctoraliaDoctor",
+          array: true,
+          relation: { opposite: "facility" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_facilities") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        externalId: { type: "String" },
+      },
+    },
+    DoctoraliaDoctor: {
+      name: "DoctoraliaDoctor",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        facilityId: {
+          name: "facilityId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("facility_id") }],
+            },
+          ],
+          foreignKeyFor: ["facility"],
+        },
+        externalId: {
+          name: "externalId",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_id") }],
+            },
+          ],
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        surname: {
+          name: "surname",
+          type: "String",
+        },
+        profileUrl: {
+          name: "profileUrl",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("profile_url") }],
+            },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        facility: {
+          name: "facility",
+          type: "DoctoraliaFacility",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("facilityId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "doctors",
+            fields: ["facilityId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        addresses: {
+          name: "addresses",
+          type: "DoctoraliaAddress",
+          array: true,
+          relation: { opposite: "doctor" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("facilityId"),
+                ExpressionUtils.field("externalId"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("facilityId")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_doctors") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        facilityId_externalId: { facilityId: { type: "Int" }, externalId: { type: "String" } },
+      },
+    },
+    DoctoraliaAddress: {
+      name: "DoctoraliaAddress",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        doctorId: {
+          name: "doctorId",
+          type: "Int",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctor_id") }] },
+          ],
+          foreignKeyFor: ["doctor"],
+        },
+        externalId: {
+          name: "externalId",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_id") }],
+            },
+          ],
+        },
+        name: {
+          name: "name",
+          type: "String",
+          optional: true,
+        },
+        cityName: {
+          name: "cityName",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("city_name") }] },
+          ],
+        },
+        postCode: {
+          name: "postCode",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("post_code") }] },
+          ],
+        },
+        street: {
+          name: "street",
+          type: "String",
+          optional: true,
+        },
+        onlineOnly: {
+          name: "onlineOnly",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("online_only") }],
+            },
+          ],
+          default: false,
+        },
+        calendarEnabled: {
+          name: "calendarEnabled",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("calendar_enabled") }],
+            },
+          ],
+          default: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        doctor: {
+          name: "doctor",
+          type: "DoctoraliaDoctor",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("doctorId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "addresses",
+            fields: ["doctorId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        services: {
+          name: "services",
+          type: "DoctoraliaService",
+          array: true,
+          relation: { opposite: "address" },
+        },
+        insuranceProviders: {
+          name: "insuranceProviders",
+          type: "DoctoraliaInsuranceProvider",
+          array: true,
+          relation: { opposite: "address" },
+        },
+        slots: {
+          name: "slots",
+          type: "DoctoraliaSlot",
+          array: true,
+          relation: { opposite: "address" },
+        },
+        bookings: {
+          name: "bookings",
+          type: "DoctoraliaBooking",
+          array: true,
+          relation: { opposite: "address" },
+        },
+        breaks: {
+          name: "breaks",
+          type: "DoctoraliaCalendarBreak",
+          array: true,
+          relation: { opposite: "address" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("doctorId"),
+                ExpressionUtils.field("externalId"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("doctorId")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_addresses") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        doctorId_externalId: { doctorId: { type: "Int" }, externalId: { type: "String" } },
+      },
+    },
+    DoctoraliaService: {
+      name: "DoctoraliaService",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        addressId: {
+          name: "addressId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("address_id") }],
+            },
+          ],
+          foreignKeyFor: ["address"],
+        },
+        externalId: {
+          name: "externalId",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_id") }],
+            },
+          ],
+        },
+        serviceId: {
+          name: "serviceId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("service_id") }],
+            },
+          ],
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        price: {
+          name: "price",
+          type: "Int",
+          optional: true,
+        },
+        isPriceFrom: {
+          name: "isPriceFrom",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("is_price_from") }],
+            },
+          ],
+          default: false,
+        },
+        isDefault: {
+          name: "isDefault",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("is_default") }],
+            },
+          ],
+          default: false,
+        },
+        isVisible: {
+          name: "isVisible",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(true) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("is_visible") }],
+            },
+          ],
+          default: true,
+        },
+        description: {
+          name: "description",
+          type: "String",
+          optional: true,
+        },
+        defaultDuration: {
+          name: "defaultDuration",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("default_duration") }],
+            },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        address: {
+          name: "address",
+          type: "DoctoraliaAddress",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "services",
+            fields: ["addressId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("addressId"),
+                ExpressionUtils.field("externalId"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_services") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } },
+      },
+    },
+    DoctoraliaInsuranceProvider: {
+      name: "DoctoraliaInsuranceProvider",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        addressId: {
+          name: "addressId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("address_id") }],
+            },
+          ],
+          foreignKeyFor: ["address"],
+        },
+        insuranceProviderId: {
+          name: "insuranceProviderId",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("insurance_provider_id") }],
+            },
+          ],
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        address: {
+          name: "address",
+          type: "DoctoraliaAddress",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "insuranceProviders",
+            fields: ["addressId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("addressId"),
+                ExpressionUtils.field("insuranceProviderId"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [
+            { name: "name", value: ExpressionUtils.literal("doctoralia_insurance_providers") },
+          ],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        addressId_insuranceProviderId: {
+          addressId: { type: "Int" },
+          insuranceProviderId: { type: "String" },
+        },
+      },
+    },
+    DoctoraliaSlot: {
+      name: "DoctoraliaSlot",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        addressId: {
+          name: "addressId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("address_id") }],
+            },
+          ],
+          foreignKeyFor: ["address"],
+        },
+        startAt: {
+          name: "startAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_at") }] },
+          ],
+        },
+        endAt: {
+          name: "endAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_at") }] },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        address: {
+          name: "address",
+          type: "DoctoraliaAddress",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "slots",
+            fields: ["addressId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startAt")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_slots") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    DoctoraliaBooking: {
+      name: "DoctoraliaBooking",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        addressId: {
+          name: "addressId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("address_id") }],
+            },
+          ],
+          foreignKeyFor: ["address"],
+        },
+        externalId: {
+          name: "externalId",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_id") }],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("booked") }],
+            },
+          ],
+          default: "booked",
+        },
+        startAt: {
+          name: "startAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_at") }] },
+          ],
+        },
+        endAt: {
+          name: "endAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_at") }] },
+          ],
+        },
+        duration: {
+          name: "duration",
+          type: "Int",
+        },
+        bookedBy: {
+          name: "bookedBy",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("booked_by") }] },
+          ],
+        },
+        bookedAt: {
+          name: "bookedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("booked_at") }] },
+          ],
+        },
+        canceledBy: {
+          name: "canceledBy",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("canceled_by") }],
+            },
+          ],
+        },
+        canceledAt: {
+          name: "canceledAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("canceled_at") }],
+            },
+          ],
+        },
+        patientName: {
+          name: "patientName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }],
+            },
+          ],
+        },
+        patientSurname: {
+          name: "patientSurname",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_surname") }],
+            },
+          ],
+        },
+        patientEmail: {
+          name: "patientEmail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_email") }],
+            },
+          ],
+        },
+        patientPhone: {
+          name: "patientPhone",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_phone") }],
+            },
+          ],
+        },
+        comment: {
+          name: "comment",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        address: {
+          name: "address",
+          type: "DoctoraliaAddress",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "bookings",
+            fields: ["addressId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("addressId"),
+                ExpressionUtils.field("externalId"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startAt")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_bookings") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } },
+      },
+    },
+    DoctoraliaCalendarBreak: {
+      name: "DoctoraliaCalendarBreak",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        addressId: {
+          name: "addressId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("address_id") }],
+            },
+          ],
+          foreignKeyFor: ["address"],
+        },
+        externalId: {
+          name: "externalId",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_id") }],
+            },
+          ],
+        },
+        since: {
+          name: "since",
+          type: "DateTime",
+        },
+        till: {
+          name: "till",
+          type: "DateTime",
+        },
+        description: {
+          name: "description",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        address: {
+          name: "address",
+          type: "DoctoraliaAddress",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "breaks",
+            fields: ["addressId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("addressId"),
+                ExpressionUtils.field("externalId"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("addressId")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_calendar_breaks") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        addressId_externalId: { addressId: { type: "Int" }, externalId: { type: "String" } },
+      },
+    },
+    DoctoraliaSyncLog: {
+      name: "DoctoraliaSyncLog",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        triggerSource: {
+          name: "triggerSource",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("trigger_source") }],
+            },
+          ],
+        },
+        triggerUserId: {
+          name: "triggerUserId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("trigger_user_id") }],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }],
+            },
+          ],
+          default: "PENDING",
+        },
+        startedAt: {
+          name: "startedAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("started_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        endedAt: {
+          name: "endedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ended_at") }] },
+          ],
+        },
+        facilitiesSynced: {
+          name: "facilitiesSynced",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("facilities_synced") }],
+            },
+          ],
+          default: 0,
+        },
+        doctorsSynced: {
+          name: "doctorsSynced",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("doctors_synced") }],
+            },
+          ],
+          default: 0,
+        },
+        slotsSynced: {
+          name: "slotsSynced",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("slots_synced") }],
+            },
+          ],
+          default: 0,
+        },
+        bookingsSynced: {
+          name: "bookingsSynced",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("bookings_synced") }],
+            },
+          ],
+          default: 0,
+        },
+        errorMessage: {
+          name: "errorMessage",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("error_message") }],
+            },
+          ],
+        },
+      },
+      attributes: [
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startedAt")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "!=",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_sync_logs") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    PersonalCredit: {
+      name: "PersonalCredit",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        bankName: {
+          name: "bankName",
+          type: "String",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("bank_name") }] },
+          ],
+        },
+        creditNumber: {
+          name: "creditNumber",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("credit_number") }],
+            },
+          ],
+        },
+        description: {
+          name: "description",
+          type: "String",
+          optional: true,
+        },
+        totalAmount: {
+          name: "totalAmount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        currency: {
+          name: "currency",
+          type: "String",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("CLP") }] },
+          ],
+          default: "CLP",
+        },
+        interestRate: {
+          name: "interestRate",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("interest_rate") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(5) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        startDate: {
+          name: "startDate",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("start_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        totalInstallments: {
+          name: "totalInstallments",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_installments") }],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("ACTIVE") }],
+            },
+          ],
+          default: "ACTIVE",
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        installments: {
+          name: "installments",
+          type: "PersonalCreditInstallment",
+          array: true,
+          relation: { opposite: "credit" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("credits") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        creditNumber: { type: "String" },
+      },
+    },
+    PersonalCreditInstallment: {
+      name: "PersonalCreditInstallment",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        creditId: {
+          name: "creditId",
+          type: "Int",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("credit_id") }] },
+          ],
+          foreignKeyFor: ["credit"],
+        },
+        installmentNumber: {
+          name: "installmentNumber",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("installment_number") }],
+            },
+          ],
+        },
+        dueDate: {
+          name: "dueDate",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("due_date") }] },
+            { name: "@db.Date" },
+          ],
+        },
+        amount: {
+          name: "amount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        capitalAmount: {
+          name: "capitalAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("capital_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        interestAmount: {
+          name: "interestAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("interest_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        otherCharges: {
+          name: "otherCharges",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("other_charges") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }],
+            },
+          ],
+          default: "PENDING",
+        },
+        paidAt: {
+          name: "paidAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("paid_at") }] },
+          ],
+        },
+        paidAmount: {
+          name: "paidAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("paid_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        credit: {
+          name: "credit",
+          type: "PersonalCredit",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("creditId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "installments",
+            fields: ["creditId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("update") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        { name: "@@schema", args: [{ name: "map", value: ExpressionUtils.literal("personal") }] },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("creditId")]),
+            },
+          ],
+        },
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("creditId"),
+                ExpressionUtils.field("installmentNumber"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("credit_installments") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        creditId_installmentNumber: {
+          creditId: { type: "Int" },
+          installmentNumber: { type: "Int" },
+        },
+      },
+    },
+    MedicalCertificate: {
+      name: "MedicalCertificate",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] },
+          ],
+          default: ExpressionUtils.call("cuid"),
+        },
+        patientName: {
+          name: "patientName",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_name") }],
+            },
+          ],
+        },
+        patientRut: {
+          name: "patientRut",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_rut") }],
+            },
+          ],
+        },
+        birthDate: {
+          name: "birthDate",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("birth_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        address: {
+          name: "address",
+          type: "String",
+        },
+        diagnosis: {
+          name: "diagnosis",
+          type: "String",
+        },
+        symptoms: {
+          name: "symptoms",
+          type: "String",
+          optional: true,
+        },
+        restDays: {
+          name: "restDays",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("rest_days") }] },
+          ],
+        },
+        restStartDate: {
+          name: "restStartDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("rest_start_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        restEndDate: {
+          name: "restEndDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("rest_end_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        purpose: {
+          name: "purpose",
+          type: "String",
+        },
+        purposeDetail: {
+          name: "purposeDetail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("purpose_detail") }],
+            },
+          ],
+        },
+        issuedBy: {
+          name: "issuedBy",
+          type: "Int",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issued_by") }] },
+          ],
+          foreignKeyFor: ["issuer"],
+        },
+        issuedAt: {
+          name: "issuedAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("issued_at") }] },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        patientId: {
+          name: "patientId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }],
+            },
+          ],
+          foreignKeyFor: ["patient"],
+        },
+        driveFileId: {
+          name: "driveFileId",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("drive_file_id") }],
+            },
+          ],
+        },
+        pdfHash: {
+          name: "pdfHash",
+          type: "String",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("pdf_hash") }] },
+          ],
+        },
+        metadata: {
+          name: "metadata",
+          type: "Json",
+          optional: true,
+        },
+        issuer: {
+          name: "issuer",
+          type: "User",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("issuedBy")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: { opposite: "medicalCertificates", fields: ["issuedBy"], references: ["id"] },
+        },
+        patient: {
+          name: "patient",
+          type: "Patient",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: { opposite: "medicalCertificates", fields: ["patientId"], references: ["id"] },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["id"]),
+                "==",
+                ExpressionUtils.field("issuedBy"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "!=",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("patientRut")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("issuedAt")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("medical_certificates") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+      },
+    },
+    Patient: {
+      name: "Patient",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        personId: {
+          name: "personId",
+          type: "Int",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] },
+          ],
+          foreignKeyFor: ["person"],
+        },
+        birthDate: {
+          name: "birthDate",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("birth_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        bloodType: {
+          name: "bloodType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("blood_type") }],
+            },
+          ],
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        person: {
+          name: "person",
+          type: "Person",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("personId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "patient",
+            fields: ["personId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        consultations: {
+          name: "consultations",
+          type: "Consultation",
+          array: true,
+          relation: { opposite: "patient" },
+        },
+        medicalCertificates: {
+          name: "medicalCertificates",
+          type: "MedicalCertificate",
+          array: true,
+          relation: { opposite: "patient" },
+        },
+        budgets: {
+          name: "budgets",
+          type: "Budget",
+          array: true,
+          relation: { opposite: "patient" },
+        },
+        payments: {
+          name: "payments",
+          type: "PatientPayment",
+          array: true,
+          relation: { opposite: "patient" },
+        },
+        attachments: {
+          name: "attachments",
+          type: "PatientAttachment",
+          array: true,
+          relation: { opposite: "patient" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("patients") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        personId: { type: "Int" },
+      },
+    },
+    Consultation: {
+      name: "Consultation",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        patientId: {
+          name: "patientId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }],
+            },
+          ],
+          foreignKeyFor: ["patient"],
+        },
+        eventId: {
+          name: "eventId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("event_id") }] },
+          ],
+          foreignKeyFor: ["event"],
+        },
+        date: {
+          name: "date",
+          type: "DateTime",
+          attributes: [{ name: "@db.Date" }],
+        },
+        reason: {
+          name: "reason",
+          type: "String",
+        },
+        diagnosis: {
+          name: "diagnosis",
+          type: "String",
+          optional: true,
+        },
+        treatment: {
+          name: "treatment",
+          type: "String",
+          optional: true,
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        patient: {
+          name: "patient",
+          type: "Patient",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "consultations",
+            fields: ["patientId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        event: {
+          name: "event",
+          type: "Event",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("eventId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: { opposite: "consultations", fields: ["eventId"], references: ["id"] },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("eventId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("date")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("consultations") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    Budget: {
+      name: "Budget",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        patientId: {
+          name: "patientId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }],
+            },
+          ],
+          foreignKeyFor: ["patient"],
+        },
+        title: {
+          name: "title",
+          type: "String",
+        },
+        totalAmount: {
+          name: "totalAmount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        discount: {
+          name: "discount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        finalAmount: {
+          name: "finalAmount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("final_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "BudgetStatus",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("DRAFT") }],
+            },
+          ],
+          default: "DRAFT",
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        patient: {
+          name: "patient",
+          type: "Patient",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "budgets",
+            fields: ["patientId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        items: {
+          name: "items",
+          type: "BudgetItem",
+          array: true,
+          relation: { opposite: "budget" },
+        },
+        payments: {
+          name: "payments",
+          type: "PatientPayment",
+          array: true,
+          relation: { opposite: "budget" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("budgets") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    BudgetItem: {
+      name: "BudgetItem",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        budgetId: {
+          name: "budgetId",
+          type: "Int",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("budget_id") }] },
+          ],
+          foreignKeyFor: ["budget"],
+        },
+        description: {
+          name: "description",
+          type: "String",
+        },
+        quantity: {
+          name: "quantity",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(1) }] },
+          ],
+          default: 1,
+        },
+        unitPrice: {
+          name: "unitPrice",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("unit_price") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        totalPrice: {
+          name: "totalPrice",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_price") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        budget: {
+          name: "budget",
+          type: "Budget",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("budgetId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "items",
+            fields: ["budgetId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("budgetId")]),
+            },
+          ],
+        },
+        { name: "@@map", args: [{ name: "name", value: ExpressionUtils.literal("budget_items") }] },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    PatientPayment: {
+      name: "PatientPayment",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        patientId: {
+          name: "patientId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }],
+            },
+          ],
+          foreignKeyFor: ["patient"],
+        },
+        budgetId: {
+          name: "budgetId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("budget_id") }] },
+          ],
+          foreignKeyFor: ["budget"],
+        },
+        amount: {
+          name: "amount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        paymentDate: {
+          name: "paymentDate",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("payment_date") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        paymentMethod: {
+          name: "paymentMethod",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("payment_method") }],
+            },
+          ],
+        },
+        reference: {
+          name: "reference",
+          type: "String",
+          optional: true,
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        patient: {
+          name: "patient",
+          type: "Patient",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "payments",
+            fields: ["patientId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        budget: {
+          name: "budget",
+          type: "Budget",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("budgetId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: { opposite: "payments", fields: ["budgetId"], references: ["id"] },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("budgetId")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("patient_payments") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    PatientAttachment: {
+      name: "PatientAttachment",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("cuid") }] },
+          ],
+          default: ExpressionUtils.call("cuid"),
+        },
+        patientId: {
+          name: "patientId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }],
+            },
+          ],
+          foreignKeyFor: ["patient"],
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        type: {
+          name: "type",
+          type: "AttachmentType",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("OTHER") }],
+            },
+          ],
+          default: "OTHER",
+        },
+        driveFileId: {
+          name: "driveFileId",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("drive_file_id") }],
+            },
+          ],
+        },
+        mimeType: {
+          name: "mimeType",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("mime_type") }] },
+          ],
+        },
+        uploadedBy: {
+          name: "uploadedBy",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("uploaded_by") }],
+            },
+          ],
+          foreignKeyFor: ["uploader"],
+        },
+        uploadedAt: {
+          name: "uploadedAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("uploaded_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        patient: {
+          name: "patient",
+          type: "Patient",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "attachments",
+            fields: ["patientId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        uploader: {
+          name: "uploader",
+          type: "User",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("uploadedBy")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: { opposite: "patientAttachments", fields: ["uploadedBy"], references: ["id"] },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("patient_attachments") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+      },
+    },
+    DTEPurchaseDetail: {
+      name: "DTEPurchaseDetail",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("uuid") }] },
+          ],
+          default: ExpressionUtils.call("uuid"),
+        },
+        registerNumber: {
+          name: "registerNumber",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("register_number") }],
+            },
+          ],
+        },
+        documentType: {
+          name: "documentType",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(33) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("document_type") }],
+            },
+          ],
+          default: 33,
+        },
+        purchaseType: {
+          name: "purchaseType",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("purchase_type") }],
+            },
+          ],
+        },
+        providerRUT: {
+          name: "providerRUT",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("provider_rut") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        providerName: {
+          name: "providerName",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("provider_name") }],
+            },
+          ],
+        },
+        folio: {
+          name: "folio",
+          type: "String",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("folio") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        documentDate: {
+          name: "documentDate",
+          type: "DateTime",
+          attributes: [
+            { name: "@db.Date" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("document_date") }],
+            },
+          ],
+        },
+        receiptDate: {
+          name: "receiptDate",
+          type: "DateTime",
+          attributes: [
+            { name: "@db.Date" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("receipt_date") }],
+            },
+          ],
+        },
+        acknowledgeDate: {
+          name: "acknowledgeDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@db.Date" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("acknowledge_date") }],
+            },
+          ],
+        },
+        period: {
+          name: "period",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("period") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] },
+          ],
+        },
+        exemptAmount: {
+          name: "exemptAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("exempt_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        netAmount: {
+          name: "netAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("net_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        recoverableIVA: {
+          name: "recoverableIVA",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("recoverable_iva") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        nonRecoverableIVA: {
+          name: "nonRecoverableIVA",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("non_recoverable_iva") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        nonRecoverableIVACode: {
+          name: "nonRecoverableIVACode",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("non_recoverable_iva_code") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] },
+          ],
+        },
+        totalAmount: {
+          name: "totalAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        fixedAssetNetAmount: {
+          name: "fixedAssetNetAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("fixed_asset_net_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        commonUseIVA: {
+          name: "commonUseIVA",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("common_use_iva") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        nonCreditableTax: {
+          name: "nonCreditableTax",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("non_creditable_tax") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        nonRetainedIVA: {
+          name: "nonRetainedIVA",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("non_retained_iva") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        pureTobacco: {
+          name: "pureTobacco",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("pure_tobacco") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        cigaretteTobacco: {
+          name: "cigaretteTobacco",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("cigarette_tobacco") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        elaboratedTobacco: {
+          name: "elaboratedTobacco",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("elaborated_tobacco") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        otherTaxCode: {
+          name: "otherTaxCode",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("other_tax_code") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] },
+          ],
+        },
+        otherTaxAmount: {
+          name: "otherTaxAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("other_tax_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        otherTaxRate: {
+          name: "otherTaxRate",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("other_tax_rate") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(5) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        referenceDocNote: {
+          name: "referenceDocNote",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("reference_doc_note") }],
+            },
+          ],
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [
+                ExpressionUtils.field("providerRUT"),
+                ExpressionUtils.field("folio"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("providerRUT")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("documentDate")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("dte_purchase_details") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+        providerRUT_folio: { providerRUT: { type: "String" }, folio: { type: "String" } },
+      },
+    },
+    DTESaleDetail: {
+      name: "DTESaleDetail",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("uuid") }] },
+          ],
+          default: ExpressionUtils.call("uuid"),
+        },
+        registerNumber: {
+          name: "registerNumber",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("register_number") }],
+            },
+          ],
+        },
+        documentType: {
+          name: "documentType",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("document_type") }],
+            },
+          ],
+        },
+        saleType: {
+          name: "saleType",
+          type: "String",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("sale_type") }] },
+          ],
+        },
+        clientRUT: {
+          name: "clientRUT",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("client_rut") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        clientName: {
+          name: "clientName",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("client_name") }],
+            },
+          ],
+        },
+        folio: {
+          name: "folio",
+          type: "String",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("folio") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        documentDate: {
+          name: "documentDate",
+          type: "DateTime",
+          attributes: [
+            { name: "@db.Date" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("document_date") }],
+            },
+          ],
+        },
+        receiptDate: {
+          name: "receiptDate",
+          type: "DateTime",
+          attributes: [
+            { name: "@db.Date" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("receipt_date") }],
+            },
+          ],
+        },
+        receiptAcknowledgeDate: {
+          name: "receiptAcknowledgeDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@db.Date" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("receipt_acknowledge_date") }],
+            },
+          ],
+        },
+        claimDate: {
+          name: "claimDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@db.Date" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("claim_date") }],
+            },
+          ],
+        },
+        period: {
+          name: "period",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("period") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] },
+          ],
+        },
+        exemptAmount: {
+          name: "exemptAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("exempt_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        netAmount: {
+          name: "netAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("net_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        ivaAmount: {
+          name: "ivaAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("iva_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        totalAmount: {
+          name: "totalAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        totalRetainedIVA: {
+          name: "totalRetainedIVA",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_retained_iva") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        partialRetainedIVA: {
+          name: "partialRetainedIVA",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("partial_retained_iva") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        nonRetainedIVA: {
+          name: "nonRetainedIVA",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("non_retained_iva") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        ownIVA: {
+          name: "ownIVA",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("own_iva") }] },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        thirdPartyIVA: {
+          name: "thirdPartyIVA",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("third_party_iva") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        lateIVA: {
+          name: "lateIVA",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("late_iva") }] },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        emitterRUT: {
+          name: "emitterRUT",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("emitter_rut") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        commissionNetAmount: {
+          name: "commissionNetAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("commission_net_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        commissionExemptAmount: {
+          name: "commissionExemptAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("commission_exempt_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        commissionIVA: {
+          name: "commissionIVA",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("commission_iva") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        referenceDocType: {
+          name: "referenceDocType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("reference_doc_type") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(10) }] },
+          ],
+        },
+        referenceDocFolio: {
+          name: "referenceDocFolio",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("reference_doc_folio") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        foreignBuyerIdentifier: {
+          name: "foreignBuyerIdentifier",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("foreign_buyer_identifier") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        foreignBuyerNationality: {
+          name: "foreignBuyerNationality",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("foreign_buyer_nationality") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        constructorCreditAmount: {
+          name: "constructorCreditAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("constructor_credit_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        freeTradeZoneAmount: {
+          name: "freeTradeZoneAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("free_trade_zone_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        containerGuaranteeAmount: {
+          name: "containerGuaranteeAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("container_guarantee_amount") },
+              ],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        nonBillableAmount: {
+          name: "nonBillableAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("non_billable_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        internationalTransportAmount: {
+          name: "internationalTransportAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("international_transport_amount") },
+              ],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        nonCostSaleIndicator: {
+          name: "nonCostSaleIndicator",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("non_cost_sale_indicator") }],
+            },
+          ],
+          default: 0,
+        },
+        periodicServiceIndicator: {
+          name: "periodicServiceIndicator",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("periodic_service_indicator") },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        totalPeriodAmount: {
+          name: "totalPeriodAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_period_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        nationalTransportPassageAmount: {
+          name: "nationalTransportPassageAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [
+                {
+                  name: "name",
+                  value: ExpressionUtils.literal("national_transport_passage_amount"),
+                },
+              ],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        internalNumber: {
+          name: "internalNumber",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("internal_number") }],
+            },
+          ],
+        },
+        branchCode: {
+          name: "branchCode",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("branch_code") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        origin: {
+          name: "origin",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("origin") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        informativeNote: {
+          name: "informativeNote",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("informative_note") }],
+            },
+          ],
+        },
+        paymentNote: {
+          name: "paymentNote",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("payment_note") }],
+            },
+          ],
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("folio")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("clientRUT")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("documentDate")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("documentType")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("dte_sale_details") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+        folio: { type: "String" },
+      },
+    },
+    DTESyncLog: {
+      name: "DTESyncLog",
+      fields: {
+        id: {
+          name: "id",
+          type: "String",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("uuid") }] },
+          ],
+          default: ExpressionUtils.call("uuid"),
+        },
+        period: {
+          name: "period",
+          type: "String",
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] },
+          ],
+        },
+        docTypes: {
+          name: "docTypes",
+          type: "String",
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(50) }] },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+          default: "PENDING",
+        },
+        totalProcessed: {
+          name: "totalProcessed",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_processed") }],
+            },
+          ],
+          default: 0,
+        },
+        totalInserted: {
+          name: "totalInserted",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_inserted") }],
+            },
+          ],
+          default: 0,
+        },
+        totalUpdated: {
+          name: "totalUpdated",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_updated") }],
+            },
+          ],
+          default: 0,
+        },
+        totalSkipped: {
+          name: "totalSkipped",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("total_skipped") }],
+            },
+          ],
+          default: 0,
+        },
+        salesInserted: {
+          name: "salesInserted",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("sales_inserted") }],
+            },
+          ],
+          default: 0,
+        },
+        purchasesInserted: {
+          name: "purchasesInserted",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("purchases_inserted") }],
+            },
+          ],
+          default: 0,
+        },
+        errorMessage: {
+          name: "errorMessage",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("error_message") }],
+            },
+          ],
+        },
+        triggerSource: {
+          name: "triggerSource",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        triggerUserId: {
+          name: "triggerUserId",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("trigger_user_id") }],
+            },
+          ],
+        },
+        startedAt: {
+          name: "startedAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("started_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        completedAt: {
+          name: "completedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("completed_at") }],
+            },
+          ],
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("status")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startedAt")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("dte_sync_logs") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "String" },
+      },
+    },
+  } as const;
+  enums = {
+    PersonType: {
+      name: "PersonType",
+      values: {
+        NATURAL: "NATURAL",
+        JURIDICAL: "JURIDICAL",
+      },
+    },
+    CounterpartCategory: {
+      name: "CounterpartCategory",
+      values: {
+        SUPPLIER: "SUPPLIER",
+        CLIENT: "CLIENT",
+        EMPLOYEE: "EMPLOYEE",
+        PARTNER: "PARTNER",
+        LENDER: "LENDER",
+        OTHER: "OTHER",
+      },
+    },
+    EmployeeStatus: {
+      name: "EmployeeStatus",
+      values: {
+        ACTIVE: "ACTIVE",
+        INACTIVE: "INACTIVE",
+        TERMINATED: "TERMINATED",
+      },
+    },
+    EmployeeSalaryType: {
+      name: "EmployeeSalaryType",
+      values: {
+        HOURLY: "HOURLY",
+        FIXED: "FIXED",
+      },
+    },
+    TransactionDirection: {
+      name: "TransactionDirection",
+      values: {
+        IN: "IN",
+        OUT: "OUT",
+        NEUTRO: "NEUTRO",
+      },
+    },
+    ServiceType: {
+      name: "ServiceType",
+      values: {
+        BUSINESS: "BUSINESS",
+        PERSONAL: "PERSONAL",
+        SUPPLIER: "SUPPLIER",
+        TAX: "TAX",
+        UTILITY: "UTILITY",
+        LEASE: "LEASE",
+        SOFTWARE: "SOFTWARE",
+        OTHER: "OTHER",
+      },
+    },
+    ServiceFrequency: {
+      name: "ServiceFrequency",
+      values: {
+        WEEKLY: "WEEKLY",
+        BIWEEKLY: "BIWEEKLY",
+        MONTHLY: "MONTHLY",
+        BIMONTHLY: "BIMONTHLY",
+        QUARTERLY: "QUARTERLY",
+        SEMIANNUAL: "SEMIANNUAL",
+        ANNUAL: "ANNUAL",
+        ONCE: "ONCE",
+      },
+    },
+    ServiceStatus: {
+      name: "ServiceStatus",
+      values: {
+        ACTIVE: "ACTIVE",
+        INACTIVE: "INACTIVE",
+        ARCHIVED: "ARCHIVED",
+      },
+    },
+    LoanStatus: {
+      name: "LoanStatus",
+      values: {
+        ACTIVE: "ACTIVE",
+        COMPLETED: "COMPLETED",
+        DEFAULTED: "DEFAULTED",
+      },
+    },
+    LoanScheduleStatus: {
+      name: "LoanScheduleStatus",
+      values: {
+        PENDING: "PENDING",
+        PARTIAL: "PARTIAL",
+        PAID: "PAID",
+        OVERDUE: "OVERDUE",
+      },
+    },
+    UserStatus: {
+      name: "UserStatus",
+      values: {
+        PENDING_SETUP: "PENDING_SETUP",
+        ACTIVE: "ACTIVE",
+        SUSPENDED: "SUSPENDED",
+      },
+    },
+    BudgetStatus: {
+      name: "BudgetStatus",
+      values: {
+        DRAFT: "DRAFT",
+        SENT: "SENT",
+        ACCEPTED: "ACCEPTED",
+        REJECTED: "REJECTED",
+        EXPIRED: "EXPIRED",
+      },
+    },
+    AttachmentType: {
+      name: "AttachmentType",
+      values: {
+        CONSENT: "CONSENT",
+        EXAM: "EXAM",
+        RECIPE: "RECIPE",
+        OTHER: "OTHER",
+      },
+    },
+    DTEType: {
+      name: "DTEType",
+      values: {
+        PURCHASE: "PURCHASE",
+        SALE: "SALE",
+      },
+    },
+  } as const;
+  authType = "User" as const;
+  plugins = {};
 }
 export const schema = new SchemaType();

@@ -17,8 +17,7 @@ export interface DTESummaryRaw {
   period: string; // Raw format YYYY-MM from API transformation
   count: number; // Document count for the period
   totalAmount: number; // Total amount in CLP
-  exemptAmount: number; // Exempt (non-taxable) amount
-  netAmount: number; // Net (taxable) amount
+  netAmount: number; // Net (non-taxable) amount
   taxAmount: number; // IVA (tax) amount
   averageAmount: number; // Average per document
 }
@@ -48,7 +47,6 @@ export interface ParsedPeriod {
 export interface MonthlyChartData {
   readonly month: string; // Abbreviated month name (Ene, Feb, etc.)
   readonly totalAmount: number;
-  readonly exemptAmount: number;
   readonly netAmount: number;
   readonly taxAmount: number;
   readonly averageAmount: number;
@@ -61,7 +59,6 @@ export interface MonthlyChartData {
  */
 export interface YearlyTotals {
   readonly totalAmount: number;
-  readonly exemptAmount: number;
   readonly netAmount: number;
   readonly taxAmount: number;
   readonly averageAmount: number;
