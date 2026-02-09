@@ -159,13 +159,21 @@ function PurchasesMonthlySummary({
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Total Compras</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="font-bold text-2xl">{formatCurrency(totals.totalAmount)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Exento</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="font-bold text-2xl">{formatCurrency(totals.exemptAmount)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -196,7 +204,7 @@ function PurchasesMonthlySummary({
 
       <Card>
         <CardHeader>
-          <CardTitle>Compras Mensuales {selectedYear} (Neto + IVA)</CardTitle>
+          <CardTitle>Compras Mensuales {selectedYear} (Exento + Neto + IVA)</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer height={400} width="100%">
@@ -212,6 +220,7 @@ function PurchasesMonthlySummary({
                 contentStyle={{ backgroundColor: "#fff" }}
               />
               <Legend />
+              <Bar dataKey="exemptAmount" stackId="total" fill="#8b5cf6" name="Exento" />
               <Bar dataKey="netAmount" stackId="total" fill="#10b981" name="Neto" />
               <Bar dataKey="taxAmount" stackId="total" fill="#f59e0b" name="IVA" />
             </BarChart>
@@ -262,13 +271,21 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Total Ventas</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="font-bold text-2xl">{formatCurrency(totals.totalAmount)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Exento</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="font-bold text-2xl">{formatCurrency(totals.exemptAmount)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -299,7 +316,7 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
 
       <Card>
         <CardHeader>
-          <CardTitle>Ventas Mensuales {selectedYear} (Neto + IVA)</CardTitle>
+          <CardTitle>Ventas Mensuales {selectedYear} (Exento + Neto + IVA)</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer height={400} width="100%">
@@ -315,6 +332,7 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
                 contentStyle={{ backgroundColor: "#fff" }}
               />
               <Legend />
+              <Bar dataKey="exemptAmount" stackId="total" fill="#8b5cf6" name="Exento" />
               <Bar dataKey="netAmount" stackId="total" fill="#10b981" name="Neto" />
               <Bar dataKey="taxAmount" stackId="total" fill="#f59e0b" name="IVA" />
             </BarChart>
