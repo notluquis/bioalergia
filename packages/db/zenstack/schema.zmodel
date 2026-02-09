@@ -1237,7 +1237,7 @@ model HaulmerSyncLog {
   id               String    @id @default(uuid())
   period           String    @db.VarChar(6)                        // YYYYMM format (e.g., "202602")
   rut              String    @db.VarChar(20)                       // Haulmer RUT
-  docType          String    @db.VarChar(20)                       // "sales" | "purchases"
+  docType          String    @map("doc_type") @db.VarChar(20)      // "sales" | "purchases"
   status           String    @default("PENDING") @db.VarChar(20)   // PENDING | SUCCESS | FAILED
   rowsCreated      Int       @default(0) @map("rows_created")
   rowsUpdated      Int       @default(0) @map("rows_updated")
