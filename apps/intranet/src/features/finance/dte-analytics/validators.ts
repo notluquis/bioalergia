@@ -39,6 +39,7 @@ export const DTESummaryRawSchema = z.object({
   period: PeriodValidator,
   count: z.number().int().nonnegative("Count must be non-negative integer"),
   totalAmount: AmountValidator,
+  exemptAmount: AmountValidator,
   netAmount: AmountValidator,
   taxAmount: AmountValidator,
   averageAmount: AmountValidator,

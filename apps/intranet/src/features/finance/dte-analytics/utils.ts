@@ -112,6 +112,7 @@ export function buildMonthlyChartData(summary: DTESummaryRaw[], year: string): M
     return {
       month: getMonthName(i),
       totalAmount: item?.totalAmount ?? 0,
+      exemptAmount: item?.exemptAmount ?? 0,
       netAmount: item?.netAmount ?? 0,
       taxAmount: item?.taxAmount ?? 0,
       averageAmount: item?.averageAmount ?? 0,
@@ -126,6 +127,7 @@ export function buildMonthlyChartData(summary: DTESummaryRaw[], year: string): M
 export function calculateYearlyTotals(data: MonthlyChartData[]): YearlyTotals {
   return {
     totalAmount: data.reduce((sum, d) => sum + d.totalAmount, 0),
+    exemptAmount: data.reduce((sum, d) => sum + d.exemptAmount, 0),
     netAmount: data.reduce((sum, d) => sum + d.netAmount, 0),
     taxAmount: data.reduce((sum, d) => sum + d.taxAmount, 0),
     averageAmount: data.reduce((sum, d) => sum + d.averageAmount, 0) / 12,
