@@ -155,6 +155,7 @@ dteAnalyticsRoutes.get("/sales/summary", zValidator("query", periodParamsSchema)
         sql<number>`coalesce(sum(s.iva_amount), 0)`.as("taxAmount"),
         sql<number>`coalesce(avg(s.total_amount), 0)`.as("averageAmount"),
       ])
+      .where("s.document_type", "<>", 61) // Exclude NCEs (type 61)
       .where(excludeAnnulledByNCE("s", "DTESaleDetail"))
       .groupBy(sql`to_char(s.document_date, 'YYYY-MM')`)
       .orderBy(sql`to_char(s.document_date, 'YYYY-MM')`, "desc");
@@ -261,6 +262,7 @@ dteAnalyticsRoutes.get(
             sql<number>`coalesce(sum(s.total_amount), 0)`.as("totalAmount"),
             sql<number>`count(s.id)::int`.as("count"),
           ])
+          .where("s.document_type", "<>", 61) // Exclude NCEs
           .where(excludeAnnulledByNCE("s", "DTESaleDetail"))
           .where(sql`s.document_date`, ">=", year1Start)
           .where(sql`s.document_date`, "<=", year1End)
@@ -275,6 +277,7 @@ dteAnalyticsRoutes.get(
             sql<number>`coalesce(sum(s.total_amount), 0)`.as("totalAmount"),
             sql<number>`count(s.id)::int`.as("count"),
           ])
+          .where("s.document_type", "<>", 61) // Exclude NCEs
           .where(excludeAnnulledByNCE("s", "DTESaleDetail"))
           .where(sql`s.document_date`, ">=", year2Start)
           .where(sql`s.document_date`, "<=", year2End)
