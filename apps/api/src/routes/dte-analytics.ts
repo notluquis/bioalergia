@@ -19,18 +19,22 @@ export const dteAnalyticsRoutes = new Hono();
  * Helper function to exclude documents annulled by electronic credit notes (NCE tipo 61)
  * An NCE (Nota de Crédito Electrónica) with documentType=61 references and nullifies
  * a previous document via reference_doc_type + reference_doc_folio
+ *
+ * Note: Only applies to DTESaleDetail. DTEPurchaseDetail uses reference_doc_note instead.
  */
 function excludeAnnulledByNCE(
   tableAlias: string,
   table: "DTESaleDetail" | "DTEPurchaseDetail",
 ): ReturnType<typeof sql> {
-  // Map Zenstack model names to actual database table names
-  const tableMapping: Record<string, string> = {
-    DTEPurchaseDetail: '"public"."dte_purchase_details"',
-    DTESaleDetail: '"public"."dte_sale_details"',
-  };
+  // NCE filtering only applies to sales (which have reference_doc_type and reference_doc_folio)
+  // Purchases use reference_doc_note instead and don't need this filter
+  if (table === "DTEPurchaseDetail") {
+    // No NCE exclusion for purchases - return condition that is always true
+    return sql`true`;
+  }
 
-  const tableName = tableMapping[table];
+  // Sales: exclude records referenced by NCE (Credit Notes tipo 61)
+  const tableName = '"public"."dte_sale_details"';
 
   return sql`NOT EXISTS (
     SELECT 1 FROM ${sql.raw(tableName)} AS nce
