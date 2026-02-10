@@ -333,9 +333,10 @@ csvUploadRoutes.post("/preview", async (c) => {
               toInsert++;
             }
           } else if (table === "counterparts") {
+            const identNumber = String(row.rut).replace(/[^0-9k]/gi, "");
             const existingCounterpart = await db.counterpart.findFirst({
-              where: { personId: person.id },
-            });
+              where: { identificationNumber: identNumber },
+            } as never);
             if (existingCounterpart) {
               if (mode === "insert-only") {
                 toSkip++;
