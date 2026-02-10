@@ -47,6 +47,79 @@ const defaultRangeQuery = (query: { from?: string; to?: string }) => ({
   to: query.to || dayjs().endOf("month").format("YYYY-MM-DD"),
 });
 
+// Get full historical date range from database
+async function getHistoricalDateRange() {
+  const minResult = await db.employeeTimesheet.findMany({
+    select: { workDate: true },
+    orderBy: { workDate: "asc" },
+    take: 1,
+  });
+  const maxResult = await db.employeeTimesheet.findMany({
+    select: { workDate: true },
+    orderBy: { workDate: "desc" },
+    take: 1,
+  });
+
+  const from = minResult[0]
+    ? dayjs(minResult[0].workDate).format("YYYY-MM-DD")
+    : dayjs().subtract(12, "month").format("YYYY-MM-DD");
+  const to = maxResult[0]
+    ? dayjs(maxResult[0].workDate).format("YYYY-MM-DD")
+    : dayjs().format("YYYY-MM-DD");
+
+  return { from, to };
+}
+
+// Build salary summary data structure
+async function buildSalarySummaryData(from: string, to: string, employeeIds?: number[]) {
+  const startMonth = dayjs(from);
+  const endMonth = dayjs(to);
+  let current = startMonth.clone().startOf("month");
+
+  const months: string[] = [];
+  while (current.isBefore(endMonth.endOf("month")) || current.isSame(endMonth, "month")) {
+    months.push(current.format("YYYY-MM"));
+    current = current.add(1, "month");
+  }
+
+  const data: Record<
+    string,
+    Array<{
+      month: string;
+      subtotal: number;
+      retention: number;
+      net: number;
+    }>
+  > = {};
+
+  // Build monthly data for each month sequentially
+  for (const month of months) {
+    const monthStart = dayjs(month).startOf("month").format("YYYY-MM-DD");
+    const monthEnd = dayjs(month).endOf("month").format("YYYY-MM-DD");
+
+    const summary = await buildMonthlySummary(monthStart, monthEnd);
+
+    // Add data for each employee in this month
+    for (const emp of summary.employees) {
+      if (!data[String(emp.id)]) {
+        data[String(emp.id)] = [];
+      }
+
+      // Only include if not filtering or if this employee is in the filter list
+      if (!employeeIds || employeeIds.length === 0 || employeeIds.includes(emp.id)) {
+        data[String(emp.id)].push({
+          month,
+          subtotal: emp.subtotal,
+          retention: emp.retention,
+          net: emp.net,
+        });
+      }
+    }
+  }
+
+  return data;
+}
+
 const multiMonthQuerySchema = z.object({
   employeeIds: z.string().optional(),
   startMonth: z
@@ -101,11 +174,14 @@ const salarySummaryQuerySchema = z.object({
   from: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
     .optional(),
   to: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
     .optional(),
+  mode: z.enum(["auto", "range"]).default("range"),
   employeeIds: z.string().optional(),
 });
 
@@ -392,65 +468,25 @@ app.get("/salary-summary", zValidator("query", salarySummaryQuerySchema), async 
 
   try {
     const { from: rawFrom, to: rawTo, employeeIds: rawIds } = c.req.valid("query");
-    const { from, to } = defaultRangeQuery({ from: rawFrom, to: rawTo });
     const employeeIds = rawIds?.split(",").map(Number) || [];
 
-    // Build all monthly summaries for each employee
-    const data: Record<
-      string,
-      Array<{
-        month: string;
-        subtotal: number;
-        retention: number;
-        net: number;
-      }>
-    > = {};
+    let from: string;
+    let to: string;
 
-    // Get list of months from start to end date
-    let current = dayjs(from);
-    const months: string[] = [];
-    while (current.isBefore(dayjs(to)) || current.isSame(dayjs(to), "month")) {
-      months.push(current.format("YYYY-MM"));
-      current = current.add(1, "month");
+    if (!rawFrom && !rawTo) {
+      // Auto-detect full historical range
+      const dateRange = await getHistoricalDateRange();
+      from = dateRange.from;
+      to = dateRange.to;
+    } else {
+      // Use provided dates or defaults
+      const defaults = defaultRangeQuery({ from: rawFrom, to: rawTo });
+      from = defaults.from;
+      to = defaults.to;
     }
 
-    // For each employee, build monthly summaries
-    for (const employeeId of employeeIds) {
-      const employeeData: Array<{
-        month: string;
-        subtotal: number;
-        retention: number;
-        net: number;
-      }> = [];
-
-      for (const month of months) {
-        const monthStart = dayjs(month).startOf("month").format("YYYY-MM-DD");
-        const monthEnd = dayjs(month).endOf("month").format("YYYY-MM-DD");
-
-        const summary = await buildMonthlySummary(monthStart, monthEnd, employeeId);
-
-        // Extract salary data for this employee in this month
-        const employeeSummary = summary.employees[0]; // Should be only one with specific employeeId
-        if (employeeSummary) {
-          employeeData.push({
-            month,
-            subtotal: employeeSummary.subtotal,
-            retention: employeeSummary.retention,
-            net: employeeSummary.net,
-          });
-        } else {
-          // No data for this employee in this month
-          employeeData.push({
-            month,
-            subtotal: 0,
-            retention: 0,
-            net: 0,
-          });
-        }
-      }
-
-      data[String(employeeId)] = employeeData;
-    }
+    // Build salary summary data for all employees
+    const data = await buildSalarySummaryData(from, to, employeeIds);
 
     return reply(c, {
       status: "ok",
