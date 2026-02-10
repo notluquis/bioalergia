@@ -320,17 +320,15 @@ const TABLE_OPTIONS: TableOption[] = [
   {
     fields: [
       { name: "rut", required: true, type: "string" },
-      { name: "year", required: true, type: "number" },
-      { name: "month", required: true, type: "number" },
-      { name: "daysWorked", required: false, type: "number" },
-      { name: "hoursWorked", required: false, type: "number" },
-      { name: "overtimeHours", required: false, type: "number" },
-      { name: "bonusAmount", required: false, type: "number" },
-      { name: "commissionAmount", required: false, type: "number" },
-      { name: "advanceAmount", required: false, type: "number" },
+      { name: "workDate", required: true, type: "date" },
+      { name: "startTime", required: false, type: "string" },
+      { name: "endTime", required: false, type: "string" },
+      { name: "workedMinutes", required: false, type: "number" },
+      { name: "overtimeMinutes", required: false, type: "number" },
+      { name: "comment", required: false, type: "string" },
     ],
 
-    label: "Libro Remuneraciones",
+    label: "Horas Trabajadas (Diarios)",
     value: "employee_timesheets",
   },
   {
