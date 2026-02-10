@@ -33,7 +33,6 @@ import { Route as AuthedServicesIndexRouteImport } from "./routes/_authed/servic
 import { Route as AuthedPatientsIndexRouteImport } from "./routes/_authed/patients/index"
 import { Route as AuthedHrIndexRouteImport } from "./routes/_authed/hr/index"
 import { Route as AuthedFinanzasIndexRouteImport } from "./routes/_authed/finanzas/index"
-import { Route as AuthedSettingsUsersRouteImport } from "./routes/_authed/settings/users"
 import { Route as AuthedSettingsRolesRouteImport } from "./routes/_authed/settings/roles"
 import { Route as AuthedSettingsMercadopagoRouteImport } from "./routes/_authed/settings/mercadopago"
 import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/settings/inventario"
@@ -71,8 +70,9 @@ import { Route as AuthedCalendarScheduleRouteImport } from "./routes/_authed/cal
 import { Route as AuthedCalendarHeatmapRouteImport } from "./routes/_authed/calendar/heatmap"
 import { Route as AuthedCalendarDailyRouteImport } from "./routes/_authed/calendar/daily"
 import { Route as AuthedCalendarClassifyRouteImport } from "./routes/_authed/calendar/classify"
+import { Route as AuthedSettingsUsersIndexRouteImport } from "./routes/_authed/settings/users/index"
 import { Route as AuthedPatientsIdIndexRouteImport } from "./routes/_authed/patients/$id/index"
-import { Route as AuthedSettingsUsersAddRouteImport } from "./routes/_authed/settings/users.add"
+import { Route as AuthedSettingsUsersAddRouteImport } from "./routes/_authed/settings/users/add"
 import { Route as AuthedServicesIdEditRouteImport } from "./routes/_authed/services/$id.edit"
 import { Route as AuthedPatientsIdNewPaymentRouteImport } from "./routes/_authed/patients/$id/new-payment"
 import { Route as AuthedPatientsIdNewConsultationRouteImport } from "./routes/_authed/patients/$id/new-consultation"
@@ -167,11 +167,6 @@ const AuthedFinanzasIndexRoute = AuthedFinanzasIndexRouteImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => AuthedFinanzasRoute,
-} as any)
-const AuthedSettingsUsersRoute = AuthedSettingsUsersRouteImport.update({
-  id: "/users",
-  path: "/users",
-  getParentRoute: () => AuthedSettingsRoute,
 } as any)
 const AuthedSettingsRolesRoute = AuthedSettingsRolesRouteImport.update({
   id: "/roles",
@@ -374,15 +369,21 @@ const AuthedCalendarClassifyRoute = AuthedCalendarClassifyRouteImport.update({
   path: "/classify",
   getParentRoute: () => AuthedCalendarRoute,
 } as any)
+const AuthedSettingsUsersIndexRoute =
+  AuthedSettingsUsersIndexRouteImport.update({
+    id: "/users/",
+    path: "/users/",
+    getParentRoute: () => AuthedSettingsRoute,
+  } as any)
 const AuthedPatientsIdIndexRoute = AuthedPatientsIdIndexRouteImport.update({
   id: "/patients/$id/",
   path: "/patients/$id/",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedSettingsUsersAddRoute = AuthedSettingsUsersAddRouteImport.update({
-  id: "/add",
-  path: "/add",
-  getParentRoute: () => AuthedSettingsUsersRoute,
+  id: "/users/add",
+  path: "/users/add",
+  getParentRoute: () => AuthedSettingsRoute,
 } as any)
 const AuthedServicesIdEditRoute = AuthedServicesIdEditRouteImport.update({
   id: "/$id/edit",
@@ -464,7 +465,6 @@ export interface FileRoutesByFullPath {
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
-  "/settings/users": typeof AuthedSettingsUsersRouteWithChildren
   "/finanzas/": typeof AuthedFinanzasIndexRoute
   "/hr/": typeof AuthedHrIndexRoute
   "/patients/": typeof AuthedPatientsIndexRoute
@@ -477,6 +477,7 @@ export interface FileRoutesByFullPath {
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/settings/users/add": typeof AuthedSettingsUsersAddRoute
   "/patients/$id/": typeof AuthedPatientsIdIndexRoute
+  "/settings/users/": typeof AuthedSettingsUsersIndexRoute
 }
 export interface FileRoutesByTo {
   "/login": typeof LoginRoute
@@ -524,7 +525,6 @@ export interface FileRoutesByTo {
   "/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/settings/roles": typeof AuthedSettingsRolesRoute
-  "/settings/users": typeof AuthedSettingsUsersRouteWithChildren
   "/finanzas": typeof AuthedFinanzasIndexRoute
   "/hr": typeof AuthedHrIndexRoute
   "/patients": typeof AuthedPatientsIndexRoute
@@ -537,6 +537,7 @@ export interface FileRoutesByTo {
   "/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/settings/users/add": typeof AuthedSettingsUsersAddRoute
   "/patients/$id": typeof AuthedPatientsIdIndexRoute
+  "/settings/users": typeof AuthedSettingsUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -590,7 +591,6 @@ export interface FileRoutesById {
   "/_authed/settings/inventario": typeof AuthedSettingsInventarioRoute
   "/_authed/settings/mercadopago": typeof AuthedSettingsMercadopagoRoute
   "/_authed/settings/roles": typeof AuthedSettingsRolesRoute
-  "/_authed/settings/users": typeof AuthedSettingsUsersRouteWithChildren
   "/_authed/finanzas/": typeof AuthedFinanzasIndexRoute
   "/_authed/hr/": typeof AuthedHrIndexRoute
   "/_authed/patients/": typeof AuthedPatientsIndexRoute
@@ -603,6 +603,7 @@ export interface FileRoutesById {
   "/_authed/services/$id/edit": typeof AuthedServicesIdEditRoute
   "/_authed/settings/users/add": typeof AuthedSettingsUsersAddRoute
   "/_authed/patients/$id/": typeof AuthedPatientsIdIndexRoute
+  "/_authed/settings/users/": typeof AuthedSettingsUsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -656,7 +657,6 @@ export interface FileRouteTypes {
     | "/settings/inventario"
     | "/settings/mercadopago"
     | "/settings/roles"
-    | "/settings/users"
     | "/finanzas/"
     | "/hr/"
     | "/patients/"
@@ -669,6 +669,7 @@ export interface FileRouteTypes {
     | "/services/$id/edit"
     | "/settings/users/add"
     | "/patients/$id/"
+    | "/settings/users/"
   fileRoutesByTo: FileRoutesByTo
   to:
     | "/login"
@@ -716,7 +717,6 @@ export interface FileRouteTypes {
     | "/settings/inventario"
     | "/settings/mercadopago"
     | "/settings/roles"
-    | "/settings/users"
     | "/finanzas"
     | "/hr"
     | "/patients"
@@ -729,6 +729,7 @@ export interface FileRouteTypes {
     | "/services/$id/edit"
     | "/settings/users/add"
     | "/patients/$id"
+    | "/settings/users"
   id:
     | "__root__"
     | "/_authed"
@@ -781,7 +782,6 @@ export interface FileRouteTypes {
     | "/_authed/settings/inventario"
     | "/_authed/settings/mercadopago"
     | "/_authed/settings/roles"
-    | "/_authed/settings/users"
     | "/_authed/finanzas/"
     | "/_authed/hr/"
     | "/_authed/patients/"
@@ -794,6 +794,7 @@ export interface FileRouteTypes {
     | "/_authed/services/$id/edit"
     | "/_authed/settings/users/add"
     | "/_authed/patients/$id/"
+    | "/_authed/settings/users/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -930,13 +931,6 @@ declare module "@tanstack/react-router" {
       fullPath: "/finanzas/"
       preLoaderRoute: typeof AuthedFinanzasIndexRouteImport
       parentRoute: typeof AuthedFinanzasRoute
-    }
-    "/_authed/settings/users": {
-      id: "/_authed/settings/users"
-      path: "/users"
-      fullPath: "/settings/users"
-      preLoaderRoute: typeof AuthedSettingsUsersRouteImport
-      parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/settings/roles": {
       id: "/_authed/settings/roles"
@@ -1197,6 +1191,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedCalendarClassifyRouteImport
       parentRoute: typeof AuthedCalendarRoute
     }
+    "/_authed/settings/users/": {
+      id: "/_authed/settings/users/"
+      path: "/users"
+      fullPath: "/settings/users/"
+      preLoaderRoute: typeof AuthedSettingsUsersIndexRouteImport
+      parentRoute: typeof AuthedSettingsRoute
+    }
     "/_authed/patients/$id/": {
       id: "/_authed/patients/$id/"
       path: "/patients/$id"
@@ -1206,10 +1207,10 @@ declare module "@tanstack/react-router" {
     }
     "/_authed/settings/users/add": {
       id: "/_authed/settings/users/add"
-      path: "/add"
+      path: "/users/add"
       fullPath: "/settings/users/add"
       preLoaderRoute: typeof AuthedSettingsUsersAddRouteImport
-      parentRoute: typeof AuthedSettingsUsersRoute
+      parentRoute: typeof AuthedSettingsRoute
     }
     "/_authed/services/$id/edit": {
       id: "/_authed/services/$id/edit"
@@ -1391,17 +1392,6 @@ const AuthedServicesRouteWithChildren = AuthedServicesRoute._addFileChildren(
   AuthedServicesRouteChildren,
 )
 
-interface AuthedSettingsUsersRouteChildren {
-  AuthedSettingsUsersAddRoute: typeof AuthedSettingsUsersAddRoute
-}
-
-const AuthedSettingsUsersRouteChildren: AuthedSettingsUsersRouteChildren = {
-  AuthedSettingsUsersAddRoute: AuthedSettingsUsersAddRoute,
-}
-
-const AuthedSettingsUsersRouteWithChildren =
-  AuthedSettingsUsersRoute._addFileChildren(AuthedSettingsUsersRouteChildren)
-
 interface AuthedSettingsRouteChildren {
   AuthedSettingsBackupsRoute: typeof AuthedSettingsBackupsRoute
   AuthedSettingsCsvUploadRoute: typeof AuthedSettingsCsvUploadRoute
@@ -1409,8 +1399,9 @@ interface AuthedSettingsRouteChildren {
   AuthedSettingsInventarioRoute: typeof AuthedSettingsInventarioRoute
   AuthedSettingsMercadopagoRoute: typeof AuthedSettingsMercadopagoRoute
   AuthedSettingsRolesRoute: typeof AuthedSettingsRolesRoute
-  AuthedSettingsUsersRoute: typeof AuthedSettingsUsersRouteWithChildren
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
+  AuthedSettingsUsersAddRoute: typeof AuthedSettingsUsersAddRoute
+  AuthedSettingsUsersIndexRoute: typeof AuthedSettingsUsersIndexRoute
 }
 
 const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
@@ -1420,8 +1411,9 @@ const AuthedSettingsRouteChildren: AuthedSettingsRouteChildren = {
   AuthedSettingsInventarioRoute: AuthedSettingsInventarioRoute,
   AuthedSettingsMercadopagoRoute: AuthedSettingsMercadopagoRoute,
   AuthedSettingsRolesRoute: AuthedSettingsRolesRoute,
-  AuthedSettingsUsersRoute: AuthedSettingsUsersRouteWithChildren,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
+  AuthedSettingsUsersAddRoute: AuthedSettingsUsersAddRoute,
+  AuthedSettingsUsersIndexRoute: AuthedSettingsUsersIndexRoute,
 }
 
 const AuthedSettingsRouteWithChildren = AuthedSettingsRoute._addFileChildren(

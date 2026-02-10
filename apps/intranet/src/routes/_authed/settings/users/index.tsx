@@ -9,7 +9,7 @@ const UserManagementPage = lazy(() =>
   })),
 );
 
-export const Route = createFileRoute("/_authed/settings/users")({
+export const Route = createFileRoute("/_authed/settings/users/")({
   staticData: {
     nav: { iconKey: "Users", label: "Usuarios", order: 1, section: "Sistema" },
     permission: { action: "read", subject: "User" },
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authed/settings/users")({
   },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "User")) {
-      const routeApi = getRouteApi("/_authed/settings/users");
+      const routeApi = getRouteApi("/_authed/settings/users/");
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }
