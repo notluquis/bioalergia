@@ -147,6 +147,12 @@ export function prepareComparisonData(
     for (const period of Object.keys(emp[breakdown])) {
       allPeriods.add(period);
     }
+    // Also include salary months even if no timesheet entries
+    for (const month of Object.keys(emp.monthlyGrossSalary)) {
+      if (granularity === "month") {
+        allPeriods.add(month);
+      }
+    }
   }
 
   const periods = [...allPeriods].toSorted((a, b) => a.localeCompare(b));
@@ -156,7 +162,16 @@ export function prepareComparisonData(
     for (const emp of employees) {
       const minutes = emp[breakdown][period] || 0;
 
+      // Add hours with employee name as key
       dataPoint[emp.fullName] = Number.parseFloat((minutes / 60).toFixed(2));
+
+      // Add gross salary with suffix
+      const grossSalary = emp.monthlyGrossSalary[period] || 0;
+      dataPoint[`${emp.fullName}_gross`] = grossSalary;
+
+      // Add net salary with suffix
+      const netSalary = emp.monthlyNetSalary[period] || 0;
+      dataPoint[`${emp.fullName}_net`] = netSalary;
     }
     return dataPoint;
   });
@@ -170,6 +185,7 @@ export function processEmployeeData(
   fullName: string,
   role: string,
   entries: TimesheetEntry[],
+  salarySummary?: Array<{ month: string; net: number; retention: number; subtotal: number }>,
 ): EmployeeWorkData {
   const totalMinutes = entries.reduce((sum, e) => sum + e.worked_minutes, 0);
   const totalOvertimeMinutes = entries.reduce((sum, e) => sum + e.overtime_minutes, 0);
@@ -186,12 +202,25 @@ export function processEmployeeData(
       ? Number.parseFloat(((totalOvertimeMinutes / totalMinutes) * 100).toFixed(1))
       : 0;
 
+  // Build salary records by month
+  const monthlyGrossSalary: Record<string, number> = {};
+  const monthlyNetSalary: Record<string, number> = {};
+
+  if (salarySummary) {
+    for (const record of salarySummary) {
+      monthlyGrossSalary[record.month] = record.subtotal;
+      monthlyNetSalary[record.month] = record.net;
+    }
+  }
+
   return {
     avgDailyMinutes,
     dailyBreakdown: groupByDay(entries),
     employeeId,
     fullName,
     monthlyBreakdown: groupByMonth(entries),
+    monthlyGrossSalary,
+    monthlyNetSalary,
     overtimePercentage,
     role,
     totalDays,

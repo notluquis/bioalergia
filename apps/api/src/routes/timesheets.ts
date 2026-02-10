@@ -97,6 +97,18 @@ const detailMonthQuerySchema = z.object({
     .optional(),
 });
 
+const salarySummaryQuerySchema = z.object({
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  employeeIds: z.string().optional(),
+});
+
 const bulkBodySchema = z.object({
   employee_id: z.number(),
   entries: z.array(z.any()).default([]), // Using any for entries as partial validation happens in normalize
@@ -360,6 +372,95 @@ app.get("/summary", zValidator("query", monthQuerySchema), async (c) => {
   } catch (error) {
     console.error("[timesheets] summary error:", error);
     return reply(c, { status: "error", message: "Error al cargar resumen" }, 500);
+  }
+});
+
+// GET /salary-summary - Get salary data for temporal reports
+app.get("/salary-summary", zValidator("query", salarySummaryQuerySchema), async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canReadReport = await hasPermission(user.id, "read", "Report");
+  const canReadAudit = await hasPermission(user.id, "read", "TimesheetAudit");
+  const canReadList = await hasPermission(user.id, "read", "TimesheetList");
+
+  if (!canReadReport && !canReadAudit && !canReadList) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  try {
+    const { from: rawFrom, to: rawTo, employeeIds: rawIds } = c.req.valid("query");
+    const { from, to } = defaultRangeQuery({ from: rawFrom, to: rawTo });
+    const employeeIds = rawIds?.split(",").map(Number) || [];
+
+    // Build all monthly summaries for each employee
+    const data: Record<
+      string,
+      Array<{
+        month: string;
+        subtotal: number;
+        retention: number;
+        net: number;
+      }>
+    > = {};
+
+    // Get list of months from start to end date
+    let current = dayjs(from);
+    const months: string[] = [];
+    while (current.isBefore(dayjs(to)) || current.isSame(dayjs(to), "month")) {
+      months.push(current.format("YYYY-MM"));
+      current = current.add(1, "month");
+    }
+
+    // For each employee, build monthly summaries
+    for (const employeeId of employeeIds) {
+      const employeeData: Array<{
+        month: string;
+        subtotal: number;
+        retention: number;
+        net: number;
+      }> = [];
+
+      for (const month of months) {
+        const monthStart = dayjs(month).startOf("month").format("YYYY-MM-DD");
+        const monthEnd = dayjs(month).endOf("month").format("YYYY-MM-DD");
+
+        const summary = await buildMonthlySummary(monthStart, monthEnd, employeeId);
+
+        // Extract salary data for this employee in this month
+        const employeeSummary = summary.employees[0]; // Should be only one with specific employeeId
+        if (employeeSummary) {
+          employeeData.push({
+            month,
+            subtotal: employeeSummary.subtotal,
+            retention: employeeSummary.retention,
+            net: employeeSummary.net,
+          });
+        } else {
+          // No data for this employee in this month
+          employeeData.push({
+            month,
+            subtotal: 0,
+            retention: 0,
+            net: 0,
+          });
+        }
+      }
+
+      data[String(employeeId)] = employeeData;
+    }
+
+    return reply(c, {
+      status: "ok",
+      from,
+      to,
+      data,
+    });
+  } catch (error) {
+    console.error("[timesheets] salary-summary error:", error);
+    return reply(c, { status: "error", message: "Error al cargar resumen de salarios" }, 500);
   }
 });
 

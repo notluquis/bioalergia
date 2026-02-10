@@ -18,7 +18,7 @@ import type { Employee } from "@/features/hr/employees/types";
 import { useMonths } from "@/features/hr/timesheets/hooks/use-months";
 import { PAGE_CONTAINER } from "@/lib/styles";
 import { cn } from "@/lib/utils";
-import { fetchGlobalTimesheetRange } from "../api";
+import { fetchGlobalTimesheetRange, fetchSalarySummary } from "../api";
 import { getHRReportsColumns, type HRReportsTableMeta } from "../components/HRReportsColumns";
 import type { EmployeeWorkData, ReportGranularity } from "../types";
 import { calculateStats, prepareComparisonData } from "../utils";
@@ -134,12 +134,18 @@ export function ReportsPage() {
   } = useQuery<EmployeeWorkData[]>({
     enabled: isQueryEnabled,
     queryFn: async () => {
-      // biome-ignore lint/style/noNonNullAssertion: protected by enabled check
-      const entries = await fetchGlobalTimesheetRange(dateParams!.start, dateParams!.end);
+      if (!dateParams) {
+        return [];
+      }
+      const [entries, salarySummary] = await Promise.all([
+        fetchGlobalTimesheetRange(dateParams.start, dateParams.end),
+        fetchSalarySummary(dateParams.start, dateParams.end, selectedEmployeeIds).catch(() => ({})),
+      ]);
       return processRawEntries(
         entries as unknown as RawTimesheetEntry[],
         selectedEmployeeIds,
         employees,
+        salarySummary,
       );
     },
     queryKey: ["reports-data", dateParams, selectedEmployeeIds, timestamp, employees],
@@ -628,10 +634,15 @@ function ReportsResultsPanel({
   );
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legitimate data processing complexity
 function processRawEntries(
   entries: RawTimesheetEntry[],
   employeeIds: number[],
   employees: Employee[],
+  salarySummary?: Record<
+    string,
+    Array<{ month: string; net: number; retention: number; subtotal: number }>
+  >,
 ): EmployeeWorkData[] {
   const map = new Map<number, EmployeeWorkData>();
 
@@ -645,6 +656,8 @@ function processRawEntries(
         employeeId: id,
         fullName: emp.full_name,
         monthlyBreakdown: {},
+        monthlyGrossSalary: {},
+        monthlyNetSalary: {},
         overtimePercentage: 0,
         role: emp.position,
         totalDays: 0,
@@ -679,6 +692,20 @@ function processRawEntries(
     const monthKey = dayjs(entry.work_date, DATE_FORMAT).format("YYYY-MM");
     const currentMonthly = data.monthlyBreakdown[monthKey] ?? 0;
     Object.assign(data.monthlyBreakdown, { [monthKey]: currentMonthly + entry.worked_minutes });
+  }
+
+  // Merge salary data
+  if (salarySummary) {
+    for (const [employeeIdStr, salaryData] of Object.entries(salarySummary)) {
+      const employeeId = Number.parseInt(employeeIdStr, 10);
+      const data = map.get(employeeId);
+      if (data) {
+        for (const record of salaryData) {
+          data.monthlyGrossSalary[record.month] = record.subtotal;
+          data.monthlyNetSalary[record.month] = record.net;
+        }
+      }
+    }
   }
 
   // Stats

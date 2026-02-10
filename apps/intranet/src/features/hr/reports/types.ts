@@ -4,6 +4,8 @@ export interface EmployeeWorkData {
   employeeId: number;
   fullName: string;
   monthlyBreakdown: Record<string, number>;
+  monthlyGrossSalary: Record<string, number>;
+  monthlyNetSalary: Record<string, number>;
   overtimePercentage: number;
   role: string;
   // New metrics

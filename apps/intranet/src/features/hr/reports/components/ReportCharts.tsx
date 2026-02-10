@@ -9,6 +9,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   Legend,
   Line,
   LineChart,
@@ -106,9 +107,46 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
 
 /**
  * Main temporal comparison chart (Bar or Line based on granularity)
+ * Now supports dual Y-axis for hours and salary metrics
  */
 export function TemporalChart({ chartData, granularity, reportData }: TemporalChartProps) {
   const chartColors = getChartColors();
+  const hasSalaryData = reportData.some((emp) => Object.keys(emp.monthlyGrossSalary).length > 0);
+
+  // Helper to format currency for tooltip display
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("es-CL", {
+      currency: "CLP",
+      style: "currency",
+    }).format(value);
+  };
+
+  // Custom tooltip to show both hours and currency
+  const CustomTooltip = (props: {
+    active?: boolean;
+    payload?: Array<{ color: string; name: string; payload?: { period?: string }; value: number }>;
+  }) => {
+    const { active, payload } = props;
+    if (!active || !payload) {
+      return null;
+    }
+
+    return (
+      <div style={tooltipStyle} className="p-3">
+        <p className="font-semibold text-xs">{payload[0]?.payload?.period}</p>
+        {payload.map((entry, idx) => {
+          const isSalary = entry.name.includes("_gross") || entry.name.includes("_net");
+          const displayName = entry.name.replace("_gross", " (Bruto)").replace("_net", " (Neto)");
+
+          return (
+            <p key={`${entry.name}-${idx}`} style={{ color: entry.color }} className="text-xs">
+              {displayName}: {isSalary ? formatCurrency(entry.value) : `${entry.value}h`}
+            </p>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="rounded-3xl border border-default-100 bg-background p-4 shadow-sm sm:p-6">
@@ -116,6 +154,7 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
         <h3 className="flex items-center gap-2 font-bold text-lg">
           <BarChart2 className="h-5 w-5 text-primary" />
           Comparativa Temporal
+          {hasSalaryData && <span className="text-default-500 text-xs">(Horas y Salarios)</span>}
         </h3>
         <Chip size="sm" variant="tertiary">
           {(() => {
@@ -129,9 +168,90 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
         </Chip>
       </div>
 
-      <div className="h-64 w-full sm:h-[350px]">
+      <div className="h-64 w-full sm:h-87.5">
         <ResponsiveContainer height="100%" width="100%">
-          {granularity === "month" ? (
+          {hasSalaryData && granularity === "month" ? (
+            // Dual-axis chart for salary data (monthly view)
+            <ComposedChart data={chartData} margin={{ bottom: 0, left: 0, right: 60, top: 10 }}>
+              <CartesianGrid opacity={0.3} strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="period" stroke="var(--default-400)" tick={{ fontSize: 12 }} />
+
+              {/* Left Y-axis for hours */}
+              <YAxis
+                yAxisId="left"
+                stroke="var(--default-400)"
+                tick={{ fontSize: 12 }}
+                label={{ value: "Horas", angle: -90, position: "insideLeft" }}
+              />
+
+              {/* Right Y-axis for salary (CLP) */}
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                stroke="var(--default-400)"
+                tick={{ fontSize: 12 }}
+                label={{ value: "CLP", angle: 90, position: "insideRight" }}
+              />
+
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--default-100)" }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="bottom" height={40} />
+
+              {/* Hours lines (left Y-axis) */}
+              {reportData.map((emp) => (
+                <Line
+                  key={`hours-${emp.employeeId}`}
+                  yAxisId="left"
+                  activeDot={{ r: 6 }}
+                  connectNulls
+                  dataKey={emp.fullName}
+                  dot={{ r: 4, strokeWidth: 2 }}
+                  stroke={chartColors[reportData.indexOf(emp) % chartColors.length]}
+                  strokeWidth={2}
+                  type="monotone"
+                />
+              ))}
+
+              {/* Gross salary (right Y-axis) - green */}
+              {reportData.map(
+                (emp) =>
+                  Object.keys(emp.monthlyGrossSalary).length > 0 && (
+                    <Line
+                      key={`gross-${emp.employeeId}`}
+                      yAxisId="right"
+                      activeDot={{ r: 5 }}
+                      connectNulls
+                      dataKey={`${emp.fullName}_gross`}
+                      dot={false}
+                      stroke="#10b981"
+                      strokeWidth={2.5}
+                      strokeDasharray="5 5"
+                      type="monotone"
+                      opacity={0.7}
+                    />
+                  ),
+              )}
+
+              {/* Net salary (right Y-axis) - orange */}
+              {reportData.map(
+                (emp) =>
+                  Object.keys(emp.monthlyNetSalary).length > 0 && (
+                    <Line
+                      key={`net-${emp.employeeId}`}
+                      yAxisId="right"
+                      activeDot={{ r: 5 }}
+                      connectNulls
+                      dataKey={`${emp.fullName}_net`}
+                      dot={false}
+                      stroke="#f97316"
+                      strokeWidth={2.5}
+                      type="monotone"
+                      opacity={0.7}
+                    />
+                  ),
+              )}
+            </ComposedChart>
+          ) : granularity === "month" ? (
+            // Standard bar chart for monthly view (no salary data)
             <BarChart data={chartData} margin={{ bottom: 0, left: 0, right: 10, top: 10 }}>
               <CartesianGrid opacity={0.3} strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="period" stroke="var(--default-400)" tick={{ fontSize: 12 }} />
@@ -149,6 +269,7 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
               ))}
             </BarChart>
           ) : (
+            // Line chart for daily/weekly view
             <LineChart data={chartData} margin={{ bottom: 0, left: 0, right: 10, top: 10 }}>
               <CartesianGrid opacity={0.3} strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="period" stroke="var(--default-400)" tick={{ fontSize: 12 }} />

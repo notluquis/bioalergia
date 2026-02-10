@@ -41,6 +41,24 @@ const MultiMonthTimesheetsResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+const SalarySummarySchema = z.object({
+  data: z.record(
+    z.string(),
+    z.array(
+      z.object({
+        month: z.string(),
+        net: z.number(),
+        retention: z.number(),
+        subtotal: z.number(),
+      }),
+    ),
+  ),
+  from: zDateString,
+  message: z.string().optional(),
+  status: z.literal("ok"),
+  to: zDateString,
+});
+
 export async function fetchEmployeeTimesheets(
   employeeId: number,
   startDate: string,
@@ -110,4 +128,34 @@ export async function fetchMultiMonthTimesheets(
   }
 
   return data;
+}
+
+export async function fetchSalarySummary(
+  startDate: string,
+  endDate: string,
+  employeeIds: number[],
+) {
+  const data = await apiClient.get<{
+    data: Record<
+      string,
+      Array<{ month: string; net: number; retention: number; subtotal: number }>
+    >;
+    from: string;
+    message?: string;
+    status: "ok";
+    to: string;
+  }>("/api/timesheets/salary-summary", {
+    query: {
+      employeeIds: employeeIds.join(","),
+      from: startDate,
+      to: endDate,
+    },
+    responseSchema: SalarySummarySchema,
+  });
+
+  if (data.status !== "ok") {
+    throw new Error(data.message || "Error fetching salary summary");
+  }
+
+  return data.data;
 }
