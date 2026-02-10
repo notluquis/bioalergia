@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import { hasPermission } from "../auth";
 import { importDtePurchaseRow, importDteSaleRow } from "../lib/dte-import";
 import { verifyToken } from "../lib/paseto";
+import { normalizeTimesheetPayload, upsertTimesheetEntry } from "../services/timesheets";
 import { reply } from "../utils/reply";
 
 const COOKIE_NAME = "finanzas_session";
@@ -18,6 +19,8 @@ const CURRENCY_DOLLAR_REGEX = /\$/g;
 const THOUSANDS_DOT_REGEX = /\./g;
 const DECIMAL_COMMA_REGEX = /,/g;
 const SLASH_DATE_REGEX = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+const HYPHEN_DATE_REGEX = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
+const TIME_REGEX = /^\d{1,2}:\d{2}$/;
 
 export const csvUploadRoutes = new Hono();
 
@@ -417,13 +420,51 @@ csvUploadRoutes.post("/preview", async (c) => {
           errors.push(`Fila ${i + 1}: Empleado con RUT ${row.rut} no existe`);
           toSkip++;
         } else {
-          const dateStr = dayjs(String(row.workDate)).format("YYYY-MM-DD");
+          // Validate date format is DD-MM-YYYY (e.g., "08-08-2025" = August 8, 2025)
+          const workDateStr = String(row.workDate).trim();
+          const dateMatch = workDateStr.match(HYPHEN_DATE_REGEX);
+          if (!dateMatch) {
+            errors.push(
+              `Fila ${i + 1}: Fecha "${workDateStr}" en formato inválido. Use DD-MM-YYYY (ej: 08-08-2025)`,
+            );
+            toSkip++;
+            continue;
+          }
+
+          const [, dayStr, monthStr, yearStr] = dateMatch;
+          const day = Number.parseInt(dayStr, 10);
+          const month = Number.parseInt(monthStr, 10);
+
+          if (month < 1 || month > 12) {
+            errors.push(
+              `Fila ${i + 1}: Mes inválido en "${workDateStr}". Use DD-MM-YYYY (mes 01-12)`,
+            );
+            toSkip++;
+            continue;
+          }
+          if (day < 1 || day > 31) {
+            errors.push(
+              `Fila ${i + 1}: Día inválido en "${workDateStr}". Use DD-MM-YYYY (día 01-31)`,
+            );
+            toSkip++;
+            continue;
+          }
+
+          // Validate date actually exists
+          const isoDate = `${yearStr}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const testDate = new Date(`${isoDate}T00:00:00Z`);
+          if (Number.isNaN(testDate.getTime())) {
+            errors.push(`Fila ${i + 1}: Fecha inválida "${workDateStr}"`);
+            toSkip++;
+            continue;
+          }
+
           const exists = await db.employeeTimesheet.findFirst({
             where: {
               employee: {
                 person: { id: person.id },
               },
-              workDate: new Date(dateStr),
+              workDate: testDate,
             },
           });
           if (exists) {
@@ -943,6 +984,84 @@ async function importInventoryItemsRow(
   return { inserted: 1, updated: 0, skipped: 0 };
 }
 
+/**
+ * Parse timesheet date from DD-MM-YYYY format to YYYY-MM-DD ISO format
+ *
+ * Format: DD-MM-YYYY where:
+ * - DD = Day (01-31)
+ * - MM = Month (01-12)
+ * - YYYY = Year (4 digits)
+ *
+ * Examples:
+ * - "08-08-2025" → "2025-08-08" (August 8, 2025)
+ * - "31-12-2025" → "2025-12-31" (December 31, 2025)
+ * - "1-1-2025" → "2025-01-01" (single digit day/month OK)
+ *
+ * @param dateStr - Date string to parse
+ * @returns ISO format date string (YYYY-MM-DD)
+ * @throws Error if format is invalid or date is invalid
+ */
+function parseWorkDate(dateStr: unknown): string {
+  const dateMatch = String(dateStr).trim().match(HYPHEN_DATE_REGEX);
+  if (!dateMatch) {
+    throw new Error("Fecha en formato inválido. Use DD-MM-YYYY (ej: 08-08-2025 para 8 de agosto)");
+  }
+
+  const [, dayStr, monthStr, year] = dateMatch;
+  const day = Number.parseInt(dayStr, 10);
+  const month = Number.parseInt(monthStr, 10);
+
+  // Validate day and month ranges (before constructing the date)
+  if (month < 1 || month > 12) {
+    throw new Error("Fecha inválida: mes debe estar entre 01 y 12 (USE DD-MM-YYYY)");
+  }
+  if (day < 1 || day > 31) {
+    throw new Error("Fecha inválida: día debe estar entre 01 y 31 (USE DD-MM-YYYY)");
+  }
+
+  // Build ISO date string
+  const workDateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+  // Validate with Date constructor (catches invalid dates like Feb 31, non-leap year Feb 29, etc)
+  const testDate = new Date(`${workDateStr}T00:00:00Z`);
+  if (Number.isNaN(testDate.getTime())) {
+    throw new Error("Fecha inválida (ej: 31-02 no existe, 29-02 solo en años bisiesto)");
+  }
+
+  return workDateStr;
+}
+
+function validateAndParseTime(timeStr: unknown, label: string): string | null {
+  if (!timeStr) {
+    return null;
+  }
+  const time = String(timeStr).trim();
+  if (!time.match(TIME_REGEX)) {
+    throw new Error(`${label} inválida: ${time}. Use HH:MM format`);
+  }
+  return time;
+}
+
+function calculateWorkedMinutes(
+  startTime: string | null,
+  endTime: string | null,
+  providedMinutes: unknown,
+): number {
+  let workedMinutes = Number(providedMinutes) || 0;
+  if (!workedMinutes && startTime && endTime) {
+    const startParts = startTime.split(":").map((p) => Number.parseInt(p, 10));
+    const endParts = endTime.split(":").map((p) => Number.parseInt(p, 10));
+    const startMin = (startParts[0] ?? 0) * 60 + (startParts[1] ?? 0);
+    const endMin = (endParts[0] ?? 0) * 60 + (endParts[1] ?? 0);
+    let diff = endMin - startMin;
+    if (diff < 0) {
+      diff += 24 * 60;
+    }
+    workedMinutes = Math.max(diff, 0);
+  }
+  return workedMinutes;
+}
+
 async function importEmployeeTimesheetsRow(
   row: CSVRow,
   mode: "insert-only" | "insert-or-update",
@@ -952,7 +1071,6 @@ async function importEmployeeTimesheetsRow(
     throw new Error(`Empleado con RUT ${row.rut} no existe`);
   }
 
-  // Find existing employee by person
   const employee = await db.employee.findFirst({
     where: { person: { id: person.id } },
   });
@@ -961,41 +1079,46 @@ async function importEmployeeTimesheetsRow(
     throw new Error(`Empleado con RUT ${row.rut} no existe`);
   }
 
-  const dateStr = dayjs(String(row.workDate)).format("YYYY-MM-DD");
-  const workDate = new Date(dateStr);
+  const workDateStr = parseWorkDate(row.workDate);
+  const startTime = validateAndParseTime(row.startTime, "Hora inicio");
+  const endTime = validateAndParseTime(row.endTime, "Hora fin");
+  const workedMinutes = calculateWorkedMinutes(startTime, endTime, row.workedMinutes);
 
-  const startTime = row.startTime ? new Date(`1970-01-01T${row.startTime}`) : null;
-  const endTime = row.endTime ? new Date(`1970-01-01T${row.endTime}`) : null;
-
-  const timesheetData = {
-    workDate,
-    startTime,
-    endTime,
-    workedMinutes: Number(row.workedMinutes) || 0,
-    overtimeMinutes: Number(row.overtimeMinutes) || 0,
+  const normalizedData = normalizeTimesheetPayload({
+    employee_id: employee.id,
+    work_date: workDateStr,
+    start_time: startTime,
+    end_time: endTime,
+    worked_minutes: workedMinutes,
+    overtime_minutes: Number(row.overtimeMinutes) || 0,
     comment: row.comment ? String(row.comment) : null,
-  };
-
-  const existing = await db.employeeTimesheet.findFirst({
-    where: {
-      employee: { id: employee.id },
-      workDate,
-    },
   });
 
-  if (existing) {
+  try {
+    await upsertTimesheetEntry(normalizedData);
+    return { inserted: 1, updated: 0, skipped: 0 };
+  } catch (error) {
+    if (mode === "insert-or-update") {
+      const existing = await db.employeeTimesheet.findFirst({
+        where: {
+          employee: { id: employee.id },
+          workDate: new Date(`${workDateStr}T00:00:00Z`),
+        },
+      });
+
+      if (existing) {
+        await db.employeeTimesheet.update({
+          where: { id: existing.id },
+          data: normalizedData,
+        });
+        return { inserted: 0, updated: 1, skipped: 0 };
+      }
+    }
+
     if (mode === "insert-only") {
       return { inserted: 0, updated: 0, skipped: 1 };
     }
-    await db.employeeTimesheet.update({
-      where: { id: existing.id },
-      data: timesheetData,
-    });
-    return { inserted: 0, updated: 1, skipped: 0 };
-  }
 
-  await db.employeeTimesheet.create({
-    data: { ...timesheetData, employee: { connect: { id: employee.id } } },
-  });
-  return { inserted: 1, updated: 0, skipped: 0 };
+    throw error;
+  }
 }
