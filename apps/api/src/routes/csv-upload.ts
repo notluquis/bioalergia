@@ -204,7 +204,7 @@ async function getAuth(c: { req: { header: (name: string) => string | undefined 
 async function findPersonByRut(rut: string) {
   return db.person.findFirst({
     where: { rut },
-    include: { employee: true, counterpart: true },
+    include: { employee: true },
   });
 }
 
@@ -754,9 +754,11 @@ async function importCounterpartsRow(
     category: String(row.type || "SUPPLIER") as "SUPPLIER" | "CLIENT",
   };
 
-  // Try to find existing counterpart using cast to bypass Zenstack type constraints
+  // Try to find existing counterpart by identification number
+  // Note: identificationNumber is typically the RUT, matching the person
+  const identNumber = String(row.rut).replace(/[^0-9k]/gi, "");
   const existingCounterpart = await db.counterpart.findFirst({
-    where: { personId: person.id },
+    where: { identificationNumber: identNumber },
   } as never);
 
   if (existingCounterpart) {
@@ -770,9 +772,14 @@ async function importCounterpartsRow(
     return { inserted: 0, updated: 1, skipped: 0 };
   }
 
-  // Create new counterpart
+  // Create new counterpart with identification number
+  const identificationNumber = String(row.rut).replace(/[^0-9k]/gi, "");
   await db.counterpart.create({
-    data: { ...counterpartData, personId: person.id } as never,
+    data: {
+      ...counterpartData,
+      identificationNumber,
+      bankAccountHolder: String(row.names || ""),
+    } as never,
   });
   return { inserted: 1, updated: 0, skipped: 0 };
 }

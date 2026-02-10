@@ -5,6 +5,10 @@ import { describe, expect, it } from "vitest";
 // Extend dayjs with UTC plugin (matching csv-upload.ts & google-calendar-queries.ts)
 dayjs.extend(utc);
 
+// Regex patterns at module level (Biome useTopLevelRegex requirement)
+const HYPHEN_DATE_REGEX_TEST = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
+const TIME_REGEX_TEST = /^(\d{1,2}):(\d{2})$/;
+
 /**
  * Test suite for timesheet CSV import functionality
  * Uses dayjs.utc() for dates (pattern from google-calendar-queries.ts) and manual time parsing
@@ -22,7 +26,7 @@ function parseDateWithDayjs(value: unknown): string | null {
   const str = String(value).trim();
 
   // Manual parsing: DD-MM-YYYY format
-  const match = str.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  const match = str.match(HYPHEN_DATE_REGEX_TEST);
   if (!match) {
     return null;
   }
@@ -62,7 +66,7 @@ function parseTimeToMinutes(value: unknown): number | null {
   const str = String(value).trim();
 
   // Manual parsing: HH:MM or H:MM format
-  const match = str.match(/^(\d{1,2}):(\d{2})$/);
+  const match = str.match(TIME_REGEX_TEST);
   if (!match) {
     return null;
   }
