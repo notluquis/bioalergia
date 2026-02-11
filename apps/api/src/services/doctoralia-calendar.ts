@@ -178,8 +178,6 @@ export class DoctoraliaCalendarSyncService {
         ...summary,
       };
     } catch (error) {
-      console.error("[DoctoraliaSync] Sync failed:", error);
-
       // Update sync log with failure
       await updateDoctoraliaSyncLog(syncLog.id, {
         status: "FAILED",
@@ -306,8 +304,6 @@ export class DoctoraliaCalendarSyncService {
         scheduleIds,
       };
     } catch (error) {
-      console.error("[DoctoraliaSync] Alert sync failed:", error);
-
       await updateDoctoraliaSyncLog(syncLog.id, {
         status: "FAILED",
         errorMessage: error instanceof Error ? error.message : String(error),

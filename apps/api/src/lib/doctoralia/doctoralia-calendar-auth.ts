@@ -1,24 +1,44 @@
 /**
  * Doctoralia Calendar Authentication
  *
- * Handles login flow for Docplanner calendar:
- * 1. Login with credentials
- * 2. Handle 2FA if enabled
- * 3. Extract and cache bearer token
+ * Handles Docplanner SSO flow:
+ * 1. Login in l.doctoralia.cl (SSO)
+ * 2. Handle 2FA when required
+ * 3. Request OAuth code via provider metadata
+ * 4. Exchange code for marketplace token in docplanner.doctoralia.cl
  */
 
 import { request } from "gaxios";
 
-const LOGIN_URL = "https://l.doctoralia.cl";
+const AUTH_BASE_URL = process.env.DOCTORALIA_CALENDAR_AUTH_BASE_URL || "https://l.doctoralia.cl";
+const AUTH_BOOTSTRAP_PATH = process.env.DOCTORALIA_CALENDAR_AUTH_BOOTSTRAP_PATH || "/";
+const LOGIN_PATH = process.env.DOCTORALIA_CALENDAR_LOGIN_PATH || "/login/check";
+const TWO_FACTOR_PATH = process.env.DOCTORALIA_CALENDAR_2FA_PATH || "/2fa";
+const DOCPLANNER_BASE_URL =
+  process.env.DOCTORALIA_CALENDAR_DOCPLANNER_BASE_URL || "https://docplanner.doctoralia.cl";
 
-// Regex patterns
 const PHPSESSID_REGEX = /PHPSESSID=([^;]+)/;
-const MKPL_AUTH_BEARER_REGEX = /mkplAuth=bearer%20([^;]+)/;
-const MKPL_AUTH_REGEX = /mkplAuth=([^;]+)/;
 const TWO_FACTOR_LOCATION_REGEX = /\/2fa(?:\?|$)/i;
 
-// Token cache with expiration (24 hours default)
+// Token cache with expiration
 let cachedToken: { token: string; expiresAt: number } | null = null;
+
+type AuthProviderResponse = {
+  url_login: string;
+  client_id?: string;
+  response_type?: string;
+  scope?: string;
+  state?: string;
+  redirect_uri?: string;
+};
+
+type WebTokenLoginResponse = {
+  marketplaceToken?: {
+    token?: string;
+    expiresAt?: string;
+    expires_in?: number;
+  };
+};
 
 /**
  * Check if calendar credentials are configured
@@ -29,129 +49,15 @@ export function isCalendarAuthConfigured(): boolean {
   );
 }
 
-/**
- * Perform login to Doctoralia calendar
- */
-async function performLogin(
-  username: string,
-  password: string,
-): Promise<{
-  requiresTwoFactor: boolean;
-  cookies: string[];
-  sessionId?: string;
-}> {
-  try {
-    const response = await request<{ requires_2fa?: boolean; token?: string }>({
-      url: `${LOGIN_URL}/login`,
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json, text/plain, */*",
-      },
-      data: new URLSearchParams({
-        username,
-        password,
-      }).toString(),
-      // Important: keep the original response to preserve Set-Cookie and Location.
-      // Following redirects can hide auth cookies required for mkplAuth extraction.
-      maxRedirects: 0,
-      validateStatus: () => true, // Don't throw on any status
-    });
+function extractLocationHeader(response: { headers: unknown }): string {
+  const headers = response.headers as {
+    get?: (name: string) => string | null;
+    location?: string;
+  };
 
-    const cookies = response.headers.getSetCookie?.() || [];
-    const locationHeader =
-      response.headers.get?.("location") ||
-      (response.headers as unknown as { location?: string }).location ||
-      "";
-    const tokenFromCookies = extractTokenFromCookies(cookies);
-
-    // Direct token in response payload (rare)
-    if (response.data?.token) {
-      return {
-        requiresTwoFactor: false,
-        cookies,
-      };
-    }
-
-    // Redirect flow: only require 2FA when redirect target indicates it.
-    if (response.status === 302) {
-      if (tokenFromCookies) {
-        return {
-          requiresTwoFactor: false,
-          cookies,
-        };
-      }
-
-      const requiresTwoFactor =
-        Boolean(response.data?.requires_2fa) || TWO_FACTOR_LOCATION_REGEX.test(locationHeader);
-
-      return {
-        requiresTwoFactor,
-        cookies,
-        sessionId: extractSessionId(cookies),
-      };
-    }
-
-    // Non-redirect successful login with auth cookie
-    if (tokenFromCookies) {
-      return {
-        requiresTwoFactor: false,
-        cookies,
-      };
-    }
-
-    throw new Error(
-      `Login failed: No token received (status=${response.status}, location=${locationHeader || "n/a"}, cookies=${cookies.length})`,
-    );
-  } catch (error) {
-    console.error("[Doctoralia Calendar] Login error:", error);
-    throw new Error(`Login failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-  }
+  return headers.get?.("location") || headers.location || "";
 }
 
-/**
- * Verify 2FA code
- */
-async function verify2FA(
-  code: string,
-  sessionCookies: string[],
-  sessionId?: string,
-): Promise<string[]> {
-  try {
-    const response = await request({
-      url: `${LOGIN_URL}/2fa`,
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json, text/plain, */*",
-        Cookie: sessionCookies.join("; "),
-      },
-      data: new URLSearchParams({
-        code,
-        ...(sessionId ? { session_id: sessionId } : {}),
-      }).toString(),
-      maxRedirects: 0,
-      validateStatus: () => true,
-    });
-
-    const cookies = response.headers.getSetCookie?.() || [];
-
-    if (response.status !== 200 && response.status !== 302) {
-      throw new Error("2FA verification failed");
-    }
-
-    return cookies;
-  } catch (error) {
-    console.error("[Doctoralia Calendar] 2FA verification error:", error);
-    throw new Error(
-      `2FA verification failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
-  }
-}
-
-/**
- * Extract session ID from cookies
- */
 function extractSessionId(cookies: string[]): string | undefined {
   for (const cookie of cookies) {
     const match = cookie.match(PHPSESSID_REGEX);
@@ -162,39 +68,232 @@ function extractSessionId(cookies: string[]): string | undefined {
   return undefined;
 }
 
-/**
- * Extract bearer token from cookies
- */
-function extractTokenFromCookies(cookies: string[]): string | null {
-  for (const cookie of cookies) {
-    // Look for mkplAuth cookie
-    const match = cookie.match(MKPL_AUTH_BEARER_REGEX);
-    if (match) {
-      return decodeURIComponent(match[1]);
-    }
+function normalizeCookie(cookie: string): string {
+  return cookie.split(";")[0]?.trim() || cookie.trim();
+}
 
-    // Alternative: direct bearer format
-    const directMatch = cookie.match(MKPL_AUTH_REGEX);
-    if (directMatch) {
-      const value = decodeURIComponent(directMatch[1]);
-      if (value.startsWith("bearer ")) {
-        return value.substring(7);
+function cookieName(cookie: string): string {
+  return normalizeCookie(cookie).split("=")[0]?.trim() || "";
+}
+
+function mergeCookies(...groups: string[][]): string[] {
+  const byName = new Map<string, string>();
+
+  for (const group of groups) {
+    for (const cookie of group) {
+      const normalized = normalizeCookie(cookie);
+      const name = cookieName(normalized);
+      if (!name) {
+        continue;
       }
-      return value;
+      byName.set(name, normalized);
     }
   }
 
-  return null;
+  return [...byName.values()];
+}
+
+function buildCookieHeader(cookies: string[]): string {
+  return mergeCookies(cookies).join("; ");
+}
+
+function extractCodeFromLocation(location: string): string | null {
+  if (!location) {
+    return null;
+  }
+
+  try {
+    const url = new URL(location, DOCPLANNER_BASE_URL);
+    return url.searchParams.get("code");
+  } catch {
+    return null;
+  }
+}
+
+async function performLogin(
+  username: string,
+  password: string,
+): Promise<{
+  requiresTwoFactor: boolean;
+  cookies: string[];
+  sessionId?: string;
+  location?: string;
+}> {
+  const bootstrapResponse = await request({
+    url: `${AUTH_BASE_URL}${AUTH_BOOTSTRAP_PATH}`,
+    method: "GET",
+    maxRedirects: 0,
+    validateStatus: () => true,
+  });
+  const bootstrapCookies = bootstrapResponse.headers.getSetCookie?.() || [];
+
+  const response = await request({
+    url: `${AUTH_BASE_URL}${LOGIN_PATH}`,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json, text/plain, */*",
+      ...(bootstrapCookies.length > 0 ? { Cookie: buildCookieHeader(bootstrapCookies) } : {}),
+    },
+    data: new URLSearchParams({
+      _username: username,
+      _password: password,
+      username,
+      password,
+    }).toString(),
+    maxRedirects: 0,
+    validateStatus: () => true,
+  });
+
+  const responseCookies = response.headers.getSetCookie?.() || [];
+  const cookies = mergeCookies(bootstrapCookies, responseCookies);
+  const location = extractLocationHeader(response);
+
+  if (response.status < 200 || response.status >= 400) {
+    throw new Error(
+      `Login request failed (status=${response.status}, loginPath=${LOGIN_PATH}, location=${location || "n/a"})`,
+    );
+  }
+
+  const requiresTwoFactor = TWO_FACTOR_LOCATION_REGEX.test(location);
+
+  return {
+    requiresTwoFactor,
+    cookies,
+    sessionId: extractSessionId(cookies),
+    location,
+  };
+}
+
+async function verify2FA(
+  code: string,
+  sessionCookies: string[],
+  sessionId?: string,
+): Promise<string[]> {
+  const response = await request({
+    url: `${AUTH_BASE_URL}${TWO_FACTOR_PATH}`,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json, text/plain, */*",
+      Cookie: buildCookieHeader(sessionCookies),
+    },
+    data: new URLSearchParams({
+      code,
+      ...(sessionId ? { session_id: sessionId } : {}),
+    }).toString(),
+    maxRedirects: 0,
+    validateStatus: () => true,
+  });
+
+  const cookies = response.headers.getSetCookie?.() || [];
+
+  if (response.status !== 200 && response.status !== 302) {
+    throw new Error(`2FA verification failed (status=${response.status})`);
+  }
+
+  return cookies;
+}
+
+async function requestAuthProvider(): Promise<AuthProviderResponse> {
+  const response = await request<AuthProviderResponse>({
+    url: `${DOCPLANNER_BASE_URL}/api/auth/provider`,
+    method: "GET",
+    headers: {
+      Accept: "application/json, text/plain, */*",
+    },
+  });
+
+  if (!response.data?.url_login) {
+    throw new Error("Auth provider response missing url_login");
+  }
+
+  return response.data;
+}
+
+async function requestAuthorizationCode(ssoCookies: string[], provider: AuthProviderResponse) {
+  const redirectUri = provider.redirect_uri || `${DOCPLANNER_BASE_URL}/#/`;
+  const state = provider.state || "ssoLogin";
+
+  const authUrl = new URL(provider.url_login);
+  authUrl.searchParams.set("client_id", provider.client_id || "");
+  authUrl.searchParams.set("response_type", provider.response_type || "code");
+  authUrl.searchParams.set("scope", provider.scope || "client");
+  authUrl.searchParams.set("state", state);
+  authUrl.searchParams.set("redirect_uri", redirectUri);
+
+  const response = await request({
+    url: authUrl.toString(),
+    method: "GET",
+    headers: {
+      Accept: "application/json, text/plain, */*",
+      Cookie: buildCookieHeader(ssoCookies),
+    },
+    maxRedirects: 0,
+    validateStatus: () => true,
+  });
+
+  const location = extractLocationHeader(response);
+  const code = extractCodeFromLocation(location);
+
+  if (!code) {
+    throw new Error(
+      `OAuth code not found (status=${response.status}, location=${location || "n/a"})`,
+    );
+  }
+
+  return {
+    code,
+    redirectUri,
+  };
+}
+
+async function exchangeCodeForWebToken(code: string, redirectUri: string): Promise<string> {
+  const response = await request<WebTokenLoginResponse>({
+    url: `${DOCPLANNER_BASE_URL}/api/account/webtoken-login`,
+    method: "GET",
+    params: {
+      code,
+      redirectUri,
+    },
+    headers: {
+      Accept: "application/json, text/plain, */*",
+    },
+    validateStatus: () => true,
+  });
+
+  if (response.status !== 200) {
+    throw new Error(`webtoken-login failed (status=${response.status})`);
+  }
+
+  const token = response.data?.marketplaceToken?.token;
+  if (!token) {
+    throw new Error("webtoken-login response missing marketplace token");
+  }
+
+  const expiresAtRaw = response.data?.marketplaceToken?.expiresAt;
+  const expiresInRaw = response.data?.marketplaceToken?.expires_in;
+
+  let expiresAt = Date.now() + 24 * 3600_000;
+  if (expiresAtRaw) {
+    const parsed = Date.parse(expiresAtRaw);
+    if (Number.isFinite(parsed)) {
+      expiresAt = parsed;
+    }
+  } else if (typeof expiresInRaw === "number" && Number.isFinite(expiresInRaw)) {
+    expiresAt = Date.now() + expiresInRaw * 1000;
+  }
+
+  cachedToken = {
+    token,
+    expiresAt,
+  };
+
+  return token;
 }
 
 /**
  * Get calendar access token (with caching)
- *
- * Flow:
- * 1. Check cache
- * 2. Perform login
- * 3. Handle 2FA if needed
- * 4. Extract and cache token
  */
 export async function getCalendarToken(twoFactorCode?: string): Promise<string> {
   const now = Date.now();
@@ -213,44 +312,31 @@ export async function getCalendarToken(twoFactorCode?: string): Promise<string> 
     );
   }
 
-  try {
-    // Step 1: Login
-    const loginResult = await performLogin(username, password);
+  const loginResult = await performLogin(username, password);
 
-    let finalCookies = loginResult.cookies;
-
-    // Step 2: Handle 2FA if required
-    if (loginResult.requiresTwoFactor) {
-      if (!twoFactorCode) {
-        throw new Error(
-          "2FA_REQUIRED: Two-factor authentication is enabled. Provide the 6-digit code.",
-        );
-      }
-
-      const tfaCookies = await verify2FA(twoFactorCode, loginResult.cookies, loginResult.sessionId);
-      finalCookies = [...loginResult.cookies, ...tfaCookies];
+  let ssoCookies = loginResult.cookies;
+  if (loginResult.requiresTwoFactor) {
+    if (!twoFactorCode) {
+      throw new Error(
+        "2FA_REQUIRED: Two-factor authentication is enabled. Provide the 6-digit code.",
+      );
     }
 
-    // Step 3: Extract token
-    const token = extractTokenFromCookies(finalCookies);
-
-    if (!token) {
-      throw new Error("Failed to extract token from authentication response");
-    }
-
-    // Cache token for 24 hours
-    cachedToken = {
-      token,
-      expiresAt: now + 24 * 3600_000,
-    };
-
-    console.log("[Doctoralia Calendar] Token obtained successfully");
-
-    return token;
-  } catch (error) {
-    console.error("[Doctoralia Calendar] Authentication error:", error);
-    throw error;
+    const twoFactorCookies = await verify2FA(
+      twoFactorCode,
+      loginResult.cookies,
+      loginResult.sessionId,
+    );
+    ssoCookies = mergeCookies(loginResult.cookies, twoFactorCookies);
   }
+
+  const provider = await requestAuthProvider();
+  const { code, redirectUri } = await requestAuthorizationCode(ssoCookies, provider);
+  const token = await exchangeCodeForWebToken(code, redirectUri);
+
+  console.log("[Doctoralia Calendar] Token obtained successfully via OAuth SSO");
+
+  return token;
 }
 
 /**
