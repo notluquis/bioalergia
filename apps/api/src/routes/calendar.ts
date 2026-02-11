@@ -33,8 +33,6 @@ import {
 } from "../services/calendar"; // Ensure calendarSyncService is exported from services/calendar OR import directly from modules/calendar/service
 import { reply } from "../utils/reply";
 
-const ISO_DATE_TIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/;
-
 export const calendarRoutes = new Hono();
 
 // Helper schemas
@@ -252,35 +250,6 @@ calendarRoutes.get(
 
     const { filters, applied, maxDays } = await buildFiltersFromValidQuery(c.req.valid("query"));
     const events = await getCalendarEventsByDate(filters, { maxDays });
-    const flatEvents = events.days.flatMap((day) => day.events);
-    const debugEvents = flatEvents.slice(0, 5).map((event) => ({
-      eventId: event.eventId,
-      eventDate: event.eventDate,
-      startDate: event.startDate,
-      startDateTime: event.startDateTime,
-      endDate: event.endDate,
-      endDateTime: event.endDateTime,
-    }));
-    const isIsoDateTime = (value: unknown) =>
-      typeof value === "string" && ISO_DATE_TIME_REGEX.test(value);
-    const invalidDateTimes = flatEvents
-      .filter(
-        (event) =>
-          (event.startDateTime && !isIsoDateTime(event.startDateTime)) ||
-          (event.endDateTime && !isIsoDateTime(event.endDateTime)),
-      )
-      .slice(0, 10)
-      .map((event) => ({
-        eventId: event.eventId,
-        startDateTime: event.startDateTime,
-        endDateTime: event.endDateTime,
-        startType: typeof event.startDateTime,
-        endType: typeof event.endDateTime,
-      }));
-    console.log("[calendar/daily] sample event datetimes", debugEvents);
-    if (invalidDateTimes.length) {
-      console.warn("[calendar/daily] invalid datetime payloads", invalidDateTimes);
-    }
     return reply(c, {
       status: "ok",
       filters: {

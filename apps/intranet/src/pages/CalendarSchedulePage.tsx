@@ -4,7 +4,7 @@ import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import React from "react";
+import React, { useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarFiltersPopover";
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
@@ -22,6 +22,7 @@ dayjs.extend(isoWeek);
 dayjs.locale("es");
 
 const DATE_FORMAT = "YYYY-MM-DD";
+type CalendarSource = "doctoralia" | "google";
 
 function toCalendarEventDetail(
   appointments: Awaited<ReturnType<typeof fetchDoctoraliaCalendarAppointments>>,
@@ -61,10 +62,100 @@ const getActualWeekStart = () => {
   return base.isoWeekday(1);
 };
 
+function CalendarSourceSelector({
+  onSourceChange,
+  source,
+}: Readonly<{
+  onSourceChange: (key: string) => void;
+  source: CalendarSource;
+}>) {
+  return (
+    <Select
+      className="min-w-44"
+      selectedKey={source}
+      onSelectionChange={(key) => onSourceChange(String(key))}
+    >
+      <Label className="font-medium text-default-500 text-xs">Fuente</Label>
+      <Select.Trigger>
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover>
+        <ListBox>
+          <ListBox.Item id="google" textValue="Google Calendar">
+            Google Calendar
+          </ListBox.Item>
+          <ListBox.Item id="doctoralia" textValue="Doctoralia Calendar">
+            Doctoralia Calendar
+          </ListBox.Item>
+        </ListBox>
+      </Select.Popover>
+    </Select>
+  );
+}
+
+function ScheduleHeaderControls({
+  appliedFilters,
+  availableCategories,
+  draftFilters,
+  filtersOpen,
+  isGoogleSource,
+  loading,
+  onApplyGoogleFilters,
+  onFilterChange,
+  onResetGoogleFilters,
+  onSourceChange,
+  setFiltersOpen,
+  source,
+  totalEvents,
+}: Readonly<{
+  appliedFilters: ReturnType<typeof useCalendarEvents>["appliedFilters"];
+  availableCategories: ReturnType<typeof useCalendarEvents>["availableCategories"];
+  draftFilters: ReturnType<typeof useCalendarEvents>["appliedFilters"];
+  filtersOpen: boolean;
+  isGoogleSource: boolean;
+  loading: boolean;
+  onApplyGoogleFilters: () => void;
+  onFilterChange: (key: string, value: unknown) => void;
+  onResetGoogleFilters: () => void;
+  onSourceChange: (key: string) => void;
+  setFiltersOpen: (open: boolean) => void;
+  source: CalendarSource;
+  totalEvents: number;
+}>) {
+  return (
+    <div className="flex items-center gap-3">
+      <CalendarSourceSelector onSourceChange={onSourceChange} source={source} />
+
+      <span className="text-default-400 text-xs">
+        {numberFormatter.format(totalEvents)} eventos
+      </span>
+
+      {isGoogleSource && (
+        <CalendarFiltersPopover
+          applyCount={totalEvents}
+          availableCategories={availableCategories}
+          className="shadow-lg"
+          filters={draftFilters}
+          isDirty={JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters)}
+          isOpen={filtersOpen}
+          layout="dropdown"
+          loading={loading}
+          onApply={onApplyGoogleFilters}
+          onFilterChange={onFilterChange}
+          onOpenChange={setFiltersOpen}
+          onReset={onResetGoogleFilters}
+          showSearch
+        />
+      )}
+    </div>
+  );
+}
+
 function CalendarSchedulePage() {
   const navigate = routeApi.useNavigate();
   const search = routeApi.useSearch();
-  const source = search.source ?? "google";
+  const source: CalendarSource = search.source ?? "google";
   const isGoogleSource = source === "google";
 
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
@@ -75,9 +166,12 @@ function CalendarSchedulePage() {
   const { data: doctoraliaEvents = [], isLoading: doctoraliaLoading } = useQuery({
     enabled: source === "doctoralia" && Boolean(search.from) && Boolean(search.to),
     queryFn: async () => {
+      if (!search.from || !search.to) {
+        return [];
+      }
       const appointments = await fetchDoctoraliaCalendarAppointments({
-        from: search.from!,
-        to: search.to!,
+        from: search.from,
+        to: search.to,
       });
       return toCalendarEventDetail(appointments);
     },
@@ -139,6 +233,56 @@ function CalendarSchedulePage() {
     updateWeek(actualWeekStart.format(DATE_FORMAT));
   };
 
+  const onSourceChange = useCallback(
+    (nextSourceKey: string) => {
+      const nextSource = nextSourceKey === "doctoralia" ? "doctoralia" : "google";
+      void navigate({
+        search: (prev) => ({
+          ...prev,
+          source: nextSource === "google" ? undefined : "doctoralia",
+          ...(nextSource === "doctoralia"
+            ? {
+                calendarId: undefined,
+                category: [],
+                search: undefined,
+              }
+            : {}),
+        }),
+      });
+    },
+    [navigate],
+  );
+
+  const onApplyGoogleFilters = useCallback(() => {
+    void navigate({
+      search: {
+        ...search,
+        calendarId: draftFilters.calendarIds?.length ? draftFilters.calendarIds : undefined,
+        category: draftFilters.categories,
+        search: draftFilters.search || undefined,
+      },
+    });
+    setFiltersOpen(false);
+  }, [draftFilters, navigate, search, setFiltersOpen]);
+
+  const onResetGoogleFilters = useCallback(() => {
+    setDraftFilters(defaults);
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        calendarId: undefined,
+        category: [],
+        search: undefined,
+      }),
+    });
+  }, [defaults, navigate]);
+
+  const totalEvents = isGoogleSource ? (summary?.totals.events ?? 0) : displayedWeekEvents.length;
+  const calendarLoading = isGoogleSource ? loading : doctoraliaLoading;
+  const onFilterChange = useCallback((key: string, value: unknown) => {
+    setDraftFilters((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
   return (
     <section className="space-y-4">
       {/* Compact Header */}
@@ -185,94 +329,21 @@ function CalendarSchedulePage() {
           </div>
 
           {/* Right: Event count + Filter toggle */}
-          <div className="flex items-center gap-3">
-            <Select
-              className="min-w-44"
-              selectedKey={source}
-              onSelectionChange={(key) => {
-                const nextSource = String(key);
-                void navigate({
-                  search: (prev) => ({
-                    ...prev,
-                    source: nextSource === "google" ? undefined : "doctoralia",
-                    ...(nextSource === "doctoralia"
-                      ? {
-                          calendarId: undefined,
-                          category: [],
-                          search: undefined,
-                        }
-                      : {}),
-                  }),
-                });
-              }}
-            >
-              <Label className="font-medium text-default-500 text-xs">Fuente</Label>
-              <Select.Trigger>
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  <ListBox.Item id="google" textValue="Google Calendar">
-                    Google Calendar
-                  </ListBox.Item>
-                  <ListBox.Item id="doctoralia" textValue="Doctoralia Calendar">
-                    Doctoralia Calendar
-                  </ListBox.Item>
-                </ListBox>
-              </Select.Popover>
-            </Select>
-
-            {(isGoogleSource ? summary : true) && (
-              <span className="text-default-400 text-xs">
-                {numberFormatter.format(
-                  isGoogleSource ? (summary?.totals.events ?? 0) : displayedWeekEvents.length,
-                )}{" "}
-                eventos
-              </span>
-            )}
-            {isGoogleSource && (
-              <CalendarFiltersPopover
-                applyCount={displayedWeekEvents.length}
-                availableCategories={availableCategories}
-                className="shadow-lg"
-                filters={draftFilters}
-                isDirty={JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters)}
-                isOpen={filtersOpen}
-                layout="dropdown"
-                loading={loading}
-                onApply={() => {
-                  void navigate({
-                    search: {
-                      ...search,
-                      calendarId: draftFilters.calendarIds?.length
-                        ? draftFilters.calendarIds
-                        : undefined,
-                      category: draftFilters.categories,
-                      search: draftFilters.search || undefined,
-                    },
-                  });
-                  setFiltersOpen(false);
-                }}
-                onFilterChange={(key, value) => {
-                  setDraftFilters((prev) => ({ ...prev, [key]: value }));
-                }}
-                onOpenChange={setFiltersOpen}
-                onReset={() => {
-                  setDraftFilters(defaults);
-                  void navigate({
-                    search: (prev) => ({
-                      ...prev,
-                      calendarId: undefined,
-                      category: [],
-                      search: undefined,
-                    }),
-                  });
-                }}
-                showSearch
-              />
-            )}
-          </div>
+          <ScheduleHeaderControls
+            appliedFilters={appliedFilters}
+            availableCategories={availableCategories}
+            draftFilters={draftFilters}
+            filtersOpen={filtersOpen}
+            isGoogleSource={isGoogleSource}
+            loading={loading}
+            onApplyGoogleFilters={onApplyGoogleFilters}
+            onFilterChange={onFilterChange}
+            onResetGoogleFilters={onResetGoogleFilters}
+            onSourceChange={onSourceChange}
+            setFiltersOpen={setFiltersOpen}
+            source={source}
+            totalEvents={totalEvents}
+          />
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs sm:hidden">
@@ -290,14 +361,14 @@ function CalendarSchedulePage() {
         className="mt-3 overflow-hidden rounded-3xl border border-default-100 shadow-sm"
         variant="default"
       >
-        {(isGoogleSource ? loading : doctoraliaLoading) && !displayedWeekEvents.length ? (
+        {calendarLoading && !displayedWeekEvents.length ? (
           <div className="p-6">
             <CalendarSkeleton days={6} />
           </div>
         ) : (
           <ScheduleCalendar
             events={displayedWeekEvents}
-            loading={isGoogleSource ? loading : doctoraliaLoading}
+            loading={calendarLoading}
             weekStart={currentWeekStartStr}
           />
         )}
