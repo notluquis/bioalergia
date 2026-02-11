@@ -69,10 +69,10 @@ async function getHistoricalDateRange() {
   });
 
   const from = minResult[0]
-    ? dayjs(minResult[0].workDate).tz(TIMEZONE).format("YYYY-MM-DD")
+    ? dayjs.utc(minResult[0].workDate).format("YYYY-MM-DD")
     : dayjs.tz(TIMEZONE).subtract(12, "month").format("YYYY-MM-DD");
   const to = maxResult[0]
-    ? dayjs(maxResult[0].workDate).tz(TIMEZONE).format("YYYY-MM-DD")
+    ? dayjs.utc(maxResult[0].workDate).format("YYYY-MM-DD")
     : dayjs.tz(TIMEZONE).format("YYYY-MM-DD");
 
   return { from, to };

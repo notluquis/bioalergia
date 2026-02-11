@@ -8,6 +8,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const TIMEZONE = "America/Santiago";
+const DATE_ONLY_FORMAT = "YYYY-MM-DD";
 
 // Regex patterns for performance (top-level definition)
 const TIME_FORMAT_PATTERN = /^[0-9]{1,2}:[0-9]{2}(:[0-9]{2})?$/;
@@ -55,6 +56,38 @@ export interface ListTimesheetOptions {
   employee_id?: number;
   from: string;
   to: string;
+}
+
+function parseDateOnlyUtc(value: string) {
+  return dayjs.utc(value, DATE_ONLY_FORMAT, true);
+}
+
+function dateOnlyStartUtc(value: string): Date {
+  const parsed = parseDateOnlyUtc(value);
+  if (!parsed.isValid()) {
+    throw new Error(`Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
+  }
+  return parsed.startOf("day").toDate();
+}
+
+function dateOnlyEndUtc(value: string): Date {
+  const parsed = parseDateOnlyUtc(value);
+  if (!parsed.isValid()) {
+    throw new Error(`Invalid date format: ${value}. Expected ${DATE_ONLY_FORMAT}`);
+  }
+  return parsed.endOf("day").toDate();
+}
+
+function monthStartUtc(month: string) {
+  const parsed = dayjs.utc(month, "YYYY-MM", true);
+  if (!parsed.isValid()) {
+    throw new Error(`Invalid month format: ${month}. Expected YYYY-MM`);
+  }
+  return parsed.startOf("month");
+}
+
+function formatDbDateOnly(value: Date | string) {
+  return dayjs.utc(value).format(DATE_ONLY_FORMAT);
 }
 
 // Helper Functions
@@ -218,7 +251,7 @@ function mapTimesheetEntry(entry: EmployeeTimesheet): TimesheetEntry {
   return {
     id: Number(entry.id),
     employee_id: entry.employeeId,
-    work_date: dayjs.utc(entry.workDate).format("YYYY-MM-DD"),
+    work_date: formatDbDateOnly(entry.workDate),
     start_time: entry.startTime ? dateToTimeString(entry.startTime) : "",
     end_time: entry.endTime ? dateToTimeString(entry.endTime) : "",
     worked_minutes: entry.workedMinutes,
@@ -252,8 +285,7 @@ export async function ensureFixedSalaryRecord(
     return; // Only for FIXED employees
   }
 
-  const firstDayOfMonth = `${month}-01`;
-  const monthStart = dayjs.tz(firstDayOfMonth, "YYYY-MM-DD", TIMEZONE);
+  const monthStart = monthStartUtc(month);
   const monthEnd = monthStart.add(1, "month");
 
   // Check if record already exists for this month
@@ -307,8 +339,8 @@ export async function listTimesheetEntries(
     where: {
       ...(options.employee_id && { employeeId: options.employee_id }),
       workDate: {
-        gte: dayjs.tz(options.from, "YYYY-MM-DD", TIMEZONE).startOf("day").toDate(),
-        lte: dayjs.tz(options.to, "YYYY-MM-DD", TIMEZONE).endOf("day").toDate(),
+        gte: dateOnlyStartUtc(options.from),
+        lte: dateOnlyEndUtc(options.to),
       },
     },
     orderBy: { workDate: "asc" },
@@ -321,7 +353,7 @@ export async function listTimesheetEntries(
 export async function upsertTimesheetEntry(
   payload: UpsertTimesheetPayload,
 ): Promise<TimesheetEntry> {
-  const workDateObj = dayjs.tz(payload.work_date, "YYYY-MM-DD", TIMEZONE).toDate();
+  const workDateObj = dateOnlyStartUtc(payload.work_date);
 
   // Convert time strings directly to HH:MM:SS format for PostgreSQL TIME columns
   // No timezone conversion - keep as-is from user input
@@ -387,7 +419,7 @@ export async function upsertTimesheetEntry(
     return {
       id: Number(result.id),
       employee_id: result.employeeId,
-      work_date: dayjs(result.workDate).tz(TIMEZONE).format("YYYY-MM-DD"),
+      work_date: formatDbDateOnly(result.workDate),
       start_time: result.startTime ? dateToTimeString(result.startTime) : "",
       end_time: result.endTime ? dateToTimeString(result.endTime) : "",
       worked_minutes: result.workedMinutes,
@@ -707,8 +739,8 @@ export async function buildMonthlySummary(from: string, to: string, employeeId?:
     by: ["employeeId"],
     where: {
       workDate: {
-        gte: dayjs.tz(from, "YYYY-MM-DD", TIMEZONE).startOf("day").toDate(),
-        lte: dayjs.tz(to, "YYYY-MM-DD", TIMEZONE).endOf("day").toDate(),
+        gte: dateOnlyStartUtc(from),
+        lte: dateOnlyEndUtc(to),
       },
       ...(employeeId && { employeeId }),
     },
