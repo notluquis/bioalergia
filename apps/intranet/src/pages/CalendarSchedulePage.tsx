@@ -476,7 +476,7 @@ function CalendarSchedulePage() {
               isDisabled={isConnectingDoctoralia || doctoraliaAuthLoading}
               onPress={() => void onConnectDoctoralia()}
               size="sm"
-              variant="flat"
+              variant="secondary"
             >
               {doctoraliaAuthStatus?.connected ? "Reconectar Doctoralia" : "Conectar Doctoralia"}
             </Button>
