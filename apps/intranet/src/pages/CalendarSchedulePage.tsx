@@ -72,27 +72,16 @@ function CalendarSchedulePage() {
   const { appliedFilters, availableCategories, daily, defaults, loading, summary } =
     useCalendarEvents({ enabled: isGoogleSource });
 
-  const doctoraliaScheduleIds =
-    search.calendarId?.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0) ?? [];
-
   const { data: doctoraliaEvents = [], isLoading: doctoraliaLoading } = useQuery({
     enabled: source === "doctoralia" && Boolean(search.from) && Boolean(search.to),
     queryFn: async () => {
       const appointments = await fetchDoctoraliaCalendarAppointments({
         from: search.from!,
         to: search.to!,
-        scheduleIds: doctoraliaScheduleIds.length > 0 ? doctoraliaScheduleIds : undefined,
       });
       return toCalendarEventDetail(appointments);
     },
-    queryKey: [
-      "doctoralia",
-      "calendar",
-      "appointments",
-      search.from,
-      search.to,
-      doctoraliaScheduleIds,
-    ],
+    queryKey: ["doctoralia", "calendar", "appointments", search.from, search.to],
   });
 
   // Local state for filter draft (not applicable until the user clicks Apply)
