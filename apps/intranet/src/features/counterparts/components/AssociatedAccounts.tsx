@@ -385,7 +385,7 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
   return (
     <section className="surface-recessed relative space-y-5 p-6">
       <AssociatedAccountsHeader onAddAccount={() => setIsAddAccountModalOpen(true)} />
-      {error && <Alert variant="error">{error}</Alert>}
+      {error && <Alert status="danger">{error}</Alert>}
 
       <AccountGroupsTable accountGroups={accountGroups} columns={accountGroupColumns} />
 
@@ -536,7 +536,7 @@ function QuickViewSection({
               to: fallbackRange.to,
             });
           }}
-          size="xs"
+          size="sm"
           variant="ghost"
         >
           Año en curso
@@ -606,7 +606,7 @@ function SuggestionList({
               onClick={() => {
                 onSuggestionClick(suggestion);
               }}
-              size="xs"
+              size="sm"
               variant="primary"
             >
               Autorellenar
@@ -617,7 +617,7 @@ function SuggestionList({
                 onClick={() => {
                   onAttachRut(suggestion.identificationNumber);
                 }}
-                size="xs"
+                size="sm"
                 variant="secondary"
               >
                 {attachPending ? "Vinculando..." : "Vincular por RUT"}
@@ -628,7 +628,7 @@ function SuggestionList({
                 onClick={() => {
                   onSuggestionCreate(suggestion);
                 }}
-                size="xs"
+                size="sm"
                 variant="secondary"
               >
                 Copiar datos

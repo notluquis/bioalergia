@@ -138,7 +138,7 @@ export function SettlementReleaseTransactionsPage() {
   return (
     <section className="mx-auto w-full max-w-none space-y-4 p-4">
       <Card>
-        <Alert variant="warning">
+        <Alert status="warning">
           <span>
             Esta sección está temporalmente deshabilitada mientras se restaura la vista de datos.
           </span>

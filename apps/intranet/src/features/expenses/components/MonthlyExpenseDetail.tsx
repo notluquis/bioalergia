@@ -26,7 +26,7 @@ export function MonthlyExpenseDetail({
   }
 
   if (!expense) {
-    return <Alert variant="warning">Selecciona un gasto para ver el detalle.</Alert>;
+    return <Alert status="warning">Selecciona un gasto para ver el detalle.</Alert>;
   }
 
   return (
@@ -106,7 +106,7 @@ export function MonthlyExpenseDetail({
                     onClick={() => {
                       onUnlinkTransaction(tx.transactionId);
                     }}
-                    size="xs"
+                    size="sm"
                     variant="secondary"
                   >
                     Desvincular

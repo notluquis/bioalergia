@@ -206,7 +206,7 @@ function TimesheetEditorInner({
         summaryRow={summaryRow}
       />
 
-      {errorLocal && <Alert variant="error">{errorLocal}</Alert>}
+      {errorLocal && <Alert status="danger">{errorLocal}</Alert>}
 
       <TimesheetEditorTable
         activeEmployees={activeEmployees}

@@ -99,7 +99,7 @@ const ActionsCell = ({
       onClick={() => {
         meta.onSave(day.date);
       }}
-      size="xs"
+      size="sm"
       type="button"
     >
       {isSaving ? "..." : "💾"}

@@ -295,7 +295,7 @@ export function BackupSettingsPage() {
                       <Button
                         isIconOnly
                         onPress={() => window.open(backup.webViewLink, "_blank")}
-                        size="xs"
+                        size="sm"
                         variant="ghost"
                       >
                         <Download className="size-4" />

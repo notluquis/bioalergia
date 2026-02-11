@@ -149,7 +149,7 @@ export function ParticipantInsightsPage() {
           </div>
         </div>
 
-        {leaderboardError && <Alert variant="error">{leaderboardError}</Alert>}
+        {leaderboardError && <Alert status="danger">{leaderboardError}</Alert>}
 
         <Card>
           <CardContent className="p-0">
@@ -175,7 +175,7 @@ export function ParticipantInsightsPage() {
         </Card>
       </div>
 
-      {detailError && <Alert variant="error">{detailError}</Alert>}
+      {detailError && <Alert status="danger">{detailError}</Alert>}
 
       {visible ? (
         <div className="grid gap-6 lg:grid-cols-2">

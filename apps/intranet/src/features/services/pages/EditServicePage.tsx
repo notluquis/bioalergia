@@ -154,8 +154,8 @@ export function ServiceEditPage() {
         title="Editar servicio"
       />
 
-      {displayError && <Alert variant="error">{displayError}</Alert>}
-      {saveMessage && <Alert variant="success">{saveMessage}</Alert>}
+      {displayError && <Alert status="danger">{displayError}</Alert>}
+      {saveMessage && <Alert status="success">{saveMessage}</Alert>}
 
       <ServicesSurface className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)] lg:items-start">

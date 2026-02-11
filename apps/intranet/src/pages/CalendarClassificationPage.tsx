@@ -227,7 +227,7 @@ function CalendarClassificationPage() {
         />
       </div>
 
-      {error && <Alert variant="error">{error}</Alert>}
+      {error && <Alert status="danger">{error}</Alert>}
 
       <ClassificationEmptyState error={error} eventsCount={events.length} loading={loading} />
 

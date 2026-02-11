@@ -1,27 +1,5 @@
 import { Dropdown } from "@heroui/react";
-import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
-
-// DropdownMenuCheckboxItem implementation compatible with Shadcn API
-const DropdownMenuCheckboxItem = ({
-  checked,
-  onCheckedChange,
-  children,
-  ...props
-}: ComponentProps<typeof Dropdown.Item> & {
-  checked?: boolean;
-  onCheckedChange?: (checked: boolean) => void;
-  children?: React.ReactNode;
-}) => (
-  <Dropdown.Item
-    className={cn("flex items-center justify-between gap-2", props.className)}
-    onPress={() => onCheckedChange?.(!checked)}
-    {...props}
-  >
-    <div className="flex items-center gap-2">{children}</div>
-    {checked && <span className="text-small">✓</span>}
-  </Dropdown.Item>
-);
 
 // Aliases for compatibility + strict HeroUI v3 exports
 // DropdownMenuContent removed in favor of strict composition: <DropdownPopover><HeroDropdownMenu>...</HeroDropdownMenu></DropdownPopover>
@@ -52,7 +30,6 @@ export {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuGroup,
-  DropdownMenuCheckboxItem,
   // Export primitives for strict composition
   DropdownPopover,
   HeroDropdownMenu,

@@ -159,28 +159,32 @@ function RoutesAuditPage() {
           </div>
           <div className="flex items-center gap-2">
             <Badge
-              variant={filter === "all" ? "default" : "outline"}
+              color={filter === "all" ? "accent" : "default"}
+              variant={filter === "all" ? "primary" : "tertiary"}
               className="cursor-pointer"
               onClick={() => setFilter("all")}
             >
               All
             </Badge>
             <Badge
-              variant={filter === "valid" ? "default" : "outline"}
+              color={filter === "valid" ? "accent" : "default"}
+              variant={filter === "valid" ? "primary" : "tertiary"}
               className="cursor-pointer"
               onClick={() => setFilter("valid")}
             >
               Valid
             </Badge>
             <Badge
-              variant={filter === "technical" ? "default" : "outline"}
+              color={filter === "technical" ? "accent" : "default"}
+              variant={filter === "technical" ? "primary" : "tertiary"}
               className="cursor-pointer"
               onClick={() => setFilter("technical")}
             >
               Technical
             </Badge>
             <Badge
-              variant={filter === "error" ? "destructive" : "outline"}
+              color={filter === "error" ? "danger" : "default"}
+              variant={filter === "error" ? "primary" : "tertiary"}
               className="cursor-pointer hover:bg-danger"
               onClick={() => setFilter("error")}
             >
@@ -205,19 +209,20 @@ function RoutesAuditPage() {
                 <div className="col-span-2">
                   {route.status === "valid" && (
                     <Badge
-                      variant="outline"
+                      color="success"
+                      variant="tertiary"
                       className="border-success-soft-hover bg-success/10 text-success"
                     >
                       <CheckCircle className="mr-1 size-3" /> Valid
                     </Badge>
                   )}
                   {route.status === "technical" && (
-                    <Badge variant="secondary">
+                    <Badge color="default" variant="secondary">
                       <Settings className="mr-1 size-3" /> Technical
                     </Badge>
                   )}
                   {route.status === "error" && (
-                    <Badge variant="destructive">
+                    <Badge color="danger" variant="primary">
                       <ShieldAlert className="mr-1 size-3" /> Error
                     </Badge>
                   )}

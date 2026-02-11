@@ -11,7 +11,7 @@ export function ServicesCreateContent() {
     useServicesOverview();
 
   if (!canManage) {
-    return <Alert variant="error">Solo administradores pueden crear servicios.</Alert>;
+    return <Alert status="danger">Solo administradores pueden crear servicios.</Alert>;
   }
 
   return (

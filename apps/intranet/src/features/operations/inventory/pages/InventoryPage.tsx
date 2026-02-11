@@ -148,7 +148,7 @@ export function InventoryPage() {
         title="Inventario"
       />
 
-      {combinedError && <Alert variant="error">{combinedError}</Alert>}
+      {combinedError && <Alert status="danger">{combinedError}</Alert>}
 
       <ServicesSurface>
         <DataTable

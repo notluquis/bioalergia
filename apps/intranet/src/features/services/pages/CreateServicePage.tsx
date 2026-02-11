@@ -10,7 +10,7 @@ export function ServicesCreatePage() {
   if (!canCreate) {
     return (
       <div className="container mx-auto p-6">
-        <Alert variant="warning">
+        <Alert status="warning">
           <Lock className="h-4 w-4" />
           <div className="flex flex-col">
             <span className="font-bold">Acceso restringido</span>

@@ -115,7 +115,7 @@ export function CierrePanel({
           Guardar
         </Button>
         <Button
-          variant="success"
+          variant="primary"
           className="flex-1 rounded-xl"
           isDisabled={!canFinalize || isSaving}
           onPress={onFinalize}

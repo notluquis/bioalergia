@@ -38,7 +38,7 @@ export function CounterpartList({
           onClick={() => {
             onSelectCounterpart(null);
           }}
-          size="xs"
+          size="sm"
         >
           Nueva
         </Button>

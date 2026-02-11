@@ -30,14 +30,9 @@ type InputProps = InputBaseProps &
     enterKeyHint?: "done" | "enter" | "go" | "next" | "previous" | "search" | "send";
     inputMode?: "decimal" | "email" | "none" | "numeric" | "search" | "tel" | "text" | "url";
   };
-
-type SelectProps = InputBaseProps & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size">;
 type TextareaProps = InputBaseProps & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-type Props =
-  | (InputProps & { as?: "input" })
-  | (SelectProps & { as: "select" })
-  | (TextareaProps & { as: "textarea" });
+type Props = (InputProps & { as?: "input" }) | (TextareaProps & { as: "textarea" });
 
 // Helper: Password toggle
 const createPasswordToggle = (isVisible: boolean, onToggle: () => void) => (
@@ -98,42 +93,6 @@ const renderTextArea = (
     {options.errorElement}
   </TextField>
 );
-
-const renderSelect = (
-  props: React.SelectHTMLAttributes<HTMLSelectElement>,
-  options: {
-    className?: string;
-    size: "xs" | "sm" | "md" | "lg";
-    labelElement: React.ReactNode;
-    descriptionElement: React.ReactNode;
-    errorElement: React.ReactNode;
-    commonTextFieldProps: { className?: string; isInvalid: boolean };
-    children?: React.ReactNode;
-  },
-) => {
-  const { className: selectClassName, ...selectProps } = props;
-
-  return (
-    <TextField {...options.commonTextFieldProps}>
-      {options.labelElement}
-      <InputGroup>
-        <select
-          className={cn(
-            "input-group__input h-full w-full bg-transparent outline-none",
-            options.size === "xs" && "text-xs",
-            options.className,
-            selectClassName,
-          )}
-          {...selectProps}
-        >
-          {options.children}
-        </select>
-      </InputGroup>
-      {options.descriptionElement}
-      {options.errorElement}
-    </TextField>
-  );
-};
 
 const renderGroupedInput = (
   props: React.InputHTMLAttributes<HTMLInputElement>,
@@ -230,18 +189,6 @@ export function Input(props: Props) {
 
   if (as === "textarea") {
     return renderTextArea(rest as React.TextareaHTMLAttributes<HTMLTextAreaElement>, {
-      className,
-      commonTextFieldProps,
-      descriptionElement,
-      errorElement,
-      labelElement,
-      size,
-    });
-  }
-
-  if (as === "select") {
-    return renderSelect(rest as React.SelectHTMLAttributes<HTMLSelectElement>, {
-      children: props.children,
       className,
       commonTextFieldProps,
       descriptionElement,

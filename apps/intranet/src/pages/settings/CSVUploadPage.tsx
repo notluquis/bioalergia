@@ -450,7 +450,7 @@ const PERMISSION_MAP: Record<string, { action: string; subject: string }> = {
 
 function AccessDeniedAlert() {
   return (
-    <Alert variant="warning">
+    <Alert status="warning">
       <Lock className="h-4 w-4" />
       <div className="flex flex-col">
         <span className="font-bold">Acceso restringido</span>
@@ -693,7 +693,7 @@ function ImportSummaryCard({ uploadedFiles }: { uploadedFiles: UploadedFile[] })
         </div>
 
         {aggregated.errors.length > 0 && (
-          <Alert className="mb-0" variant="warning">
+          <Alert className="mb-0" status="warning">
             <div className="flex w-full flex-col gap-2">
               <div className="flex items-center gap-2 font-medium">
                 <AlertCircle className="h-4 w-4" />

@@ -2,31 +2,24 @@
  * Alert Component - Adapter for HeroUI Alert
  */
 import { Button, Alert as HeroAlert } from "@heroui/react";
-import type React from "react";
+import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
 
-interface AlertProps {
-  children: React.ReactNode;
-  className?: string;
+interface AlertProps extends Omit<ComponentProps<typeof HeroAlert>, "color" | "variant"> {
+  children: ComponentProps<typeof HeroAlert>["children"];
   onClose?: () => void;
-  variant?: "error" | "info" | "success" | "warning";
+  status?: "accent" | "danger" | "default" | "success" | "warning";
 }
 export function Alert({
   children,
-  className = "",
   onClose,
-  variant = "error",
+  status = "default",
+  className,
+  ...props
 }: Readonly<AlertProps>) {
-  const colorMap = {
-    error: "danger",
-    info: "primary", // HeroUI uses primary/secondary for info-like states usually, or we can use "primary"
-    success: "success",
-    warning: "warning",
-  } as const;
-
   return (
-    <HeroAlert className={cn("relative items-start", className)} color={colorMap[variant]}>
+    <HeroAlert className={cn("relative items-start", className)} status={status} {...props}>
       <div className="mr-6 flex-1">{children}</div>
       {onClose && (
         <Button

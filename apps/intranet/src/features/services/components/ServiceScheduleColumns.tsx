@@ -161,7 +161,7 @@ export const getColumns = (
                     onClick={() => {
                       actions.onRegisterPayment(schedule);
                     }}
-                    size="xs"
+                    size="sm"
                     type="button"
                   >
                     Registrar pago
@@ -172,7 +172,7 @@ export const getColumns = (
                     onClick={() => {
                       actions.onUnlinkPayment(schedule);
                     }}
-                    size="xs"
+                    size="sm"
                     type="button"
                     variant="secondary"
                   >

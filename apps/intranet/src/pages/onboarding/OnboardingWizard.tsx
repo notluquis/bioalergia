@@ -130,7 +130,7 @@ function StepContent({
   return (
     <>
       {logic.error && (
-        <Alert variant="error" className="mb-6">
+        <Alert status="danger" className="mb-6">
           <span>{logic.error}</span>
         </Alert>
       )}{" "}

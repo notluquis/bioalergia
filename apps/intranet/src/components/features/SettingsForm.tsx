@@ -255,12 +255,12 @@ export function SettingsForm() {
       </div>
       {error && (
         <div className="col-span-full">
-          <Alert variant="error">{error}</Alert>
+          <Alert status="danger">{error}</Alert>
         </div>
       )}
       {status === "success" && !error && (
         <div className="col-span-full">
-          <Alert variant="success">La configuración se ha guardado correctamente.</Alert>
+          <Alert status="success">La configuración se ha guardado correctamente.</Alert>
         </div>
       )}
       <div className="flex justify-end">

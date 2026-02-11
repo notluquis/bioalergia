@@ -135,7 +135,7 @@ export function EmployeesPage() {
         </div>
       </div>
 
-      {error && <Alert variant="error">{error}</Alert>}
+      {error && <Alert status="danger">{error}</Alert>}
 
       {canEdit && showForm && (
         <div className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">

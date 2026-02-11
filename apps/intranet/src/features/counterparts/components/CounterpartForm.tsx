@@ -196,7 +196,7 @@ export function CounterpartForm({
           )}
 
           <div className="flex flex-col gap-3 md:col-span-2">
-            {error && <Alert variant="error">{error}</Alert>}
+            {error && <Alert status="danger">{error}</Alert>}
             <div className="flex flex-wrap justify-end gap-2">
               <Button disabled={busy} type="submit">
                 {busy ? "Guardando..." : "Guardar"}

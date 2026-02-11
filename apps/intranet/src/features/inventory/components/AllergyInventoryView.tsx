@@ -56,7 +56,7 @@ function AllergyInventoryView() {
           {isFetching ? "Actualizando…" : "Refrescar"}
         </Button>
       </div>
-      {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
+      {errorMessage && <Alert status="danger">{errorMessage}</Alert>}
       {loading && data.length === 0 && <p className="text-default-500 text-xs">Cargando datos…</p>}
       {!loading && data.length === 0 && (
         <p className="text-default-500 text-xs">No hay insumos registrados aún.</p>

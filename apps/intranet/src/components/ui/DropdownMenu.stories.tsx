@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button } from "./Button";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -38,9 +37,13 @@ export const Basic: Story = {
               <DropdownMenuItem>Perfil</DropdownMenuItem>
               <DropdownMenuItem>Notificaciones</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem checked={compact} onCheckedChange={setCompact}>
-                Modo compacto
-              </DropdownMenuCheckboxItem>
+              <DropdownMenuItem
+                className="flex items-center justify-between gap-2"
+                onPress={() => setCompact((prev) => !prev)}
+              >
+                <span>Modo compacto</span>
+                {compact ? <span className="text-small">✓</span> : null}
+              </DropdownMenuItem>
             </HeroDropdownMenu>
           </DropdownPopover>
         </DropdownMenu>

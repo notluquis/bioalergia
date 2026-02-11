@@ -178,7 +178,7 @@ export const columns: ColumnDef<Employee>[] = [
                 onActivate(employee.id);
               }}
               size="sm"
-              variant="success"
+              variant="primary"
             >
               Activar
             </Button>

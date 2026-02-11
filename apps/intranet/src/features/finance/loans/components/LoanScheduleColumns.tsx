@@ -144,7 +144,7 @@ export const getColumns = (
                     onClick={() => {
                       actions.onUnlinkPayment(schedule);
                     }}
-                    size="xs"
+                    size="sm"
                     title="Desvincular pago"
                     variant="ghost"
                   >
@@ -156,7 +156,7 @@ export const getColumns = (
                     onClick={() => {
                       actions.onRegisterPayment(schedule);
                     }}
-                    size="xs"
+                    size="sm"
                     variant="primary"
                   >
                     Pagar

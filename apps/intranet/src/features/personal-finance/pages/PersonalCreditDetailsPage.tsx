@@ -41,7 +41,10 @@ const installmentColumns = (
     accessorKey: "status",
     cell: ({ row }) => (
       <div className="flex justify-center">
-        <Badge variant={row.original.status === "PAID" ? "success" : "outline"}>
+        <Badge
+          color={row.original.status === "PAID" ? "success" : "default"}
+          variant={row.original.status === "PAID" ? "primary" : "tertiary"}
+        >
           {row.original.status}
         </Badge>
       </div>

@@ -459,7 +459,7 @@ function SecuritySection({ form }: Pick<AddUserFormCardProps, "form">) {
             <Checkbox
               checked={field.state.value}
               label="Forzar passkey o MFA"
-              onChange={(e) => field.handleChange(e.target.checked)}
+              onCheckedChange={field.handleChange}
             />
           )}
         </form.Field>

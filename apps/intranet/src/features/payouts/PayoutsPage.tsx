@@ -12,7 +12,7 @@ export function PayoutsPage() {
   if (!canView) {
     return (
       <div className="p-6">
-        <Alert variant="error">No tienes permisos para ver los retiros.</Alert>
+        <Alert status="danger">No tienes permisos para ver los retiros.</Alert>
       </div>
     );
   }

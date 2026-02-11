@@ -44,7 +44,7 @@ export function DailyBalancePage() {
   if (!canView) {
     return (
       <div className="p-6">
-        <Alert variant="error">No tienes permisos para ver los balances diarios.</Alert>
+        <Alert status="danger">No tienes permisos para ver los balances diarios.</Alert>
       </div>
     );
   }

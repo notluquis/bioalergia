@@ -163,7 +163,7 @@ export function LoansPage() {
   if (!canView) {
     return (
       <section className={PAGE_CONTAINER}>
-        <Alert variant="error">No tienes permisos para ver los préstamos registrados.</Alert>
+        <Alert status="danger">No tienes permisos para ver los préstamos registrados.</Alert>
       </section>
     );
   }

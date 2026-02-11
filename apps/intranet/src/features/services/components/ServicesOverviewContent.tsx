@@ -97,7 +97,7 @@ export function ServicesOverviewContent() {
 
   return (
     <section className="space-y-4">
-      {globalError && <Alert variant="error">{globalError}</Alert>}
+      {globalError && <Alert status="danger">{globalError}</Alert>}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className={TITLE_MD}>Resumen de servicios</h1>
@@ -180,7 +180,7 @@ export function ServicesOverviewContent() {
               <p className="text-default-500 text-xs">Próximos pagos programados</p>
             </div>
             <Link to="/services/agenda">
-              <Button size="xs" variant="ghost">
+              <Button size="sm" variant="ghost">
                 Ver todo
               </Button>
             </Link>

@@ -39,8 +39,9 @@ export function NotificationHistory() {
             {unreadCount > 0 && (
               <Badge
                 className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center border-2 border-background px-1 text-[10px]"
+                color="danger"
                 size="sm"
-                variant="destructive"
+                variant="primary"
               >
                 {unreadCount > 99 ? "99+" : unreadCount}
               </Badge>

@@ -53,7 +53,7 @@ export const getAccountGroupColumns = (
             onClick={() => {
               onQuickView(group);
             }}
-            size="xs"
+            size="sm"
             variant="secondary"
           >
             Ver movimientos

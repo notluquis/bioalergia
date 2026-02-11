@@ -269,9 +269,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
               <Checkbox
                 checked={field.state.value}
                 label="Generar cronograma automáticamente"
-                onChange={(e) => {
-                  field.handleChange(e.target.checked);
-                }}
+                onCheckedChange={field.handleChange}
               />
 
               {field.state.meta.errors.length > 0 && (
@@ -304,7 +302,7 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
       </form.Field>
 
       {hasErrors && (
-        <Alert variant="error">
+        <Alert status="danger">
           Por favor corrige los errores en el formulario antes de continuar.
         </Alert>
       )}
