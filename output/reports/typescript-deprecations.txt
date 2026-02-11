@@ -1,2 +1,3 @@
 ## apps/intranet/tsconfig.json :: 0 deprecations
+
 ## apps/api/tsconfig.json :: 0 deprecations

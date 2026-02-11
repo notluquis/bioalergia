@@ -11,6 +11,159 @@ function toJsonValue(value: unknown): JsonValue {
   return JSON.parse(JSON.stringify(value)) as JsonValue;
 }
 
+function hasShallowDataChanges<TRecord extends Record<string, unknown>>(
+  existing: Record<string, unknown>,
+  data: TRecord,
+) {
+  return Object.entries(data).some(([key, value]) => {
+    const existingValue = existing[key];
+    return JSON.stringify(existingValue) !== JSON.stringify(value);
+  });
+}
+
+function mapScheduleData(schedule: DoctoraliaCalendarSchedule) {
+  return {
+    externalId: schedule.id,
+    name: schedule.name,
+    displayName: schedule.displayName,
+    facilityId: schedule.facilityId || null,
+    specialityId: schedule.specialityId || null,
+    doctorId: schedule.doctorId || null,
+    provinceId: schedule.provinceId || null,
+    cityId: schedule.cityId || null,
+    hasWaitingRoom: schedule.hasWaitingRoom ?? null,
+    scheduleType: schedule.scheduleType,
+    colorSchemaId: schedule.colorSchemaId || null,
+    isVirtual: schedule.isVirtual,
+    patientsNotificationType: schedule.patientsNotificationType,
+  };
+}
+
+function mapAppointmentData(scheduleId: number, appointment: DoctoraliaAppointment) {
+  return {
+    scheduleId,
+    externalId: appointment.id,
+    title: appointment.title,
+    startAt: new Date(appointment.start),
+    endAt: new Date(appointment.end),
+    isBlock: appointment.isBlock,
+    eventType: appointment.eventType,
+    scheduledBy: appointment.scheduledBy,
+    status: appointment.status,
+    hasPatient: appointment.hasPatient,
+    hasWaitingRoom: appointment.hasWaitingRoom ?? null,
+    insuranceId: appointment.insuranceId || null,
+    insuranceName: appointment.insuranceName || null,
+    comments: appointment.comments || null,
+    serviceId: appointment.serviceId,
+    serviceName: appointment.serviceName,
+    ...(appointment.eventServices
+      ? { eventServices: { items: toJsonValue(appointment.eventServices) } }
+      : {}),
+    serviceColorSchemaId: appointment.serviceColorSchemaId,
+    serviceIsDeleted: appointment.serviceIsDeleted,
+    attendance: appointment.attendance,
+    patientExternalId: appointment.patientId,
+    patientReferenceId: appointment.patientReferenceId,
+    patientPhone: appointment.patientPhone || null,
+    patientEmail: appointment.patientEmail || null,
+    patientBirthDate: appointment.patientBirthDate ? new Date(appointment.patientBirthDate) : null,
+    patientArrivalTime: appointment.patientArrivalTime
+      ? new Date(appointment.patientArrivalTime)
+      : null,
+    isPatientFirstTime: appointment.isPatientFirstTime,
+    isPatientFirstAdminBooking: appointment.isPatientFirstAdminBooking,
+    isBookedViaSecretaryAi: appointment.isBookedViaSecretaryAi,
+    onlinePaymentType: appointment.onlinePaymentType || null,
+    onlinePaymentStatus: appointment.onlinePaymentStatus || null,
+    isPaidOnline: appointment.isPaidOnline,
+    communicationChannel: appointment.communicationChannel || null,
+    fake: appointment.fake,
+    isEventWithVoucher: appointment.isEventWithVoucher,
+    duration: appointment.duration,
+    canNotifyPatient: appointment.canNotifyPatient,
+    noShowProtection: appointment.noShowProtection,
+  };
+}
+
+async function upsertAppointment(
+  scheduleId: number,
+  appointment: DoctoraliaAppointment,
+): Promise<"inserted" | "skipped" | "updated"> {
+  const existing = await db.doctoraliaCalendarAppointment.findUnique({
+    where: {
+      scheduleId_externalId: {
+        scheduleId,
+        externalId: appointment.id,
+      },
+    },
+  });
+
+  const data = mapAppointmentData(scheduleId, appointment);
+
+  if (existing) {
+    const hasChanges = JSON.stringify(existing) !== JSON.stringify({ ...existing, ...data });
+    if (!hasChanges) {
+      return "skipped";
+    }
+
+    await db.doctoraliaCalendarAppointment.update({
+      where: {
+        scheduleId_externalId: {
+          scheduleId,
+          externalId: appointment.id,
+        },
+      },
+      data,
+    });
+    return "updated";
+  }
+
+  await db.doctoraliaCalendarAppointment.create({ data });
+  return "inserted";
+}
+
+function buildAlertPatch(alert: DoctoraliaCalendarAlert): {
+  data: {
+    patientExternalId?: number;
+    startAt?: Date;
+    status?: number;
+  };
+  eventId: number;
+} | null {
+  const eventId = alert.params.eventId;
+  if (!eventId) {
+    return null;
+  }
+
+  const data: {
+    patientExternalId?: number;
+    startAt?: Date;
+    status?: number;
+  } = {};
+
+  if (typeof alert.params.eventStatus === "number") {
+    data.status = alert.params.eventStatus;
+  }
+
+  if (typeof alert.params.patientId === "number") {
+    data.patientExternalId = alert.params.patientId;
+  }
+
+  if (alert.params.eventStartDateTime) {
+    const startAt = new Date(alert.params.eventStartDateTime);
+    if (!Number.isNaN(startAt.getTime())) {
+      data.startAt = startAt;
+    }
+  }
+
+  if (Object.keys(data).length === 0) {
+    return null;
+  }
+
+  return { eventId, data };
+}
+
 /**
  * Upsert Doctoralia schedules into the database
  */
@@ -29,28 +182,10 @@ export async function upsertDoctoraliaSchedules(schedules: DoctoraliaCalendarSch
         where: { externalId: schedule.id },
       });
 
-      const data = {
-        externalId: schedule.id,
-        name: schedule.name,
-        displayName: schedule.displayName,
-        facilityId: schedule.facilityId || null,
-        specialityId: schedule.specialityId || null,
-        doctorId: schedule.doctorId || null,
-        provinceId: schedule.provinceId || null,
-        cityId: schedule.cityId || null,
-        hasWaitingRoom: schedule.hasWaitingRoom ?? null,
-        scheduleType: schedule.scheduleType,
-        colorSchemaId: schedule.colorSchemaId || null,
-        isVirtual: schedule.isVirtual,
-        patientsNotificationType: schedule.patientsNotificationType,
-      };
+      const data = mapScheduleData(schedule);
 
       if (existing) {
-        // Check if there are actual changes
-        const hasChanges = Object.entries(data).some(([key, value]) => {
-          const existingValue = existing[key as keyof typeof existing];
-          return JSON.stringify(existingValue) !== JSON.stringify(value);
-        });
+        const hasChanges = hasShallowDataChanges(existing as Record<string, unknown>, data);
 
         if (hasChanges) {
           await db.doctoraliaSchedule.update({
@@ -107,85 +242,13 @@ export async function upsertDoctoraliaAppointments(
     await Promise.all(
       batch.map(async (appointment) => {
         try {
-          const existing = await db.doctoraliaCalendarAppointment.findUnique({
-            where: {
-              scheduleId_externalId: {
-                scheduleId: schedule.id,
-                externalId: appointment.id,
-              },
-            },
-          });
-
-          const data = {
-            scheduleId: schedule.id,
-            externalId: appointment.id,
-            title: appointment.title,
-            startAt: new Date(appointment.start),
-            endAt: new Date(appointment.end),
-            isBlock: appointment.isBlock,
-            eventType: appointment.eventType,
-            scheduledBy: appointment.scheduledBy,
-            status: appointment.status,
-            hasPatient: appointment.hasPatient,
-            hasWaitingRoom: appointment.hasWaitingRoom ?? null,
-            insuranceId: appointment.insuranceId || null,
-            insuranceName: appointment.insuranceName || null,
-            comments: appointment.comments || null,
-            serviceId: appointment.serviceId,
-            serviceName: appointment.serviceName,
-            // ZenStack expects JsonObject for this field in current generated types.
-            ...(appointment.eventServices
-              ? { eventServices: { items: toJsonValue(appointment.eventServices) } }
-              : {}),
-            serviceColorSchemaId: appointment.serviceColorSchemaId,
-            serviceIsDeleted: appointment.serviceIsDeleted,
-            attendance: appointment.attendance,
-            patientExternalId: appointment.patientId,
-            patientReferenceId: appointment.patientReferenceId,
-            patientPhone: appointment.patientPhone || null,
-            patientEmail: appointment.patientEmail || null,
-            patientBirthDate: appointment.patientBirthDate
-              ? new Date(appointment.patientBirthDate)
-              : null,
-            patientArrivalTime: appointment.patientArrivalTime
-              ? new Date(appointment.patientArrivalTime)
-              : null,
-            isPatientFirstTime: appointment.isPatientFirstTime,
-            isPatientFirstAdminBooking: appointment.isPatientFirstAdminBooking,
-            isBookedViaSecretaryAi: appointment.isBookedViaSecretaryAi,
-            onlinePaymentType: appointment.onlinePaymentType || null,
-            onlinePaymentStatus: appointment.onlinePaymentStatus || null,
-            isPaidOnline: appointment.isPaidOnline,
-            communicationChannel: appointment.communicationChannel || null,
-            fake: appointment.fake,
-            isEventWithVoucher: appointment.isEventWithVoucher,
-            duration: appointment.duration,
-            canNotifyPatient: appointment.canNotifyPatient,
-            noShowProtection: appointment.noShowProtection,
-          };
-
-          if (existing) {
-            // Check if there are actual changes (simplified comparison)
-            const hasChanges =
-              JSON.stringify(existing) !== JSON.stringify({ ...existing, ...data });
-
-            if (hasChanges) {
-              await db.doctoraliaCalendarAppointment.update({
-                where: {
-                  scheduleId_externalId: {
-                    scheduleId: schedule.id,
-                    externalId: appointment.id,
-                  },
-                },
-                data,
-              });
-              updated++;
-            } else {
-              skipped++;
-            }
-          } else {
-            await db.doctoraliaCalendarAppointment.create({ data });
+          const result = await upsertAppointment(schedule.id, appointment);
+          if (result === "inserted") {
             inserted++;
+          } else if (result === "updated") {
+            updated++;
+          } else {
+            skipped++;
           }
         } catch (error) {
           console.error(`Error upserting appointment ${appointment.id}:`, error);
@@ -279,42 +342,16 @@ export async function applyDoctoraliaAlertUpdates(alerts: DoctoraliaCalendarAler
   let skipped = 0;
 
   for (const alert of alerts) {
-    const eventId = alert.params.eventId;
-    if (!eventId) {
-      skipped++;
-      continue;
-    }
-
-    const data: {
-      status?: number;
-      startAt?: Date;
-      patientExternalId?: number;
-    } = {};
-
-    if (typeof alert.params.eventStatus === "number") {
-      data.status = alert.params.eventStatus;
-    }
-
-    if (typeof alert.params.patientId === "number") {
-      data.patientExternalId = alert.params.patientId;
-    }
-
-    if (alert.params.eventStartDateTime) {
-      const startAt = new Date(alert.params.eventStartDateTime);
-      if (!Number.isNaN(startAt.getTime())) {
-        data.startAt = startAt;
-      }
-    }
-
-    if (Object.keys(data).length === 0) {
+    const patch = buildAlertPatch(alert);
+    if (!patch) {
       skipped++;
       continue;
     }
 
     try {
       const result = await db.doctoraliaCalendarAppointment.updateMany({
-        where: { externalId: eventId },
-        data,
+        where: { externalId: patch.eventId },
+        data: patch.data,
       });
 
       if (result.count > 0) {
@@ -323,7 +360,7 @@ export async function applyDoctoraliaAlertUpdates(alerts: DoctoraliaCalendarAler
         skipped++;
       }
     } catch (error) {
-      console.error(`Error applying alert update for event ${eventId}:`, error);
+      console.error(`Error applying alert update for event ${patch.eventId}:`, error);
       skipped++;
     }
   }
