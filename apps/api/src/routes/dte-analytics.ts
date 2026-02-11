@@ -25,18 +25,18 @@ export const dteAnalyticsRoutes = new Hono();
 function excludeAnnulledByNCE(
   tableAlias: string,
   table: "DTESaleDetail" | "DTEPurchaseDetail",
-): ReturnType<typeof sql> {
+): ReturnType<typeof sql<boolean>> {
   // NCE filtering only applies to sales (which have reference_doc_type and reference_doc_folio)
   // Purchases use reference_doc_note instead and don't need this filter
   if (table === "DTEPurchaseDetail") {
     // No NCE exclusion for purchases - return condition that is always true
-    return sql`true`;
+    return sql<boolean>`true`;
   }
 
   // Sales: exclude records referenced by NCE (Credit Notes tipo 61)
   const tableName = '"public"."dte_sale_details"';
 
-  return sql`NOT EXISTS (
+  return sql<boolean>`NOT EXISTS (
     SELECT 1 FROM ${sql.raw(tableName)} AS nce
     WHERE nce."document_type" = 61
     AND nce."reference_doc_type" = ${sql.raw(`${tableAlias}."document_type"`)}::varchar
@@ -97,17 +97,17 @@ dteAnalyticsRoutes.get("/purchases/summary", zValidator("query", periodParamsSch
     // Apply filters using SQL for proper date filtering
     if (startPeriod) {
       const startDate = dayjs(startPeriod).startOf("month").toISOString();
-      query = query.where(sql`p.document_date`, ">=", startDate);
+      query = query.where(sql<boolean>`p.document_date >= ${startDate}`);
     }
     if (endPeriod) {
       const endDate = dayjs(endPeriod).endOf("month").toISOString();
-      query = query.where(sql`p.document_date`, "<=", endDate);
+      query = query.where(sql<boolean>`p.document_date <= ${endDate}`);
     }
     if (year) {
       const yearStart = dayjs().year(year).startOf("year").toISOString();
       const yearEnd = dayjs().year(year).endOf("year").toISOString();
-      query = query.where(sql`p.document_date`, ">=", yearStart);
-      query = query.where(sql`p.document_date`, "<=", yearEnd);
+      query = query.where(sql<boolean>`p.document_date >= ${yearStart}`);
+      query = query.where(sql<boolean>`p.document_date <= ${yearEnd}`);
     }
 
     const results = await query.execute();
@@ -158,7 +158,7 @@ dteAnalyticsRoutes.get("/sales/summary", zValidator("query", periodParamsSchema)
         sql<number>`coalesce(sum(s.iva_amount), 0)`.as("taxAmount"),
         sql<number>`coalesce(avg(s.total_amount), 0)`.as("averageAmount"),
       ])
-      .where("s.document_type", "<>", 61) // Exclude NCEs (type 61)
+      .where("s.documentType", "<>", 61) // Exclude NCEs (type 61)
       .where(excludeAnnulledByNCE("s", "DTESaleDetail"))
       .groupBy(sql`to_char(s.document_date, 'YYYY-MM')`)
       .orderBy(sql`to_char(s.document_date, 'YYYY-MM')`, "desc");
@@ -166,17 +166,17 @@ dteAnalyticsRoutes.get("/sales/summary", zValidator("query", periodParamsSchema)
     // Apply filters
     if (startPeriod) {
       const startDate = dayjs(startPeriod).startOf("month").toISOString();
-      query = query.where(sql`s.document_date`, ">=", startDate);
+      query = query.where(sql<boolean>`s.document_date >= ${startDate}`);
     }
     if (endPeriod) {
       const endDate = dayjs(endPeriod).endOf("month").toISOString();
-      query = query.where(sql`s.document_date`, "<=", endDate);
+      query = query.where(sql<boolean>`s.document_date <= ${endDate}`);
     }
     if (year) {
       const yearStart = dayjs().year(year).startOf("year").toISOString();
       const yearEnd = dayjs().year(year).endOf("year").toISOString();
-      query = query.where(sql`s.document_date`, ">=", yearStart);
-      query = query.where(sql`s.document_date`, "<=", yearEnd);
+      query = query.where(sql<boolean>`s.document_date >= ${yearStart}`);
+      query = query.where(sql<boolean>`s.document_date <= ${yearEnd}`);
     }
 
     const results = await query.execute();
@@ -239,8 +239,8 @@ dteAnalyticsRoutes.get(
             sql<number>`count(p.id)::int`.as("count"),
           ])
           .where(excludeAnnulledByNCE("p", "DTEPurchaseDetail"))
-          .where(sql`p.document_date`, ">=", year1Start)
-          .where(sql`p.document_date`, "<=", year1End)
+          .where(sql<boolean>`p.document_date >= ${year1Start}`)
+          .where(sql<boolean>`p.document_date <= ${year1End}`)
           .groupBy(sql`to_char(p.document_date, 'MM')`)
           .orderBy(sql`to_char(p.document_date, 'MM')`)
           .execute();
@@ -253,8 +253,8 @@ dteAnalyticsRoutes.get(
             sql<number>`count(p.id)::int`.as("count"),
           ])
           .where(excludeAnnulledByNCE("p", "DTEPurchaseDetail"))
-          .where(sql`p.document_date`, ">=", year2Start)
-          .where(sql`p.document_date`, "<=", year2End)
+          .where(sql<boolean>`p.document_date >= ${year2Start}`)
+          .where(sql<boolean>`p.document_date <= ${year2End}`)
           .groupBy(sql`to_char(p.document_date, 'MM')`)
           .orderBy(sql`to_char(p.document_date, 'MM')`)
           .execute();
@@ -266,10 +266,10 @@ dteAnalyticsRoutes.get(
             sql<number>`coalesce(sum(s.total_amount), 0)`.as("totalAmount"),
             sql<number>`count(s.id)::int`.as("count"),
           ])
-          .where("s.document_type", "<>", 61) // Exclude NCEs
+          .where("s.documentType", "<>", 61) // Exclude NCEs
           .where(excludeAnnulledByNCE("s", "DTESaleDetail"))
-          .where(sql`s.document_date`, ">=", year1Start)
-          .where(sql`s.document_date`, "<=", year1End)
+          .where(sql<boolean>`s.document_date >= ${year1Start}`)
+          .where(sql<boolean>`s.document_date <= ${year1End}`)
           .groupBy(sql`to_char(s.document_date, 'MM')`)
           .orderBy(sql`to_char(s.document_date, 'MM')`)
           .execute();
@@ -281,10 +281,10 @@ dteAnalyticsRoutes.get(
             sql<number>`coalesce(sum(s.total_amount), 0)`.as("totalAmount"),
             sql<number>`count(s.id)::int`.as("count"),
           ])
-          .where("s.document_type", "<>", 61) // Exclude NCEs
+          .where("s.documentType", "<>", 61) // Exclude NCEs
           .where(excludeAnnulledByNCE("s", "DTESaleDetail"))
-          .where(sql`s.document_date`, ">=", year2Start)
-          .where(sql`s.document_date`, "<=", year2End)
+          .where(sql<boolean>`s.document_date >= ${year2Start}`)
+          .where(sql<boolean>`s.document_date <= ${year2End}`)
           .groupBy(sql`to_char(s.document_date, 'MM')`)
           .orderBy(sql`to_char(s.document_date, 'MM')`)
           .execute();

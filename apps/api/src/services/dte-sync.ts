@@ -104,7 +104,7 @@ export async function syncDTEs(options: DTESyncOptions = {}): Promise<{
     // Update sync log with success
     const finalStatus = syncResults.some((r) => r.status === "failed") ? "PARTIAL" : "SUCCESS";
 
-    await db.dteSyncLog.update({
+    await db.dTESyncLog.update({
       where: { id: syncLog.id },
       data: {
         status: finalStatus,
@@ -132,7 +132,7 @@ export async function syncDTEs(options: DTESyncOptions = {}): Promise<{
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     // Update sync log with error
-    await db.dteSyncLog.update({
+    await db.dTESyncLog.update({
       where: { id: syncLog.id },
       data: {
         status: "FAILED",
@@ -159,16 +159,16 @@ export async function getDTESyncHistory(
   limit: number = 20,
   offset: number = 0,
 ): Promise<{
-  logs: ReturnType<typeof db.dteSyncLog.findMany>;
+  logs: Awaited<ReturnType<typeof db.dTESyncLog.findMany>>;
   total: number;
 }> {
   const [logs, total] = await Promise.all([
-    db.dteSyncLog.findMany({
+    db.dTESyncLog.findMany({
       take: limit,
       skip: offset,
       orderBy: { startedAt: "desc" },
     }),
-    db.dteSyncLog.count(),
+    db.dTESyncLog.count(),
   ]);
 
   return { logs, total };

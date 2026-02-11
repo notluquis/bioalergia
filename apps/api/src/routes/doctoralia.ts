@@ -760,7 +760,7 @@ doctoraliaRoutes.get(
       const fromDate = new Date(`${from}T00:00:00.000Z`);
       const toDateExclusive = new Date(`${to}T23:59:59.999Z`);
 
-      const appointments = await db.DoctoraliaCalendarAppointment.findMany({
+      const appointments = await db.doctoraliaCalendarAppointment.findMany({
         where: {
           ...(scheduleId.length > 0
             ? {
@@ -897,7 +897,7 @@ doctoraliaRoutes.get("/calendar/schedules", requireAuth, async (c) => {
 
   try {
     const { db } = await import("@finanzas/db");
-    const schedules = await db.DoctoraliaSchedule.findMany({
+    const schedules = await db.doctoraliaSchedule.findMany({
       select: {
         id: true,
         externalId: true,

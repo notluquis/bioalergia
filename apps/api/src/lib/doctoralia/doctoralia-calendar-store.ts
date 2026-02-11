@@ -1,4 +1,4 @@
-import { db } from "@finanzas/db";
+import { db, type JsonValue } from "@finanzas/db";
 
 import type {
   DoctoraliaAppointment,
@@ -6,6 +6,10 @@ import type {
   DoctoraliaCalendarSchedule,
   DoctoraliaWorkPeriod,
 } from "./doctoralia-calendar-types";
+
+function toJsonValue(value: unknown): JsonValue {
+  return JSON.parse(JSON.stringify(value)) as JsonValue;
+}
 
 /**
  * Upsert Doctoralia schedules into the database
@@ -129,7 +133,10 @@ export async function upsertDoctoraliaAppointments(
             comments: appointment.comments || null,
             serviceId: appointment.serviceId,
             serviceName: appointment.serviceName,
-            eventServices: appointment.eventServices || null,
+            // ZenStack expects JsonObject for this field in current generated types.
+            ...(appointment.eventServices
+              ? { eventServices: { items: toJsonValue(appointment.eventServices) } }
+              : {}),
             serviceColorSchemaId: appointment.serviceColorSchemaId,
             serviceIsDeleted: appointment.serviceIsDeleted,
             attendance: appointment.attendance,
