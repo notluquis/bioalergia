@@ -26,10 +26,7 @@ if (process.env.NODE_ENV === "production" || process.env.ENABLE_DTE_AUTO_SYNC ==
   startDTESyncScheduler();
 }
 
-if (
-  process.env.NODE_ENV === "production" ||
-  process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true"
-) {
+if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC === "true") {
   startDoctoraliaCalendarScheduler();
 }
 

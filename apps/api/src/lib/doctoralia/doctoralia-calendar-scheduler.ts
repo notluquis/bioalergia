@@ -15,6 +15,13 @@ const SETTINGS_KEYS = {
 let isRunning = false;
 
 export function startDoctoraliaCalendarScheduler() {
+  if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC !== "true") {
+    logWarn("doctoralia.calendar.scheduler.disabled", {
+      reason: "standby_mode",
+    });
+    return;
+  }
+
   if (!isCalendarAuthConfigured()) {
     logWarn("doctoralia.calendar.scheduler.disabled", {
       reason: "missing_credentials",
@@ -52,6 +59,14 @@ export function startDoctoraliaCalendarScheduler() {
 }
 
 export async function runDoctoraliaCalendarAutoSync({ trigger }: { trigger: string }) {
+  if (process.env.ENABLE_DOCTORALIA_CALENDAR_SYNC !== "true") {
+    logWarn("doctoralia.calendar.sync.skip", {
+      reason: "standby_mode",
+      trigger,
+    });
+    return;
+  }
+
   const minSyncIntervalMs = Number(
     process.env.DOCTORALIA_CALENDAR_MIN_SYNC_INTERVAL_MS || DEFAULT_MIN_SYNC_INTERVAL_MS,
   );
