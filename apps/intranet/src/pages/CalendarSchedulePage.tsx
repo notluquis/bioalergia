@@ -14,7 +14,6 @@ import type { CalendarEventDetail } from "@/features/calendar/types";
 import {
   fetchDoctoraliaCalendarAppointments,
   fetchDoctoraliaCalendarAuthStatus,
-  startDoctoraliaCalendarOAuth,
 } from "@/features/doctoralia/api";
 import { useCan } from "@/hooks/use-can";
 import { useDisclosure } from "@/hooks/use-disclosure";
@@ -121,8 +120,11 @@ function useDoctoraliaCalendarAuth(params: {
   const onConnectDoctoralia = useCallback(async () => {
     setIsConnectingDoctoralia(true);
     try {
-      const { authUrl } = await startDoctoraliaCalendarOAuth();
-      const popup = window.open(authUrl, "doctoralia-oauth", "popup,width=640,height=840");
+      const popup = window.open(
+        "/api/doctoralia/calendar/auth/redirect",
+        "doctoralia-oauth",
+        "popup,width=640,height=840",
+      );
       if (!popup) {
         throw new Error("No se pudo abrir la ventana OAuth (bloqueada por el navegador).");
       }

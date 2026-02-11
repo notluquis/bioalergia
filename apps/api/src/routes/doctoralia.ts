@@ -509,6 +509,43 @@ doctoraliaRoutes.get("/calendar/auth/start", requireAuth, async (c) => {
   }
 });
 
+doctoraliaRoutes.get("/calendar/auth/redirect", requireAuth, async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
+
+  const canManage = await hasPermission(user.id, "update", "DoctoraliaFacility");
+  if (!canManage) {
+    return reply(c, { status: "error", message: "Sin permisos" }, 403);
+  }
+
+  try {
+    const state = randomBytes(24).toString("hex");
+    const callbackBase = getOAuthCallbackBaseUrl(c);
+    const redirectUri =
+      process.env.DOCTORALIA_CALENDAR_OAUTH_REDIRECT_URI ||
+      `${callbackBase}/api/doctoralia/calendar/auth/callback`;
+
+    setCookie(c, CALENDAR_OAUTH_STATE_COOKIE, state, {
+      httpOnly: true,
+      maxAge: 600,
+      path: "/",
+      sameSite: "Lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    const { buildCalendarOAuthAuthorizationUrl } = await import(
+      "../lib/doctoralia/doctoralia-calendar-auth.js"
+    );
+    const authUrl = await buildCalendarOAuthAuthorizationUrl({ redirectUri, state });
+    return c.redirect(authUrl, 302);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    return c.html(renderDoctoraliaOAuthCallbackHtml("error", message), 500);
+  }
+});
+
 doctoraliaRoutes.get("/calendar/auth/callback", async (c) => {
   const code = c.req.query("code");
   const state = c.req.query("state");
