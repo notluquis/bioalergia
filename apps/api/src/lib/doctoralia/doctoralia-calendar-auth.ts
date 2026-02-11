@@ -40,6 +40,20 @@ type WebTokenLoginResponse = {
   };
 };
 
+type OAuthCandidate = {
+  state?: string;
+  redirectUri?: string;
+  responseType?: string;
+  scope?: string;
+};
+
+type OAuthAttemptResult = {
+  code: string | null;
+  status: number;
+  location: string;
+  redirectUri: string;
+};
+
 /**
  * Check if calendar credentials are configured
  */
@@ -180,6 +194,34 @@ async function performLogin(
   };
 }
 
+async function assertSsoSessionIsAuthenticated(cookies: string[]) {
+  const response = await fetch(`${AUTH_BASE_URL}${AUTH_BOOTSTRAP_PATH}`, {
+    method: "GET",
+    headers: {
+      Accept: "text/html,application/xhtml+xml",
+      Cookie: buildCookieHeader(cookies),
+    },
+    redirect: "manual",
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("text/html")) {
+    return;
+  }
+
+  const html = await response.text();
+  const hasLoginForm =
+    html.includes('id="login-form"') ||
+    html.includes('name="_username"') ||
+    html.includes("route_login");
+
+  if (hasLoginForm) {
+    throw new Error(
+      "SSO login did not establish an authenticated session (check credentials, CAPTCHA/2FA, or anti-bot restrictions).",
+    );
+  }
+}
+
 async function verify2FA(
   code: string,
   sessionCookies: string[],
@@ -224,15 +266,64 @@ async function requestAuthProvider(): Promise<AuthProviderResponse> {
 }
 
 async function requestAuthorizationCode(ssoCookies: string[], provider: AuthProviderResponse) {
-  const redirectUri = provider.redirect_uri || `${DOCPLANNER_BASE_URL}/#/`;
-  const state = provider.state || "ssoLogin";
+  const candidates = buildOAuthCandidates(provider);
 
+  let lastStatus = 0;
+  let lastLocation = "";
+  for (const candidate of candidates) {
+    const result = await tryOAuthCandidate(ssoCookies, provider, candidate);
+    if (result.code) {
+      return {
+        code: result.code,
+        redirectUri: result.redirectUri,
+      };
+    }
+
+    lastStatus = result.status;
+    lastLocation = result.location;
+  }
+
+  throw new Error(`OAuth code not found (status=${lastStatus}, location=${lastLocation || "n/a"})`);
+}
+
+function buildOAuthCandidates(provider: AuthProviderResponse): OAuthCandidate[] {
+  return [
+    {
+      responseType: provider.response_type || "code",
+      scope: provider.scope || "client",
+      state: provider.state || undefined,
+      redirectUri: provider.redirect_uri || undefined,
+    },
+    {
+      responseType: provider.response_type || "code",
+      scope: provider.scope || "client",
+      state: "ssoLogin",
+      redirectUri: `${DOCPLANNER_BASE_URL}/`,
+    },
+    {
+      responseType: provider.response_type || "code",
+      scope: provider.scope || "client",
+      state: "ssoLogin",
+      redirectUri: `${DOCPLANNER_BASE_URL}/#/`,
+    },
+  ];
+}
+
+async function tryOAuthCandidate(
+  ssoCookies: string[],
+  provider: AuthProviderResponse,
+  candidate: OAuthCandidate,
+): Promise<OAuthAttemptResult> {
   const authUrl = new URL(provider.url_login);
   authUrl.searchParams.set("client_id", provider.client_id || "");
-  authUrl.searchParams.set("response_type", provider.response_type || "code");
-  authUrl.searchParams.set("scope", provider.scope || "client");
-  authUrl.searchParams.set("state", state);
-  authUrl.searchParams.set("redirect_uri", redirectUri);
+  authUrl.searchParams.set("response_type", candidate.responseType || "code");
+  authUrl.searchParams.set("scope", candidate.scope || "client");
+  if (candidate.state) {
+    authUrl.searchParams.set("state", candidate.state);
+  }
+  if (candidate.redirectUri) {
+    authUrl.searchParams.set("redirect_uri", candidate.redirectUri);
+  }
 
   const response = await requestManualRedirect(authUrl.toString(), {
     method: "GET",
@@ -244,16 +335,11 @@ async function requestAuthorizationCode(ssoCookies: string[], provider: AuthProv
 
   const location = extractLocationHeader(response);
   const code = extractCodeFromLocation(location);
-
-  if (!code) {
-    throw new Error(
-      `OAuth code not found (status=${response.status}, location=${location || "n/a"})`,
-    );
-  }
-
   return {
     code,
-    redirectUri,
+    status: response.status,
+    location,
+    redirectUri: candidate.redirectUri || `${DOCPLANNER_BASE_URL}/#/`,
   };
 }
 
@@ -338,6 +424,8 @@ export async function getCalendarToken(twoFactorCode?: string): Promise<string> 
     );
     ssoCookies = mergeCookies(loginResult.cookies, twoFactorCookies);
   }
+
+  await assertSsoSessionIsAuthenticated(ssoCookies);
 
   const provider = await requestAuthProvider();
   const { code, redirectUri } = await requestAuthorizationCode(ssoCookies, provider);
