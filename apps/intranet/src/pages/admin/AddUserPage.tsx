@@ -12,6 +12,7 @@ import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople } from "@/features/people/api";
 import { inviteUser } from "@/features/users/api";
+import { ApiError } from "@/lib/api-client";
 import { getPersonFullName } from "@/lib/person";
 import { usePersonLinking } from "./hooks/usePersonLinking";
 
@@ -44,18 +45,36 @@ export function AddUserPage() {
 
   // Fetch people without users
   const {
-    data: peopleData,
+    data: peopleResult,
     isLoading: isPeopleLoading,
     error: peopleError,
   } = useQuery({
-    queryFn: fetchPeople,
+    queryFn: async () => {
+      try {
+        const people = await fetchPeople();
+        return { denied: false, people };
+      } catch (error) {
+        // If the current role can't read Person, continue without linkable people.
+        if (error instanceof ApiError && error.status === 403) {
+          return { denied: true, people: [] };
+        }
+        throw error;
+      }
+    },
     queryKey: ["people"],
-    retry: 1,
+    retry: (failureCount, error) => {
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        return false;
+      }
+      return failureCount < 1;
+    },
   });
+
+  const isPeoplePermissionDenied = peopleResult?.denied ?? false;
 
   // Filter people who don't have a user yet and exclude test users
   const availablePeople =
-    peopleData?.filter(
+    peopleResult?.people.filter(
       (p) =>
         !p.user &&
         !p.hasUser &&
@@ -152,6 +171,13 @@ export function AddUserPage() {
           void form.handleSubmit();
         }}
       >
+        {isPeoplePermissionDenied ? (
+          <div className="rounded-xl border border-warning/20 bg-warning/5 p-4 text-warning-700 text-sm">
+            No tienes permiso para ver personas existentes. Puedes crear el usuario sin vincularlo a
+            una persona.
+          </div>
+        ) : null}
+
         {/* Opción de vincular a persona existente */}
         {availablePeople.length > 0 ? (
           <div className="rounded-xl border border-info/20 bg-info/5 p-4">

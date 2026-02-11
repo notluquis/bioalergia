@@ -11,6 +11,22 @@ interface ErrorData {
   message?: string;
 }
 
+function defaultErrorMessageByStatus(status: number): string {
+  if (status === 401) {
+    return "Tu sesión expiró. Vuelve a iniciar sesión.";
+  }
+  if (status === 403) {
+    return "No tienes permisos para realizar esta acción.";
+  }
+  if (status === 404) {
+    return "Recurso no encontrado.";
+  }
+  if (status >= 500) {
+    return "Ocurrió un error interno del servidor.";
+  }
+  return "Ocurrió un error inesperado.";
+}
+
 function formatZodIssues(issues: z.ZodIssue[]): string {
   return issues.map(formatZodIssue).join(" | ");
 }
@@ -63,30 +79,46 @@ function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
 async function handleKyError(error: HTTPError) {
   const response = error.response;
   const status = response.status;
-  let serverMessage = response.statusText;
+  let serverMessage = response.statusText?.trim();
   let details: unknown;
+  let rawBody: null | string = null;
 
   try {
-    const rawBody = await response.text();
+    rawBody = await response.text();
     if (rawBody) {
+      const trimmedBody = rawBody.trim();
       let errorData: ErrorData | null = null;
+
       try {
-        errorData = JSON.parse(rawBody);
+        const parsed = JSON.parse(trimmedBody) as unknown;
+        if (parsed && typeof parsed === "object") {
+          errorData = parsed as ErrorData;
+        } else if (typeof parsed === "string") {
+          errorData = { message: parsed };
+        }
       } catch {
         // If not JSON, treat body as simple message
-        errorData = { message: rawBody };
+        errorData = { message: trimmedBody };
       }
 
       if (errorData) {
         serverMessage = errorData.message ?? errorData.error ?? serverMessage;
-        details = errorData.details ?? errorData.issues;
+        details = errorData.details ?? errorData.issues ?? details;
       }
     }
   } catch {
     // Ignore body read errors
   }
 
-  return new ApiError(serverMessage || "Ocurrió un error inesperado.", status, details);
+  if (!serverMessage) {
+    serverMessage = defaultErrorMessageByStatus(status);
+  }
+
+  if (!details && rawBody?.trim()) {
+    details = { raw: rawBody.trim() };
+  }
+
+  return new ApiError(serverMessage, status, details);
 }
 
 // SuperJSON Parser
