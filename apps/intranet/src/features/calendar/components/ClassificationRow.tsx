@@ -213,11 +213,9 @@ export function ClassificationRow({
             {(field: { handleChange: (v: boolean) => void; state: { value: boolean } }) => (
               <div className="flex items-center pt-2">
                 <Checkbox
-                  checked={field.state.value}
+                  checked={Boolean(field.state.value)}
                   label="Asistió / llegó"
-                  onChange={(e) => {
-                    field.handleChange(e.target.checked);
-                  }}
+                  onCheckedChange={field.handleChange}
                 />
               </div>
             )}
