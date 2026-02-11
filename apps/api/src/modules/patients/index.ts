@@ -9,7 +9,9 @@ import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { Hono } from "hono";
+import { sql } from "kysely";
 import { getSessionUser } from "../../auth.js";
+import { normalizeRut } from "../../lib/rut.js";
 import { zValidator } from "../../lib/zod-validator";
 import { uploadPatientAttachmentToDrive } from "../../services/patient-attachments-drive.js";
 import {
@@ -17,6 +19,8 @@ import {
   createConsultationSchema,
   createPatientSchema,
   createPaymentSchema,
+  listDtePatientSourcesQuerySchema,
+  syncPatientsFromDteSalesSchema,
   updatePatientSchema,
 } from "./patients.schema.js";
 
@@ -30,7 +34,198 @@ type Variables = {
   user: User;
 };
 
+type DteSalesSyncOptions = {
+  dryRun: boolean;
+  documentTypes?: number[];
+  limit?: number;
+  period?: string;
+};
+
+type NormalizedDteClientRow = {
+  clientName: string;
+  clientRUT: string;
+  documentDate: Date | null;
+  documentType: number;
+  folio: string | null;
+  period: string | null;
+  sourceUpdatedAt: Date | null;
+};
+
 const patientsRoutes = new Hono<{ Variables: Variables }>();
+
+const normalizeSourceRut = (value: string) => {
+  const normalized = normalizeRut(value);
+  if (normalized) {
+    return normalized;
+  }
+  return value.trim().toUpperCase();
+};
+
+function buildDteLatestClientQuery(options: Omit<DteSalesSyncOptions, "dryRun">) {
+  let rankedQuery = db.$qb
+    .selectFrom("DTESaleDetail as s")
+    .select([
+      "s.clientRUT as clientRUT",
+      "s.clientName as clientName",
+      "s.documentType as documentType",
+      "s.documentDate as documentDate",
+      "s.folio as folio",
+      "s.period as period",
+      "s.updatedAt as sourceUpdatedAt",
+      sql<number>`
+        row_number() over (
+          partition by s.client_rut
+          order by s.document_date desc, s.updated_at desc, s.id desc
+        )
+      `.as("rank"),
+    ])
+    .where("s.clientRUT", "<>", "")
+    .where("s.clientName", "<>", "");
+
+  if (options.period) {
+    rankedQuery = rankedQuery.where("s.period", "=", options.period);
+  }
+
+  if (options.documentTypes && options.documentTypes.length > 0) {
+    rankedQuery = rankedQuery.where("s.documentType", "in", options.documentTypes);
+  }
+
+  let latestQuery = db.$qb
+    .selectFrom(rankedQuery.as("ranked"))
+    .select([
+      "ranked.clientRUT",
+      "ranked.clientName",
+      "ranked.documentType",
+      "ranked.documentDate",
+      "ranked.folio",
+      "ranked.period",
+      "ranked.sourceUpdatedAt",
+    ])
+    .where("ranked.rank", "=", 1)
+    .orderBy("ranked.clientRUT", "asc");
+
+  if (options.limit) {
+    latestQuery = latestQuery.limit(options.limit);
+  }
+
+  return latestQuery;
+}
+
+function normalizeDteClientRows(
+  rows: Awaited<ReturnType<ReturnType<typeof buildDteLatestClientQuery>["execute"]>>,
+): NormalizedDteClientRow[] {
+  return rows
+    .map((row) => ({
+      clientRUT: normalizeSourceRut(String(row.clientRUT || "")),
+      clientName: String(row.clientName || "").trim(),
+      documentType: Number(row.documentType),
+      documentDate: row.documentDate ? new Date(row.documentDate) : null,
+      folio: row.folio ? String(row.folio) : null,
+      period: row.period ? String(row.period) : null,
+      sourceUpdatedAt: row.sourceUpdatedAt ? new Date(row.sourceUpdatedAt) : null,
+    }))
+    .filter((row) => row.clientRUT.length > 0 && row.clientName.length > 0);
+}
+
+function hasSourceChanges(
+  existing: {
+    clientName: string;
+    documentDate: Date | null;
+    documentType: number;
+    folio: string | null;
+    period: string | null;
+    sourceUpdatedAt: Date | null;
+  },
+  nextData: Omit<NormalizedDteClientRow, "clientRUT">,
+) {
+  return (
+    existing.clientName !== nextData.clientName ||
+    existing.documentType !== nextData.documentType ||
+    String(existing.documentDate || "") !== String(nextData.documentDate || "") ||
+    String(existing.folio || "") !== String(nextData.folio || "") ||
+    String(existing.period || "") !== String(nextData.period || "") ||
+    String(existing.sourceUpdatedAt || "") !== String(nextData.sourceUpdatedAt || "")
+  );
+}
+
+async function syncPatientDteSaleSources(options: DteSalesSyncOptions) {
+  const latestRows = await buildDteLatestClientQuery(options).execute();
+  const normalizedRows = normalizeDteClientRows(latestRows);
+
+  if (normalizedRows.length === 0) {
+    return {
+      dryRun: options.dryRun,
+      inserted: 0,
+      message: "No se encontraron clientes válidos en DTE sales para sincronizar",
+      selected: 0,
+      skipped: 0,
+      updated: 0,
+    };
+  }
+
+  const existingRows = await db.patientDteSaleSource.findMany({
+    where: {
+      clientRUT: {
+        in: normalizedRows.map((row) => row.clientRUT),
+      },
+    },
+  });
+
+  const existingByRut = new Map(existingRows.map((row) => [row.clientRUT, row]));
+
+  let inserted = 0;
+  let updated = 0;
+  let skipped = 0;
+
+  for (const row of normalizedRows) {
+    const existing = existingByRut.get(row.clientRUT);
+    const nextData = {
+      clientName: row.clientName,
+      documentDate: row.documentDate,
+      documentType: row.documentType,
+      folio: row.folio,
+      period: row.period,
+      sourceUpdatedAt: row.sourceUpdatedAt,
+    };
+
+    if (!existing) {
+      inserted += 1;
+      if (!options.dryRun) {
+        await db.patientDteSaleSource.create({
+          data: {
+            clientRUT: row.clientRUT,
+            ...nextData,
+          },
+        });
+      }
+      continue;
+    }
+
+    if (!hasSourceChanges(existing, nextData)) {
+      skipped += 1;
+      continue;
+    }
+
+    updated += 1;
+    if (!options.dryRun) {
+      await db.patientDteSaleSource.update({
+        where: { clientRUT: row.clientRUT },
+        data: nextData,
+      });
+    }
+  }
+
+  return {
+    dryRun: options.dryRun,
+    inserted,
+    message: options.dryRun
+      ? "Dry run completado para sincronización de pacientes desde DTE sales"
+      : "Sincronización de pacientes desde DTE sales completada",
+    selected: normalizedRows.length,
+    skipped,
+    updated,
+  };
+}
 
 // GET / - List patients with search
 patientsRoutes.get("/", async (c) => {
@@ -68,6 +263,64 @@ patientsRoutes.get("/", async (c) => {
     return c.json({ error: "Error al buscar pacientes" }, 500);
   }
 });
+
+// GET /sources/dte - List DTE-derived patient source rows
+patientsRoutes.get(
+  "/sources/dte",
+  zValidator("query", listDtePatientSourcesQuerySchema),
+  async (c) => {
+    const { q, period, limit } = c.req.valid("query");
+    const maxRows = Math.min(limit || 100, 1000);
+
+    try {
+      const rows = await db.patientDteSaleSource.findMany({
+        where: {
+          AND: [
+            period ? { period } : {},
+            q
+              ? {
+                  OR: [
+                    { clientRUT: { contains: q, mode: "insensitive" } },
+                    { clientName: { contains: q, mode: "insensitive" } },
+                  ],
+                }
+              : {},
+          ],
+        },
+        orderBy: [{ updatedAt: "desc" }],
+        take: maxRows,
+      });
+
+      return c.json(rows);
+    } catch (error) {
+      console.error("Error listing DTE patient sources:", error);
+      return c.json({ error: "Error al listar fuentes DTE de pacientes" }, 500);
+    }
+  },
+);
+
+// POST /sources/dte/sync - Materialize patients source from DTE sales
+patientsRoutes.post(
+  "/sources/dte/sync",
+  zValidator("json", syncPatientsFromDteSalesSchema),
+  async (c) => {
+    const options = c.req.valid("json");
+
+    try {
+      const result = await syncPatientDteSaleSources(options);
+      return c.json(result);
+    } catch (error) {
+      console.error("Error syncing DTE patient sources:", error);
+      return c.json(
+        {
+          error: "Error al sincronizar base de pacientes desde DTE sales",
+          details: error instanceof Error ? error.message : String(error),
+        },
+        500,
+      );
+    }
+  },
+);
 
 // GET /:id - Get patient details
 patientsRoutes.get("/:id", async (c) => {
@@ -165,7 +418,7 @@ patientsRoutes.post("/", zValidator("json", createPatientSchema), async (c) => {
     const patient = await db.patient.create({
       data: {
         personId: person.id,
-        birthDate: parseDateOnly(input.birthDate),
+        birthDate: input.birthDate ? parseDateOnly(input.birthDate) : null,
         bloodType: input.bloodType,
         notes: input.notes,
       },
@@ -228,7 +481,12 @@ patientsRoutes.put("/:id", zValidator("json", updatePatientSchema), async (c) =>
     const updatedPatient = await db.patient.update({
       where: { id },
       data: {
-        birthDate: input.birthDate ? parseDateOnly(input.birthDate) : undefined,
+        birthDate:
+          input.birthDate === null
+            ? null
+            : input.birthDate
+              ? parseDateOnly(input.birthDate)
+              : undefined,
         bloodType: input.bloodType,
         notes: input.notes,
       },

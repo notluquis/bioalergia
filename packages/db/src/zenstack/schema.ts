@@ -11521,6 +11521,7 @@ export class SchemaType implements SchemaDef {
         birthDate: {
           name: "birthDate",
           type: "DateTime",
+          optional: true,
           attributes: [
             {
               name: "@map",
@@ -11627,6 +11628,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "patient" },
         },
+        dteSaleSources: {
+          name: "dteSaleSources",
+          type: "PatientDteSaleSource",
+          array: true,
+          relation: { opposite: "patient" },
+        },
       },
       attributes: [
         {
@@ -11677,6 +11684,243 @@ export class SchemaType implements SchemaDef {
       uniqueFields: {
         id: { type: "Int" },
         personId: { type: "Int" },
+      },
+    },
+    PatientDteSaleSource: {
+      name: "PatientDteSaleSource",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        patientId: {
+          name: "patientId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_id") }],
+            },
+          ],
+          foreignKeyFor: ["patient"],
+        },
+        clientRUT: {
+          name: "clientRUT",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("client_rut") }],
+            },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        clientName: {
+          name: "clientName",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("client_name") }],
+            },
+          ],
+        },
+        documentType: {
+          name: "documentType",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("document_type") }],
+            },
+          ],
+        },
+        documentDate: {
+          name: "documentDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("document_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        folio: {
+          name: "folio",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("folio") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(20) }] },
+          ],
+        },
+        period: {
+          name: "period",
+          type: "String",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("period") }] },
+            { name: "@db.VarChar", args: [{ name: "x", value: ExpressionUtils.literal(6) }] },
+          ],
+        },
+        sourceUpdatedAt: {
+          name: "sourceUpdatedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("source_updated_at") }],
+            },
+          ],
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        patient: {
+          name: "patient",
+          type: "Patient",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("SetNull") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "dteSaleSources",
+            fields: ["patientId"],
+            references: ["id"],
+            onDelete: "SetNull",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("documentDate")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("String", [ExpressionUtils.field("period")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("patient_dte_sale_sources") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        clientRUT: { type: "String" },
       },
     },
     Consultation: {

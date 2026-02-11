@@ -55,7 +55,6 @@ app.get("/", zValidator("query", listPeopleQuerySchema), async (c) => {
             },
       orderBy: { names: "asc" },
       include: {
-        counterpart: true,
         employee: true,
         user: true,
       },
@@ -93,7 +92,6 @@ app.get("/:id", zValidator("param", peopleParamSchema), async (c) => {
     const person = await db.person.findUnique({
       where: { id },
       include: {
-        counterpart: true,
         employee: true,
         user: true,
       },

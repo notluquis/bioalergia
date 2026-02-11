@@ -4418,6 +4418,7 @@ export class SchemaType implements SchemaDef {
         birthDate: {
           name: "birthDate",
           type: "DateTime",
+          optional: true,
         },
         bloodType: {
           name: "bloodType",
@@ -4480,11 +4481,94 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "patient" },
         },
+        dteSaleSources: {
+          name: "dteSaleSources",
+          type: "PatientDteSaleSource",
+          array: true,
+          relation: { opposite: "patient" },
+        },
       },
       idFields: ["id"],
       uniqueFields: {
         id: { type: "Int" },
         personId: { type: "Int" },
+      },
+    },
+    PatientDteSaleSource: {
+      name: "PatientDteSaleSource",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        patientId: {
+          name: "patientId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["patient"],
+        },
+        clientRUT: {
+          name: "clientRUT",
+          type: "String",
+          unique: true,
+        },
+        clientName: {
+          name: "clientName",
+          type: "String",
+        },
+        documentType: {
+          name: "documentType",
+          type: "Int",
+        },
+        documentDate: {
+          name: "documentDate",
+          type: "DateTime",
+          optional: true,
+        },
+        folio: {
+          name: "folio",
+          type: "String",
+          optional: true,
+        },
+        period: {
+          name: "period",
+          type: "String",
+          optional: true,
+        },
+        sourceUpdatedAt: {
+          name: "sourceUpdatedAt",
+          type: "DateTime",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          default: ExpressionUtils.call("now"),
+        },
+        patient: {
+          name: "patient",
+          type: "Patient",
+          optional: true,
+          relation: {
+            opposite: "dteSaleSources",
+            fields: ["patientId"],
+            references: ["id"],
+            onDelete: "SetNull",
+          },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        clientRUT: { type: "String" },
       },
     },
     Consultation: {

@@ -1570,7 +1570,7 @@ model MedicalCertificate {
 model Patient {
   id                  Int                  @id @default(autoincrement())
   personId            Int                  @unique @map("person_id")
-  birthDate           DateTime             @map("birth_date") @db.Date
+  birthDate           DateTime?            @map("birth_date") @db.Date
   bloodType           String?              @map("blood_type")
   notes               String?  // Notas generales del paciente
 
@@ -1583,12 +1583,38 @@ model Patient {
   budgets             Budget[]
   payments            PatientPayment[]
   attachments         PatientAttachment[]
+  dteSaleSources      PatientDteSaleSource[]
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')
   @@allow('create,update', auth().status == 'ACTIVE')
 
   @@map("patients")
+}
+
+model PatientDteSaleSource {
+  id               Int       @id @default(autoincrement())
+  patientId        Int?      @map("patient_id")
+  clientRUT        String    @unique @map("client_rut") @db.VarChar(20)
+  clientName       String    @map("client_name")
+  documentType     Int       @map("document_type")
+  documentDate     DateTime? @map("document_date") @db.Date
+  folio            String?   @map("folio") @db.VarChar(20)
+  period           String?   @map("period") @db.VarChar(6)
+  sourceUpdatedAt  DateTime? @map("source_updated_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  patient          Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@deny('all', auth() == null)
+  @@allow('read', auth().status == 'ACTIVE')
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@index([patientId])
+  @@index([documentDate])
+  @@index([period])
+  @@map("patient_dte_sale_sources")
 }
 
 model Consultation {

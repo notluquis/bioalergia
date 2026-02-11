@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authed/patients/")({
 interface Patient {
   id: number;
   personId: number;
-  birthDate: string;
+  birthDate?: string | null;
   bloodType?: string;
   notes?: string;
   person: {
@@ -90,6 +90,9 @@ function PatientsListPage() {
         header: "EDAD",
         cell: ({ row }) => {
           const patient = row.original;
+          if (!patient.birthDate) {
+            return <span className="text-default-400 text-sm">Sin fecha</span>;
+          }
           const age = dayjs().diff(dayjs(patient.birthDate, "YYYY-MM-DD"), "year");
           return (
             <div className="flex flex-col">

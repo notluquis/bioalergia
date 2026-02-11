@@ -2,7 +2,6 @@ import { Card } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { Save, User, UserPlus, X } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
@@ -38,7 +37,7 @@ interface PatientFormState {
   notes: string;
 }
 
-type PatientPayload = PatientFormState;
+type PatientPayload = Omit<PatientFormState, "birthDate"> & { birthDate?: string };
 
 function AddPatientPage() {
   const navigate = useNavigate();
@@ -70,7 +69,7 @@ function AddPatientPage() {
       email: "",
       phone: "",
       address: "",
-      birthDate: dayjs().format("YYYY-MM-DD"),
+      birthDate: "",
       bloodType: "",
       notes: "",
     } as PatientFormState,
@@ -81,7 +80,7 @@ function AddPatientPage() {
       }
       await createPatientMutation.mutateAsync({
         ...value,
-        birthDate: value.birthDate,
+        birthDate: value.birthDate || undefined,
       });
     },
   });
@@ -179,7 +178,6 @@ function AddPatientPage() {
                       type="date"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      required
                     />
                   )}
                 </form.Field>

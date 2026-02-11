@@ -18,7 +18,7 @@ export const PersonSchema = z.strictObject({
 });
 
 export const PatientListItemSchema = z.strictObject({
-  birthDate: zDateString,
+  birthDate: zDateString.nullable().optional(),
   bloodType: z.string().nullable().optional(),
   createdAt: z.coerce.date(),
   id: z.number(),
@@ -114,7 +114,7 @@ export const AttachmentSchema = z.strictObject({
 
 export const PatientDetailSchema = z.strictObject({
   attachments: z.array(AttachmentSchema),
-  birthDate: zDateString,
+  birthDate: zDateString.nullable().optional(),
   bloodType: z.string().nullable().optional(),
   budgets: z.array(BudgetSchema),
   consultations: z.array(ConsultationSchema),

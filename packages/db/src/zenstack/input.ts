@@ -30,7 +30,7 @@ import type {
   UpsertArgs as $UpsertArgs,
   WhereInput as $WhereInput,
 } from "@zenstackhq/orm";
-import type { SchemaType as $Schema } from "./schema-lite";
+import type { SchemaType as $Schema } from "./schema-lite.js";
 export type PersonFindManyArgs = $FindManyArgs<$Schema, "Person">;
 export type PersonFindUniqueArgs = $FindUniqueArgs<$Schema, "Person">;
 export type PersonFindFirstArgs = $FindFirstArgs<$Schema, "Person">;
@@ -1660,6 +1660,36 @@ export type PatientGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "Patient", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "Patient", Args, Options>;
+export type PatientDteSaleSourceFindManyArgs = $FindManyArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceFindUniqueArgs = $FindUniqueArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceFindFirstArgs = $FindFirstArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceExistsArgs = $ExistsArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceCreateArgs = $CreateArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceCreateManyArgs = $CreateManyArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "PatientDteSaleSource"
+>;
+export type PatientDteSaleSourceUpdateArgs = $UpdateArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceUpdateManyArgs = $UpdateManyArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "PatientDteSaleSource"
+>;
+export type PatientDteSaleSourceUpsertArgs = $UpsertArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceDeleteArgs = $DeleteArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceDeleteManyArgs = $DeleteManyArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceCountArgs = $CountArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceAggregateArgs = $AggregateArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceGroupByArgs = $GroupByArgs<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceWhereInput = $WhereInput<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceSelect = $SelectInput<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceInclude = $IncludeInput<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceOmit = $OmitInput<$Schema, "PatientDteSaleSource">;
+export type PatientDteSaleSourceGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "PatientDteSaleSource", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "PatientDteSaleSource", Args, Options>;
 export type ConsultationFindManyArgs = $FindManyArgs<$Schema, "Consultation">;
 export type ConsultationFindUniqueArgs = $FindUniqueArgs<$Schema, "Consultation">;
 export type ConsultationFindFirstArgs = $FindFirstArgs<$Schema, "Consultation">;

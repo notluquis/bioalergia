@@ -90,7 +90,7 @@ interface PatientAttachment {
 interface Patient {
   id: number;
   personId: number;
-  birthDate: string;
+  birthDate?: string | null;
   bloodType?: string;
   notes?: string;
   createdAt: Date;
@@ -156,7 +156,9 @@ function PatientDetailsPage() {
     );
   }
 
-  const age = dayjs().diff(dayjs(patient.birthDate, "YYYY-MM-DD"), "year");
+  const age = patient.birthDate
+    ? dayjs().diff(dayjs(patient.birthDate, "YYYY-MM-DD"), "year")
+    : null;
   const person = patient.person;
 
   return (
@@ -176,9 +178,11 @@ function PatientDetailsPage() {
             </h1>
             <div className="mt-1 flex items-center gap-2">
               <span className="font-mono text-default-500 text-sm">{person.rut}</span>
-              <div className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs">
-                {age} años
-              </div>
+              {age !== null ? (
+                <div className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs">
+                  {age} años
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -206,7 +210,7 @@ function PatientDetailsPage() {
                   patientName: person.names,
                   rut: person.rut,
                   address: person.address || "",
-                  birthDate: patient.birthDate,
+                  birthDate: patient.birthDate || undefined,
                 },
               })
             }
@@ -409,7 +413,11 @@ function PatientDetailsPage() {
                     <DetailRow label="RUT" value={person.rut} />
                     <DetailRow
                       label="Fecha Nacimiento"
-                      value={dayjs(patient.birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")}
+                      value={
+                        patient.birthDate
+                          ? dayjs(patient.birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")
+                          : "N/A"
+                      }
                     />
 
                     <DetailRow label="Email" value={person.email || "N/A"} />

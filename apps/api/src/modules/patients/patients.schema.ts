@@ -14,12 +14,21 @@ export const createPatientSchema = z.object({
   address: z.string().optional(),
 
   // Patient fields
-  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de nacimiento inválida (YYYY-MM-DD)"),
+  birthDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de nacimiento inválida (YYYY-MM-DD)")
+    .optional(),
   bloodType: z.string().optional(),
   notes: z.string().optional(),
 });
 
-export const updatePatientSchema = createPatientSchema.partial();
+export const updatePatientSchema = createPatientSchema.partial().extend({
+  birthDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha de nacimiento inválida (YYYY-MM-DD)")
+    .nullable()
+    .optional(),
+});
 
 export const createConsultationSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)"),
@@ -59,9 +68,29 @@ export const createAttachmentSchema = z.object({
   mimeType: z.string().optional(),
 });
 
+export const syncPatientsFromDteSalesSchema = z.object({
+  period: z
+    .string()
+    .regex(/^\d{6}$/, "Periodo inválido (YYYYMM)")
+    .optional(),
+  documentTypes: z.array(z.number().int().positive()).optional(),
+  limit: z.number().int().positive().max(5000).optional(),
+  dryRun: z.boolean().optional().default(false),
+});
+
+export const listDtePatientSourcesQuerySchema = z.object({
+  q: z.string().optional(),
+  period: z
+    .string()
+    .regex(/^\d{6}$/, "Periodo inválido (YYYYMM)")
+    .optional(),
+  limit: z.string().regex(/^\d+$/).transform(Number).optional(),
+});
+
 export type CreatePatientInput = z.infer<typeof createPatientSchema>;
 export type UpdatePatientInput = z.infer<typeof updatePatientSchema>;
 export type CreateConsultationInput = z.infer<typeof createConsultationSchema>;
 export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;
 export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
 export type CreateAttachmentInput = z.infer<typeof createAttachmentSchema>;
+export type SyncPatientsFromDteSalesInput = z.infer<typeof syncPatientsFromDteSalesSchema>;
