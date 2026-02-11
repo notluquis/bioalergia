@@ -27,6 +27,7 @@ dayjs.locale("es");
 
 const DATE_FORMAT = "YYYY-MM-DD";
 type CalendarSource = "doctoralia" | "google";
+const DOCTORALIA_STANDBY = true;
 
 function toCalendarEventDetail(
   appointments: Awaited<ReturnType<typeof fetchDoctoraliaCalendarAppointments>>,
@@ -205,15 +206,18 @@ const getActualWeekStart = () => {
 };
 
 function CalendarSourceSelector({
+  isDisabled,
   onSourceChange,
   source,
 }: Readonly<{
+  isDisabled: boolean;
   onSourceChange: (key: string) => void;
   source: CalendarSource;
 }>) {
   return (
     <Select
       className="min-w-44"
+      isDisabled={isDisabled}
       selectedKey={source}
       onSelectionChange={(key) => onSourceChange(String(key))}
     >
@@ -248,6 +252,7 @@ function ScheduleHeaderControls({
   onResetGoogleFilters,
   onSourceChange,
   setFiltersOpen,
+  sourceSelectorDisabled,
   source,
   totalEvents,
 }: Readonly<{
@@ -262,12 +267,17 @@ function ScheduleHeaderControls({
   onResetGoogleFilters: () => void;
   onSourceChange: (key: string) => void;
   setFiltersOpen: (open: boolean) => void;
+  sourceSelectorDisabled: boolean;
   source: CalendarSource;
   totalEvents: number;
 }>) {
   return (
     <div className="flex items-center gap-3">
-      <CalendarSourceSelector onSourceChange={onSourceChange} source={source} />
+      <CalendarSourceSelector
+        isDisabled={sourceSelectorDisabled}
+        onSourceChange={onSourceChange}
+        source={source}
+      />
 
       <span className="text-default-400 text-xs">
         {numberFormatter.format(totalEvents)} eventos
@@ -323,12 +333,7 @@ function CalendarSchedulePage() {
     queryKey: ["doctoralia", "calendar", "appointments", search.from, search.to],
   });
 
-  const {
-    doctoraliaAuthLoading,
-    doctoraliaAuthStatus,
-    isConnectingDoctoralia,
-    onConnectDoctoralia,
-  } = useDoctoraliaCalendarAuth({
+  const { doctoraliaAuthStatus, onConnectDoctoralia } = useDoctoraliaCalendarAuth({
     canConnectDoctoralia,
     isDoctoraliaSource,
   });
@@ -470,12 +475,13 @@ function CalendarSchedulePage() {
             onResetGoogleFilters={onResetGoogleFilters}
             onSourceChange={onSourceChange}
             setFiltersOpen={setFiltersOpen}
+            sourceSelectorDisabled={DOCTORALIA_STANDBY}
             source={source}
             totalEvents={totalEvents}
           />
           {isDoctoraliaSource && canConnectDoctoralia && (
             <Button
-              isDisabled={isConnectingDoctoralia || doctoraliaAuthLoading}
+              isDisabled={true}
               onPress={() => void onConnectDoctoralia()}
               size="sm"
               variant="secondary"
