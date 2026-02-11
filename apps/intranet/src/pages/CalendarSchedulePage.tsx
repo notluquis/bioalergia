@@ -333,7 +333,7 @@ function CalendarSchedulePage() {
     queryKey: ["doctoralia", "calendar", "appointments", search.from, search.to],
   });
 
-  const { doctoraliaAuthStatus, onConnectDoctoralia } = useDoctoraliaCalendarAuth({
+  const { onConnectDoctoralia } = useDoctoraliaCalendarAuth({
     canConnectDoctoralia,
     isDoctoraliaSource,
   });
@@ -463,32 +463,34 @@ function CalendarSchedulePage() {
           </div>
 
           {/* Right: Event count + Filter toggle */}
-          <ScheduleHeaderControls
-            appliedFilters={appliedFilters}
-            availableCategories={availableCategories}
-            draftFilters={draftFilters}
-            filtersOpen={filtersOpen}
-            isGoogleSource={isGoogleSource}
-            loading={loading}
-            onApplyGoogleFilters={onApplyGoogleFilters}
-            onFilterChange={onFilterChange}
-            onResetGoogleFilters={onResetGoogleFilters}
-            onSourceChange={onSourceChange}
-            setFiltersOpen={setFiltersOpen}
-            sourceSelectorDisabled={DOCTORALIA_STANDBY}
-            source={source}
-            totalEvents={totalEvents}
-          />
-          {isDoctoraliaSource && canConnectDoctoralia && (
-            <Button
-              isDisabled={true}
-              onPress={() => void onConnectDoctoralia()}
-              size="sm"
-              variant="secondary"
-            >
-              {doctoraliaAuthStatus?.connected ? "Reconectar Doctoralia" : "Conectar Doctoralia"}
-            </Button>
-          )}
+          <div className="flex items-end gap-3">
+            <ScheduleHeaderControls
+              appliedFilters={appliedFilters}
+              availableCategories={availableCategories}
+              draftFilters={draftFilters}
+              filtersOpen={filtersOpen}
+              isGoogleSource={isGoogleSource}
+              loading={loading}
+              onApplyGoogleFilters={onApplyGoogleFilters}
+              onFilterChange={onFilterChange}
+              onResetGoogleFilters={onResetGoogleFilters}
+              onSourceChange={onSourceChange}
+              setFiltersOpen={setFiltersOpen}
+              sourceSelectorDisabled={DOCTORALIA_STANDBY}
+              source={source}
+              totalEvents={totalEvents}
+            />
+            {isDoctoraliaSource && canConnectDoctoralia && (
+              <Button
+                isDisabled={true}
+                onPress={() => void onConnectDoctoralia()}
+                size="sm"
+                variant="secondary"
+              >
+                Doctoralia en standby
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs sm:hidden">
