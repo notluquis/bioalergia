@@ -66,6 +66,27 @@ type OAuthAttemptResult = {
   redirectUri: string;
 };
 
+function toSafeOAuthUrlDetails(rawUrl: string) {
+  try {
+    const parsed = new URL(rawUrl);
+    return {
+      authUrlHost: parsed.host,
+      authUrlPath: parsed.pathname,
+      authUrlHasRedirectUri: Boolean(parsed.searchParams.get("redirect_uri")),
+      authUrlHasState: Boolean(parsed.searchParams.get("state")),
+      authUrlClientIdPrefix: parsed.searchParams.get("client_id")?.slice(0, 6) || null,
+    };
+  } catch {
+    return {
+      authUrlHost: "invalid",
+      authUrlPath: "invalid",
+      authUrlHasRedirectUri: false,
+      authUrlHasState: false,
+      authUrlClientIdPrefix: null,
+    };
+  }
+}
+
 function toSafeLocationDetails(location: string) {
   if (!location) {
     return { locationHost: "n/a", locationPath: "n/a", locationHasCode: false };
@@ -365,6 +386,12 @@ async function persistToken(params: { expiresAt: number; refreshToken?: string; 
       ? updateSetting(TOKEN_REFRESH_SETTING_KEY, refreshToken)
       : Promise.resolve(undefined),
   ]);
+
+  logEvent("doctoralia.calendar.auth.token.persisted", {
+    expiresAt: new Date(expiresAt).toISOString(),
+    hasRefreshToken: Boolean(refreshToken),
+    tokenPrefix: token.slice(0, 8),
+  });
 }
 
 async function hydrateTokenFromSettings() {
@@ -379,12 +406,17 @@ async function hydrateTokenFromSettings() {
   ]);
 
   if (!token) {
+    logEvent("doctoralia.calendar.auth.token.hydrate.miss", {});
     return;
   }
 
   const parsedExpiresAt = expiresAtRaw ? Date.parse(expiresAtRaw) : Number.NaN;
   const expiresAt = Number.isFinite(parsedExpiresAt) ? parsedExpiresAt : Date.now() + 3600_000;
   cachedToken = { token, expiresAt };
+  logEvent("doctoralia.calendar.auth.token.hydrate.hit", {
+    expiresAt: new Date(expiresAt).toISOString(),
+    tokenPrefix: token.slice(0, 8),
+  });
 }
 
 async function requestAuthorizationCode(ssoCookies: string[], provider: AuthProviderResponse) {
@@ -459,7 +491,14 @@ async function tryOAuthCandidate(
     authUrl.searchParams.set("redirect_uri", candidate.redirectUri);
   }
 
-  const response = await requestManualRedirect(authUrl.toString(), {
+  const authUrlStr = authUrl.toString();
+  logEvent("doctoralia.calendar.auth.oauth.request", {
+    redirectUri: candidate.redirectUri || `${DOCPLANNER_BASE_URL}/#/`,
+    statePrefix: candidate.state?.slice(0, 8) || null,
+    ...toSafeOAuthUrlDetails(authUrlStr),
+  });
+
+  const response = await requestManualRedirect(authUrlStr, {
     method: "GET",
     headers: {
       Accept: "application/json, text/plain, */*",
@@ -479,6 +518,10 @@ async function tryOAuthCandidate(
 }
 
 async function exchangeCodeForWebToken(code: string, redirectUri: string): Promise<string> {
+  logEvent("doctoralia.calendar.auth.webtoken.exchange.request", {
+    codePrefix: code.slice(0, 8),
+    redirectUri,
+  });
   const response = await request<WebTokenLoginResponse>({
     url: `${DOCPLANNER_BASE_URL}/api/account/webtoken-login`,
     method: "GET",
@@ -493,11 +536,22 @@ async function exchangeCodeForWebToken(code: string, redirectUri: string): Promi
   });
 
   if (response.status !== 200) {
+    logWarn("doctoralia.calendar.auth.webtoken.exchange.failed", {
+      status: response.status,
+      codePrefix: code.slice(0, 8),
+      redirectUri,
+    });
     throw new Error(`webtoken-login failed (status=${response.status})`);
   }
 
   const token = response.data?.marketplaceToken?.token;
   if (!token) {
+    logWarn("doctoralia.calendar.auth.webtoken.exchange.failed", {
+      status: response.status,
+      reason: "missing_token",
+      codePrefix: code.slice(0, 8),
+      redirectUri,
+    });
     throw new Error("webtoken-login response missing marketplace token");
   }
 
@@ -510,6 +564,13 @@ async function exchangeCodeForWebToken(code: string, redirectUri: string): Promi
     token,
     expiresAt,
     refreshToken,
+  });
+
+  logEvent("doctoralia.calendar.auth.webtoken.exchange.success", {
+    status: response.status,
+    hasRefreshToken: Boolean(refreshToken),
+    expiresAt: new Date(expiresAt).toISOString(),
+    tokenPrefix: token.slice(0, 8),
   });
 
   return token;
@@ -546,7 +607,20 @@ export async function buildCalendarOAuthAuthorizationUrl(params: {
   url.searchParams.set("scope", provider.scope || "client");
   url.searchParams.set("state", params.state);
   url.searchParams.set("redirect_uri", params.redirectUri);
-  return url.toString();
+  const builtUrl = url.toString();
+  logEvent("doctoralia.calendar.auth.oauth.url.built", {
+    redirectUri: params.redirectUri,
+    statePrefix: params.state.slice(0, 8),
+    providerUrlHost: (() => {
+      try {
+        return new URL(provider.url_login).host;
+      } catch {
+        return "invalid";
+      }
+    })(),
+    ...toSafeOAuthUrlDetails(builtUrl),
+  });
+  return builtUrl;
 }
 
 export async function exchangeCalendarOAuthCodeForToken(params: {

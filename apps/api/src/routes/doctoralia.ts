@@ -10,6 +10,7 @@ import {
   getSlots,
 } from "../lib/doctoralia/doctoralia-client.js";
 import { isDoctoraliaConfigured } from "../lib/doctoralia/doctoralia-core.js";
+import { logEvent, logWarn } from "../lib/logger.js";
 import { zValidator } from "../lib/zod-validator";
 import {
   createDoctoraliaSyncLogEntry,
@@ -134,6 +135,27 @@ function renderDoctoraliaOAuthCallbackHtml(status: "error" | "success", message:
     </script>
   </body>
 </html>`;
+}
+
+function toSafeUrlDetails(rawUrl: string) {
+  try {
+    const parsed = new URL(rawUrl);
+    return {
+      urlHost: parsed.host,
+      urlPath: parsed.pathname,
+      urlHasCode: Boolean(parsed.searchParams.get("code")),
+      urlHasState: Boolean(parsed.searchParams.get("state")),
+      urlHasError: Boolean(parsed.searchParams.get("error")),
+    };
+  } catch {
+    return {
+      urlHost: "invalid",
+      urlPath: "invalid",
+      urlHasCode: false,
+      urlHasState: false,
+      urlHasError: false,
+    };
+  }
 }
 
 // ============================================================
@@ -454,13 +476,22 @@ doctoraliaRoutes.get("/calendar/auth/status", requireAuth, async (c) => {
   const cached = getCachedToken();
   const storedExpiresAtRaw = await getSetting("doctoralia:calendar:marketplaceToken:expiresAt");
   const storedExpiresAt = storedExpiresAtRaw ? Date.parse(storedExpiresAtRaw) : null;
+  const expiresAtIso =
+    storedExpiresAt && Number.isFinite(storedExpiresAt)
+      ? new Date(storedExpiresAt).toISOString()
+      : null;
+
+  logEvent("doctoralia.calendar.oauth.status", {
+    userId: user.id,
+    connected: Boolean(cached),
+    expiresAt: expiresAtIso,
+  });
 
   return reply(c, {
     status: "ok",
     data: {
       connected: Boolean(cached),
-      expiresAt:
-        storedExpiresAt && Number.isFinite(storedExpiresAt) ? new Date(storedExpiresAt) : null,
+      expiresAt: expiresAtIso ? new Date(expiresAtIso) : null,
     },
   });
 });
@@ -495,6 +526,13 @@ doctoraliaRoutes.get("/calendar/auth/start", requireAuth, async (c) => {
       "../lib/doctoralia/doctoralia-calendar-auth.js"
     );
     const authUrl = await buildCalendarOAuthAuthorizationUrl({ redirectUri, state });
+    logEvent("doctoralia.calendar.oauth.start.success", {
+      userId: user.id,
+      callbackBase,
+      redirectUri,
+      statePrefix: state.slice(0, 8),
+      ...toSafeUrlDetails(authUrl),
+    });
 
     return reply(c, {
       status: "ok",
@@ -505,6 +543,10 @@ doctoraliaRoutes.get("/calendar/auth/start", requireAuth, async (c) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error desconocido";
+    logWarn("doctoralia.calendar.oauth.start.error", {
+      userId: user.id,
+      error: message,
+    });
     return reply(c, { status: "error", message }, 500);
   }
 });
@@ -539,9 +581,20 @@ doctoraliaRoutes.get("/calendar/auth/redirect", requireAuth, async (c) => {
       "../lib/doctoralia/doctoralia-calendar-auth.js"
     );
     const authUrl = await buildCalendarOAuthAuthorizationUrl({ redirectUri, state });
+    logEvent("doctoralia.calendar.oauth.redirect.start", {
+      userId: user.id,
+      callbackBase,
+      redirectUri,
+      statePrefix: state.slice(0, 8),
+      ...toSafeUrlDetails(authUrl),
+    });
     return c.redirect(authUrl, 302);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error desconocido";
+    logWarn("doctoralia.calendar.oauth.redirect.error", {
+      userId: user.id,
+      error: message,
+    });
     return c.html(renderDoctoraliaOAuthCallbackHtml("error", message), 500);
   }
 });
@@ -558,11 +611,33 @@ doctoraliaRoutes.get("/calendar/auth/callback", async (c) => {
     process.env.DOCTORALIA_CALENDAR_OAUTH_REDIRECT_URI ||
     `${callbackBase}/api/doctoralia/calendar/auth/callback`;
 
+  logEvent("doctoralia.calendar.oauth.callback.received", {
+    callbackBase,
+    redirectUri,
+    hasCode: Boolean(code),
+    hasError: Boolean(error),
+    hasState: Boolean(state),
+    hasSavedState: Boolean(savedState),
+    stateMatches: Boolean(state && savedState && state === savedState),
+    codePrefix: code?.slice(0, 8) || null,
+    ...toSafeUrlDetails(c.req.url),
+  });
+
   if (error) {
+    logWarn("doctoralia.calendar.oauth.callback.error_param", {
+      error,
+    });
     return c.html(renderDoctoraliaOAuthCallbackHtml("error", `Login cancelado: ${error}`), 200);
   }
 
   if (!state || !savedState || state !== savedState) {
+    logWarn("doctoralia.calendar.oauth.callback.invalid_state", {
+      hasState: Boolean(state),
+      hasSavedState: Boolean(savedState),
+      stateMatches: Boolean(state && savedState && state === savedState),
+      statePrefix: state?.slice(0, 8) || null,
+      savedStatePrefix: savedState?.slice(0, 8) || null,
+    });
     return c.html(
       renderDoctoraliaOAuthCallbackHtml(
         "error",
@@ -573,6 +648,7 @@ doctoraliaRoutes.get("/calendar/auth/callback", async (c) => {
   }
 
   if (!code) {
+    logWarn("doctoralia.calendar.oauth.callback.missing_code", {});
     return c.html(renderDoctoraliaOAuthCallbackHtml("error", "OAuth code faltante."), 400);
   }
 
@@ -581,12 +657,21 @@ doctoraliaRoutes.get("/calendar/auth/callback", async (c) => {
       "../lib/doctoralia/doctoralia-calendar-auth.js"
     );
     await exchangeCalendarOAuthCodeForToken({ code, redirectUri });
+    logEvent("doctoralia.calendar.oauth.callback.exchange.success", {
+      codePrefix: code.slice(0, 8),
+      redirectUri,
+    });
     return c.html(
       renderDoctoraliaOAuthCallbackHtml("success", "Conexión Doctoralia completada."),
       200,
     );
   } catch (oauthError) {
     const message = oauthError instanceof Error ? oauthError.message : "Error OAuth";
+    logWarn("doctoralia.calendar.oauth.callback.exchange.error", {
+      error: message,
+      codePrefix: code.slice(0, 8),
+      redirectUri,
+    });
     return c.html(renderDoctoraliaOAuthCallbackHtml("error", message), 500);
   }
 });
