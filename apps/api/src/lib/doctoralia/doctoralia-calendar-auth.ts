@@ -110,6 +110,27 @@ function extractCodeFromLocation(location: string): string | null {
   }
 }
 
+function getSetCookies(headers: Headers): string[] {
+  const withGetSetCookie = headers as Headers & {
+    getSetCookie?: () => string[];
+  };
+
+  const cookies = withGetSetCookie.getSetCookie?.();
+  if (cookies && cookies.length > 0) {
+    return cookies;
+  }
+
+  const singleCookie = headers.get("set-cookie");
+  return singleCookie ? [singleCookie] : [];
+}
+
+async function requestManualRedirect(input: string, init?: RequestInit) {
+  return fetch(input, {
+    ...init,
+    redirect: "manual",
+  });
+}
+
 async function performLogin(
   username: string,
   password: string,
@@ -119,33 +140,27 @@ async function performLogin(
   sessionId?: string;
   location?: string;
 }> {
-  const bootstrapResponse = await request({
-    url: `${AUTH_BASE_URL}${AUTH_BOOTSTRAP_PATH}`,
+  const bootstrapResponse = await requestManualRedirect(`${AUTH_BASE_URL}${AUTH_BOOTSTRAP_PATH}`, {
     method: "GET",
-    maxRedirects: 0,
-    validateStatus: () => true,
   });
-  const bootstrapCookies = bootstrapResponse.headers.getSetCookie?.() || [];
+  const bootstrapCookies = getSetCookies(bootstrapResponse.headers);
 
-  const response = await request({
-    url: `${AUTH_BASE_URL}${LOGIN_PATH}`,
+  const response = await requestManualRedirect(`${AUTH_BASE_URL}${LOGIN_PATH}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json, text/plain, */*",
       ...(bootstrapCookies.length > 0 ? { Cookie: buildCookieHeader(bootstrapCookies) } : {}),
     },
-    data: new URLSearchParams({
+    body: new URLSearchParams({
       _username: username,
       _password: password,
       username,
       password,
     }).toString(),
-    maxRedirects: 0,
-    validateStatus: () => true,
   });
 
-  const responseCookies = response.headers.getSetCookie?.() || [];
+  const responseCookies = getSetCookies(response.headers);
   const cookies = mergeCookies(bootstrapCookies, responseCookies);
   const location = extractLocationHeader(response);
 
@@ -170,23 +185,20 @@ async function verify2FA(
   sessionCookies: string[],
   sessionId?: string,
 ): Promise<string[]> {
-  const response = await request({
-    url: `${AUTH_BASE_URL}${TWO_FACTOR_PATH}`,
+  const response = await requestManualRedirect(`${AUTH_BASE_URL}${TWO_FACTOR_PATH}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json, text/plain, */*",
       Cookie: buildCookieHeader(sessionCookies),
     },
-    data: new URLSearchParams({
+    body: new URLSearchParams({
       code,
       ...(sessionId ? { session_id: sessionId } : {}),
     }).toString(),
-    maxRedirects: 0,
-    validateStatus: () => true,
   });
 
-  const cookies = response.headers.getSetCookie?.() || [];
+  const cookies = getSetCookies(response.headers);
 
   if (response.status !== 200 && response.status !== 302) {
     throw new Error(`2FA verification failed (status=${response.status})`);
@@ -222,15 +234,12 @@ async function requestAuthorizationCode(ssoCookies: string[], provider: AuthProv
   authUrl.searchParams.set("state", state);
   authUrl.searchParams.set("redirect_uri", redirectUri);
 
-  const response = await request({
-    url: authUrl.toString(),
+  const response = await requestManualRedirect(authUrl.toString(), {
     method: "GET",
     headers: {
       Accept: "application/json, text/plain, */*",
       Cookie: buildCookieHeader(ssoCookies),
     },
-    maxRedirects: 0,
-    validateStatus: () => true,
   });
 
   const location = extractLocationHeader(response);
