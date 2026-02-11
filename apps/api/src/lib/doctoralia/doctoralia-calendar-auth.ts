@@ -17,6 +17,10 @@ const LOGIN_PATH = process.env.DOCTORALIA_CALENDAR_LOGIN_PATH || "/login/check";
 const TWO_FACTOR_PATH = process.env.DOCTORALIA_CALENDAR_2FA_PATH || "/2fa";
 const DOCPLANNER_BASE_URL =
   process.env.DOCTORALIA_CALENDAR_DOCPLANNER_BASE_URL || "https://docplanner.doctoralia.cl";
+const BROWSER_USER_AGENT =
+  process.env.DOCTORALIA_CALENDAR_USER_AGENT ||
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Safari/605.1.15";
+const BROWSER_ACCEPT_LANGUAGE = process.env.DOCTORALIA_CALENDAR_ACCEPT_LANGUAGE || "es-CL,es;q=0.9";
 
 const PHPSESSID_REGEX = /PHPSESSID=([^;]+)/;
 const TWO_FACTOR_LOCATION_REGEX = /\/2fa(?:\?|$)/i;
@@ -149,12 +153,30 @@ function getSetCookies(headers: Headers): string[] {
   }
 
   const singleCookie = headers.get("set-cookie");
-  return singleCookie ? [singleCookie] : [];
+  if (!singleCookie) {
+    return [];
+  }
+
+  // Fallback for runtimes without Headers.getSetCookie():
+  // split combined Set-Cookie header on cookie boundaries.
+  return singleCookie
+    .split(/,(?=\s*[^;,=\s]+=[^;,]+)/g)
+    .map((value) => value.trim())
+    .filter(Boolean);
 }
 
 async function requestManualRedirect(input: string, init?: RequestInit) {
+  const headers = new Headers(init?.headers);
+  if (!headers.has("User-Agent")) {
+    headers.set("User-Agent", BROWSER_USER_AGENT);
+  }
+  if (!headers.has("Accept-Language")) {
+    headers.set("Accept-Language", BROWSER_ACCEPT_LANGUAGE);
+  }
+
   return fetch(input, {
     ...init,
+    headers,
     redirect: "manual",
   });
 }
@@ -178,6 +200,8 @@ async function performLogin(
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json, text/plain, */*",
+      Origin: AUTH_BASE_URL,
+      Referer: `${AUTH_BASE_URL}${AUTH_BOOTSTRAP_PATH}`,
       ...(bootstrapCookies.length > 0 ? { Cookie: buildCookieHeader(bootstrapCookies) } : {}),
     },
     body: new URLSearchParams({
@@ -194,7 +218,7 @@ async function performLogin(
   const locationDetails = toSafeLocationDetails(location);
   logEvent("doctoralia.calendar.auth.login.response", {
     status: response.status,
-    hasSetCookie: responseCookies.length > 0,
+    setCookieCount: responseCookies.length,
     ...locationDetails,
   });
 
@@ -259,6 +283,8 @@ async function verify2FA(
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json, text/plain, */*",
+      Origin: AUTH_BASE_URL,
+      Referer: `${AUTH_BASE_URL}${AUTH_BOOTSTRAP_PATH}`,
       Cookie: buildCookieHeader(sessionCookies),
     },
     body: new URLSearchParams({
@@ -374,6 +400,7 @@ async function tryOAuthCandidate(
     method: "GET",
     headers: {
       Accept: "application/json, text/plain, */*",
+      Referer: `${DOCPLANNER_BASE_URL}/`,
       Cookie: buildCookieHeader(ssoCookies),
     },
   });
