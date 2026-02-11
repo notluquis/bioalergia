@@ -86,7 +86,7 @@ export function TimesheetsPage() {
               }}
             >
               {activeEmployees.map((emp) => (
-                <SelectItem id={String(emp.id)} key={emp.id}>
+                <SelectItem id={String(emp.id)} key={String(emp.id)}>
                   {emp.full_name}
                 </SelectItem>
               ))}
