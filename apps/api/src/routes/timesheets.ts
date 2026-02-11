@@ -1,4 +1,7 @@
+import { db } from "@finanzas/db";
 import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
 import { Hono } from "hono";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth";
@@ -15,6 +18,11 @@ import {
   upsertTimesheetEntry,
 } from "../services/timesheets";
 import { reply } from "../utils/reply";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const TIMEZONE = "America/Santiago";
 
 const app = new Hono();
 
@@ -42,9 +50,9 @@ const rangeQuerySchema = z.object({
 });
 
 // Reuse existing logic defaults
-const defaultRangeQuery = (query: { from?: string; to?: string }) => ({
-  from: query.from || dayjs().startOf("month").format("YYYY-MM-DD"),
-  to: query.to || dayjs().endOf("month").format("YYYY-MM-DD"),
+const defaultRangeQuery = (query: { from?: string | null; to?: string | null }) => ({
+  from: query.from || dayjs.tz(TIMEZONE).startOf("month").format("YYYY-MM-DD"),
+  to: query.to || dayjs.tz(TIMEZONE).endOf("month").format("YYYY-MM-DD"),
 });
 
 // Get full historical date range from database
@@ -61,19 +69,19 @@ async function getHistoricalDateRange() {
   });
 
   const from = minResult[0]
-    ? dayjs(minResult[0].workDate).format("YYYY-MM-DD")
-    : dayjs().subtract(12, "month").format("YYYY-MM-DD");
+    ? dayjs(minResult[0].workDate).tz(TIMEZONE).format("YYYY-MM-DD")
+    : dayjs.tz(TIMEZONE).subtract(12, "month").format("YYYY-MM-DD");
   const to = maxResult[0]
-    ? dayjs(maxResult[0].workDate).format("YYYY-MM-DD")
-    : dayjs().format("YYYY-MM-DD");
+    ? dayjs(maxResult[0].workDate).tz(TIMEZONE).format("YYYY-MM-DD")
+    : dayjs.tz(TIMEZONE).format("YYYY-MM-DD");
 
   return { from, to };
 }
 
 // Build salary summary data structure
 async function buildSalarySummaryData(from: string, to: string, employeeIds?: number[]) {
-  const startMonth = dayjs(from);
-  const endMonth = dayjs(to);
+  const startMonth = dayjs.tz(from, "YYYY-MM-DD", TIMEZONE);
+  const endMonth = dayjs.tz(to, "YYYY-MM-DD", TIMEZONE);
   let current = startMonth.clone().startOf("month");
 
   const months: string[] = [];
@@ -94,20 +102,20 @@ async function buildSalarySummaryData(from: string, to: string, employeeIds?: nu
 
   // Build monthly data for each month sequentially
   for (const month of months) {
-    const monthStart = dayjs(month).startOf("month").format("YYYY-MM-DD");
-    const monthEnd = dayjs(month).endOf("month").format("YYYY-MM-DD");
+    const monthStart = dayjs.tz(month, "YYYY-MM", TIMEZONE).startOf("month").format("YYYY-MM-DD");
+    const monthEnd = dayjs.tz(month, "YYYY-MM", TIMEZONE).endOf("month").format("YYYY-MM-DD");
 
     const summary = await buildMonthlySummary(monthStart, monthEnd);
 
     // Add data for each employee in this month
     for (const emp of summary.employees) {
-      if (!data[String(emp.id)]) {
-        data[String(emp.id)] = [];
+      if (!data[String(emp.employeeId)]) {
+        data[String(emp.employeeId)] = [];
       }
 
       // Only include if not filtering or if this employee is in the filter list
-      if (!employeeIds || employeeIds.length === 0 || employeeIds.includes(emp.id)) {
-        data[String(emp.id)].push({
+      if (!employeeIds || employeeIds.length === 0 || employeeIds.includes(emp.employeeId)) {
+        data[String(emp.employeeId)].push({
           month,
           subtotal: emp.subtotal,
           retention: emp.retention,
@@ -430,11 +438,11 @@ app.get("/summary", zValidator("query", monthQuerySchema), async (c) => {
   }
 
   try {
-    const { month = dayjs().format("YYYY-MM"), employeeId } = c.req.valid("query");
+    const { month = dayjs.tz(TIMEZONE).format("YYYY-MM"), employeeId } = c.req.valid("query");
 
-    // Parse month to get date range
-    const from = dayjs(month).startOf("month").format("YYYY-MM-DD");
-    const to = dayjs(month).endOf("month").format("YYYY-MM-DD");
+    // Parse month to get date range using timezone
+    const from = dayjs.tz(month, "YYYY-MM", TIMEZONE).startOf("month").format("YYYY-MM-DD");
+    const to = dayjs.tz(month, "YYYY-MM", TIMEZONE).endOf("month").format("YYYY-MM-DD");
 
     const summary = await buildMonthlySummary(from, to, employeeId);
 
@@ -582,11 +590,11 @@ app.get("/multi-month", zValidator("query", multiMonthQuerySchema), async (c) =>
   try {
     const { employeeIds: rawIds, startMonth, endMonth } = c.req.valid("query");
     const employeeIds = rawIds?.split(",").map(Number) || [];
-    const start = startMonth || dayjs().format("YYYY-MM");
+    const start = startMonth || dayjs.tz(TIMEZONE).format("YYYY-MM");
     const end = endMonth || start;
 
-    const from = dayjs(start).startOf("month").format("YYYY-MM-DD");
-    const to = dayjs(end).endOf("month").format("YYYY-MM-DD");
+    const from = dayjs.tz(start, "YYYY-MM", TIMEZONE).startOf("month").format("YYYY-MM-DD");
+    const to = dayjs.tz(end, "YYYY-MM", TIMEZONE).endOf("month").format("YYYY-MM-DD");
 
     // Get entries for all requested employees
     const data: Record<
@@ -693,8 +701,8 @@ app.get(
       const { employeeId } = c.req.valid("param");
       const { startDate: rawStart, endDate: rawEnd } = c.req.valid("query");
 
-      const startDate = rawStart || dayjs().startOf("month").format("YYYY-MM-DD");
-      const endDate = rawEnd || dayjs().endOf("month").format("YYYY-MM-DD");
+      const startDate = rawStart || dayjs.tz(TIMEZONE).startOf("month").format("YYYY-MM-DD");
+      const endDate = rawEnd || dayjs.tz(TIMEZONE).endOf("month").format("YYYY-MM-DD");
 
       const entries = await listTimesheetEntries({
         employee_id: employeeId,
@@ -738,10 +746,10 @@ app.get(
     try {
       const { employeeId } = c.req.valid("param");
       const { month: rawMonth } = c.req.valid("query");
-      const month = rawMonth || dayjs().format("YYYY-MM");
+      const month = rawMonth || dayjs.tz(TIMEZONE).format("YYYY-MM");
 
-      const from = dayjs(month).startOf("month").format("YYYY-MM-DD");
-      const to = dayjs(month).endOf("month").format("YYYY-MM-DD");
+      const from = dayjs.tz(month, "YYYY-MM", TIMEZONE).startOf("month").format("YYYY-MM-DD");
+      const to = dayjs.tz(month, "YYYY-MM", TIMEZONE).endOf("month").format("YYYY-MM-DD");
 
       const entries = await listTimesheetEntries({
         employee_id: employeeId,
