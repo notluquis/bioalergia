@@ -1,5 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { useForm } from "@tanstack/react-form";
+import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
-import { fetchPeople } from "@/features/people/api";
+import { fetchPeople, type PersonWithExtras } from "@/features/people/api";
 import { inviteUser } from "@/features/users/api";
 import { ApiError } from "@/lib/api-client";
 import { getPersonFullName } from "@/lib/person";
@@ -154,6 +154,57 @@ export function AddUserPage() {
   }
 
   return (
+    <AddUserFormCard
+      availablePeople={availablePeople}
+      form={form as AddUserFormApi}
+      handleLinkPerson={handleLinkPerson}
+      isPeoplePermissionDenied={isPeoplePermissionDenied}
+      isRolesLoading={isRolesLoading}
+      isSubmitPending={createUserMutation.isPending}
+      onCancel={() => navigate({ to: "/settings/users" })}
+      roles={roles}
+    />
+  );
+}
+
+type AddUserFormApi = ReactFormExtendedApi<
+  AddUserFormState,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  unknown
+>;
+type RoleOption = { description: null | string; id: number; name: string };
+
+interface AddUserFormCardProps {
+  availablePeople: PersonWithExtras[];
+  form: AddUserFormApi;
+  handleLinkPerson: (personId: number | undefined) => void;
+  isPeoplePermissionDenied: boolean;
+  isRolesLoading: boolean;
+  isSubmitPending: boolean;
+  onCancel: () => void;
+  roles: RoleOption[];
+}
+
+function AddUserFormCard({
+  availablePeople,
+  form,
+  handleLinkPerson,
+  isPeoplePermissionDenied,
+  isRolesLoading,
+  isSubmitPending,
+  onCancel,
+  roles,
+}: AddUserFormCardProps) {
+  return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="space-y-2">
         <h1 className="font-bold text-3xl text-primary">Agregar usuario</h1>
@@ -172,227 +223,247 @@ export function AddUserPage() {
         }}
       >
         {isPeoplePermissionDenied ? (
-          <div className="rounded-xl border border-warning/20 bg-warning/5 p-4 text-sm text-warning-700">
+          <div className="rounded-xl border border-warning-soft-hover bg-warning/5 p-4 text-sm text-warning-700">
             No tienes permiso para ver personas existentes. Puedes crear el usuario sin vincularlo a
             una persona.
           </div>
         ) : null}
 
-        {/* Opción de vincular a persona existente */}
-        {availablePeople.length > 0 ? (
-          <div className="rounded-xl border border-info/20 bg-info/5 p-4">
-            <div className="flex items-start gap-3">
-              <Users className="mt-0.5 h-5 w-5 text-info" />
-              <div className="flex-1 space-y-3">
-                <div>
-                  <p className="font-medium text-info">Vincular a persona existente</p>
-                  <p className="text-default-600 text-xs">
-                    Si esta persona ya existe en el sistema, puedes vincular el usuario
-                    directamente.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <form.Field name="personId">
-                    {(field) => (
-                      <Select
-                        label="Vincular con persona (opcional)"
-                        onSelectionChange={(val) => {
-                          const pid = val ? Number(val) : undefined;
-                          handleLinkPerson(pid);
-                        }}
-                        selectedKey={field.state.value ? String(field.state.value) : ""}
-                      >
-                        <SelectItem id="" textValue="No vincular (Crear usuario nuevo)">
-                          No vincular (Crear usuario nuevo)
-                        </SelectItem>
-                        {availablePeople.map((person) => (
-                          <SelectItem
-                            id={String(person.id)}
-                            key={person.id}
-                            textValue={getPersonFullName(person)}
-                          >
-                            {getPersonFullName(person)} - {person.rut}
-                          </SelectItem>
-                        ))}
-                      </Select>
-                    )}
-                  </form.Field>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <form.Subscribe selector={(state) => [state.values.personId]}>
-            {([personId]) => {
-              if (personId) {
-                return null;
-              }
-              return (
-                <>
-                  <div className="md:col-span-2">
-                    <h3 className="mb-4 font-semibold text-foreground">Datos personales</h3>
-                  </div>
-                  <form.Field name="names">
-                    {(field) => (
-                      <Input
-                        label="Nombres"
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Ej: Juan Andrés"
-                        required
-                        value={field.state.value}
-                      />
-                    )}
-                  </form.Field>
-                  <form.Field name="fatherName">
-                    {(field) => (
-                      <Input
-                        label="Apellido Paterno"
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Ej: Pérez"
-                        required
-                        value={field.state.value}
-                      />
-                    )}
-                  </form.Field>
-                  <form.Field name="motherName">
-                    {(field) => (
-                      <Input
-                        label="Apellido Materno"
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="Ej: González"
-                        required
-                        value={field.state.value}
-                      />
-                    )}
-                  </form.Field>
-                  <form.Field name="rut">
-                    {(field) => (
-                      <Input
-                        label="RUT"
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="12.345.678-9"
-                        required
-                        value={field.state.value}
-                      />
-                    )}
-                  </form.Field>
-                  <div className="md:col-span-1">{/* Spacer */}</div>
-                </>
-              );
-            }}
-          </form.Subscribe>
-
-          <div className="md:col-span-2">
-            <h3 className="mt-2 mb-4 font-semibold text-foreground">Datos de cuenta</h3>
-          </div>
-
-          <div className="md:col-span-2">
-            <form.Field name="email">
-              {(field) => (
-                <form.Subscribe selector={(state) => [state.values.personId]}>
-                  {([personId]) => (
-                    <Input
-                      helper={personId ? "Verifica o actualiza el correo asociado" : undefined}
-                      label="Correo electrónico"
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="usuario@bioalergia.cl"
-                      required
-                      type="email"
-                      value={field.state.value}
-                    />
-                  )}
-                </form.Subscribe>
-              )}
-            </form.Field>
-          </div>
-
-          <form.Field name="position">
-            {(field) => (
-              <Input
-                label="Cargo / posición"
-                onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Ej: Enfermera, Administrativo"
-                required
-                value={field.state.value}
-              />
-            )}
-          </form.Field>
-
-          <form.Subscribe selector={(state) => [state.values.personId]}>
-            {([personId]) => (
-              <div className={personId ? "md:col-span-2" : ""}>
-                <form.Field name="role">
-                  {(field) => (
-                    <Select
-                      errorMessage={field.state.meta.errors.join(", ")}
-                      isInvalid={field.state.meta.errors.length > 0}
-                      label="Rol del sistema"
-                      placeholder={isRolesLoading ? "Cargando roles..." : "Seleccionar rol"}
-                      isDisabled={isRolesLoading}
-                      onSelectionChange={(val) => field.handleChange(val as string)}
-                      selectedKey={field.state.value}
-                    >
-                      {roles.map((r: { id: number; name: string; description: string | null }) => (
-                        <SelectItem id={r.name} key={r.id} textValue={r.name}>
-                          {r.name} ({r.description || "Sin descripción"})
-                        </SelectItem>
-                      ))}
-                    </Select>
-                  )}
-                </form.Field>
-              </div>
-            )}
-          </form.Subscribe>
-        </div>
-
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-          <div className="flex items-start gap-3">
-            <Shield className="mt-0.5 h-5 w-5 text-primary" />
-            <div className="space-y-1">
-              <p className="font-medium text-primary">Seguridad reforzada</p>
-              <p className="text-default-600 text-xs">
-                Si activas esta opción, el usuario estará <strong>obligado</strong> a configurar
-                Passkey o MFA (Google Authenticator) antes de poder usar el sistema.
-              </p>
-            </div>
-          </div>
-          <div className="mt-4 space-y-3 pl-8">
-            <form.Field name="mfaEnforced">
-              {(field) => (
-                <Checkbox
-                  checked={field.state.value}
-                  label="Forzar passkey o MFA"
-                  onChange={(e) => field.handleChange(e.target.checked)}
-                />
-              )}
-            </form.Field>
-          </div>
-        </div>
+        <PersonLinkSection
+          availablePeople={availablePeople}
+          form={form}
+          handleLinkPerson={handleLinkPerson}
+        />
+        <UserDataFields form={form} isRolesLoading={isRolesLoading} roles={roles} />
+        <SecuritySection form={form} />
 
         <div className="flex justify-end gap-3 pt-4">
-          <Button
-            onClick={() => navigate({ to: "/settings/users" })}
-            type="button"
-            variant="secondary"
-          >
+          <Button onClick={onCancel} type="button" variant="secondary">
             Cancelar
           </Button>
           <form.Subscribe selector={(state) => [state.isSubmitting]}>
             {([isSubmitting]) => (
-              <Button
-                className="gap-2"
-                disabled={isSubmitting || createUserMutation.isPending}
-                type="submit"
-              >
+              <Button className="gap-2" disabled={isSubmitting || isSubmitPending} type="submit">
                 <UserPlus size={18} />
-                {isSubmitting || createUserMutation.isPending ? "Creando..." : "Crear usuario"}
+                {isSubmitting || isSubmitPending ? "Creando..." : "Crear usuario"}
               </Button>
             )}
           </form.Subscribe>
         </div>
       </form>
+    </div>
+  );
+}
+
+function PersonLinkSection({
+  availablePeople,
+  form,
+  handleLinkPerson,
+}: Pick<AddUserFormCardProps, "availablePeople" | "form" | "handleLinkPerson">) {
+  if (availablePeople.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-xl border border-info/20 bg-info/5 p-4">
+      <div className="flex items-start gap-3">
+        <Users className="mt-0.5 h-5 w-5 text-info" />
+        <div className="flex-1 space-y-3">
+          <div>
+            <p className="font-medium text-info">Vincular a persona existente</p>
+            <p className="text-default-600 text-xs">
+              Si esta persona ya existe en el sistema, puedes vincular el usuario directamente.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <form.Field name="personId">
+              {(field) => (
+                <Select
+                  label="Vincular con persona (opcional)"
+                  onChange={(val) => {
+                    const pid = val ? Number(val) : undefined;
+                    handleLinkPerson(pid);
+                  }}
+                  value={field.state.value ? String(field.state.value) : ""}
+                >
+                  <SelectItem id="" textValue="No vincular (Crear usuario nuevo)">
+                    No vincular (Crear usuario nuevo)
+                  </SelectItem>
+                  {availablePeople.map((person) => (
+                    <SelectItem
+                      id={String(person.id)}
+                      key={person.id}
+                      textValue={getPersonFullName(person)}
+                    >
+                      {getPersonFullName(person)} - {person.rut}
+                    </SelectItem>
+                  ))}
+                </Select>
+              )}
+            </form.Field>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserDataFields({
+  form,
+  isRolesLoading,
+  roles,
+}: Pick<AddUserFormCardProps, "form" | "isRolesLoading" | "roles">) {
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      <form.Subscribe selector={(state) => [state.values.personId]}>
+        {([personId]) => {
+          if (personId) {
+            return null;
+          }
+          return (
+            <>
+              <div className="md:col-span-2">
+                <h3 className="mb-4 font-semibold text-foreground">Datos personales</h3>
+              </div>
+              <form.Field name="names">
+                {(field) => (
+                  <Input
+                    label="Nombres"
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Ej: Juan Andrés"
+                    required
+                    value={field.state.value}
+                  />
+                )}
+              </form.Field>
+              <form.Field name="fatherName">
+                {(field) => (
+                  <Input
+                    label="Apellido Paterno"
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Ej: Pérez"
+                    required
+                    value={field.state.value}
+                  />
+                )}
+              </form.Field>
+              <form.Field name="motherName">
+                {(field) => (
+                  <Input
+                    label="Apellido Materno"
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Ej: González"
+                    required
+                    value={field.state.value}
+                  />
+                )}
+              </form.Field>
+              <form.Field name="rut">
+                {(field) => (
+                  <Input
+                    label="RUT"
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="12.345.678-9"
+                    required
+                    value={field.state.value}
+                  />
+                )}
+              </form.Field>
+              <div className="md:col-span-1">{/* Spacer */}</div>
+            </>
+          );
+        }}
+      </form.Subscribe>
+
+      <div className="md:col-span-2">
+        <h3 className="mt-2 mb-4 font-semibold text-foreground">Datos de cuenta</h3>
+      </div>
+
+      <div className="md:col-span-2">
+        <form.Field name="email">
+          {(field) => (
+            <form.Subscribe selector={(state) => [state.values.personId]}>
+              {([personId]) => (
+                <Input
+                  helper={personId ? "Verifica o actualiza el correo asociado" : undefined}
+                  label="Correo electrónico"
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="usuario@bioalergia.cl"
+                  required
+                  type="email"
+                  value={field.state.value}
+                />
+              )}
+            </form.Subscribe>
+          )}
+        </form.Field>
+      </div>
+
+      <form.Field name="position">
+        {(field) => (
+          <Input
+            label="Cargo / posición"
+            onChange={(e) => field.handleChange(e.target.value)}
+            placeholder="Ej: Enfermera, Administrativo"
+            required
+            value={field.state.value}
+          />
+        )}
+      </form.Field>
+
+      <form.Subscribe selector={(state) => [state.values.personId]}>
+        {([personId]) => (
+          <div className={personId ? "md:col-span-2" : ""}>
+            <form.Field name="role">
+              {(field) => (
+                <Select
+                  errorMessage={field.state.meta.errors.join(", ")}
+                  isDisabled={isRolesLoading}
+                  isInvalid={field.state.meta.errors.length > 0}
+                  label="Rol del sistema"
+                  onChange={(val) => field.handleChange(val as string)}
+                  placeholder={isRolesLoading ? "Cargando roles..." : "Seleccionar rol"}
+                  value={field.state.value}
+                >
+                  {roles.map((r) => (
+                    <SelectItem id={r.name} key={r.id} textValue={r.name}>
+                      {r.name} ({r.description || "Sin descripción"})
+                    </SelectItem>
+                  ))}
+                </Select>
+              )}
+            </form.Field>
+          </div>
+        )}
+      </form.Subscribe>
+    </div>
+  );
+}
+
+function SecuritySection({ form }: Pick<AddUserFormCardProps, "form">) {
+  return (
+    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+      <div className="flex items-start gap-3">
+        <Shield className="mt-0.5 h-5 w-5 text-primary" />
+        <div className="space-y-1">
+          <p className="font-medium text-primary">Seguridad reforzada</p>
+          <p className="text-default-600 text-xs">
+            Si activas esta opción, el usuario estará <strong>obligado</strong> a configurar Passkey
+            o MFA (Google Authenticator) antes de poder usar el sistema.
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-3 pl-8">
+        <form.Field name="mfaEnforced">
+          {(field) => (
+            <Checkbox
+              checked={field.state.value}
+              label="Forzar passkey o MFA"
+              onChange={(e) => field.handleChange(e.target.checked)}
+            />
+          )}
+        </form.Field>
+      </div>
     </div>
   );
 }
