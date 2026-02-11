@@ -3649,6 +3649,430 @@ export class SchemaType implements SchemaDef {
         id: { type: "Int" },
       },
     },
+    DoctoraliaSchedule: {
+      name: "DoctoraliaSchedule",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        externalId: {
+          name: "externalId",
+          type: "Int",
+          unique: true,
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        displayName: {
+          name: "displayName",
+          type: "String",
+        },
+        facilityId: {
+          name: "facilityId",
+          type: "Int",
+          optional: true,
+        },
+        specialityId: {
+          name: "specialityId",
+          type: "Int",
+          optional: true,
+        },
+        doctorId: {
+          name: "doctorId",
+          type: "Int",
+          optional: true,
+        },
+        provinceId: {
+          name: "provinceId",
+          type: "Int",
+          optional: true,
+        },
+        cityId: {
+          name: "cityId",
+          type: "Int",
+          optional: true,
+        },
+        hasWaitingRoom: {
+          name: "hasWaitingRoom",
+          type: "Boolean",
+          optional: true,
+        },
+        scheduleType: {
+          name: "scheduleType",
+          type: "Int",
+          default: 0,
+        },
+        colorSchemaId: {
+          name: "colorSchemaId",
+          type: "Int",
+          optional: true,
+        },
+        isVirtual: {
+          name: "isVirtual",
+          type: "Boolean",
+          default: false,
+        },
+        patientsNotificationType: {
+          name: "patientsNotificationType",
+          type: "Int",
+          default: 1,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          default: ExpressionUtils.call("now"),
+        },
+        appointments: {
+          name: "appointments",
+          type: "DoctoraliaCalendarAppointment",
+          array: true,
+          relation: { opposite: "schedule" },
+        },
+        workPeriods: {
+          name: "workPeriods",
+          type: "DoctoraliaWorkPeriod",
+          array: true,
+          relation: { opposite: "schedule" },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        externalId: { type: "Int" },
+      },
+    },
+    DoctoraliaCalendarAppointment: {
+      name: "DoctoraliaCalendarAppointment",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        scheduleId: {
+          name: "scheduleId",
+          type: "Int",
+          foreignKeyFor: ["schedule"],
+        },
+        externalId: {
+          name: "externalId",
+          type: "Int",
+          unique: true,
+        },
+        title: {
+          name: "title",
+          type: "String",
+        },
+        startAt: {
+          name: "startAt",
+          type: "DateTime",
+        },
+        endAt: {
+          name: "endAt",
+          type: "DateTime",
+        },
+        isBlock: {
+          name: "isBlock",
+          type: "Boolean",
+          default: false,
+        },
+        eventType: {
+          name: "eventType",
+          type: "Int",
+        },
+        scheduledBy: {
+          name: "scheduledBy",
+          type: "Int",
+        },
+        status: {
+          name: "status",
+          type: "Int",
+        },
+        hasPatient: {
+          name: "hasPatient",
+          type: "Boolean",
+        },
+        hasWaitingRoom: {
+          name: "hasWaitingRoom",
+          type: "Boolean",
+          optional: true,
+        },
+        insuranceId: {
+          name: "insuranceId",
+          type: "Int",
+          optional: true,
+        },
+        insuranceName: {
+          name: "insuranceName",
+          type: "String",
+          optional: true,
+        },
+        comments: {
+          name: "comments",
+          type: "String",
+          optional: true,
+        },
+        serviceId: {
+          name: "serviceId",
+          type: "Int",
+        },
+        serviceName: {
+          name: "serviceName",
+          type: "String",
+        },
+        eventServices: {
+          name: "eventServices",
+          type: "Json",
+          optional: true,
+        },
+        serviceColorSchemaId: {
+          name: "serviceColorSchemaId",
+          type: "Int",
+        },
+        serviceIsDeleted: {
+          name: "serviceIsDeleted",
+          type: "Boolean",
+          default: false,
+        },
+        attendance: {
+          name: "attendance",
+          type: "Int",
+          default: 0,
+        },
+        patientExternalId: {
+          name: "patientExternalId",
+          type: "Int",
+        },
+        patientReferenceId: {
+          name: "patientReferenceId",
+          type: "String",
+        },
+        patientPhone: {
+          name: "patientPhone",
+          type: "String",
+          optional: true,
+        },
+        patientEmail: {
+          name: "patientEmail",
+          type: "String",
+          optional: true,
+        },
+        patientBirthDate: {
+          name: "patientBirthDate",
+          type: "DateTime",
+          optional: true,
+        },
+        patientArrivalTime: {
+          name: "patientArrivalTime",
+          type: "DateTime",
+          optional: true,
+        },
+        isPatientFirstTime: {
+          name: "isPatientFirstTime",
+          type: "Boolean",
+          default: false,
+        },
+        isPatientFirstAdminBooking: {
+          name: "isPatientFirstAdminBooking",
+          type: "Boolean",
+          default: false,
+        },
+        isBookedViaSecretaryAi: {
+          name: "isBookedViaSecretaryAi",
+          type: "Boolean",
+          default: false,
+        },
+        onlinePaymentType: {
+          name: "onlinePaymentType",
+          type: "String",
+          optional: true,
+        },
+        onlinePaymentStatus: {
+          name: "onlinePaymentStatus",
+          type: "String",
+          optional: true,
+        },
+        isPaidOnline: {
+          name: "isPaidOnline",
+          type: "Boolean",
+          default: false,
+        },
+        communicationChannel: {
+          name: "communicationChannel",
+          type: "String",
+          optional: true,
+        },
+        fake: {
+          name: "fake",
+          type: "Boolean",
+          default: false,
+        },
+        isEventWithVoucher: {
+          name: "isEventWithVoucher",
+          type: "Boolean",
+          default: false,
+        },
+        duration: {
+          name: "duration",
+          type: "Int",
+        },
+        canNotifyPatient: {
+          name: "canNotifyPatient",
+          type: "Boolean",
+        },
+        noShowProtection: {
+          name: "noShowProtection",
+          type: "Boolean",
+          default: false,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          default: ExpressionUtils.call("now"),
+        },
+        schedule: {
+          name: "schedule",
+          type: "DoctoraliaSchedule",
+          relation: {
+            opposite: "appointments",
+            fields: ["scheduleId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        externalId: { type: "Int" },
+        scheduleId_externalId: { scheduleId: { type: "Int" }, externalId: { type: "Int" } },
+      },
+    },
+    DoctoraliaWorkPeriod: {
+      name: "DoctoraliaWorkPeriod",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        scheduleId: {
+          name: "scheduleId",
+          type: "Int",
+          foreignKeyFor: ["schedule"],
+        },
+        startAt: {
+          name: "startAt",
+          type: "DateTime",
+        },
+        endAt: {
+          name: "endAt",
+          type: "DateTime",
+        },
+        isPrivate: {
+          name: "isPrivate",
+          type: "Boolean",
+          default: false,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        schedule: {
+          name: "schedule",
+          type: "DoctoraliaSchedule",
+          relation: {
+            opposite: "workPeriods",
+            fields: ["scheduleId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    DoctoraliaCalendarSyncLog: {
+      name: "DoctoraliaCalendarSyncLog",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        triggerSource: {
+          name: "triggerSource",
+          type: "String",
+          optional: true,
+        },
+        triggerUserId: {
+          name: "triggerUserId",
+          type: "Int",
+          optional: true,
+        },
+        status: {
+          name: "status",
+          type: "String",
+          default: "PENDING",
+        },
+        startedAt: {
+          name: "startedAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        endedAt: {
+          name: "endedAt",
+          type: "DateTime",
+          optional: true,
+        },
+        schedulesSynced: {
+          name: "schedulesSynced",
+          type: "Int",
+          default: 0,
+        },
+        appointmentsSynced: {
+          name: "appointmentsSynced",
+          type: "Int",
+          default: 0,
+        },
+        workPeriodsSynced: {
+          name: "workPeriodsSynced",
+          type: "Int",
+          default: 0,
+        },
+        errorMessage: {
+          name: "errorMessage",
+          type: "String",
+          optional: true,
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
     HaulmerSyncLog: {
       name: "HaulmerSyncLog",
       fields: {

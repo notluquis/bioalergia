@@ -6,7 +6,7 @@
 /* eslint-disable */
 
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
-import { type SchemaType as $Schema, schema as $schema } from "./schema-lite.js";
+import { type SchemaType as $Schema, schema as $schema } from "./schema-lite";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
 export type Passkey = $ModelResult<$Schema, "Passkey">;
@@ -50,6 +50,10 @@ export type DoctoraliaSlot = $ModelResult<$Schema, "DoctoraliaSlot">;
 export type DoctoraliaBooking = $ModelResult<$Schema, "DoctoraliaBooking">;
 export type DoctoraliaCalendarBreak = $ModelResult<$Schema, "DoctoraliaCalendarBreak">;
 export type DoctoraliaSyncLog = $ModelResult<$Schema, "DoctoraliaSyncLog">;
+export type DoctoraliaSchedule = $ModelResult<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaCalendarAppointment = $ModelResult<$Schema, "DoctoraliaCalendarAppointment">;
+export type DoctoraliaWorkPeriod = $ModelResult<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaCalendarSyncLog = $ModelResult<$Schema, "DoctoraliaCalendarSyncLog">;
 export type HaulmerSyncLog = $ModelResult<$Schema, "HaulmerSyncLog">;
 export type PersonalCredit = $ModelResult<$Schema, "PersonalCredit">;
 export type PersonalCreditInstallment = $ModelResult<$Schema, "PersonalCreditInstallment">;

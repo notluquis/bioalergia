@@ -349,6 +349,107 @@ doctoraliaRoutes.post("/sync", requireAuth, async (c) => {
 });
 
 // ============================================================
+// CALENDAR SYNC
+// ============================================================
+
+const calendarSyncSchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  scheduleIds: z.array(z.number()).optional(),
+});
+
+doctoraliaRoutes.get("/calendar/status", requireAuth, async (c) => {
+  const { isCalendarAuthConfigured } = await import(
+    "../lib/doctoralia/doctoralia-calendar-auth.js"
+  );
+  const configured = isCalendarAuthConfigured();
+
+  return reply(c, {
+    status: "ok",
+    data: {
+      configured,
+      message: configured
+        ? "Calendar authentication configured"
+        : "DOCTORALIA_CALENDAR_USERNAME and DOCTORALIA_CALENDAR_PASSWORD required",
+    },
+  });
+});
+
+doctoraliaRoutes.post(
+  "/calendar/sync",
+  requireAuth,
+  zValidator("json", calendarSyncSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canSync = await hasPermission(user.id, "update", "DoctoraliaFacility");
+    if (!canSync) {
+      return reply(c, { status: "error", message: "Sin permisos" }, 403);
+    }
+
+    const body = c.req.valid("json");
+
+    try {
+      const { doctoraliaCalendarSyncService } = await import("../services/doctoralia-calendar.js");
+      const result = await doctoraliaCalendarSyncService.syncCalendar(
+        body.from,
+        body.to,
+        body.scheduleIds,
+        "manual",
+        user.id,
+      );
+
+      return reply(c, {
+        status: "ok",
+        data: result,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Error desconocido";
+      console.error("[DoctoraliaCalendar] Sync error:", error);
+      return reply(c, { status: "error", message }, 500);
+    }
+  },
+);
+
+doctoraliaRoutes.get("/calendar/schedules", requireAuth, async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
+
+  try {
+    const { db } = await import("@finanzas/db");
+    const schedules = await db.DoctoraliaSchedule.findMany({
+      select: {
+        id: true,
+        externalId: true,
+        name: true,
+        displayName: true,
+        scheduleType: true,
+        isVirtual: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { displayName: "asc" },
+    });
+
+    return reply(c, {
+      status: "ok",
+      data: {
+        schedules,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    console.error("[DoctoraliaCalendar] List schedules error:", error);
+    return reply(c, { status: "error", message }, 500);
+  }
+});
+
+// ============================================================
 // WEBHOOK (No Auth - for Doctoralia push notifications)
 // ============================================================
 

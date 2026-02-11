@@ -9447,6 +9447,1109 @@ export class SchemaType implements SchemaDef {
         id: { type: "Int" },
       },
     },
+    DoctoraliaSchedule: {
+      name: "DoctoraliaSchedule",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        externalId: {
+          name: "externalId",
+          type: "Int",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_id") }],
+            },
+          ],
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        displayName: {
+          name: "displayName",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("display_name") }],
+            },
+          ],
+        },
+        facilityId: {
+          name: "facilityId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("facility_id") }],
+            },
+          ],
+        },
+        specialityId: {
+          name: "specialityId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("speciality_id") }],
+            },
+          ],
+        },
+        doctorId: {
+          name: "doctorId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("doctor_id") }] },
+          ],
+        },
+        provinceId: {
+          name: "provinceId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("province_id") }],
+            },
+          ],
+        },
+        cityId: {
+          name: "cityId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("city_id") }] },
+          ],
+        },
+        hasWaitingRoom: {
+          name: "hasWaitingRoom",
+          type: "Boolean",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("has_waiting_room") }],
+            },
+          ],
+        },
+        scheduleType: {
+          name: "scheduleType",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("schedule_type") }],
+            },
+          ],
+          default: 0,
+        },
+        colorSchemaId: {
+          name: "colorSchemaId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("color_schema_id") }],
+            },
+          ],
+        },
+        isVirtual: {
+          name: "isVirtual",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("is_virtual") }],
+            },
+          ],
+          default: false,
+        },
+        patientsNotificationType: {
+          name: "patientsNotificationType",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(1) }] },
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("patients_notification_type") },
+              ],
+            },
+          ],
+          default: 1,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        appointments: {
+          name: "appointments",
+          type: "DoctoraliaCalendarAppointment",
+          array: true,
+          relation: { opposite: "schedule" },
+        },
+        workPeriods: {
+          name: "workPeriods",
+          type: "DoctoraliaWorkPeriod",
+          array: true,
+          relation: { opposite: "schedule" },
+        },
+      },
+      attributes: [
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("externalId")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_schedules") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        externalId: { type: "Int" },
+      },
+    },
+    DoctoraliaCalendarAppointment: {
+      name: "DoctoraliaCalendarAppointment",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        scheduleId: {
+          name: "scheduleId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("schedule_id") }],
+            },
+          ],
+          foreignKeyFor: ["schedule"],
+        },
+        externalId: {
+          name: "externalId",
+          type: "Int",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("external_id") }],
+            },
+          ],
+        },
+        title: {
+          name: "title",
+          type: "String",
+        },
+        startAt: {
+          name: "startAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_at") }] },
+          ],
+        },
+        endAt: {
+          name: "endAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_at") }] },
+          ],
+        },
+        isBlock: {
+          name: "isBlock",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("is_block") }] },
+          ],
+          default: false,
+        },
+        eventType: {
+          name: "eventType",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("event_type") }],
+            },
+          ],
+        },
+        scheduledBy: {
+          name: "scheduledBy",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("scheduled_by") }],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "Int",
+        },
+        hasPatient: {
+          name: "hasPatient",
+          type: "Boolean",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("has_patient") }],
+            },
+          ],
+        },
+        hasWaitingRoom: {
+          name: "hasWaitingRoom",
+          type: "Boolean",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("has_waiting_room") }],
+            },
+          ],
+        },
+        insuranceId: {
+          name: "insuranceId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("insurance_id") }],
+            },
+          ],
+        },
+        insuranceName: {
+          name: "insuranceName",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("insurance_name") }],
+            },
+          ],
+        },
+        comments: {
+          name: "comments",
+          type: "String",
+          optional: true,
+        },
+        serviceId: {
+          name: "serviceId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("service_id") }],
+            },
+          ],
+        },
+        serviceName: {
+          name: "serviceName",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("service_name") }],
+            },
+          ],
+        },
+        eventServices: {
+          name: "eventServices",
+          type: "Json",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("event_services") }],
+            },
+          ],
+        },
+        serviceColorSchemaId: {
+          name: "serviceColorSchemaId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("service_color_schema_id") }],
+            },
+          ],
+        },
+        serviceIsDeleted: {
+          name: "serviceIsDeleted",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("service_is_deleted") }],
+            },
+          ],
+          default: false,
+        },
+        attendance: {
+          name: "attendance",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+          ],
+          default: 0,
+        },
+        patientExternalId: {
+          name: "patientExternalId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_external_id") }],
+            },
+          ],
+        },
+        patientReferenceId: {
+          name: "patientReferenceId",
+          type: "String",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_reference_id") }],
+            },
+          ],
+        },
+        patientPhone: {
+          name: "patientPhone",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_phone") }],
+            },
+          ],
+        },
+        patientEmail: {
+          name: "patientEmail",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_email") }],
+            },
+          ],
+        },
+        patientBirthDate: {
+          name: "patientBirthDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_birth_date") }],
+            },
+          ],
+        },
+        patientArrivalTime: {
+          name: "patientArrivalTime",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("patient_arrival_time") }],
+            },
+          ],
+        },
+        isPatientFirstTime: {
+          name: "isPatientFirstTime",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("is_patient_first_time") }],
+            },
+          ],
+          default: false,
+        },
+        isPatientFirstAdminBooking: {
+          name: "isPatientFirstAdminBooking",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("is_patient_first_admin_booking") },
+              ],
+            },
+          ],
+          default: false,
+        },
+        isBookedViaSecretaryAi: {
+          name: "isBookedViaSecretaryAi",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [
+                { name: "name", value: ExpressionUtils.literal("is_booked_via_secretary_ai") },
+              ],
+            },
+          ],
+          default: false,
+        },
+        onlinePaymentType: {
+          name: "onlinePaymentType",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("online_payment_type") }],
+            },
+          ],
+        },
+        onlinePaymentStatus: {
+          name: "onlinePaymentStatus",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("online_payment_status") }],
+            },
+          ],
+        },
+        isPaidOnline: {
+          name: "isPaidOnline",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("is_paid_online") }],
+            },
+          ],
+          default: false,
+        },
+        communicationChannel: {
+          name: "communicationChannel",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("communication_channel") }],
+            },
+          ],
+        },
+        fake: {
+          name: "fake",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+          ],
+          default: false,
+        },
+        isEventWithVoucher: {
+          name: "isEventWithVoucher",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("is_event_with_voucher") }],
+            },
+          ],
+          default: false,
+        },
+        duration: {
+          name: "duration",
+          type: "Int",
+        },
+        canNotifyPatient: {
+          name: "canNotifyPatient",
+          type: "Boolean",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("can_notify_patient") }],
+            },
+          ],
+        },
+        noShowProtection: {
+          name: "noShowProtection",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("no_show_protection") }],
+            },
+          ],
+          default: false,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        schedule: {
+          name: "schedule",
+          type: "DoctoraliaSchedule",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("scheduleId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "appointments",
+            fields: ["scheduleId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("scheduleId"),
+                ExpressionUtils.field("externalId"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("scheduleId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startAt")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("patientExternalId")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [
+            { name: "name", value: ExpressionUtils.literal("doctoralia_calendar_appointments") },
+          ],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        externalId: { type: "Int" },
+        scheduleId_externalId: { scheduleId: { type: "Int" }, externalId: { type: "Int" } },
+      },
+    },
+    DoctoraliaWorkPeriod: {
+      name: "DoctoraliaWorkPeriod",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        scheduleId: {
+          name: "scheduleId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("schedule_id") }],
+            },
+          ],
+          foreignKeyFor: ["schedule"],
+        },
+        startAt: {
+          name: "startAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("start_at") }] },
+          ],
+        },
+        endAt: {
+          name: "endAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_at") }] },
+          ],
+        },
+        isPrivate: {
+          name: "isPrivate",
+          type: "Boolean",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(false) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("is_private") }],
+            },
+          ],
+          default: false,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        schedule: {
+          name: "schedule",
+          type: "DoctoraliaSchedule",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("scheduleId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "workPeriods",
+            fields: ["scheduleId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("scheduleId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startAt")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_work_periods") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    DoctoraliaCalendarSyncLog: {
+      name: "DoctoraliaCalendarSyncLog",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        triggerSource: {
+          name: "triggerSource",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("trigger_source") }],
+            },
+          ],
+        },
+        triggerUserId: {
+          name: "triggerUserId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("trigger_user_id") }],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "String",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }],
+            },
+          ],
+          default: "PENDING",
+        },
+        startedAt: {
+          name: "startedAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("started_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        endedAt: {
+          name: "endedAt",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("ended_at") }] },
+          ],
+        },
+        schedulesSynced: {
+          name: "schedulesSynced",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("schedules_synced") }],
+            },
+          ],
+          default: 0,
+        },
+        appointmentsSynced: {
+          name: "appointmentsSynced",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("appointments_synced") }],
+            },
+          ],
+          default: 0,
+        },
+        workPeriodsSynced: {
+          name: "workPeriodsSynced",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("work_periods_synced") }],
+            },
+          ],
+          default: 0,
+        },
+        errorMessage: {
+          name: "errorMessage",
+          type: "String",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("error_message") }],
+            },
+          ],
+        },
+      },
+      attributes: [
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("DateTime", [ExpressionUtils.field("startedAt")]),
+            },
+          ],
+        },
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "!=",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("doctoralia_calendar_sync_logs") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
     HaulmerSyncLog: {
       name: "HaulmerSyncLog",
       fields: {

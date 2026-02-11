@@ -1230,22 +1230,146 @@ model DoctoraliaSyncLog {
 }
 
 // ============================================================
+// DOCTORALIA CALENDAR (Docplanner Calendar API)
+// ============================================================
+
+model DoctoraliaSchedule {
+  id                       Int                             @id @default(autoincrement())
+  externalId               Int                             @unique @map("external_id")
+  name                     String
+  displayName              String                          @map("display_name")
+  facilityId               Int?                            @map("facility_id")
+  specialityId             Int?                            @map("speciality_id")
+  doctorId                 Int?                            @map("doctor_id")
+  provinceId               Int?                            @map("province_id")
+  cityId                   Int?                            @map("city_id")
+  hasWaitingRoom           Boolean?                        @map("has_waiting_room")
+  scheduleType             Int                             @default(0) @map("schedule_type")
+  colorSchemaId            Int?                            @map("color_schema_id")
+  isVirtual                Boolean                         @default(false) @map("is_virtual")
+  patientsNotificationType Int                             @default(1) @map("patients_notification_type")
+  createdAt                DateTime                        @default(now()) @map("created_at")
+  updatedAt                DateTime                        @default(now()) @updatedAt @map("updated_at")
+  appointments             DoctoraliaCalendarAppointment[]
+  workPeriods              DoctoraliaWorkPeriod[]
+
+  @@index([externalId])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("doctoralia_schedules")
+}
+
+model DoctoraliaCalendarAppointment {
+  id                         Int                @id @default(autoincrement())
+  scheduleId                 Int                @map("schedule_id")
+  externalId                 Int                @unique @map("external_id")
+  title                      String
+  startAt                    DateTime           @map("start_at")
+  endAt                      DateTime           @map("end_at")
+  isBlock                    Boolean            @default(false) @map("is_block")
+  eventType                  Int                @map("event_type")
+  scheduledBy                Int                @map("scheduled_by")
+  status                     Int
+  hasPatient                 Boolean            @map("has_patient")
+  hasWaitingRoom             Boolean?           @map("has_waiting_room")
+  insuranceId                Int?               @map("insurance_id")
+  insuranceName              String?            @map("insurance_name")
+  comments                   String?
+  serviceId                  Int                @map("service_id")
+  serviceName                String             @map("service_name")
+  eventServices              Json?              @map("event_services")
+  serviceColorSchemaId       Int                @map("service_color_schema_id")
+  serviceIsDeleted           Boolean            @default(false) @map("service_is_deleted")
+  attendance                 Int                @default(0)
+  patientExternalId          Int                @map("patient_external_id")
+  patientReferenceId         String             @map("patient_reference_id")
+  patientPhone               String?            @map("patient_phone")
+  patientEmail               String?            @map("patient_email")
+  patientBirthDate           DateTime?          @map("patient_birth_date")
+  patientArrivalTime         DateTime?          @map("patient_arrival_time")
+  isPatientFirstTime         Boolean            @default(false) @map("is_patient_first_time")
+  isPatientFirstAdminBooking Boolean            @default(false) @map("is_patient_first_admin_booking")
+  isBookedViaSecretaryAi     Boolean            @default(false) @map("is_booked_via_secretary_ai")
+  onlinePaymentType          String?            @map("online_payment_type")
+  onlinePaymentStatus        String?            @map("online_payment_status")
+  isPaidOnline               Boolean            @default(false) @map("is_paid_online")
+  communicationChannel       String?            @map("communication_channel")
+  fake                       Boolean            @default(false)
+  isEventWithVoucher         Boolean            @default(false) @map("is_event_with_voucher")
+  duration                   Int
+  canNotifyPatient           Boolean            @map("can_notify_patient")
+  noShowProtection           Boolean            @default(false) @map("no_show_protection")
+  createdAt                  DateTime           @default(now()) @map("created_at")
+  updatedAt                  DateTime           @default(now()) @updatedAt @map("updated_at")
+  schedule                   DoctoraliaSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, externalId])
+  @@index([scheduleId])
+  @@index([startAt])
+  @@index([patientExternalId])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("doctoralia_calendar_appointments")
+}
+
+model DoctoraliaWorkPeriod {
+  id         Int                @id @default(autoincrement())
+  scheduleId Int                @map("schedule_id")
+  startAt    DateTime           @map("start_at")
+  endAt      DateTime           @map("end_at")
+  isPrivate  Boolean            @default(false) @map("is_private")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  schedule   DoctoraliaSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId])
+  @@index([startAt])
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@map("doctoralia_work_periods")
+}
+
+model DoctoraliaCalendarSyncLog {
+  id                 Int       @id @default(autoincrement())
+  triggerSource      String?   @map("trigger_source")
+  triggerUserId      Int?      @map("trigger_user_id")
+  status             String    @default("PENDING")
+  startedAt          DateTime  @default(now()) @map("started_at")
+  endedAt            DateTime? @map("ended_at")
+  schedulesSynced    Int       @default(0) @map("schedules_synced")
+  appointmentsSynced Int       @default(0) @map("appointments_synced")
+  workPeriodsSynced  Int       @default(0) @map("work_periods_synced")
+  errorMessage       String?   @map("error_message")
+
+  @@index([startedAt(sort: Desc)])
+  @@deny('all', auth() == null)
+  @@allow('read', auth() != null)
+
+  @@map("doctoralia_calendar_sync_logs")
+}
+
+// ============================================================
 // HAULMER INTEGRATION
 // ============================================================
 
 model HaulmerSyncLog {
-  id               String    @id @default(uuid())
-  period           String    @db.VarChar(6)                        // YYYYMM format (e.g., "202602")
-  rut              String    @db.VarChar(20)                       // Haulmer RUT
-  docType          String    @map("doc_type") @db.VarChar(20)      // "sales" | "purchases"
-  status           String    @default("PENDING") @db.VarChar(20)   // PENDING | SUCCESS | FAILED
-  rowsCreated      Int       @default(0) @map("rows_created")
-  rowsUpdated      Int       @default(0) @map("rows_updated")
-  rowsSkipped      Int       @default(0) @map("rows_skipped")
-  csvSize          Int?      @map("csv_size")                      // Size of CSV file in bytes
-  errorMessage     String?   @map("error_message")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  period       String   @db.VarChar(6)                        // YYYYMM format (e.g., "202602")
+  rut          String   @db.VarChar(20)                       // Haulmer RUT
+  docType      String   @map("doc_type") @db.VarChar(20)      // "sales" | "purchases"
+  status       String   @default("PENDING") @db.VarChar(20)   // PENDING | SUCCESS | FAILED
+  rowsCreated  Int      @default(0) @map("rows_created")
+  rowsUpdated  Int      @default(0) @map("rows_updated")
+  rowsSkipped  Int      @default(0) @map("rows_skipped")
+  csvSize      Int?     @map("csv_size")                      // Size of CSV file in bytes
+  errorMessage String?  @map("error_message")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@index([period])
   @@index([rut])

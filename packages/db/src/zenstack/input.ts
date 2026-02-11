@@ -30,7 +30,7 @@ import type {
   UpsertArgs as $UpsertArgs,
   WhereInput as $WhereInput,
 } from "@zenstackhq/orm";
-import type { SchemaType as $Schema } from "./schema-lite.js";
+import type { SchemaType as $Schema } from "./schema-lite";
 export type PersonFindManyArgs = $FindManyArgs<$Schema, "Person">;
 export type PersonFindUniqueArgs = $FindUniqueArgs<$Schema, "Person">;
 export type PersonFindFirstArgs = $FindFirstArgs<$Schema, "Person">;
@@ -1294,6 +1294,204 @@ export type DoctoraliaSyncLogGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "DoctoraliaSyncLog", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "DoctoraliaSyncLog", Args, Options>;
+export type DoctoraliaScheduleFindManyArgs = $FindManyArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleFindUniqueArgs = $FindUniqueArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleFindFirstArgs = $FindFirstArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleExistsArgs = $ExistsArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleCreateArgs = $CreateArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleCreateManyArgs = $CreateManyArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "DoctoraliaSchedule"
+>;
+export type DoctoraliaScheduleUpdateArgs = $UpdateArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleUpdateManyArgs = $UpdateManyArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "DoctoraliaSchedule"
+>;
+export type DoctoraliaScheduleUpsertArgs = $UpsertArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleDeleteArgs = $DeleteArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleDeleteManyArgs = $DeleteManyArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleCountArgs = $CountArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleAggregateArgs = $AggregateArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleGroupByArgs = $GroupByArgs<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleWhereInput = $WhereInput<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleSelect = $SelectInput<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleInclude = $IncludeInput<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleOmit = $OmitInput<$Schema, "DoctoraliaSchedule">;
+export type DoctoraliaScheduleGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "DoctoraliaSchedule", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "DoctoraliaSchedule", Args, Options>;
+export type DoctoraliaCalendarAppointmentFindManyArgs = $FindManyArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentFindUniqueArgs = $FindUniqueArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentFindFirstArgs = $FindFirstArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentExistsArgs = $ExistsArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentCreateArgs = $CreateArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentCreateManyArgs = $CreateManyArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentUpdateArgs = $UpdateArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentUpdateManyArgs = $UpdateManyArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentUpsertArgs = $UpsertArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentDeleteArgs = $DeleteArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentDeleteManyArgs = $DeleteManyArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentCountArgs = $CountArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentAggregateArgs = $AggregateArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentGroupByArgs = $GroupByArgs<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentWhereInput = $WhereInput<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentSelect = $SelectInput<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentInclude = $IncludeInput<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentOmit = $OmitInput<
+  $Schema,
+  "DoctoraliaCalendarAppointment"
+>;
+export type DoctoraliaCalendarAppointmentGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "DoctoraliaCalendarAppointment", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "DoctoraliaCalendarAppointment", Args, Options>;
+export type DoctoraliaWorkPeriodFindManyArgs = $FindManyArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodFindUniqueArgs = $FindUniqueArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodFindFirstArgs = $FindFirstArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodExistsArgs = $ExistsArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodCreateArgs = $CreateArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodCreateManyArgs = $CreateManyArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "DoctoraliaWorkPeriod"
+>;
+export type DoctoraliaWorkPeriodUpdateArgs = $UpdateArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodUpdateManyArgs = $UpdateManyArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "DoctoraliaWorkPeriod"
+>;
+export type DoctoraliaWorkPeriodUpsertArgs = $UpsertArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodDeleteArgs = $DeleteArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodDeleteManyArgs = $DeleteManyArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodCountArgs = $CountArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodAggregateArgs = $AggregateArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodGroupByArgs = $GroupByArgs<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodWhereInput = $WhereInput<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodSelect = $SelectInput<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodInclude = $IncludeInput<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodOmit = $OmitInput<$Schema, "DoctoraliaWorkPeriod">;
+export type DoctoraliaWorkPeriodGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "DoctoraliaWorkPeriod", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "DoctoraliaWorkPeriod", Args, Options>;
+export type DoctoraliaCalendarSyncLogFindManyArgs = $FindManyArgs<
+  $Schema,
+  "DoctoraliaCalendarSyncLog"
+>;
+export type DoctoraliaCalendarSyncLogFindUniqueArgs = $FindUniqueArgs<
+  $Schema,
+  "DoctoraliaCalendarSyncLog"
+>;
+export type DoctoraliaCalendarSyncLogFindFirstArgs = $FindFirstArgs<
+  $Schema,
+  "DoctoraliaCalendarSyncLog"
+>;
+export type DoctoraliaCalendarSyncLogExistsArgs = $ExistsArgs<$Schema, "DoctoraliaCalendarSyncLog">;
+export type DoctoraliaCalendarSyncLogCreateArgs = $CreateArgs<$Schema, "DoctoraliaCalendarSyncLog">;
+export type DoctoraliaCalendarSyncLogCreateManyArgs = $CreateManyArgs<
+  $Schema,
+  "DoctoraliaCalendarSyncLog"
+>;
+export type DoctoraliaCalendarSyncLogCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "DoctoraliaCalendarSyncLog"
+>;
+export type DoctoraliaCalendarSyncLogUpdateArgs = $UpdateArgs<$Schema, "DoctoraliaCalendarSyncLog">;
+export type DoctoraliaCalendarSyncLogUpdateManyArgs = $UpdateManyArgs<
+  $Schema,
+  "DoctoraliaCalendarSyncLog"
+>;
+export type DoctoraliaCalendarSyncLogUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "DoctoraliaCalendarSyncLog"
+>;
+export type DoctoraliaCalendarSyncLogUpsertArgs = $UpsertArgs<$Schema, "DoctoraliaCalendarSyncLog">;
+export type DoctoraliaCalendarSyncLogDeleteArgs = $DeleteArgs<$Schema, "DoctoraliaCalendarSyncLog">;
+export type DoctoraliaCalendarSyncLogDeleteManyArgs = $DeleteManyArgs<
+  $Schema,
+  "DoctoraliaCalendarSyncLog"
+>;
+export type DoctoraliaCalendarSyncLogCountArgs = $CountArgs<$Schema, "DoctoraliaCalendarSyncLog">;
+export type DoctoraliaCalendarSyncLogAggregateArgs = $AggregateArgs<
+  $Schema,
+  "DoctoraliaCalendarSyncLog"
+>;
+export type DoctoraliaCalendarSyncLogGroupByArgs = $GroupByArgs<
+  $Schema,
+  "DoctoraliaCalendarSyncLog"
+>;
+export type DoctoraliaCalendarSyncLogWhereInput = $WhereInput<$Schema, "DoctoraliaCalendarSyncLog">;
+export type DoctoraliaCalendarSyncLogSelect = $SelectInput<$Schema, "DoctoraliaCalendarSyncLog">;
+export type DoctoraliaCalendarSyncLogInclude = $IncludeInput<$Schema, "DoctoraliaCalendarSyncLog">;
+export type DoctoraliaCalendarSyncLogOmit = $OmitInput<$Schema, "DoctoraliaCalendarSyncLog">;
+export type DoctoraliaCalendarSyncLogGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "DoctoraliaCalendarSyncLog", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "DoctoraliaCalendarSyncLog", Args, Options>;
 export type HaulmerSyncLogFindManyArgs = $FindManyArgs<$Schema, "HaulmerSyncLog">;
 export type HaulmerSyncLogFindUniqueArgs = $FindUniqueArgs<$Schema, "HaulmerSyncLog">;
 export type HaulmerSyncLogFindFirstArgs = $FindFirstArgs<$Schema, "HaulmerSyncLog">;
