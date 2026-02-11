@@ -99,6 +99,35 @@ export const DoctoraliaStatusResponseSchema = z.strictObject({
   status: z.literal("ok"),
 });
 
+export const DoctoraliaCalendarAppointmentSchema = z.strictObject({
+  comments: z.string().nullable(),
+  endAt: z.coerce.date(),
+  externalId: z.number(),
+  id: z.number(),
+  patientExternalId: z.number(),
+  schedule: z.strictObject({
+    displayName: z.string(),
+    externalId: z.number(),
+  }),
+  serviceName: z.string(),
+  startAt: z.coerce.date(),
+  status: z.number(),
+  title: z.string(),
+});
+
+export const DoctoraliaCalendarAppointmentsResponseSchema = z.strictObject({
+  data: z.strictObject({
+    appointments: z.array(DoctoraliaCalendarAppointmentSchema),
+    count: z.number(),
+    filters: z.strictObject({
+      from: z.string(),
+      scheduleIds: z.array(z.number()),
+      to: z.string(),
+    }),
+  }),
+  status: z.literal("ok"),
+});
+
 export const DoctoraliaSyncLogSchema = z.strictObject({
   bookingsSynced: z.number(),
   doctorsSynced: z.number(),

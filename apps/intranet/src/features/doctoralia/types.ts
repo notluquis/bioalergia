@@ -106,6 +106,35 @@ export interface DoctoraliaStatusResponse {
   status: "ok";
 }
 
+export interface DoctoraliaCalendarAppointment {
+  comments: null | string;
+  endAt: Date;
+  externalId: number;
+  id: number;
+  patientExternalId: number;
+  schedule: {
+    displayName: string;
+    externalId: number;
+  };
+  serviceName: string;
+  startAt: Date;
+  status: number;
+  title: string;
+}
+
+export interface DoctoraliaCalendarAppointmentsResponse {
+  data: {
+    appointments: DoctoraliaCalendarAppointment[];
+    count: number;
+    filters: {
+      from: string;
+      scheduleIds: number[];
+      to: string;
+    };
+  };
+  status: "ok";
+}
+
 export interface DoctoraliaSyncLog {
   bookingsSynced: number;
   doctorsSynced: number;
@@ -158,4 +187,10 @@ export interface DoctoraliaSlotQuery {
   end: string;
   facilityId: string;
   start: string;
+}
+
+export interface DoctoraliaCalendarAppointmentsQuery {
+  from: string;
+  scheduleIds?: number[];
+  to: string;
 }

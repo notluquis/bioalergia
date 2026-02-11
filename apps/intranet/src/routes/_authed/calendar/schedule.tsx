@@ -49,6 +49,10 @@ export const Route = createFileRoute("/_authed/calendar/schedule")({
 
   loaderDeps: ({ search }) => search,
   loader: async ({ context, deps: search }) => {
+    if (search.source === "doctoralia") {
+      return;
+    }
+
     const defaults = computeDefaultFilters({});
     const filters: CalendarFilters = {
       calendarIds: search.calendarId ?? [],

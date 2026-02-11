@@ -4,6 +4,7 @@ export const calendarSearchSchema = z.object({
   from: z.string().optional().catch(undefined),
   to: z.string().optional().catch(undefined),
   date: z.string().optional().catch(undefined),
+  source: z.enum(["doctoralia", "google"]).optional().catch(undefined),
   search: z.string().optional().catch(undefined),
   maxDays: z.coerce.number().optional().catch(undefined),
   calendarId: z.array(z.string()).optional().catch(undefined),

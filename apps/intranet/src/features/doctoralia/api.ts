@@ -8,6 +8,7 @@ import { apiClient } from "@/lib/api-client";
 import {
   BookingResponseSchema,
   DoctoraliaBookingsResponseSchema,
+  DoctoraliaCalendarAppointmentsResponseSchema,
   DoctoraliaDoctorsResponseSchema,
   DoctoraliaFacilitiesResponseSchema,
   DoctoraliaSlotsResponseSchema,
@@ -21,6 +22,9 @@ import type {
   DoctoraliaBooking,
   DoctoraliaBookingQuery,
   DoctoraliaBookingsResponse,
+  DoctoraliaCalendarAppointment,
+  DoctoraliaCalendarAppointmentsQuery,
+  DoctoraliaCalendarAppointmentsResponse,
   DoctoraliaDoctor,
   DoctoraliaDoctorsResponse,
   DoctoraliaFacilitiesResponse,
@@ -160,6 +164,28 @@ export async function fetchDoctoraliaStatus(): Promise<{
     configured: response.configured,
     domain: response.domain,
   };
+}
+
+export async function fetchDoctoraliaCalendarAppointments(
+  query: DoctoraliaCalendarAppointmentsQuery,
+): Promise<DoctoraliaCalendarAppointment[]> {
+  const response = await apiClient.get<DoctoraliaCalendarAppointmentsResponse>(
+    "/api/doctoralia/calendar/appointments",
+    {
+      query: {
+        from: query.from,
+        to: query.to,
+        scheduleId: query.scheduleIds?.length ? query.scheduleIds : undefined,
+      },
+      responseSchema: DoctoraliaCalendarAppointmentsResponseSchema,
+    },
+  );
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener las citas de Doctoralia");
+  }
+
+  return response.data.appointments;
 }
 
 // ============================================================

@@ -225,11 +225,12 @@ function useCalendarSync(queryClient: ReturnType<typeof useQueryClient>) {
   };
 }
 
-export function useCalendarEvents() {
+export function useCalendarEvents(options?: { enabled?: boolean }) {
   const { settings } = useSettings();
   const queryClient = useQueryClient();
   const rawSearch = useSearch({ strict: false });
   const search = calendarSearchSchema.parse(rawSearch);
+  const enabled = options?.enabled ?? true;
 
   const computeDefaults = () =>
     computeDefaultFilters({
@@ -243,7 +244,7 @@ export function useCalendarEvents() {
   const effectiveApplied = deriveEffectiveFilters(search, defaults);
 
   const normalizedApplied = normalizeFilters(effectiveApplied);
-  const shouldFetch = Boolean(normalizedApplied.from && normalizedApplied.to);
+  const shouldFetch = enabled && Boolean(normalizedApplied.from && normalizedApplied.to);
 
   const summaryQuery = useQuery<CalendarSummary>({
     queryFn: shouldFetch ? () => fetchCalendarSummary(normalizedApplied) : skipToken,

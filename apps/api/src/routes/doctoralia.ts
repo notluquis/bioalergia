@@ -358,6 +358,15 @@ const calendarSyncSchema = z.object({
   scheduleIds: z.array(z.number()).optional(),
 });
 
+const doctoraliaCalendarAppointmentsQuerySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  scheduleId: z
+    .union([z.array(z.coerce.number().int().positive()), z.coerce.number().int().positive()])
+    .optional()
+    .transform((value) => (value == null ? [] : Array.isArray(value) ? value : [value])),
+});
+
 const calendarAlertsQuerySchema = z.object({
   alertType: z.coerce.number().int().positive().optional().default(3),
 });
@@ -417,6 +426,84 @@ doctoraliaRoutes.post(
     } catch (error) {
       const message = error instanceof Error ? error.message : "Error desconocido";
       console.error("[DoctoraliaCalendar] Sync error:", error);
+      return reply(c, { status: "error", message }, 500);
+    }
+  },
+);
+
+doctoraliaRoutes.get(
+  "/calendar/appointments",
+  requireAuth,
+  zValidator("query", doctoraliaCalendarAppointmentsQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canRead = await hasPermission(user.id, "read", "DoctoraliaFacility");
+    if (!canRead) {
+      return reply(c, { status: "error", message: "Sin permisos" }, 403);
+    }
+
+    const { from, scheduleId, to } = c.req.valid("query");
+
+    try {
+      const { db } = await import("@finanzas/db");
+      const fromDate = new Date(`${from}T00:00:00.000Z`);
+      const toDateExclusive = new Date(`${to}T23:59:59.999Z`);
+
+      const appointments = await db.DoctoraliaCalendarAppointment.findMany({
+        where: {
+          ...(scheduleId.length > 0
+            ? {
+                schedule: {
+                  externalId: {
+                    in: scheduleId,
+                  },
+                },
+              }
+            : {}),
+          startAt: {
+            gte: fromDate,
+            lte: toDateExclusive,
+          },
+        },
+        orderBy: [{ startAt: "asc" }],
+        select: {
+          id: true,
+          externalId: true,
+          title: true,
+          startAt: true,
+          endAt: true,
+          status: true,
+          comments: true,
+          serviceName: true,
+          patientExternalId: true,
+          schedule: {
+            select: {
+              externalId: true,
+              displayName: true,
+            },
+          },
+        },
+      });
+
+      return reply(c, {
+        status: "ok",
+        data: {
+          appointments,
+          count: appointments.length,
+          filters: {
+            from,
+            to,
+            scheduleIds: scheduleId,
+          },
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Error desconocido";
+      console.error("[DoctoraliaCalendar] List appointments error:", error);
       return reply(c, { status: "error", message }, 500);
     }
   },

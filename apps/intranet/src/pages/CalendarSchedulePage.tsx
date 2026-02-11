@@ -1,4 +1,5 @@
-import { ButtonGroup, Chip, Surface } from "@heroui/react";
+import { ButtonGroup, Chip, Label, ListBox, Select, Surface } from "@heroui/react";
+import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -9,6 +10,8 @@ import { CalendarFiltersPopover } from "@/features/calendar/components/CalendarF
 import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleton";
 import { ScheduleCalendar } from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
+import type { CalendarEventDetail } from "@/features/calendar/types";
+import { fetchDoctoraliaCalendarAppointments } from "@/features/doctoralia/api";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { numberFormatter } from "@/lib/format";
 
@@ -20,6 +23,37 @@ dayjs.locale("es");
 
 const DATE_FORMAT = "YYYY-MM-DD";
 
+function toCalendarEventDetail(
+  appointments: Awaited<ReturnType<typeof fetchDoctoraliaCalendarAppointments>>,
+): CalendarEventDetail[] {
+  return appointments.map((appointment) => ({
+    calendarId: `doctoralia:${appointment.schedule.externalId}`,
+    category: null,
+    colorId: null,
+    controlIncluded: null,
+    description: appointment.comments,
+    endDate: appointment.endAt.toISOString().split("T")[0] ?? null,
+    endDateTime: appointment.endAt.toISOString(),
+    endTimeZone: null,
+    eventCreatedAt: null,
+    eventDate: appointment.startAt.toISOString().split("T")[0] ?? appointment.startAt.toISOString(),
+    eventDateTime: appointment.startAt.toISOString(),
+    eventId: String(appointment.externalId),
+    eventType: "doctoralia",
+    eventUpdatedAt: null,
+    hangoutLink: null,
+    location: appointment.schedule.displayName,
+    rawEvent: appointment,
+    startDate: appointment.startAt.toISOString().split("T")[0] ?? null,
+    startDateTime: appointment.startAt.toISOString(),
+    startTimeZone: null,
+    status: String(appointment.status),
+    summary: appointment.title,
+    transparency: null,
+    visibility: null,
+  }));
+}
+
 // Logic moved to validateSearch in route, but we still use it for comparison logic
 const getActualWeekStart = () => {
   const today = dayjs();
@@ -30,11 +64,36 @@ const getActualWeekStart = () => {
 function CalendarSchedulePage() {
   const navigate = routeApi.useNavigate();
   const search = routeApi.useSearch();
+  const source = search.source ?? "google";
+  const isGoogleSource = source === "google";
 
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
   const { appliedFilters, availableCategories, daily, defaults, loading, summary } =
-    useCalendarEvents();
+    useCalendarEvents({ enabled: isGoogleSource });
+
+  const doctoraliaScheduleIds =
+    search.calendarId?.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0) ?? [];
+
+  const { data: doctoraliaEvents = [], isLoading: doctoraliaLoading } = useQuery({
+    enabled: source === "doctoralia" && Boolean(search.from) && Boolean(search.to),
+    queryFn: async () => {
+      const appointments = await fetchDoctoraliaCalendarAppointments({
+        from: search.from!,
+        to: search.to!,
+        scheduleIds: doctoraliaScheduleIds.length > 0 ? doctoraliaScheduleIds : undefined,
+      });
+      return toCalendarEventDetail(appointments);
+    },
+    queryKey: [
+      "doctoralia",
+      "calendar",
+      "appointments",
+      search.from,
+      search.to,
+      doctoraliaScheduleIds,
+    ],
+  });
 
   // Local state for filter draft (not applicable until the user clicks Apply)
   const [draftFilters, setDraftFilters] = React.useState(appliedFilters);
@@ -54,7 +113,9 @@ function CalendarSchedulePage() {
 
   // The hook already filters events by the 'from'/'to' range in the URL.
   // No need to re-filter on the client.
-  const displayedWeekEvents = daily?.days.flatMap((day) => day.events) ?? [];
+  const displayedWeekEvents = isGoogleSource
+    ? (daily?.days.flatMap((day) => day.events) ?? [])
+    : doctoraliaEvents;
 
   // Navigation helpers
   const rangeLabel = currentDisplayed.isValid()
@@ -136,50 +197,92 @@ function CalendarSchedulePage() {
 
           {/* Right: Event count + Filter toggle */}
           <div className="flex items-center gap-3">
-            {summary && (
-              <span className="text-default-400 text-xs">
-                {numberFormatter.format(summary.totals.events)} eventos
-              </span>
-            )}
-            <CalendarFiltersPopover
-              applyCount={displayedWeekEvents.length}
-              availableCategories={availableCategories}
-              className="shadow-lg"
-              filters={draftFilters}
-              isDirty={JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters)}
-              isOpen={filtersOpen}
-              layout="dropdown"
-              loading={loading}
-              onApply={() => {
-                void navigate({
-                  search: {
-                    ...search,
-                    calendarId: draftFilters.calendarIds?.length
-                      ? draftFilters.calendarIds
-                      : undefined,
-                    category: draftFilters.categories,
-                    search: draftFilters.search || undefined,
-                  },
-                });
-                setFiltersOpen(false);
-              }}
-              onFilterChange={(key, value) => {
-                setDraftFilters((prev) => ({ ...prev, [key]: value }));
-              }}
-              onOpenChange={setFiltersOpen}
-              onReset={() => {
-                setDraftFilters(defaults);
+            <Select
+              className="min-w-44"
+              selectedKey={source}
+              onSelectionChange={(key) => {
+                const nextSource = String(key);
                 void navigate({
                   search: (prev) => ({
                     ...prev,
-                    calendarId: undefined,
-                    category: [],
-                    search: undefined,
+                    source: nextSource === "google" ? undefined : "doctoralia",
+                    ...(nextSource === "doctoralia"
+                      ? {
+                          calendarId: undefined,
+                          category: [],
+                          search: undefined,
+                        }
+                      : {}),
                   }),
                 });
               }}
-              showSearch
-            />
+            >
+              <Label className="font-medium text-default-500 text-xs">Fuente</Label>
+              <Select.Trigger>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover>
+                <ListBox>
+                  <ListBox.Item id="google" textValue="Google Calendar">
+                    Google Calendar
+                  </ListBox.Item>
+                  <ListBox.Item id="doctoralia" textValue="Doctoralia Calendar">
+                    Doctoralia Calendar
+                  </ListBox.Item>
+                </ListBox>
+              </Select.Popover>
+            </Select>
+
+            {(isGoogleSource ? summary : true) && (
+              <span className="text-default-400 text-xs">
+                {numberFormatter.format(
+                  isGoogleSource ? (summary?.totals.events ?? 0) : displayedWeekEvents.length,
+                )}{" "}
+                eventos
+              </span>
+            )}
+            {isGoogleSource && (
+              <CalendarFiltersPopover
+                applyCount={displayedWeekEvents.length}
+                availableCategories={availableCategories}
+                className="shadow-lg"
+                filters={draftFilters}
+                isDirty={JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters)}
+                isOpen={filtersOpen}
+                layout="dropdown"
+                loading={loading}
+                onApply={() => {
+                  void navigate({
+                    search: {
+                      ...search,
+                      calendarId: draftFilters.calendarIds?.length
+                        ? draftFilters.calendarIds
+                        : undefined,
+                      category: draftFilters.categories,
+                      search: draftFilters.search || undefined,
+                    },
+                  });
+                  setFiltersOpen(false);
+                }}
+                onFilterChange={(key, value) => {
+                  setDraftFilters((prev) => ({ ...prev, [key]: value }));
+                }}
+                onOpenChange={setFiltersOpen}
+                onReset={() => {
+                  setDraftFilters(defaults);
+                  void navigate({
+                    search: (prev) => ({
+                      ...prev,
+                      calendarId: undefined,
+                      category: [],
+                      search: undefined,
+                    }),
+                  });
+                }}
+                showSearch
+              />
+            )}
           </div>
         </div>
 
@@ -198,14 +301,14 @@ function CalendarSchedulePage() {
         className="mt-3 overflow-hidden rounded-3xl border border-default-100 shadow-sm"
         variant="default"
       >
-        {loading && !displayedWeekEvents.length ? (
+        {(isGoogleSource ? loading : doctoraliaLoading) && !displayedWeekEvents.length ? (
           <div className="p-6">
             <CalendarSkeleton days={6} />
           </div>
         ) : (
           <ScheduleCalendar
             events={displayedWeekEvents}
-            loading={loading}
+            loading={isGoogleSource ? loading : doctoraliaLoading}
             weekStart={currentWeekStartStr}
           />
         )}
