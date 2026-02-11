@@ -172,7 +172,7 @@ export function AddUserPage() {
         }}
       >
         {isPeoplePermissionDenied ? (
-          <div className="rounded-xl border border-warning/20 bg-warning/5 p-4 text-warning-700 text-sm">
+          <div className="rounded-xl border border-warning/20 bg-warning/5 p-4 text-sm text-warning-700">
             No tienes permiso para ver personas existentes. Puedes crear el usuario sin vincularlo a
             una persona.
           </div>
