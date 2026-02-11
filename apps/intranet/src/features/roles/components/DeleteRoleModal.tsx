@@ -138,8 +138,8 @@ function DeleteRoleForm({
                 aria-label="Seleccionar rol de destino"
                 className="w-full"
                 placeholder="Seleccionar rol..."
-                selectedKey={targetRoleId}
-                onSelectionChange={(key) => setTargetRoleId(key ? String(key) : "")}
+                value={targetRoleId}
+                onChange={(key) => setTargetRoleId(key ? String(key) : "")}
               >
                 {availableRoles.map((r) => (
                   <SelectItem id={r.id.toString()} key={r.id} textValue={r.name}>

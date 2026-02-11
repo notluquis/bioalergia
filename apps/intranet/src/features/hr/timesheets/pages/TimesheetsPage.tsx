@@ -79,8 +79,8 @@ export function TimesheetsPage() {
               isDisabled={activeEmployees.length === 0}
               label="Prestador"
               placeholder="Seleccionar..."
-              selectedKey={selectedEmployeeId ? String(selectedEmployeeId) : null}
-              onSelectionChange={(key) => {
+              value={selectedEmployeeId ? String(selectedEmployeeId) : null}
+              onChange={(key) => {
                 const value = key ? Number(key) : null;
                 setSelectedEmployeeId(value);
               }}
@@ -96,8 +96,8 @@ export function TimesheetsPage() {
             <Select
               className="w-full"
               label="Periodo"
-              selectedKey={month}
-              onSelectionChange={(key) => {
+              value={month}
+              onChange={(key) => {
                 if (key) {
                   setMonth(key.toString());
                 }

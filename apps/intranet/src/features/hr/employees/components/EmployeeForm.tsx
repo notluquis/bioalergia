@@ -273,13 +273,13 @@ function EmployeeFormContent({
         <div className="md:col-span-3">
           <Select
             label="Tipo de salario"
-            onSelectionChange={(key) => {
+            onChange={(key) => {
               if (!key) {
                 return;
               }
               setForm((prev) => ({ ...prev, salaryType: String(key) }));
             }}
-            selectedKey={form.salaryType}
+            value={form.salaryType}
           >
             <SelectItem id="HOURLY" key="HOURLY">
               Por hora

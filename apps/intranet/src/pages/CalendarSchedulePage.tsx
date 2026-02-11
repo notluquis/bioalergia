@@ -218,8 +218,8 @@ function CalendarSourceSelector({
     <Select
       className="min-w-44"
       isDisabled={isDisabled}
-      selectedKey={source}
-      onSelectionChange={(key) => onSourceChange(String(key))}
+      value={source}
+      onChange={(key) => onSourceChange(String(key))}
     >
       <Label className="font-medium text-default-500 text-xs">Fuente</Label>
       <Select.Trigger>

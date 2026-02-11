@@ -258,8 +258,8 @@ export function UserManagementPage() {
             <Select
               aria-label="Filtrar por rol"
               className="w-full"
-              selectedKey={roleFilter}
-              onSelectionChange={(key) => {
+              value={roleFilter}
+              onChange={(key) => {
                 if (key) {
                   setRoleFilter(key.toString());
                 }
@@ -317,8 +317,8 @@ export function UserManagementPage() {
               aria-label="Rol asignado"
               className="w-full"
               placeholder="Seleccionar rol"
-              selectedKey={selectedRole}
-              onSelectionChange={(key) => {
+              value={selectedRole}
+              onChange={(key) => {
                 if (key) {
                   setSelectedRole(key.toString());
                 }

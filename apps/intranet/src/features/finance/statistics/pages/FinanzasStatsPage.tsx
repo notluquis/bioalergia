@@ -165,8 +165,8 @@ export function FinanzasStatsPage() {
         <div className="form-control">
           <Select
             className="w-full"
-            selectedKey={quickRange}
-            onSelectionChange={(key) => handleQuickRangeChange(key as string)}
+            value={quickRange}
+            onChange={(key) => handleQuickRangeChange(key as string)}
           >
             <Label className="font-medium text-xs">Intervalo rápido</Label>
             <Select.Trigger>

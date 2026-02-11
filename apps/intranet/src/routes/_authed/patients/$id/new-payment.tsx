@@ -161,8 +161,8 @@ function NewPaymentPage() {
               {(field) => (
                 <Select
                   label="Método de Pago"
-                  selectedKey={field.state.value}
-                  onSelectionChange={(key) => {
+                  value={field.state.value}
+                  onChange={(key) => {
                     if (key) {
                       field.handleChange(key as PaymentForm["paymentMethod"]);
                     }
@@ -189,8 +189,8 @@ function NewPaymentPage() {
                 <Select
                   label="Vincular a Presupuesto (Opcional)"
                   placeholder="Seleccione un presupuesto"
-                  selectedKey={field.state.value}
-                  onSelectionChange={(key) => {
+                  value={field.state.value}
+                  onChange={(key) => {
                     field.handleChange(key ? String(key) : "");
                   }}
                 >

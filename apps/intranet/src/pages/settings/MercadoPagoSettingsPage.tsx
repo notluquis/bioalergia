@@ -365,8 +365,8 @@ export function MercadoPagoSettingsPage() {
             <div className="flex items-center gap-2">
               <Select
                 aria-label="Cantidad de filas"
-                selectedKey={String(reportPagination.pageSize)}
-                onSelectionChange={(key) => {
+                value={String(reportPagination.pageSize)}
+                onChange={(key) => {
                   const value = Number(key);
                   setReportPagination((prev) => ({
                     pageIndex: 0,
@@ -410,8 +410,8 @@ export function MercadoPagoSettingsPage() {
             </div>
             <Select
               aria-label="Cantidad de filas"
-              selectedKey={String(syncPagination.pageSize)}
-              onSelectionChange={(key) => {
+              value={String(syncPagination.pageSize)}
+              onChange={(key) => {
                 const value = Number(key);
                 setSyncPagination((prev) => ({
                   pageIndex: 0,

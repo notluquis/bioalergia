@@ -335,8 +335,8 @@ function ReportsFiltersPanel({
               <Select
                 label="Seleccionar mes"
                 className="w-full"
-                selectedKey={selectedMonth}
-                onSelectionChange={(key) => setSelectedMonth(key ? String(key) : "")}
+                value={selectedMonth}
+                onChange={(key) => setSelectedMonth(key ? String(key) : "")}
               >
                 {months.map((month) => (
                   <SelectItem id={month} key={month}>
@@ -394,8 +394,8 @@ function ReportsFiltersPanel({
             <Select
               label="Agrupación temporal"
               className="w-full"
-              selectedKey={granularity}
-              onSelectionChange={(key) => {
+              value={granularity}
+              onChange={(key) => {
                 if (key) {
                   setGranularity(key.toString() as ReportGranularity);
                 }

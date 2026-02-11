@@ -113,8 +113,8 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
             <Select
               label="Nombre del insumo"
               placeholder="Seleccione un insumo"
-              selectedKey={field.state.value || null}
-              onSelectionChange={(key) => {
+              value={field.state.value || null}
+              onChange={(key) => {
                 field.handleChange(key ? String(key) : "");
                 form.setFieldValue("selectedBrand", "");
                 form.setFieldValue("selectedModel", "");
@@ -163,8 +163,8 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
             <Select
               label="Marca"
               placeholder="Seleccione una marca"
-              selectedKey={field.state.value || null}
-              onSelectionChange={(key) => {
+              value={field.state.value || null}
+              onChange={(key) => {
                 field.handleChange(key ? String(key) : "");
                 form.setFieldValue("selectedModel", "");
               }}
@@ -189,8 +189,8 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
             <Select
               label="Modelo"
               placeholder="Seleccione un modelo"
-              selectedKey={field.state.value || null}
-              onSelectionChange={(key) => {
+              value={field.state.value || null}
+              onChange={(key) => {
                 field.handleChange(key ? String(key) : "");
               }}
               onBlur={field.handleBlur}

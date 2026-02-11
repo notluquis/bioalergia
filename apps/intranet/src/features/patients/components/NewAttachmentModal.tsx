@@ -104,8 +104,8 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
 
           <Select
             label="Categoría"
-            selectedKey={type}
-            onSelectionChange={(key) => {
+            value={type}
+            onChange={(key) => {
               if (key) {
                 setType(String(key));
               }

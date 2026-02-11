@@ -27,9 +27,9 @@ export const getColumns = (
         <Select
           aria-label="Rol en Aplicación"
           className="w-full max-w-xs"
+          value={mapping.app_role}
           placeholder="Seleccionar rol..."
-          selectedKey={mapping.app_role}
-          onSelectionChange={(key) => {
+          onChange={(key) => {
             if (key) {
               onRoleChange(mapping.employee_role, key.toString());
             }

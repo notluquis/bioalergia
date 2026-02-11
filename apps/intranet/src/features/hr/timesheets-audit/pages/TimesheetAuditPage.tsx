@@ -328,8 +328,8 @@ function PeriodSelectionPanel({
                   aria-label="Seleccionar mes"
                   className="max-w-xs flex-1"
                   placeholder="Seleccionar mes"
-                  selectedKey={selectedMonth}
-                  onSelectionChange={(key) => {
+                  value={selectedMonth}
+                  onChange={(key) => {
                     if (key) {
                       setSelectedMonth(key.toString());
                       setSelectedWeekKeys([]);

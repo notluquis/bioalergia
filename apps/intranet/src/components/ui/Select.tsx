@@ -39,25 +39,20 @@ function SelectBase<T extends object>({
   isInvalid,
   ...props
 }: SelectProps<T> & {
-  value?: HeroSelectProps<T>["selectedKey"];
-  onChange?: HeroSelectProps<T>["onSelectionChange"];
+  value?: HeroSelectProps<T>["value"];
+  onChange?: HeroSelectProps<T>["onChange"];
 }) {
   const hasError = isInvalid || Boolean(errorMessage);
   const hasValueProp = Object.hasOwn(props, "value");
 
-  // Map legacy value/onChange to HeroUI selectedKey/onSelectionChange if provided
+  // Map controlled value/onChange to HeroUI value/onChange
   const { value, onChange, ...restProps } = props;
   const mappedProps: HeroSelectProps<T> = { ...restProps };
   if (hasValueProp) {
-    if (value !== undefined && value !== "") {
-      mappedProps.selectedKey = value;
-    } else {
-      // For empty value, pass null to selectedKey to show placeholder
-      mappedProps.selectedKey = null;
-    }
+    mappedProps.value = value !== undefined && value !== "" ? value : null;
   }
   if (onChange) {
-    mappedProps.onSelectionChange = onChange;
+    mappedProps.onChange = onChange;
   }
 
   return (

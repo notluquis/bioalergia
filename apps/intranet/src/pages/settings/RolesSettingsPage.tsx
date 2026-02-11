@@ -195,8 +195,8 @@ export function RolesSettingsPage() {
               <Select
                 aria-label="Filtrar roles"
                 className="w-full max-w-50"
-                selectedKey={viewModeRole}
-                onSelectionChange={(key) => setViewModeRole(key ? key.toString() : "")}
+                value={viewModeRole}
+                onChange={(key) => setViewModeRole(key ? key.toString() : "")}
               >
                 <SelectItem id="all" textValue="Ver todos los roles">
                   Ver todos los roles

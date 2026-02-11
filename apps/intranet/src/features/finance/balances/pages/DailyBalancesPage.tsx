@@ -82,8 +82,8 @@ export function DailyBalances() {
                 <Select
                   className="w-full"
                   label="Mes rápido"
-                  selectedKey={quickRange}
-                  onSelectionChange={(key) => {
+                  value={quickRange}
+                  onChange={(key) => {
                     const value = key as string;
                     if (value === "custom") {
                       return;
