@@ -449,6 +449,26 @@ doctoraliaRoutes.get(
     const { from, scheduleId, to } = c.req.valid("query");
 
     try {
+      const staleThresholdMs = Number(
+        process.env.DOCTORALIA_CALENDAR_APPOINTMENTS_REFRESH_MS || "120000",
+      );
+      const { runDoctoraliaCalendarAutoSync } = await import(
+        "../lib/doctoralia/doctoralia-calendar-scheduler.js"
+      );
+      const { getSetting } = await import("../services/settings.js");
+      const lastSuccessAtRaw = await getSetting("doctoralia:calendar:lastSuccessAt");
+      const lastSuccessAt = lastSuccessAtRaw ? new Date(lastSuccessAtRaw).getTime() : 0;
+      const shouldRefresh =
+        !Number.isFinite(lastSuccessAt) ||
+        lastSuccessAt <= 0 ||
+        Date.now() - lastSuccessAt > staleThresholdMs;
+
+      if (shouldRefresh) {
+        void runDoctoraliaCalendarAutoSync({
+          trigger: "read-stale",
+        });
+      }
+
       const { db } = await import("@finanzas/db");
       const fromDate = new Date(`${from}T00:00:00.000Z`);
       const toDateExclusive = new Date(`${to}T23:59:59.999Z`);

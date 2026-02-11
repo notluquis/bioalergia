@@ -11,6 +11,11 @@ import type {
   DoctoraliaCalendarAlert,
   DoctoraliaCalendarResponse,
 } from "../lib/doctoralia/doctoralia-calendar-types";
+import { getSetting, updateSetting } from "./settings";
+
+const SETTINGS_KEYS = {
+  lastAlertId: "doctoralia:calendar:lastAlertId",
+};
 
 type UpsertSummary = {
   schedules: { inserted: number; updated: number; skipped: number };
@@ -209,9 +214,22 @@ export class DoctoraliaCalendarSyncService {
 
     try {
       const alerts = await getCalendarAlerts(alertType);
-      console.log(`[DoctoraliaSync] Retrieved ${alerts.length} alerts (alertType=${alertType})`);
+      const lastAlertIdRaw = await getSetting(SETTINGS_KEYS.lastAlertId);
+      const lastAlertId = Number(lastAlertIdRaw ?? "0");
+      const latestAlertId = alerts.reduce((maxId, alert) => Math.max(maxId, alert.id), 0);
+      const pendingAlerts = Number.isFinite(lastAlertId)
+        ? alerts.filter((alert) => alert.id > lastAlertId)
+        : alerts;
 
-      if (alerts.length === 0) {
+      console.log(
+        `[DoctoraliaSync] Retrieved ${alerts.length} alerts (pending=${pendingAlerts.length}, alertType=${alertType}, lastAlertId=${lastAlertId || 0})`,
+      );
+
+      if (pendingAlerts.length === 0) {
+        if (latestAlertId > 0 && latestAlertId !== lastAlertId) {
+          await updateSetting(SETTINGS_KEYS.lastAlertId, String(latestAlertId));
+        }
+
         await updateDoctoraliaSyncLog(syncLog.id, {
           status: "SUCCESS",
           schedulesSynced: 0,
@@ -221,7 +239,8 @@ export class DoctoraliaCalendarSyncService {
 
         return {
           success: true,
-          alertsFetched: 0,
+          alertsFetched: alerts.length,
+          pendingAlertsFetched: 0,
           schedules: { inserted: 0, updated: 0, skipped: 0 },
           appointments: { inserted: 0, updated: 0, skipped: 0 },
           workPeriods: { inserted: 0, updated: 0, skipped: 0 },
@@ -233,12 +252,12 @@ export class DoctoraliaCalendarSyncService {
 
       const scheduleIds = [
         ...new Set(
-          alerts
+          pendingAlerts
             .map((alert) => alert.params.scheduleId)
             .filter((scheduleId): scheduleId is number => Number.isFinite(scheduleId)),
         ),
       ];
-      const syncWindow = this.buildDateWindowFromAlerts(alerts);
+      const syncWindow = this.buildDateWindowFromAlerts(pendingAlerts);
 
       const summary: UpsertSummary = {
         schedules: { inserted: 0, updated: 0, skipped: 0 },
@@ -258,12 +277,16 @@ export class DoctoraliaCalendarSyncService {
         summary.workPeriods = upsertResult.workPeriods;
       }
 
-      const actionableAlerts = alerts.filter((alert) =>
+      const actionableAlerts = pendingAlerts.filter((alert) =>
         ["cancel-event-alert", "reschedule-event-alert", "event-confirmation-alert"].includes(
           alert.type,
         ),
       );
       const alertUpdates = await applyDoctoraliaAlertUpdates(actionableAlerts);
+
+      if (latestAlertId > 0 && latestAlertId !== lastAlertId) {
+        await updateSetting(SETTINGS_KEYS.lastAlertId, String(latestAlertId));
+      }
 
       await updateDoctoraliaSyncLog(syncLog.id, {
         status: "SUCCESS",
@@ -276,6 +299,7 @@ export class DoctoraliaCalendarSyncService {
       return {
         success: true,
         alertsFetched: alerts.length,
+        pendingAlertsFetched: pendingAlerts.length,
         ...summary,
         alertUpdates,
         syncWindow,
