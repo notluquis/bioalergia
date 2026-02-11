@@ -9,6 +9,7 @@
  */
 
 import { request } from "gaxios";
+import { logEvent, logWarn } from "../logger";
 
 const AUTH_BASE_URL = process.env.DOCTORALIA_CALENDAR_AUTH_BASE_URL || "https://l.doctoralia.cl";
 const AUTH_BOOTSTRAP_PATH = process.env.DOCTORALIA_CALENDAR_AUTH_BOOTSTRAP_PATH || "/";
@@ -53,6 +54,19 @@ type OAuthAttemptResult = {
   location: string;
   redirectUri: string;
 };
+
+function toSafeLocationDetails(location: string) {
+  if (!location) {
+    return { locationHost: "n/a", locationPath: "n/a" };
+  }
+
+  try {
+    const parsed = new URL(location, DOCPLANNER_BASE_URL);
+    return { locationHost: parsed.host, locationPath: parsed.pathname };
+  } catch {
+    return { locationHost: "invalid", locationPath: "invalid" };
+  }
+}
 
 /**
  * Check if calendar credentials are configured
@@ -177,6 +191,12 @@ async function performLogin(
   const responseCookies = getSetCookies(response.headers);
   const cookies = mergeCookies(bootstrapCookies, responseCookies);
   const location = extractLocationHeader(response);
+  const locationDetails = toSafeLocationDetails(location);
+  logEvent("doctoralia.calendar.auth.login.response", {
+    status: response.status,
+    hasSetCookie: responseCookies.length > 0,
+    ...locationDetails,
+  });
 
   if (response.status < 200 || response.status >= 400) {
     throw new Error(
@@ -216,10 +236,17 @@ async function assertSsoSessionIsAuthenticated(cookies: string[]) {
     html.includes("route_login");
 
   if (hasLoginForm) {
+    logWarn("doctoralia.calendar.auth.session.not_authenticated", {
+      status: response.status,
+    });
     throw new Error(
       "SSO login did not establish an authenticated session (check credentials, CAPTCHA/2FA, or anti-bot restrictions).",
     );
   }
+
+  logEvent("doctoralia.calendar.auth.session.authenticated", {
+    status: response.status,
+  });
 }
 
 async function verify2FA(
@@ -262,6 +289,12 @@ async function requestAuthProvider(): Promise<AuthProviderResponse> {
     throw new Error("Auth provider response missing url_login");
   }
 
+  logEvent("doctoralia.calendar.auth.provider.loaded", {
+    hasClientId: Boolean(response.data.client_id),
+    hasRedirectUri: Boolean(response.data.redirect_uri),
+    hasState: Boolean(response.data.state),
+  });
+
   return response.data;
 }
 
@@ -270,8 +303,15 @@ async function requestAuthorizationCode(ssoCookies: string[], provider: AuthProv
 
   let lastStatus = 0;
   let lastLocation = "";
-  for (const candidate of candidates) {
+  for (const [index, candidate] of candidates.entries()) {
     const result = await tryOAuthCandidate(ssoCookies, provider, candidate);
+    const locationDetails = toSafeLocationDetails(result.location);
+    logEvent("doctoralia.calendar.auth.oauth.attempt", {
+      attempt: index + 1,
+      status: result.status,
+      hasCode: Boolean(result.code),
+      ...locationDetails,
+    });
     if (result.code) {
       return {
         code: result.code,
@@ -283,6 +323,11 @@ async function requestAuthorizationCode(ssoCookies: string[], provider: AuthProv
     lastLocation = result.location;
   }
 
+  logWarn("doctoralia.calendar.auth.oauth.failed", {
+    attempts: candidates.length,
+    status: lastStatus,
+    ...toSafeLocationDetails(lastLocation),
+  });
   throw new Error(`OAuth code not found (status=${lastStatus}, location=${lastLocation || "n/a"})`);
 }
 
@@ -395,6 +440,7 @@ export async function getCalendarToken(twoFactorCode?: string): Promise<string> 
 
   // Return cached token if still valid (with 1 hour buffer)
   if (cachedToken && cachedToken.expiresAt > now + 3600_000) {
+    logEvent("doctoralia.calendar.auth.cache.hit", {});
     return cachedToken.token;
   }
 
@@ -408,6 +454,9 @@ export async function getCalendarToken(twoFactorCode?: string): Promise<string> 
   }
 
   const loginResult = await performLogin(username, password);
+  logEvent("doctoralia.calendar.auth.login.completed", {
+    requiresTwoFactor: loginResult.requiresTwoFactor,
+  });
 
   let ssoCookies = loginResult.cookies;
   if (loginResult.requiresTwoFactor) {
@@ -423,6 +472,9 @@ export async function getCalendarToken(twoFactorCode?: string): Promise<string> 
       loginResult.sessionId,
     );
     ssoCookies = mergeCookies(loginResult.cookies, twoFactorCookies);
+    logEvent("doctoralia.calendar.auth.2fa.completed", {
+      hasSessionId: Boolean(loginResult.sessionId),
+    });
   }
 
   await assertSsoSessionIsAuthenticated(ssoCookies);
