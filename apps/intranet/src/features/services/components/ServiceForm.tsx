@@ -247,7 +247,7 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
       ? 1
       : (form.monthsToGenerate ?? 12);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
     setError(null);

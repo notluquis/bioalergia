@@ -17,11 +17,11 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  Cell,
   Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
+  Sector,
   Tooltip,
   XAxis,
   YAxis,
@@ -462,11 +462,8 @@ function PieChartCard({
                 outerRadius={42}
                 paddingAngle={5}
                 dataKey="value"
-              >
-                {data.map((entry, index) => (
-                  <Cell key={entry.name} fill={colors[index % colors.length]} />
-                ))}
-              </Pie>
+                shape={(props, index) => <Sector {...props} fill={colors[index % colors.length]} />}
+              />
               <Tooltip />
               <Legend
                 verticalAlign="middle"

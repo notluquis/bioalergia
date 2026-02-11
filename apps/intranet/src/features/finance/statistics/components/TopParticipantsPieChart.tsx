@@ -2,7 +2,7 @@
  * Top Participants Pie Chart - Recharts Implementation
  */
 
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Pie, PieChart, ResponsiveContainer, Sector, Tooltip } from "recharts";
 
 import { fmtCLP } from "@/lib/format";
 
@@ -36,12 +36,8 @@ export function TopParticipantsPieChart({ data }: TopParticipantsPieChartProps) 
           label={(entry) => entry.name}
           labelLine={false}
           outerRadius={80}
-        >
-          {chartData.map((_, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: colors depend on index
-            <Cell fill={COLORS[index % COLORS.length]} key={`cell-${index}`} />
-          ))}
-        </Pie>
+          shape={(props, index) => <Sector {...props} fill={COLORS[index % COLORS.length]} />}
+        />
         <Tooltip
           contentStyle={{
             backgroundColor: "hsl(var(--b1))",

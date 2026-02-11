@@ -103,7 +103,7 @@ export function FinanzasStatsPage() {
     }
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     void refetch();
   };

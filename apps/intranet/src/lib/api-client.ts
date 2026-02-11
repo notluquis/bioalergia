@@ -27,7 +27,7 @@ function defaultErrorMessageByStatus(status: number): string {
   return "Ocurrió un error inesperado.";
 }
 
-function formatZodIssues(issues: z.ZodIssue[]): string {
+function formatZodIssues(issues: z.core.$ZodIssue[]): string {
   return issues.map(formatZodIssue).join(" | ");
 }
 
@@ -164,9 +164,10 @@ type NonJsonRequestOptions = Omit<RequestOptions, "responseSchema"> & {
   responseType: "blob" | "text";
 };
 
-const getIssuePath = (issue: z.ZodIssue) => (issue.path.length ? issue.path.join(".") : "root");
+const getIssuePath = (issue: z.core.$ZodIssue) =>
+  issue.path.length ? issue.path.join(".") : "root";
 
-const formatZodIssue = (issue: z.ZodIssue) => {
+const formatZodIssue = (issue: z.core.$ZodIssue) => {
   const path = getIssuePath(issue);
   if (issue.code === "invalid_type") {
     const expected =

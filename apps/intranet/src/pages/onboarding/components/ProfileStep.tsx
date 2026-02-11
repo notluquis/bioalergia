@@ -21,7 +21,7 @@ interface ProfileStepProps {
 
 export function ProfileStep(props: ProfileStepProps) {
   const { profile, onProfileChange, onNext, isLoading, error } = props;
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (profile.names && validateRut(profile.rut)) {
       onNext();

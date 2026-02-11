@@ -3,7 +3,7 @@ import { z } from "zod";
 const zDate = z.coerce.date();
 const zDateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected date in YYYY-MM-DD format");
 const zDateOnlyNullable = zDateOnly.nullable();
-const zDateTime = z.string().datetime({ offset: true });
+const zDateTime = z.iso.datetime({ offset: true });
 const zEventDateTime = z.preprocess((value) => {
   if (value instanceof Date) {
     return value.toISOString();

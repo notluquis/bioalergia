@@ -162,8 +162,8 @@ export const StatusOkSchema = z.strictObject({ status: z.literal("ok") });
 
 export const DoctoraliaCalendarAuthStartResponseSchema = z.strictObject({
   data: z.strictObject({
-    authUrl: z.string().url(),
-    redirectUri: z.string().url(),
+    authUrl: z.url(),
+    redirectUri: z.url(),
   }),
   status: z.literal("ok"),
 });

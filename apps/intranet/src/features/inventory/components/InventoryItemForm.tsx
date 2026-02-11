@@ -27,7 +27,7 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
     getInventoryCategories().then(setCategories).catch(console.error);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSave(form as Omit<InventoryItem, "id">);
   };

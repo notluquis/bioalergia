@@ -24,7 +24,7 @@ export function PasswordStep({
   isLoading,
   error,
 }: PasswordStepProps) {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (password.length < 8) {
       return;

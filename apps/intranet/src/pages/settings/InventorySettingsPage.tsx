@@ -89,7 +89,7 @@ export function InventorySettingsPage() {
     },
   });
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newCategoryName.trim()) {
       return;

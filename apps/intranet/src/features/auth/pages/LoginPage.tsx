@@ -1,6 +1,6 @@
 import { useLocation } from "@tanstack/react-router";
 import { Fingerprint, Mail } from "lucide-react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, SubmitEvent } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -158,7 +158,7 @@ interface CredentialsStepProps {
   isLoading: boolean;
   email: string;
   password: string;
-  handleCredentialsSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  handleCredentialsSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
   handleEmailChange: (e: ChangeEvent<HTMLInputElement>) => void;
   handlePasswordChange: (e: ChangeEvent<HTMLInputElement>) => void;
   switchToPasskey: () => void;
@@ -229,7 +229,7 @@ function CredentialsStep({
 interface MfaStepProps {
   isLoading: boolean;
   mfaCode: string;
-  handleMfaSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  handleMfaSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
   handleMfaCodeChange: (e: ChangeEvent<HTMLInputElement>) => void;
   switchToCredentialsFromMfa: () => void;
 }
@@ -295,11 +295,11 @@ interface LoginContentProps {
   passkeyMutation: { isPending: boolean };
   handlePasskeyLogin: () => void;
   switchToCredentials: () => void;
-  handleCredentialsSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  handleCredentialsSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
   handleEmailChange: (e: ChangeEvent<HTMLInputElement>) => void;
   handlePasswordChange: (e: ChangeEvent<HTMLInputElement>) => void;
   switchToPasskey: () => void;
-  handleMfaSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  handleMfaSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
   handleMfaCodeChange: (e: ChangeEvent<HTMLInputElement>) => void;
   switchToCredentialsFromMfa: () => void;
 }

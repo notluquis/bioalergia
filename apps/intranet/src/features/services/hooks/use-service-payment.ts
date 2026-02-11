@@ -75,7 +75,7 @@ export function useServicePayment() {
   });
 
   // Actions
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
+  const handlePaymentSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!paymentSchedule) {
       return;

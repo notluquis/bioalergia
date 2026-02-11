@@ -13,7 +13,7 @@ export const monthRegex = /^\d{4}-\d{2}$/;
 export const httpsUrlSchema = z
   .string()
   .trim()
-  .url({ message: "Debe ser una URL válida" })
+  .check(z.url({ message: "Debe ser una URL válida" }))
   .refine((value) => value.startsWith("https://"), {
     message: "Debe comenzar con https://",
   });
@@ -36,7 +36,7 @@ export const brandAssetUrlSchema = z
 
 // Numeric schemas
 export const moneySchema = z.coerce.number().min(0);
-export const clpInt = z.coerce.number().int().safe().default(0);
+export const clpInt = z.coerce.number().int().default(0);
 
 export const amountSchema = z
   .union([z.number(), z.string(), z.null()])
@@ -105,7 +105,7 @@ export const settingsSchema = z.object({
   orgAddress: z.string().max(255).optional().default(""),
   orgPhone: z.string().max(60).optional().default(""),
   primaryCurrency: z.string().trim().min(2).max(8).optional().default("CLP"),
-  supportEmail: z.string().email(),
+  supportEmail: z.email(),
   calendarTimeZone: z.string().trim().min(2).max(60).optional().default("America/Santiago"),
   calendarSyncStart: z.string().regex(dateRegex).optional().default("2000-01-01"),
   calendarSyncLookaheadDays: z.coerce

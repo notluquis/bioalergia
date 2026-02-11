@@ -158,7 +158,7 @@ export function useParticipantInsightsData() {
   })();
 
   // Handlers
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const rangeParams = resolveRange(quickMonth, from, to);
     setSelectedRange(rangeParams);

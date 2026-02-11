@@ -8,7 +8,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   ComposedChart,
   Legend,
   Line,
@@ -16,6 +15,7 @@ import {
   Pie,
   PieChart,
   ResponsiveContainer,
+  Sector,
   Tooltip,
   XAxis,
   YAxis,
@@ -78,17 +78,15 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
               innerRadius={70}
               outerRadius={90}
               paddingAngle={5}
-            >
-              {reportData.map((_, idx) => (
-                <Cell
+              shape={(props, idx) => (
+                <Sector
+                  {...props}
                   fill={chartColors[idx % chartColors.length]}
-                  // biome-ignore lint/suspicious/noArrayIndexKey: colors depend on index
-                  key={`cell-${idx}`}
                   stroke="var(--default-200)"
                   strokeWidth={2}
                 />
-              ))}
-            </Pie>
+              )}
+            />
             <Tooltip contentStyle={tooltipStyle} />
             <Legend
               align="center"

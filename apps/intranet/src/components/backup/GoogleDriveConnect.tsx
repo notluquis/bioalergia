@@ -29,7 +29,7 @@ const GoogleStatusSchema = z.object({
 });
 
 const AuthUrlResponseSchema = z.object({
-  url: z.string().url(),
+  url: z.url(),
 });
 
 const DisconnectResponseSchema = z.looseObject({

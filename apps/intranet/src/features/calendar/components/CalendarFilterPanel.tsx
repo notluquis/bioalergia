@@ -6,7 +6,7 @@
 import { DateField, DateInputGroup } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { RotateCcw, Search } from "lucide-react";
-import React, { type FormEvent } from "react";
+import React, { type SubmitEvent } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -64,7 +64,7 @@ export function CalendarFilterPanel({
   showSearch = false,
   variant: _variant = "card",
 }: Readonly<CalendarFilterPanelProps>) {
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     onApply();
   };

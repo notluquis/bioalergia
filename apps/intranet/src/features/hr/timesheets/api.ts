@@ -88,8 +88,8 @@ const TimesheetSummaryResponseSchema = z.looseObject({
 });
 
 const PrepareEmailPayloadSchema = z.object({
-  to: z.string().email(),
-  from: z.string().email(),
+  to: z.email(),
+  from: z.email(),
   subject: z.string(),
   html: z.string(),
   text: z.string().optional(),

@@ -36,7 +36,7 @@ export function InventoryCategoryManager() {
     return null;
   })();
 
-  function handleAddCategory(e: React.FormEvent) {
+  function handleAddCategory(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!newCategoryName.trim()) {
       return;

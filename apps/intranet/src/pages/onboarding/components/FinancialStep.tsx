@@ -23,7 +23,7 @@ export function FinancialStep({
   onPrev,
   isLoading,
 }: FinancialStepProps) {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     onNext();
   };

@@ -205,7 +205,7 @@ const emailBodySchema = z.object({
   monthLabel: z.string(),
   pdfBase64: z.string(),
   employeeName: z.string(),
-  employeeEmail: z.string().email(),
+  employeeEmail: z.email(),
   summary: z.object({
     role: z.string(),
     subtotal: z.number(),

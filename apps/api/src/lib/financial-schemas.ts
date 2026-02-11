@@ -8,7 +8,7 @@ export const moneySchema = z.coerce
   .min(0, "Amount must be positive")
   .transform((val) => Number(val.toFixed(2)));
 
-export const clpInt = z.coerce.number().int().safe().min(0).default(0);
+export const clpInt = z.coerce.number().int().min(0).default(0);
 
 // Transactions Schemas
 export const transactionsQuerySchema = z.object({
@@ -71,7 +71,7 @@ export const productionBalancePayloadSchema = z.object({
   ingresoTarjetas: clpInt,
   ingresoTransferencias: clpInt,
   ingresoEfectivo: clpInt,
-  gastosDiarios: z.coerce.number().int().safe().default(0),
+  gastosDiarios: z.coerce.number().int().default(0),
   otrosAbonos: clpInt,
   consultas: z.coerce.number().int().min(0).default(0),
   controles: z.coerce.number().int().min(0).default(0),

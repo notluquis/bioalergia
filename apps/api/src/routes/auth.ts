@@ -57,7 +57,7 @@ import { zValidator } from "../lib/zod-validator";
 // ============================================================
 
 const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: z.email("Email inválido"),
   password: z.string().min(1, "Contraseña requerida"),
 });
 

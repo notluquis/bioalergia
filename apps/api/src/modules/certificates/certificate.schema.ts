@@ -36,7 +36,7 @@ export const medicalCertificateSchema = z.object({
   doctorName: z.string().optional(),
   doctorSpecialty: z.string().optional(),
   doctorRut: z.string().optional(),
-  doctorEmail: z.string().email().optional(),
+  doctorEmail: z.email().optional(),
   doctorAddress: z.string().optional(),
 });
 

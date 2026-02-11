@@ -145,7 +145,7 @@ export function ServiceDetail({
   const [regenerateError, setRegenerateError] = useState<null | string>(null);
   const navigate = useNavigate();
 
-  const handleRegenerate = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleRegenerate = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!service) {
       return;
@@ -361,7 +361,7 @@ function RegenerateServiceModal({
   error: string | null;
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: React.SubmitEvent<HTMLFormElement>) => void;
   regenerating: boolean;
   service: ServiceSummary;
   setRegenerateForm: React.Dispatch<React.SetStateAction<RegenerateServicePayload>>;

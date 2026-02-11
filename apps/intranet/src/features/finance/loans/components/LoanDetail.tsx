@@ -60,7 +60,7 @@ export function LoanDetail({
     }
   })();
 
-  const handleRegenerate = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleRegenerate = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!loan) {
       return;

@@ -50,7 +50,7 @@ const listUsersQuerySchema = z.object({
 });
 
 const inviteUserSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: z.email("Email inválido"),
   role: z.string().min(1, "Rol requerido"),
   position: z.string().min(1, "Cargo requerido"),
   mfaEnforced: z.boolean().optional().default(true),

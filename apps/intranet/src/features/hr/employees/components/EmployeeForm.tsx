@@ -162,7 +162,7 @@ export function EmployeeForm({ employee, onCancel, onSave }: EmployeeFormProps) 
 
   const isMutating = createMutation.isPending || updateMutation.isPending;
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy form validation
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!hasPermission) {
       return;
@@ -248,7 +248,7 @@ function EmployeeFormContent({
   isEditing: boolean;
   isMutating: boolean;
   onCancel: () => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: React.SubmitEvent<HTMLFormElement>) => void;
   setForm: React.Dispatch<
     React.SetStateAction<{
       bankAccountNumber: string;

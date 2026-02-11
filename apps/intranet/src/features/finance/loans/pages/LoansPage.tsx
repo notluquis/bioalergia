@@ -124,7 +124,7 @@ export function LoansPage() {
     setPaymentError(null);
   };
 
-  const handlePaymentSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handlePaymentSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!paymentSchedule) {
       return;
