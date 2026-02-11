@@ -159,3 +159,19 @@ export const BookingResponseSchema = z.strictObject({
 });
 
 export const StatusOkSchema = z.strictObject({ status: z.literal("ok") });
+
+export const DoctoraliaCalendarAuthStartResponseSchema = z.strictObject({
+  data: z.strictObject({
+    authUrl: z.string().url(),
+    redirectUri: z.string().url(),
+  }),
+  status: z.literal("ok"),
+});
+
+export const DoctoraliaCalendarAuthStatusResponseSchema = z.strictObject({
+  data: z.strictObject({
+    connected: z.boolean(),
+    expiresAt: z.coerce.date().nullable(),
+  }),
+  status: z.literal("ok"),
+});

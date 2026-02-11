@@ -7,6 +7,7 @@
     "build": "esbuild src/index.ts --bundle --platform=node --target=esnext --format=esm --outfile=dist/index.js --packages=external --sourcemap",
     "start": "tsx dist/index.js",
     "google:auth": "tsx src/scripts/google-auth.ts",
+    "doctoralia:diagnose-login": "tsx src/scripts/diagnose-doctoralia-login.ts",
     "type-check": "tsc --noEmit",
     "lint": "biome lint .",
     "format": "biome format . --write",

@@ -9,6 +9,8 @@ import {
   BookingResponseSchema,
   DoctoraliaBookingsResponseSchema,
   DoctoraliaCalendarAppointmentsResponseSchema,
+  DoctoraliaCalendarAuthStartResponseSchema,
+  DoctoraliaCalendarAuthStatusResponseSchema,
   DoctoraliaDoctorsResponseSchema,
   DoctoraliaFacilitiesResponseSchema,
   DoctoraliaSlotsResponseSchema,
@@ -25,6 +27,8 @@ import type {
   DoctoraliaCalendarAppointment,
   DoctoraliaCalendarAppointmentsQuery,
   DoctoraliaCalendarAppointmentsResponse,
+  DoctoraliaCalendarAuthStartResponse,
+  DoctoraliaCalendarAuthStatusResponse,
   DoctoraliaDoctor,
   DoctoraliaDoctorsResponse,
   DoctoraliaFacilitiesResponse,
@@ -216,4 +220,36 @@ export async function triggerDoctoraliaSync(): Promise<{ logId: number }> {
   }
 
   return { logId: response.logId };
+}
+
+export async function fetchDoctoraliaCalendarAuthStatus(): Promise<{
+  connected: boolean;
+  expiresAt: Date | null;
+}> {
+  const response = await apiClient.get<DoctoraliaCalendarAuthStatusResponse>(
+    "/api/doctoralia/calendar/auth/status",
+    { responseSchema: DoctoraliaCalendarAuthStatusResponseSchema },
+  );
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo obtener el estado de conexión de Doctoralia");
+  }
+
+  return response.data;
+}
+
+export async function startDoctoraliaCalendarOAuth(): Promise<{
+  authUrl: string;
+  redirectUri: string;
+}> {
+  const response = await apiClient.get<DoctoraliaCalendarAuthStartResponse>(
+    "/api/doctoralia/calendar/auth/start",
+    { responseSchema: DoctoraliaCalendarAuthStartResponseSchema },
+  );
+
+  if (response.status !== "ok") {
+    throw new Error("No se pudo iniciar OAuth de Doctoralia");
+  }
+
+  return response.data;
 }

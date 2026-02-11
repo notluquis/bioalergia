@@ -1,5 +1,6 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { type Context, Hono } from "hono";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { z } from "zod";
 import { getSessionUser, hasPermission } from "../auth.js";
 import {
@@ -20,6 +21,8 @@ import {
 import { reply } from "../utils/reply.js";
 
 export const doctoraliaRoutes = new Hono();
+const CALENDAR_OAUTH_STATE_COOKIE = "doctoralia_calendar_oauth_state";
+const TRAILING_SLASH_REGEX = /\/$/;
 
 type DoctoraliaWebhookPayload = {
   name?: string;
@@ -88,6 +91,49 @@ function timingSafeCompare(a: string, b: string): boolean {
   }
 
   return timingSafeEqual(aBuffer, bBuffer);
+}
+
+function getOAuthCallbackBaseUrl(c: Context): string {
+  const envBase =
+    process.env.DOCTORALIA_CALENDAR_OAUTH_CALLBACK_BASE_URL ||
+    process.env.PUBLIC_URL ||
+    process.env.ORIGIN;
+  if (envBase) {
+    return envBase.replace(TRAILING_SLASH_REGEX, "");
+  }
+
+  const url = new URL(c.req.url);
+  const proto = c.req.header("x-forwarded-proto") || url.protocol.replace(":", "");
+  return `${proto}://${url.host}`;
+}
+
+function renderDoctoraliaOAuthCallbackHtml(status: "error" | "success", message: string): string {
+  const payload = JSON.stringify({
+    source: "doctoralia-calendar-oauth",
+    status,
+    message,
+  });
+  const safeMessage = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Doctoralia OAuth</title>
+  </head>
+  <body style="font-family: system-ui, sans-serif; padding: 24px;">
+    <p>${safeMessage}</p>
+    <script>
+      (function () {
+        const payload = ${payload};
+        if (window.opener) {
+          window.opener.postMessage(payload, window.location.origin);
+          window.close();
+        }
+      })();
+    </script>
+  </body>
+</html>`;
 }
 
 // ============================================================
@@ -390,6 +436,122 @@ doctoraliaRoutes.get("/calendar/status", requireAuth, async (c) => {
         : "DOCTORALIA_CALENDAR_USERNAME and DOCTORALIA_CALENDAR_PASSWORD required",
     },
   });
+});
+
+doctoraliaRoutes.get("/calendar/auth/status", requireAuth, async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
+
+  const canManage = await hasPermission(user.id, "update", "DoctoraliaFacility");
+  if (!canManage) {
+    return reply(c, { status: "error", message: "Sin permisos" }, 403);
+  }
+
+  const { getCachedToken } = await import("../lib/doctoralia/doctoralia-calendar-auth.js");
+  const { getSetting } = await import("../services/settings.js");
+  const cached = getCachedToken();
+  const storedExpiresAtRaw = await getSetting("doctoralia:calendar:marketplaceToken:expiresAt");
+  const storedExpiresAt = storedExpiresAtRaw ? Date.parse(storedExpiresAtRaw) : null;
+
+  return reply(c, {
+    status: "ok",
+    data: {
+      connected: Boolean(cached),
+      expiresAt:
+        storedExpiresAt && Number.isFinite(storedExpiresAt) ? new Date(storedExpiresAt) : null,
+    },
+  });
+});
+
+doctoraliaRoutes.get("/calendar/auth/start", requireAuth, async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "No autorizado" }, 401);
+  }
+
+  const canManage = await hasPermission(user.id, "update", "DoctoraliaFacility");
+  if (!canManage) {
+    return reply(c, { status: "error", message: "Sin permisos" }, 403);
+  }
+
+  try {
+    const state = randomBytes(24).toString("hex");
+    const callbackBase = getOAuthCallbackBaseUrl(c);
+    const redirectUri =
+      process.env.DOCTORALIA_CALENDAR_OAUTH_REDIRECT_URI ||
+      `${callbackBase}/api/doctoralia/calendar/auth/callback`;
+
+    setCookie(c, CALENDAR_OAUTH_STATE_COOKIE, state, {
+      httpOnly: true,
+      maxAge: 600,
+      path: "/",
+      sameSite: "Lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    const { buildCalendarOAuthAuthorizationUrl } = await import(
+      "../lib/doctoralia/doctoralia-calendar-auth.js"
+    );
+    const authUrl = await buildCalendarOAuthAuthorizationUrl({ redirectUri, state });
+
+    return reply(c, {
+      status: "ok",
+      data: {
+        authUrl,
+        redirectUri,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error desconocido";
+    return reply(c, { status: "error", message }, 500);
+  }
+});
+
+doctoraliaRoutes.get("/calendar/auth/callback", async (c) => {
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  const error = c.req.query("error");
+  const savedState = getCookie(c, CALENDAR_OAUTH_STATE_COOKIE);
+  deleteCookie(c, CALENDAR_OAUTH_STATE_COOKIE, { path: "/" });
+
+  const callbackBase = getOAuthCallbackBaseUrl(c);
+  const redirectUri =
+    process.env.DOCTORALIA_CALENDAR_OAUTH_REDIRECT_URI ||
+    `${callbackBase}/api/doctoralia/calendar/auth/callback`;
+
+  if (error) {
+    return c.html(renderDoctoraliaOAuthCallbackHtml("error", `Login cancelado: ${error}`), 200);
+  }
+
+  if (!state || !savedState || state !== savedState) {
+    return c.html(
+      renderDoctoraliaOAuthCallbackHtml(
+        "error",
+        "Estado OAuth inválido. Reintenta desde intranet.",
+      ),
+      400,
+    );
+  }
+
+  if (!code) {
+    return c.html(renderDoctoraliaOAuthCallbackHtml("error", "OAuth code faltante."), 400);
+  }
+
+  try {
+    const { exchangeCalendarOAuthCodeForToken } = await import(
+      "../lib/doctoralia/doctoralia-calendar-auth.js"
+    );
+    await exchangeCalendarOAuthCodeForToken({ code, redirectUri });
+    return c.html(
+      renderDoctoraliaOAuthCallbackHtml("success", "Conexión Doctoralia completada."),
+      200,
+    );
+  } catch (oauthError) {
+    const message = oauthError instanceof Error ? oauthError.message : "Error OAuth";
+    return c.html(renderDoctoraliaOAuthCallbackHtml("error", message), 500);
+  }
 });
 
 doctoraliaRoutes.post(

@@ -1,5 +1,5 @@
 import { ButtonGroup, Chip, Label, ListBox, Select, Surface } from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -11,7 +11,12 @@ import { CalendarSkeleton } from "@/features/calendar/components/CalendarSkeleto
 import { ScheduleCalendar } from "@/features/calendar/components/ScheduleCalendar";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import type { CalendarEventDetail } from "@/features/calendar/types";
-import { fetchDoctoraliaCalendarAppointments } from "@/features/doctoralia/api";
+import {
+  fetchDoctoraliaCalendarAppointments,
+  fetchDoctoraliaCalendarAuthStatus,
+  startDoctoraliaCalendarOAuth,
+} from "@/features/doctoralia/api";
+import { useCan } from "@/hooks/use-can";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { numberFormatter } from "@/lib/format";
 
@@ -53,6 +58,141 @@ function toCalendarEventDetail(
     transparency: null,
     visibility: null,
   }));
+}
+
+async function waitForDoctoraliaOAuthPopup(popup: Window, origin: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Tiempo de espera agotado para OAuth de Doctoralia."));
+    }, 180_000);
+
+    const interval = window.setInterval(() => {
+      if (popup.closed) {
+        cleanup();
+        reject(new Error("Ventana OAuth cerrada antes de completar la conexión."));
+      }
+    }, 500);
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== origin) {
+        return;
+      }
+
+      const data = event.data as { message?: string; source?: string; status?: string };
+      if (data?.source !== "doctoralia-calendar-oauth") {
+        return;
+      }
+
+      cleanup();
+      if (data.status === "success") {
+        resolve();
+        return;
+      }
+
+      reject(new Error(data.message || "No se pudo conectar Doctoralia."));
+    };
+
+    const cleanup = () => {
+      window.clearTimeout(timeout);
+      window.clearInterval(interval);
+      window.removeEventListener("message", onMessage);
+    };
+
+    window.addEventListener("message", onMessage);
+  });
+}
+
+function useDoctoraliaCalendarAuth(params: {
+  canConnectDoctoralia: boolean;
+  isDoctoraliaSource: boolean;
+}) {
+  const { canConnectDoctoralia, isDoctoraliaSource } = params;
+  const queryClient = useQueryClient();
+  const [isConnectingDoctoralia, setIsConnectingDoctoralia] = React.useState(false);
+
+  const { data: doctoraliaAuthStatus, isLoading: doctoraliaAuthLoading } = useQuery({
+    enabled: isDoctoraliaSource && canConnectDoctoralia,
+    queryFn: fetchDoctoraliaCalendarAuthStatus,
+    queryKey: ["doctoralia", "calendar", "auth-status"],
+    staleTime: 30_000,
+  });
+
+  const onConnectDoctoralia = useCallback(async () => {
+    setIsConnectingDoctoralia(true);
+    try {
+      const { authUrl } = await startDoctoraliaCalendarOAuth();
+      const popup = window.open(authUrl, "doctoralia-oauth", "popup,width=640,height=840");
+      if (!popup) {
+        throw new Error("No se pudo abrir la ventana OAuth (bloqueada por el navegador).");
+      }
+
+      await waitForDoctoraliaOAuthPopup(popup, window.location.origin);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["doctoralia", "calendar", "auth-status"] }),
+        queryClient.invalidateQueries({ queryKey: ["doctoralia", "calendar", "appointments"] }),
+      ]);
+    } finally {
+      setIsConnectingDoctoralia(false);
+    }
+  }, [queryClient]);
+
+  return {
+    doctoraliaAuthLoading,
+    doctoraliaAuthStatus,
+    isConnectingDoctoralia,
+    onConnectDoctoralia,
+  };
+}
+
+function useScheduleRange(params: {
+  navigate: ReturnType<typeof routeApi.useNavigate>;
+  search: ReturnType<typeof routeApi.useSearch>;
+}) {
+  const { navigate, search } = params;
+  const actualWeekStart = getActualWeekStart();
+  const currentWeekStartStr = search.from ?? actualWeekStart.format(DATE_FORMAT);
+  const currentDisplayed = dayjs(currentWeekStartStr, DATE_FORMAT);
+
+  const rangeLabel = currentDisplayed.isValid()
+    ? `${currentDisplayed.format("D MMM")} - ${currentDisplayed.add(5, "day").format("D MMM YYYY")}`
+    : "Seleccionar rango";
+  const isCurrentWeek = currentDisplayed.isSame(actualWeekStart, "day");
+  const isNextWeek = currentDisplayed.isSame(actualWeekStart.add(1, "week"), "day");
+
+  const updateWeek = (newStart: string) => {
+    const start = dayjs(newStart);
+    const end = start.add(6, "day");
+    void navigate({
+      search: {
+        ...search,
+        from: start.format(DATE_FORMAT),
+        to: end.format(DATE_FORMAT),
+      },
+    });
+  };
+
+  const goToPreviousWeek = () => {
+    updateWeek(currentDisplayed.subtract(1, "week").format(DATE_FORMAT));
+  };
+
+  const goToNextWeek = () => {
+    updateWeek(currentDisplayed.add(1, "week").format(DATE_FORMAT));
+  };
+
+  const goToThisWeek = () => {
+    updateWeek(actualWeekStart.format(DATE_FORMAT));
+  };
+
+  return {
+    currentWeekStartStr,
+    goToNextWeek,
+    goToPreviousWeek,
+    goToThisWeek,
+    isCurrentWeek,
+    isNextWeek,
+    rangeLabel,
+  };
 }
 
 // Logic moved to validateSearch in route, but we still use it for comparison logic
@@ -153,10 +293,13 @@ function ScheduleHeaderControls({
 }
 
 function CalendarSchedulePage() {
+  const { can } = useCan();
   const navigate = routeApi.useNavigate();
   const search = routeApi.useSearch();
   const source: CalendarSource = search.source ?? "google";
   const isGoogleSource = source === "google";
+  const isDoctoraliaSource = source === "doctoralia";
+  const canConnectDoctoralia = can("update", "DoctoraliaFacility");
 
   const { isOpen: filtersOpen, set: setFiltersOpen } = useDisclosure(false);
 
@@ -164,7 +307,7 @@ function CalendarSchedulePage() {
     useCalendarEvents({ enabled: isGoogleSource });
 
   const { data: doctoraliaEvents = [], isLoading: doctoraliaLoading } = useQuery({
-    enabled: source === "doctoralia" && Boolean(search.from) && Boolean(search.to),
+    enabled: isDoctoraliaSource && Boolean(search.from) && Boolean(search.to),
     queryFn: async () => {
       if (!search.from || !search.to) {
         return [];
@@ -178,6 +321,16 @@ function CalendarSchedulePage() {
     queryKey: ["doctoralia", "calendar", "appointments", search.from, search.to],
   });
 
+  const {
+    doctoraliaAuthLoading,
+    doctoraliaAuthStatus,
+    isConnectingDoctoralia,
+    onConnectDoctoralia,
+  } = useDoctoraliaCalendarAuth({
+    canConnectDoctoralia,
+    isDoctoraliaSource,
+  });
+
   // Local state for filter draft (not applicable until the user clicks Apply)
   const [draftFilters, setDraftFilters] = React.useState(appliedFilters);
 
@@ -188,50 +341,24 @@ function CalendarSchedulePage() {
       setDraftFilters(appliedFilters);
     }
   }, [appliedFilters, filtersOpen]);
-
-  // Purely derived state from the URL (Source of Truth)
-  const actualWeekStart = getActualWeekStart();
-  const currentWeekStartStr = search.from ?? actualWeekStart.format(DATE_FORMAT);
-  const currentDisplayed = dayjs(currentWeekStartStr, DATE_FORMAT);
+  const {
+    currentWeekStartStr,
+    goToNextWeek,
+    goToPreviousWeek,
+    goToThisWeek,
+    isCurrentWeek,
+    isNextWeek,
+    rangeLabel,
+  } = useScheduleRange({
+    navigate,
+    search,
+  });
 
   // The hook already filters events by the 'from'/'to' range in the URL.
   // No need to re-filter on the client.
   const displayedWeekEvents = isGoogleSource
     ? (daily?.days.flatMap((day) => day.events) ?? [])
     : doctoraliaEvents;
-
-  // Navigation helpers
-  const rangeLabel = currentDisplayed.isValid()
-    ? `${currentDisplayed.format("D MMM")} - ${currentDisplayed.add(5, "day").format("D MMM YYYY")}`
-    : "Seleccionar rango";
-
-  const isCurrentWeek = currentDisplayed.isSame(actualWeekStart, "day");
-  const isNextWeek = currentDisplayed.isSame(actualWeekStart.add(1, "week"), "day");
-
-  const updateWeek = (newStart: string) => {
-    const start = dayjs(newStart);
-    const end = start.add(6, "day");
-
-    void navigate({
-      search: {
-        ...search,
-        from: start.format(DATE_FORMAT),
-        to: end.format(DATE_FORMAT),
-      },
-    });
-  };
-
-  const goToPreviousWeek = () => {
-    updateWeek(currentDisplayed.subtract(1, "week").format(DATE_FORMAT));
-  };
-
-  const goToNextWeek = () => {
-    updateWeek(currentDisplayed.add(1, "week").format(DATE_FORMAT));
-  };
-
-  const goToThisWeek = () => {
-    updateWeek(actualWeekStart.format(DATE_FORMAT));
-  };
 
   const onSourceChange = useCallback(
     (nextSourceKey: string) => {
@@ -344,6 +471,16 @@ function CalendarSchedulePage() {
             source={source}
             totalEvents={totalEvents}
           />
+          {isDoctoraliaSource && canConnectDoctoralia && (
+            <Button
+              isDisabled={isConnectingDoctoralia || doctoraliaAuthLoading}
+              onPress={() => void onConnectDoctoralia()}
+              size="sm"
+              variant="flat"
+            >
+              {doctoraliaAuthStatus?.connected ? "Reconectar Doctoralia" : "Conectar Doctoralia"}
+            </Button>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs sm:hidden">

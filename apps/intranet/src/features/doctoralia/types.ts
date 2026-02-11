@@ -194,3 +194,19 @@ export interface DoctoraliaCalendarAppointmentsQuery {
   scheduleIds?: number[];
   to: string;
 }
+
+export interface DoctoraliaCalendarAuthStartResponse {
+  data: {
+    authUrl: string;
+    redirectUri: string;
+  };
+  status: "ok";
+}
+
+export interface DoctoraliaCalendarAuthStatusResponse {
+  data: {
+    connected: boolean;
+    expiresAt: Date | null;
+  };
+  status: "ok";
+}

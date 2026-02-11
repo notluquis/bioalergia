@@ -39,7 +39,7 @@ importers:
         version: 6.8.0
       '@finanzas/db':
         specifier: workspace:*
-        version: link:../../packages/db
+        version: file:packages/db
       '@googleapis/calendar':
         specifier: ^14.2.0
         version: 14.2.0
@@ -75,10 +75,10 @@ importers:
         version: 13.2.2
       '@zenstackhq/orm':
         specifier: ^3.3.3
-        version: 3.3.3(better-sqlite3@12.6.2)(mysql2@3.16.3)(pg@8.18.0)(zod@4.3.6)
+        version: 3.3.3(pg@8.18.0)(zod@4.3.6)
       '@zenstackhq/server':
         specifier: ^3.3.3
-        version: 3.3.3(better-sqlite3@12.6.2)(express@5.2.1)(hono@4.11.9)(mysql2@3.16.3)(pg@8.18.0)(zod@4.3.6)
+        version: 3.3.3(hono@4.11.9)(pg@8.18.0)(zod@4.3.6)
       argon2:
         specifier: ^0.44.0
         version: 0.44.0
@@ -175,7 +175,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.0.18
-        version: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(jiti@2.6.1)(jsdom@28.0.0(@noble/hashes@2.0.1))(lightningcss@1.31.1)(msw@2.12.10(@types/node@25.2.3)(typescript@5.9.3))(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.0.18(@types/node@25.2.3)(jsdom@28.0.0(@noble/hashes@2.0.1))(tsx@4.21.0)
 
   apps/intranet:
     dependencies:
@@ -1730,6 +1730,9 @@ packages:
     resolution: {integrity: sha512-xflqJ3XQZVzm8+7dsm8OFxVAmBNNA3Mg65sqwNHiq7VRSMSD7qwH4BPsBy07ZaX+9nHeaacBpFZd3Q0aIsISqw==}
     peerDependencies:
       react: ^16.14.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@finanzas/db@file:packages/db':
+    resolution: {directory: packages/db, type: directory}
 
   '@formatjs/ecma402-abstract@2.3.6':
     resolution: {integrity: sha512-HJnTFeRM2kVFVr5gr5kH1XP6K0JcJtE7Lzvtr3FS/so5f1kpsqqqxy5JF+FRaO6H2qmcMfAUIox7AJteieRtVw==}
@@ -8888,6 +8891,34 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
+  '@finanzas/db@file:packages/db':
+    dependencies:
+      '@zenstackhq/language': 3.3.3
+      '@zenstackhq/orm': 3.3.3(pg@8.18.0)(zod@4.3.6)
+      '@zenstackhq/plugin-policy': 3.3.3(kysely@0.28.11)(pg@8.18.0)(zod@4.3.6)
+      '@zenstackhq/server': 3.3.3(hono@4.11.9)(pg@8.18.0)(zod@4.3.6)
+      '@zenstackhq/tanstack-query': 3.3.3
+      hono: 4.11.9
+      kysely: 0.28.11
+      pg: 8.18.0
+      pg-types: 4.1.0
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - '@sveltejs/kit'
+      - '@tanstack/react-query'
+      - '@tanstack/svelte-query'
+      - '@tanstack/vue-query'
+      - better-sqlite3
+      - elysia
+      - express
+      - fastify
+      - fastify-plugin
+      - mysql2
+      - next
+      - nuxt
+      - pg-native
+      - sql.js
+
   '@formatjs/ecma402-abstract@2.3.6':
     dependencies:
       '@formatjs/fast-memoize': 2.2.7
@@ -11420,6 +11451,14 @@ snapshots:
       msw: 2.12.10(@types/node@25.2.3)(typescript@5.9.3)
       vite: 7.3.1(@types/node@25.2.3)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
+  '@vitest/mocker@4.0.18(vite@7.3.1(@types/node@25.2.3)(tsx@4.21.0))':
+    dependencies:
+      '@vitest/spy': 4.0.18
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 7.3.1(@types/node@25.2.3)(tsx@4.21.0)
+
   '@vitest/pretty-format@3.2.4':
     dependencies:
       tinyrainbow: 2.0.0
@@ -11535,10 +11574,43 @@ snapshots:
       mysql2: 3.16.3
       pg: 8.18.0
 
+  '@zenstackhq/orm@3.3.3(pg@8.18.0)(zod@4.3.6)':
+    dependencies:
+      '@paralleldrive/cuid2': 2.3.1
+      '@zenstackhq/common-helpers': 3.3.3
+      '@zenstackhq/schema': 3.3.3
+      cuid: 3.0.0
+      decimal.js: 10.6.0
+      json-stable-stringify: 1.3.0
+      kysely: 0.28.11
+      nanoid: 5.1.6
+      postgres-array: 3.0.4
+      toposort: 2.0.2
+      ts-pattern: 5.9.0
+      ulid: 3.0.2
+      uuid: 11.1.0
+      zod: 4.3.6
+      zod-validation-error: 4.0.2(zod@4.3.6)
+    optionalDependencies:
+      pg: 8.18.0
+
   '@zenstackhq/plugin-policy@3.3.3(better-sqlite3@12.6.2)(kysely@0.28.11)(mysql2@3.16.3)(pg@8.18.0)(zod@4.3.6)':
     dependencies:
       '@zenstackhq/common-helpers': 3.3.3
       '@zenstackhq/orm': 3.3.3(better-sqlite3@12.6.2)(mysql2@3.16.3)(pg@8.18.0)(zod@4.3.6)
+      kysely: 0.28.11
+      ts-pattern: 5.9.0
+    transitivePeerDependencies:
+      - better-sqlite3
+      - mysql2
+      - pg
+      - sql.js
+      - zod
+
+  '@zenstackhq/plugin-policy@3.3.3(kysely@0.28.11)(pg@8.18.0)(zod@4.3.6)':
+    dependencies:
+      '@zenstackhq/common-helpers': 3.3.3
+      '@zenstackhq/orm': 3.3.3(pg@8.18.0)(zod@4.3.6)
       kysely: 0.28.11
       ts-pattern: 5.9.0
     transitivePeerDependencies:
@@ -11579,6 +11651,32 @@ snapshots:
       - mysql2
       - pg
       - sql.js
+
+  '@zenstackhq/server@3.3.3(hono@4.11.9)(pg@8.18.0)(zod@4.3.6)':
+    dependencies:
+      '@zenstackhq/common-helpers': 3.3.3
+      '@zenstackhq/orm': 3.3.3(pg@8.18.0)(zod@4.3.6)
+      decimal.js: 10.6.0
+      superjson: 2.2.6
+      ts-japi: 1.12.1
+      ts-pattern: 5.9.0
+      url-pattern: 1.0.3
+      zod: 4.3.6
+      zod-validation-error: 4.0.2(zod@4.3.6)
+    optionalDependencies:
+      hono: 4.11.9
+    transitivePeerDependencies:
+      - better-sqlite3
+      - mysql2
+      - pg
+      - sql.js
+
+  '@zenstackhq/tanstack-query@3.3.3':
+    dependencies:
+      '@zenstackhq/client-helpers': 3.3.3
+      '@zenstackhq/common-helpers': 3.3.3
+      '@zenstackhq/schema': 3.3.3
+      decimal.js: 10.6.0
 
   '@zenstackhq/tanstack-query@3.3.3(@tanstack/react-query@5.90.20(react@19.2.4))':
     dependencies:
@@ -15353,6 +15451,19 @@ snapshots:
       tsx: 4.21.0
       yaml: 2.8.2
 
+  vite@7.3.1(@types/node@25.2.3)(tsx@4.21.0):
+    dependencies:
+      esbuild: 0.27.3
+      fdir: 6.5.0(picomatch@4.0.3)
+      picomatch: 4.0.3
+      postcss: 8.5.6
+      rollup: 4.57.1
+      tinyglobby: 0.2.15
+    optionalDependencies:
+      '@types/node': 25.2.3
+      fsevents: 2.3.3
+      tsx: 4.21.0
+
   vite@8.0.0-beta.12(@types/node@25.2.3)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2):
     dependencies:
       '@oxc-project/runtime': 0.111.0
@@ -15395,6 +15506,44 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
+      '@types/node': 25.2.3
+      jsdom: 28.0.0(@noble/hashes@2.0.1)
+    transitivePeerDependencies:
+      - jiti
+      - less
+      - lightningcss
+      - msw
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - terser
+      - tsx
+      - yaml
+
+  vitest@4.0.18(@types/node@25.2.3)(jsdom@28.0.0(@noble/hashes@2.0.1))(tsx@4.21.0):
+    dependencies:
+      '@vitest/expect': 4.0.18
+      '@vitest/mocker': 4.0.18(vite@7.3.1(@types/node@25.2.3)(tsx@4.21.0))
+      '@vitest/pretty-format': 4.0.18
+      '@vitest/runner': 4.0.18
+      '@vitest/snapshot': 4.0.18
+      '@vitest/spy': 4.0.18
+      '@vitest/utils': 4.0.18
+      es-module-lexer: 1.7.0
+      expect-type: 1.3.0
+      magic-string: 0.30.21
+      obug: 2.1.1
+      pathe: 2.0.3
+      picomatch: 4.0.3
+      std-env: 3.10.0
+      tinybench: 2.9.0
+      tinyexec: 1.0.2
+      tinyglobby: 0.2.15
+      tinyrainbow: 3.0.3
+      vite: 7.3.1(@types/node@25.2.3)(tsx@4.21.0)
+      why-is-node-running: 2.3.0
+    optionalDependencies:
       '@types/node': 25.2.3
       jsdom: 28.0.0(@noble/hashes@2.0.1)
     transitivePeerDependencies:

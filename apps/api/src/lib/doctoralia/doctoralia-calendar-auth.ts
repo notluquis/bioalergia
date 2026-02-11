@@ -9,6 +9,7 @@
  */
 
 import { request } from "gaxios";
+import { getSetting, updateSetting } from "../../services/settings";
 import { logEvent, logWarn } from "../logger";
 
 const AUTH_BASE_URL = process.env.DOCTORALIA_CALENDAR_AUTH_BASE_URL || "https://l.doctoralia.cl";
@@ -27,6 +28,11 @@ const TWO_FACTOR_LOCATION_REGEX = /\/2fa(?:\?|$)/i;
 
 // Token cache with expiration
 let cachedToken: { token: string; expiresAt: number } | null = null;
+let attemptedLoadStoredToken = false;
+
+const TOKEN_SETTING_KEY = "doctoralia:calendar:marketplaceToken";
+const TOKEN_EXPIRES_AT_SETTING_KEY = "doctoralia:calendar:marketplaceToken:expiresAt";
+const TOKEN_REFRESH_SETTING_KEY = "doctoralia:calendar:marketplaceToken:refreshToken";
 
 type AuthProviderResponse = {
   url_login: string;
@@ -40,6 +46,7 @@ type AuthProviderResponse = {
 type WebTokenLoginResponse = {
   marketplaceToken?: {
     token?: string;
+    refreshToken?: string;
     expiresAt?: string;
     expires_in?: number;
   };
@@ -80,8 +87,11 @@ function toSafeLocationDetails(location: string) {
  * Check if calendar credentials are configured
  */
 export function isCalendarAuthConfigured(): boolean {
-  return Boolean(
-    process.env.DOCTORALIA_CALENDAR_USERNAME && process.env.DOCTORALIA_CALENDAR_PASSWORD,
+  return (
+    Boolean(process.env.DOCTORALIA_CALENDAR_FORCE_OAUTH === "true") ||
+    Boolean(process.env.DOCTORALIA_CALENDAR_OAUTH_REDIRECT_URI) ||
+    Boolean(process.env.DOCTORALIA_CALENDAR_OAUTH_CLIENT_ID) ||
+    Boolean(process.env.DOCTORALIA_CALENDAR_USERNAME && process.env.DOCTORALIA_CALENDAR_PASSWORD)
   );
 }
 
@@ -327,6 +337,56 @@ async function requestAuthProvider(): Promise<AuthProviderResponse> {
   return response.data;
 }
 
+function resolveExpiresAtTimestamp(params: { expiresAt?: string; expiresIn?: number }): number {
+  const { expiresAt, expiresIn } = params;
+  if (expiresAt) {
+    const parsed = Date.parse(expiresAt);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  if (typeof expiresIn === "number" && Number.isFinite(expiresIn)) {
+    return Date.now() + expiresIn * 1000;
+  }
+
+  return Date.now() + 24 * 3600_000;
+}
+
+async function persistToken(params: { expiresAt: number; refreshToken?: string; token: string }) {
+  const { expiresAt, refreshToken, token } = params;
+  cachedToken = { token, expiresAt };
+  attemptedLoadStoredToken = true;
+
+  await Promise.all([
+    updateSetting(TOKEN_SETTING_KEY, token),
+    updateSetting(TOKEN_EXPIRES_AT_SETTING_KEY, new Date(expiresAt).toISOString()),
+    refreshToken
+      ? updateSetting(TOKEN_REFRESH_SETTING_KEY, refreshToken)
+      : Promise.resolve(undefined),
+  ]);
+}
+
+async function hydrateTokenFromSettings() {
+  if (attemptedLoadStoredToken) {
+    return;
+  }
+  attemptedLoadStoredToken = true;
+
+  const [token, expiresAtRaw] = await Promise.all([
+    getSetting(TOKEN_SETTING_KEY),
+    getSetting(TOKEN_EXPIRES_AT_SETTING_KEY),
+  ]);
+
+  if (!token) {
+    return;
+  }
+
+  const parsedExpiresAt = expiresAtRaw ? Date.parse(expiresAtRaw) : Number.NaN;
+  const expiresAt = Number.isFinite(parsedExpiresAt) ? parsedExpiresAt : Date.now() + 3600_000;
+  cachedToken = { token, expiresAt };
+}
+
 async function requestAuthorizationCode(ssoCookies: string[], provider: AuthProviderResponse) {
   const candidates = buildOAuthCandidates(provider);
 
@@ -441,25 +501,59 @@ async function exchangeCodeForWebToken(code: string, redirectUri: string): Promi
     throw new Error("webtoken-login response missing marketplace token");
   }
 
-  const expiresAtRaw = response.data?.marketplaceToken?.expiresAt;
-  const expiresInRaw = response.data?.marketplaceToken?.expires_in;
-
-  let expiresAt = Date.now() + 24 * 3600_000;
-  if (expiresAtRaw) {
-    const parsed = Date.parse(expiresAtRaw);
-    if (Number.isFinite(parsed)) {
-      expiresAt = parsed;
-    }
-  } else if (typeof expiresInRaw === "number" && Number.isFinite(expiresInRaw)) {
-    expiresAt = Date.now() + expiresInRaw * 1000;
-  }
-
-  cachedToken = {
+  const refreshToken = response.data?.marketplaceToken?.refreshToken;
+  const expiresAt = resolveExpiresAtTimestamp({
+    expiresAt: response.data?.marketplaceToken?.expiresAt,
+    expiresIn: response.data?.marketplaceToken?.expires_in,
+  });
+  await persistToken({
     token,
     expiresAt,
-  };
+    refreshToken,
+  });
 
   return token;
+}
+
+export async function saveCalendarOAuthToken(params: {
+  expiresAt?: string;
+  expiresIn?: number;
+  refreshToken?: string;
+  token: string;
+}) {
+  const expiresAt = resolveExpiresAtTimestamp({
+    expiresAt: params.expiresAt,
+    expiresIn: params.expiresIn,
+  });
+  await persistToken({
+    token: params.token,
+    expiresAt,
+    refreshToken: params.refreshToken,
+  });
+}
+
+export async function buildCalendarOAuthAuthorizationUrl(params: {
+  redirectUri: string;
+  state: string;
+}): Promise<string> {
+  const provider = await requestAuthProvider();
+  const url = new URL(provider.url_login);
+  url.searchParams.set(
+    "client_id",
+    process.env.DOCTORALIA_CALENDAR_OAUTH_CLIENT_ID || provider.client_id || "",
+  );
+  url.searchParams.set("response_type", provider.response_type || "code");
+  url.searchParams.set("scope", provider.scope || "client");
+  url.searchParams.set("state", params.state);
+  url.searchParams.set("redirect_uri", params.redirectUri);
+  return url.toString();
+}
+
+export async function exchangeCalendarOAuthCodeForToken(params: {
+  code: string;
+  redirectUri: string;
+}): Promise<string> {
+  return exchangeCodeForWebToken(params.code, params.redirectUri);
 }
 
 /**
@@ -467,6 +561,8 @@ async function exchangeCodeForWebToken(code: string, redirectUri: string): Promi
  */
 export async function getCalendarToken(twoFactorCode?: string): Promise<string> {
   const now = Date.now();
+
+  await hydrateTokenFromSettings();
 
   // Return cached token if still valid (with 1 hour buffer)
   if (cachedToken && cachedToken.expiresAt > now + 3600_000) {
