@@ -64,7 +64,7 @@ interface UpdateRolePermissionsParams {
   roleId: number;
 }
 
-const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
+const StatusResponseSchema = z.union([z.null(), z.looseObject({ status: z.string().optional() })]);
 const PermissionsResponseSchema = z.object({
   permissions: z.array(z.unknown()),
   status: z.string(),
