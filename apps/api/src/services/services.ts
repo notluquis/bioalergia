@@ -1,4 +1,5 @@
 import { db, type ServiceFrequency, type ServiceStatus, type ServiceType } from "@finanzas/db";
+import type { ServiceInclude } from "@finanzas/db/input";
 import { Decimal } from "decimal.js";
 
 type ServicePayload = {
@@ -14,29 +15,21 @@ type ServiceUpdatePayload = Partial<ServicePayload>;
 
 const toDecimal = (value: number) => new Decimal(value);
 
+const serviceInclude: ServiceInclude = {
+  counterpart: true,
+};
+
 export async function listServices() {
   return await db.service.findMany({
     orderBy: { createdAt: "desc" },
-    include: {
-      counterpart: {
-        include: {
-          person: true,
-        },
-      },
-    },
+    include: serviceInclude,
   });
 }
 
 export async function getServiceById(id: number) {
   return await db.service.findUnique({
     where: { id },
-    include: {
-      counterpart: {
-        include: {
-          person: true,
-        },
-      },
-    },
+    include: serviceInclude,
   });
 }
 
@@ -50,13 +43,7 @@ export async function createService(data: ServicePayload) {
       counterpartId: data.counterpartId ?? null,
       status: data.status ?? "ACTIVE",
     },
-    include: {
-      counterpart: {
-        include: {
-          person: true,
-        },
-      },
-    },
+    include: serviceInclude,
   });
 }
 
@@ -83,13 +70,7 @@ export async function updateService(id: number, data: ServiceUpdatePayload) {
   return await db.service.update({
     where: { id },
     data: updateData,
-    include: {
-      counterpart: {
-        include: {
-          person: true,
-        },
-      },
-    },
+    include: serviceInclude,
   });
 }
 
