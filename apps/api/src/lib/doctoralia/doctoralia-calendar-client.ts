@@ -8,6 +8,7 @@
 import { request } from "gaxios";
 import { getCalendarToken } from "./doctoralia-calendar-auth.js";
 import type {
+  DoctoraliaCalendarAlert,
   DoctoraliaCalendarRequest,
   DoctoraliaCalendarResponse,
 } from "./doctoralia-calendar-types.js";
@@ -75,6 +76,24 @@ export async function getCalendarEvents(
     "POST",
     "/calendarevents",
     payload,
+    twoFactorCode,
+  );
+}
+
+/**
+ * Get alerts feed (agenda notifications)
+ *
+ * alertType=3 corresponds to schedule/event alerts.
+ */
+export async function getCalendarAlerts(
+  alertType = 3,
+  twoFactorCode?: string,
+): Promise<DoctoraliaCalendarAlert[]> {
+  const query = new URLSearchParams({ alertType: String(alertType) });
+  return calendarApiRequest<DoctoraliaCalendarAlert[]>(
+    "GET",
+    `/alerts?${query.toString()}`,
+    undefined,
     twoFactorCode,
   );
 }

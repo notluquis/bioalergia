@@ -152,3 +152,39 @@ export interface DoctoraliaCalendarRequest {
   to: string; // YYYY-MM-DDTHH:MM:SS
   schedules: number[]; // Empty array = all schedules
 }
+
+export type DoctoraliaCalendarAlertType =
+  | "new-event-alert"
+  | "event-confirmation-alert"
+  | "cancel-event-alert"
+  | "reschedule-event-alert"
+  | string;
+
+export interface DoctoraliaCalendarAlertParams {
+  scheduleId?: number;
+  eventId?: number;
+  oldEventId?: number;
+  patientName?: string;
+  eventStartDateTime?: string;
+  eventStatus?: number;
+  patientId?: number;
+  cancelledByUserName?: string | null;
+  rescheduledByUserName?: string | null;
+  createdByUserName?: string | null;
+  doctorName?: string;
+  external?: boolean;
+  externalSource?: string;
+  scheduledBy?: number;
+  isNotPaidAutomaticCancelation?: boolean;
+}
+
+export interface DoctoraliaCalendarAlert {
+  id: number;
+  triggerUserId: number | null;
+  userId: number;
+  type: DoctoraliaCalendarAlertType;
+  params: DoctoraliaCalendarAlertParams;
+  createdAt: string;
+  read: boolean;
+  readed: boolean;
+}

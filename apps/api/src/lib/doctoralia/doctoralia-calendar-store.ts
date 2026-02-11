@@ -2,6 +2,7 @@ import { db } from "@finanzas/db";
 
 import type {
   DoctoraliaAppointment,
+  DoctoraliaCalendarAlert,
   DoctoraliaCalendarSchedule,
   DoctoraliaWorkPeriod,
 } from "./doctoralia-calendar-types";
@@ -256,6 +257,71 @@ export async function upsertDoctoraliaWorkPeriods(
   }
 
   return { inserted, updated, skipped };
+}
+
+/**
+ * Apply appointment updates from alerts feed.
+ * We only patch fields present in the alert payload and skip unknown events.
+ */
+export async function applyDoctoraliaAlertUpdates(alerts: DoctoraliaCalendarAlert[]) {
+  if (alerts.length === 0) {
+    return { updated: 0, skipped: 0 };
+  }
+
+  let updated = 0;
+  let skipped = 0;
+
+  for (const alert of alerts) {
+    const eventId = alert.params.eventId;
+    if (!eventId) {
+      skipped++;
+      continue;
+    }
+
+    const data: {
+      status?: number;
+      startAt?: Date;
+      patientExternalId?: number;
+    } = {};
+
+    if (typeof alert.params.eventStatus === "number") {
+      data.status = alert.params.eventStatus;
+    }
+
+    if (typeof alert.params.patientId === "number") {
+      data.patientExternalId = alert.params.patientId;
+    }
+
+    if (alert.params.eventStartDateTime) {
+      const startAt = new Date(alert.params.eventStartDateTime);
+      if (!Number.isNaN(startAt.getTime())) {
+        data.startAt = startAt;
+      }
+    }
+
+    if (Object.keys(data).length === 0) {
+      skipped++;
+      continue;
+    }
+
+    try {
+      const result = await db.doctoraliaCalendarAppointment.updateMany({
+        where: { externalId: eventId },
+        data,
+      });
+
+      if (result.count > 0) {
+        updated += result.count;
+      } else {
+        skipped++;
+      }
+    } catch (error) {
+      console.error(`Error applying alert update for event ${eventId}:`, error);
+      skipped++;
+    }
+  }
+
+  return { updated, skipped };
 }
 
 /**

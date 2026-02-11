@@ -1,17 +1,130 @@
-import { getCalendarEvents } from "../lib/doctoralia/doctoralia-calendar-client";
+import { getCalendarAlerts, getCalendarEvents } from "../lib/doctoralia/doctoralia-calendar-client";
 import {
+  applyDoctoraliaAlertUpdates,
   createDoctoraliaSyncLog,
   updateDoctoraliaSyncLog,
   upsertDoctoraliaAppointments,
   upsertDoctoraliaSchedules,
   upsertDoctoraliaWorkPeriods,
 } from "../lib/doctoralia/doctoralia-calendar-store";
+import type {
+  DoctoraliaCalendarAlert,
+  DoctoraliaCalendarResponse,
+} from "../lib/doctoralia/doctoralia-calendar-types";
+
+type UpsertSummary = {
+  schedules: { inserted: number; updated: number; skipped: number };
+  appointments: { inserted: number; updated: number; skipped: number };
+  workPeriods: { inserted: number; updated: number; skipped: number };
+};
 
 /**
  * Service to handle Doctoralia Calendar synchronization
  * Fetches calendar events from Docplanner API and stores them in the database
  */
 export class DoctoraliaCalendarSyncService {
+  private async upsertCalendarResponse(
+    response: DoctoraliaCalendarResponse,
+  ): Promise<UpsertSummary> {
+    let schedulesInserted = 0;
+    let schedulesUpdated = 0;
+    let schedulesSkipped = 0;
+
+    let appointmentsInserted = 0;
+    let appointmentsUpdated = 0;
+    let appointmentsSkipped = 0;
+
+    let workPeriodsInserted = 0;
+    let workPeriodsUpdated = 0;
+    let workPeriodsSkipped = 0;
+
+    // 1. Sync schedules
+    const schedules = Object.values(response.schedules);
+    if (schedules.length > 0) {
+      console.log(`[DoctoraliaSync] Upserting ${schedules.length} schedules`);
+      const scheduleResult = await upsertDoctoraliaSchedules(schedules);
+      schedulesInserted = scheduleResult.inserted;
+      schedulesUpdated = scheduleResult.updated;
+      schedulesSkipped = scheduleResult.skipped;
+    }
+
+    // 2. Group appointments by schedule ID
+    const appointmentsBySchedule = new Map<number, typeof response.appointments>();
+    for (const appointment of response.appointments) {
+      const scheduleId = appointment.scheduleId;
+      if (!appointmentsBySchedule.has(scheduleId)) {
+        appointmentsBySchedule.set(scheduleId, []);
+      }
+      appointmentsBySchedule.get(scheduleId)?.push(appointment);
+    }
+
+    // 3. Sync appointments for each schedule
+    for (const [scheduleId, appointments] of appointmentsBySchedule.entries()) {
+      console.log(
+        `[DoctoraliaSync] Upserting ${appointments.length} appointments for schedule ${scheduleId}`,
+      );
+      const appointmentResult = await upsertDoctoraliaAppointments(scheduleId, appointments);
+      appointmentsInserted += appointmentResult.inserted;
+      appointmentsUpdated += appointmentResult.updated;
+      appointmentsSkipped += appointmentResult.skipped;
+    }
+
+    // 4. Group work periods by schedule ID
+    const workPeriodsBySchedule = new Map<number, typeof response.workperiods>();
+    for (const period of response.workperiods) {
+      const scheduleId = period.scheduleId;
+      if (!workPeriodsBySchedule.has(scheduleId)) {
+        workPeriodsBySchedule.set(scheduleId, []);
+      }
+      workPeriodsBySchedule.get(scheduleId)?.push(period);
+    }
+
+    // 5. Sync work periods for each schedule
+    for (const [scheduleId, workPeriods] of workPeriodsBySchedule.entries()) {
+      console.log(
+        `[DoctoraliaSync] Upserting ${workPeriods.length} work periods for schedule ${scheduleId}`,
+      );
+      const periodResult = await upsertDoctoraliaWorkPeriods(scheduleId, workPeriods);
+      workPeriodsInserted += periodResult.inserted;
+      workPeriodsUpdated += periodResult.updated;
+      workPeriodsSkipped += periodResult.skipped;
+    }
+
+    return {
+      schedules: {
+        inserted: schedulesInserted,
+        updated: schedulesUpdated,
+        skipped: schedulesSkipped,
+      },
+      appointments: {
+        inserted: appointmentsInserted,
+        updated: appointmentsUpdated,
+        skipped: appointmentsSkipped,
+      },
+      workPeriods: {
+        inserted: workPeriodsInserted,
+        updated: workPeriodsUpdated,
+        skipped: workPeriodsSkipped,
+      },
+    };
+  }
+
+  private buildDateWindowFromAlerts(alerts: DoctoraliaCalendarAlert[]) {
+    const dates = alerts
+      .map((alert) => alert.params.eventStartDateTime?.split("T")[0])
+      .filter((date): date is string => Boolean(date));
+
+    if (dates.length === 0) {
+      return null;
+    }
+
+    const sorted = [...dates].sort();
+    return {
+      from: sorted[0],
+      to: sorted[sorted.length - 1],
+    };
+  }
+
   /**
    * Sync all Doctoralia calendar events for a date range
    * @param from Start date (YYYY-MM-DD)
@@ -35,111 +148,142 @@ export class DoctoraliaCalendarSyncService {
       console.log(`[DoctoraliaSync] Fetching calendar events from ${from} to ${to}`);
 
       const response = await getCalendarEvents(from, to, scheduleIds);
-
-      let schedulesInserted = 0;
-      let schedulesUpdated = 0;
-      let schedulesSkipped = 0;
-
-      let appointmentsInserted = 0;
-      let appointmentsUpdated = 0;
-      let appointmentsSkipped = 0;
-
-      let workPeriodsInserted = 0;
-      let workPeriodsUpdated = 0;
-      let workPeriodsSkipped = 0;
-
-      // 1. Sync schedules
-      const schedules = Object.values(response.schedules);
-      if (schedules.length > 0) {
-        console.log(`[DoctoraliaSync] Upserting ${schedules.length} schedules`);
-        const scheduleResult = await upsertDoctoraliaSchedules(schedules);
-        schedulesInserted = scheduleResult.inserted;
-        schedulesUpdated = scheduleResult.updated;
-        schedulesSkipped = scheduleResult.skipped;
-      }
-
-      // 2. Group appointments by schedule ID
-      const appointmentsBySchedule = new Map<number, typeof response.appointments>();
-      for (const appointment of response.appointments) {
-        const scheduleId = appointment.scheduleId;
-        if (!appointmentsBySchedule.has(scheduleId)) {
-          appointmentsBySchedule.set(scheduleId, []);
-        }
-        appointmentsBySchedule.get(scheduleId)?.push(appointment);
-      }
-
-      // 3. Sync appointments for each schedule
-      for (const [scheduleId, appointments] of appointmentsBySchedule.entries()) {
-        console.log(
-          `[DoctoraliaSync] Upserting ${appointments.length} appointments for schedule ${scheduleId}`,
-        );
-        const appointmentResult = await upsertDoctoraliaAppointments(scheduleId, appointments);
-        appointmentsInserted += appointmentResult.inserted;
-        appointmentsUpdated += appointmentResult.updated;
-        appointmentsSkipped += appointmentResult.skipped;
-      }
-
-      // 4. Group work periods by schedule ID
-      const workPeriodsBySchedule = new Map<number, typeof response.workperiods>();
-      for (const period of response.workperiods) {
-        const scheduleId = period.scheduleId;
-        if (!workPeriodsBySchedule.has(scheduleId)) {
-          workPeriodsBySchedule.set(scheduleId, []);
-        }
-        workPeriodsBySchedule.get(scheduleId)?.push(period);
-      }
-
-      // 5. Sync work periods for each schedule
-      for (const [scheduleId, workPeriods] of workPeriodsBySchedule.entries()) {
-        console.log(
-          `[DoctoraliaSync] Upserting ${workPeriods.length} work periods for schedule ${scheduleId}`,
-        );
-        const periodResult = await upsertDoctoraliaWorkPeriods(scheduleId, workPeriods);
-        workPeriodsInserted += periodResult.inserted;
-        workPeriodsUpdated += periodResult.updated;
-        workPeriodsSkipped += periodResult.skipped;
-      }
+      const summary = await this.upsertCalendarResponse(response);
 
       // Update sync log with success
       await updateDoctoraliaSyncLog(syncLog.id, {
         status: "SUCCESS",
-        schedulesSynced: schedulesInserted + schedulesUpdated,
-        appointmentsSynced: appointmentsInserted + appointmentsUpdated,
-        workPeriodsSynced: workPeriodsInserted + workPeriodsUpdated,
+        schedulesSynced: summary.schedules.inserted + summary.schedules.updated,
+        appointmentsSynced: summary.appointments.inserted + summary.appointments.updated,
+        workPeriodsSynced: summary.workPeriods.inserted + summary.workPeriods.updated,
       });
 
       console.log(
-        `[DoctoraliaSync] Sync completed: ${schedulesInserted} schedules inserted, ${schedulesUpdated} updated, ${schedulesSkipped} skipped`,
+        `[DoctoraliaSync] Sync completed: ${summary.schedules.inserted} schedules inserted, ${summary.schedules.updated} updated, ${summary.schedules.skipped} skipped`,
       );
       console.log(
-        `[DoctoraliaSync] ${appointmentsInserted} appointments inserted, ${appointmentsUpdated} updated, ${appointmentsSkipped} skipped`,
+        `[DoctoraliaSync] ${summary.appointments.inserted} appointments inserted, ${summary.appointments.updated} updated, ${summary.appointments.skipped} skipped`,
       );
       console.log(
-        `[DoctoraliaSync] ${workPeriodsInserted} work periods inserted, ${workPeriodsUpdated} updated, ${workPeriodsSkipped} skipped`,
+        `[DoctoraliaSync] ${summary.workPeriods.inserted} work periods inserted, ${summary.workPeriods.updated} updated, ${summary.workPeriods.skipped} skipped`,
       );
 
       return {
         success: true,
-        schedules: {
-          inserted: schedulesInserted,
-          updated: schedulesUpdated,
-          skipped: schedulesSkipped,
-        },
-        appointments: {
-          inserted: appointmentsInserted,
-          updated: appointmentsUpdated,
-          skipped: appointmentsSkipped,
-        },
-        workPeriods: {
-          inserted: workPeriodsInserted,
-          updated: workPeriodsUpdated,
-          skipped: workPeriodsSkipped,
-        },
+        ...summary,
       };
     } catch (error) {
       console.error("[DoctoraliaSync] Sync failed:", error);
 
       // Update sync log with failure
+      await updateDoctoraliaSyncLog(syncLog.id, {
+        status: "FAILED",
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch and return the alert feed for event notifications (alertType=3 by default).
+   */
+  async getAlerts(alertType = 3) {
+    return getCalendarAlerts(alertType);
+  }
+
+  /**
+   * Incremental sync based on alerts feed.
+   *
+   * 1) Fetch `/alerts?alertType=3`
+   * 2) Derive impacted date window + schedules
+   * 3) Pull `/calendarevents` for that window and upsert
+   * 4) Apply direct status/date updates from alerts (mainly cancellations)
+   */
+  async syncFromAlerts(alertType = 3, triggerSource?: string, triggerUserId?: number) {
+    const syncLog = await createDoctoraliaSyncLog({
+      triggerSource,
+      triggerUserId,
+      status: "RUNNING",
+    });
+
+    try {
+      const alerts = await getCalendarAlerts(alertType);
+      console.log(`[DoctoraliaSync] Retrieved ${alerts.length} alerts (alertType=${alertType})`);
+
+      if (alerts.length === 0) {
+        await updateDoctoraliaSyncLog(syncLog.id, {
+          status: "SUCCESS",
+          schedulesSynced: 0,
+          appointmentsSynced: 0,
+          workPeriodsSynced: 0,
+        });
+
+        return {
+          success: true,
+          alertsFetched: 0,
+          schedules: { inserted: 0, updated: 0, skipped: 0 },
+          appointments: { inserted: 0, updated: 0, skipped: 0 },
+          workPeriods: { inserted: 0, updated: 0, skipped: 0 },
+          alertUpdates: { updated: 0, skipped: 0 },
+          syncWindow: null,
+          scheduleIds: [] as number[],
+        };
+      }
+
+      const scheduleIds = [
+        ...new Set(
+          alerts
+            .map((alert) => alert.params.scheduleId)
+            .filter((scheduleId): scheduleId is number => Number.isFinite(scheduleId)),
+        ),
+      ];
+      const syncWindow = this.buildDateWindowFromAlerts(alerts);
+
+      const summary: UpsertSummary = {
+        schedules: { inserted: 0, updated: 0, skipped: 0 },
+        appointments: { inserted: 0, updated: 0, skipped: 0 },
+        workPeriods: { inserted: 0, updated: 0, skipped: 0 },
+      };
+
+      if (syncWindow) {
+        console.log(
+          `[DoctoraliaSync] Syncing alerts window ${syncWindow.from}..${syncWindow.to} for ${scheduleIds.length} schedules`,
+        );
+
+        const response = await getCalendarEvents(syncWindow.from, syncWindow.to, scheduleIds);
+        const upsertResult = await this.upsertCalendarResponse(response);
+        summary.schedules = upsertResult.schedules;
+        summary.appointments = upsertResult.appointments;
+        summary.workPeriods = upsertResult.workPeriods;
+      }
+
+      const actionableAlerts = alerts.filter((alert) =>
+        ["cancel-event-alert", "reschedule-event-alert", "event-confirmation-alert"].includes(
+          alert.type,
+        ),
+      );
+      const alertUpdates = await applyDoctoraliaAlertUpdates(actionableAlerts);
+
+      await updateDoctoraliaSyncLog(syncLog.id, {
+        status: "SUCCESS",
+        schedulesSynced: summary.schedules.inserted + summary.schedules.updated,
+        appointmentsSynced:
+          summary.appointments.inserted + summary.appointments.updated + alertUpdates.updated,
+        workPeriodsSynced: summary.workPeriods.inserted + summary.workPeriods.updated,
+      });
+
+      return {
+        success: true,
+        alertsFetched: alerts.length,
+        ...summary,
+        alertUpdates,
+        syncWindow,
+        scheduleIds,
+      };
+    } catch (error) {
+      console.error("[DoctoraliaSync] Alert sync failed:", error);
+
       await updateDoctoraliaSyncLog(syncLog.id, {
         status: "FAILED",
         errorMessage: error instanceof Error ? error.message : String(error),

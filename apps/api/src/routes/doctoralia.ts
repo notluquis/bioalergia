@@ -358,6 +358,14 @@ const calendarSyncSchema = z.object({
   scheduleIds: z.array(z.number()).optional(),
 });
 
+const calendarAlertsQuerySchema = z.object({
+  alertType: z.coerce.number().int().positive().optional().default(3),
+});
+
+const calendarAlertsSyncSchema = z.object({
+  alertType: z.number().int().positive().optional().default(3),
+});
+
 doctoraliaRoutes.get("/calendar/status", requireAuth, async (c) => {
   const { isCalendarAuthConfigured } = await import(
     "../lib/doctoralia/doctoralia-calendar-auth.js"
@@ -409,6 +417,79 @@ doctoraliaRoutes.post(
     } catch (error) {
       const message = error instanceof Error ? error.message : "Error desconocido";
       console.error("[DoctoraliaCalendar] Sync error:", error);
+      return reply(c, { status: "error", message }, 500);
+    }
+  },
+);
+
+doctoraliaRoutes.get(
+  "/calendar/alerts",
+  requireAuth,
+  zValidator("query", calendarAlertsQuerySchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canRead = await hasPermission(user.id, "read", "DoctoraliaFacility");
+    if (!canRead) {
+      return reply(c, { status: "error", message: "Sin permisos" }, 403);
+    }
+
+    try {
+      const { alertType } = c.req.valid("query");
+      const { doctoraliaCalendarSyncService } = await import("../services/doctoralia-calendar.js");
+      const alerts = await doctoraliaCalendarSyncService.getAlerts(alertType);
+
+      return reply(c, {
+        status: "ok",
+        data: {
+          alertType,
+          count: alerts.length,
+          alerts,
+        },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Error desconocido";
+      console.error("[DoctoraliaCalendar] Alerts fetch error:", error);
+      return reply(c, { status: "error", message }, 500);
+    }
+  },
+);
+
+doctoraliaRoutes.post(
+  "/calendar/alerts/sync",
+  requireAuth,
+  zValidator("json", calendarAlertsSyncSchema),
+  async (c) => {
+    const user = await getSessionUser(c);
+    if (!user) {
+      return reply(c, { status: "error", message: "No autorizado" }, 401);
+    }
+
+    const canSync = await hasPermission(user.id, "update", "DoctoraliaFacility");
+    if (!canSync) {
+      return reply(c, { status: "error", message: "Sin permisos" }, 403);
+    }
+
+    const { alertType } = c.req.valid("json");
+
+    try {
+      const { doctoraliaCalendarSyncService } = await import("../services/doctoralia-calendar.js");
+      const result = await doctoraliaCalendarSyncService.syncFromAlerts(
+        alertType,
+        "manual-alerts",
+        user.id,
+      );
+
+      return reply(c, {
+        status: "ok",
+        data: result,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Error desconocido";
+      console.error("[DoctoraliaCalendar] Alerts sync error:", error);
       return reply(c, { status: "error", message }, 500);
     }
   },
