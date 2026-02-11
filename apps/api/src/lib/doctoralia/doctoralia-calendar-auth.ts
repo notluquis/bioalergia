@@ -238,7 +238,7 @@ async function performLogin(
   };
 }
 
-async function assertSsoSessionIsAuthenticated(cookies: string[]) {
+async function assertSsoSessionIsAuthenticated(cookies: string[]): Promise<boolean> {
   const response = await fetch(`${AUTH_BASE_URL}${AUTH_BOOTSTRAP_PATH}`, {
     method: "GET",
     headers: {
@@ -250,7 +250,7 @@ async function assertSsoSessionIsAuthenticated(cookies: string[]) {
 
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("text/html")) {
-    return;
+    return true;
   }
 
   const html = await response.text();
@@ -263,14 +263,13 @@ async function assertSsoSessionIsAuthenticated(cookies: string[]) {
     logWarn("doctoralia.calendar.auth.session.not_authenticated", {
       status: response.status,
     });
-    throw new Error(
-      "SSO login did not establish an authenticated session (check credentials, CAPTCHA/2FA, or anti-bot restrictions).",
-    );
+    return false;
   }
 
   logEvent("doctoralia.calendar.auth.session.authenticated", {
     status: response.status,
   });
+  return true;
 }
 
 async function verify2FA(
@@ -504,7 +503,10 @@ export async function getCalendarToken(twoFactorCode?: string): Promise<string> 
     });
   }
 
-  await assertSsoSessionIsAuthenticated(ssoCookies);
+  const isAuthenticated = await assertSsoSessionIsAuthenticated(ssoCookies);
+  if (!isAuthenticated) {
+    logWarn("doctoralia.calendar.auth.session.continue_with_oauth", {});
+  }
 
   const provider = await requestAuthProvider();
   const { code, redirectUri } = await requestAuthorizationCode(ssoCookies, provider);
