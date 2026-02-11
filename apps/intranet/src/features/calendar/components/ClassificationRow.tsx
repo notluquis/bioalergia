@@ -22,6 +22,39 @@ interface ClassificationRowProps {
   treatmentStageChoices: readonly string[];
 }
 
+const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
+
+function normalizeChoiceValue(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function resolveChoiceValue(value: null | string | undefined, choices: readonly string[]): string {
+  if (!value) {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  const exactMatch = choices.find((choice) => choice === trimmed);
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const normalizedInput = normalizeChoiceValue(trimmed);
+  const normalizedMatch = choices.find(
+    (choice) => normalizeChoiceValue(choice) === normalizedInput,
+  );
+  return normalizedMatch ?? trimmed;
+}
+
 export function ClassificationRow({
   categoryChoices,
   event,
@@ -36,60 +69,72 @@ export function ClassificationRow({
 
   // Subscribe to category for conditional fields
   const category = useStore(form.store, (state) => state.values.entries[index]?.category ?? "");
-  const isSubcutaneous = category === "Tratamiento subcutáneo";
+  const isSubcutaneous =
+    normalizeChoiceValue(category) === normalizeChoiceValue(SUBCUTANEOUS_CATEGORY);
 
   return (
-    <Card className="text-sm">
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 p-5 pb-2">
+    <Card className="border-default-200/70 bg-content1 text-sm shadow-sm">
+      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 p-6 pb-4">
         <div className="flex flex-col gap-1">
           <span className="font-semibold text-secondary/70 text-xs uppercase tracking-wide">
             {event.calendarId}
           </span>
-          <h2 className="font-semibold text-foreground text-lg">
+          <h2 className="font-semibold text-foreground text-xl leading-tight">
             {event.summary ?? "(Sin título)"}
           </h2>
-          <span className="text-foreground-500 text-xs">{formatEventDate(event)}</span>
+          <span className="text-foreground-500 text-sm">{formatEventDate(event)}</span>
         </div>
         <div className="flex flex-col items-end gap-2 text-foreground-500 text-xs">
           {event.eventType && event.eventType !== "default" && (
-            <span className="rounded-full bg-default-100 px-2 py-1 font-semibold text-foreground">
+            <span className="rounded-full border border-default-200/70 bg-default-100 px-3 py-1 font-semibold text-foreground">
               {event.eventType}
             </span>
           )}
           {event.category && (
-            <span className="rounded-full bg-secondary/15 px-2 py-1 font-semibold text-secondary">
+            <span className="rounded-full border border-secondary/25 bg-secondary/15 px-3 py-1 font-semibold text-secondary">
               {event.category}
             </span>
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 p-5 pt-0">
+      <CardContent className="space-y-5 px-6 pb-6 pt-0">
         {description && (
-          <div className="rounded-xl bg-default-100 p-3 text-foreground shadow-inner">
-            <span className="mb-1 block font-semibold text-foreground text-xs">Descripción:</span>
+          <div className="rounded-xl border border-default-200/60 bg-default-100/80 p-4 text-foreground">
+            <span className="mb-2 block font-semibold text-foreground text-xs uppercase tracking-wide">
+              Descripción
+            </span>
             <FormattedEventDescription text={description} />
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-4 text-foreground text-xs sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-5 text-foreground text-xs sm:grid-cols-2 xl:grid-cols-3">
           <form.Field name={`entries[${index}].category`}>
             {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => {
-              // Validate that the value exists in available choices to prevent React Aria ID leak
-              const validatedValue =
-                field.state.value && categoryChoices.includes(field.state.value)
-                  ? field.state.value
-                  : "";
+              const selectedCategory = resolveChoiceValue(field.state.value, categoryChoices);
+              const hasLegacyCategory =
+                selectedCategory.length > 0 && !categoryChoices.includes(selectedCategory);
               return (
                 <Select
                   label="Clasificación"
+                  placeholder="Selecciona una clasificación"
                   onChange={(key) => {
                     field.handleChange(key as string);
                   }}
-                  value={validatedValue}
+                  value={selectedCategory}
+                  variant="secondary"
                 >
-                  <SelectItem key="">Sin clasificación</SelectItem>
+                  <SelectItem id="" key="">
+                    Sin clasificación
+                  </SelectItem>
+                  {hasLegacyCategory && (
+                    <SelectItem id={selectedCategory} key={`legacy-category-${selectedCategory}`}>
+                      {selectedCategory}
+                    </SelectItem>
+                  )}
                   {categoryChoices.map((option: string) => (
-                    <SelectItem key={option}>{option}</SelectItem>
+                    <SelectItem id={option} key={option}>
+                      {option}
+                    </SelectItem>
                   ))}
                 </Select>
               );
@@ -144,14 +189,20 @@ export function ClassificationRow({
               {(field: { handleChange: (v: string) => void; state: { value: null | string } }) => (
                 <Select
                   label="Etapa tratamiento"
+                  placeholder="Selecciona una etapa"
                   onChange={(key) => {
                     field.handleChange(key as string);
                   }}
-                  value={field.state.value ?? ""}
+                  value={resolveChoiceValue(field.state.value, treatmentStageChoices)}
+                  variant="secondary"
                 >
-                  <SelectItem key="">Sin etapa</SelectItem>
+                  <SelectItem id="" key="">
+                    Sin etapa
+                  </SelectItem>
                   {treatmentStageChoices.map((option: string) => (
-                    <SelectItem key={option}>{option}</SelectItem>
+                    <SelectItem id={option} key={option}>
+                      {option}
+                    </SelectItem>
                   ))}
                 </Select>
               )}
@@ -173,13 +224,14 @@ export function ClassificationRow({
           </form.Field>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 pt-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-default-200/70 border-t pt-4">
           <Button
             variant="primary"
             disabled={isSaving}
             onClick={() => {
               onSave(event, index);
             }}
+            size="sm"
             type="button"
           >
             {isSaving ? "Guardando..." : "Guardar y continuar"}
@@ -189,6 +241,7 @@ export function ClassificationRow({
             onClick={() => {
               onReset(index, event);
             }}
+            size="sm"
             type="button"
             variant="secondary"
           >

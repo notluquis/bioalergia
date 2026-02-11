@@ -201,10 +201,10 @@ function CalendarClassificationPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <ClassificationStats events={events} form={form} loading={loading} totalCount={totalCount} />
 
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-default-50/50 p-4 backdrop-blur-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-default-200/70 bg-content1 p-4 sm:p-5">
         <ClassificationFilters filters={filters} onSearchChange={handleSearchChange} />
         <ClassificationToolbar
           isJobRunning={isJobRunning}
@@ -232,7 +232,7 @@ function CalendarClassificationPage() {
       <ClassificationEmptyState error={error} eventsCount={events.length} loading={loading} />
 
       {events.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {events.map((event, index) => {
             const key = eventKey(event);
             return (

@@ -12,6 +12,24 @@ export interface ParsedPayload {
   treatmentStage: null | string;
 }
 
+const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
+
+function normalizeChoiceValue(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function isSubcutaneousCategory(value: null | string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+  return normalizeChoiceValue(value) === normalizeChoiceValue(SUBCUTANEOUS_CATEGORY);
+}
+
 export function buildDefaultEntry(event: CalendarUnclassifiedEvent) {
   return {
     amountExpected: event.amountExpected == null ? "" : String(event.amountExpected),
@@ -29,7 +47,10 @@ export function buildPayload(
   event: CalendarUnclassifiedEvent,
 ): ParsedPayload {
   const category = entry.category?.trim() ?? null;
-  const resolvedCategory = category ?? event.category;
+  const resolvedCategoryRaw = category ?? event.category;
+  const resolvedCategory = isSubcutaneousCategory(resolvedCategoryRaw)
+    ? SUBCUTANEOUS_CATEGORY
+    : resolvedCategoryRaw;
   const amountExpected = parseAmountInput(entry.amountExpected) ?? event.amountExpected ?? null;
   const amountPaid = parseAmountInput(entry.amountPaid) ?? event.amountPaid ?? null;
   const attended = entry.attended;
@@ -41,7 +62,7 @@ export function buildPayload(
   const dosageUnit = entry.dosageUnit?.trim() || event.dosageUnit || null;
 
   const treatmentStage =
-    resolvedCategory === "Tratamiento subcutáneo" && entry.treatmentStage?.trim()
+    isSubcutaneousCategory(resolvedCategory) && entry.treatmentStage?.trim()
       ? entry.treatmentStage.trim()
       : null;
 
