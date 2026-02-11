@@ -15,6 +15,7 @@ const LOGIN_URL = "https://l.doctoralia.cl";
 const PHPSESSID_REGEX = /PHPSESSID=([^;]+)/;
 const MKPL_AUTH_BEARER_REGEX = /mkplAuth=bearer%20([^;]+)/;
 const MKPL_AUTH_REGEX = /mkplAuth=([^;]+)/;
+const TWO_FACTOR_LOCATION_REGEX = /\/2fa(?:\?|$)/i;
 
 // Token cache with expiration (24 hours default)
 let cachedToken: { token: string; expiresAt: number } | null = null;
@@ -51,21 +52,20 @@ async function performLogin(
         username,
         password,
       }).toString(),
+      // Important: keep the original response to preserve Set-Cookie and Location.
+      // Following redirects can hide auth cookies required for mkplAuth extraction.
+      maxRedirects: 0,
       validateStatus: () => true, // Don't throw on any status
     });
 
     const cookies = response.headers.getSetCookie?.() || [];
+    const locationHeader =
+      response.headers.get?.("location") ||
+      (response.headers as unknown as { location?: string }).location ||
+      "";
+    const tokenFromCookies = extractTokenFromCookies(cookies);
 
-    // Check if 2FA is required
-    if (response.status === 302 || response.data?.requires_2fa) {
-      return {
-        requiresTwoFactor: true,
-        cookies,
-        sessionId: extractSessionId(cookies),
-      };
-    }
-
-    // Check for direct token in response
+    // Direct token in response payload (rare)
     if (response.data?.token) {
       return {
         requiresTwoFactor: false,
@@ -73,16 +73,36 @@ async function performLogin(
       };
     }
 
-    // Login successful, extract token from cookies
-    const token = extractTokenFromCookies(cookies);
-    if (token) {
+    // Redirect flow: only require 2FA when redirect target indicates it.
+    if (response.status === 302) {
+      if (tokenFromCookies) {
+        return {
+          requiresTwoFactor: false,
+          cookies,
+        };
+      }
+
+      const requiresTwoFactor =
+        Boolean(response.data?.requires_2fa) || TWO_FACTOR_LOCATION_REGEX.test(locationHeader);
+
+      return {
+        requiresTwoFactor,
+        cookies,
+        sessionId: extractSessionId(cookies),
+      };
+    }
+
+    // Non-redirect successful login with auth cookie
+    if (tokenFromCookies) {
       return {
         requiresTwoFactor: false,
         cookies,
       };
     }
 
-    throw new Error("Login failed: No token received");
+    throw new Error(
+      `Login failed: No token received (status=${response.status}, location=${locationHeader || "n/a"}, cookies=${cookies.length})`,
+    );
   } catch (error) {
     console.error("[Doctoralia Calendar] Login error:", error);
     throw new Error(`Login failed: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -110,6 +130,7 @@ async function verify2FA(
         code,
         ...(sessionId ? { session_id: sessionId } : {}),
       }).toString(),
+      maxRedirects: 0,
       validateStatus: () => true,
     });
 
