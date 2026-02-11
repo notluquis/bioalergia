@@ -61,14 +61,18 @@ type OAuthAttemptResult = {
 
 function toSafeLocationDetails(location: string) {
   if (!location) {
-    return { locationHost: "n/a", locationPath: "n/a" };
+    return { locationHost: "n/a", locationPath: "n/a", locationHasCode: false };
   }
 
   try {
     const parsed = new URL(location, DOCPLANNER_BASE_URL);
-    return { locationHost: parsed.host, locationPath: parsed.pathname };
+    return {
+      locationHost: parsed.host,
+      locationPath: parsed.pathname,
+      locationHasCode: Boolean(parsed.searchParams.get("code")),
+    };
   } catch {
-    return { locationHost: "invalid", locationPath: "invalid" };
+    return { locationHost: "invalid", locationPath: "invalid", locationHasCode: false };
   }
 }
 
@@ -501,6 +505,15 @@ export async function getCalendarToken(twoFactorCode?: string): Promise<string> 
     logEvent("doctoralia.calendar.auth.2fa.completed", {
       hasSessionId: Boolean(loginResult.sessionId),
     });
+  }
+
+  // Some flows redirect directly to docplanner with ?code=...
+  const directCodeFromLogin = extractCodeFromLocation(loginResult.location || "");
+  if (directCodeFromLogin) {
+    logEvent("doctoralia.calendar.auth.code.from_login_redirect", {});
+    const token = await exchangeCodeForWebToken(directCodeFromLogin, `${DOCPLANNER_BASE_URL}/#/`);
+    console.log("[Doctoralia Calendar] Token obtained successfully via login redirect code");
+    return token;
   }
 
   const isAuthenticated = await assertSsoSessionIsAuthenticated(ssoCookies);
