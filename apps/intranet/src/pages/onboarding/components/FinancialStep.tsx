@@ -61,9 +61,15 @@ export function FinancialStep({
             <SelectItem id={NO_ACCOUNT_TYPE_KEY} key={NO_ACCOUNT_TYPE_KEY}>
               Seleccionar...
             </SelectItem>
-            <SelectItem key="Corriente">Cuenta corriente</SelectItem>
-            <SelectItem key="Vista">Cuenta vista / RUT</SelectItem>
-            <SelectItem key="Ahorro">Cuenta de ahorro</SelectItem>
+            <SelectItem id="Corriente" key="Corriente" textValue="Cuenta corriente">
+              Cuenta corriente
+            </SelectItem>
+            <SelectItem id="Vista" key="Vista" textValue="Cuenta vista / RUT">
+              Cuenta vista / RUT
+            </SelectItem>
+            <SelectItem id="Ahorro" key="Ahorro" textValue="Cuenta de ahorro">
+              Cuenta de ahorro
+            </SelectItem>
           </Select>
           <Input
             label="Número de cuenta"

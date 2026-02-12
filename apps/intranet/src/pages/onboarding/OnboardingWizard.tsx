@@ -1,8 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { useEffect } from "react";
-import { Alert } from "@/components/ui/Alert";
-
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { CompleteStep } from "./components/CompleteStep";
@@ -77,64 +75,76 @@ function StepContent({
   const mv = logic.mutations.mfaVerify as unknown as M;
   const mp = logic.mutations.passkeyRegister as unknown as M;
   const mf2 = logic.mutations.finalSubmit as unknown as M;
-  const s = {
-    0: <WelcomeStep userEmail={userEmail} onNext={logic.handleNext} />,
-    1: (
-      <ProfileStep
-        profile={logic.profile}
-        onProfileChange={logic.handleProfileChange}
-        onNext={logic.handleNext}
-        error={logic.error}
-        isLoading={logic.isLoading}
-      />
-    ),
-
-    2: (
-      <FinancialStep
-        profile={logic.profile}
-        onProfileChange={logic.handleProfileChange}
-        onNext={logic.handleNext}
-        onPrev={logic.handlePrev}
-        isLoading={logic.isLoading}
-      />
-    ),
-
-    3: (
-      <PasswordStep
-        password={logic.password}
-        confirmPassword={logic.confirmPassword}
-        onPasswordChange={logic.setPassword}
-        onNext={logic.handleNext}
-        onConfirmPasswordChange={logic.setConfirmPassword}
-        onPrev={logic.handlePrev}
-        isLoading={logic.isLoading}
-        error={logic.error}
-      />
-    ),
-
-    4: (
-      <MfaStep
-        mfaSecret={logic.mfaSecret}
-        mfaCode={logic.mfaCode}
-        onMfaCodeChange={logic.setMfaCode}
-        onSetupMfa={() => mf.mutate()}
-        onVerifyMfa={() => mv.mutate(logic.mfaCode)}
-        onPasskeyRegister={() => mp.mutate()}
-        onSkip={logic.handleNext}
-        isLoading={logic.isLoading}
-      />
-    ),
-
-    5: <CompleteStep onFinish={() => mf2.mutate()} isLoading={logic.isLoading} />,
-  } as Record<number, React.ReactNode>;
+  let stepNode: React.ReactNode = null;
+  switch (currentStep) {
+    case 0:
+      stepNode = <WelcomeStep userEmail={userEmail} onNext={logic.handleNext} />;
+      break;
+    case 1:
+      stepNode = (
+        <ProfileStep
+          profile={logic.profile}
+          onProfileChange={logic.handleProfileChange}
+          onNext={logic.handleNext}
+          error={logic.error}
+          isLoading={logic.isLoading}
+        />
+      );
+      break;
+    case 2:
+      stepNode = (
+        <FinancialStep
+          profile={logic.profile}
+          onProfileChange={logic.handleProfileChange}
+          onNext={logic.handleNext}
+          onPrev={logic.handlePrev}
+          isLoading={logic.isLoading}
+        />
+      );
+      break;
+    case 3:
+      stepNode = (
+        <PasswordStep
+          password={logic.password}
+          confirmPassword={logic.confirmPassword}
+          onPasswordChange={logic.setPassword}
+          onNext={logic.handleNext}
+          onConfirmPasswordChange={logic.setConfirmPassword}
+          onPrev={logic.handlePrev}
+          isLoading={logic.isLoading}
+          error={logic.error}
+        />
+      );
+      break;
+    case 4:
+      stepNode = (
+        <MfaStep
+          mfaSecret={logic.mfaSecret}
+          mfaCode={logic.mfaCode}
+          onMfaCodeChange={logic.setMfaCode}
+          onSetupMfa={() => mf.mutate()}
+          onVerifyMfa={() => mv.mutate(logic.mfaCode)}
+          onPasskeyRegister={() => mp.mutate()}
+          onSkip={logic.handleNext}
+          isLoading={logic.isLoading}
+        />
+      );
+      break;
+    case 5:
+      stepNode = <CompleteStep onFinish={() => mf2.mutate()} isLoading={logic.isLoading} />;
+      break;
+    default:
+      stepNode = null;
+      break;
+  }
   return (
     <>
-      {logic.error && (
-        <Alert status="danger" className="mb-6">
-          <span>{logic.error}</span>
-        </Alert>
-      )}
-      {s[currentStep]}
+      {logic.error ? (
+        <div className="mb-6 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-danger text-sm">
+          {logic.error}
+        </div>
+      ) : null}
+      {stepNode}
     </>
   );
 }
