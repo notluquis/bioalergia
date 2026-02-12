@@ -310,7 +310,7 @@ function AnalyticsCharts({
           </h3>
         </Card.Header>
         <Card.Content>
-          <div className="h-52 min-h-52 w-full">
+          <div className="h-52 min-h-52 w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={trendData?.toReversed() ?? []}
@@ -451,7 +451,7 @@ function PieChartCard({
         <h3 className="font-semibold text-foreground text-xs sm:text-sm">{title}</h3>
       </Card.Header>
       <Card.Content className="p-2">
-        <div className="h-24 min-h-24 w-full">
+        <div className="h-24 min-h-24 w-full min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie

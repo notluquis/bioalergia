@@ -85,7 +85,7 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
         <PieChartIcon className="h-5 w-5 text-secondary" />
         Distribución Total
       </h3>
-      <div className="h-64 w-full sm:h-80">
+      <div className="h-64 w-full min-w-0 sm:h-80">
         <ResponsiveContainer height="100%" width="100%">
           <PieChart>
             <Pie
@@ -186,7 +186,7 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
         </Chip>
       </div>
 
-      <div className="h-64 w-full sm:h-87.5">
+      <div className="h-64 w-full min-w-0 sm:h-87.5">
         <ResponsiveContainer height="100%" width="100%">
           {hasSalaryData && granularity === "month" ? (
             // Dual-axis chart for salary data (monthly view)

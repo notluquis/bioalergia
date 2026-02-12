@@ -53,11 +53,16 @@ export function CounterpartsPage() {
 
   // ZenStack hook for list query
   const { data: counterpartsData, error: listError } = client.counterpart.useFindMany({
-    include: {
-      accounts: true,
-      withdrawTransactions: true,
-      releaseTransactions: true,
-      settlementTransactions: true,
+    // Keep list query lean: detail/accounts are fetched in the detail section.
+    // Avoids oversized generated SQL payloads in ZenStack/Postgres.
+    select: {
+      id: true,
+      identificationNumber: true,
+      bankAccountHolder: true,
+      category: true,
+      notes: true,
+      createdAt: true,
+      updatedAt: true,
     },
   });
 
