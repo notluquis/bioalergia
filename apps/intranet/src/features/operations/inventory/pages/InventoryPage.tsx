@@ -1,4 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
+import { Surface } from "@heroui/react";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Lock, PlusCircle } from "lucide-react";
@@ -15,7 +16,6 @@ import { columns } from "@/features/inventory/components/columns";
 import { InventoryItemForm } from "@/features/inventory/components/InventoryItemForm";
 import { inventoryKeys } from "@/features/inventory/queries";
 import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
-import { ServicesSurface } from "@/features/services/components/ServicesShell";
 export function InventoryPage() {
   const client = useClientQueries(schemaLite);
 
@@ -134,7 +134,7 @@ export function InventoryPage() {
     <section className="space-y-8">
       {combinedError && <Alert status="danger">{combinedError}</Alert>}
 
-      <ServicesSurface>
+      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
         <div className="mb-4 flex justify-end">
           <Button
             className="w-full sm:w-auto"
@@ -160,7 +160,7 @@ export function InventoryPage() {
             openEditModal,
           }}
         />
-      </ServicesSurface>
+      </Surface>
 
       <AllergyInventoryView />
 

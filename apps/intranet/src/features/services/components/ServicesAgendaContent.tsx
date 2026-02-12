@@ -1,7 +1,6 @@
-import { Spinner } from "@heroui/react";
+import { Spinner, Surface } from "@heroui/react";
 import dayjs from "dayjs";
 import { StatCard } from "@/components/ui/StatCard";
-import { ServicesSurface } from "@/features/services/components/ServicesShell";
 import { ServicesUnifiedAgenda } from "@/features/services/components/ServicesUnifiedAgenda";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 import { currencyFormatter } from "@/lib/format";
@@ -35,19 +34,19 @@ export function ServicesAgendaContent() {
   if (aggregatedLoading && unifiedAgendaItems.length === 0) {
     return (
       <section className="space-y-8">
-        <ServicesSurface className="flex min-h-64 items-center justify-center">
+        <Surface className="rounded-[28px] p-6 shadow-inner flex min-h-64 items-center justify-center">
           <div className="flex items-center gap-3 text-default-600 text-sm">
             <Spinner size="md" />
             <span>Cargando agenda consolidada...</span>
           </div>
-        </ServicesSurface>
+        </Surface>
       </section>
     );
   }
 
   return (
     <section className="space-y-8">
-      <ServicesSurface>
+      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard title="Pagos hoy" value={currencyFormatter.format(totals.day)} />
           <StatCard title="Semana en curso" value={currencyFormatter.format(totals.week)} />
@@ -62,7 +61,7 @@ export function ServicesAgendaContent() {
           onRegisterPayment={handleAgendaRegisterPayment}
           onUnlinkPayment={handleAgendaUnlinkPayment}
         />
-      </ServicesSurface>
+      </Surface>
     </section>
   );
 }

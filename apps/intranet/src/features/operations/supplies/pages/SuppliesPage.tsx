@@ -1,7 +1,7 @@
+import { Surface } from "@heroui/react";
 import { RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
-import { ServicesSurface } from "@/features/services/components/ServicesShell";
 import { SupplyRequestForm } from "@/features/supplies/components/SupplyRequestForm";
 import { SupplyRequestsTable } from "@/features/supplies/components/SupplyRequestsTable";
 import { useSupplyManagement } from "@/features/supplies/hooks/use-supply-management";
@@ -17,7 +17,7 @@ export function Supplies() {
   return (
     <section className="space-y-8">
       {canCreate && (
-        <ServicesSurface>
+        <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
           <div className="space-y-4">
             <div>
               <h2 className="font-semibold text-foreground text-lg">Solicitar nuevo insumo</h2>
@@ -27,10 +27,10 @@ export function Supplies() {
             </div>
             <SupplyRequestForm commonSupplies={commonSupplies} onSuccess={refresh} />
           </div>
-        </ServicesSurface>
+        </Surface>
       )}
 
-      <ServicesSurface>
+      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-default-500 text-sm">{tableTitle}</p>
           <Button
@@ -50,7 +50,7 @@ export function Supplies() {
             requests={requests}
           />
         </div>
-      </ServicesSurface>
+      </Surface>
     </section>
   );
 }

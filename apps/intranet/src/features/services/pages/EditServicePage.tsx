@@ -1,3 +1,4 @@
+import { Surface } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -12,7 +13,6 @@ import {
 import { ServiceForm } from "@/features/services/components/ServiceForm";
 import { ServiceScheduleAccordion } from "@/features/services/components/ServiceScheduleAccordion";
 import { ServiceScheduleTable } from "@/features/services/components/ServiceScheduleTable";
-import { ServicesSurface } from "@/features/services/components/ServicesShell";
 import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
 import { fmtCLP } from "@/lib/format";
 export function ServiceEditPage() {
@@ -140,7 +140,7 @@ export function ServiceEditPage() {
       {displayError && <Alert status="danger">{displayError}</Alert>}
       {saveMessage && <Alert status="success">{saveMessage}</Alert>}
 
-      <ServicesSurface className="space-y-6">
+      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
         <div className="flex justify-end">
           <Button
             onClick={() => {
@@ -236,7 +236,7 @@ export function ServiceEditPage() {
             </section>
           </div>
         </div>
-      </ServicesSurface>
+      </Surface>
     </section>
   );
 }

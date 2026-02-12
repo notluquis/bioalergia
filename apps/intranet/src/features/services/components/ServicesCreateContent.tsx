@@ -1,9 +1,9 @@
+import { Surface } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { ServiceForm } from "@/features/services/components/ServiceForm";
-import { ServicesSurface } from "@/features/services/components/ServicesShell";
 import { SERVICE_TEMPLATES } from "@/features/services/components/ServiceTemplateGallery";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 export function ServicesCreateContent() {
@@ -16,7 +16,7 @@ export function ServicesCreateContent() {
 
   return (
     <section className="space-y-8">
-      <ServicesSurface>
+      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -46,9 +46,9 @@ export function ServicesCreateContent() {
             ))}
           </div>
         </div>
-      </ServicesSurface>
+      </Surface>
 
-      <ServicesSurface>
+      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
         <div className="space-y-4">
           <p className="font-semibold text-foreground text-sm">Formulario de creación</p>
           <ServiceForm
@@ -64,7 +64,7 @@ export function ServicesCreateContent() {
 
           {createError && <p className="text-rose-600 text-sm">{createError}</p>}
         </div>
-      </ServicesSurface>
+      </Surface>
     </section>
   );
 }

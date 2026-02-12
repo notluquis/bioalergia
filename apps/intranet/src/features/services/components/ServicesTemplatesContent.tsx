@@ -1,5 +1,5 @@
+import { Surface } from "@heroui/react";
 import { Alert } from "@/components/ui/Alert";
-import { ServicesSurface } from "@/features/services/components/ServicesShell";
 import { ServiceTemplateGallery } from "@/features/services/components/ServiceTemplateGallery";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 export function ServicesTemplatesContent() {
@@ -13,9 +13,9 @@ export function ServicesTemplatesContent() {
         </Alert>
       )}
 
-      <ServicesSurface>
+      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
         <ServiceTemplateGallery onApply={applyTemplate} />
-      </ServicesSurface>
+      </Surface>
     </section>
   );
 }
