@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 
 import {
@@ -80,23 +80,20 @@ export function useOnboardingForm() {
   const [error, setError] = useState<string | null>(null);
   const [mfaSecret, setMfaSecret] = useState<MfaSecretData | null>(null);
 
-  const defaultValues = useMemo<OnboardingValues>(
-    () => ({
-      names: userProfile?.names ?? "",
-      rut: userProfile?.rut ?? "",
-      phone: userProfile?.phone ?? "",
-      address: userProfile?.address ?? "",
-      fatherName: userProfile?.fatherName ?? "",
-      motherName: userProfile?.motherName ?? "",
-      bankName: userProfile?.bankName ?? "",
-      bankAccountType: userProfile?.bankAccountType ?? "",
-      bankAccountNumber: userProfile?.bankAccountNumber ?? "",
-      password: "",
-      confirmPassword: "",
-      mfaCode: "",
-    }),
-    [userProfile],
-  );
+  const [defaultValues] = useState<OnboardingValues>(() => ({
+    names: userProfile?.names ?? "",
+    rut: userProfile?.rut ?? "",
+    phone: userProfile?.phone ?? "",
+    address: userProfile?.address ?? "",
+    fatherName: userProfile?.fatherName ?? "",
+    motherName: userProfile?.motherName ?? "",
+    bankName: userProfile?.bankName ?? "",
+    bankAccountType: userProfile?.bankAccountType ?? "",
+    bankAccountNumber: userProfile?.bankAccountNumber ?? "",
+    password: "",
+    confirmPassword: "",
+    mfaCode: "",
+  }));
 
   const form = useForm({
     defaultValues,
