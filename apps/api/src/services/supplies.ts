@@ -6,9 +6,9 @@ export async function getSupplyRequests() {
     include: {
       user: {
         select: {
-          email: true,
           person: {
             select: {
+              email: true,
               names: true,
               fatherName: true,
             },

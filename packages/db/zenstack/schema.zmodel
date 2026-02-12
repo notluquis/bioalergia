@@ -60,6 +60,7 @@ model User {
   status                  UserStatus               @default(PENDING_SETUP)
   mfaSecret               String?                  @map("mfa_secret")
   mfaEnabled              Boolean                  @default(false) @map("mfa_enabled")
+  sessionVersion          Int                      @default(1) @map("session_version")
 
 
   // Relationships

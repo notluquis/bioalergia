@@ -34,6 +34,7 @@ interface AuthSession {
   userId: number;
   email: string;
   roles: string[];
+  sessionVersion: number;
 }
 
 async function issueToken(session: AuthSession): Promise<string> {
@@ -42,9 +43,38 @@ async function issueToken(session: AuthSession): Promise<string> {
       sub: session.userId.toString(),
       email: session.email,
       roles: session.roles,
+      sv: session.sessionVersion,
     },
     "2d",
   );
+}
+
+async function resolveSessionFromToken(token: string) {
+  const decoded = await verifyToken(token);
+  if (!decoded || typeof decoded.sub !== "string") {
+    return null;
+  }
+  const userId = Number(decoded.sub);
+  if (!Number.isFinite(userId)) {
+    return null;
+  }
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, sessionVersion: true, person: { select: { email: true } } },
+  });
+  if (!user) {
+    return null;
+  }
+  const tokenSessionVersion =
+    typeof decoded.sv === "number" && Number.isFinite(decoded.sv) ? decoded.sv : 1;
+  if (tokenSessionVersion !== user.sessionVersion) {
+    return null;
+  }
+  return {
+    decoded,
+    userId: user.id,
+    userEmail: user.person?.email ?? String(decoded.email ?? ""),
+  };
 }
 
 import { z } from "zod";
@@ -143,7 +173,12 @@ authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
   const userEmail = user.person?.email ?? normalizedEmail;
 
   // Issue token and set cookie
-  const token = await issueToken({ userId: user.id, email: userEmail, roles });
+  const token = await issueToken({
+    userId: user.id,
+    email: userEmail,
+    roles,
+    sessionVersion: user.sessionVersion,
+  });
   setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
   const { getAbilityRulesForUser } = await import("../services/authz.js");
@@ -192,7 +227,12 @@ authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
 
   const roles = user.roles.map((r) => r.role.name);
   const userEmail = user.person?.email ?? "";
-  const token = await issueToken({ userId: user.id, email: userEmail, roles });
+  const token = await issueToken({
+    userId: user.id,
+    email: userEmail,
+    roles,
+    sessionVersion: user.sessionVersion,
+  });
   setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
   const { getAbilityRulesForUser } = await import("../services/authz.js");
@@ -233,8 +273,12 @@ authRoutes.get("/me/session", async (c) => {
   }
 
   try {
-    const decoded = await verifyToken(token);
-    const userId = Number(decoded.sub);
+    const session = await resolveSessionFromToken(token);
+    if (!session) {
+      deleteCookie(c, COOKIE_NAME);
+      return c.json({ status: "ok", user: null });
+    }
+    const userId = session.userId;
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -249,7 +293,6 @@ authRoutes.get("/me/session", async (c) => {
       deleteCookie(c, COOKIE_NAME);
       return c.json({ status: "ok", user: null });
     }
-
     // --- Role Governance Logic ---
     const { getAbilityRulesForUser } = await import("../services/authz.js");
     const abilityRules = await getAbilityRulesForUser(user.id);
@@ -287,9 +330,12 @@ authRoutes.post("/mfa/setup", async (c) => {
   }
 
   try {
-    const decoded = await verifyToken(token);
-    const userId = Number(decoded.sub);
-    const email = String(decoded.email);
+    const session = await resolveSessionFromToken(token);
+    if (!session) {
+      return c.json({ status: "error", message: "Token inválido" }, 401);
+    }
+    const userId = session.userId;
+    const email = session.userEmail;
 
     const { generateMfaSecret } = await import("../services/mfa.js");
     const { secret, qrCodeUrl } = await generateMfaSecret(email);
@@ -312,8 +358,11 @@ authRoutes.post("/mfa/enable", zValidator("json", mfaEnableSchema), async (c) =>
   }
 
   try {
-    const decoded = await verifyToken(token);
-    const userId = Number(decoded.sub);
+    const session = await resolveSessionFromToken(token);
+    if (!session) {
+      return c.json({ status: "error", message: "Token inválido" }, 401);
+    }
+    const userId = session.userId;
 
     const { token: mfaToken } = c.req.valid("json");
 
@@ -347,8 +396,11 @@ authRoutes.post("/mfa/disable", async (c) => {
   }
 
   try {
-    const decoded = await verifyToken(token);
-    const userId = Number(decoded.sub);
+    const session = await resolveSessionFromToken(token);
+    if (!session) {
+      return c.json({ status: "error", message: "Token inválido" }, 401);
+    }
+    const userId = session.userId;
 
     await db.user.update({
       where: { id: userId },
@@ -491,6 +543,7 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
       userId: user.id,
       email: user.person?.email ?? "",
       roles,
+      sessionVersion: user.sessionVersion,
     });
     setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
@@ -526,9 +579,12 @@ authRoutes.get("/passkey/register/options", async (c) => {
 
   try {
     const { generateRegistrationOptions } = await import("@simplewebauthn/server");
-    const decoded = await verifyToken(token);
-    const userId = Number(decoded.sub);
-    const email = String(decoded.email);
+    const session = await resolveSessionFromToken(token);
+    if (!session) {
+      return c.json({ status: "error", message: "Token inválido" }, 401);
+    }
+    const userId = session.userId;
+    const email = session.userEmail;
 
     const user = await db.user.findUnique({
       where: { id: userId },
@@ -576,8 +632,11 @@ authRoutes.post(
 
     try {
       const { verifyRegistrationResponse } = await import("@simplewebauthn/server");
-      const decoded = await verifyToken(sessionToken);
-      const userId = Number(decoded.sub);
+      const session = await resolveSessionFromToken(sessionToken);
+      if (!session) {
+        return c.json({ status: "error", message: "Token inválido" }, 401);
+      }
+      const userId = session.userId;
 
       const { body: regResponse, challenge } = c.req.valid("json");
 
@@ -640,8 +699,11 @@ authRoutes.delete("/passkey/remove", async (c) => {
   }
 
   try {
-    const decoded = await verifyToken(token);
-    const userId = Number(decoded.sub);
+    const session = await resolveSessionFromToken(token);
+    if (!session) {
+      return c.json({ status: "error", message: "Token inválido" }, 401);
+    }
+    const userId = session.userId;
 
     // Remove all passkeys for the user (or specific one if ID provided in query? For now Wipe All)
     await db.passkey.deleteMany({

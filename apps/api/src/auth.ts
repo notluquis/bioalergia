@@ -59,7 +59,10 @@ export async function getSessionUser(ctx: Context): Promise<AuthSession | null> 
 
     const user = await db.user.findUnique({
       where: { id: userId },
-      include: {
+      select: {
+        id: true,
+        status: true,
+        sessionVersion: true,
         person: { select: { email: true } },
         roles: {
           include: {
@@ -72,6 +75,11 @@ export async function getSessionUser(ctx: Context): Promise<AuthSession | null> 
     });
 
     if (!user || user.status === "SUSPENDED") {
+      return null;
+    }
+    const tokenSessionVersion =
+      typeof decoded.sv === "number" && Number.isFinite(decoded.sv) ? decoded.sv : 1;
+    if (tokenSessionVersion !== user.sessionVersion) {
       return null;
     }
 
@@ -120,6 +128,14 @@ export async function hasPermission(
   subject: string,
   resource?: Record<string, unknown>,
 ): Promise<boolean> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { status: true },
+  });
+  if (!user || user.status !== "ACTIVE") {
+    return false;
+  }
+
   const rules = await getAbilityRulesForUser(userId);
 
   if (rules.length === 0) {

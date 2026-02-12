@@ -5,37 +5,27 @@
  */
 
 import { db } from "@finanzas/db";
-import type { Context } from "hono";
 import { Hono } from "hono";
-import { getCookie } from "hono/cookie";
 import { z } from "zod";
-import { hasPermission } from "../auth";
+import { getSessionUser, hasPermission } from "../auth";
 import { hashPassword } from "../lib/crypto";
-import { verifyToken } from "../lib/paseto";
 import { normalizeRut } from "../lib/rut";
 import { zValidator } from "../lib/zod-validator";
 import { reply } from "../utils/reply";
 
-const COOKIE_NAME = "finanzas_session";
-
 export const userRoutes = new Hono();
 
 // Helper to get auth from cookie
-async function getAuth(c: Context) {
-  const token = getCookie(c, COOKIE_NAME);
-  if (!token) {
+async function getAuth(c: Parameters<typeof getSessionUser>[0]) {
+  const sessionUser = await getSessionUser(c);
+  if (!sessionUser) {
     return null;
   }
-  try {
-    const decoded = await verifyToken(token);
-    return {
-      userId: Number(decoded.sub),
-      email: String(decoded.email),
-      roles: decoded.roles as string[],
-    };
-  } catch {
-    return null;
-  }
+  return {
+    userId: sessionUser.id,
+    email: sessionUser.email,
+    roles: sessionUser.roles.map((role) => role.role.name),
+  };
 }
 
 // ============================================================
@@ -362,6 +352,13 @@ userRoutes.post("/:id/reset-password", zValidator("param", idParamSchema), async
   }
 
   const { id: targetUserId } = c.req.valid("param");
+  const targetUser = await db.user.findUnique({
+    where: { id: targetUserId },
+    select: { id: true },
+  });
+  if (!targetUser) {
+    return reply(c, { status: "error", message: "Usuario no encontrado" }, 404);
+  }
 
   const crypto = await import("node:crypto");
   const tempPassword = crypto.randomBytes(12).toString("hex");
@@ -374,6 +371,7 @@ userRoutes.post("/:id/reset-password", zValidator("param", idParamSchema), async
       status: "PENDING_SETUP",
       mfaEnabled: false,
       mfaSecret: null,
+      sessionVersion: { increment: 1 },
     },
   });
 

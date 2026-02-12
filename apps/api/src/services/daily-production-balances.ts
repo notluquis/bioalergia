@@ -35,7 +35,7 @@ export async function listProductionBalances(from: string, to: string) {
       },
     },
     include: {
-      user: { select: { email: true } },
+      user: { select: { person: { select: { email: true } } } },
     },
     orderBy: [{ balanceDate: "desc" }, { id: "desc" }],
   });
@@ -45,7 +45,7 @@ export async function getProductionBalanceById(id: number) {
   return await db.dailyProductionBalance.findUnique({
     where: { id },
     include: {
-      user: { select: { email: true } },
+      user: { select: { person: { select: { email: true } } } },
     },
   });
 }
@@ -71,7 +71,7 @@ export async function createProductionBalance(data: ProductionBalancePayload, us
       roxairMonto: data.roxairMonto,
     },
     include: {
-      user: { select: { email: true } },
+      user: { select: { person: { select: { email: true } } } },
     },
   });
 }
@@ -127,7 +127,7 @@ export async function updateProductionBalance(id: number, data: ProductionBalanc
     where: { id },
     data: updateData,
     include: {
-      user: { select: { email: true } },
+      user: { select: { person: { select: { email: true } } } },
     },
   });
 }

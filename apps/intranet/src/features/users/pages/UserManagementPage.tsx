@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { Key, Shield, UserCog, UserPlus } from "lucide-react";
+import { Copy, Key, Shield, UserCog, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
@@ -32,6 +32,9 @@ export function UserManagementPage() {
 
   const [editingUser, setEditingUser] = useState<null | User>(null);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [resetPasswordUser, setResetPasswordUser] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
 
   // ZenStack hooks for users
@@ -117,9 +120,12 @@ export function UserManagementPage() {
         if (confirm("¿Restablecer contraseña? Esto generará una clave temporal.")) {
           try {
             const tempPassword = await resetUserPassword(id);
+            const target = users.find((u) => u.id === id);
             success("Contraseña restablecida");
             queryClient.invalidateQueries({ queryKey: ["user"] });
-            alert(`Contraseña temporal: ${tempPassword}`);
+            setResetPasswordValue(tempPassword);
+            setResetPasswordUser(target ? getPersonFullName(target.person) : `Usuario #${id}`);
+            setIsResetPasswordOpen(true);
           } catch (error_) {
             error(error_ instanceof Error ? error_.message : "Error al restablecer");
           }
@@ -154,7 +160,7 @@ export function UserManagementPage() {
         }
       },
     }),
-    [deleteUserMutation, error, queryClient, success, updateUserMutation],
+    [deleteUserMutation, error, queryClient, success, updateUserMutation, users],
   );
 
   const columns = useMemo(() => getColumns(actions), [actions]);
@@ -375,6 +381,51 @@ export function UserManagementPage() {
               variant="primary"
             >
               Guardar cambios
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        boxClassName="max-w-md"
+        isOpen={isResetPasswordOpen}
+        onClose={() => {
+          setIsResetPasswordOpen(false);
+        }}
+        title="Contraseña temporal generada"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-default-600 text-sm">
+            Guarda esta contraseña para <strong>{resetPasswordUser}</strong>. Se mostrará una sola
+            vez.
+          </p>
+
+          <div className="rounded-xl border border-default-200 bg-default-50 p-3">
+            <code className="break-all font-mono text-sm">{resetPasswordValue}</code>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(resetPasswordValue);
+                  success("Contraseña copiada al portapapeles");
+                } catch {
+                  error("No se pudo copiar automáticamente. Copia manualmente la clave.");
+                }
+              }}
+              startContent={<Copy size={16} />}
+              variant="ghost"
+            >
+              Copiar
+            </Button>
+            <Button
+              onClick={() => {
+                setIsResetPasswordOpen(false);
+              }}
+              variant="primary"
+            >
+              Cerrar
             </Button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import type { DailyProductionBalance, User } from "@finanzas/db";
+import type { DailyProductionBalance } from "@finanzas/db";
 import dayjs from "dayjs";
 import { Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
@@ -17,7 +17,7 @@ const app = new Hono();
 
 // Type for production balance response mapper - includes optional user relation
 type ProductionBalanceWithUser = DailyProductionBalance & {
-  user?: Pick<User, "email"> | null;
+  user?: { person?: { email?: null | string } } | null;
 };
 
 // Helper to map record for response (mimicking legacy mapProductionBalance)
@@ -54,7 +54,7 @@ function mapResponse(p: ProductionBalanceWithUser) {
     comentarios: p.comentarios,
     status: p.status,
     changeReason: p.changeReason,
-    createdByEmail: p.user?.email ?? null,
+    createdByEmail: p.user?.person?.email ?? null,
     updatedByEmail: null,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,

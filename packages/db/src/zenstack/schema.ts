@@ -261,6 +261,18 @@ export class SchemaType implements SchemaDef {
           ],
           default: false,
         },
+        sessionVersion: {
+          name: "sessionVersion",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(1) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("session_version") }],
+            },
+          ],
+          default: 1,
+        },
         passkeys: {
           name: "passkeys",
           type: "Passkey",

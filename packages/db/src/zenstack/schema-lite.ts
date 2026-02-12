@@ -138,6 +138,11 @@ export class SchemaType implements SchemaDef {
           type: "Boolean",
           default: false,
         },
+        sessionVersion: {
+          name: "sessionVersion",
+          type: "Int",
+          default: 1,
+        },
         passkeys: {
           name: "passkeys",
           type: "Passkey",
