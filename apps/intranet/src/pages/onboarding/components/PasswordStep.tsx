@@ -36,10 +36,7 @@ export function PasswordStep({
   };
 
   return (
-    <form
-      className="fade-in slide-in-from-right-4 animate-in space-y-6 duration-500"
-      onSubmit={handleSubmit}
-    >
+    <form className="space-y-6" onSubmit={handleSubmit}>
       <div className="mb-6 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10 text-secondary">
           <Key size={24} />

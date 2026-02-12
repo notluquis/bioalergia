@@ -9,7 +9,7 @@ interface CompleteStepProps {
 
 export function CompleteStep({ onFinish, isLoading }: CompleteStepProps) {
   return (
-    <div className="fade-in zoom-in animate-in space-y-6 py-8 text-center duration-500">
+    <div className="space-y-6 py-8 text-center">
       <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-success/10 text-success">
         <Check size={48} strokeWidth={3} />
       </div>
@@ -20,7 +20,7 @@ export function CompleteStep({ onFinish, isLoading }: CompleteStepProps) {
         </p>
       </div>
       <Button
-        className="w-full max-w-xs shadow-lg shadow-primary/20"
+        className="w-full max-w-xs"
         disabled={isLoading}
         onClick={onFinish}
         size="lg"

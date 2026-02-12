@@ -40,7 +40,7 @@ export function MfaStep({
 
   if (!mfaSecret) {
     return (
-      <div className="fade-in slide-in-from-right-4 animate-in space-y-6 duration-500">
+      <div className="space-y-6">
         <div className="mb-6 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
             <Smartphone size={24} />
@@ -59,7 +59,7 @@ export function MfaStep({
   }
 
   return (
-    <div className="fade-in slide-in-from-right-4 animate-in space-y-6 duration-500">
+    <div className="space-y-6">
       <div className="mb-6 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
           <Smartphone size={24} />
@@ -72,7 +72,7 @@ export function MfaStep({
       </div>
 
       <div className="flex flex-col items-center gap-6">
-        <div className="rounded-xl bg-white p-4 shadow-sm">
+        <div className="rounded-xl bg-white p-4">
           <img
             alt="QR Code"
             className="h-48 w-48"
