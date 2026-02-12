@@ -171,8 +171,10 @@ export function useOnboardingForm() {
         bankAccountNumber: values.bankAccountNumber,
         password: values.password,
       });
-
-      await queryClient.refetchQueries({ queryKey: ["user", "profile"] });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
+      setError(null);
     },
     onError: (mutationError) => {
       const msg =

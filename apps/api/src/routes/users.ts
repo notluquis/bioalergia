@@ -279,8 +279,12 @@ userRoutes.post("/setup", zValidator("json", setupUserSchema), async (c) => {
     return reply(c, { status: "error", message: "Usuario no encontrado" }, 404);
   }
 
+  if (user.status === "ACTIVE") {
+    return reply(c, { status: "ok", message: "Cuenta ya configurada" });
+  }
+
   if (user.status !== "PENDING_SETUP") {
-    return reply(c, { status: "error", message: "Cuenta ya configurada" }, 403);
+    return reply(c, { status: "error", message: "Estado de usuario no válido para setup" }, 409);
   }
 
   const hash = await hashPassword(body.password);
