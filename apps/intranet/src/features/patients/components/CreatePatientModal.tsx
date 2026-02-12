@@ -137,7 +137,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
             <form.Field name="fatherName">
               {(field) => (
                 <Input
-                  label="Apellido Paterno"
+                  label="Primer apellido"
                   onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="Ej: Perez"
                   required
@@ -149,7 +149,7 @@ export function CreatePatientModal({ isOpen, onClose }: Readonly<CreatePatientMo
             <form.Field name="motherName">
               {(field) => (
                 <Input
-                  label="Apellido Materno"
+                  label="Segundo apellido"
                   onChange={(e) => field.handleChange(e.target.value)}
                   placeholder="Ej: Gonzalez"
                   required

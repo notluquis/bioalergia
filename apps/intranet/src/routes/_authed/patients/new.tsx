@@ -150,7 +150,7 @@ function AddPatientPage() {
                 <form.Field name="fatherName">
                   {(field) => (
                     <Input
-                      label="Apellido Paterno"
+                      label="Primer apellido"
                       placeholder="Ej: Pérez"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
@@ -162,7 +162,7 @@ function AddPatientPage() {
                 <form.Field name="motherName">
                   {(field) => (
                     <Input
-                      label="Apellido Materno"
+                      label="Segundo apellido"
                       placeholder="Ej: González"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}

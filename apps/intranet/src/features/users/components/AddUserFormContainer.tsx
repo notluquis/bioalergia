@@ -1,7 +1,6 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Shield, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -12,9 +11,9 @@ import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
 import { fetchPeople, type PersonWithExtras } from "@/features/people/api";
 import { inviteUser } from "@/features/users/api";
+import { usePersonLinking } from "@/features/users/hooks/usePersonLinking";
 import { ApiError } from "@/lib/api-client";
 import { getPersonFullName } from "@/lib/person";
-import { usePersonLinking } from "./hooks/usePersonLinking";
 
 interface AddUserFormState {
   email: string;
@@ -29,8 +28,18 @@ interface AddUserFormState {
   role: string;
   rut: string;
 }
-export function AddUserPage() {
-  const navigate = useNavigate();
+
+interface AddUserFormContainerProps {
+  onCancel: () => void;
+  onCreated?: () => void;
+  showPageHeader?: boolean;
+}
+
+export function AddUserFormContainer({
+  onCancel,
+  onCreated,
+  showPageHeader = true,
+}: Readonly<AddUserFormContainerProps>) {
   const queryClient = useQueryClient();
   const { error: toastError, success } = useToast();
 
@@ -92,7 +101,7 @@ export function AddUserPage() {
       success("Usuario creado exitosamente");
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["people"] });
-      await navigate({ to: "/settings/users" });
+      onCreated?.();
     },
   });
 
@@ -145,7 +154,7 @@ export function AddUserPage() {
       <div className="mx-auto max-w-2xl space-y-8">
         <div className="surface-elevated rounded-3xl p-6 shadow-lg">
           <p className="text-danger">Error al cargar datos: {String(peopleError)}</p>
-          <Button onClick={() => navigate({ to: "/settings/users" })} className="mt-4">
+          <Button onClick={onCancel} className="mt-4">
             Volver
           </Button>
         </div>
@@ -161,8 +170,9 @@ export function AddUserPage() {
       isPeoplePermissionDenied={isPeoplePermissionDenied}
       isRolesLoading={isRolesLoading}
       isSubmitPending={createUserMutation.isPending}
-      onCancel={() => navigate({ to: "/settings/users" })}
+      onCancel={onCancel}
       roles={roles}
+      showPageHeader={showPageHeader}
     />
   );
 }
@@ -192,6 +202,7 @@ interface AddUserFormCardProps {
   isSubmitPending: boolean;
   onCancel: () => void;
   roles: RoleOption[];
+  showPageHeader: boolean;
 }
 
 function AddUserFormCard({
@@ -203,16 +214,19 @@ function AddUserFormCard({
   isSubmitPending,
   onCancel,
   roles,
+  showPageHeader,
 }: AddUserFormCardProps) {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      <div className="space-y-2">
-        <h1 className="font-bold text-3xl text-primary">Agregar usuario</h1>
-        <p className="text-default-600">
-          Crea un nuevo usuario en el sistema. Se generará una contraseña temporal y el usuario
-          deberá completar su configuración de seguridad al iniciar sesión.
-        </p>
-      </div>
+      {showPageHeader ? (
+        <div className="space-y-2">
+          <h1 className="font-bold text-3xl text-primary">Agregar usuario</h1>
+          <p className="text-default-600">
+            Crea un nuevo usuario en el sistema. Se generará una contraseña temporal y el usuario
+            deberá completar su configuración de seguridad al iniciar sesión.
+          </p>
+        </div>
+      ) : null}
 
       <form
         className="surface-elevated space-y-6 rounded-3xl p-6 shadow-lg"
@@ -345,7 +359,7 @@ function UserDataFields({
               <form.Field name="fatherName">
                 {(field) => (
                   <Input
-                    label="Apellido Paterno"
+                    label="Primer apellido"
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="Ej: Pérez"
                     required
@@ -356,7 +370,7 @@ function UserDataFields({
               <form.Field name="motherName">
                 {(field) => (
                   <Input
-                    label="Apellido Materno"
+                    label="Segundo apellido"
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="Ej: González"
                     required

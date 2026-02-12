@@ -1,6 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -13,6 +12,7 @@ import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { deleteUserPasskey, resetUserPassword, toggleUserMfa } from "@/features/users/api";
+import { AddUserFormContainer } from "@/features/users/components/AddUserFormContainer";
 import { getColumns } from "@/features/users/components/columns";
 import type { User } from "@/features/users/types";
 import { getPersonFullName } from "@/lib/person";
@@ -31,6 +31,7 @@ export function UserManagementPage() {
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
 
   const [editingUser, setEditingUser] = useState<null | User>(null);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
 
   // ZenStack hooks for users
@@ -277,12 +278,16 @@ export function UserManagementPage() {
           </div>
 
           {can("create", "User") && (
-            <Link to="/settings/users/add">
-              <Button variant="primary" className="gap-2">
-                <UserPlus size={20} />
-                Agregar usuario
-              </Button>
-            </Link>
+            <Button
+              variant="primary"
+              className="gap-2"
+              onClick={() => {
+                setIsCreateUserOpen(true);
+              }}
+            >
+              <UserPlus size={20} />
+              Agregar usuario
+            </Button>
           )}
         </div>
 
@@ -295,6 +300,25 @@ export function UserManagementPage() {
           isLoading={isLoading}
         />
       </div>
+
+      <Modal
+        boxClassName="max-w-4xl"
+        isOpen={isCreateUserOpen}
+        onClose={() => {
+          setIsCreateUserOpen(false);
+        }}
+        title="Agregar usuario"
+      >
+        <AddUserFormContainer
+          showPageHeader={false}
+          onCancel={() => {
+            setIsCreateUserOpen(false);
+          }}
+          onCreated={() => {
+            setIsCreateUserOpen(false);
+          }}
+        />
+      </Modal>
 
       <Modal
         boxClassName="max-w-md"
