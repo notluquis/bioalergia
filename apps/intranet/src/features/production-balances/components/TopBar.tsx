@@ -9,18 +9,16 @@ import type { DayStatus } from "../types";
 import { formatDateFull } from "../utils";
 
 interface TopBarProps {
-  canFinalize: boolean;
   date: Date;
   isSaving: boolean;
-  onFinalize: () => void;
-  onSave: () => void;
+  onSave: () => Promise<void> | void;
   status: DayStatus;
 }
 
 /**
  * Sticky top bar with date, status, and action buttons
  */
-export function TopBar({ canFinalize, date, isSaving, onFinalize, onSave, status }: TopBarProps) {
+export function TopBar({ date, isSaving, onSave, status }: TopBarProps) {
   const [showShortcut, setShowShortcut] = useState(false);
 
   // Keyboard shortcut: ⌘S to save
@@ -28,7 +26,7 @@ export function TopBar({ canFinalize, date, isSaving, onFinalize, onSave, status
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
-        onSave();
+        void onSave();
       }
     };
     globalThis.addEventListener("keydown", handleKeyDown);
@@ -92,20 +90,6 @@ export function TopBar({ canFinalize, date, isSaving, onFinalize, onSave, status
             </kbd>
           )}
         </Button>
-
-        {/* Finalizar button */}
-        <Button
-          className={cn(
-            "rounded-xl px-6",
-            canFinalize && "bg-success text-success-foreground hover:bg-success/90",
-          )}
-          isDisabled={!canFinalize || isSaving}
-          onPress={onFinalize}
-        >
-          Finalizar
-        </Button>
-
-        {/* More options dropdown */}
       </div>
     </div>
   );

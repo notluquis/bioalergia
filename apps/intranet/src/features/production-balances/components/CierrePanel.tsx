@@ -10,8 +10,8 @@ interface CierrePanelProps {
   className?: string;
   isSaving: boolean;
   lastSaved: Date | null;
-  onFinalize: () => void;
-  onSaveDraft: () => void;
+  onFinalize: () => Promise<void> | void;
+  onSaveDraft: () => Promise<void> | void;
   status: DayStatus;
   summary: BalanceSummary;
 }
@@ -104,7 +104,7 @@ export function CierrePanel({
       )}
 
       {/* Action buttons */}
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 hidden gap-2 lg:flex">
         <Button
           variant="outline"
           className="flex-1 rounded-xl"

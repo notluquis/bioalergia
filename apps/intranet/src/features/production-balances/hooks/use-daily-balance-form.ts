@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { useCallback, useEffect, useRef } from "react";
 
 import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/context/ToastContext";
+import { toast } from "@/lib/toast-interceptor";
 import { dailyBalanceApi, type ProductionBalanceApiItem } from "../api";
 import { productionBalanceKeys } from "../queries";
 import type { DailyBalanceFormData } from "../types";
@@ -17,7 +17,6 @@ const DATE_FORMAT = "YYYY-MM-DD";
  * Hook for Daily Balance form logic with autosave
  */
 export function useDailyBalanceForm() {
-  const { error: showError, success } = useToast();
   const queryClient = useQueryClient();
   const autosaveTimeout = useRef<null | ReturnType<typeof setTimeout>>(null);
 
@@ -135,33 +134,74 @@ export function useDailyBalanceForm() {
     onMutate: () => {
       setIsSaving(true);
     },
-    onError: (err) => {
+    onError: () => {
       setIsSaving(false);
-      showError(err instanceof Error ? err.message : "Error al guardar");
     },
     onSettled: () => {
       setIsSaving(false);
     },
     onSuccess: (response) => {
       markSaved(response.item.id);
-      success("Balance guardado");
       // Invalidate the week query so dots update
       void queryClient.invalidateQueries({ queryKey: productionBalanceKeys.all });
     },
   });
 
-  // Save function
-  const { mutate: saveMutate } = saveMutation;
-  const save = useCallback(() => {
-    if (!isDirty) {
-      return;
-    }
-    saveMutate(formData);
-  }, [isDirty, formData, saveMutate]);
+  type SaveOptions = {
+    errorMessage?: string;
+    loadingMessage?: string;
+    silent?: boolean;
+    successMessage?: string;
+  };
+
+  const { mutateAsync: saveMutateAsync } = saveMutation;
+  const save = useCallback(
+    async (options?: SaveOptions) => {
+      if (!isDirty || isSaving) {
+        return true;
+      }
+
+      const operation = saveMutateAsync(formData);
+
+      if (options?.silent) {
+        try {
+          await operation;
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      try {
+        await toast.promise(operation, {
+          error: (err: unknown) =>
+            options?.errorMessage ??
+            (err instanceof Error ? err.message : "Error al guardar el balance"),
+          loading: options?.loadingMessage ?? "Guardando balance...",
+          success: options?.successMessage ?? "Balance guardado",
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [formData, isDirty, isSaving, saveMutateAsync],
+  );
+
+  const saveDraft = useCallback(() => {
+    void save({
+      loadingMessage: "Guardando borrador...",
+      successMessage: "Borrador guardado",
+    });
+  }, [save]);
 
   // Autosave: trigger save after delay when dirty
   useEffect(() => {
     if (!isDirty) {
+      return;
+    }
+
+    if (isSaving) {
       return;
     }
 
@@ -170,7 +210,7 @@ export function useDailyBalanceForm() {
     }
 
     autosaveTimeout.current = setTimeout(() => {
-      save();
+      void save({ silent: true });
     }, AUTOSAVE_DELAY_MS);
 
     return () => {
@@ -178,21 +218,31 @@ export function useDailyBalanceForm() {
         clearTimeout(autosaveTimeout.current);
       }
     };
-  }, [isDirty, save]);
+  }, [isDirty, isSaving, save]);
 
   // Finalize day
-  const finalize = useCallback(() => {
+  const finalize = useCallback(async () => {
     if (!summary.cuadra) {
-      showError("El balance no cuadra");
+      toast.error("El balance no cuadra", {
+        description: "Revisa la diferencia antes de finalizar",
+      });
       return;
     }
-    // For now, finalizing just means ensuring it's saved.
-    // In the future, this might trigger a status update to "CLOSED" if the API supports it.
-    if (isDirty) {
-      save();
+    if (isSaving) {
+      return;
     }
-    success("Día finalizado");
-  }, [summary, success, showError, isDirty, save]);
+
+    if (isDirty) {
+      await save({
+        errorMessage: "No se pudo finalizar. Intenta nuevamente.",
+        loadingMessage: "Guardando y finalizando...",
+        successMessage: "Día finalizado",
+      });
+      return;
+    }
+
+    toast.success("Día finalizado", { description: "No había cambios pendientes por guardar" });
+  }, [summary.cuadra, isSaving, isDirty, save]);
 
   // Navigation
   const goToPrevWeek = useCallback(() => {
@@ -227,7 +277,7 @@ export function useDailyBalanceForm() {
     isSaving,
     lastSaved,
 
-    save,
+    save: saveDraft,
     selectDate,
     // State
     selectedDate,

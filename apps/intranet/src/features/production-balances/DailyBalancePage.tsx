@@ -12,6 +12,7 @@
 import { Spinner } from "@heroui/react";
 
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
 
 import { CierrePanel } from "./components/CierrePanel";
@@ -52,14 +53,7 @@ export function DailyBalancePage() {
   return (
     <div className="flex h-full flex-col">
       {/* Sticky TopBar */}
-      <TopBar
-        canFinalize={summary.cuadra && summary.totalMetodos > 0}
-        date={selectedDate}
-        isSaving={isSaving}
-        onFinalize={finalize}
-        onSave={save}
-        status={status}
-      />
+      <TopBar date={selectedDate} isSaving={isSaving} onSave={save} status={status} />
 
       {/* Week Navigation */}
       <WeekStrip
@@ -72,7 +66,7 @@ export function DailyBalancePage() {
       />
 
       {/* Main Content: 2-column layout */}
-      <div className="grid flex-1 gap-4 lg:grid-cols-12">
+      <div className="grid flex-1 gap-4 pb-24 lg:grid-cols-12 lg:pb-0">
         {/* Entry Form - main column */}
         <div className="lg:col-span-8">
           {isLoading ? (
@@ -94,6 +88,28 @@ export function DailyBalancePage() {
             status={status}
             summary={summary}
           />
+        </div>
+      </div>
+
+      {/* Mobile actions: single sticky CTA area to avoid duplicated primaries */}
+      <div className="sticky bottom-0 z-20 mt-4 border-default-200 border-t bg-background/95 p-3 backdrop-blur-md lg:hidden">
+        <div className="flex gap-2">
+          <Button
+            className="flex-1 rounded-xl"
+            isDisabled={isSaving}
+            isLoading={isSaving}
+            onPress={save}
+            variant="outline"
+          >
+            Guardar
+          </Button>
+          <Button
+            className="flex-1 rounded-xl"
+            isDisabled={!summary.cuadra || summary.totalMetodos <= 0 || isSaving}
+            onPress={finalize}
+          >
+            Finalizar
+          </Button>
         </div>
       </div>
     </div>

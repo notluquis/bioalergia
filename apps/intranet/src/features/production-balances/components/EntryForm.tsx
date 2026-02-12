@@ -1,3 +1,4 @@
+import { Label, TextArea } from "@heroui/react";
 import { CreditCard, Receipt } from "lucide-react";
 
 import { MoneyInput } from "@/components/ui/MoneyInput";
@@ -72,12 +73,12 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
             }}
             value={values.gastos}
           />
-          <div className="form-control">
-            <label className="label py-1" htmlFor="input-nota">
-              <span className="label-text font-medium text-xs sm:text-sm">Nota (opcional)</span>
-            </label>
-            <textarea
-              className="textarea textarea-bordered textarea-sm w-full resize-none"
+          <div className="flex flex-col gap-1.5">
+            <Label className="font-medium text-xs sm:text-sm" htmlFor="input-nota">
+              Nota (opcional)
+            </Label>
+            <TextArea
+              className="w-full"
               disabled={disabled}
               id="input-nota"
               onChange={(e) => {
@@ -85,7 +86,9 @@ export function EntryForm({ disabled = false, onChange, values }: EntryFormProps
               }}
               placeholder="Detalles o comentarios..."
               rows={2}
+              style={{ resize: "none" }}
               value={values.nota}
+              variant="secondary"
             />
           </div>
         </div>
