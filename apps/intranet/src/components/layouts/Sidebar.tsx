@@ -1,18 +1,8 @@
-import { Avatar } from "@heroui/react";
-import { Link, useRouter } from "@tanstack/react-router";
+import { Avatar, Dropdown, Label, Separator } from "@heroui/react";
+import { useRouter } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
-import type { ComponentProps } from "react";
 
 import { Backdrop } from "@/components/ui/Backdrop";
-import {
-  DropdownMenu,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownPopover,
-  HeroDropdownMenu,
-} from "@/components/ui/DropdownMenu";
 
 import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/hooks/use-can";
@@ -142,9 +132,10 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
               isMobile ? "px-3" : "flex flex-col items-center justify-center px-0",
             )}
           >
-            <DropdownMenu>
-              <DropdownMenuTrigger>
+            <Dropdown>
+              <Dropdown.Trigger>
                 <button
+                  aria-label="Abrir menu de usuario"
                   type="button"
                   className={cn(
                     "group flex cursor-pointer items-center outline-none transition-all hover:bg-default-50/50",
@@ -168,35 +159,42 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                     </div>
                   )}
                 </button>
-              </DropdownMenuTrigger>
-              <DropdownPopover
-                placement={"top-start" as ComponentProps<typeof DropdownPopover>["placement"]}
-              >
-                <HeroDropdownMenu aria-label="Menu de usuario" className="w-56">
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="font-medium text-sm leading-none">{displayName}</p>
-                      <p className="text-default-500 text-xs leading-none">{user?.email}</p>
+              </Dropdown.Trigger>
+              <Dropdown.Popover placement="top start">
+                <Dropdown.Menu
+                  aria-label="Menu de usuario"
+                  className="w-56"
+                  onAction={(key) => {
+                    if (key === "account") {
+                      router.navigate({ to: "/account" });
+                    }
+                    if (key === "logout") {
+                      logout();
+                    }
+                  }}
+                >
+                  <Dropdown.Item id="user" isDisabled textValue={displayName}>
+                    <div className="flex flex-col py-1">
+                      <Label>{displayName}</Label>
+                      <span className="text-default-500 text-xs">{user?.email}</span>
                     </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Link className="flex cursor-pointer items-center" to="/account">
+                  </Dropdown.Item>
+                  <Separator />
+                  <Dropdown.Item id="account" textValue="Mi cuenta">
+                    <div className="flex items-center">
                       <User className="mr-2 size-4" />
                       Mi Cuenta
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="cursor-pointer text-danger focus:bg-danger/10 focus:text-danger"
-                    onPress={() => logout()}
-                  >
-                    <LogOut className="mr-2 size-4" />
-                    Cerrar sesión
-                  </DropdownMenuItem>
-                </HeroDropdownMenu>
-              </DropdownPopover>
-            </DropdownMenu>
+                    </div>
+                  </Dropdown.Item>
+                  <Dropdown.Item id="logout" textValue="Cerrar sesion" variant="danger">
+                    <div className="flex items-center">
+                      <LogOut className="mr-2 size-4" />
+                      Cerrar sesion
+                    </div>
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown.Popover>
+            </Dropdown>
           </div>
         </aside>
       </div>
