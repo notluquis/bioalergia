@@ -37,7 +37,8 @@ export async function fetchParticipantLeaderboard(params?: {
   to?: string;
 }): Promise<ParticipantLeaderboardResponse> {
   const data = await apiClient.get<
-    ParticipantLeaderboardResponse & { message?: string; status: string }
+    | (ParticipantLeaderboardResponse & { message?: string; status: string })
+    | { data?: ParticipantLeaderboardResponse["participants"]; message?: string; status: string }
   >("/api/transactions/participants", {
     query: params,
     responseSchema: ParticipantLeaderboardResponseSchema,
@@ -46,5 +47,16 @@ export async function fetchParticipantLeaderboard(params?: {
   if (data.status !== "ok") {
     throw new Error(data.message || "No se pudo obtener la información del participante");
   }
-  return data;
+
+  // Backend returns { data: [...] } for this endpoint. Keep a stable frontend contract.
+  if ("participants" in data && Array.isArray(data.participants)) {
+    return data as ParticipantLeaderboardResponse;
+  }
+
+  return {
+    participants: ("data" in data && Array.isArray(data.data) ? data.data : []) as
+      | ParticipantLeaderboardResponse["participants"]
+      | [],
+    status: "ok",
+  };
 }
