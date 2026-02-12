@@ -24,8 +24,8 @@
   "dependencies": {
     "@heroui/react": "3.0.0-beta.5",
     "@heroui/styles": "3.0.0-beta.5",
-    "@tanstack/react-query": "^5.90.20",
-    "posthog-js": "^1.345.2",
+    "@tanstack/react-query": "^5.90.21",
+    "posthog-js": "^1.346.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
@@ -36,10 +36,10 @@
     "@storybook/addon-themes": "^10.2.8",
     "@storybook/react-vite": "^10.2.8",
     "@tailwindcss/vite": "^4.1.18",
-    "@types/react": "^19.2.13",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
-    "chromatic": "^15.0.0",
+    "chromatic": "^15.1.0",
     "msw": "^2.12.10",
     "msw-storybook-addon": "^2.0.6",
     "rollup-plugin-visualizer": "^6.0.5",
@@ -47,7 +47,7 @@
     "storybook-addon-tag-badges": "^3.0.6",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
-    "vite": "8.0.0-beta.12",
+    "vite": "8.0.0-beta.14",
     "vitest": "^4.0.18"
   }
 }
