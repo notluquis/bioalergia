@@ -1,4 +1,3 @@
-import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
@@ -95,9 +94,7 @@ export function useOnboardingForm() {
     mfaCode: "",
   }));
 
-  const form = useForm({
-    defaultValues,
-  });
+  const [values, setValues] = useState<OnboardingValues>(defaultValues);
 
   const mfaSetup = useMutation({
     mutationFn: () => setupMfa(),
@@ -158,21 +155,21 @@ export function useOnboardingForm() {
 
   const finalSubmit = useMutation({
     mutationFn: async () => {
-      const names = (form.getFieldValue("names") ?? "").trim();
-      const motherName = (form.getFieldValue("motherName") ?? "").trim();
+      const names = values.names.trim();
+      const motherName = values.motherName.trim();
       const cleanNames = motherName ? `${names} ${motherName}` : names;
 
       await setupUser({
         names: cleanNames,
-        rut: form.getFieldValue("rut") ?? "",
-        phone: form.getFieldValue("phone") ?? "",
-        address: form.getFieldValue("address") ?? "",
-        fatherName: form.getFieldValue("fatherName") ?? "",
-        motherName: form.getFieldValue("motherName") ?? "",
-        bankName: form.getFieldValue("bankName") ?? "",
-        bankAccountType: form.getFieldValue("bankAccountType") ?? "",
-        bankAccountNumber: form.getFieldValue("bankAccountNumber") ?? "",
-        password: form.getFieldValue("password") ?? "",
+        rut: values.rut,
+        phone: values.phone,
+        address: values.address,
+        fatherName: values.fatherName,
+        motherName: values.motherName,
+        bankName: values.bankName,
+        bankAccountType: values.bankAccountType,
+        bankAccountNumber: values.bankAccountNumber,
+        password: values.password,
       });
 
       await queryClient.refetchQueries({ queryKey: ["user", "profile"] });
@@ -194,13 +191,10 @@ export function useOnboardingForm() {
     setCurrentStep((prev) => (prev > 0 ? prev - 1 : prev));
   }, []);
 
-  const handleProfileChange = useCallback(
-    (field: string, value: string) => {
-      form.setFieldValue(field as keyof OnboardingValues, value);
-      setError(null);
-    },
-    [form],
-  );
+  const handleProfileChange = useCallback((field: string, value: string) => {
+    setValues((prev) => ({ ...prev, [field]: value }) as OnboardingValues);
+    setError(null);
+  }, []);
 
   useEffect(() => {
     if (currentStep === 4 && !mfaSecret && !mfaSetup.isPending) {
@@ -217,22 +211,23 @@ export function useOnboardingForm() {
     mfaSecret,
     isLoading,
     profile: {
-      names: (form.getFieldValue("names") ?? "") as string,
-      rut: (form.getFieldValue("rut") ?? "") as string,
-      phone: (form.getFieldValue("phone") ?? "") as string,
-      address: (form.getFieldValue("address") ?? "") as string,
-      fatherName: (form.getFieldValue("fatherName") ?? "") as string,
-      motherName: (form.getFieldValue("motherName") ?? "") as string,
-      bankName: (form.getFieldValue("bankName") ?? "") as string,
-      bankAccountType: (form.getFieldValue("bankAccountType") ?? "") as string,
-      bankAccountNumber: (form.getFieldValue("bankAccountNumber") ?? "") as string,
+      names: values.names,
+      rut: values.rut,
+      phone: values.phone,
+      address: values.address,
+      fatherName: values.fatherName,
+      motherName: values.motherName,
+      bankName: values.bankName,
+      bankAccountType: values.bankAccountType,
+      bankAccountNumber: values.bankAccountNumber,
     },
-    password: (form.getFieldValue("password") ?? "") as string,
-    confirmPassword: (form.getFieldValue("confirmPassword") ?? "") as string,
-    mfaCode: (form.getFieldValue("mfaCode") ?? "") as string,
-    setPassword: (value: string) => form.setFieldValue("password", value),
-    setConfirmPassword: (value: string) => form.setFieldValue("confirmPassword", value),
-    setMfaCode: (value: string) => form.setFieldValue("mfaCode", value),
+    password: values.password,
+    confirmPassword: values.confirmPassword,
+    mfaCode: values.mfaCode,
+    setPassword: (value: string) => setValues((prev) => ({ ...prev, password: value })),
+    setConfirmPassword: (value: string) =>
+      setValues((prev) => ({ ...prev, confirmPassword: value })),
+    setMfaCode: (value: string) => setValues((prev) => ({ ...prev, mfaCode: value })),
     handleNext,
     handlePrev,
     handleProfileChange,
@@ -242,6 +237,6 @@ export function useOnboardingForm() {
       passkeyRegister,
       finalSubmit,
     },
-    form,
+    form: null,
   };
 }
