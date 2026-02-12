@@ -44,7 +44,7 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
               </div>
               <span
                 className={cn(
-                  "line-clamp-2 max-w-[88px] text-[10px] leading-tight uppercase tracking-wide sm:text-[11px]",
+                  "line-clamp-2 max-w-22 text-[10px] uppercase leading-tight tracking-wide sm:text-[11px]",
                   idx <= currentStep ? "font-semibold text-primary" : "text-default-500",
                 )}
               >
