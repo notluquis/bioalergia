@@ -3,6 +3,7 @@
  * These are separated to enable code-splitting of Recharts (~400KB)
  */
 import { Chip } from "@heroui/react";
+import dayjs from "dayjs";
 import { BarChart2, PieChart as PieChartIcon } from "lucide-react";
 import {
   Bar,
@@ -41,6 +42,23 @@ const tooltipStyle = {
   boxShadow: "0 10px 24px -18px rgb(0 0 0 / 0.45)",
   color: "var(--color-foreground)",
 };
+
+const compactClpFormatter = new Intl.NumberFormat("es-CL", {
+  currency: "CLP",
+  maximumFractionDigits: 0,
+  notation: "compact",
+  style: "currency",
+});
+
+function formatSeriesLabel(rawName: string): string {
+  if (rawName.endsWith("_gross")) {
+    return `${rawName.replace("_gross", "")} · Bruto`;
+  }
+  if (rawName.endsWith("_net")) {
+    return `${rawName.replace("_net", "")} · Neto`;
+  }
+  return `${rawName} · Horas`;
+}
 
 interface DistributionChartProps {
   reportData: EmployeeWorkData[];
@@ -109,14 +127,15 @@ export function DistributionChart({ reportData }: DistributionChartProps) {
  */
 export function TemporalChart({ chartData, granularity, reportData }: TemporalChartProps) {
   const chartColors = getChartColors();
-  const hasSalaryData = reportData.some((emp) => Object.keys(emp.monthlyGrossSalary).length > 0);
+  const hasSalaryData = reportData.some((emp) =>
+    Object.values(emp.monthlyGrossSalary).some((value) => value > 0),
+  );
 
-  // Helper to format currency for tooltip display
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("es-CL", {
-      currency: "CLP",
-      style: "currency",
-    }).format(value);
+  const formatHoursTick = (value: number | string) => `${value}h`;
+  const formatSalaryTick = (value: number | string) => compactClpFormatter.format(Number(value));
+  const formatPeriodLabel = (label: unknown) => {
+    const value = typeof label === "string" || typeof label === "number" ? String(label) : "";
+    return granularity === "month" && value ? dayjs(value).format("MMM YYYY") : value;
   };
 
   // Custom tooltip to show both hours and currency
@@ -134,11 +153,12 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
         <p className="font-semibold text-xs">{payload[0]?.payload?.period}</p>
         {payload.map((entry, idx) => {
           const isSalary = entry.name.includes("_gross") || entry.name.includes("_net");
-          const displayName = entry.name.replace("_gross", " (Bruto)").replace("_net", " (Neto)");
+          const displayName = formatSeriesLabel(entry.name);
 
           return (
             <p key={`${entry.name}-${idx}`} style={{ color: entry.color }} className="text-xs">
-              {displayName}: {isSalary ? formatCurrency(entry.value) : `${entry.value}h`}
+              {displayName}:{" "}
+              {isSalary ? formatSalaryTick(entry.value) : formatHoursTick(entry.value)}
             </p>
           );
         })}
@@ -171,79 +191,112 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
           {hasSalaryData && granularity === "month" ? (
             // Dual-axis chart for salary data (monthly view)
             <ComposedChart data={chartData} margin={{ bottom: 0, left: 0, right: 60, top: 10 }}>
-              <CartesianGrid opacity={0.3} strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="period" stroke="var(--default-400)" tick={{ fontSize: 12 }} />
+              <CartesianGrid
+                opacity={0.35}
+                stroke="var(--default-200)"
+                strokeDasharray="4 4"
+                vertical={false}
+              />
+              <XAxis
+                axisLine={{ stroke: "var(--default-300)" }}
+                dataKey="period"
+                minTickGap={24}
+                stroke="var(--default-500)"
+                tick={{ fill: "var(--default-500)", fontSize: 12 }}
+                tickFormatter={formatPeriodLabel}
+                tickLine={false}
+              />
 
               {/* Left Y-axis for hours */}
               <YAxis
+                allowDecimals={false}
+                axisLine={{ stroke: "var(--default-300)" }}
+                domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.15)]}
+                tickFormatter={formatHoursTick}
+                tickLine={false}
                 yAxisId="left"
-                stroke="var(--default-400)"
-                tick={{ fontSize: 12 }}
+                stroke="var(--default-500)"
+                tick={{ fill: "var(--default-500)", fontSize: 12 }}
                 label={{ value: "Horas", angle: -90, position: "insideLeft" }}
               />
 
               {/* Right Y-axis for salary (CLP) */}
               <YAxis
+                allowDecimals={false}
+                axisLine={{ stroke: "var(--default-300)" }}
+                domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.15)]}
                 yAxisId="right"
                 orientation="right"
-                stroke="var(--default-400)"
-                tick={{ fontSize: 12 }}
+                tickFormatter={formatSalaryTick}
+                tickLine={false}
+                stroke="var(--default-500)"
+                tick={{ fill: "var(--default-500)", fontSize: 12 }}
                 label={{ value: "CLP", angle: 90, position: "insideRight" }}
               />
 
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--default-100)" }} />
-              <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="bottom" height={40} />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: "var(--default-100)" }}
+                labelFormatter={formatPeriodLabel}
+              />
+              <Legend
+                formatter={(value) => formatSeriesLabel(String(value))}
+                wrapperStyle={{ fontSize: 11 }}
+                verticalAlign="bottom"
+                height={48}
+              />
 
               {/* Hours lines (left Y-axis) */}
-              {reportData.map((emp) => (
+              {reportData.map((emp, idx) => (
                 <Line
                   key={`hours-${emp.employeeId}`}
                   yAxisId="left"
-                  activeDot={{ r: 6 }}
+                  activeDot={{ r: 4 }}
                   connectNulls
                   dataKey={emp.fullName}
-                  dot={{ r: 4, strokeWidth: 2 }}
-                  stroke={chartColors[reportData.indexOf(emp) % chartColors.length]}
-                  strokeWidth={2}
+                  dot={{ r: 2, strokeWidth: 1.5 }}
+                  stroke={chartColors[idx % chartColors.length]}
+                  strokeWidth={2.2}
                   type="monotone"
                 />
               ))}
 
-              {/* Gross salary (right Y-axis) - green */}
+              {/* Gross salary (right Y-axis) */}
               {reportData.map(
-                (emp) =>
-                  Object.keys(emp.monthlyGrossSalary).length > 0 && (
+                (emp, idx) =>
+                  Object.values(emp.monthlyGrossSalary).some((value) => value > 0) && (
                     <Line
                       key={`gross-${emp.employeeId}`}
                       yAxisId="right"
-                      activeDot={{ r: 5 }}
+                      activeDot={{ r: 3 }}
                       connectNulls
                       dataKey={`${emp.fullName}_gross`}
                       dot={false}
-                      stroke="#10b981"
-                      strokeWidth={2.5}
-                      strokeDasharray="5 5"
+                      stroke={chartColors[idx % chartColors.length]}
+                      strokeWidth={1.8}
+                      strokeDasharray="6 3"
                       type="monotone"
-                      opacity={0.7}
+                      opacity={0.78}
                     />
                   ),
               )}
 
-              {/* Net salary (right Y-axis) - orange */}
+              {/* Net salary (right Y-axis) */}
               {reportData.map(
-                (emp) =>
-                  Object.keys(emp.monthlyNetSalary).length > 0 && (
+                (emp, idx) =>
+                  Object.values(emp.monthlyNetSalary).some((value) => value > 0) && (
                     <Line
                       key={`net-${emp.employeeId}`}
                       yAxisId="right"
-                      activeDot={{ r: 5 }}
+                      activeDot={{ r: 3 }}
                       connectNulls
                       dataKey={`${emp.fullName}_net`}
                       dot={false}
-                      stroke="#f97316"
-                      strokeWidth={2.5}
+                      stroke={chartColors[idx % chartColors.length]}
+                      strokeDasharray="2 4"
+                      strokeWidth={1.8}
                       type="monotone"
-                      opacity={0.7}
+                      opacity={0.62}
                     />
                   ),
               )}
@@ -251,10 +304,35 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
           ) : granularity === "month" ? (
             // Standard bar chart for monthly view (no salary data)
             <BarChart data={chartData} margin={{ bottom: 0, left: 0, right: 10, top: 10 }}>
-              <CartesianGrid opacity={0.3} strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="period" stroke="var(--default-400)" tick={{ fontSize: 12 }} />
-              <YAxis stroke="var(--default-400)" tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--default-100)" }} />
+              <CartesianGrid
+                opacity={0.35}
+                stroke="var(--default-200)"
+                strokeDasharray="4 4"
+                vertical={false}
+              />
+              <XAxis
+                axisLine={{ stroke: "var(--default-300)" }}
+                dataKey="period"
+                minTickGap={24}
+                stroke="var(--default-500)"
+                tick={{ fill: "var(--default-500)", fontSize: 12 }}
+                tickFormatter={formatPeriodLabel}
+                tickLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                axisLine={{ stroke: "var(--default-300)" }}
+                stroke="var(--default-500)"
+                tick={{ fill: "var(--default-500)", fontSize: 12 }}
+                tickFormatter={formatHoursTick}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                cursor={{ fill: "var(--default-100)" }}
+                formatter={(value) => formatHoursTick(Number(value))}
+                labelFormatter={formatPeriodLabel}
+              />
               <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
               {reportData.map((emp, idx) => (
                 <Bar
@@ -269,20 +347,44 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
           ) : (
             // Line chart for daily/weekly view
             <LineChart data={chartData} margin={{ bottom: 0, left: 0, right: 10, top: 10 }}>
-              <CartesianGrid opacity={0.3} strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="period" stroke="var(--default-400)" tick={{ fontSize: 12 }} />
-              <YAxis stroke="var(--default-400)" tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "var(--default-100)" }} />
+              <CartesianGrid
+                opacity={0.35}
+                stroke="var(--default-200)"
+                strokeDasharray="4 4"
+                vertical={false}
+              />
+              <XAxis
+                axisLine={{ stroke: "var(--default-300)" }}
+                dataKey="period"
+                minTickGap={24}
+                stroke="var(--default-500)"
+                tick={{ fill: "var(--default-500)", fontSize: 12 }}
+                tickLine={false}
+              />
+              <YAxis
+                allowDecimals={false}
+                axisLine={{ stroke: "var(--default-300)" }}
+                stroke="var(--default-500)"
+                tick={{ fill: "var(--default-500)", fontSize: 12 }}
+                tickFormatter={formatHoursTick}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                cursor={{ fill: "var(--default-100)" }}
+                formatter={(value) => formatHoursTick(Number(value))}
+                labelFormatter={formatPeriodLabel}
+              />
               <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
               {reportData.map((emp, idx) => (
                 <Line
-                  activeDot={{ r: 6 }}
+                  activeDot={{ r: 4 }}
                   connectNulls
                   dataKey={emp.fullName}
-                  dot={{ r: 4, strokeWidth: 2 }}
+                  dot={{ r: 2, strokeWidth: 1.5 }}
                   key={emp.employeeId}
                   stroke={chartColors[idx % chartColors.length]}
-                  strokeWidth={3}
+                  strokeWidth={2.2}
                   type="monotone"
                 />
               ))}

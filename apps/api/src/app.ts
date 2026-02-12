@@ -43,19 +43,22 @@ import { transactionRoutes } from "./routes/transactions";
 import { userRoutes } from "./routes/users";
 
 export const app = new Hono();
+const enableHttpRequestLogs = process.env.API_HTTP_REQUEST_LOGS === "true";
 
-// Request logging middleware (before everything else)
-app.use("*", async (c, next) => {
-  const start = Date.now();
-  const method = c.req.method;
-  const path = c.req.path;
-  console.log(`[${new Date().toISOString()}] --> ${method} ${path}`);
-  await next();
-  const duration = Date.now() - start;
-  console.log(
-    `[${new Date().toISOString()}] <-- ${method} ${path} ${c.res.status} (${duration}ms)`,
-  );
-});
+if (enableHttpRequestLogs) {
+  // Verbose request logging middleware (opt-in via API_HTTP_REQUEST_LOGS=true)
+  app.use("*", async (c, next) => {
+    const start = Date.now();
+    const method = c.req.method;
+    const path = c.req.path;
+    console.log(`[${new Date().toISOString()}] --> ${method} ${path}`);
+    await next();
+    const duration = Date.now() - start;
+    console.log(
+      `[${new Date().toISOString()}] <-- ${method} ${path} ${c.res.status} (${duration}ms)`,
+    );
+  });
+}
 
 // Security headers and CSP for Cloudflare + Vite
 app.use("*", async (c, next) => {
