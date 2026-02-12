@@ -63,7 +63,6 @@ const calendarQuerySchema = z.object({
 });
 
 type CalendarQuery = z.infer<typeof calendarQuerySchema>;
-const REACT_ARIA_INTERNAL_KEY_REGEX = /^react-aria-\d+$/i;
 
 function sanitizeOptionalSelectionValue(value: null | string | undefined): null | string {
   if (!value) {
@@ -71,7 +70,7 @@ function sanitizeOptionalSelectionValue(value: null | string | undefined): null 
   }
 
   const trimmed = value.trim();
-  if (!trimmed || REACT_ARIA_INTERNAL_KEY_REGEX.test(trimmed)) {
+  if (!trimmed) {
     return null;
   }
 

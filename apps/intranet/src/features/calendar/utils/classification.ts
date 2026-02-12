@@ -13,7 +13,6 @@ export interface ParsedPayload {
 }
 
 const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
-const REACT_ARIA_INTERNAL_KEY_REGEX = /^react-aria-\d+$/i;
 
 function normalizeChoiceValue(value: string): string {
   return value
@@ -79,7 +78,7 @@ export function buildPayload(
 
 function sanitizeSelectValue(value: null | string | undefined): null | string {
   const trimmed = value?.trim();
-  if (!trimmed || REACT_ARIA_INTERNAL_KEY_REGEX.test(trimmed)) {
+  if (!trimmed) {
     return null;
   }
   return trimmed;
