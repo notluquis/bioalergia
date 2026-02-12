@@ -30,8 +30,20 @@ const BackupJobSchema = z.looseObject({
       driveFileId: z.string(),
       durationMs: z.number(),
       filename: z.string(),
+      message: z.string().optional(),
       sizeBytes: z.number(),
+      skipped: z.boolean().optional(),
+      stats: z
+        .record(
+          z.string(),
+          z.object({
+            count: z.number(),
+            hash: z.string(),
+          }),
+        )
+        .optional(),
       tables: z.array(z.string()),
+      webViewLink: z.string().optional(),
     })
     .optional(),
   startedAt: z.coerce.date(),

@@ -52,6 +52,9 @@ export function BackupSettingsPage() {
     backup: null,
     restore: null,
   });
+  const [lastCompletedBackupResult, setLastCompletedBackupResult] = useState<
+    BackupJob["result"] | null
+  >(null);
 
   // SSE connection for real-time progress
   useEffect(() => {
@@ -67,9 +70,13 @@ export function BackupSettingsPage() {
         };
         switch (data.type) {
           case "backup": {
-            setLiveJobs((prev) => ({ ...prev, backup: data.job as BackupJob }));
-            if (data.job.status === "completed" || data.job.status === "failed") {
+            const backupJob = data.job as BackupJob;
+            setLiveJobs((prev) => ({ ...prev, backup: backupJob }));
+            if (backupJob.status === "completed" || backupJob.status === "failed") {
               void queryClient.invalidateQueries({ queryKey: ["backups"] });
+            }
+            if (backupJob.status === "completed" && backupJob.result) {
+              setLastCompletedBackupResult(backupJob.result);
             }
 
             break;
@@ -182,6 +189,70 @@ export function BackupSettingsPage() {
 
       {/* Google Drive Connection */}
       <GoogleDriveConnect />
+
+      {lastCompletedBackupResult && (
+        <div className="rounded-xl bg-default-50 p-6 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="size-5 text-success" />
+              <h3 className="font-semibold text-base">Detalle del último backup</h3>
+            </div>
+            <span className="text-default-500 text-xs">
+              {lastCompletedBackupResult.filename || "-"}
+            </span>
+          </div>
+
+          <div className="mb-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-lg bg-background p-3">
+              <p className="text-default-500 text-xs">Duración</p>
+              <p className="font-semibold">
+                {Math.round((lastCompletedBackupResult.durationMs ?? 0) / 1000)}s
+              </p>
+            </div>
+            <div className="rounded-lg bg-background p-3">
+              <p className="text-default-500 text-xs">Tamaño</p>
+              <p className="font-semibold">
+                {formatFileSize(lastCompletedBackupResult.sizeBytes ?? 0)}
+              </p>
+            </div>
+            <div className="rounded-lg bg-background p-3">
+              <p className="text-default-500 text-xs">Tablas</p>
+              <p className="font-semibold">{lastCompletedBackupResult.tables?.length ?? 0}</p>
+            </div>
+          </div>
+
+          {lastCompletedBackupResult.stats &&
+          Object.keys(lastCompletedBackupResult.stats).length > 0 ? (
+            <div className="rounded-lg border border-default-200 bg-background p-3">
+              <p className="mb-2 font-medium text-sm">Conteo por tabla</p>
+              <div className="max-h-56 overflow-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-default-500 text-xs">
+                      <th className="pb-2 text-left font-medium">Tabla</th>
+                      <th className="pb-2 text-right font-medium">Registros</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(lastCompletedBackupResult.stats)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([tableName, stat]) => (
+                        <tr className="border-default-100 border-t" key={tableName}>
+                          <td className="py-2">{tableName}</td>
+                          <td className="py-2 text-right">{stat.count}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-default-200 bg-background p-3 text-default-500 text-sm">
+              No hay estadísticas por tabla disponibles para este backup.
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">

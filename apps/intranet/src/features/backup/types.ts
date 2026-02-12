@@ -16,8 +16,12 @@ export interface BackupJob {
     driveFileId: string;
     durationMs: number;
     filename: string;
+    message?: string;
     sizeBytes: number;
+    skipped?: boolean;
+    stats?: Record<string, { count: number; hash: string }>;
     tables: string[];
+    webViewLink?: string;
   };
   startedAt: Date;
   status: "completed" | "failed" | "pending" | "running";
