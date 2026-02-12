@@ -49,11 +49,14 @@ export function UserManagementPage() {
       return [];
     }
     return usersData
-      .filter((u) => !u.email?.includes("test") && !u.email?.includes("debug"))
+      .filter((u) => {
+        const personEmail = (u as { person?: { email?: null | string } }).person?.email ?? "";
+        return !personEmail.includes("test") && !personEmail.includes("debug");
+      })
       .map(
         (u: RawUser): User => ({
           createdAt: u.createdAt ?? new Date(),
-          email: (u as { person?: { email?: null | string } }).person?.email ?? u.email,
+          email: (u as { person?: { email?: null | string } }).person?.email ?? "",
           hasPasskey: ((u as { passkeys?: unknown[] }).passkeys ?? []).length > 0,
           id: u.id,
           mfaEnabled: u.mfaEnabled ?? false,
