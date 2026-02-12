@@ -186,10 +186,14 @@ function AddPatientPage() {
                   {(field) => (
                     <Select
                       label="Grupo Sanguíneo"
-                      value={field.state.value}
-                      onChange={(val) => field.handleChange(val as string)}
+                      value={field.state.value || "__unknown_blood_type__"}
+                      onChange={(val) =>
+                        field.handleChange(val === "__unknown_blood_type__" ? "" : (val as string))
+                      }
                     >
-                      <SelectItem key="">Desconocido</SelectItem>
+                      <SelectItem id="__unknown_blood_type__" key="__unknown_blood_type__">
+                        Desconocido
+                      </SelectItem>
                       {BLOOD_TYPES.map((type) => (
                         <SelectItem key={type}>{type}</SelectItem>
                       ))}

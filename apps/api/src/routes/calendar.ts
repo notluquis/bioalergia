@@ -63,6 +63,20 @@ const calendarQuerySchema = z.object({
 });
 
 type CalendarQuery = z.infer<typeof calendarQuerySchema>;
+const REACT_ARIA_INTERNAL_KEY_REGEX = /^react-aria-\d+$/i;
+
+function sanitizeOptionalSelectionValue(value: null | string | undefined): null | string {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || REACT_ARIA_INTERNAL_KEY_REGEX.test(trimmed)) {
+    return null;
+  }
+
+  return trimmed;
+}
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy filter building logic
 async function buildFiltersFromValidQuery(query: CalendarQuery) {
@@ -510,13 +524,13 @@ calendarRoutes.post(
     const payload = c.req.valid("json");
 
     await updateCalendarEventClassification(payload.calendarId, payload.eventId, {
-      category: payload.category ?? null,
+      category: sanitizeOptionalSelectionValue(payload.category),
       amountExpected: payload.amountExpected ?? null,
       amountPaid: payload.amountPaid ?? null,
       attended: payload.attended ?? null,
       dosageValue: payload.dosageValue ?? null,
-      dosageUnit: payload.dosageUnit ?? null,
-      treatmentStage: payload.treatmentStage ?? null,
+      dosageUnit: sanitizeOptionalSelectionValue(payload.dosageUnit),
+      treatmentStage: sanitizeOptionalSelectionValue(payload.treatmentStage),
       controlIncluded: payload.controlIncluded ?? null,
       isDomicilio: payload.isDomicilio ?? null,
     });

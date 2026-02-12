@@ -471,6 +471,8 @@ function TableSelectionCard({
   onTableChange: (val: string) => void;
   selectedTable: string;
 }) {
+  const NO_TABLE_SELECTED_KEY = "__no_table_selected__";
+
   return (
     <Card>
       <CardHeader>
@@ -486,10 +488,12 @@ function TableSelectionCard({
             <Select
               className="w-full max-w-md"
               label="Tipo de Datos (Tabla)"
-              onChange={(val) => onTableChange(val as string)}
-              value={selectedTable}
+              onChange={(val) =>
+                onTableChange(val === NO_TABLE_SELECTED_KEY ? "" : (val as string))
+              }
+              value={selectedTable || NO_TABLE_SELECTED_KEY}
             >
-              <SelectItem id="" key="">
+              <SelectItem id={NO_TABLE_SELECTED_KEY} key={NO_TABLE_SELECTED_KEY}>
                 -- Seleccionar tabla --
               </SelectItem>
               {allowedTableOptions.map((table) => (
@@ -799,6 +803,8 @@ function buildMappingColumns({
   firstFile: UploadedFile | undefined;
   setUploadedFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>;
 }): ColumnDef<FieldDefinition>[] {
+  const UNMAPPED_COLUMN_KEY = "__unmapped_column__";
+
   if (!firstFile) {
     return [];
   }
@@ -843,7 +849,7 @@ function buildMappingColumns({
                     ...file,
                     columnMapping: {
                       ...file.columnMapping,
-                      [row.original.name]: val as string,
+                      [row.original.name]: val === UNMAPPED_COLUMN_KEY ? "" : (val as string),
                     },
                   };
                 }
@@ -851,9 +857,9 @@ function buildMappingColumns({
               }),
             );
           }}
-          value={firstFile.columnMapping[row.original.name] ?? ""}
+          value={firstFile.columnMapping[row.original.name] || UNMAPPED_COLUMN_KEY}
         >
-          <SelectItem id="" key="">
+          <SelectItem id={UNMAPPED_COLUMN_KEY} key={UNMAPPED_COLUMN_KEY}>
             -- Ignorar / Sin mapear --
           </SelectItem>
           {firstFile.csvHeaders.map((header) => (

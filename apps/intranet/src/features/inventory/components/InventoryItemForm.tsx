@@ -15,6 +15,7 @@ interface InventoryItemFormProps {
   saving: boolean;
 }
 export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryItemFormProps) {
+  const NO_CATEGORY_KEY = "__no_inventory_category__";
   const [form, setForm] = useState({
     ...item,
     category_id: item?.category_id ?? null,
@@ -50,12 +51,14 @@ export function InventoryItemForm({ item, onCancel, onSave, saving }: InventoryI
           onChange={(key) => {
             setForm({
               ...form,
-              category_id: key ? Number(key) : null,
+              category_id: key && key !== NO_CATEGORY_KEY ? Number(key) : null,
             });
           }}
-          value={form.category_id == null ? "" : String(form.category_id)}
+          value={form.category_id == null ? NO_CATEGORY_KEY : String(form.category_id)}
         >
-          <SelectItem key="">Sin categoría</SelectItem>
+          <SelectItem id={NO_CATEGORY_KEY} key={NO_CATEGORY_KEY}>
+            Sin categoría
+          </SelectItem>
           {categories.map((cat) => (
             <SelectItem key={String(cat.id)}>{cat.name}</SelectItem>
           ))}

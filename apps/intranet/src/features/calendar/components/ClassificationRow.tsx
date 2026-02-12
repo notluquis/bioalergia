@@ -23,6 +23,8 @@ interface ClassificationRowProps {
 }
 
 const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
+const NONE_CATEGORY_KEY = "__none_category__";
+const NONE_TREATMENT_STAGE_KEY = "__none_treatment_stage__";
 
 function normalizeChoiceValue(value: string): string {
   return value
@@ -118,12 +120,12 @@ export function ClassificationRow({
                   label="Clasificación"
                   placeholder="Selecciona una clasificación"
                   onChange={(key) => {
-                    field.handleChange(key as string);
+                    field.handleChange(key === NONE_CATEGORY_KEY ? "" : (key as string));
                   }}
-                  value={selectedCategory}
+                  value={selectedCategory || NONE_CATEGORY_KEY}
                   variant="secondary"
                 >
-                  <SelectItem id="" key="">
+                  <SelectItem id={NONE_CATEGORY_KEY} key={NONE_CATEGORY_KEY}>
                     Sin clasificación
                   </SelectItem>
                   {hasLegacyCategory && (
@@ -191,12 +193,15 @@ export function ClassificationRow({
                   label="Etapa tratamiento"
                   placeholder="Selecciona una etapa"
                   onChange={(key) => {
-                    field.handleChange(key as string);
+                    field.handleChange(key === NONE_TREATMENT_STAGE_KEY ? "" : (key as string));
                   }}
-                  value={resolveChoiceValue(field.state.value, treatmentStageChoices)}
+                  value={
+                    resolveChoiceValue(field.state.value, treatmentStageChoices) ||
+                    NONE_TREATMENT_STAGE_KEY
+                  }
                   variant="secondary"
                 >
-                  <SelectItem id="" key="">
+                  <SelectItem id={NONE_TREATMENT_STAGE_KEY} key={NONE_TREATMENT_STAGE_KEY}>
                     Sin etapa
                   </SelectItem>
                   {treatmentStageChoices.map((option: string) => (

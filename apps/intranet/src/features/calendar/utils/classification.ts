@@ -13,6 +13,7 @@ export interface ParsedPayload {
 }
 
 const SUBCUTANEOUS_CATEGORY = "Tratamiento subcutáneo";
+const REACT_ARIA_INTERNAL_KEY_REGEX = /^react-aria-\d+$/i;
 
 function normalizeChoiceValue(value: string): string {
   return value
@@ -46,7 +47,7 @@ export function buildPayload(
   entry: z.infer<typeof classificationSchema>,
   event: CalendarUnclassifiedEvent,
 ): ParsedPayload {
-  const category = entry.category?.trim() ?? null;
+  const category = sanitizeSelectValue(entry.category);
   const resolvedCategoryRaw = category ?? event.category;
   const resolvedCategory = isSubcutaneousCategory(resolvedCategoryRaw)
     ? SUBCUTANEOUS_CATEGORY
@@ -59,12 +60,11 @@ export function buildPayload(
   const dosageValue = entry.dosageValue?.trim()
     ? Number.parseFloat(entry.dosageValue.trim())
     : event.dosageValue;
-  const dosageUnit = entry.dosageUnit?.trim() || event.dosageUnit || null;
+  const dosageUnit = sanitizeSelectValue(entry.dosageUnit) || event.dosageUnit || null;
+  const treatmentStageValue = sanitizeSelectValue(entry.treatmentStage);
 
   const treatmentStage =
-    isSubcutaneousCategory(resolvedCategory) && entry.treatmentStage?.trim()
-      ? entry.treatmentStage.trim()
-      : null;
+    isSubcutaneousCategory(resolvedCategory) && treatmentStageValue ? treatmentStageValue : null;
 
   return {
     amountExpected,
@@ -75,6 +75,14 @@ export function buildPayload(
     dosageUnit,
     treatmentStage,
   };
+}
+
+function sanitizeSelectValue(value: null | string | undefined): null | string {
+  const trimmed = value?.trim();
+  if (!trimmed || REACT_ARIA_INTERNAL_KEY_REGEX.test(trimmed)) {
+    return null;
+  }
+  return trimmed;
 }
 
 export function eventKey(event: Pick<CalendarUnclassifiedEvent, "calendarId" | "eventId">) {

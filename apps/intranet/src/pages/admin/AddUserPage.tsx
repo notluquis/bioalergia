@@ -260,6 +260,8 @@ function PersonLinkSection({
   form,
   handleLinkPerson,
 }: Pick<AddUserFormCardProps, "availablePeople" | "form" | "handleLinkPerson">) {
+  const NONE_PERSON_KEY = "__none_person__";
+
   if (availablePeople.length === 0) {
     return null;
   }
@@ -281,12 +283,16 @@ function PersonLinkSection({
                 <Select
                   label="Vincular con persona (opcional)"
                   onChange={(val) => {
-                    const pid = val ? Number(val) : undefined;
+                    const pid = val && val !== NONE_PERSON_KEY ? Number(val) : undefined;
                     handleLinkPerson(pid);
                   }}
-                  value={field.state.value ? String(field.state.value) : ""}
+                  value={field.state.value ? String(field.state.value) : NONE_PERSON_KEY}
                 >
-                  <SelectItem id="" textValue="No vincular (Crear usuario nuevo)">
+                  <SelectItem
+                    id={NONE_PERSON_KEY}
+                    key={NONE_PERSON_KEY}
+                    textValue="No vincular (Crear usuario nuevo)"
+                  >
                     No vincular (Crear usuario nuevo)
                   </SelectItem>
                   {availablePeople.map((person) => (

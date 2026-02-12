@@ -9,7 +9,9 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
 import { CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { PatientListSchema } from "@/features/patients/schemas";
+import { useDisclosure } from "@/hooks/use-disclosure";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER_RELAXED, TITLE_LG } from "@/lib/styles";
 
@@ -39,6 +41,7 @@ interface Patient {
 }
 
 function PatientsListPage() {
+  const { close: closeCreateModal, isOpen: createOpen, open: openCreateModal } = useDisclosure();
   const [search, setSearch] = useState("");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -142,12 +145,10 @@ function PatientsListPage() {
           <h1 className={TITLE_LG}>Pacientes</h1>
           <p className="text-default-500 text-sm">Gestión de ficha clínica y certificados</p>
         </div>
-        <Link to="/patients/new">
-          <Button variant="primary" className="w-full shadow-md sm:w-auto">
-            <UserPlus size={18} className="mr-2" />
-            Registrar Paciente
-          </Button>
-        </Link>
+        <Button className="w-full shadow-md sm:w-auto" onClick={openCreateModal} variant="primary">
+          <UserPlus size={18} className="mr-2" />
+          Registrar Paciente
+        </Button>
       </div>
 
       <Card className="border-none bg-background shadow-sm">
@@ -178,6 +179,7 @@ function PatientsListPage() {
         pagination={pagination}
         noDataMessage="No se encontraron pacientes registrados."
       />
+      <CreatePatientModal isOpen={createOpen} onClose={closeCreateModal} />
     </section>
   );
 }

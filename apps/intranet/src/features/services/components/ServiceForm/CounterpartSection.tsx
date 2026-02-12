@@ -32,6 +32,9 @@ export function CounterpartSection({
   onChange,
   onCounterpartSelect,
 }: CounterpartSectionProps) {
+  const NO_COUNTERPART_KEY = "__no_counterpart__";
+  const NO_ACCOUNT_KEY = "__no_counterpart_account__";
+
   let accountsHelper: string | undefined;
   if (counterpartsError) {
     accountsHelper = "No se pudo cargar las cuentas";
@@ -47,10 +50,12 @@ export function CounterpartSection({
         isDisabled={counterpartsLoading}
         helper={counterpartsError ?? (counterpartsLoading ? "Cargando contrapartes..." : undefined)}
         label="Empresa / contraparte"
-        onChange={(val) => onCounterpartSelect(val as string)}
-        value={counterpartId ? String(counterpartId) : ""}
+        onChange={(val) => onCounterpartSelect(val === NO_COUNTERPART_KEY ? "" : (val as string))}
+        value={counterpartId ? String(counterpartId) : NO_COUNTERPART_KEY}
       >
-        <SelectItem key="">Sin contraparte</SelectItem>
+        <SelectItem id={NO_COUNTERPART_KEY} key={NO_COUNTERPART_KEY}>
+          Sin contraparte
+        </SelectItem>
         {counterparts.map((counterpart) => (
           <SelectItem key={counterpart.id}>{counterpart.bankAccountHolder}</SelectItem>
         ))}
@@ -60,11 +65,13 @@ export function CounterpartSection({
         helper={accountsHelper}
         label="Cuenta asociada"
         onChange={(val) => {
-          onChange("counterpartAccountId", val ? Number(val) : null);
+          onChange("counterpartAccountId", val && val !== NO_ACCOUNT_KEY ? Number(val) : null);
         }}
-        value={counterpartAccountId ? String(counterpartAccountId) : ""}
+        value={counterpartAccountId ? String(counterpartAccountId) : NO_ACCOUNT_KEY}
       >
-        <SelectItem key="">Sin cuenta específica</SelectItem>
+        <SelectItem id={NO_ACCOUNT_KEY} key={NO_ACCOUNT_KEY}>
+          Sin cuenta específica
+        </SelectItem>
         {accounts.map((account) => (
           <SelectItem key={account.id}>
             {account.accountNumber}

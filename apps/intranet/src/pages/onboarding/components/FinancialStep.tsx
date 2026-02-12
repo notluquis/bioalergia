@@ -23,6 +23,8 @@ export function FinancialStep({
   onPrev,
   isLoading,
 }: FinancialStepProps) {
+  const NO_ACCOUNT_TYPE_KEY = "__no_account_type__";
+
   const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     onNext();
@@ -54,10 +56,14 @@ export function FinancialStep({
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select
             label="Tipo de cuenta"
-            onChange={(key) => onProfileChange("bankAccountType", key as string)}
-            value={profile.bankAccountType}
+            onChange={(key) =>
+              onProfileChange("bankAccountType", key === NO_ACCOUNT_TYPE_KEY ? "" : (key as string))
+            }
+            value={profile.bankAccountType || NO_ACCOUNT_TYPE_KEY}
           >
-            <SelectItem key="">Seleccionar...</SelectItem>
+            <SelectItem id={NO_ACCOUNT_TYPE_KEY} key={NO_ACCOUNT_TYPE_KEY}>
+              Seleccionar...
+            </SelectItem>
             <SelectItem key="Corriente">Cuenta corriente</SelectItem>
             <SelectItem key="Vista">Cuenta vista / RUT</SelectItem>
             <SelectItem key="Ahorro">Cuenta de ahorro</SelectItem>

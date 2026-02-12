@@ -15,7 +15,10 @@ export const calendarSearchSchema = z.object({
       if (!val) {
         return [];
       }
-      return Array.isArray(val) ? val : [val];
+      const values = Array.isArray(val) ? val : [val];
+      return values
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0 && entry !== "[]");
     })
     .catch([]),
   page: z.coerce.number().optional().catch(undefined),
