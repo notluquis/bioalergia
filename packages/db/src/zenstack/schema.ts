@@ -65,7 +65,9 @@ export class SchemaType implements SchemaDef {
         email: {
           name: "email",
           type: "String",
+          unique: true,
           optional: true,
+          attributes: [{ name: "@unique" }],
         },
         phone: {
           name: "phone",
@@ -185,6 +187,7 @@ export class SchemaType implements SchemaDef {
       uniqueFields: {
         id: { type: "Int" },
         rut: { type: "String" },
+        email: { type: "String" },
       },
     },
     User: {
@@ -212,12 +215,6 @@ export class SchemaType implements SchemaDef {
             { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("person_id") }] },
           ],
           foreignKeyFor: ["person"],
-        },
-        email: {
-          name: "email",
-          type: "String",
-          unique: true,
-          attributes: [{ name: "@unique" }],
         },
         passwordHash: {
           name: "passwordHash",
@@ -434,7 +431,6 @@ export class SchemaType implements SchemaDef {
       uniqueFields: {
         id: { type: "Int" },
         personId: { type: "Int" },
-        email: { type: "String" },
       },
     },
     Passkey: {
