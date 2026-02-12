@@ -175,7 +175,7 @@ export function OnboardingWizard() {
   }, [logic.mutations.finalSubmit.isSuccess, navigate]);
 
   return (
-    <div className="flex min-h-screen items-start justify-center bg-default-50 px-4 py-6 sm:py-10">
+    <div className="flex min-h-screen items-center justify-center bg-default-50 px-4 py-6 sm:py-10">
       <div className="surface-elevated flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-default-100">
         <ProgressBar currentStep={logic.currentStep} />
         <div className="mx-auto w-full max-w-2xl p-6 sm:p-8">

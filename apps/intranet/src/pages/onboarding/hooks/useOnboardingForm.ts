@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
 import {
@@ -12,7 +12,6 @@ import {
 import { fetchUserProfile, setupUser } from "@/features/users/api";
 import { validateRut } from "@/lib/rut";
 
-// ========== VALIDATION SCHEMAS ==========
 export const profileSchema = z.object({
   names: z.string().min(1, "El nombre es requerido"),
   rut: z
@@ -55,43 +54,66 @@ export interface MfaSecretData {
   secret: string;
 }
 
-type FormFieldName =
-  | "names"
-  | "rut"
-  | "phone"
-  | "address"
-  | "fatherName"
-  | "motherName"
-  | "bankName"
-  | "bankAccountType"
-  | "bankAccountNumber"
-  | "password"
-  | "confirmPassword"
-  | "mfaCode";
+interface OnboardingValues {
+  names: string;
+  rut: string;
+  phone: string;
+  address: string;
+  fatherName: string;
+  motherName: string;
+  bankName: string;
+  bankAccountType: string;
+  bankAccountNumber: string;
+  password: string;
+  confirmPassword: string;
+  mfaCode: string;
+}
 
-// ========== MUTATION HELPERS ==========
-function useMfaSetupMutation(
-  setMfaSecret: (data: MfaSecretData) => void,
-  setError: (error: string | null) => void,
-) {
-  return useMutation({
+export function useOnboardingForm() {
+  const queryClient = useQueryClient();
+  const { data: userProfile } = useSuspenseQuery({
+    queryKey: ["user", "profile"],
+    queryFn: fetchUserProfile,
+  });
+
+  const [currentStep, setCurrentStep] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [mfaSecret, setMfaSecret] = useState<MfaSecretData | null>(null);
+
+  const defaultValues = useMemo<OnboardingValues>(
+    () => ({
+      names: userProfile?.names ?? "",
+      rut: userProfile?.rut ?? "",
+      phone: userProfile?.phone ?? "",
+      address: userProfile?.address ?? "",
+      fatherName: userProfile?.fatherName ?? "",
+      motherName: userProfile?.motherName ?? "",
+      bankName: userProfile?.bankName ?? "",
+      bankAccountType: userProfile?.bankAccountType ?? "",
+      bankAccountNumber: userProfile?.bankAccountNumber ?? "",
+      password: "",
+      confirmPassword: "",
+      mfaCode: "",
+    }),
+    [userProfile],
+  );
+
+  const form = useForm({
+    defaultValues,
+  });
+
+  const mfaSetup = useMutation({
     mutationFn: () => setupMfa(),
     onSuccess: (data) => {
       setMfaSecret({ qrCodeUrl: data.qrCodeUrl, secret: data.secret });
     },
-    onError: (error) => {
-      const msg = error instanceof Error ? error.message : "Error configurando MFA";
+    onError: (mutationError) => {
+      const msg = mutationError instanceof Error ? mutationError.message : "Error configurando MFA";
       setError(msg);
     },
   });
-}
 
-function useMfaVerifyMutation(
-  mfaSecret: MfaSecretData | null,
-  setCurrentStep: (fn: (prev: number) => number) => void,
-  setError: (error: string | null) => void,
-) {
-  return useMutation({
+  const mfaVerify = useMutation({
     mutationFn: async (code: string) => {
       if (!mfaSecret) {
         throw new Error("MFA secret no configurado");
@@ -104,15 +126,13 @@ function useMfaVerifyMutation(
     onSuccess: () => {
       setCurrentStep((prev) => prev + 1);
     },
-    onError: (error) => {
-      const msg = error instanceof Error ? error.message : "Código MFA inválido";
+    onError: (mutationError) => {
+      const msg = mutationError instanceof Error ? mutationError.message : "Código MFA inválido";
       setError(msg);
     },
   });
-}
 
-function usePasskeyRegisterMutation(setError: (error: string | null) => void) {
-  return useMutation({
+  const passkeyRegister = useMutation({
     mutationFn: async () => {
       const options = await fetchPasskeyRegistrationOptions();
       if (!options?.challenge) {
@@ -120,78 +140,80 @@ function usePasskeyRegisterMutation(setError: (error: string | null) => void) {
       }
 
       const { startRegistration } = await import("@simplewebauthn/browser");
-      const attResp = await startRegistration({ optionsJSON: options });
+      const attestation = await startRegistration({ optionsJSON: options });
 
-      const verifyData = await verifyPasskeyRegistration({
-        body: attResp,
+      const verifyResult = await verifyPasskeyRegistration({
+        body: attestation,
         challenge: options.challenge,
       });
 
-      if (verifyData.status !== "ok") {
-        throw new Error(verifyData.message ?? "Error al verificar passkey");
+      if (verifyResult.status !== "ok") {
+        throw new Error(verifyResult.message ?? "Error al verificar passkey");
       }
-
-      return verifyData;
+      return verifyResult;
     },
-    onError: (error) => {
-      const msg = error instanceof Error ? error.message : "No se pudo registrar el Passkey";
+    onError: (mutationError) => {
+      const msg =
+        mutationError instanceof Error ? mutationError.message : "No se pudo registrar el Passkey";
       setError(msg);
     },
   });
-}
 
-function useFinalSubmitMutation(
-  getValues: (fields: FormFieldName[]) => Record<string, unknown>,
-  queryClient: ReturnType<typeof useQueryClient>,
-  setError: (error: string | null) => void,
-) {
-  return useMutation({
+  const finalSubmit = useMutation({
     mutationFn: async () => {
-      const vals = getValues(["names", "motherName", "password"]);
-      let cleanNames = (vals.names as string).trim();
-      if (vals.motherName) {
-        cleanNames = `${cleanNames} ${vals.motherName}`;
-      }
-
-      const allValues = getValues([
-        "names",
-        "rut",
-        "phone",
-        "address",
-        "fatherName",
-        "motherName",
-        "bankName",
-        "bankAccountType",
-        "bankAccountNumber",
-        "password",
-      ]);
+      const names = (form.getFieldValue("names") ?? "").trim();
+      const motherName = (form.getFieldValue("motherName") ?? "").trim();
+      const cleanNames = motherName ? `${names} ${motherName}` : names;
 
       await setupUser({
-        ...allValues,
         names: cleanNames,
-        password: allValues.password,
+        rut: form.getFieldValue("rut") ?? "",
+        phone: form.getFieldValue("phone") ?? "",
+        address: form.getFieldValue("address") ?? "",
+        fatherName: form.getFieldValue("fatherName") ?? "",
+        motherName: form.getFieldValue("motherName") ?? "",
+        bankName: form.getFieldValue("bankName") ?? "",
+        bankAccountType: form.getFieldValue("bankAccountType") ?? "",
+        bankAccountNumber: form.getFieldValue("bankAccountNumber") ?? "",
+        password: form.getFieldValue("password") ?? "",
       });
 
-      queryClient.refetchQueries({ queryKey: ["user", "profile"] });
+      await queryClient.refetchQueries({ queryKey: ["user", "profile"] });
     },
-    onError: (error) => {
-      const msg = error instanceof Error ? error.message : "Error completando onboarding";
+    onError: (mutationError) => {
+      const msg =
+        mutationError instanceof Error ? mutationError.message : "Error completando onboarding";
       setError(msg);
     },
   });
-}
 
-function buildOnboardingReturnValue(
-  form: ReturnType<typeof useForm>,
-  currentStep: number,
-  error: string | null,
-  mfaSecret: MfaSecretData | null,
-  isLoading: boolean,
-  handleNext: () => void,
-  handlePrev: () => void,
-  handleProfileChange: (field: string, value: string) => void,
-  mutations: Record<string, unknown>,
-) {
+  const handleNext = useCallback(() => {
+    setError(null);
+    setCurrentStep((prev) => (prev < 5 ? prev + 1 : prev));
+  }, []);
+
+  const handlePrev = useCallback(() => {
+    setError(null);
+    setCurrentStep((prev) => (prev > 0 ? prev - 1 : prev));
+  }, []);
+
+  const handleProfileChange = useCallback(
+    (field: string, value: string) => {
+      form.setFieldValue(field as keyof OnboardingValues, value);
+      setError(null);
+    },
+    [form],
+  );
+
+  useEffect(() => {
+    if (currentStep === 4 && !mfaSecret && !mfaSetup.isPending) {
+      mfaSetup.mutate();
+    }
+  }, [currentStep, mfaSecret, mfaSetup]);
+
+  const isLoading =
+    mfaSetup.isPending || mfaVerify.isPending || passkeyRegister.isPending || finalSubmit.isPending;
+
   return {
     currentStep,
     error,
@@ -217,137 +239,12 @@ function buildOnboardingReturnValue(
     handleNext,
     handlePrev,
     handleProfileChange,
-    mutations: mutations as {
-      mfaSetup: ReturnType<typeof useMutation>;
-      mfaVerify: ReturnType<typeof useMutation>;
-      passkeyRegister: ReturnType<typeof useMutation>;
-      finalSubmit: ReturnType<typeof useMutation>;
+    mutations: {
+      mfaSetup,
+      mfaVerify,
+      passkeyRegister,
+      finalSubmit,
     },
     form,
   };
-}
-
-function initializeFormState(userProfile: unknown) {
-  return useForm({
-    defaultValues: {
-      names: (userProfile as Record<string, unknown>)?.names ?? "",
-      rut: (userProfile as Record<string, unknown>)?.rut ?? "",
-      phone: (userProfile as Record<string, unknown>)?.phone ?? "",
-      address: (userProfile as Record<string, unknown>)?.address ?? "",
-      fatherName: (userProfile as Record<string, unknown>)?.fatherName ?? "",
-      motherName: (userProfile as Record<string, unknown>)?.motherName ?? "",
-      bankName: (userProfile as Record<string, unknown>)?.bankName ?? "",
-      bankAccountType: (userProfile as Record<string, unknown>)?.bankAccountType ?? "",
-      bankAccountNumber: (userProfile as Record<string, unknown>)?.bankAccountNumber ?? "",
-      password: "",
-      confirmPassword: "",
-      mfaCode: "",
-    },
-  });
-}
-
-function createMutations(
-  mfaSecret: MfaSecretData | null,
-  setMfaSecret: (data: MfaSecretData) => void,
-  setCurrentStep: (fn: (prev: number) => number) => void,
-  setError: (error: string | null) => void,
-  getFormValues: (fields: FormFieldName[]) => Record<string, unknown>,
-  queryClient: ReturnType<typeof useQueryClient>,
-) {
-  return {
-    mfaSetup: useMfaSetupMutation(setMfaSecret, setError),
-    mfaVerify: useMfaVerifyMutation(mfaSecret, setCurrentStep, setError),
-    passkeyRegister: usePasskeyRegisterMutation(setError),
-    finalSubmit: useFinalSubmitMutation(getFormValues, queryClient, setError),
-  };
-}
-
-function createHandlers(
-  currentStep: number,
-  form: unknown,
-  setError: (error: string | null) => void,
-  setCurrentStep: (fn: (prev: number) => number) => void,
-) {
-  return {
-    handleNext: useCallback(() => {
-      setError(null);
-      if (currentStep < 5) {
-        setCurrentStep((prev) => prev + 1);
-      }
-    }, [currentStep, setError, setCurrentStep]),
-    handlePrev: useCallback(() => {
-      setError(null);
-      if (currentStep > 0) {
-        setCurrentStep((prev) => prev - 1);
-      }
-    }, [currentStep, setError, setCurrentStep]),
-    handleProfileChange: useCallback(
-      (field: string, value: string) => {
-        (form as unknown as Record<string, (field: string, value: string) => void>).setFieldValue?.(
-          field as FormFieldName,
-          value,
-        );
-        setError(null);
-      },
-      [form, setError],
-    ),
-  };
-}
-
-// ========== FORM HOOK ==========
-export function useOnboardingForm() {
-  const queryClient = useQueryClient();
-  const { data: userProfile } = useSuspenseQuery({
-    queryKey: ["user", "profile"],
-    queryFn: fetchUserProfile,
-  });
-  const [currentStep, setCurrentStep] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [mfaSecret, setMfaSecret] = useState<MfaSecretData | null>(null);
-  const form = initializeFormState(userProfile) as unknown as ReturnType<typeof useForm>;
-  const getFormValues = useCallback(
-    (fields: FormFieldName[]) => {
-      const result: Record<string, unknown> = {};
-      fields.forEach((field) => {
-        result[field] = form.getFieldValue(field);
-      });
-      return result;
-    },
-    [form],
-  );
-  const mutations = createMutations(
-    mfaSecret,
-    setMfaSecret,
-    setCurrentStep,
-    setError,
-    getFormValues,
-    queryClient,
-  );
-  const { handleNext, handlePrev, handleProfileChange } = createHandlers(
-    currentStep,
-    form,
-    setError,
-    setCurrentStep,
-  );
-  useEffect(() => {
-    if (currentStep === 4 && !mfaSecret && !mutations.mfaSetup.isPending) {
-      mutations.mfaSetup.mutate();
-    }
-  }, [currentStep, mfaSecret, mutations]);
-  const isLoading =
-    mutations.mfaSetup.isPending ||
-    mutations.mfaVerify.isPending ||
-    mutations.passkeyRegister.isPending ||
-    mutations.finalSubmit.isPending;
-  return buildOnboardingReturnValue(
-    form,
-    currentStep,
-    error,
-    mfaSecret,
-    isLoading,
-    handleNext,
-    handlePrev,
-    handleProfileChange,
-    mutations,
-  );
 }
