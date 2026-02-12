@@ -19,11 +19,7 @@ import { CounterpartList } from "@/features/counterparts/components/CounterpartL
 import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
 import { counterpartKeys } from "@/features/counterparts/queries";
 import type { Counterpart, CounterpartCategory } from "@/features/counterparts/types";
-import {
-  ServicesGrid,
-  ServicesHero,
-  ServicesSurface,
-} from "@/features/services/components/ServicesShell";
+import { ServicesGrid, ServicesSurface } from "@/features/services/components/ServicesShell";
 import { CounterpartDetailSection } from "../components/CounterpartDetailSection";
 
 export function CounterpartsPage() {
@@ -173,8 +169,6 @@ export function CounterpartsPage() {
 
   return (
     <section className="space-y-8">
-      <ServicesHero title="Contrapartes" />
-
       <ServicesSurface>
         <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

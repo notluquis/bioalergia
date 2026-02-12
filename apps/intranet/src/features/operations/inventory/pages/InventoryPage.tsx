@@ -15,7 +15,7 @@ import { columns } from "@/features/inventory/components/columns";
 import { InventoryItemForm } from "@/features/inventory/components/InventoryItemForm";
 import { inventoryKeys } from "@/features/inventory/queries";
 import type { InventoryItem, InventoryMovement } from "@/features/inventory/types";
-import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import { ServicesSurface } from "@/features/services/components/ServicesShell";
 export function InventoryPage() {
   const client = useClientQueries(schemaLite);
 
@@ -132,8 +132,10 @@ export function InventoryPage() {
 
   return (
     <section className="space-y-8">
-      <ServicesHero
-        actions={
+      {combinedError && <Alert status="danger">{combinedError}</Alert>}
+
+      <ServicesSurface>
+        <div className="mb-4 flex justify-end">
           <Button
             className="w-full sm:w-auto"
             disabled={!canCreateItem}
@@ -143,14 +145,7 @@ export function InventoryPage() {
             {canCreateItem ? <PlusCircle size={16} /> : <Lock size={16} />}
             Agregar item
           </Button>
-        }
-        description="Gestiona insumos, materiales y stock del centro con controles rápidos para crear y ajustar."
-        title="Inventario"
-      />
-
-      {combinedError && <Alert status="danger">{combinedError}</Alert>}
-
-      <ServicesSurface>
+        </div>
         <DataTable
           columns={columns}
           data={items}

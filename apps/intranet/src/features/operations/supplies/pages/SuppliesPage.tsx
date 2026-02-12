@@ -1,7 +1,7 @@
 import { RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
-import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import { ServicesSurface } from "@/features/services/components/ServicesShell";
 import { SupplyRequestForm } from "@/features/supplies/components/SupplyRequestForm";
 import { SupplyRequestsTable } from "@/features/supplies/components/SupplyRequestsTable";
 import { useSupplyManagement } from "@/features/supplies/hooks/use-supply-management";
@@ -16,23 +16,6 @@ export function Supplies() {
 
   return (
     <section className="space-y-8">
-      <ServicesHero
-        actions={
-          <Button
-            className="w-full sm:w-auto"
-            onClick={() => void refresh()}
-            size="sm"
-            variant="secondary"
-            aria-label="Actualizar solicitudes de insumos"
-          >
-            <RefreshCcw className="h-4 w-4" />
-            Actualizar
-          </Button>
-        }
-        description="Solicita insumos críticos y sigue el estado de aprobación y entrega."
-        title="Insumos"
-      />
-
       {canCreate && (
         <ServicesSurface>
           <div className="space-y-4">
@@ -49,10 +32,17 @@ export function Supplies() {
 
       <ServicesSurface>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="font-semibold text-foreground text-lg">{tableTitle}</h2>
-            <p className="text-default-500 text-xs">{requests.length} solicitudes en el periodo.</p>
-          </div>
+          <p className="text-default-500 text-sm">{tableTitle}</p>
+          <Button
+            className="w-full sm:w-auto"
+            onClick={() => void refresh()}
+            size="sm"
+            variant="secondary"
+            aria-label="Actualizar solicitudes de insumos"
+          >
+            <RefreshCcw className="h-4 w-4" />
+            Actualizar
+          </Button>
         </div>
         <div className="mt-4">
           <SupplyRequestsTable

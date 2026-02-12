@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { ServiceForm } from "@/features/services/components/ServiceForm";
-import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import { ServicesSurface } from "@/features/services/components/ServicesShell";
 import { SERVICE_TEMPLATES } from "@/features/services/components/ServiceTemplateGallery";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 export function ServicesCreateContent() {
@@ -16,16 +16,6 @@ export function ServicesCreateContent() {
 
   return (
     <section className="space-y-8">
-      <ServicesHero
-        actions={
-          <Link to="/services">
-            <Button variant="ghost">Volver al panel</Button>
-          </Link>
-        }
-        description="Usa una plantilla o completa el formulario manualmente para incorporar nuevos servicios recurrentes."
-        title="Crear servicio"
-      />
-
       <ServicesSurface>
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">

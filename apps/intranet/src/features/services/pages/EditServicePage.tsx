@@ -12,7 +12,7 @@ import {
 import { ServiceForm } from "@/features/services/components/ServiceForm";
 import { ServiceScheduleAccordion } from "@/features/services/components/ServiceScheduleAccordion";
 import { ServiceScheduleTable } from "@/features/services/components/ServiceScheduleTable";
-import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import { ServicesSurface } from "@/features/services/components/ServicesShell";
 import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
 import { fmtCLP } from "@/lib/format";
 export function ServiceEditPage() {
@@ -137,8 +137,11 @@ export function ServiceEditPage() {
 
   return (
     <section className="space-y-6">
-      <ServicesHero
-        actions={
+      {displayError && <Alert status="danger">{displayError}</Alert>}
+      {saveMessage && <Alert status="success">{saveMessage}</Alert>}
+
+      <ServicesSurface className="space-y-6">
+        <div className="flex justify-end">
           <Button
             onClick={() => {
               globalThis.history.back();
@@ -147,17 +150,7 @@ export function ServiceEditPage() {
           >
             Volver
           </Button>
-        }
-        description={
-          service ? service.name : "Ajusta los datos y cronogramas del servicio seleccionado."
-        }
-        title="Editar servicio"
-      />
-
-      {displayError && <Alert status="danger">{displayError}</Alert>}
-      {saveMessage && <Alert status="success">{saveMessage}</Alert>}
-
-      <ServicesSurface className="space-y-6">
+        </div>
         <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)] lg:items-start">
           <aside className="space-y-4 rounded-2xl border border-default-200/60 bg-background/80 p-4 text-foreground text-sm shadow-inner">
             <h2 className="font-semibold text-default-700 text-sm uppercase tracking-wide">

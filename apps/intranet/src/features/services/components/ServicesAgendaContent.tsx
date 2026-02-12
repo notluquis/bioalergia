@@ -1,9 +1,7 @@
 import { Spinner } from "@heroui/react";
-import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
-import { ServicesHero, ServicesSurface } from "@/features/services/components/ServicesShell";
+import { ServicesSurface } from "@/features/services/components/ServicesShell";
 import { ServicesUnifiedAgenda } from "@/features/services/components/ServicesUnifiedAgenda";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 import { currencyFormatter } from "@/lib/format";
@@ -37,16 +35,6 @@ export function ServicesAgendaContent() {
   if (aggregatedLoading && unifiedAgendaItems.length === 0) {
     return (
       <section className="space-y-8">
-        <ServicesHero
-          actions={
-            <Link to="/services">
-              <Button variant="ghost">Volver al panel</Button>
-            </Link>
-          }
-          description="Visualiza los pagos programados, sus estados y registra conciliaciones rápidamente."
-          title="Agenda de servicios"
-        />
-
         <ServicesSurface className="flex min-h-64 items-center justify-center">
           <div className="flex items-center gap-3 text-default-600 text-sm">
             <Spinner size="md" />
@@ -59,16 +47,6 @@ export function ServicesAgendaContent() {
 
   return (
     <section className="space-y-8">
-      <ServicesHero
-        actions={
-          <Link to="/services">
-            <Button variant="ghost">Volver al panel</Button>
-          </Link>
-        }
-        description="Visualiza los pagos programados, sus estados y registra conciliaciones rápidamente."
-        title="Agenda de servicios"
-      />
-
       <ServicesSurface>
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard title="Pagos hoy" value={currencyFormatter.format(totals.day)} />
