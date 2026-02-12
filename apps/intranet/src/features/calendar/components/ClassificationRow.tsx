@@ -99,7 +99,7 @@ export function ClassificationRow({
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-5 px-6 pb-6 pt-0">
+      <CardContent className="space-y-5 px-6 pt-0 pb-6">
         {description && (
           <div className="rounded-xl border border-default-200/60 bg-default-100/80 p-4 text-foreground">
             <span className="mb-2 block font-semibold text-foreground text-xs uppercase tracking-wide">

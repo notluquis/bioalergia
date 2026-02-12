@@ -139,9 +139,16 @@ function StepContent({
   );
 }
 export function OnboardingWizard() {
-  const { user } = useAuth();
+  const { initializing, user } = useAuth();
   const navigate = useNavigate();
   const logic = useOnboardingForm();
+
+  // Session lost while onboarding -> return to login.
+  useEffect(() => {
+    if (!initializing && !user) {
+      void navigate({ replace: true, to: "/login", search: { redirect: "/onboarding" } });
+    }
+  }, [initializing, navigate, user]);
 
   // Redirect if already completed
   useEffect(() => {

@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { APP_CONFIG } from "@/config/app";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { apiClient } from "@/lib/api-client";
+import { ApiError, apiClient } from "@/lib/api-client";
 import { logger } from "@/lib/logger";
 
 export interface AppSettings {
@@ -54,9 +54,10 @@ const UpdateSettingsResponseSchema = z.looseObject({
 export function useSettings() {
   const { user, hasRole } = useAuth();
   const queryClient = useQueryClient();
+  const canFetchInternalSettings = Boolean(user && user.status !== "PENDING_SETUP");
 
   const settingsQuery = useQuery<AppSettings>({
-    enabled: Boolean(user),
+    enabled: canFetchInternalSettings,
     gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       logger.info("[settings] fetch:start", { userId: user?.id ?? null });
@@ -66,12 +67,25 @@ export function useSettings() {
           upsertChunkSize?: number | string;
         };
       }
-      const payload = await apiClient.get<InternalSettingsResponse>("/api/settings/internal", {
-        responseSchema: InternalSettingsResponseSchema,
-      });
-      return { ...DEFAULT_SETTINGS, ...payload };
+      try {
+        const payload = await apiClient.get<InternalSettingsResponse>("/api/settings/internal", {
+          responseSchema: InternalSettingsResponseSchema,
+        });
+        return { ...DEFAULT_SETTINGS, ...payload };
+      } catch (error) {
+        // During onboarding or stale sessions, internal settings might be unavailable.
+        // Do not break app rendering for branding defaults.
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          logger.info("[settings] fetch:skip_unauthorized", {
+            status: error.status,
+            userId: user?.id ?? null,
+          });
+          return DEFAULT_SETTINGS;
+        }
+        throw error;
+      }
     },
-    queryKey: ["settings", user?.id],
+    queryKey: ["settings", user?.id, user?.status],
     staleTime: 5 * 60 * 1000,
   });
 
