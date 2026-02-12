@@ -54,7 +54,6 @@ import { Route as AuthedFinanzasStatisticsRouteImport } from "./routes/_authed/f
 import { Route as AuthedFinanzasProductionBalancesRouteImport } from "./routes/_authed/finanzas/production-balances"
 import { Route as AuthedFinanzasPersonalCreditsRouteImport } from "./routes/_authed/finanzas/personal-credits"
 import { Route as AuthedFinanzasPayoutsRouteImport } from "./routes/_authed/finanzas/payouts"
-import { Route as AuthedFinanzasParticipantsRouteImport } from "./routes/_authed/finanzas/participants"
 import { Route as AuthedFinanzasLoansRouteImport } from "./routes/_authed/finanzas/loans"
 import { Route as AuthedFinanzasLiberacionesRouteImport } from "./routes/_authed/finanzas/liberaciones"
 import { Route as AuthedFinanzasDteAnalyticsRouteImport } from "./routes/_authed/finanzas/dte-analytics"
@@ -280,12 +279,6 @@ const AuthedFinanzasPayoutsRoute = AuthedFinanzasPayoutsRouteImport.update({
   path: "/payouts",
   getParentRoute: () => AuthedFinanzasRoute,
 } as any)
-const AuthedFinanzasParticipantsRoute =
-  AuthedFinanzasParticipantsRouteImport.update({
-    id: "/participants",
-    path: "/participants",
-    getParentRoute: () => AuthedFinanzasRoute,
-  } as any)
 const AuthedFinanzasLoansRoute = AuthedFinanzasLoansRouteImport.update({
   id: "/loans",
   path: "/loans",
@@ -435,7 +428,6 @@ export interface FileRoutesByFullPath {
   "/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute
   "/finanzas/liberaciones": typeof AuthedFinanzasLiberacionesRoute
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute
-  "/finanzas/participants": typeof AuthedFinanzasParticipantsRoute
   "/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute
   "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
@@ -494,7 +486,6 @@ export interface FileRoutesByTo {
   "/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute
   "/finanzas/liberaciones": typeof AuthedFinanzasLiberacionesRoute
   "/finanzas/loans": typeof AuthedFinanzasLoansRoute
-  "/finanzas/participants": typeof AuthedFinanzasParticipantsRoute
   "/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute
   "/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
   "/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
@@ -559,7 +550,6 @@ export interface FileRoutesById {
   "/_authed/finanzas/dte-analytics": typeof AuthedFinanzasDteAnalyticsRoute
   "/_authed/finanzas/liberaciones": typeof AuthedFinanzasLiberacionesRoute
   "/_authed/finanzas/loans": typeof AuthedFinanzasLoansRoute
-  "/_authed/finanzas/participants": typeof AuthedFinanzasParticipantsRoute
   "/_authed/finanzas/payouts": typeof AuthedFinanzasPayoutsRoute
   "/_authed/finanzas/personal-credits": typeof AuthedFinanzasPersonalCreditsRouteWithChildren
   "/_authed/finanzas/production-balances": typeof AuthedFinanzasProductionBalancesRoute
@@ -624,7 +614,6 @@ export interface FileRouteTypes {
     | "/finanzas/dte-analytics"
     | "/finanzas/liberaciones"
     | "/finanzas/loans"
-    | "/finanzas/participants"
     | "/finanzas/payouts"
     | "/finanzas/personal-credits"
     | "/finanzas/production-balances"
@@ -683,7 +672,6 @@ export interface FileRouteTypes {
     | "/finanzas/dte-analytics"
     | "/finanzas/liberaciones"
     | "/finanzas/loans"
-    | "/finanzas/participants"
     | "/finanzas/payouts"
     | "/finanzas/personal-credits"
     | "/finanzas/production-balances"
@@ -747,7 +735,6 @@ export interface FileRouteTypes {
     | "/_authed/finanzas/dte-analytics"
     | "/_authed/finanzas/liberaciones"
     | "/_authed/finanzas/loans"
-    | "/_authed/finanzas/participants"
     | "/_authed/finanzas/payouts"
     | "/_authed/finanzas/personal-credits"
     | "/_authed/finanzas/production-balances"
@@ -1066,13 +1053,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedFinanzasPayoutsRouteImport
       parentRoute: typeof AuthedFinanzasRoute
     }
-    "/_authed/finanzas/participants": {
-      id: "/_authed/finanzas/participants"
-      path: "/participants"
-      fullPath: "/finanzas/participants"
-      preLoaderRoute: typeof AuthedFinanzasParticipantsRouteImport
-      parentRoute: typeof AuthedFinanzasRoute
-    }
     "/_authed/finanzas/loans": {
       id: "/_authed/finanzas/loans"
       path: "/loans"
@@ -1284,7 +1264,6 @@ interface AuthedFinanzasRouteChildren {
   AuthedFinanzasDteAnalyticsRoute: typeof AuthedFinanzasDteAnalyticsRoute
   AuthedFinanzasLiberacionesRoute: typeof AuthedFinanzasLiberacionesRoute
   AuthedFinanzasLoansRoute: typeof AuthedFinanzasLoansRoute
-  AuthedFinanzasParticipantsRoute: typeof AuthedFinanzasParticipantsRoute
   AuthedFinanzasPayoutsRoute: typeof AuthedFinanzasPayoutsRoute
   AuthedFinanzasPersonalCreditsRoute: typeof AuthedFinanzasPersonalCreditsRouteWithChildren
   AuthedFinanzasProductionBalancesRoute: typeof AuthedFinanzasProductionBalancesRoute
@@ -1300,7 +1279,6 @@ const AuthedFinanzasRouteChildren: AuthedFinanzasRouteChildren = {
   AuthedFinanzasDteAnalyticsRoute: AuthedFinanzasDteAnalyticsRoute,
   AuthedFinanzasLiberacionesRoute: AuthedFinanzasLiberacionesRoute,
   AuthedFinanzasLoansRoute: AuthedFinanzasLoansRoute,
-  AuthedFinanzasParticipantsRoute: AuthedFinanzasParticipantsRoute,
   AuthedFinanzasPayoutsRoute: AuthedFinanzasPayoutsRoute,
   AuthedFinanzasPersonalCreditsRoute:
     AuthedFinanzasPersonalCreditsRouteWithChildren,

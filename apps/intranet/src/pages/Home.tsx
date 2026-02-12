@@ -135,9 +135,9 @@ const QUICK_LINKS = [
     color: "text-violet-500",
     description: "Gestiona contrapartes y sus historiales.",
     icon: Users,
-    subject: "Person",
-    title: "Participantes",
-    to: "/finanzas/participants" as const,
+    subject: "Counterpart",
+    title: "Contrapartes",
+    to: "/finanzas/counterparts" as const,
   },
   {
     action: "read",

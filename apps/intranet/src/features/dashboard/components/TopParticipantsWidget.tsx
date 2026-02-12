@@ -21,7 +21,7 @@ export function TopParticipantsWidget({
         </h3>
         <Link
           className="inline-flex items-center rounded-full border border-secondary/40 bg-secondary/15 px-3 py-1 font-semibold text-secondary text-xs uppercase tracking-wide"
-          to="/finanzas/participants"
+          to="/finanzas/counterparts"
         >
           Ver todos
         </Link>
