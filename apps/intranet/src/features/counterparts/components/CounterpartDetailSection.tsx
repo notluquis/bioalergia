@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/Button";
 import { AssociatedAccounts } from "@/features/counterparts/components/AssociatedAccounts";
 import { counterpartKeys } from "@/features/counterparts/queries";
 import type { Counterpart } from "@/features/counterparts/types";
-import { ServicesSurface } from "@/features/services/components/ServicesShell";
 
 interface CounterpartDetailSectionProps {
   canUpdate: boolean;
@@ -30,41 +29,43 @@ export function CounterpartDetailSection({
 
   return (
     <div className="space-y-6">
-      <ServicesSurface className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-default-500 text-xs uppercase tracking-[0.3em]">
-              Contraparte activa
-            </p>
-            <h3 className="font-semibold text-foreground text-lg">
-              {detail.counterpart.bankAccountHolder}
-            </h3>
-            {detail.counterpart.identificationNumber && (
-              <p className="text-default-600 text-xs">
-                RUT {detail.counterpart.identificationNumber}
+      <section className="surface-recessed rounded-[28px] p-6 shadow-inner">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-default-500 text-xs uppercase tracking-[0.3em]">
+                Contraparte activa
               </p>
-            )}
+              <h3 className="font-semibold text-foreground text-lg">
+                {detail.counterpart.bankAccountHolder}
+              </h3>
+              {detail.counterpart.identificationNumber && (
+                <p className="text-default-600 text-xs">
+                  RUT {detail.counterpart.identificationNumber}
+                </p>
+              )}
+            </div>
+            <Button
+              disabled={!canUpdate}
+              onClick={() => {
+                onEdit(detail.counterpart);
+              }}
+              size="sm"
+              title={canUpdate ? undefined : "No tienes permisos para editar"}
+              variant="ghost"
+            >
+              {!canUpdate && <Lock className="mr-2 h-3 w-3" />}
+              Editar contraparte
+            </Button>
           </div>
-          <Button
-            disabled={!canUpdate}
-            onClick={() => {
-              onEdit(detail.counterpart);
-            }}
-            size="sm"
-            title={canUpdate ? undefined : "No tienes permisos para editar"}
-            variant="ghost"
-          >
-            {!canUpdate && <Lock className="mr-2 h-3 w-3" />}
-            Editar contraparte
-          </Button>
-        </div>
-        <div className="grid gap-3 text-default-600 text-xs sm:grid-cols-2">
-          <div>
-            <p className="font-semibold text-default-500">Clasificación</p>
-            <p className="text-foreground text-sm">{detail.counterpart.category ?? "—"}</p>
+          <div className="grid gap-3 text-default-600 text-xs sm:grid-cols-2">
+            <div>
+              <p className="font-semibold text-default-500">Clasificación</p>
+              <p className="text-foreground text-sm">{detail.counterpart.category ?? "—"}</p>
+            </div>
           </div>
         </div>
-      </ServicesSurface>
+      </section>
 
       <AssociatedAccounts
         detail={detail}

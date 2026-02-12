@@ -19,7 +19,6 @@ import { CounterpartList } from "@/features/counterparts/components/CounterpartL
 import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
 import { counterpartKeys } from "@/features/counterparts/queries";
 import type { Counterpart, CounterpartCategory } from "@/features/counterparts/types";
-import { ServicesGrid, ServicesSurface } from "@/features/services/components/ServicesShell";
 import { CounterpartDetailSection } from "../components/CounterpartDetailSection";
 
 export function CounterpartsPage() {
@@ -169,8 +168,8 @@ export function CounterpartsPage() {
 
   return (
     <section className="space-y-8">
-      <ServicesSurface>
-        <div className="space-y-4">
+      <section className="surface-recessed rounded-[28px] p-6 shadow-inner">
+        <div className="space-y-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.4em]">
@@ -220,39 +219,39 @@ export function CounterpartsPage() {
             </div>
           </div>
         </div>
-      </ServicesSurface>
+      </section>
 
-      <ServicesGrid>
-        <ServicesSurface className="h-full">
+      <div className="grid min-h-0 items-start gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <section className="surface-recessed h-full rounded-[28px] p-6 shadow-inner">
           <CounterpartList
             className="max-h-[calc(100vh-220px)]"
             counterparts={visibleCounterparts}
             onSelectCounterpart={handleSelectCounterpart}
             selectedId={selectedId}
           />
-        </ServicesSurface>
+        </section>
 
         <div className="h-full">
           {!selectedId && (
-            <ServicesSurface className="h-full">
+            <section className="surface-recessed h-full rounded-[28px] p-6 shadow-inner">
               <div className="flex flex-col items-center justify-center p-8 text-center">
                 <p className="text-default-500 text-sm">
                   Selecciona una contraparte para ver los detalles
                 </p>
               </div>
-            </ServicesSurface>
+            </section>
           )}
 
           {selectedId && (
             <Suspense
               fallback={
-                <ServicesSurface className="space-y-4">
+                <section className="surface-recessed space-y-4 rounded-[28px] p-6 shadow-inner">
                   <Skeleton className="h-8 w-1/2" />
                   <div className="grid grid-cols-2 gap-4">
                     <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-12 w-full" />
                   </div>
-                </ServicesSurface>
+                </section>
               }
             >
               <CounterpartDetailSection
@@ -265,7 +264,7 @@ export function CounterpartsPage() {
             </Suspense>
           )}
         </div>
-      </ServicesGrid>
+      </div>
       <Modal
         isOpen={isFormModalOpen}
         onClose={closeFormModal}
