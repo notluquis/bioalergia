@@ -1,10 +1,11 @@
-import { Card } from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Card, Chip, Tabs } from "@heroui/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { ArrowRight, Calendar, Search, User, UserPlus } from "lucide-react";
+import { ArrowRight, Database, RefreshCw, Search, User, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { z } from "zod";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
 import { CardContent } from "@/components/ui/Card";
@@ -13,7 +14,7 @@ import { CreatePatientModal } from "@/features/patients/components/CreatePatient
 import { PatientListSchema } from "@/features/patients/schemas";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { apiClient } from "@/lib/api-client";
-import { PAGE_CONTAINER_RELAXED, TITLE_LG } from "@/lib/styles";
+import { PAGE_CONTAINER_RELAXED } from "@/lib/styles";
 
 export const Route = createFileRoute("/_authed/patients/")({
   staticData: {
@@ -23,41 +24,94 @@ export const Route = createFileRoute("/_authed/patients/")({
   component: PatientsListPage,
 });
 
-// Types for the patient data
 interface Patient {
   id: number;
   personId: number;
-  birthDate?: string | null;
-  bloodType?: string;
-  notes?: string;
+  birthDate?: null | string;
   person: {
     rut: string;
     names: string;
     fatherName?: string;
     motherName?: string;
     email?: string;
-    phone?: string;
   };
 }
 
+interface DtePatientSource {
+  clientName: string;
+  clientRUT: string;
+  documentDate?: Date | null | string;
+  documentType: number;
+  folio?: null | string;
+  period?: null | string;
+  sourceUpdatedAt?: Date | null | string;
+  updatedAt?: Date | null | string;
+}
+
+const DtePatientSourceSchema = z.array(
+  z.object({
+    clientName: z.string(),
+    clientRUT: z.string(),
+    documentDate: z.union([z.coerce.date(), z.null()]).optional(),
+    documentType: z.number(),
+    folio: z.string().nullable().optional(),
+    period: z.string().nullable().optional(),
+    sourceUpdatedAt: z.union([z.coerce.date(), z.null()]).optional(),
+    updatedAt: z.union([z.coerce.date(), z.null()]).optional(),
+  }),
+);
+
 function PatientsListPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { close: closeCreateModal, isOpen: createOpen, open: openCreateModal } = useDisclosure();
-  const [search, setSearch] = useState("");
-  const [pagination, setPagination] = useState<PaginationState>({
+  const [searchClinical, setSearchClinical] = useState("");
+  const [searchDte, setSearchDte] = useState("");
+  const [activeTab, setActiveTab] = useState("clinical");
+  const [paginationClinical, setPaginationClinical] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 20,
+  });
+  const [paginationDte, setPaginationDte] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 20,
   });
 
-  const { data: patients, isLoading } = useQuery({
-    queryKey: ["patients", search],
-    queryFn: async () => {
-      return await apiClient.get<Patient[]>(`/api/patients?q=${encodeURIComponent(search)}`, {
+  const { data: patients = [], isLoading: isLoadingPatients } = useQuery({
+    queryKey: ["patients", searchClinical],
+    queryFn: async () =>
+      apiClient.get<Patient[]>(`/api/patients?q=${encodeURIComponent(searchClinical)}`, {
         responseSchema: PatientListSchema,
-      });
+      }),
+  });
+
+  const { data: dteSources = [], isLoading: isLoadingDteSources } = useQuery({
+    queryKey: ["patients", "dte-sources", searchDte],
+    queryFn: async () =>
+      apiClient.get<DtePatientSource[]>(
+        `/api/patients/sources/dte?q=${encodeURIComponent(searchDte)}&limit=300`,
+        { responseSchema: DtePatientSourceSchema },
+      ),
+  });
+
+  const syncDteSourcesMutation = useMutation({
+    mutationFn: async () =>
+      apiClient.post(
+        "/api/patients/sources/dte/sync",
+        { dryRun: false },
+        {
+          responseSchema: z.object({
+            selected: z.number().optional(),
+            updated: z.number().optional(),
+          }),
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["patients", "dte-sources"] });
     },
   });
 
-  const columns = useMemo<ColumnDef<Patient>[]>(
+  const patientColumns = useMemo<ColumnDef<Patient>[]>(
     () => [
       {
         accessorKey: "person.names",
@@ -92,93 +146,183 @@ function PatientsListPage() {
         accessorKey: "birthDate",
         header: "EDAD",
         cell: ({ row }) => {
-          const patient = row.original;
-          if (!patient.birthDate) {
+          const { birthDate } = row.original;
+          if (!birthDate) {
             return <span className="text-default-400 text-sm">Sin fecha</span>;
           }
-          const age = dayjs().diff(dayjs(patient.birthDate, "YYYY-MM-DD"), "year");
+          const age = dayjs().diff(dayjs(birthDate, "YYYY-MM-DD"), "year");
           return (
             <div className="flex flex-col">
               <span className="text-default-700 text-sm">{age} años</span>
               <span className="text-[10px] text-default-400">
-                {dayjs(patient.birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")}
+                {dayjs(birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")}
               </span>
             </div>
           );
         },
       },
       {
-        id: "last_consultation",
-        header: "ÚLT. CONSULTA",
-        cell: () => (
-          <div className="flex items-center gap-2 text-default-500">
-            <Calendar size={14} />
-            <span className="text-sm italic">Sin registros</span>
-          </div>
-        ),
-      },
-      {
         id: "actions",
         header: "ACCIONES",
         cell: ({ row }) => (
           <Button
-            as={Link}
-            // @ts-expect-error - Link to prop mismatch in HeroUI adapter wrap
-            to={`/patients/${row.original.id}`}
+            className="h-8 w-8 min-w-0 p-0"
+            onClick={() =>
+              void navigate({
+                params: { id: String(row.original.id) },
+                to: "/patients/$id",
+              })
+            }
             size="sm"
             variant="ghost"
-            className="h-8 w-8 min-w-0 p-0"
           >
             <ArrowRight size={16} />
           </Button>
         ),
       },
     ],
+    [navigate],
+  );
 
+  const dteColumns = useMemo<ColumnDef<DtePatientSource>[]>(
+    () => [
+      {
+        accessorKey: "clientName",
+        header: "CLIENTE (DTE)",
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <span className="font-medium text-foreground">{row.original.clientName}</span>
+            <span className="font-mono text-default-500 text-xs">{row.original.clientRUT}</span>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "documentType",
+        header: "DOC",
+        cell: ({ row }) => <Chip size="sm">{row.original.documentType}</Chip>,
+      },
+      {
+        accessorKey: "folio",
+        header: "FOLIO",
+        cell: ({ row }) => row.original.folio || "-",
+      },
+      {
+        accessorKey: "period",
+        header: "PERIODO",
+        cell: ({ row }) => row.original.period || "-",
+      },
+      {
+        accessorKey: "documentDate",
+        header: "FECHA DOC",
+        cell: ({ row }) => {
+          const date = row.original.documentDate;
+          return date ? dayjs(date).format("DD/MM/YYYY") : "-";
+        },
+      },
+    ],
     [],
   );
 
   return (
     <section className={PAGE_CONTAINER_RELAXED}>
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className={TITLE_LG}>Pacientes</h1>
-          <p className="text-default-500 text-sm">Gestión de ficha clínica y certificados</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-default-600 text-sm">
+          <Database size={16} />
+          <span>
+            {patients.length} fichas clínicas
+            {" · "}
+            {dteSources.length} registros fuente DTE
+          </span>
         </div>
-        <Button className="w-full shadow-md sm:w-auto" onClick={openCreateModal} variant="primary">
-          <UserPlus size={18} className="mr-2" />
-          Registrar Paciente
-        </Button>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button
+            className="w-full sm:w-auto"
+            isLoading={syncDteSourcesMutation.isPending}
+            onClick={() => syncDteSourcesMutation.mutate()}
+            variant="secondary"
+          >
+            <RefreshCw className="mr-2" size={16} />
+            Sincronizar fuente DTE
+          </Button>
+          <Button className="w-full sm:w-auto" onClick={openCreateModal} variant="primary">
+            <UserPlus className="mr-2" size={18} />
+            Registrar paciente
+          </Button>
+        </div>
       </div>
 
       <Card className="border-none bg-background shadow-sm">
         <CardContent className="p-4">
-          <Input
-            placeholder="Buscar por nombre o RUT..."
-            rightElement={<Search size={18} className="text-default-300" />}
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-            }}
-            className="max-w-md"
-          />
+          <Tabs
+            aria-label="Fuentes de pacientes"
+            selectedKey={activeTab}
+            onSelectionChange={(key) => setActiveTab(String(key))}
+          >
+            <Tabs.List className="w-fit rounded-xl bg-default-100 p-1">
+              <Tabs.Tab id="clinical">Ficha clínica</Tabs.Tab>
+              <Tabs.Tab id="dte">Fuentes DTE</Tabs.Tab>
+            </Tabs.List>
+
+            <Tabs.Panel className="space-y-4 pt-4" id="clinical">
+              <Input
+                className="max-w-md"
+                onChange={(e) => {
+                  setSearchClinical(e.target.value);
+                  setPaginationClinical((prev) => ({ ...prev, pageIndex: 0 }));
+                }}
+                placeholder="Buscar ficha clínica por nombre o RUT..."
+                rightElement={<Search className="text-default-300" size={18} />}
+                value={searchClinical}
+              />
+              <DataTable
+                columns={patientColumns}
+                containerVariant="plain"
+                data={patients}
+                enableExport={false}
+                enableGlobalFilter={false}
+                enableToolbar={false}
+                isLoading={isLoadingPatients}
+                noDataMessage="No hay fichas clínicas registradas."
+                onPaginationChange={setPaginationClinical}
+                pageSizeOptions={[10, 20, 50]}
+                pagination={paginationClinical}
+              />
+            </Tabs.Panel>
+
+            <Tabs.Panel className="space-y-4 pt-4" id="dte">
+              <div className="rounded-xl border border-default-200 bg-default-50 p-3 text-default-600 text-sm">
+                Los registros DTE son una fuente de clientes y no se transforman automáticamente en
+                ficha clínica (`Patient`). Por eso pueden existir en DTE y no aparecer en la vista
+                clínica.
+              </div>
+              <Input
+                className="max-w-md"
+                onChange={(e) => {
+                  setSearchDte(e.target.value);
+                  setPaginationDte((prev) => ({ ...prev, pageIndex: 0 }));
+                }}
+                placeholder="Buscar en fuente DTE por nombre o RUT..."
+                rightElement={<Search className="text-default-300" size={18} />}
+                value={searchDte}
+              />
+              <DataTable
+                columns={dteColumns}
+                containerVariant="plain"
+                data={dteSources}
+                enableExport={false}
+                enableGlobalFilter={false}
+                enableToolbar={false}
+                isLoading={isLoadingDteSources}
+                noDataMessage="No hay registros DTE en la base de fuentes."
+                onPaginationChange={setPaginationDte}
+                pageSizeOptions={[10, 20, 50]}
+                pagination={paginationDte}
+              />
+            </Tabs.Panel>
+          </Tabs>
         </CardContent>
       </Card>
 
-      <DataTable
-        columns={columns}
-        data={patients || []}
-        containerVariant="plain"
-        enableExport={false}
-        enableGlobalFilter={false}
-        enableToolbar={false}
-        isLoading={isLoading}
-        onPaginationChange={setPagination}
-        pageSizeOptions={[10, 20, 50]}
-        pagination={pagination}
-        noDataMessage="No se encontraron pacientes registrados."
-      />
       <CreatePatientModal isOpen={createOpen} onClose={closeCreateModal} />
     </section>
   );
