@@ -60,14 +60,16 @@ interface ApiSuccessResponse<T> {
 }
 
 const ProductionBalanceApiItemSchema = z.strictObject({
-  balanceDate: z.undefined().optional(),
   changeReason: z.string().nullable(),
   comentarios: z.string().nullable(),
   consultasMonto: z.number(),
   controlesMonto: z.number(),
   createdAt: z.coerce.date(),
   createdByEmail: z.string().nullable(),
-  date: zDateString,
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}(?:[T ].*)?$/)
+    .transform((value) => value.slice(0, 10)),
   gastosDiarios: z.number(),
   id: z.number(),
   ingresoEfectivo: z.number(),
@@ -77,7 +79,10 @@ const ProductionBalanceApiItemSchema = z.strictObject({
   otrosAbonos: z.number(),
   roxairMonto: z.number(),
   status: z.string(),
+  subtotalIngresos: z.number().optional(),
   testsMonto: z.number(),
+  total: z.number().optional(),
+  totalIngresos: z.number().optional(),
   updatedAt: z.coerce.date(),
   updatedByEmail: z.string().nullable(),
   vacunasMonto: z.number(),
