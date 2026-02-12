@@ -1,4 +1,4 @@
-import { createPersistentStore } from "@/lib/store-utils";
+import { Store } from "@tanstack/store";
 
 export type NotificationType = "success" | "error" | "info" | "warning";
 
@@ -16,16 +16,83 @@ export interface NotificationState {
   unreadCount: number;
 }
 
-export const notificationStore = createPersistentStore<NotificationState>(
-  "bioalergia-notification-history",
-  { notifications: [], unreadCount: 0 },
-);
+const STORAGE_PREFIX = "bioalergia-notification-history";
+const DEFAULT_SCOPE = "guest";
+const INITIAL_STATE: NotificationState = { notifications: [], unreadCount: 0 };
+
+let currentScope = DEFAULT_SCOPE;
+
+function getStorageKey(scope: string) {
+  return `${STORAGE_PREFIX}:${scope}`;
+}
+
+function isNotificationState(value: unknown): value is NotificationState {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const state = value as Partial<NotificationState>;
+  return Array.isArray(state.notifications) && typeof state.unreadCount === "number";
+}
+
+function loadState(scope: string): NotificationState {
+  if (typeof window === "undefined") {
+    return INITIAL_STATE;
+  }
+  try {
+    const raw = localStorage.getItem(getStorageKey(scope));
+    if (!raw) {
+      return INITIAL_STATE;
+    }
+    const parsed = JSON.parse(raw);
+    if (!isNotificationState(parsed)) {
+      return INITIAL_STATE;
+    }
+    return parsed;
+  } catch {
+    return INITIAL_STATE;
+  }
+}
+
+function saveState(scope: string, state: NotificationState) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    localStorage.setItem(getStorageKey(scope), JSON.stringify(state));
+  } catch {
+    // ignore storage write failures (quota/private mode)
+  }
+}
+
+function setStateAndPersist(
+  updater: (state: NotificationState) => NotificationState,
+): NotificationState {
+  let nextState: NotificationState = INITIAL_STATE;
+  notificationStore.setState((state) => {
+    nextState = updater(state);
+    return nextState;
+  });
+  saveState(currentScope, nextState);
+  return nextState;
+}
+
+export const notificationStore = new Store<NotificationState>(loadState(currentScope));
+
+export const setNotificationScope = (userId: null | number | string) => {
+  const nextScope =
+    userId === null || userId === undefined ? DEFAULT_SCOPE : `user-${String(userId)}`;
+  if (nextScope === currentScope) {
+    return;
+  }
+  currentScope = nextScope;
+  notificationStore.setState(() => loadState(currentScope));
+};
 
 // Actions
 export const addNotification = (
   notification: Omit<NotificationItem, "id" | "timestamp" | "read">,
 ) => {
-  notificationStore.setState((state) => {
+  setStateAndPersist((state) => {
     const newItem: NotificationItem = {
       ...notification,
       id: crypto.randomUUID(),
@@ -44,7 +111,7 @@ export const addNotification = (
 };
 
 export const markAsRead = (id: string) => {
-  notificationStore.setState((state) => {
+  setStateAndPersist((state) => {
     const notification = state.notifications.find((n) => n.id === id);
     if (!notification || notification.read) {
       return state;
@@ -58,18 +125,18 @@ export const markAsRead = (id: string) => {
 };
 
 export const markAllAsRead = () => {
-  notificationStore.setState((state) => ({
+  setStateAndPersist((state) => ({
     notifications: state.notifications.map((n) => ({ ...n, read: true })),
     unreadCount: 0,
   }));
 };
 
 export const clearAll = () => {
-  notificationStore.setState(() => ({ notifications: [], unreadCount: 0 }));
+  setStateAndPersist(() => ({ notifications: [], unreadCount: 0 }));
 };
 
 export const removeNotification = (id: string) => {
-  notificationStore.setState((state) => {
+  setStateAndPersist((state) => {
     const notification = state.notifications.find((n) => n.id === id);
     const wasUnread = notification ? !notification.read : false;
 

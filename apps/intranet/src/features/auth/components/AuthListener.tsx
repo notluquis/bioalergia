@@ -1,5 +1,6 @@
 import type { RawRuleOf } from "@casl/ability";
 import { useEffect, useRef } from "react";
+import { setNotificationScope } from "@/features/notifications/store/use-notification-store";
 import type { AppAbility } from "@/lib/authz/ability";
 import { updateAbility } from "@/lib/authz/ability";
 import { useAuth } from "../hooks/use-auth";
@@ -11,6 +12,13 @@ import { useAuth } from "../hooks/use-auth";
 export function AuthListener() {
   const { sessionData, impersonatedRole } = useAuth();
   const lastRulesKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (sessionData === undefined) {
+      return;
+    }
+    setNotificationScope(sessionData?.user?.id ?? null);
+  }, [sessionData]);
 
   useEffect(() => {
     const sessionLoaded = sessionData !== undefined;

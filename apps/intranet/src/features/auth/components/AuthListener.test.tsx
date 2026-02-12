@@ -6,6 +6,7 @@ import type { AuthSessionData } from "../types";
 import { AuthListener } from "./AuthListener";
 
 const updateAbilityMock = vi.hoisted(() => vi.fn());
+const setNotificationScopeMock = vi.hoisted(() => vi.fn());
 const mockAuthState = vi.hoisted(() => ({
   impersonatedRole: null as null | {
     permissions: { permission: { action: string; subject: string } }[];
@@ -17,6 +18,10 @@ vi.mock("@/lib/authz/ability", () => ({
   updateAbility: updateAbilityMock,
 }));
 
+vi.mock("@/features/notifications/store/use-notification-store", () => ({
+  setNotificationScope: setNotificationScopeMock,
+}));
+
 vi.mock("@/features/auth/hooks/use-auth", () => ({
   useAuth: () => mockAuthState,
 }));
@@ -24,6 +29,7 @@ vi.mock("@/features/auth/hooks/use-auth", () => ({
 describe("AuthListener", () => {
   beforeEach(() => {
     updateAbilityMock.mockClear();
+    setNotificationScopeMock.mockClear();
     mockAuthState.impersonatedRole = null;
     mockAuthState.sessionData = undefined;
   });
@@ -63,6 +69,7 @@ describe("AuthListener", () => {
     mockAuthState.sessionData = null;
     render(<AuthListener />);
     await waitFor(() => expect(updateAbilityMock).toHaveBeenCalledWith([]));
+    await waitFor(() => expect(setNotificationScopeMock).toHaveBeenCalledWith(null));
   });
 
   it("updates ability when rules change", async () => {

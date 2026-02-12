@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast-interceptor";
 import { apiClient } from "../../../lib/api-client";
 import { CalendarSyncResponseSchema } from "../schemas";
 
