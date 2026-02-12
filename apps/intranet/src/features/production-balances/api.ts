@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
-import { parseOrThrow, zDateString, zStatusOk } from "@/lib/api-validate";
+import { parseOrThrow, zApiDateOnly, zStatusOk } from "@/lib/api-validate";
 
 export interface DailyBalancePayload {
   date: string;
@@ -66,10 +66,7 @@ const ProductionBalanceApiItemSchema = z.strictObject({
   controlesMonto: z.number(),
   createdAt: z.coerce.date(),
   createdByEmail: z.string().nullable(),
-  date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}(?:[T ].*)?$/)
-    .transform((value) => value.slice(0, 10)),
+  date: zApiDateOnly,
   gastosDiarios: z.number(),
   id: z.number(),
   ingresoEfectivo: z.number(),
@@ -89,10 +86,10 @@ const ProductionBalanceApiItemSchema = z.strictObject({
 });
 
 const ApiListResponseSchema = z.strictObject({
-  from: zDateString,
+  from: zApiDateOnly,
   items: z.array(ProductionBalanceApiItemSchema),
   status: zStatusOk.shape.status,
-  to: zDateString,
+  to: zApiDateOnly,
 });
 
 const ApiSuccessResponseSchema = z.strictObject({

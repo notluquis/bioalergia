@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { zApiDateOnly, zDateString } from "@/lib/api-validate";
 
 const zDate = z.coerce.date();
-const zDateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected date in YYYY-MM-DD format");
+const zDateOnly = zApiDateOnly;
 const zDateOnlyNullable = zDateOnly.nullable();
 const zDateTime = z.iso.datetime({ offset: true });
 const zEventDateTime = z.preprocess((value) => {
@@ -80,10 +81,10 @@ export const CalendarFiltersSchema = z.strictObject({
   calendarIds: z.array(z.string()),
   categories: z.array(z.string()),
   eventTypes: z.array(z.string()).optional(),
-  from: z.string(),
+  from: zDateString,
   maxDays: z.number(),
   search: z.string().optional(),
-  to: z.string(),
+  to: zDateString,
 });
 
 export const CalendarTotalsSchema = z.strictObject({
@@ -190,9 +191,9 @@ export const CalendarSummaryResponseSchema = z.strictObject({
     calendarIds: z.array(z.string()),
     categories: z.array(z.string()),
     eventTypes: z.array(z.string()).optional(),
-    from: z.string(),
+    from: zDateString,
     search: z.string().optional(),
-    to: z.string(),
+    to: zDateString,
   }),
   status: z.literal("ok"),
   totals: CalendarTotalsSchema.extend({
@@ -295,7 +296,7 @@ const TreatmentAnalyticsPeriodSchema = z.strictObject({
 });
 
 const TreatmentAnalyticsByDateSchema = TreatmentAnalyticsPeriodSchema.extend({
-  date: z.string(),
+  date: zApiDateOnly,
 });
 
 const TreatmentAnalyticsByWeekSchema = TreatmentAnalyticsPeriodSchema.extend({
@@ -317,8 +318,8 @@ export const TreatmentAnalyticsResponseSchema = z.strictObject({
   }),
   filters: z.strictObject({
     calendarIds: z.array(z.string()).optional(),
-    from: z.string().optional(),
-    to: z.string().optional(),
+    from: zDateString.optional(),
+    to: zDateString.optional(),
   }),
   status: z.literal("ok"),
 });
