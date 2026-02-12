@@ -9,7 +9,7 @@ interface Breadcrumb {
 
 interface ServicesHeroProps {
   actions?: ReactNode;
-  description: string;
+  description?: string;
   title: string;
   breadcrumbs?: Breadcrumb[];
 }
@@ -41,11 +41,11 @@ export function ServicesHero({ actions, description, title, breadcrumbs }: Servi
             ))}
           </Breadcrumbs>
         )}
-        <div className="space-y-1.5">
+        <div className={description ? "space-y-1.5" : ""}>
           <h1 className="font-semibold text-2xl text-foreground drop-shadow-sm lg:text-3xl">
             {title}
           </h1>
-          <p className="text-default-600 text-sm">{description}</p>
+          {description ? <p className="text-default-600 text-sm">{description}</p> : null}
         </div>
       </div>
       {actions && <div className="flex flex-wrap justify-end gap-2">{actions}</div>}
