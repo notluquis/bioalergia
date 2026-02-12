@@ -5,7 +5,9 @@
  */
 
 import { db } from "@finanzas/db";
+import type { Context } from "hono";
 import { Hono } from "hono";
+import { getCookie } from "hono/cookie";
 import { z } from "zod";
 import { hasPermission } from "../auth";
 import { hashPassword } from "../lib/crypto";
@@ -19,13 +21,8 @@ const COOKIE_NAME = "finanzas_session";
 export const userRoutes = new Hono();
 
 // Helper to get auth from cookie
-async function getAuth(c: { req: { header: (name: string) => string | undefined } }) {
-  const cookieHeader = c.req.header("Cookie");
-  if (!cookieHeader) {
-    return null;
-  }
-  const cookies = Object.fromEntries(cookieHeader.split(";").map((c) => c.trim().split("=")));
-  const token = cookies[COOKIE_NAME];
+async function getAuth(c: Context) {
+  const token = getCookie(c, COOKIE_NAME);
   if (!token) {
     return null;
   }

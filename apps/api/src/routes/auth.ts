@@ -89,25 +89,51 @@ const passkeyResponseSchema = z.object({
 
 authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
   const { email, password } = c.req.valid("json");
+  const normalizedEmail = email.toLowerCase().trim();
 
   // Find user with ZenStack
-  const user = await db.user.findUnique({
-    where: { email: email.toLowerCase() },
-    include: {
-      person: true,
-      roles: {
-        include: {
-          role: {
-            include: {
-              permissions: {
-                include: { permission: true },
-              },
+  const baseInclude = {
+    person: true,
+    roles: {
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: { permission: true },
             },
           },
         },
       },
     },
+  } as const;
+
+  let user = await db.user.findUnique({
+    where: { email: normalizedEmail },
+    include: baseInclude,
   });
+
+  // Allow login using the person's email if it diverged from user.email
+  if (!user) {
+    user = await db.user.findFirst({
+      where: { person: { email: normalizedEmail } },
+      include: baseInclude,
+    });
+  }
+
+  // Keep both sources aligned when possible (user.email is used across auth/session payloads)
+  if (user?.person?.email) {
+    const normalizedPersonEmail = user.person.email.toLowerCase().trim();
+    if (normalizedPersonEmail && normalizedPersonEmail !== user.email) {
+      const existing = await db.user.findUnique({ where: { email: normalizedPersonEmail } });
+      if (!existing || existing.id === user.id) {
+        user = await db.user.update({
+          where: { id: user.id },
+          data: { email: normalizedPersonEmail },
+          include: baseInclude,
+        });
+      }
+    }
+  }
 
   if (!user || !user.passwordHash) {
     return c.json({ status: "error", message: "Credenciales incorrectas" }, 401);

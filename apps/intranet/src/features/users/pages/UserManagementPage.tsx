@@ -53,7 +53,7 @@ export function UserManagementPage() {
       .map(
         (u: RawUser): User => ({
           createdAt: u.createdAt ?? new Date(),
-          email: u.email,
+          email: (u as { person?: { email?: null | string } }).person?.email ?? u.email,
           hasPasskey: ((u as { passkeys?: unknown[] }).passkeys ?? []).length > 0,
           id: u.id,
           mfaEnabled: u.mfaEnabled ?? false,
