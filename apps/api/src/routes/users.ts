@@ -110,7 +110,7 @@ userRoutes.get("/", zValidator("query", listUsersQuerySchema), async (c) => {
       includeTest === "true"
         ? undefined
         : {
-            NOT: {
+            person: {
               OR: [{ email: { contains: "test" } }, { email: { contains: "debug" } }],
             },
           },
@@ -119,12 +119,12 @@ userRoutes.get("/", zValidator("query", listUsersQuerySchema), async (c) => {
       roles: { include: { role: true } },
       passkeys: { select: { id: true } },
     },
-    orderBy: { email: "asc" },
+    orderBy: { person: { names: "asc" } },
   });
 
   const safeUsers = users.map((u) => ({
     id: u.id,
-    email: u.email,
+    email: u.person?.email ?? "",
     status: u.status,
     mfaEnabled: u.mfaEnabled,
     hasPasskey: u.passkeys.length > 0,
@@ -168,7 +168,7 @@ userRoutes.get("/profile", async (c) => {
       fatherName: user.person.fatherName,
       motherName: user.person.motherName,
       rut: normalizeRut(user.person.rut),
-      email: user.email,
+      email: user.person?.email ?? "",
       phone: user.person.phone,
       address: user.person.address,
       bankName: user.person.employee?.bankName,
@@ -195,9 +195,10 @@ userRoutes.post("/invite", zValidator("json", inviteUserSchema), async (c) => {
 
   const { email, role, position, mfaEnforced, personId, names, fatherName, motherName, rut } =
     c.req.valid("json");
+  const normalizedEmail = email.toLowerCase().trim();
 
   // Check if user exists
-  const existing = await db.user.findUnique({ where: { email } });
+  const existing = await db.user.findFirst({ where: { person: { email: normalizedEmail } } });
   if (existing) {
     return reply(c, { status: "error", message: "Email ya registrado" }, 400);
   }
@@ -215,17 +216,38 @@ userRoutes.post("/invite", zValidator("json", inviteUserSchema), async (c) => {
         names: names || "Nuevo Usuario",
         fatherName: fatherName || "",
         motherName: motherName || "",
-        email,
+        email: normalizedEmail,
         rut: rut || `TEMP-${Date.now()}`,
       },
     });
     targetPersonId = person.id;
+  } else {
+    const linkedPerson = await db.person.findUnique({ where: { id: targetPersonId } });
+    if (!linkedPerson) {
+      return reply(c, { status: "error", message: "Persona no encontrada" }, 404);
+    }
+    const linkedEmail = linkedPerson.email?.toLowerCase().trim();
+    if (!linkedEmail) {
+      await db.person.update({
+        where: { id: linkedPerson.id },
+        data: { email: normalizedEmail },
+      });
+    } else if (linkedEmail !== normalizedEmail) {
+      return reply(
+        c,
+        {
+          status: "error",
+          message:
+            "La persona vinculada ya tiene otro email. Actualiza el email de la persona primero.",
+        },
+        409,
+      );
+    }
   }
 
   const user = await db.user.create({
     data: {
       personId: targetPersonId,
-      email: email.toLowerCase(),
       passwordHash: tempPasswordHash,
       status: "PENDING_SETUP",
       mfaEnforced,

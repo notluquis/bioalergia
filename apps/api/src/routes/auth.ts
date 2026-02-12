@@ -107,33 +107,10 @@ authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
     },
   } as const;
 
-  let user = await db.user.findUnique({
-    where: { email: normalizedEmail },
+  const user = await db.user.findFirst({
+    where: { person: { email: normalizedEmail } },
     include: baseInclude,
   });
-
-  // Allow login using the person's email if it diverged from user.email
-  if (!user) {
-    user = await db.user.findFirst({
-      where: { person: { email: normalizedEmail } },
-      include: baseInclude,
-    });
-  }
-
-  // Keep both sources aligned when possible (user.email is used across auth/session payloads)
-  if (user?.person?.email) {
-    const normalizedPersonEmail = user.person.email.toLowerCase().trim();
-    if (normalizedPersonEmail && normalizedPersonEmail !== user.email) {
-      const existing = await db.user.findUnique({ where: { email: normalizedPersonEmail } });
-      if (!existing || existing.id === user.id) {
-        user = await db.user.update({
-          where: { id: user.id },
-          data: { email: normalizedPersonEmail },
-          include: baseInclude,
-        });
-      }
-    }
-  }
 
   if (!user || !user.passwordHash) {
     return c.json({ status: "error", message: "Credenciales incorrectas" }, 401);
@@ -163,9 +140,10 @@ authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
 
   // Build roles array
   const roles = user.roles.map((r) => r.role.name);
+  const userEmail = user.person?.email ?? normalizedEmail;
 
   // Issue token and set cookie
-  const token = await issueToken({ userId: user.id, email: user.email, roles });
+  const token = await issueToken({ userId: user.id, email: userEmail, roles });
   setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
   const { getAbilityRulesForUser } = await import("../services/authz.js");
@@ -175,7 +153,7 @@ authRoutes.post("/login", zValidator("json", loginSchema), async (c) => {
     status: "ok",
     user: {
       id: user.id,
-      email: user.email,
+      email: userEmail,
       name: user.person?.names || null,
       roles,
       status: user.status,
@@ -213,7 +191,8 @@ authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
   }
 
   const roles = user.roles.map((r) => r.role.name);
-  const token = await issueToken({ userId: user.id, email: user.email, roles });
+  const userEmail = user.person?.email ?? "";
+  const token = await issueToken({ userId: user.id, email: userEmail, roles });
   setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
 
   const { getAbilityRulesForUser } = await import("../services/authz.js");
@@ -223,7 +202,7 @@ authRoutes.post("/login/mfa", zValidator("json", mfaLoginSchema), async (c) => {
     status: "ok",
     user: {
       id: user.id,
-      email: user.email,
+      email: userEmail,
       name: user.person?.names || null,
       roles,
       status: user.status,
@@ -279,7 +258,7 @@ authRoutes.get("/me/session", async (c) => {
       status: "ok",
       user: {
         id: user.id,
-        email: user.email,
+        email: user.person?.email ?? "",
         name: user.person?.names || null,
         roles: user.roles.map((r) => r.role.name),
         status: user.status,
@@ -510,7 +489,7 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
     const roles = user.roles.map((r) => r.role.name);
     const token = await issueToken({
       userId: user.id,
-      email: user.email,
+      email: user.person?.email ?? "",
       roles,
     });
     setCookie(c, COOKIE_NAME, token, COOKIE_OPTIONS);
@@ -524,7 +503,7 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
       status: "ok",
       user: {
         id: user.id,
-        email: user.email,
+        email: user.person?.email ?? "",
         name: user.person?.names || null,
         roles,
         status: user.status,
@@ -564,8 +543,8 @@ authRoutes.get("/passkey/register/options", async (c) => {
       rpName: RP_NAME,
       rpID: RP_ID,
       userID: new Uint8Array(Buffer.from(String(userId))),
-      userName: email,
-      userDisplayName: user.person?.names || email,
+      userName: user.person?.email || email,
+      userDisplayName: user.person?.names || user.person?.email || email,
       attestationType: "none",
       authenticatorSelection: {
         residentKey: "required", // Force discoverable credential (Passkey)

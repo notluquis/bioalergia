@@ -60,6 +60,7 @@ export async function getSessionUser(ctx: Context): Promise<AuthSession | null> 
     const user = await db.user.findUnique({
       where: { id: userId },
       include: {
+        person: { select: { email: true } },
         roles: {
           include: {
             role: {
@@ -76,7 +77,7 @@ export async function getSessionUser(ctx: Context): Promise<AuthSession | null> 
 
     const session: AuthSession = {
       id: user.id,
-      email: user.email,
+      email: user.person?.email ?? "",
       status: user.status,
       roles: user.roles.map((roleAssignment) => ({ role: { name: roleAssignment.role.name } })),
     };

@@ -34,7 +34,7 @@ model Person {
   names        String
   fatherName   String?       @map("father_name")
   motherName   String?       @map("mother_name")
-  email        String?
+  email        String?        @unique
   phone        String?
   address      String?
   personType   PersonType    @default(NATURAL) @map("person_type")
@@ -56,7 +56,6 @@ model Person {
 model User {
   id                      Int                      @id @default(autoincrement())
   personId                Int                      @unique @map("person_id")
-  email                   String                   @unique
   passwordHash            String?                  @map("password_hash")
   status                  UserStatus               @default(PENDING_SETUP)
   mfaSecret               String?                  @map("mfa_secret")

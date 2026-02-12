@@ -6,8 +6,8 @@
 import { db } from "@finanzas/db";
 
 export async function findUserByEmail(email: string) {
-  return await db.user.findUnique({
-    where: { email: email.toLowerCase() },
+  return await db.user.findFirst({
+    where: { person: { email: email.toLowerCase() } },
     include: {
       person: true,
       roles: { include: { role: true } },
