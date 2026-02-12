@@ -173,40 +173,38 @@ export function CounterpartsPage() {
 
   return (
     <section className="space-y-8">
-      <ServicesHero
-        actions={
-          canCreate ? (
-            <Button
-              onClick={() => {
-                openFormModal(null);
-              }}
-            >
-              + Nueva contraparte
-            </Button>
-          ) : null
-        }
-        description="Gestiona proveedores, prestamistas y clientes con sus cuentas asociadas y movimientos históricos."
-        title="Contrapartes"
-      />
+      <ServicesHero title="Contrapartes" />
 
       <ServicesSurface>
         <div className="space-y-4">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.4em]">
                 Filtros rápidos
               </p>
               <p className="text-default-600 text-sm">Acota la lista por clasificación.</p>
             </div>
-            <Button
-              onClick={() => {
-                setCategoryFilter("ALL");
-              }}
-              size="sm"
-              variant="ghost"
-            >
-              Reset filtros
-            </Button>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <Button
+                onClick={() => {
+                  setCategoryFilter("ALL");
+                }}
+                size="sm"
+                variant="ghost"
+              >
+                Reset filtros
+              </Button>
+              {canCreate ? (
+                <Button
+                  onClick={() => {
+                    openFormModal(null);
+                  }}
+                  size="sm"
+                >
+                  + Nueva contraparte
+                </Button>
+              ) : null}
+            </div>
           </div>
           <div className="space-y-2">
             <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.3em]">
