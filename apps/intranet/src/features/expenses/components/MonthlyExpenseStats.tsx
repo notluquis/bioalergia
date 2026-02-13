@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import { currencyFormatter } from "@/lib/format";
 
 import type { MonthlyExpenseStatsRow } from "../types";
@@ -8,14 +9,14 @@ interface MonthlyExpenseStatsProps {
 }
 export function MonthlyExpenseStats({ loading, stats }: Readonly<MonthlyExpenseStatsProps>) {
   if (loading) {
-    return <p className="text-default-400 text-xs">Calculando estadísticas…</p>;
+    return <Description className="text-default-400 text-xs">Calculando estadísticas…</Description>;
   }
 
   if (stats.length === 0) {
     return (
-      <p className="text-default-400 text-xs">
+      <Description className="text-default-400 text-xs">
         No hay datos disponibles para el período seleccionado.
-      </p>
+      </Description>
     );
   }
 
@@ -28,16 +29,18 @@ export function MonthlyExpenseStats({ loading, stats }: Readonly<MonthlyExpenseS
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="font-semibold text-foreground text-sm">{row.period}</p>
-              <p className="text-default-400 text-xs">{row.expenseCount} gastos registrados</p>
+              <span className="block font-semibold text-foreground text-sm">{row.period}</span>
+              <Description className="text-default-400 text-xs">
+                {row.expenseCount} gastos registrados
+              </Description>
             </div>
             <div className="text-right">
-              <p className="font-semibold text-foreground text-sm">
+              <span className="block font-semibold text-foreground text-sm">
                 Esperado {currencyFormatter.format(row.totalExpected)}
-              </p>
-              <p className="text-default-400 text-xs">
+              </span>
+              <Description className="text-default-400 text-xs">
                 Aplicado {currencyFormatter.format(row.totalApplied)}
-              </p>
+              </Description>
             </div>
           </div>
         </article>

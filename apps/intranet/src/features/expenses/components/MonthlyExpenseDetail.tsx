@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import dayjs from "dayjs";
 
 import { Alert } from "@/components/ui/Alert";
@@ -22,7 +23,7 @@ export function MonthlyExpenseDetail({
   onUnlinkTransaction,
 }: MonthlyExpenseDetailProps) {
   if (loading) {
-    return <p className="text-default-500 text-xs">Cargando gasto…</p>;
+    return <Description className="text-default-500 text-xs">Cargando gasto…</Description>;
   }
 
   if (!expense) {
@@ -33,11 +34,11 @@ export function MonthlyExpenseDetail({
     <section className="space-y-4 border border-default-200 bg-background p-4 text-foreground text-sm">
       <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="break-all font-semibold text-primary text-xl">{expense.name}</h2>
-          <p className="text-default-400 text-xs">
+          <span className="block break-all font-semibold text-primary text-xl">{expense.name}</span>
+          <Description className="text-default-400 text-xs">
             {expense.category || "Sin categoría"} ·{" "}
             {dayjs(expense.expenseDate).format("DD MMM YYYY")}
-          </p>
+          </Description>
         </div>
         {canManage && (
           <div className="flex gap-2">
@@ -73,13 +74,15 @@ export function MonthlyExpenseDetail({
       </div>
 
       {expense.notes && (
-        <p className="rounded-xl bg-background/60 p-3 text-default-500 text-xs">{expense.notes}</p>
+        <Description className="rounded-xl bg-background/60 p-3 text-default-500 text-xs">
+          {expense.notes}
+        </Description>
       )}
 
       <section className="space-y-2">
-        <h3 className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+        <span className="font-semibold text-default-500 text-xs uppercase tracking-wide">
           Transacciones
-        </h3>
+        </span>
         <div className="muted-scrollbar max-h-72 space-y-2 overflow-y-auto pr-1">
           {expense.transactions.map((tx) => (
             <article
@@ -88,10 +91,12 @@ export function MonthlyExpenseDetail({
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-semibold text-foreground text-sm">ID #{tx.transactionId}</p>
-                  <p className="text-default-400 text-xs">
+                  <span className="block font-semibold text-foreground text-sm">
+                    ID #{tx.transactionId}
+                  </span>
+                  <Description className="text-default-400 text-xs">
                     {tx.description ?? "(sin descripción)"}
-                  </p>
+                  </Description>
                 </div>
                 <span className="font-semibold text-foreground text-sm">
                   ${tx.amount.toLocaleString("es-CL")}
@@ -116,9 +121,9 @@ export function MonthlyExpenseDetail({
             </article>
           ))}
           {expense.transactions.length === 0 && (
-            <p className="rounded-xl border border-default-200 border-dashed bg-default-50 p-3 text-default-500 text-xs">
+            <Description className="rounded-xl border border-default-200 border-dashed bg-default-50 p-3 text-default-500 text-xs">
               Aún no se han vinculado transacciones a este gasto.
-            </p>
+            </Description>
           )}
         </div>
       </section>
@@ -129,9 +134,11 @@ export function MonthlyExpenseDetail({
 function DetailCard({ helper, title, value }: { helper?: string; title: string; value: string }) {
   return (
     <article className="rounded-xl border border-default-200 bg-default-50 p-3 shadow-sm">
-      <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">{title}</p>
-      <p className="mt-1 font-semibold text-foreground text-lg">{value}</p>
-      {helper && <p className="text-default-400 text-xs">{helper}</p>}
+      <Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+        {title}
+      </Description>
+      <span className="mt-1 block font-semibold text-foreground text-lg">{value}</span>
+      {helper && <Description className="text-default-400 text-xs">{helper}</Description>}
     </article>
   );
 }

@@ -165,7 +165,7 @@ function PurchasesMonthlySummary({
             <CardTitle className="text-sm">Total Compras</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-bold text-2xl">{formatCurrency(totals.totalAmount)}</p>
+            <span className="font-bold text-2xl">{formatCurrency(totals.totalAmount)}</span>
           </CardContent>
         </Card>
         <Card>
@@ -173,7 +173,7 @@ function PurchasesMonthlySummary({
             <CardTitle className="text-sm">Exento</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-bold text-2xl">{formatCurrency(totals.exemptAmount)}</p>
+            <span className="font-bold text-2xl">{formatCurrency(totals.exemptAmount)}</span>
           </CardContent>
         </Card>
         <Card>
@@ -181,7 +181,7 @@ function PurchasesMonthlySummary({
             <CardTitle className="text-sm">Neto</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-bold text-2xl">{formatCurrency(totals.netAmount)}</p>
+            <span className="font-bold text-2xl">{formatCurrency(totals.netAmount)}</span>
           </CardContent>
         </Card>
         <Card>
@@ -189,7 +189,7 @@ function PurchasesMonthlySummary({
             <CardTitle className="text-sm">IVA Recuperable</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-bold text-2xl">{formatCurrency(totals.taxAmount)}</p>
+            <span className="font-bold text-2xl">{formatCurrency(totals.taxAmount)}</span>
           </CardContent>
         </Card>
         <Card>
@@ -197,7 +197,7 @@ function PurchasesMonthlySummary({
             <CardTitle className="text-sm">Documentos</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-bold text-2xl">{formatNumber(totals.count)}</p>
+            <span className="font-bold text-2xl">{formatNumber(totals.count)}</span>
           </CardContent>
         </Card>
       </div>
@@ -277,7 +277,7 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
             <CardTitle className="text-sm">Total Ventas</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-bold text-2xl">{formatCurrency(totals.totalAmount)}</p>
+            <span className="font-bold text-2xl">{formatCurrency(totals.totalAmount)}</span>
           </CardContent>
         </Card>
         <Card>
@@ -285,7 +285,7 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
             <CardTitle className="text-sm">Exento</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-bold text-2xl">{formatCurrency(totals.exemptAmount)}</p>
+            <span className="font-bold text-2xl">{formatCurrency(totals.exemptAmount)}</span>
           </CardContent>
         </Card>
         <Card>
@@ -293,7 +293,7 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
             <CardTitle className="text-sm">Neto</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-bold text-2xl">{formatCurrency(totals.netAmount)}</p>
+            <span className="font-bold text-2xl">{formatCurrency(totals.netAmount)}</span>
           </CardContent>
         </Card>
         <Card>
@@ -301,7 +301,7 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
             <CardTitle className="text-sm">IVA</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-bold text-2xl">{formatCurrency(totals.taxAmount)}</p>
+            <span className="font-bold text-2xl">{formatCurrency(totals.taxAmount)}</span>
           </CardContent>
         </Card>
         <Card>
@@ -309,7 +309,7 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
             <CardTitle className="text-sm">Documentos</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-bold text-2xl">{formatNumber(totals.count)}</p>
+            <span className="font-bold text-2xl">{formatNumber(totals.count)}</span>
           </CardContent>
         </Card>
       </div>

@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import dayjs from "dayjs";
 
 import { fmtCLP } from "@/lib/format";
@@ -20,11 +21,11 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
     return (
       <section className="card bg-background shadow-sm">
         <div className="card-body">
-          <h2 className="card-title text-lg text-primary">Conciliación</h2>
+          <span className="card-title text-lg text-primary">Conciliación</span>
           {error && (
-            <p className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
+            <Description className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
               {error}
-            </p>
+            </Description>
           )}
           <div className="space-y-3">
             <div className="skeleton-card space-y-2">
@@ -45,15 +46,15 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
     return (
       <section className="card bg-background shadow-sm">
         <div className="card-body">
-          <h2 className="card-title text-lg text-primary">Conciliación</h2>
+          <span className="card-title text-lg text-primary">Conciliación</span>
           {error && (
-            <p className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
+            <Description className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
               {error}
-            </p>
+            </Description>
           )}
-          <p className="text-foreground text-sm">
+          <Description className="text-foreground text-sm">
             Selecciona un rango para revisar los saldos de cierre registrados.
-          </p>
+          </Description>
         </div>
       </section>
     );
@@ -63,16 +64,16 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
     return (
       <section className="card bg-background shadow-sm">
         <div className="card-body">
-          <h2 className="card-title text-lg text-primary">Conciliación</h2>
+          <span className="card-title text-lg text-primary">Conciliación</span>
           {error && (
-            <p className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
+            <Description className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
               {error}
-            </p>
+            </Description>
           )}
-          <p className="text-foreground text-sm">
+          <Description className="text-foreground text-sm">
             Aún no registras saldos de cierre para este rango. Actualiza la sección de Saldos
             diarios en la página de movimientos para comenzar la conciliación.
-          </p>
+          </Description>
         </div>
       </section>
     );
@@ -81,11 +82,11 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
   return (
     <section className="card bg-background shadow-sm">
       <div className="card-body">
-        <h2 className="card-title text-lg text-primary">Conciliación</h2>
+        <span className="card-title text-lg text-primary">Conciliación</span>
         {error && (
-          <p className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
+          <Description className="border-rose-300/80 border-l-4 bg-background px-4 py-2 text-rose-700 text-xs">
             {error}
-          </p>
+          </Description>
         )}
         {/* Main content */}
         <div className="space-y-3 text-foreground text-xs">
@@ -127,9 +128,9 @@ export function BalanceSummary({ error, loading, report }: Readonly<BalanceSumma
           {mismatchDays.length > 0 ? (
             <MismatchSummary mismatchDays={mismatchDays} />
           ) : (
-            <p className="font-semibold text-emerald-600">
+            <Description className="font-semibold text-emerald-600">
               Los saldos registrados coinciden con los movimientos del rango seleccionado.
-            </p>
+            </Description>
           )}
         </div>
       </div>
@@ -144,10 +145,10 @@ function formatSignedCLP(value: number) {
 function MismatchSummary({ mismatchDays }: Readonly<{ mismatchDays: MismatchDay[] }>) {
   return (
     <div className="space-y-2 rounded-2xl border border-rose-200/70 bg-rose-50/60 px-4 py-3">
-      <p className="font-semibold text-rose-600">
+      <Description className="font-semibold text-rose-600">
         Hay {mismatchDays.length} día{mismatchDays.length > 1 ? "s" : ""} con diferencias entre el
         saldo esperado y el registrado.
-      </p>
+      </Description>
       <ul className="space-y-1 text-foreground">
         {mismatchDays.slice(0, 5).map((day) => (
           <li
