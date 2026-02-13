@@ -82,6 +82,14 @@
       "style": {
         "recommended": true,
         "noDefaultExport": "error",
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "@/components/ui/Card": "Importa Card desde @heroui/react y usa Card.Header/Card.Content/Card.Title/Card.Description."
+            }
+          }
+        },
         "useBlockStatements": "warn",
         "useSelfClosingElements": "warn",
         "noNonNullAssertion": "warn",
