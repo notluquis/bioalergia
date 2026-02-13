@@ -4,6 +4,8 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/es";
 import { AlertCircle, CheckCircle2, Clock, RefreshCw } from "lucide-react";
+import { z } from "zod";
+import { apiClient } from "@/lib/api-client";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
@@ -27,16 +29,35 @@ interface SyncHistoryResponse {
   total: number;
 }
 
+const DTE_SYNC_LOG_SCHEMA = z.object({
+  id: z.string(),
+  period: z.string(),
+  docTypes: z.string(),
+  status: z.enum(["PENDING", "IN_PROGRESS", "SUCCESS", "PARTIAL", "FAILED"]),
+  triggerSource: z.string().optional(),
+  startedAt: z.string(),
+  endedAt: z.string().optional(),
+  rowsInserted: z.number(),
+  rowsUpdated: z.number(),
+  rowsSkipped: z.number(),
+  errorMessage: z.string().optional(),
+});
+
+const SYNC_HISTORY_RESPONSE_SCHEMA = z.object({
+  logs: z.array(DTE_SYNC_LOG_SCHEMA),
+  total: z.number(),
+});
+
 export function DTESyncHistoryPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["dte-sync-history"],
     queryFn: async (): Promise<SyncHistoryResponse> => {
-      // biome-ignore lint/security/noSecrets: Query parameters, not secrets
-      const response = await fetch("/api/dte/sync-history?limit=50&offset=0");
-      const json = await response.json();
-      return json;
+      return apiClient.get<SyncHistoryResponse>("/api/dte/sync-history", {
+        query: { limit: 50, offset: 0 },
+        responseSchema: SYNC_HISTORY_RESPONSE_SCHEMA,
+      });
     },
   });
 

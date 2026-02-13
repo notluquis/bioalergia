@@ -22,7 +22,7 @@ export function NotFoundPage() {
         <Button
           variant="outline"
           onClick={() => {
-            globalThis.history.back();
+            void navigate({ to: "/" });
           }}
         >
           <ArrowLeft size={18} />

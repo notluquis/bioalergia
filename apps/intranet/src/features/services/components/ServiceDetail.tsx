@@ -144,7 +144,7 @@ export function ServiceDetail({
   const [regenerateForm, setRegenerateForm] = useState<RegenerateServicePayload>({});
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<null | string>(null);
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: "/services" });
 
   const handleRegenerate = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -177,7 +177,7 @@ export function ServiceDetail({
     <section className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl bg-background p-6">
       <ServiceHeader
         canManage={canManage}
-        onEdit={() => navigate({ to: `/services/${service.public_id}/edit` })}
+        onEdit={() => navigate({ to: "/services/$id/edit", params: { id: service.public_id } })}
         onRegenerate={() => setRegenerateOpen(true)}
         service={service}
       />

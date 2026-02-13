@@ -1,6 +1,6 @@
 import { Description, Surface } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
@@ -17,6 +17,7 @@ import type { CreateServicePayload, ServiceDetailResponse } from "@/features/ser
 import { fmtCLP } from "@/lib/format";
 export function ServiceEditPage() {
   const { id } = useParams({ from: "/_authed/services/$id/edit" });
+  const navigate = useNavigate({ from: "/services/$id/edit" });
   const queryClient = useQueryClient();
   const [saveMessage, setSaveMessage] = useState<null | string>(null);
 
@@ -143,7 +144,7 @@ export function ServiceEditPage() {
         <div className="flex justify-end">
           <Button
             onClick={() => {
-              globalThis.history.back();
+              void navigate({ to: "/services" });
             }}
             variant="ghost"
           >
@@ -207,7 +208,7 @@ export function ServiceEditPage() {
                 <ServiceForm
                   initialValues={initialValues}
                   onCancel={() => {
-                    globalThis.history.back();
+                    void navigate({ to: "/services" });
                   }}
                   onSubmit={handleSubmit}
                   submitLabel="Actualizar servicio"
