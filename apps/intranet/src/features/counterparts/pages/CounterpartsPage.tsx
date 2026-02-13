@@ -17,6 +17,7 @@ import {
   createCounterpart,
   fetchCounterparts,
   fetchUnassignedPayoutAccounts,
+  syncCounterparts,
   updateCounterpart,
 } from "@/features/counterparts/api";
 import { CounterpartForm } from "@/features/counterparts/components/CounterpartForm";
@@ -173,6 +174,25 @@ export function CounterpartsPage() {
     },
   });
 
+  const syncMutation = useMutation({
+    mutationFn: syncCounterparts,
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
+      void queryClient.invalidateQueries({
+        queryKey: [...counterpartKeys.all, "unassigned-payout"],
+      });
+      toastSuccess(
+        `Sync completado: ${result.syncedCounterparts} contrapartes, ${result.syncedAccounts} cuentas, ${result.conflictCount ?? 0} conflictos.`,
+      );
+    },
+    onError: (error_) => {
+      const message =
+        error_ instanceof Error ? error_.message : "No se pudo sincronizar contrapartes";
+      setError(message);
+      toastError(message);
+    },
+  });
+
   const handleSaveCounterpart = async (payload: CounterpartUpsertPayload) => {
     setError(null);
 
@@ -310,6 +330,7 @@ export function CounterpartsPage() {
     <section className="space-y-6">
       <CounterpartsToolbar
         canCreate={canCreate}
+        canSync={canUpdate}
         categoryFilter={categoryFilter}
         clientCount={clientCount}
         lenderCount={lenderCount}
@@ -317,10 +338,14 @@ export function CounterpartsPage() {
         onCreate={() => {
           openFormModal(null);
         }}
+        onSync={() => {
+          syncMutation.mutate();
+        }}
         onResetFilters={() => {
           setCategoryFilter("ALL");
           setSearchQuery("");
         }}
+        syncLoading={syncMutation.isPending}
         onSearchQueryChange={setSearchQuery}
         searchQuery={searchQuery}
         selectedCounterpart={selectedCounterpart}
@@ -620,32 +645,38 @@ function UnassignedPayoutAccountsTable({
 
 interface CounterpartsToolbarProps {
   canCreate: boolean;
+  canSync: boolean;
   categoryFilter: "ALL" | CounterpartCategory;
   clientCount: number;
   lenderCount: number;
   onCategoryFilterChange: (value: "ALL" | CounterpartCategory) => void;
   onCreate: () => void;
   onResetFilters: () => void;
+  onSync: () => void;
   onSearchQueryChange: (value: string) => void;
   searchQuery: string;
   selectedCounterpart: Counterpart | null;
   supplierCount: number;
+  syncLoading: boolean;
   totalCount: number;
   visibleCount: number;
 }
 
 function CounterpartsToolbar({
   canCreate,
+  canSync,
   categoryFilter,
   clientCount,
   lenderCount,
   onCategoryFilterChange,
   onCreate,
   onResetFilters,
+  onSync,
   onSearchQueryChange,
   searchQuery,
   selectedCounterpart,
   supplierCount,
+  syncLoading,
   totalCount,
   visibleCount,
 }: CounterpartsToolbarProps) {
@@ -666,11 +697,18 @@ function CounterpartsToolbar({
               </Chip>
             ) : null}
           </div>
-          {canCreate ? (
-            <Button onClick={onCreate} size="sm">
-              + Nueva contraparte
-            </Button>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {canSync ? (
+              <Button disabled={syncLoading} onClick={onSync} size="sm" variant="ghost">
+                {syncLoading ? "Sincronizando..." : "Sincronizar contrapartes"}
+              </Button>
+            ) : null}
+            {canCreate ? (
+              <Button onClick={onCreate} size="sm">
+                + Nueva contraparte
+              </Button>
+            ) : null}
+          </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-[1fr_auto]">
