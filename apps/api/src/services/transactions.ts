@@ -1,59 +1,4 @@
 import { db } from "@finanzas/db";
-import type { TransactionCreateArgs, TransactionWhereInput } from "@finanzas/db/input";
-
-// Aggregate result interfaces for Kysely raw queries
-interface AggregateByMonth {
-  month: string | number;
-  in: number | string;
-  out: number | string;
-  net: number | string;
-}
-
-interface AggregateByType {
-  description: string;
-  total: number | string;
-}
-
-// Types for raw SQL query results
-interface ParticipantRow {
-  participant: string;
-  displayName: string;
-  identificationNumber: string;
-  bankAccountHolder: string;
-  bankAccountNumber: string;
-  bankAccountType: string;
-  bankName: string;
-  withdrawId: string;
-  totalCount: number;
-  totalAmount: number;
-  outgoingCount: number;
-  outgoingAmount: number;
-  incomingCount: number;
-  incomingAmount: number;
-}
-
-interface MonthlyStatsRow {
-  month: string;
-  outgoingCount: number;
-  outgoingAmount: number;
-  incomingCount: number;
-  incomingAmount: number;
-}
-
-interface CounterpartRow {
-  counterpart: string;
-  counterpartId: string;
-  withdrawId: string;
-  bankAccountHolder: string;
-  bankName: string;
-  bankAccountNumber: string;
-  bankAccountType: string;
-  identificationNumber: string;
-  outgoingCount: number;
-  outgoingAmount: number;
-  incomingCount: number;
-  incomingAmount: number;
-}
 
 export type TransactionFilters = {
   from?: Date;
@@ -69,129 +14,275 @@ export type TransactionFilters = {
   includeTest?: boolean;
 };
 
-// Extract transaction input types from Zenstack args
-type TransactionCreateInput = NonNullable<TransactionCreateArgs["data"]>;
+type RawMeta = Record<string, unknown>;
+type DecimalLike = { toString(): string };
+type NumericInput = DecimalLike | null | number | string | undefined;
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy filtering logic
+type SettlementRow = {
+  description: null | string;
+  externalReference: null | string;
+  id: number;
+  identificationNumber: null | string;
+  metadata: unknown;
+  paymentMethod: null | string;
+  settlementNetAmount: NumericInput;
+  sourceId: string;
+  transactionAmount: NumericInput;
+  transactionDate: Date;
+  transactionType: string;
+};
+
+type ReleaseRow = {
+  date: Date;
+  description: null | string;
+  externalReference: null | string;
+  grossAmount: NumericInput;
+  id: number;
+  identificationNumber: null | string;
+  metadata: unknown;
+  netCreditAmount: NumericInput;
+  netDebitAmount: NumericInput;
+  paymentMethod: null | string;
+  recordType: null | string;
+  sourceId: string;
+};
+
+type UnifiedTransaction = {
+  id: number;
+  source: "release" | "settlement";
+  transactionDate: Date;
+  description: null | string;
+  transactionType: string;
+  transactionAmount: number;
+  status: null | string;
+  externalReference: null | string;
+  sourceId: null | string;
+  paymentMethod: null | string;
+  settlementNetAmount: null | number;
+  identificationNumber: null | string;
+  bankAccountHolder: null | string;
+  bankAccountNumber: null | string;
+  bankAccountType: null | string;
+  bankName: null | string;
+  withdrawId: null | string;
+};
+
+const toLower = (value: null | string | undefined) => value?.toLowerCase() ?? "";
+const asNumber = (value: NumericInput) => {
+  if (value == null) {
+    return 0;
+  }
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value === "string") {
+    return Number(value);
+  }
+  return Number(value.toString());
+};
+
+const asObject = (value: unknown): RawMeta =>
+  value && typeof value === "object" && !Array.isArray(value) ? (value as RawMeta) : {};
+
+const getMetaString = (meta: RawMeta, keys: string[]) => {
+  for (const key of keys) {
+    const value = meta[key];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return null;
+};
+
+const monthKey = (date: Date) =>
+  `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-01`;
+
+function mapSettlementRow(row: SettlementRow): UnifiedTransaction {
+  const meta = asObject(row.metadata);
+  return {
+    id: row.id,
+    source: "settlement",
+    transactionDate: row.transactionDate,
+    description: row.description ?? null,
+    transactionType: row.transactionType,
+    transactionAmount: asNumber(row.transactionAmount),
+    status: null,
+    externalReference: row.externalReference ?? null,
+    sourceId: row.sourceId ?? null,
+    paymentMethod: row.paymentMethod ?? null,
+    settlementNetAmount: row.settlementNetAmount != null ? asNumber(row.settlementNetAmount) : null,
+    identificationNumber:
+      row.identificationNumber ??
+      getMetaString(meta, ["recipient_rut", "rut", "identification_number"]),
+    bankAccountHolder:
+      getMetaString(meta, ["bank_account_holder_name", "name", "account_holder"]) ?? null,
+    bankAccountNumber: getMetaString(meta, ["bank_account_number", "account_number"]) ?? null,
+    bankAccountType: getMetaString(meta, ["bank_account_type", "account_type"]) ?? null,
+    bankName: getMetaString(meta, ["bank_name", "bank"]) ?? null,
+    withdrawId: getMetaString(meta, ["withdraw_id", "id"]) ?? null,
+  };
+}
+
+function mapReleaseRow(row: ReleaseRow): UnifiedTransaction {
+  const meta = asObject(row.metadata);
+  const credit = asNumber(row.netCreditAmount);
+  const debit = asNumber(row.netDebitAmount);
+  const amount = credit !== 0 || debit !== 0 ? credit - debit : asNumber(row.grossAmount);
+
+  return {
+    id: -row.id,
+    source: "release",
+    transactionDate: row.date,
+    description: row.description ?? null,
+    transactionType: row.recordType ?? "release",
+    transactionAmount: amount,
+    status: null,
+    externalReference: row.externalReference ?? null,
+    sourceId: row.sourceId ?? null,
+    paymentMethod: row.paymentMethod ?? null,
+    settlementNetAmount: row.netCreditAmount != null ? asNumber(row.netCreditAmount) : null,
+    identificationNumber:
+      row.identificationNumber ??
+      getMetaString(meta, ["recipient_rut", "rut", "identification_number"]),
+    bankAccountHolder:
+      getMetaString(meta, ["bank_account_holder_name", "name", "account_holder"]) ?? null,
+    bankAccountNumber: getMetaString(meta, ["bank_account_number", "account_number"]) ?? null,
+    bankAccountType: getMetaString(meta, ["bank_account_type", "account_type"]) ?? null,
+    bankName: getMetaString(meta, ["bank_name", "bank"]) ?? null,
+    withdrawId: getMetaString(meta, ["withdraw_id", "id"]) ?? null,
+  };
+}
+
+function isTestLike(tx: UnifiedTransaction) {
+  const marker = "test";
+  return (
+    toLower(tx.description).includes(marker) ||
+    toLower(tx.sourceId).includes(marker) ||
+    toLower(tx.externalReference).includes(marker)
+  );
+}
+
+function matchesFilter(tx: UnifiedTransaction, filters: TransactionFilters) {
+  if (filters.from && tx.transactionDate < filters.from) {
+    return false;
+  }
+  if (filters.to && tx.transactionDate > filters.to) {
+    return false;
+  }
+  if (filters.minAmount !== undefined && tx.transactionAmount < filters.minAmount) {
+    return false;
+  }
+  if (filters.maxAmount !== undefined && tx.transactionAmount > filters.maxAmount) {
+    return false;
+  }
+  if (filters.status && toLower(tx.status) !== toLower(filters.status)) {
+    return false;
+  }
+  if (
+    filters.transactionType &&
+    !toLower(tx.transactionType).includes(toLower(filters.transactionType))
+  ) {
+    return false;
+  }
+  if (filters.description && !toLower(tx.description).includes(toLower(filters.description))) {
+    return false;
+  }
+  if (
+    filters.externalReference &&
+    !toLower(tx.externalReference).includes(toLower(filters.externalReference))
+  ) {
+    return false;
+  }
+  if (filters.sourceId && !toLower(tx.sourceId).includes(toLower(filters.sourceId))) {
+    return false;
+  }
+  if (filters.search) {
+    const search = toLower(filters.search);
+    const text = [tx.description, tx.externalReference, tx.paymentMethod, tx.sourceId]
+      .map((value) => toLower(value))
+      .join(" ");
+    if (!text.includes(search)) {
+      return false;
+    }
+  }
+  if (!filters.includeTest && isTestLike(tx)) {
+    return false;
+  }
+  return true;
+}
+
+async function fetchMergedTransactions(filters: TransactionFilters): Promise<UnifiedTransaction[]> {
+  const settlementDateWhere =
+    filters.from || filters.to
+      ? {
+          transactionDate: {
+            ...(filters.from ? { gte: filters.from } : {}),
+            ...(filters.to ? { lte: filters.to } : {}),
+          },
+        }
+      : undefined;
+
+  const releaseDateWhere =
+    filters.from || filters.to
+      ? {
+          date: {
+            ...(filters.from ? { gte: filters.from } : {}),
+            ...(filters.to ? { lte: filters.to } : {}),
+          },
+        }
+      : undefined;
+
+  const [settlements, releases] = await Promise.all([
+    db.settlementTransaction.findMany({
+      where: settlementDateWhere,
+      select: {
+        id: true,
+        metadata: true,
+        description: true,
+        externalReference: true,
+        identificationNumber: true,
+        paymentMethod: true,
+        settlementNetAmount: true,
+        sourceId: true,
+        transactionAmount: true,
+        transactionDate: true,
+        transactionType: true,
+      },
+    }),
+    db.releaseTransaction.findMany({
+      where: releaseDateWhere,
+      select: {
+        id: true,
+        metadata: true,
+        description: true,
+        date: true,
+        externalReference: true,
+        grossAmount: true,
+        identificationNumber: true,
+        netCreditAmount: true,
+        netDebitAmount: true,
+        paymentMethod: true,
+        recordType: true,
+        sourceId: true,
+      },
+    }),
+  ]);
+
+  return [...settlements.map(mapSettlementRow), ...releases.map(mapReleaseRow)]
+    .filter((tx) => matchesFilter(tx, filters))
+    .sort((a, b) => b.transactionDate.getTime() - a.transactionDate.getTime());
+}
+
 export async function listTransactions(
   filters: TransactionFilters,
   limit = 100,
   offset = 0,
   includeTotal = true,
 ) {
-  const where: TransactionWhereInput = {};
-
-  if (filters.from || filters.to) {
-    where.transactionDate = {};
-    if (filters.from) {
-      where.transactionDate.gte = filters.from;
-    }
-    if (filters.to) {
-      where.transactionDate.lte = filters.to;
-    }
-  }
-
-  if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
-    where.transactionAmount = {};
-    if (filters.minAmount !== undefined) {
-      where.transactionAmount.gte = filters.minAmount;
-    }
-    if (filters.maxAmount !== undefined) {
-      where.transactionAmount.lte = filters.maxAmount;
-    }
-  }
-
-  if (filters.status) {
-    where.status = filters.status;
-  }
-
-  if (filters.transactionType) {
-    where.transactionType = filters.transactionType;
-  }
-
-  if (filters.description) {
-    where.description = { contains: filters.description, mode: "insensitive" };
-  }
-
-  if (filters.externalReference) {
-    where.externalReference = {
-      contains: filters.externalReference,
-      mode: "insensitive",
-    };
-  }
-
-  if (filters.sourceId) {
-    where.sourceId = { contains: filters.sourceId, mode: "insensitive" };
-  }
-
-  if (filters.search) {
-    where.OR = [
-      { description: { contains: filters.search, mode: "insensitive" } },
-      { externalReference: { contains: filters.search, mode: "insensitive" } },
-      { paymentMethod: { contains: filters.search, mode: "insensitive" } },
-    ];
-  }
-
-  // Exclude test data by default
-  if (!filters.includeTest) {
-    // Add to AND array to ensure it doesn't conflict with other filters
-    if (!where.AND) {
-      where.AND = [];
-    }
-    if (Array.isArray(where.AND)) {
-      where.AND.push({
-        NOT: {
-          OR: [
-            { description: { contains: "test", mode: "insensitive" } },
-            { sourceId: { contains: "test", mode: "insensitive" } },
-            { externalReference: { contains: "test", mode: "insensitive" } },
-          ],
-        },
-      });
-    }
-  }
-
-  const transactionsPromise = db.transaction.findMany({
-    where,
-    orderBy: { transactionDate: "desc" },
-    take: limit,
-    skip: offset,
-  });
-
-  if (!includeTotal) {
-    const transactions = await transactionsPromise;
-    return { total: undefined, transactions };
-  }
-
-  const [total, transactions] = await Promise.all([
-    db.transaction.count({ where }),
-    transactionsPromise,
-  ]);
-
-  return { total, transactions };
+  const all = await fetchMergedTransactions(filters);
+  const transactions = all.slice(offset, offset + limit);
+  return { total: includeTotal ? all.length : undefined, transactions };
 }
-
-export async function getTransactionById(id: number) {
-  return await db.transaction.findUnique({
-    where: { id },
-  });
-}
-
-export async function createTransaction(data: TransactionCreateInput) {
-  return await db.transaction.create({
-    data,
-  });
-}
-
-export async function createTransactionsBatch(data: TransactionCreateInput[]) {
-  return await db.transaction.createMany({
-    data,
-    skipDuplicates: true,
-  });
-}
-
-// Participants Logic
-import { sql } from "kysely";
 
 export async function getParticipantLeaderboard(params: {
   from?: Date;
@@ -199,82 +290,52 @@ export async function getParticipantLeaderboard(params: {
   limit?: number;
   mode?: "combined" | "incoming" | "outgoing";
 }) {
-  const { from, to, limit } = params;
-  // ZenStack Query Builder handles the mapping (Model Key: Transaction)
-  // Note: We must use Model Field Names (e.g. transactionDate) not DB columns
-  let query = db.$qb
-    .selectFrom("Transaction")
-    .select([
-      sql<string>`COALESCE(metadata->>'recipient_rut', metadata->>'rut', metadata->>'identification_number')`.as(
-        "identificationNumber",
-      ),
-      sql<string>`COALESCE(metadata->>'bank_account_holder_name', metadata->>'name', metadata->>'account_holder')`.as(
-        "bankAccountHolder",
-      ),
-      sql<string>`COALESCE(metadata->>'bank_account_number', metadata->>'account_number')`.as(
-        "bankAccountNumber",
-      ),
-      sql<string>`COALESCE(metadata->>'bank_name', metadata->>'bank')`.as("bankName"),
-      sql<string>`COALESCE(metadata->>'bank_account_type', metadata->>'account_type')`.as(
-        "bankAccountType",
-      ),
-      sql<string>`COALESCE(metadata->>'withdraw_id', metadata->>'id')`.as("withdrawId"),
-      // Determine participant key (prefer RUT, then Account, then Name)
-      sql<string>`COALESCE(metadata->>'recipient_rut', metadata->>'rut', metadata->>'identification_number', metadata->>'bank_account_number', metadata->>'account_number', 'unknown')`.as(
-        "participant",
-      ),
-      // Display Name
-      sql<string>`COALESCE(metadata->>'bank_account_holder_name', metadata->>'name', metadata->>'account_holder', 'Desconocido')`.as(
-        "displayName",
-      ),
-      // Metrics
-      sql<number>`count(*)`.as("totalCount"),
-      sql<number>`sum(transaction_amount)`.as("totalAmount"),
-      sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as("outgoingCount"),
-      sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
-        "outgoingAmount",
-      ),
-      sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as("incomingCount"),
-      sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
-        "incomingAmount",
-      ),
-    ])
-    .groupBy([
-      "participant",
-      "displayName",
-      "identificationNumber",
-      "bankAccountHolder",
-      "bankAccountNumber",
-      "bankAccountType",
-      "bankName",
-      "withdrawId",
-    ])
-    .orderBy("outgoingAmount", "desc");
+  const rows = await fetchMergedTransactions({
+    from: params.from,
+    includeTest: false,
+    to: params.to,
+  });
 
-  if (from) {
-    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-    query = query.where("transactionDate", ">=", from as any);
-  }
-  if (to) {
-    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-    query = query.where("transactionDate", "<=", to as any);
-  }
-  if (limit) {
-    query = query.limit(limit);
-  }
+  const grouped = new Map<
+    string,
+    {
+      displayName: string;
+      outgoingAmount: number;
+      outgoingCount: number;
+    }
+  >();
 
-  // Filter by mode? Default combined.
-
-  const stats = await query.execute();
+  for (const row of rows) {
+    const participant =
+      row.identificationNumber ??
+      row.bankAccountNumber ??
+      row.withdrawId ??
+      row.bankAccountHolder ??
+      "unknown";
+    const displayName = row.bankAccountHolder ?? row.identificationNumber ?? "Desconocido";
+    const current = grouped.get(participant) ?? {
+      displayName,
+      outgoingAmount: 0,
+      outgoingCount: 0,
+    };
+    if (row.transactionAmount < 0) {
+      current.outgoingAmount += Math.abs(row.transactionAmount);
+      current.outgoingCount += 1;
+    }
+    grouped.set(participant, current);
+  }
 
   return {
     status: "ok",
-    data: (stats as ParticipantRow[]).map((s) => ({
-      count: Number(s.outgoingCount),
-      personId: s.participant,
-      personName: s.displayName,
-      total: Number(s.outgoingAmount),
-    })),
+    data: Array.from(grouped.entries())
+      .map(([participant, stats]) => ({
+        count: stats.outgoingCount,
+        personId: participant,
+        personName: stats.displayName,
+        total: stats.outgoingAmount,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, params.limit ?? Number.MAX_SAFE_INTEGER),
   };
 }
 
@@ -282,205 +343,179 @@ export async function getParticipantInsight(
   participantId: string,
   params: { from?: Date; to?: Date },
 ) {
-  const { from, to } = params;
+  const rows = await fetchMergedTransactions({
+    from: params.from,
+    includeTest: false,
+    to: params.to,
+  });
 
-  // 1. Monthly Stats
-  // ZenStack Query Builder: Use Model Fields
-  let monthlyQuery = db.$qb
-    .selectFrom("Transaction")
-    .select([
-      sql<string>`to_char(transaction_date, 'YYYY-MM-01')`.as("month"), // SQL helper uses raw DB names inside template strings
-      sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as("outgoingCount"),
-      sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
-        "outgoingAmount",
-      ),
-      sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as("incomingCount"),
-      sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
-        "incomingAmount",
-      ),
-    ])
-    .where((eb) =>
-      eb.or([
-        sql<boolean>`metadata->>'recipient_rut' = ${participantId}`,
-        sql<boolean>`metadata->>'rut' = ${participantId}`,
-        sql<boolean>`metadata->>'identification_number' = ${participantId}`,
-        sql<boolean>`metadata->>'bank_account_number' = ${participantId}`,
-      ]),
-    )
-    .groupBy("month")
-    .orderBy("month", "desc");
+  const participantRows = rows.filter((row) =>
+    [
+      row.identificationNumber,
+      row.bankAccountNumber,
+      row.withdrawId,
+      row.bankAccountHolder,
+      row.sourceId,
+    ].some((candidate) => candidate != null && candidate === participantId),
+  );
 
-  if (from) {
-    monthlyQuery = monthlyQuery.where("transactionDate", ">=", from.toISOString());
+  const monthlyMap = new Map<
+    string,
+    { incomingAmount: number; incomingCount: number; outgoingAmount: number; outgoingCount: number }
+  >();
+
+  const counterpartMap = new Map<
+    string,
+    {
+      bankAccountHolder: null | string;
+      bankAccountNumber: null | string;
+      bankAccountType: null | string;
+      bankName: null | string;
+      identificationNumber: null | string;
+      incomingAmount: number;
+      incomingCount: number;
+      outgoingAmount: number;
+      outgoingCount: number;
+      withdrawId: null | string;
+    }
+  >();
+
+  for (const row of participantRows) {
+    const month = monthKey(row.transactionDate);
+    const monthAgg = monthlyMap.get(month) ?? {
+      incomingAmount: 0,
+      incomingCount: 0,
+      outgoingAmount: 0,
+      outgoingCount: 0,
+    };
+    if (row.transactionAmount < 0) {
+      monthAgg.outgoingAmount += Math.abs(row.transactionAmount);
+      monthAgg.outgoingCount += 1;
+    } else {
+      monthAgg.incomingAmount += row.transactionAmount;
+      monthAgg.incomingCount += 1;
+    }
+    monthlyMap.set(month, monthAgg);
+
+    const counterpartKey = [
+      row.identificationNumber ?? "",
+      row.bankAccountNumber ?? "",
+      row.bankAccountHolder ?? "",
+      row.withdrawId ?? "",
+    ].join("|");
+    const counterpartAgg = counterpartMap.get(counterpartKey) ?? {
+      bankAccountHolder: row.bankAccountHolder,
+      bankAccountNumber: row.bankAccountNumber,
+      bankAccountType: row.bankAccountType,
+      bankName: row.bankName,
+      identificationNumber: row.identificationNumber,
+      incomingAmount: 0,
+      incomingCount: 0,
+      outgoingAmount: 0,
+      outgoingCount: 0,
+      withdrawId: row.withdrawId,
+    };
+    if (row.transactionAmount < 0) {
+      counterpartAgg.outgoingAmount += Math.abs(row.transactionAmount);
+      counterpartAgg.outgoingCount += 1;
+    } else {
+      counterpartAgg.incomingAmount += row.transactionAmount;
+      counterpartAgg.incomingCount += 1;
+    }
+    counterpartMap.set(counterpartKey, counterpartAgg);
   }
-  if (to) {
-    monthlyQuery = monthlyQuery.where("transactionDate", "<=", to.toISOString());
-  }
-
-  const monthlyStats = await monthlyQuery.execute();
-
-  // 2. Counterparts (Details) - Reuse leaderboard logic but filtered by ID
-  // ZenStack Query Builder
-  let counterpartsQuery = db.$qb
-    .selectFrom("Transaction")
-    .select([
-      sql<string>`COALESCE(metadata->>'recipient_rut', metadata->>'rut', metadata->>'identification_number')`.as(
-        "identificationNumber",
-      ),
-      sql<string>`COALESCE(metadata->>'bank_account_holder_name', metadata->>'name')`.as(
-        "bankAccountHolder",
-      ),
-      sql<string>`COALESCE(metadata->>'bank_account_number', metadata->>'account_number')`.as(
-        "bankAccountNumber",
-      ),
-      sql<string>`COALESCE(metadata->>'bank_name', metadata->>'bank')`.as("bankName"),
-      sql<string>`COALESCE(metadata->>'bank_account_type', metadata->>'account_type')`.as(
-        "bankAccountType",
-      ),
-      sql<string>`COALESCE(metadata->>'withdraw_id', metadata->>'id')`.as("withdrawId"),
-      //
-      sql<number>`sum(case when transaction_amount < 0 then 1 else 0 end)`.as("outgoingCount"),
-      sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
-        "outgoingAmount",
-      ),
-      sql<number>`sum(case when transaction_amount > 0 then 1 else 0 end)`.as("incomingCount"),
-      sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
-        "incomingAmount",
-      ),
-    ])
-    .where((eb) =>
-      eb.or([
-        sql<boolean>`metadata->>'recipient_rut' = ${participantId}`,
-        sql<boolean>`metadata->>'rut' = ${participantId}`,
-        sql<boolean>`metadata->>'identification_number' = ${participantId}`,
-        sql<boolean>`metadata->>'bank_account_number' = ${participantId}`,
-      ]),
-    )
-    .groupBy([
-      "identificationNumber",
-      "bankAccountHolder",
-      "bankAccountNumber",
-      "bankName",
-      "bankAccountType",
-      "withdrawId",
-    ])
-    .orderBy("outgoingAmount", "desc");
-
-  if (from) {
-    counterpartsQuery = counterpartsQuery.where("transactionDate", ">=", from.toISOString());
-  }
-  if (to) {
-    counterpartsQuery = counterpartsQuery.where("transactionDate", "<=", to.toISOString());
-  }
-
-  const counterparts = await counterpartsQuery.execute();
 
   return {
     status: "ok",
     participant: participantId,
-    monthly: (monthlyStats as MonthlyStatsRow[]).map((s) => ({
-      month: s.month,
-      outgoingCount: Number(s.outgoingCount),
-      outgoingAmount: Number(s.outgoingAmount),
-      incomingCount: Number(s.incomingCount),
-      incomingAmount: Number(s.incomingAmount),
-    })),
-    counterparts: (counterparts as CounterpartRow[]).map((s) => ({
-      counterpart: s.bankAccountHolder || "Desconocido",
-      counterpartId: s.identificationNumber,
-      withdrawId: s.withdrawId,
-      bankAccountHolder: s.bankAccountHolder,
-      bankName: s.bankName,
-      bankAccountNumber: s.bankAccountNumber,
-      bankAccountType: s.bankAccountType,
-      bankBranch: null,
-      identificationType: "RUT", // Assumption
-      identificationNumber: s.identificationNumber,
-      outgoingCount: Number(s.outgoingCount),
-      outgoingAmount: Number(s.outgoingAmount),
-      incomingCount: Number(s.incomingCount),
-      incomingAmount: Number(s.incomingAmount),
-    })),
+    monthly: Array.from(monthlyMap.entries())
+      .map(([month, value]) => ({
+        month,
+        outgoingCount: value.outgoingCount,
+        outgoingAmount: value.outgoingAmount,
+        incomingCount: value.incomingCount,
+        incomingAmount: value.incomingAmount,
+      }))
+      .sort((a, b) => (a.month < b.month ? 1 : -1)),
+    counterparts: Array.from(counterpartMap.values())
+      .map((s) => ({
+        counterpart: s.bankAccountHolder || "Desconocido",
+        counterpartId: s.identificationNumber,
+        withdrawId: s.withdrawId,
+        bankAccountHolder: s.bankAccountHolder,
+        bankName: s.bankName,
+        bankAccountNumber: s.bankAccountNumber,
+        bankAccountType: s.bankAccountType,
+        bankBranch: null,
+        identificationType: "RUT",
+        identificationNumber: s.identificationNumber,
+        outgoingCount: s.outgoingCount,
+        outgoingAmount: s.outgoingAmount,
+        incomingCount: s.incomingCount,
+        incomingAmount: s.incomingAmount,
+      }))
+      .sort((a, b) => b.outgoingAmount - a.outgoingAmount)
+      .map((s) => ({
+        ...s,
+        counterpartId: s.counterpartId ?? s.bankAccountNumber ?? s.withdrawId ?? "unknown",
+      })),
   };
 }
 
 export async function getTransactionStats(params: { from: Date; to: Date }) {
-  const { from, to } = params;
+  const rows = await fetchMergedTransactions({
+    from: params.from,
+    includeTest: false,
+    to: params.to,
+  });
 
-  // Monthly
-  const monthly = await db.$qb
-    .selectFrom("Transaction")
-    .select([
-      sql<string>`to_char(transaction_date, 'YYYY-MM-01')`.as("month"),
-      sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
-        "in",
-      ),
-      sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
-        "out",
-      ),
-      sql<number>`sum(transaction_amount)`.as("net"),
-    ])
-    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-    .where("transactionDate", ">=", from as any)
-    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-    .where("transactionDate", "<=", to as any)
-    .groupBy("month")
-    .orderBy("month", "asc")
-    .execute();
+  const monthlyMap = new Map<string, { in: number; net: number; out: number }>();
+  const byTypeMap = new Map<string, number>();
 
-  // By Type
-  const byType = await db.$qb
-    .selectFrom("Transaction")
-    .select([
-      (eb) => eb.ref("transactionType").as("description"),
-      sql<number>`sum(transaction_amount)`.as("total"),
-    ])
-    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-    .where("transactionDate", ">=", from as any)
-    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-    .where("transactionDate", "<=", to as any)
-    .groupBy("transactionType")
-    .execute();
+  let totalIn = 0;
+  let totalOut = 0;
 
-  const byTypeMapped = byType.map((t: AggregateByType) => ({
-    description: t.description,
-    direction: Number(t.total) > 0 ? "IN" : Number(t.total) < 0 ? "OUT" : "NEUTRO",
-    total: Math.abs(Number(t.total)),
+  for (const row of rows) {
+    const month = monthKey(row.transactionDate);
+    const monthAgg = monthlyMap.get(month) ?? { in: 0, net: 0, out: 0 };
+    if (row.transactionAmount >= 0) {
+      monthAgg.in += row.transactionAmount;
+      totalIn += row.transactionAmount;
+    } else {
+      const outAmount = Math.abs(row.transactionAmount);
+      monthAgg.out += outAmount;
+      totalOut += outAmount;
+    }
+    monthAgg.net += row.transactionAmount;
+    monthlyMap.set(month, monthAgg);
+
+    const type = row.transactionType || "unknown";
+    byTypeMap.set(type, (byTypeMap.get(type) ?? 0) + row.transactionAmount);
+  }
+
+  const monthly = Array.from(monthlyMap.entries())
+    .map(([month, values]) => ({
+      month,
+      in: values.in,
+      out: values.out,
+      net: values.net,
+    }))
+    .sort((a, b) => (a.month > b.month ? 1 : -1));
+
+  const byType = Array.from(byTypeMap.entries()).map(([description, total]) => ({
+    description,
+    direction: total > 0 ? "IN" : total < 0 ? "OUT" : "NEUTRO",
+    total: Math.abs(total),
   }));
-
-  // Totals
-  const totalsQuery = await db.$qb
-    .selectFrom("Transaction")
-    .select([
-      sql<number>`sum(case when transaction_amount > 0 then transaction_amount else 0 end)`.as(
-        "in",
-      ),
-      sql<number>`sum(case when transaction_amount < 0 then ABS(transaction_amount) else 0 end)`.as(
-        "out",
-      ),
-      sql<number>`sum(transaction_amount)`.as("net"),
-    ])
-    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-    .where("transactionDate", ">=", from as any)
-    // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-    .where("transactionDate", "<=", to as any)
-    .executeTakeFirst();
-
-  const totals = {
-    in: Number(totalsQuery?.in || 0),
-    out: Number(totalsQuery?.out || 0),
-    net: Number(totalsQuery?.net || 0),
-  };
 
   return {
     status: "ok",
-    monthly: monthly.map((m: AggregateByMonth) => ({
-      month: m.month,
-      in: Number(m.in),
-      out: Number(m.out),
-      net: Number(m.net),
-    })),
-    totals,
-    byType: byTypeMapped,
+    monthly,
+    totals: {
+      in: totalIn,
+      out: totalOut,
+      net: totalIn - totalOut,
+    },
+    byType,
   };
 }

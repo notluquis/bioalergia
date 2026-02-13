@@ -37,7 +37,7 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
     orderBy: { date: "desc" },
   });
 
-  const transactions = await db.transaction.findMany({
+  const settlements = await db.settlementTransaction.findMany({
     where: {
       transactionDate: {
         gte: parseDateOnly(from).startOf("day").toDate(),
@@ -47,9 +47,39 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
     select: {
       transactionDate: true,
       transactionAmount: true,
-      transactionType: true,
     },
   });
+
+  const releases = await db.releaseTransaction.findMany({
+    where: {
+      date: {
+        gte: parseDateOnly(from).startOf("day").toDate(),
+        lte: parseDateOnly(to).endOf("day").toDate(),
+      },
+    },
+    select: {
+      date: true,
+      grossAmount: true,
+      netCreditAmount: true,
+      netDebitAmount: true,
+    },
+  });
+
+  const movements = [
+    ...settlements.map((tx) => ({
+      amount: Number(tx.transactionAmount),
+      date: tx.transactionDate,
+    })),
+    ...releases.map((tx) => {
+      const credit = Number(tx.netCreditAmount ?? 0);
+      const debit = Number(tx.netDebitAmount ?? 0);
+      const amount = credit !== 0 || debit !== 0 ? credit - debit : Number(tx.grossAmount ?? 0);
+      return {
+        amount,
+        date: tx.date,
+      };
+    }),
+  ];
 
   const existingBalances = await db.dailyBalance.findMany({
     where: {
@@ -72,15 +102,13 @@ export async function getBalancesReport(from: string, to: string): Promise<Balan
 
   while (current.isBefore(end) || current.isSame(end, "day")) {
     const dateStr = current.format("YYYY-MM-DD");
-    const dayTx = transactions.filter(
-      (t) => dayjs(t.transactionDate).format("YYYY-MM-DD") === dateStr,
-    );
+    const dayTx = movements.filter((t) => dayjs(t.date).format("YYYY-MM-DD") === dateStr);
 
     let totalIn = 0;
     let totalOut = 0;
 
     for (const tx of dayTx) {
-      const amt = Number(tx.transactionAmount);
+      const amt = Number(tx.amount);
       if (amt >= 0) {
         totalIn += amt;
       } else {

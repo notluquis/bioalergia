@@ -1,19 +1,15 @@
-import type { Transaction } from "@finanzas/db";
-
-// Transaction mapper type - expects Transaction or transaction-like row
-type TransactionRow = Pick<
-  Transaction,
-  | "id"
-  | "transactionDate"
-  | "description"
-  | "transactionType"
-  | "transactionAmount"
-  | "status"
-  | "externalReference"
-  | "sourceId"
-  | "paymentMethod"
-  | "settlementNetAmount"
->;
+type TransactionRow = {
+  id: number;
+  transactionDate: Date;
+  description: null | string;
+  transactionType: string;
+  transactionAmount: null | number;
+  status: null | string;
+  externalReference: null | string;
+  sourceId: null | string;
+  paymentMethod: null | string;
+  settlementNetAmount: null | number;
+};
 
 export function mapTransaction(row: TransactionRow) {
   return {

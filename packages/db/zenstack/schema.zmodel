@@ -41,7 +41,6 @@ model Person {
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
   employee     Employee?
-  transactions Transaction[]
   user         User?
   patient      Patient?
 
@@ -291,86 +290,6 @@ model EmployeeTimesheet {
   @@allow('create,update,delete', auth().status == 'ACTIVE')
 
   @@map("employee_timesheets")
-}
-
-model Transaction {
-  id                  Int       @id @default(autoincrement())
-  description         String?   @map("description")
-  person_id           Int?
-  created_at          DateTime  @default(now())
-  businessUnit        String?   @map("business_unit")
-  cardInitialNumber   String?   @map("card_initial_number")
-  couponAmount        Decimal?  @map("coupon_amount") @db.Decimal(17, 2)
-  externalPosId       String?   @map("external_pos_id")
-  externalReference   String?   @map("external_reference")
-  externalStoreId     String?   @map("external_store_id")
-  feeAmount           Decimal?  @map("fee_amount") @db.Decimal(17, 2)
-  financingFeeAmount  Decimal?  @map("financing_fee_amount") @db.Decimal(17, 2)
-  franchise           String?
-  installments        Int?
-  invoicingPeriod     String?   @map("invoicing_period")
-  isReleased          Boolean?  @map("is_released")
-  issuerName          String?   @map("issuer_name")
-  lastFourDigits      String?   @map("last_four_digits")
-  metadata            Json?
-  mkpFeeAmount        Decimal?  @map("mkp_fee_amount") @db.Decimal(17, 2)
-  moneyReleaseDate    DateTime? @map("money_release_date")
-  operationTags       Json?     @map("operation_tags")
-  orderId             BigInt?   @map("order_id")
-  orderMp             String?   @map("order_mp")
-  packId              BigInt?   @map("pack_id")
-  payBankTransferId   String?   @map("pay_bank_transfer_id")
-  paymentMethod       String?   @map("payment_method")
-  paymentMethodType   String?   @map("payment_method_type")
-  poiBankName         String?   @map("poi_bank_name")
-  poiId               String?   @map("poi_id")
-  poiWalletName       String?   @map("poi_wallet_name")
-  posId               String?   @map("pos_id")
-  posName             String?   @map("pos_name")
-  productSku          String?   @map("product_sku")
-  purchaseId          String?   @map("purchase_id")
-  realAmount          Decimal?  @map("real_amount") @db.Decimal(17, 2)
-  saleDetail          String?   @map("sale_detail")
-  sellerAmount        Decimal?  @map("seller_amount") @db.Decimal(17, 2)
-  settlementCurrency  String?   @map("settlement_currency") @db.VarChar(10)
-  settlementDate      DateTime? @map("settlement_date")
-  settlementNetAmount Decimal?  @map("settlement_net_amount") @db.Decimal(17, 2)
-  shipmentMode        String?   @map("shipment_mode")
-  shippingFeeAmount   Decimal?  @map("shipping_fee_amount") @db.Decimal(17, 2)
-  shippingId          BigInt?   @map("shipping_id")
-  shippingOrderId     String?   @map("shipping_order_id")
-  site                String?
-  sourceId            String?   @map("source_id")
-  status              String?
-  storeId             String?   @map("store_id")
-  storeName           String?   @map("store_name")
-  subUnit             String?   @map("sub_unit")
-  taxDetail           String?   @map("tax_detail")
-  taxesAmount         Decimal?  @map("taxes_amount") @db.Decimal(17, 2)
-  taxesDisaggregated  Json?     @map("taxes_disaggregated")
-  tipAmount           Decimal?  @map("tip_amount") @db.Decimal(17, 2)
-  totalCouponAmount   Decimal?  @map("total_coupon_amount") @db.Decimal(17, 2)
-  transactionAmount   Decimal   @map("transaction_amount") @db.Decimal(17, 2)
-  transactionCurrency String    @map("transaction_currency") @db.VarChar(10)
-  transactionDate     DateTime  @map("transaction_date")
-  transactionIntentId String?   @map("transaction_intent_id")
-  transactionType     String    @map("transaction_type")
-  userId              String?   @map("user_id")
-  people              Person?   @relation(fields: [person_id], references: [id])
-
-  // Access policies
-  @@deny('all', auth() == null)
-  @@allow('read', true)
-  @@allow('create,update,delete', auth().status == 'ACTIVE')
-
-  @@unique([sourceId, transactionType], map: "unique_mp_tx")
-  @@index([person_id])
-  @@index([transactionDate])
-  @@index([status])
-  @@index([transactionType])
-  @@index([externalReference])
-  @@index([sourceId])
-  @@map("transactions")
 }
 
 // MercadoPago Settlement Report data (Conciliación)
@@ -1656,7 +1575,6 @@ model Budget {
   updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
 
   patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  items       BudgetItem[]
   payments    PatientPayment[]
 
   @@deny('all', auth() == null)
@@ -1665,24 +1583,6 @@ model Budget {
 
   @@index([patientId])
   @@map("budgets")
-}
-
-model BudgetItem {
-  id          Int     @id @default(autoincrement())
-  budgetId    Int     @map("budget_id")
-  description String
-  quantity    Int     @default(1)
-  unitPrice   Decimal @map("unit_price") @db.Decimal(15, 2)
-  totalPrice  Decimal @map("total_price") @db.Decimal(15, 2)
-
-  budget      Budget  @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-
-  @@deny('all', auth() == null)
-  @@allow('read', auth().status == 'ACTIVE')
-  @@allow('create,update,delete', auth().status == 'ACTIVE')
-
-  @@index([budgetId])
-  @@map("budget_items")
 }
 
 model PatientPayment {

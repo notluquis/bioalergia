@@ -30,7 +30,7 @@ import type {
   UpsertArgs as $UpsertArgs,
   WhereInput as $WhereInput,
 } from "@zenstackhq/orm";
-import type { SchemaType as $Schema } from "./schema-lite.js";
+import type { SchemaType as $Schema } from "./schema-lite";
 export type PersonFindManyArgs = $FindManyArgs<$Schema, "Person">;
 export type PersonFindUniqueArgs = $FindUniqueArgs<$Schema, "Person">;
 export type PersonFindFirstArgs = $FindFirstArgs<$Schema, "Person">;
@@ -349,30 +349,6 @@ export type EmployeeTimesheetGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "EmployeeTimesheet", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "EmployeeTimesheet", Args, Options>;
-export type TransactionFindManyArgs = $FindManyArgs<$Schema, "Transaction">;
-export type TransactionFindUniqueArgs = $FindUniqueArgs<$Schema, "Transaction">;
-export type TransactionFindFirstArgs = $FindFirstArgs<$Schema, "Transaction">;
-export type TransactionExistsArgs = $ExistsArgs<$Schema, "Transaction">;
-export type TransactionCreateArgs = $CreateArgs<$Schema, "Transaction">;
-export type TransactionCreateManyArgs = $CreateManyArgs<$Schema, "Transaction">;
-export type TransactionCreateManyAndReturnArgs = $CreateManyAndReturnArgs<$Schema, "Transaction">;
-export type TransactionUpdateArgs = $UpdateArgs<$Schema, "Transaction">;
-export type TransactionUpdateManyArgs = $UpdateManyArgs<$Schema, "Transaction">;
-export type TransactionUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<$Schema, "Transaction">;
-export type TransactionUpsertArgs = $UpsertArgs<$Schema, "Transaction">;
-export type TransactionDeleteArgs = $DeleteArgs<$Schema, "Transaction">;
-export type TransactionDeleteManyArgs = $DeleteManyArgs<$Schema, "Transaction">;
-export type TransactionCountArgs = $CountArgs<$Schema, "Transaction">;
-export type TransactionAggregateArgs = $AggregateArgs<$Schema, "Transaction">;
-export type TransactionGroupByArgs = $GroupByArgs<$Schema, "Transaction">;
-export type TransactionWhereInput = $WhereInput<$Schema, "Transaction">;
-export type TransactionSelect = $SelectInput<$Schema, "Transaction">;
-export type TransactionInclude = $IncludeInput<$Schema, "Transaction">;
-export type TransactionOmit = $OmitInput<$Schema, "Transaction">;
-export type TransactionGetPayload<
-  Args extends $SelectIncludeOmit<$Schema, "Transaction", true>,
-  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
-> = $Result<$Schema, "Transaction", Args, Options>;
 export type SettlementTransactionFindManyArgs = $FindManyArgs<$Schema, "SettlementTransaction">;
 export type SettlementTransactionFindUniqueArgs = $FindUniqueArgs<$Schema, "SettlementTransaction">;
 export type SettlementTransactionFindFirstArgs = $FindFirstArgs<$Schema, "SettlementTransaction">;
@@ -1738,30 +1714,6 @@ export type BudgetGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "Budget", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "Budget", Args, Options>;
-export type BudgetItemFindManyArgs = $FindManyArgs<$Schema, "BudgetItem">;
-export type BudgetItemFindUniqueArgs = $FindUniqueArgs<$Schema, "BudgetItem">;
-export type BudgetItemFindFirstArgs = $FindFirstArgs<$Schema, "BudgetItem">;
-export type BudgetItemExistsArgs = $ExistsArgs<$Schema, "BudgetItem">;
-export type BudgetItemCreateArgs = $CreateArgs<$Schema, "BudgetItem">;
-export type BudgetItemCreateManyArgs = $CreateManyArgs<$Schema, "BudgetItem">;
-export type BudgetItemCreateManyAndReturnArgs = $CreateManyAndReturnArgs<$Schema, "BudgetItem">;
-export type BudgetItemUpdateArgs = $UpdateArgs<$Schema, "BudgetItem">;
-export type BudgetItemUpdateManyArgs = $UpdateManyArgs<$Schema, "BudgetItem">;
-export type BudgetItemUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<$Schema, "BudgetItem">;
-export type BudgetItemUpsertArgs = $UpsertArgs<$Schema, "BudgetItem">;
-export type BudgetItemDeleteArgs = $DeleteArgs<$Schema, "BudgetItem">;
-export type BudgetItemDeleteManyArgs = $DeleteManyArgs<$Schema, "BudgetItem">;
-export type BudgetItemCountArgs = $CountArgs<$Schema, "BudgetItem">;
-export type BudgetItemAggregateArgs = $AggregateArgs<$Schema, "BudgetItem">;
-export type BudgetItemGroupByArgs = $GroupByArgs<$Schema, "BudgetItem">;
-export type BudgetItemWhereInput = $WhereInput<$Schema, "BudgetItem">;
-export type BudgetItemSelect = $SelectInput<$Schema, "BudgetItem">;
-export type BudgetItemInclude = $IncludeInput<$Schema, "BudgetItem">;
-export type BudgetItemOmit = $OmitInput<$Schema, "BudgetItem">;
-export type BudgetItemGetPayload<
-  Args extends $SelectIncludeOmit<$Schema, "BudgetItem", true>,
-  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
-> = $Result<$Schema, "BudgetItem", Args, Options>;
 export type PatientPaymentFindManyArgs = $FindManyArgs<$Schema, "PatientPayment">;
 export type PatientPaymentFindUniqueArgs = $FindUniqueArgs<$Schema, "PatientPayment">;
 export type PatientPaymentFindFirstArgs = $FindFirstArgs<$Schema, "PatientPayment">;

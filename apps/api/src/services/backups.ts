@@ -45,7 +45,6 @@ function getAllModelNames(): string[] {
     "EmployeeTimesheet",
     "Counterpart",
     "CounterpartAccount",
-    "Transaction",
     "DailyBalance",
     "Service",
     "Loan",

@@ -6,7 +6,7 @@
 /* eslint-disable */
 
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
-import { type SchemaType as $Schema, schema as $schema } from "./schema-lite.js";
+import { type SchemaType as $Schema, schema as $schema } from "./schema-lite";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
 export type Passkey = $ModelResult<$Schema, "Passkey">;
@@ -19,7 +19,6 @@ export type Employee = $ModelResult<$Schema, "Employee">;
 export type Counterpart = $ModelResult<$Schema, "Counterpart">;
 export type CounterpartAccount = $ModelResult<$Schema, "CounterpartAccount">;
 export type EmployeeTimesheet = $ModelResult<$Schema, "EmployeeTimesheet">;
-export type Transaction = $ModelResult<$Schema, "Transaction">;
 export type SettlementTransaction = $ModelResult<$Schema, "SettlementTransaction">;
 export type ReleaseTransaction = $ModelResult<$Schema, "ReleaseTransaction">;
 export type WithdrawTransaction = $ModelResult<$Schema, "WithdrawTransaction">;
@@ -62,7 +61,6 @@ export type Patient = $ModelResult<$Schema, "Patient">;
 export type PatientDteSaleSource = $ModelResult<$Schema, "PatientDteSaleSource">;
 export type Consultation = $ModelResult<$Schema, "Consultation">;
 export type Budget = $ModelResult<$Schema, "Budget">;
-export type BudgetItem = $ModelResult<$Schema, "BudgetItem">;
 export type PatientPayment = $ModelResult<$Schema, "PatientPayment">;
 export type PatientAttachment = $ModelResult<$Schema, "PatientAttachment">;
 export type DTEPurchaseDetail = $ModelResult<$Schema, "DTEPurchaseDetail">;

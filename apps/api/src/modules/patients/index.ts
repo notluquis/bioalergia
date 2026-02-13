@@ -29,6 +29,16 @@ dayjs.extend(timezone);
 
 const TIMEZONE = "America/Santiago";
 const parseDateOnly = (value: string) => dayjs.tz(value, "YYYY-MM-DD", TIMEZONE).toDate();
+const withBudgetItems = <T extends { budgets?: unknown[] }>(payload: T): T => {
+  if (!Array.isArray(payload.budgets)) {
+    return payload;
+  }
+  const budgets = payload.budgets.map((budget) => ({
+    ...(budget as Record<string, unknown>),
+    items: [],
+  }));
+  return { ...payload, budgets } as T;
+};
 
 type Variables = {
   user: User;
@@ -345,7 +355,6 @@ patientsRoutes.get("/:id", async (c) => {
         },
         budgets: {
           orderBy: { updatedAt: "desc" },
-          include: { items: true },
         },
         payments: {
           orderBy: { paymentDate: "desc" },
@@ -360,7 +369,7 @@ patientsRoutes.get("/:id", async (c) => {
       return c.json({ error: "Paciente no encontrado" }, 404);
     }
 
-    return c.json(patient);
+    return c.json(withBudgetItems(patient));
   } catch (error) {
     console.error("Error fetching patient:", error);
     return c.json({ error: "Error al obtener paciente" }, 500);
@@ -563,21 +572,10 @@ patientsRoutes.post("/:id/budgets", zValidator("json", createBudgetSchema), asyn
         // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
         finalAmount: finalAmount as any,
         notes: input.notes,
-        items: {
-          create: input.items.map((item) => ({
-            description: item.description,
-            quantity: item.quantity,
-            // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
-            unitPrice: item.unitPrice as any,
-            // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
-            totalPrice: (item.unitPrice * item.quantity) as any,
-          })),
-        },
       },
-      include: { items: true },
     });
 
-    return c.json(budget, 201);
+    return c.json({ ...budget, items: [] }, 201);
   } catch {
     console.error("Error creating budget:");
     return c.json({ error: "Error al crear el presupuesto" }, 500);
@@ -590,10 +588,10 @@ patientsRoutes.get("/:id/budgets", async (c) => {
   try {
     const budgets = await db.budget.findMany({
       where: { patientId },
-      include: { items: true, payments: true },
+      include: { payments: true },
       orderBy: { updatedAt: "desc" },
     });
-    return c.json(budgets);
+    return c.json(budgets.map((budget) => ({ ...budget, items: [] })));
   } catch {
     return c.json({ error: "Error al obtener presupuestos" }, 500);
   }
