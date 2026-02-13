@@ -3,6 +3,7 @@ import { Lock } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { AssociatedAccounts } from "@/features/counterparts/components/AssociatedAccounts";
+import { CATEGORY_LABELS } from "@/features/counterparts/constants";
 import { counterpartKeys } from "@/features/counterparts/queries";
 import type { Counterpart } from "@/features/counterparts/types";
 
@@ -61,7 +62,9 @@ export function CounterpartDetailSection({
           <div className="grid gap-3 text-default-600 text-xs sm:grid-cols-2">
             <div>
               <p className="font-semibold text-default-500">Clasificación</p>
-              <p className="text-foreground text-sm">{detail.counterpart.category ?? "—"}</p>
+              <p className="text-foreground text-sm">
+                {CATEGORY_LABELS[detail.counterpart.category] ?? detail.counterpart.category ?? "—"}
+              </p>
             </div>
           </div>
         </div>

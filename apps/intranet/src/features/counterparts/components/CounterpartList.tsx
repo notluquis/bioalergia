@@ -1,3 +1,4 @@
+import { Chip, ScrollShadow } from "@heroui/react";
 import { Button } from "@/components/ui/Button";
 
 import type { Counterpart, CounterpartCategory } from "../types";
@@ -5,6 +6,7 @@ import type { Counterpart, CounterpartCategory } from "../types";
 interface CounterpartListProps {
   className?: string;
   counterparts: Counterpart[];
+  emptyMessage?: string;
   onSelectCounterpart: (id: null | number) => void;
   selectedId: null | number;
 }
@@ -25,65 +27,67 @@ const CATEGORY_LABELS = CATEGORY_OPTIONS.reduce<Record<string, string>>((acc, it
 export function CounterpartList({
   className,
   counterparts,
+  emptyMessage = "No hay registros aún.",
   onSelectCounterpart,
   selectedId,
 }: CounterpartListProps) {
   return (
-    <aside
-      className={`surface-recessed flex h-full min-h-0 flex-col gap-4 overflow-hidden p-5 text-foreground text-sm ${className ?? ""}`}
-    >
+    <aside className={`flex h-full min-h-0 flex-col gap-4 overflow-hidden ${className ?? ""}`}>
       <header className="flex items-center justify-between gap-3">
-        <h2 className="typ-caption text-default-700">Contrapartes</h2>
+        <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.24em]">
+          Resultados ({counterparts.length})
+        </p>
         <Button
           onClick={() => {
             onSelectCounterpart(null);
           }}
           size="sm"
+          variant="ghost"
         >
-          Nueva
+          Limpiar selección
         </Button>
       </header>
-      <ul className="muted-scrollbar flex-1 space-y-2 overflow-y-auto pr-1">
-        {counterparts.map((item) => {
-          const isActive = selectedId === item.id;
-          return (
-            <li key={item.id}>
-              <button
-                className={`group w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition-all ${
-                  isActive
-                    ? "border-primary/40 bg-primary/10 text-primary shadow-sm"
-                    : "border-transparent bg-default-50/60 text-foreground hover:border-default-200 hover:bg-default-50"
-                }`}
-                onClick={() => {
-                  onSelectCounterpart(item.id);
-                }}
-                type="button"
-              >
-                <span className="flex items-center justify-between gap-2">
-                  <span className="block font-medium tracking-tight">{item.bankAccountHolder}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 font-semibold text-xs uppercase tracking-wide ${
-                      isActive ? "bg-primary/15 text-primary" : "bg-default-100/60 text-default-500"
-                    }`}
-                  >
-                    {CATEGORY_LABELS[item.category] ?? item.category}
+      <ScrollShadow className="min-h-0 flex-1 pr-1">
+        <ul className="space-y-2">
+          {counterparts.map((item) => {
+            const isActive = selectedId === item.id;
+            return (
+              <li key={item.id}>
+                <button
+                  className={`group w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition-all ${
+                    isActive
+                      ? "border-primary/45 bg-primary/10 shadow-sm"
+                      : "border-default-200/70 bg-default-50/60 hover:border-default-300 hover:bg-default-100/60"
+                  }`}
+                  onClick={() => {
+                    onSelectCounterpart(item.id);
+                  }}
+                  type="button"
+                >
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="block font-medium text-foreground tracking-tight">
+                      {item.bankAccountHolder}
+                    </span>
+                    <Chip size="sm" variant={isActive ? "secondary" : "soft"}>
+                      {CATEGORY_LABELS[item.category] ?? item.category}
+                    </Chip>
                   </span>
-                </span>
-                {item.identificationNumber && (
-                  <span className="mt-1 block text-foreground/90 text-xs">
-                    RUT {item.identificationNumber}
-                  </span>
-                )}
-              </button>
+                  {item.identificationNumber && (
+                    <span className="mt-1 block text-default-600 text-xs">
+                      RUT {item.identificationNumber}
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+          {counterparts.length === 0 && (
+            <li className="rounded-xl border border-default-300 border-dashed bg-default-50 px-3 py-3 text-center text-default-500 text-sm">
+              {emptyMessage}
             </li>
-          );
-        })}
-        {counterparts.length === 0 && (
-          <li className="rounded-xl border border-default-200 bg-default-50 px-3 py-2 text-default-500 text-xs">
-            No hay registros aún.
-          </li>
-        )}
-      </ul>
+          )}
+        </ul>
+      </ScrollShadow>
     </aside>
   );
 }
