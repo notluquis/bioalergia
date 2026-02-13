@@ -1090,6 +1090,45 @@ export function CSVUploadPage() {
     }
   };
 
+  const handleImportModeChange = (mode: "insert-only" | "insert-or-update") => {
+    if (mode === importMode) {
+      return;
+    }
+    setImportMode(mode);
+    if (!selectedTable || uploadedFiles.length === 0) {
+      return;
+    }
+    void (async () => {
+      setIsProcessing(true);
+      setUploadedFiles((prev) =>
+        prev.map((f) => (f.status === "error" ? f : { ...f, status: "previewing" as FileStatus })),
+      );
+
+      try {
+        const batch = buildBatchRows(selectedTable, uploadedFiles);
+        const previewData = await previewMutateAsync({
+          data: batch.rows,
+          table: selectedTable,
+          mode,
+        });
+
+        setBatchDroppedDuplicates(batch.droppedDuplicates);
+        setBatchPreviewData(previewData);
+        setUploadedFiles((prev) =>
+          prev.map((f) => (f.status === "error" ? f : { ...f, status: "ready" as FileStatus })),
+        );
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : "Error en vista previa";
+        toastError(errorMsg);
+        setUploadedFiles((prev) =>
+          prev.map((f) => (f.status === "error" ? f : { ...f, status: "error" as FileStatus })),
+        );
+      } finally {
+        setIsProcessing(false);
+      }
+    })();
+  };
+
   const handleImport = async () => {
     if (!selectedTable || uploadedFiles.length === 0 || !batchPreviewData) {
       return;
@@ -1181,14 +1220,7 @@ export function CSVUploadPage() {
 
       {/* 6. Import Mode Selection */}
       {hasPreviewData && (
-        <ImportModeCard
-          importMode={importMode}
-          onModeChange={(mode) => {
-            setImportMode(mode);
-            setBatchDroppedDuplicates(0);
-            setBatchPreviewData(null);
-          }}
-        />
+        <ImportModeCard importMode={importMode} onModeChange={handleImportModeChange} />
       )}
 
       {/* 7. Actions */}

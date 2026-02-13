@@ -264,8 +264,6 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
 // PREVIEW (VALIDATE WITHOUT INSERTING)
 // ============================================================
 
-// biome-ignore lint/complexity/noExcessiveLinesPerFunction: csv preview has explicit per-table validations
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: csv preview branches by table
 csvUploadRoutes.post("/preview", async (c) => {
   const auth = await getAuth(c);
   if (!auth) {
@@ -937,6 +935,17 @@ function normalizeWithdrawId(value: unknown) {
   return String(value).trim();
 }
 
+function normalizeIdentificationNumber(value: null | string | undefined) {
+  if (!value) {
+    return null;
+  }
+  const normalized = value
+    .replace(/[^0-9k]/gi, "")
+    .toUpperCase()
+    .trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
 async function importWithdrawalsRowsBatch(
   data: object[],
   mode: "insert-only" | "insert-or-update",
@@ -950,6 +959,12 @@ async function importWithdrawalsRowsBatch(
   }
 
   const existingIds = await findExistingWithdrawIds(prepared.rows.map((row) => row.withdrawId));
+  const rowsToPersist =
+    mode === "insert-only"
+      ? prepared.rows.filter((row) => !existingIds.has(row.withdrawId))
+      : prepared.rows;
+
+  await ensureCounterpartsForWithdrawRows(rowsToPersist);
   const applied = await applyWithdrawBatchRows(prepared.rows, existingIds, mode);
   addOutcome(totals, applied);
 
@@ -1041,6 +1056,41 @@ async function applyWithdrawBatchRows(
   }
 
   return totals;
+}
+
+async function ensureCounterpartsForWithdrawRows(rows: PreparedWithdrawBatch["rows"]) {
+  const byIdentificationNumber = new Map<string, string>();
+
+  for (const row of rows) {
+    const identificationNumber = normalizeIdentificationNumber(
+      row.withdrawData.identificationNumber,
+    );
+    if (!identificationNumber) {
+      continue;
+    }
+    const holder = row.withdrawData.bankAccountHolder?.trim() || `Titular ${identificationNumber}`;
+    if (!byIdentificationNumber.has(identificationNumber)) {
+      byIdentificationNumber.set(identificationNumber, holder);
+    }
+  }
+
+  for (const [identificationNumber, bankAccountHolder] of byIdentificationNumber.entries()) {
+    await db.counterpart.upsert({
+      create: {
+        identificationNumber,
+        bankAccountHolder,
+        category: "SUPPLIER",
+      },
+      update: {},
+      where: { identificationNumber },
+    });
+  }
+
+  for (const row of rows) {
+    row.withdrawData.identificationNumber = normalizeIdentificationNumber(
+      row.withdrawData.identificationNumber,
+    );
+  }
 }
 
 function parseProductionBalanceDate(row: CSVRow) {
