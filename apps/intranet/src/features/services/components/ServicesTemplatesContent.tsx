@@ -13,7 +13,7 @@ export function ServicesTemplatesContent() {
         </Alert>
       )}
 
-      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
+      <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <ServiceTemplateGallery onApply={applyTemplate} />
       </Surface>
     </section>

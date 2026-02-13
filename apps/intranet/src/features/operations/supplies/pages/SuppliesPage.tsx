@@ -17,7 +17,7 @@ export function Supplies() {
   return (
     <section className="space-y-8">
       {canCreate && (
-        <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
+        <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
           <div className="space-y-4">
             <div>
               <h2 className="font-semibold text-foreground text-lg">Solicitar nuevo insumo</h2>
@@ -30,7 +30,7 @@ export function Supplies() {
         </Surface>
       )}
 
-      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
+      <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-default-500 text-sm">{tableTitle}</p>
           <Button

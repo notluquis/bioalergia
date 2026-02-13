@@ -34,6 +34,16 @@ interface TemporalChartProps {
   granularity: ReportGranularity;
   reportData: EmployeeWorkData[];
 }
+interface TemporalTooltipEntry {
+  color: string;
+  name: string;
+  payload?: { period?: string };
+  value: number;
+}
+interface TemporalTooltipProps {
+  active?: boolean;
+  payload?: TemporalTooltipEntry[];
+}
 
 const tooltipStyle = {
   backgroundColor: "var(--color-background)",
@@ -58,6 +68,29 @@ function formatSeriesLabel(rawName: string): string {
     return `${rawName.replace("_net", "")} · Neto`;
   }
   return `${rawName} · Horas`;
+}
+
+function TemporalCustomTooltip({ active, payload }: TemporalTooltipProps) {
+  if (!active || !payload) {
+    return null;
+  }
+
+  return (
+    <div className="p-3" style={tooltipStyle}>
+      <p className="font-semibold text-xs">{payload[0]?.payload?.period}</p>
+      {payload.map((entry, idx) => {
+        const isSalary = entry.name.includes("_gross") || entry.name.includes("_net");
+        const displayName = formatSeriesLabel(entry.name);
+
+        return (
+          <p className="text-xs" key={`${entry.name}-${idx}`} style={{ color: entry.color }}>
+            {displayName}:{" "}
+            {isSalary ? compactClpFormatter.format(Number(entry.value)) : `${entry.value}h`}
+          </p>
+        );
+      })}
+    </div>
+  );
 }
 
 interface DistributionChartProps {
@@ -138,34 +171,6 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
     return granularity === "month" && value ? dayjs(value).format("MMM YYYY") : value;
   };
 
-  // Custom tooltip to show both hours and currency
-  const CustomTooltip = (props: {
-    active?: boolean;
-    payload?: Array<{ color: string; name: string; payload?: { period?: string }; value: number }>;
-  }) => {
-    const { active, payload } = props;
-    if (!active || !payload) {
-      return null;
-    }
-
-    return (
-      <div style={tooltipStyle} className="p-3">
-        <p className="font-semibold text-xs">{payload[0]?.payload?.period}</p>
-        {payload.map((entry, idx) => {
-          const isSalary = entry.name.includes("_gross") || entry.name.includes("_net");
-          const displayName = formatSeriesLabel(entry.name);
-
-          return (
-            <p key={`${entry.name}-${idx}`} style={{ color: entry.color }} className="text-xs">
-              {displayName}:{" "}
-              {isSalary ? formatSalaryTick(entry.value) : formatHoursTick(entry.value)}
-            </p>
-          );
-        })}
-      </div>
-    );
-  };
-
   return (
     <div className="rounded-3xl border border-default-100 bg-background p-4 shadow-sm sm:p-6">
       <div className="mb-6 flex items-center justify-between">
@@ -235,7 +240,7 @@ export function TemporalChart({ chartData, granularity, reportData }: TemporalCh
               />
 
               <Tooltip
-                content={<CustomTooltip />}
+                content={<TemporalCustomTooltip />}
                 cursor={{ fill: "var(--default-100)" }}
                 labelFormatter={formatPeriodLabel}
               />

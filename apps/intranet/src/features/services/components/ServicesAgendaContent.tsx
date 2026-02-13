@@ -34,7 +34,7 @@ export function ServicesAgendaContent() {
   if (aggregatedLoading && unifiedAgendaItems.length === 0) {
     return (
       <section className="space-y-8">
-        <Surface className="rounded-[28px] p-6 shadow-inner flex min-h-64 items-center justify-center">
+        <Surface className="flex min-h-64 items-center justify-center rounded-[28px] p-6 shadow-inner">
           <div className="flex items-center gap-3 text-default-600 text-sm">
             <Spinner size="md" />
             <span>Cargando agenda consolidada...</span>
@@ -46,7 +46,7 @@ export function ServicesAgendaContent() {
 
   return (
     <section className="space-y-8">
-      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
+      <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard title="Pagos hoy" value={currencyFormatter.format(totals.day)} />
           <StatCard title="Semana en curso" value={currencyFormatter.format(totals.week)} />

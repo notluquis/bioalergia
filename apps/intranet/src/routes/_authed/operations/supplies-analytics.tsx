@@ -11,6 +11,8 @@ const TreatmentAnalyticsPage = lazy(() =>
   })),
 );
 
+const MONTH_FORMAT_REGEX = /^\d{4}-\d{2}$/;
+
 const analyticsSearchSchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
@@ -18,7 +20,7 @@ const analyticsSearchSchema = z.object({
   month: z
     .string()
     .optional()
-    .refine((val) => !val || /^\d{4}-\d{2}$/.test(val), { message: "Invalid month format" }),
+    .refine((val) => !val || MONTH_FORMAT_REGEX.test(val), { message: "Invalid month format" }),
   calendarId: z
     .union([z.string(), z.array(z.string())])
     .optional()

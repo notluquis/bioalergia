@@ -134,7 +134,7 @@ export function InventoryPage() {
     <section className="space-y-8">
       {combinedError && <Alert status="danger">{combinedError}</Alert>}
 
-      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
+      <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <div className="mb-4 flex justify-end">
           <Button
             className="w-full sm:w-auto"
