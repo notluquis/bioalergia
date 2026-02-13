@@ -203,11 +203,6 @@ export async function syncCounterpartsFromTransactions() {
       bankName: true,
       identificationNumber: true,
     },
-    where: {
-      identificationNumber: {
-        not: null,
-      },
-    },
   });
 
   const byRut = buildCounterpartAccumulatorMap(withdrawals);
@@ -233,7 +228,7 @@ export async function syncCounterpartsFromTransactions() {
 
 const buildPayoutBankAccountWhere = (query: string) => {
   if (!query) {
-    return { not: null } as const;
+    return undefined;
   }
 
   return {
@@ -349,10 +344,6 @@ export async function listUnassignedPayoutAccounts(params: {
       select: {
         bankAccountNumber: true,
         identificationNumber: true,
-      },
-      where: {
-        bankAccountNumber: { not: null },
-        identificationNumber: { not: null },
       },
     }),
     db.counterpartAccount.findMany({
