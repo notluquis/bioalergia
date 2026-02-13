@@ -1,8 +1,7 @@
+import { Card } from "@heroui/react";
 import { useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
-
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
@@ -76,7 +75,7 @@ export function ClassificationRow({
 
   return (
     <Card className="border-default-200/70 bg-content1 text-sm shadow-sm">
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0 p-6 pb-4">
+      <Card.Header className="flex flex-row items-start justify-between gap-4 space-y-0 p-6 pb-4">
         <div className="flex flex-col gap-1">
           <span className="font-semibold text-secondary/70 text-xs uppercase tracking-wide">
             {event.calendarId}
@@ -98,8 +97,8 @@ export function ClassificationRow({
             </span>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-5 px-6 pt-0 pb-6">
+      </Card.Header>
+      <Card.Content className="space-y-5 px-6 pt-0 pb-6">
         {description && (
           <div className="rounded-xl border border-default-200/60 bg-default-100/80 p-4 text-foreground">
             <span className="mb-2 block font-semibold text-foreground text-xs uppercase tracking-wide">
@@ -251,7 +250,7 @@ export function ClassificationRow({
             Limpiar cambios
           </Button>
         </div>
-      </CardContent>
+      </Card.Content>
     </Card>
   );
 }

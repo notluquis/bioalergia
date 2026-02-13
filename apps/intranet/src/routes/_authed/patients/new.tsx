@@ -5,7 +5,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Save, User, UserPlus, X } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
-import { CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useToast } from "@/context/ToastContext";
@@ -107,7 +106,7 @@ function AddPatientPage() {
         className="space-y-6"
       >
         <Card className="overflow-visible border-none bg-background shadow-sm">
-          <CardContent className="space-y-8 p-6">
+          <Card.Content className="space-y-8 p-6">
             {/* Sección: Datos Personales */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 border-default-100 border-b pb-2 font-semibold text-primary">
@@ -269,7 +268,7 @@ function AddPatientPage() {
                 )}
               </form.Field>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         <div className="flex justify-end gap-3">

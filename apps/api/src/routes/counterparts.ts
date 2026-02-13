@@ -3,9 +3,11 @@ import { getSessionUser, hasPermission } from "../auth";
 import {
   counterpartAccountPayloadSchema,
   counterpartAccountUpdateSchema,
+  counterpartBulkAssignRutSchema,
   counterpartPayloadSchema,
 } from "../lib/entity-schemas";
 import {
+  assignRutToPayoutAccounts,
   attachRutToCounterpart,
   createCounterpart,
   getCounterpartById,
@@ -53,6 +55,32 @@ app.post("/sync", async (c) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to sync counterparts";
     return reply(c, { status: "error", message }, 500);
+  }
+});
+
+app.post("/assign-rut-to-payouts", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canUpdate = await hasPermission(user.id, "update", "Counterpart");
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const body = await c.req.json();
+  const parsed = counterpartBulkAssignRutSchema.safeParse(body);
+  if (!parsed.success) {
+    return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
+  }
+
+  try {
+    const result = await assignRutToPayoutAccounts(parsed.data);
+    return reply(c, { status: "ok", ...result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to assign RUT to payouts";
+    return reply(c, { status: "error", message }, 400);
   }
 });
 

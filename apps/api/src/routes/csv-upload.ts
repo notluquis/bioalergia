@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import { hasPermission } from "../auth";
 import { importDtePurchaseRow, importDteSaleRow } from "../lib/dte-import";
 import { verifyToken } from "../lib/paseto";
+import { syncCounterpartsFromTransactions } from "../services/counterparts";
 import { normalizeTimesheetPayload, upsertTimesheetEntry } from "../services/timesheets";
 import { reply } from "../utils/reply";
 
@@ -579,6 +580,7 @@ csvUploadRoutes.post("/import", async (c) => {
     auth,
     mode ?? "insert-or-update",
   );
+  const syncResult = table === "withdrawals" ? await syncCounterpartsFromTransactions() : undefined;
 
   console.log(
     "[CSV] Import by",
@@ -596,6 +598,7 @@ csvUploadRoutes.post("/import", async (c) => {
   return reply(c, {
     status: "ok",
     inserted,
+    sync: syncResult,
     updated,
     skipped,
     toInsert: inserted,

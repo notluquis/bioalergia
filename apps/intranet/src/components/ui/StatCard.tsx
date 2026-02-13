@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { CardDescription, CardTitle } from "./Card";
 
 interface StatCardProps {
   /** Additional CSS classes */
@@ -76,23 +75,21 @@ export function StatCard({
         className,
       )}
     >
-      <CardTitle
+      <span
         className={cn(
-          "flex items-center gap-1.5 font-semibold text-default-500 uppercase tracking-wide",
+          "flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide",
           sizes.title,
         )}
       >
         {Icon && <Icon className="h-4 w-4" />}
         {title}
-      </CardTitle>
+      </span>
       {/* eslint-disable-next-line security/detect-object-injection */}
-      <CardDescription className={cn("mt-2", toneClasses[tone], sizes.value)}>
+      <span className={cn("mt-2 block", toneClasses[tone], sizes.value)}>
         {value}
         {suffix && <span className="ml-1 font-normal text-default-400 text-sm">{suffix}</span>}
-      </CardDescription>
-      {subtitle && (
-        <CardDescription className="mt-1 text-default-400 text-xs">{subtitle}</CardDescription>
-      )}
+      </span>
+      {subtitle && <span className="mt-1 block text-default-400 text-xs">{subtitle}</span>}
     </article>
   );
 }

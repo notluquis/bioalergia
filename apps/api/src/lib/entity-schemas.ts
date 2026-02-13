@@ -146,6 +146,12 @@ export const counterpartAccountUpdateSchema = counterpartAccountBaseSchema.parti
   metadata: counterpartAccountBaseSchema.shape.metadata.optional(),
 });
 
+export const counterpartBulkAssignRutSchema = z.object({
+  accountNumbers: z.array(z.string().trim().min(1).max(191)).min(1).max(500),
+  bankAccountHolder: z.string().min(1).max(255).optional(),
+  rut: z.string().trim().min(1).max(50),
+});
+
 // --- Role Schemas ---
 
 export const roleCreateSchema = z.object({

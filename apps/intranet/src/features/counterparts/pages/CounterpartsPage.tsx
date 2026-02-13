@@ -12,8 +12,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
-  addCounterpartAccount,
-  attachCounterpartRut,
+  assignRutToPayouts,
   type CounterpartUpsertPayload,
   createCounterpart,
   fetchCounterparts,
@@ -48,10 +47,7 @@ type SaveCounterpartArgs = {
     mutateAsync: (payload: CounterpartUpsertPayload) => Promise<{ counterpart: { id: number } }>;
   };
   payload: CounterpartUpsertPayload;
-  queryClient: ReturnType<typeof useQueryClient>;
   selectedId: null | number;
-  toastInfo: (message: string) => void;
-  toastSuccess: (message: string) => void;
   updateMutation: {
     mutateAsync: (args: {
       id: number;
@@ -63,10 +59,7 @@ type SaveCounterpartArgs = {
 async function saveCounterpartWithFeedback({
   createMutation,
   payload,
-  queryClient,
   selectedId,
-  toastInfo,
-  toastSuccess,
   updateMutation,
 }: SaveCounterpartArgs): Promise<number> {
   if (!payload.identificationNumber?.trim()) {
@@ -78,29 +71,15 @@ async function saveCounterpartWithFeedback({
   }
 
   let savedId = selectedId;
-  const isNew = !selectedId;
-
   if (selectedId) {
     await updateMutation.mutateAsync({ id: selectedId, payload });
-    toastSuccess("Contraparte actualizada correctamente");
   } else {
     const result = await createMutation.mutateAsync(payload);
     savedId = result.counterpart.id;
-    toastSuccess("Contraparte creada correctamente");
   }
 
   if (!savedId) {
     throw new Error("No se pudo obtener el ID de la contraparte");
-  }
-
-  if (isNew && payload.identificationNumber) {
-    try {
-      await attachCounterpartRut(savedId, payload.identificationNumber);
-      void queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
-      toastInfo("Cuentas detectadas vinculadas automáticamente");
-    } catch {
-      // Auto-attach failed, silently continue
-    }
   }
 
   return savedId;
@@ -130,9 +109,10 @@ export function CounterpartsPage() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formCounterpart, setFormCounterpart] = useState<Counterpart | null>(null);
   const [isAssignRutModalOpen, setIsAssignRutModalOpen] = useState(false);
-  const [assigningPayoutAccount, setAssigningPayoutAccount] = useState<null | string>(null);
+  const [assigningPayoutAccounts, setAssigningPayoutAccounts] = useState<string[]>([]);
   const [assignRutValue, setAssignRutValue] = useState("");
   const [assignHolderValue, setAssignHolderValue] = useState("");
+  const [selectedPayoutAccounts, setSelectedPayoutAccounts] = useState<string[]>([]);
 
   const openFormModal = (target: Counterpart | null = null) => {
     setFormCounterpart(target);
@@ -197,15 +177,16 @@ export function CounterpartsPage() {
     setError(null);
 
     try {
+      const wasUpdating = Boolean(selectedId);
       const savedId = await saveCounterpartWithFeedback({
         createMutation,
         payload,
-        queryClient,
         selectedId,
-        toastInfo,
-        toastSuccess,
         updateMutation,
       });
+      toastSuccess(
+        wasUpdating ? "Contraparte actualizada correctamente" : "Contraparte creada correctamente",
+      );
 
       setSelectedId(savedId);
       setIsFormModalOpen(false);
@@ -258,15 +239,24 @@ export function CounterpartsPage() {
         ? "RUT inválido. Corrige el formato/verificador para continuar."
         : assignExistingCounterpart
           ? `Se asociará a contraparte existente: ${assignExistingCounterpart.bankAccountHolder}.`
-          : "Se creará una nueva contraparte con este RUT y se asociará la cuenta payout.";
+          : "Se creará una nueva contraparte con este RUT y se asociarán las cuentas payout.";
   const handleCreateFromPayout = (payoutBankAccountNumber: string) => {
-    setAssigningPayoutAccount(payoutBankAccountNumber);
+    setAssigningPayoutAccounts([payoutBankAccountNumber]);
+    setAssignRutValue("");
+    setAssignHolderValue("");
+    setIsAssignRutModalOpen(true);
+  };
+  const handleBulkAssignFromSelection = () => {
+    if (selectedPayoutAccounts.length === 0) {
+      return;
+    }
+    setAssigningPayoutAccounts(selectedPayoutAccounts);
     setAssignRutValue("");
     setAssignHolderValue("");
     setIsAssignRutModalOpen(true);
   };
   const handleAssignRutToPayout = async () => {
-    if (!assigningPayoutAccount) {
+    if (assigningPayoutAccounts.length === 0) {
       return;
     }
     if (!assignRutIsValid) {
@@ -282,34 +272,32 @@ export function CounterpartsPage() {
       return;
     }
 
-    const compactRut = normalized.replaceAll("-", "");
-    const existing = counterparts.find(
-      (item) => item.identificationNumber.toUpperCase() === compactRut.toUpperCase(),
-    );
     setError(null);
 
     try {
-      if (existing) {
-        await addCounterpartAccount(existing.id, { accountNumber: assigningPayoutAccount });
-        setSelectedId(existing.id);
-        toastSuccess("Cuenta payout asociada a contraparte existente");
+      const result = await assignRutToPayouts({
+        accountNumbers: assigningPayoutAccounts,
+        bankAccountHolder: assignHolderValue.trim() || undefined,
+        rut: normalized,
+      });
+      setSelectedId(result.counterpart.id);
+      if (result.conflicts.length > 0) {
+        toastInfo(
+          `Asignadas ${result.assignedCount}. ${result.conflicts.length} cuentas quedaron en conflicto.`,
+        );
       } else {
-        const created = await createMutation.mutateAsync({
-          identificationNumber: normalized,
-          bankAccountHolder: assignHolderValue.trim() || `Titular ${compactRut}`,
-        });
-        await addCounterpartAccount(created.counterpart.id, {
-          accountNumber: assigningPayoutAccount,
-        });
-        setSelectedId(created.counterpart.id);
-        toastSuccess("Contraparte creada y cuenta payout asociada");
+        toastSuccess(`Asignadas ${result.assignedCount} cuentas a la contraparte.`);
       }
 
       setIsAssignRutModalOpen(false);
-      setAssigningPayoutAccount(null);
+      setAssigningPayoutAccounts([]);
+      setSelectedPayoutAccounts([]);
       setAssignRutValue("");
       setAssignHolderValue("");
       void queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
+      void queryClient.invalidateQueries({
+        queryKey: [...counterpartKeys.all, "unassigned-payout"],
+      });
     } catch (error_) {
       const message =
         error_ instanceof Error ? error_.message : "No se pudo asignar el RUT a la cuenta payout";
@@ -343,6 +331,7 @@ export function CounterpartsPage() {
       <UnassignedPayoutAccountsTable
         canCreate={canCreate}
         loading={isUnassignedPayoutLoading}
+        onBulkAssign={handleBulkAssignFromSelection}
         onCreateFromPayout={handleCreateFromPayout}
         onPaginationChange={setPayoutPagination}
         onSearchQueryChange={(value) => {
@@ -357,6 +346,8 @@ export function CounterpartsPage() {
         pagination={payoutPagination}
         rows={unassignedPayoutData?.rows ?? []}
         searchQuery={payoutSearchQuery}
+        selectedAccounts={selectedPayoutAccounts}
+        setSelectedAccounts={setSelectedPayoutAccounts}
         total={unassignedPayoutData?.total ?? 0}
       />
 
@@ -404,14 +395,18 @@ export function CounterpartsPage() {
         isOpen={isAssignRutModalOpen}
         onClose={() => {
           setIsAssignRutModalOpen(false);
-          setAssigningPayoutAccount(null);
+          setAssigningPayoutAccounts([]);
           setAssignRutValue("");
           setAssignHolderValue("");
         }}
         title="Asignar RUT a cuenta payout"
       >
         <div className="space-y-4">
-          <Input readOnly label="Cuenta payout" value={assigningPayoutAccount ?? ""} />
+          <Input
+            readOnly
+            label="Cuentas payout seleccionadas"
+            value={String(assigningPayoutAccounts.length)}
+          />
           <Input
             label="RUT de contraparte"
             onChange={(event) => {
@@ -441,7 +436,7 @@ export function CounterpartsPage() {
             <Button
               onClick={() => {
                 setIsAssignRutModalOpen(false);
-                setAssigningPayoutAccount(null);
+                setAssigningPayoutAccounts([]);
                 setAssignRutValue("");
                 setAssignHolderValue("");
               }}
@@ -462,6 +457,7 @@ export function CounterpartsPage() {
 function UnassignedPayoutAccountsTable({
   canCreate,
   loading,
+  onBulkAssign,
   onCreateFromPayout,
   onPaginationChange,
   onSearchQueryChange,
@@ -469,10 +465,13 @@ function UnassignedPayoutAccountsTable({
   pagination,
   rows,
   searchQuery,
+  selectedAccounts,
+  setSelectedAccounts,
   total,
 }: {
   canCreate: boolean;
   loading: boolean;
+  onBulkAssign: () => void;
   onCreateFromPayout: (payoutBankAccountNumber: string) => void;
   onPaginationChange: OnChangeFn<PaginationState>;
   onSearchQueryChange: (value: string) => void;
@@ -480,9 +479,52 @@ function UnassignedPayoutAccountsTable({
   pagination: PaginationState;
   rows: UnassignedPayoutAccount[];
   searchQuery: string;
+  selectedAccounts: string[];
+  setSelectedAccounts: (value: string[]) => void;
   total: number;
 }) {
+  const selectedSet = new Set(selectedAccounts);
+  const allCurrentPageSelected =
+    rows.length > 0 && rows.every((row) => selectedSet.has(row.payoutBankAccountNumber));
+
   const columns: ColumnDef<UnassignedPayoutAccount>[] = [
+    {
+      cell: ({ row }) => (
+        <input
+          checked={selectedSet.has(row.original.payoutBankAccountNumber)}
+          onChange={() => {
+            const account = row.original.payoutBankAccountNumber;
+            if (selectedSet.has(account)) {
+              setSelectedAccounts(selectedAccounts.filter((value) => value !== account));
+            } else {
+              setSelectedAccounts([...selectedAccounts, account]);
+            }
+          }}
+          type="checkbox"
+        />
+      ),
+      header: () => (
+        <input
+          checked={allCurrentPageSelected}
+          onChange={() => {
+            if (allCurrentPageSelected) {
+              const currentAccounts = new Set(rows.map((row) => row.payoutBankAccountNumber));
+              setSelectedAccounts(
+                selectedAccounts.filter((account) => !currentAccounts.has(account)),
+              );
+            } else {
+              const merged = new Set([
+                ...selectedAccounts,
+                ...rows.map((row) => row.payoutBankAccountNumber),
+              ]);
+              setSelectedAccounts([...merged]);
+            }
+          }}
+          type="checkbox"
+        />
+      ),
+      id: "select",
+    },
     {
       accessorKey: "payoutBankAccountNumber",
       header: "Cuenta payout",
@@ -495,6 +537,19 @@ function UnassignedPayoutAccountsTable({
       accessorKey: "totalGrossAmount",
       cell: ({ row }) => fmtCLP(row.original.totalGrossAmount),
       header: "Total bruto",
+    },
+    {
+      cell: ({ row }) =>
+        row.original.conflict ? (
+          <span className="font-medium text-danger text-xs">
+            Conflicto: linked {row.original.counterpartRut ?? "-"} / withdraw{" "}
+            {row.original.withdrawRut ?? "-"}
+          </span>
+        ) : (
+          <span className="text-default-500 text-xs">Sin conflicto</span>
+        ),
+      header: "Estado",
+      id: "status",
     },
     {
       cell: ({ row }) =>
@@ -525,6 +580,16 @@ function UnassignedPayoutAccountsTable({
         <Chip size="sm" variant="soft">
           {total} pendientes
         </Chip>
+      </div>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="text-default-500 text-xs">{selectedAccounts.length} seleccionadas</span>
+        <Button
+          disabled={!canCreate || selectedAccounts.length === 0}
+          onClick={onBulkAssign}
+          size="sm"
+        >
+          Asignar RUT en lote
+        </Button>
       </div>
       <div className="mb-3">
         <Input

@@ -32,9 +32,36 @@ export interface CounterpartAccountSuggestion {
 }
 
 export interface UnassignedPayoutAccount {
+  conflict: boolean;
+  counterpartId: null | number;
+  counterpartName: null | string;
+  counterpartRut: null | string;
   movementCount: number;
   payoutBankAccountNumber: string;
   totalGrossAmount: number;
+  withdrawRut: null | string;
+}
+
+export class CounterpartAccountConflictError extends Error {
+  readonly accountNumber: string;
+  readonly counterpartId: number;
+  readonly counterpartRut: string;
+  readonly withdrawRut: string;
+
+  constructor(params: {
+    accountNumber: string;
+    counterpartId: number;
+    counterpartRut: string;
+    withdrawRut: string;
+  }) {
+    super(
+      `Conflicto en cuenta ${params.accountNumber}: linked ${params.counterpartRut}, withdraw ${params.withdrawRut}`,
+    );
+    this.accountNumber = params.accountNumber;
+    this.counterpartId = params.counterpartId;
+    this.counterpartRut = params.counterpartRut;
+    this.withdrawRut = params.withdrawRut;
+  }
 }
 
 type CounterpartAccumulator = {
@@ -125,6 +152,7 @@ export async function syncCounterpartsFromTransactions() {
     );
   }
 
+  let conflictCount = 0;
   let syncedCounterparts = 0;
   let syncedAccounts = 0;
 
@@ -141,16 +169,24 @@ export async function syncCounterpartsFromTransactions() {
     syncedCounterparts += 1;
 
     for (const account of counterpartData.accountMap.values()) {
-      await upsertCounterpartAccount(counterpart.id, {
-        accountNumber: account.accountNumber,
-        accountType: account.accountType,
-        bankName: account.bankName,
-      });
-      syncedAccounts += 1;
+      try {
+        await upsertCounterpartAccount(counterpart.id, {
+          accountNumber: account.accountNumber,
+          accountType: account.accountType,
+          bankName: account.bankName,
+        });
+        syncedAccounts += 1;
+      } catch (error) {
+        if (error instanceof CounterpartAccountConflictError) {
+          conflictCount += 1;
+          continue;
+        }
+        throw error;
+      }
     }
   }
 
-  return { syncedAccounts, syncedCounterparts };
+  return { conflictCount, syncedAccounts, syncedCounterparts };
 }
 
 export async function listUnassignedPayoutAccounts(params: {
@@ -180,6 +216,7 @@ export async function listUnassignedPayoutAccounts(params: {
     db.withdrawTransaction.findMany({
       select: {
         bankAccountNumber: true,
+        identificationNumber: true,
       },
       where: {
         bankAccountNumber: { not: null },
@@ -187,8 +224,14 @@ export async function listUnassignedPayoutAccounts(params: {
       },
     }),
     db.counterpartAccount.findMany({
-      select: {
-        accountNumber: true,
+      include: {
+        counterpart: {
+          select: {
+            bankAccountHolder: true,
+            id: true,
+            identificationNumber: true,
+          },
+        },
       },
     }),
   ]);
@@ -204,13 +247,34 @@ export async function listUnassignedPayoutAccounts(params: {
       .filter((value) => value.length > 0),
   );
 
+  const linkedByAccount = new Map(
+    linkedRows.map((row) => [normalizeAccountNumber(row.accountNumber), row]),
+  );
+  const withdrawRutByAccount = new Map<string, string>();
+  for (const row of withdrawRows) {
+    const account = normalizeAccountNumber(row.bankAccountNumber ?? "");
+    if (!account || !row.identificationNumber) {
+      continue;
+    }
+    const rut = normalizeRut(row.identificationNumber);
+    if (!rut) {
+      continue;
+    }
+    withdrawRutByAccount.set(account, rut);
+  }
+
   const grouped = new Map<string, UnassignedPayoutAccount>();
   for (const row of releaseRows) {
     const account = normalizeAccountNumber(row.payoutBankAccountNumber ?? "");
     if (!account) {
       continue;
     }
-    if (accountsWithRut.has(account) || linkedAccounts.has(account)) {
+    const linked = linkedByAccount.get(account);
+    const withdrawRut = withdrawRutByAccount.get(account) ?? null;
+    const linkedRut = linked?.counterpart?.identificationNumber ?? null;
+    const conflict = Boolean(linked && withdrawRut && linkedRut && linkedRut !== withdrawRut);
+
+    if (!conflict && (accountsWithRut.has(account) || linkedAccounts.has(account))) {
       continue;
     }
 
@@ -218,17 +282,26 @@ export async function listUnassignedPayoutAccounts(params: {
     if (existing) {
       existing.movementCount += 1;
       existing.totalGrossAmount += row.grossAmount ? Number(row.grossAmount) : 0;
+      existing.conflict = existing.conflict || conflict;
       continue;
     }
 
     grouped.set(account, {
+      conflict,
+      counterpartId: linked?.counterpart?.id ?? null,
+      counterpartName: linked?.counterpart?.bankAccountHolder ?? null,
+      counterpartRut: linkedRut,
       movementCount: 1,
       payoutBankAccountNumber: account,
       totalGrossAmount: row.grossAmount ? Number(row.grossAmount) : 0,
+      withdrawRut,
     });
   }
 
   const sorted = [...grouped.values()].toSorted((a, b) => {
+    if (a.conflict !== b.conflict) {
+      return Number(b.conflict) - Number(a.conflict);
+    }
     if (b.movementCount !== a.movementCount) {
       return b.movementCount - a.movementCount;
     }
@@ -434,6 +507,32 @@ export async function upsertCounterpartAccount(
   },
 ) {
   const normalizedAccount = normalizeAccountNumber(payload.accountNumber);
+  const existingAny = await db.counterpartAccount.findFirst({
+    include: {
+      counterpart: {
+        select: {
+          id: true,
+          identificationNumber: true,
+        },
+      },
+    },
+    where: {
+      accountNumber: normalizedAccount,
+    },
+  });
+  if (existingAny && existingAny.counterpartId !== counterpartId) {
+    const targetCounterpart = await db.counterpart.findUnique({
+      where: { id: counterpartId },
+      select: { identificationNumber: true },
+    });
+    throw new CounterpartAccountConflictError({
+      accountNumber: normalizedAccount,
+      counterpartId: existingAny.counterpartId,
+      counterpartRut: existingAny.counterpart.identificationNumber,
+      withdrawRut: targetCounterpart?.identificationNumber ?? "UNKNOWN",
+    });
+  }
+
   const existing = await db.counterpartAccount.findFirst({
     where: {
       counterpartId,
@@ -523,4 +622,62 @@ export async function attachRutToCounterpart(counterpartId: number, rutInput: st
 
   const detail = await getCounterpartById(counterpartId);
   return detail.accounts;
+}
+
+export async function assignRutToPayoutAccounts(params: {
+  accountNumbers: string[];
+  bankAccountHolder?: string;
+  rut: string;
+}) {
+  const rut = normalizeRut(params.rut);
+  if (!rut) {
+    throw new Error("RUT inválido");
+  }
+  const uniqueAccounts = [
+    ...new Set(params.accountNumbers.map(normalizeAccountNumber).filter(Boolean)),
+  ];
+  if (uniqueAccounts.length === 0) {
+    return { assignedCount: 0, conflicts: [] as UnassignedPayoutAccount[] };
+  }
+
+  const counterpart = await db.counterpart.upsert({
+    create: {
+      bankAccountHolder: params.bankAccountHolder?.trim() || `Titular ${rut}`,
+      category: "SUPPLIER",
+      identificationNumber: rut,
+    },
+    update: {
+      bankAccountHolder: params.bankAccountHolder?.trim() || undefined,
+    },
+    where: { identificationNumber: rut },
+  });
+
+  const conflicts: UnassignedPayoutAccount[] = [];
+  let assignedCount = 0;
+  for (const accountNumber of uniqueAccounts) {
+    try {
+      await upsertCounterpartAccount(counterpart.id, { accountNumber });
+      assignedCount += 1;
+    } catch (error) {
+      if (!(error instanceof CounterpartAccountConflictError)) {
+        throw error;
+      }
+      const linked = await db.counterpart.findUnique({
+        where: { id: error.counterpartId },
+        select: { bankAccountHolder: true, id: true, identificationNumber: true },
+      });
+      conflicts.push({
+        conflict: true,
+        counterpartId: linked?.id ?? null,
+        counterpartName: linked?.bankAccountHolder ?? null,
+        counterpartRut: linked?.identificationNumber ?? error.counterpartRut,
+        movementCount: 0,
+        payoutBankAccountNumber: accountNumber,
+        totalGrossAmount: 0,
+        withdrawRut: rut,
+      });
+    }
+  }
+
+  return { assignedCount, conflicts, counterpart };
 }

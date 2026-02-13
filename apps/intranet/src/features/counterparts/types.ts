@@ -50,9 +50,14 @@ export interface CounterpartAccountSuggestion {
 }
 
 export interface UnassignedPayoutAccount {
+  conflict: boolean;
+  counterpartId: number | null;
+  counterpartName: null | string;
+  counterpartRut: null | string;
   movementCount: number;
   payoutBankAccountNumber: string;
   totalGrossAmount: number;
+  withdrawRut: null | string;
 }
 
 export interface CounterpartDetail {

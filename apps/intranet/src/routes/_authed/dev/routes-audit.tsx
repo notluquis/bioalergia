@@ -1,10 +1,9 @@
+import { Card } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AlertCircle, CheckCircle, Search, Settings, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
-
 import { Badge } from "@/components/ui/Badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 // Import dynamically to avoid bundling in prod if not tree-shaken correctly by router
 // But for this dev page we can import directly for simplicity as the route itself should be dev-only
@@ -106,43 +105,43 @@ function RoutesAuditPage() {
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="font-medium text-sm">Total Routes</CardTitle>
+          <Card.Header className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card.Title className="font-medium text-sm">Total Routes</Card.Title>
             <Settings className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+          </Card.Header>
+          <Card.Content>
             <div className="font-bold text-2xl">{stats.total}</div>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="font-medium text-sm">Valid Pages</CardTitle>
+          <Card.Header className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card.Title className="font-medium text-sm">Valid Pages</Card.Title>
             <CheckCircle className="size-4 text-success" />
-          </CardHeader>
-          <CardContent>
+          </Card.Header>
+          <Card.Content>
             <div className="font-bold text-2xl">{stats.valid}</div>
             <p className="text-muted-foreground text-xs">With proper metadata</p>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="font-medium text-sm">Technical</CardTitle>
+          <Card.Header className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card.Title className="font-medium text-sm">Technical</Card.Title>
             <Settings className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
+          </Card.Header>
+          <Card.Content>
             <div className="font-bold text-2xl">{stats.technical}</div>
             <p className="text-muted-foreground text-xs">Auto-excluded from nav</p>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="font-medium text-sm">Errors</CardTitle>
+          <Card.Header className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card.Title className="font-medium text-sm">Errors</Card.Title>
             <AlertCircle className="size-4 text-danger" />
-          </CardHeader>
-          <CardContent>
+          </Card.Header>
+          <Card.Content>
             <div className="font-bold text-2xl text-danger">{stats.error}</div>
             <p className="text-muted-foreground text-xs">Missing required data</p>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
 

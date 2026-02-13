@@ -1,11 +1,10 @@
-import { Description } from "@heroui/react";
+import { Card, Description } from "@heroui/react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import { signalAppFallback } from "@/lib/app-recovery";
 import { logger } from "@/lib/logger";
 
 import { Button } from "./Button";
-import { Card, CardDescription, CardTitle } from "./Card";
 
 interface Props {
   children: ReactNode;
@@ -76,14 +75,14 @@ export class GlobalError extends Component<Props, State> {
             </div>
 
             <div className="space-y-2">
-              <CardTitle className="font-bold text-3xl text-foreground">
+              <Card.Title className="font-bold text-3xl text-foreground">
                 {isDeployIssue ? "Nueva versión disponible" : "Algo salió mal"}
-              </CardTitle>
-              <CardDescription className="text-default-500">
+              </Card.Title>
+              <Card.Description className="text-default-500">
                 {isDeployIssue
                   ? "Hay una nueva versión de la aplicación. Por favor, recarga la página para actualizar."
                   : "Ha ocurrido un error inesperado. Hemos registrado el problema y nuestro equipo lo revisará."}
-              </CardDescription>
+              </Card.Description>
             </div>
 
             {!isDeployIssue && this.state.error && (

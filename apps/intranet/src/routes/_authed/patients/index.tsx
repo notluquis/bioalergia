@@ -8,7 +8,6 @@ import { useMemo, useState } from "react";
 import { z } from "zod";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
-import { CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { PatientListSchema } from "@/features/patients/schemas";
@@ -252,7 +251,7 @@ function PatientsListPage() {
       </div>
 
       <Card className="border-none bg-background shadow-sm">
-        <CardContent className="p-4">
+        <Card.Content className="p-4">
           <Tabs
             aria-label="Fuentes de pacientes"
             selectedKey={activeTab}
@@ -320,7 +319,7 @@ function PatientsListPage() {
               />
             </Tabs.Panel>
           </Tabs>
-        </CardContent>
+        </Card.Content>
       </Card>
 
       <CreatePatientModal isOpen={createOpen} onClose={closeCreateModal} />

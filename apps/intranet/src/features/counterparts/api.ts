@@ -32,6 +32,7 @@ const SummaryResponseSchema = z.object({
 });
 
 const CounterpartsSyncResponseSchema = z.object({
+  conflictCount: z.number().optional(),
   syncedAccounts: z.number(),
   syncedCounterparts: z.number(),
 });
@@ -41,6 +42,12 @@ const UnassignedPayoutAccountsResponseSchema = z.object({
   pageSize: z.number(),
   rows: z.array(z.unknown()),
   total: z.number(),
+});
+
+const AssignRutToPayoutsResponseSchema = z.object({
+  assignedCount: z.number(),
+  conflicts: z.array(z.unknown()),
+  counterpart: z.unknown(),
 });
 
 const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
@@ -113,11 +120,11 @@ export async function fetchCounterparts() {
 }
 
 export async function syncCounterparts() {
-  return await apiClient.post<{ syncedAccounts: number; syncedCounterparts: number }>(
-    "/api/counterparts/sync",
-    {},
-    { responseSchema: CounterpartsSyncResponseSchema },
-  );
+  return await apiClient.post<{
+    conflictCount?: number;
+    syncedAccounts: number;
+    syncedCounterparts: number;
+  }>("/api/counterparts/sync", {}, { responseSchema: CounterpartsSyncResponseSchema });
 }
 
 export async function fetchUnassignedPayoutAccounts(params?: {
@@ -140,6 +147,20 @@ export async function fetchUnassignedPayoutAccounts(params?: {
     responseSchema: UnassignedPayoutAccountsResponseSchema,
   });
   return data;
+}
+
+export async function assignRutToPayouts(payload: {
+  accountNumbers: string[];
+  bankAccountHolder?: string;
+  rut: string;
+}) {
+  return await apiClient.post<{
+    assignedCount: number;
+    conflicts: UnassignedPayoutAccount[];
+    counterpart: Counterpart;
+  }>("/api/counterparts/assign-rut-to-payouts", payload, {
+    responseSchema: AssignRutToPayoutsResponseSchema,
+  });
 }
 
 export async function fetchCounterpartSummary(
