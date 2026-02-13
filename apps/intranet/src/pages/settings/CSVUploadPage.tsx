@@ -506,9 +506,9 @@ function TableSelectionCard({
 
           {currentTable && (
             <div className="flex-1 rounded-lg bg-default-50/50 p-4">
-              <h3 className="mb-2 font-bold text-xs uppercase tracking-wide opacity-70">
+              <span className="mb-2 block font-bold text-xs uppercase tracking-wide opacity-70">
                 Campos requeridos
-              </h3>
+              </span>
               <div className="flex flex-wrap gap-2">
                 {currentTable.fields.map((field) => (
                   <Chip
@@ -680,7 +680,7 @@ function ImportSummaryCard({ uploadedFiles }: { uploadedFiles: UploadedFile[] })
   return (
     <Card className="border-primary/20 bg-primary/5">
       <CardContent className="p-6">
-        <h3 className="mb-4 font-semibold text-lg">Vista Previa de Importación</h3>
+        <span className="mb-4 block font-semibold text-lg">Vista Previa de Importación</span>
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
           <div className="rounded-lg border border-default-100 bg-background p-3 shadow-sm">
             <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Insertar</div>
@@ -752,7 +752,7 @@ function ImportModeCard({
           >
             <div className="flex items-center gap-3">
               <Chip
-                className="min-w-[96px] justify-center text-center"
+                className="min-w-24 justify-center text-center"
                 color={importMode === "insert-only" ? "accent" : "default"}
                 size="sm"
                 variant={importMode === "insert-only" ? "primary" : "tertiary"}
@@ -781,7 +781,7 @@ function ImportModeCard({
           >
             <div className="flex items-center gap-3">
               <Chip
-                className="min-w-[96px] justify-center text-center"
+                className="min-w-24 justify-center text-center"
                 color={importMode === "insert-or-update" ? "accent" : "default"}
                 size="sm"
                 variant={importMode === "insert-or-update" ? "primary" : "tertiary"}

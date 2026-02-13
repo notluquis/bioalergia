@@ -1,4 +1,4 @@
-import { Card, Chip, Spinner } from "@heroui/react";
+import { Card, Chip, Description, Spinner } from "@heroui/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import localeEs from "dayjs/locale/es";
@@ -195,11 +195,11 @@ function SyncAllCard({
       <div className="space-y-4 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-default-700">Sincronización Masiva</h3>
-            <p className="mt-1 text-default-500 text-sm">
+            <span className="block font-semibold text-default-700">Sincronización Masiva</span>
+            <Description className="mt-1 text-default-500 text-sm">
               Datos disponibles: {availablePeriods.sales.length} períodos de ventas +{" "}
               {availablePeriods.purchases.length} períodos de compras
-            </p>
+            </Description>
           </div>
           <Button
             isDisabled={isSyncingAll}
@@ -222,9 +222,9 @@ function SyncAllCard({
                 }}
               />
             </div>
-            <p className="text-default-600 text-xs">
+            <Description className="text-default-600 text-xs">
               {syncAllProgress.completed} de {syncAllProgress.total} completados
-            </p>
+            </Description>
           </div>
         )}
       </div>
@@ -261,8 +261,8 @@ function PeriodCard({
       <div className="gap-4 space-y-4 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium text-base">{period.month}</h4>
-            <p className="text-default-500 text-xs">{period.period}</p>
+            <span className="block font-medium text-base">{period.month}</span>
+            <Description className="text-default-500 text-xs">{period.period}</Description>
           </div>
           {syncMutation.isPending && syncMutation.variables?.period === period.period && (
             <Spinner size="sm" />
@@ -302,10 +302,16 @@ function PeriodCard({
           </Button>
           {lastSyncs[`${period.period}-sales`] && (
             <div className="space-y-1 text-default-600 text-xs">
-              <p>Creados: {lastSyncs[`${period.period}-sales`]?.rowsInserted}</p>
-              <p>Actualizados: {lastSyncs[`${period.period}-sales`]?.rowsUpdated}</p>
+              <Description>
+                Creados: {lastSyncs[`${period.period}-sales`]?.rowsInserted}
+              </Description>
+              <Description>
+                Actualizados: {lastSyncs[`${period.period}-sales`]?.rowsUpdated}
+              </Description>
               {lastSyncs[`${period.period}-sales`]?.error && (
-                <p className="text-red-500">Error: {lastSyncs[`${period.period}-sales`]?.error}</p>
+                <Description className="text-red-500">
+                  Error: {lastSyncs[`${period.period}-sales`]?.error}
+                </Description>
               )}
             </div>
           )}
@@ -344,12 +350,16 @@ function PeriodCard({
           </Button>
           {lastSyncs[`${period.period}-purchases`] && (
             <div className="space-y-1 text-default-600 text-xs">
-              <p>Creados: {lastSyncs[`${period.period}-purchases`]?.rowsInserted}</p>
-              <p>Actualizados: {lastSyncs[`${period.period}-purchases`]?.rowsUpdated}</p>
+              <Description>
+                Creados: {lastSyncs[`${period.period}-purchases`]?.rowsInserted}
+              </Description>
+              <Description>
+                Actualizados: {lastSyncs[`${period.period}-purchases`]?.rowsUpdated}
+              </Description>
               {lastSyncs[`${period.period}-purchases`]?.error && (
-                <p className="text-red-500">
+                <Description className="text-red-500">
                   Error: {lastSyncs[`${period.period}-purchases`]?.error}
-                </p>
+                </Description>
               )}
             </div>
           )}
@@ -538,7 +548,9 @@ export function HaulmerSyncPage() {
         <Card className="border-warning-100 bg-warning-50">
           <div className="flex items-center gap-2 p-4">
             <Spinner size="sm" />
-            <p className="text-default-700 text-sm">Cargando períodos disponibles...</p>
+            <Description className="text-default-700 text-sm">
+              Cargando períodos disponibles...
+            </Description>
           </div>
         </Card>
       )}
@@ -547,10 +559,12 @@ export function HaulmerSyncPage() {
       {periodsError && (
         <Card className="border-danger-100 bg-danger-50">
           <div className="p-4">
-            <h3 className="font-semibold text-danger text-sm">Error al cargar períodos</h3>
-            <p className="mt-1 text-danger text-xs">
+            <span className="block font-semibold text-danger text-sm">
+              Error al cargar períodos
+            </span>
+            <Description className="mt-1 text-danger text-xs">
               {periodsError instanceof Error ? periodsError.message : "Error desconocido"}
-            </p>
+            </Description>
             <details className="mt-2">
               <summary className="cursor-pointer font-mono text-danger text-xs">
                 Respuesta del servidor
@@ -586,7 +600,7 @@ export function HaulmerSyncPage() {
       <div className="max-h-[calc(100vh-400px)] space-y-4 overflow-y-auto pr-2">
         {sortedYears.map((year) => (
           <div key={year} className="space-y-4">
-            <h2 className="font-semibold text-default-700 text-lg">{year}</h2>
+            <span className="block font-semibold text-default-700 text-lg">{year}</span>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {(periodsByYear[year] ?? []).map((period) => (
                 <PeriodCard

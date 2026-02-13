@@ -1,4 +1,4 @@
-import { Tabs, Tooltip } from "@heroui/react";
+import { Description, Tabs, Tooltip } from "@heroui/react";
 import {
   keepPreviousData,
   type QueryClient,
@@ -253,36 +253,42 @@ export function MercadoPagoSettingsPage() {
 
             <div className="grid grid-cols-2 gap-3 rounded-lg bg-default-50/50 p-4 sm:grid-cols-3">
               <div className="text-center">
-                <p className="font-bold text-2xl">{lastImportStats.totalRows}</p>
-                <p className="text-default-500 text-xs">Total filas</p>
+                <span className="block font-bold text-2xl">{lastImportStats.totalRows}</span>
+                <Description className="text-default-500 text-xs">Total filas</Description>
               </div>
               <div className="text-center">
-                <p className="font-bold text-2xl">{lastImportStats.validRows}</p>
-                <p className="text-default-500 text-xs">Válidas</p>
+                <span className="block font-bold text-2xl">{lastImportStats.validRows}</span>
+                <Description className="text-default-500 text-xs">Válidas</Description>
               </div>
               <div className="text-center">
-                <p className="font-bold text-2xl text-success">{lastImportStats.insertedRows}</p>
-                <p className="text-success/70 text-xs">Insertadas</p>
+                <span className="block font-bold text-2xl text-success">
+                  {lastImportStats.insertedRows}
+                </span>
+                <Description className="text-success/70 text-xs">Insertadas</Description>
               </div>
               <div className="text-center">
-                <p className="font-bold text-2xl text-warning">{lastImportStats.duplicateRows}</p>
-                <p className="text-warning/70 text-xs">Duplicados</p>
+                <span className="block font-bold text-2xl text-warning">
+                  {lastImportStats.duplicateRows}
+                </span>
+                <Description className="text-warning/70 text-xs">Duplicados</Description>
               </div>
               <div className="text-center">
-                <p className="font-bold text-2xl">{lastImportStats.skippedRows}</p>
-                <p className="text-default-500 text-xs">Omitidas</p>
+                <span className="block font-bold text-2xl">{lastImportStats.skippedRows}</span>
+                <Description className="text-default-500 text-xs">Omitidas</Description>
               </div>
               {lastImportStats.errors.length > 0 && (
                 <div className="text-center">
-                  <p className="font-bold text-2xl text-danger">{lastImportStats.errors.length}</p>
-                  <p className="text-danger/70 text-xs">Errores</p>
+                  <span className="block font-bold text-2xl text-danger">
+                    {lastImportStats.errors.length}
+                  </span>
+                  <Description className="text-danger/70 text-xs">Errores</Description>
                 </div>
               )}
             </div>
 
             {lastImportStats.errors.length > 0 && (
               <div className="rounded-lg bg-danger/10 p-3 text-sm">
-                <p className="mb-2 font-medium text-danger">Errores encontrados:</p>
+                <span className="mb-2 block font-medium text-danger">Errores encontrados:</span>
                 <ul className="list-inside list-disc space-y-1 text-danger/80 text-xs">
                   {lastImportStats.errors.slice(0, 5).map((err, i) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: static list
@@ -315,10 +321,10 @@ export function MercadoPagoSettingsPage() {
           <article className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
             <div className="flex items-start justify-between">
               <div>
-                <p className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
+                <span className="flex items-center gap-1.5 font-semibold text-default-500 text-xs uppercase tracking-wide">
                   Último Reporte
-                </p>
-                <h3 className="mt-2 line-clamp-1 font-semibold text-lg">
+                </span>
+                <span className="mt-2 line-clamp-1 block font-semibold text-lg">
                   {(() => {
                     const lastReport = reports[0];
                     if (!lastReport) {
@@ -327,15 +333,15 @@ export function MercadoPagoSettingsPage() {
                     const date = lastReport.date_created ?? lastReport.begin_date;
                     return date ? dayjs(date).format("D MMM, HH:mm") : "N/A";
                   })()}
-                </h3>
+                </span>
               </div>
               <div className="rounded-lg bg-primary/10 p-2 text-primary">
                 <Clock className="h-5 w-5" />
               </div>
             </div>
-            <p className="mt-4 truncate border-default-200/50 border-t pt-4 text-default-400 text-xs">
+            <Description className="mt-4 truncate border-default-200/50 border-t pt-4 text-default-400 text-xs">
               {reports[0]?.file_name ?? "Sin reportes recientes"}
-            </p>
+            </Description>
           </article>
 
           {/* Total Reports Card */}
@@ -357,8 +363,8 @@ export function MercadoPagoSettingsPage() {
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
               <div>
-                <h3 className="font-semibold text-lg">Historial de Reportes</h3>
-                <p className="text-default-500 text-xs">Total: {reportTotal}</p>
+                <span className="block font-semibold text-lg">Historial de Reportes</span>
+                <Description className="text-default-500 text-xs">Total: {reportTotal}</Description>
               </div>
             </div>
 
@@ -404,8 +410,8 @@ export function MercadoPagoSettingsPage() {
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
               <div>
-                <h3 className="font-semibold text-lg">Historial de Sync</h3>
-                <p className="text-default-500 text-xs">Total: {syncTotal}</p>
+                <span className="block font-semibold text-lg">Historial de Sync</span>
+                <Description className="text-default-500 text-xs">Total: {syncTotal}</Description>
               </div>
             </div>
             <Select

@@ -1,4 +1,4 @@
-import { Accordion, Button, Card, Chip, Spinner } from "@heroui/react";
+import { Accordion, Button, Card, Chip, Description, Spinner } from "@heroui/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -109,10 +109,10 @@ export function DTESyncHistoryPage() {
       <Card>
         <Card.Header className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="font-bold text-2xl">Historial de Sincronización DTE</h2>
-            <p className="text-default-500 text-sm">
+            <span className="block font-bold text-2xl">Historial de Sincronización DTE</span>
+            <Description className="text-default-500 text-sm">
               Registro de sincronizaciones automáticas y manuales de documentos tributarios
-            </p>
+            </Description>
           </div>
           <Button
             isIconOnly
@@ -137,10 +137,10 @@ export function DTESyncHistoryPage() {
           ) : error ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
               <AlertCircle className="h-8 w-8 text-danger" />
-              <p className="font-medium text-danger">Error al cargar el historial</p>
-              <p className="text-default-500 text-sm">
+              <span className="font-medium text-danger">Error al cargar el historial</span>
+              <Description className="text-default-500 text-sm">
                 {error instanceof Error ? error.message : "Error desconocido"}
-              </p>
+              </Description>
             </div>
           ) : data && data.logs.length > 0 ? (
             <Accordion className="w-full" variant="surface">
@@ -189,20 +189,24 @@ export function DTESyncHistoryPage() {
                       {/* Timestamp Row */}
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                          <p className="mb-1 text-default-500 text-xs">Iniciado</p>
-                          <p className="font-mono text-sm">
+                          <Description className="mb-1 text-default-500 text-xs">
+                            Iniciado
+                          </Description>
+                          <span className="block font-mono text-sm">
                             {dayjs(log.startedAt).format("DD/MM/YYYY HH:mm:ss")}
-                          </p>
+                          </span>
                         </div>
                         {log.endedAt && (
                           <div>
-                            <p className="mb-1 text-default-500 text-xs">Finalizado</p>
-                            <p className="font-mono text-sm">
+                            <Description className="mb-1 text-default-500 text-xs">
+                              Finalizado
+                            </Description>
+                            <span className="block font-mono text-sm">
                               {dayjs(log.endedAt).format("DD/MM/YYYY HH:mm:ss")}
                               <span className="ml-2 text-default-500">
                                 ({getDuration(log.startedAt, log.endedAt)})
                               </span>
-                            </p>
+                            </span>
                           </div>
                         )}
                       </div>
@@ -210,46 +214,56 @@ export function DTESyncHistoryPage() {
                       {/* Results Grid */}
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <div className="rounded-lg bg-background p-3">
-                          <p className="mb-1 font-semibold text-default-500 text-xs">Insertados</p>
-                          <p className="font-bold font-mono text-lg text-success">
+                          <Description className="mb-1 font-semibold text-default-500 text-xs">
+                            Insertados
+                          </Description>
+                          <span className="block font-bold font-mono text-lg text-success">
                             +{log.rowsInserted}
-                          </p>
+                          </span>
                         </div>
                         <div className="rounded-lg bg-background p-3">
-                          <p className="mb-1 font-semibold text-default-500 text-xs">
+                          <Description className="mb-1 font-semibold text-default-500 text-xs">
                             Actualizados
-                          </p>
-                          <p className="font-bold font-mono text-info text-lg">
+                          </Description>
+                          <span className="block font-bold font-mono text-info text-lg">
                             ~{log.rowsUpdated}
-                          </p>
+                          </span>
                         </div>
                         <div className="rounded-lg bg-background p-3">
-                          <p className="mb-1 font-semibold text-default-500 text-xs">Omitidos</p>
-                          <p className="font-bold font-mono text-lg text-warning">
+                          <Description className="mb-1 font-semibold text-default-500 text-xs">
+                            Omitidos
+                          </Description>
+                          <span className="block font-bold font-mono text-lg text-warning">
                             {log.rowsSkipped}
-                          </p>
+                          </span>
                         </div>
                         <div className="rounded-lg bg-background p-3">
-                          <p className="mb-1 font-semibold text-default-500 text-xs">Total</p>
-                          <p className="font-bold font-mono text-lg">
+                          <Description className="mb-1 font-semibold text-default-500 text-xs">
+                            Total
+                          </Description>
+                          <span className="block font-bold font-mono text-lg">
                             {log.rowsInserted + log.rowsUpdated + log.rowsSkipped}
-                          </p>
+                          </span>
                         </div>
                       </div>
 
                       {/* Error Message */}
                       {log.errorMessage && (
                         <div className="rounded-lg border border-danger/30 bg-danger/10 p-3">
-                          <p className="mb-1 font-semibold text-danger text-xs">Mensaje de Error</p>
-                          <p className="overflow-auto font-mono text-default-700 text-sm">
+                          <Description className="mb-1 font-semibold text-danger text-xs">
+                            Mensaje de Error
+                          </Description>
+                          <Description className="overflow-auto font-mono text-default-700 text-sm">
                             {log.errorMessage}
-                          </p>
+                          </Description>
                         </div>
                       )}
 
                       {/* ID Footer */}
                       <div className="border-default-100 border-t pt-3">
-                        <p className="font-mono text-default-400 text-xs">ID: {log.id}</p>
+                        <Description className="font-mono text-default-400 text-xs">
+                          ID: {log.id}
+                        </Description>
                       </div>
                     </Accordion.Body>
                   </Accordion.Panel>
@@ -259,10 +273,10 @@ export function DTESyncHistoryPage() {
           ) : (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
               <Clock className="h-8 w-8 text-default-300" />
-              <p className="font-medium text-default-500">No hay registros aún</p>
-              <p className="text-default-400 text-sm">
+              <span className="font-medium text-default-500">No hay registros aún</span>
+              <Description className="text-default-400 text-sm">
                 Los registros aparecerán aquí cuando se ejecute una sincronización
-              </p>
+              </Description>
             </div>
           )}
         </Card.Content>
@@ -272,31 +286,31 @@ export function DTESyncHistoryPage() {
       {data && data.logs.length > 0 && (
         <Card>
           <Card.Header>
-            <h3 className="font-semibold">Resumen</h3>
+            <span className="font-semibold">Resumen</span>
           </Card.Header>
           <Card.Content>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
               <div>
-                <p className="mb-1 text-default-500 text-xs">Total</p>
-                <p className="font-bold text-2xl">{data.total}</p>
+                <Description className="mb-1 text-default-500 text-xs">Total</Description>
+                <span className="block font-bold text-2xl">{data.total}</span>
               </div>
               <div>
-                <p className="mb-1 text-default-500 text-xs">Exitosas</p>
-                <p className="font-bold text-2xl text-success">
+                <Description className="mb-1 text-default-500 text-xs">Exitosas</Description>
+                <span className="block font-bold text-2xl text-success">
                   {data.logs.filter((l) => l.status === "SUCCESS").length}
-                </p>
+                </span>
               </div>
               <div>
-                <p className="mb-1 text-default-500 text-xs">Parciales</p>
-                <p className="font-bold text-2xl text-warning">
+                <Description className="mb-1 text-default-500 text-xs">Parciales</Description>
+                <span className="block font-bold text-2xl text-warning">
                   {data.logs.filter((l) => l.status === "PARTIAL").length}
-                </p>
+                </span>
               </div>
               <div>
-                <p className="mb-1 text-default-500 text-xs">Fallidas</p>
-                <p className="font-bold text-2xl text-danger">
+                <Description className="mb-1 text-default-500 text-xs">Fallidas</Description>
+                <span className="block font-bold text-2xl text-danger">
                   {data.logs.filter((l) => l.status === "FAILED").length}
-                </p>
+                </span>
               </div>
             </div>
           </Card.Content>

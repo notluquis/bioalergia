@@ -184,10 +184,10 @@ export function RolesSettingsPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-4 border-b pb-4">
           <div className="space-y-1">
-            <h2 className="font-semibold text-lg">Listado de roles</h2>
-            <p className="hidden text-default-600 text-sm md:block">
+            <span className="block font-semibold text-lg">Listado de roles</span>
+            <span className="hidden text-default-600 text-sm md:block">
               Gestiona los permisos y roles del sistema
-            </p>
+            </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {/* Role Filter Selector */}
