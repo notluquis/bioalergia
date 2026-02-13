@@ -134,11 +134,10 @@ export function InventorySettingsPage() {
             <div className="fade-in slide-in-from-top-2 animate-in border-b bg-default-50/30 p-4">
               <form className="flex items-end gap-3" onSubmit={handleCreate}>
                 <div className="flex-1">
-                  <label className="label py-1" htmlFor="category-name">
-                    <span className="label-text text-xs">Nombre de la categoría</span>
-                  </label>
                   <Input
+                    containerClassName="gap-1"
                     id="category-name"
+                    label="Nombre de la categoría"
                     onChange={(e) => {
                       setNewCategoryName(e.target.value);
                     }}
@@ -274,9 +273,11 @@ function InventoryList({
                       <Box size={12} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-sm">{item.name}</p>
+                      <span className="block truncate font-medium text-sm">{item.name}</span>
                       {item.description && (
-                        <p className="truncate text-default-400 text-xs">{item.description}</p>
+                        <span className="block truncate text-default-400 text-xs">
+                          {item.description}
+                        </span>
                       )}
                     </div>
                     <span
@@ -337,9 +338,11 @@ function InventoryList({
                     <Box size={12} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-sm">{item.name}</p>
+                    <span className="block truncate font-medium text-sm">{item.name}</span>
                     {item.description && (
-                      <p className="truncate text-default-400 text-xs">{item.description}</p>
+                      <span className="block truncate text-default-400 text-xs">
+                        {item.description}
+                      </span>
                     )}
                   </div>
                   <span

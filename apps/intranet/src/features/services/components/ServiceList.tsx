@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import dayjs from "dayjs";
 
 import { Button } from "@/components/ui/Button";
@@ -27,10 +28,12 @@ export function ServiceList({
     <aside className="flex h-full min-h-80 flex-col gap-4 rounded-2xl border border-default-200/60 bg-background/80 p-5 text-foreground text-sm shadow-inner">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+          <span className="block font-semibold text-default-500 text-xs uppercase tracking-wide">
             Servicios
-          </h2>
-          <p className="text-default-500 text-xs">Suscripciones y gastos recurrentes.</p>
+          </span>
+          <Description className="text-default-500 text-xs">
+            Suscripciones y gastos recurrentes.
+          </Description>
         </div>
         {canManage && (
           <Button onClick={onCreateRequest} size="sm" type="button" variant="primary">
@@ -104,11 +107,11 @@ export function ServiceList({
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-semibold text-sm tracking-tight">{service.name}</p>
+                  <span className="block font-semibold text-sm tracking-tight">{service.name}</span>
                   {service.detail && (
-                    <p className="text-default-400 text-xs uppercase tracking-wide">
+                    <Description className="text-default-400 text-xs uppercase tracking-wide">
                       {service.detail}
-                    </p>
+                    </Description>
                   )}
                 </div>
                 <span
@@ -134,9 +137,9 @@ export function ServiceList({
           );
         })}
         {services.length === 0 && (
-          <p className="rounded-2xl border border-default-200 border-dashed bg-background/40 p-4 text-default-500 text-xs">
+          <Description className="rounded-2xl border border-default-200 border-dashed bg-background/40 p-4 text-default-500 text-xs">
             Aún no registras servicios recurrentes. Crea el primero para controlar gastos mensuales.
-          </p>
+          </Description>
         )}
       </div>
     </aside>

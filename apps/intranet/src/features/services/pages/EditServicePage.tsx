@@ -1,4 +1,4 @@
-import { Surface } from "@heroui/react";
+import { Description, Surface } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -20,7 +20,6 @@ export function ServiceEditPage() {
   const queryClient = useQueryClient();
   const [saveMessage, setSaveMessage] = useState<null | string>(null);
 
-  // Keep fetchServiceDetail as it provides aggregated data with schedules
   // Keep fetchServiceDetail as it provides aggregated data with schedules
   const { data: detail } = useSuspenseQuery({
     queryFn: () => {
@@ -140,7 +139,7 @@ export function ServiceEditPage() {
       {displayError && <Alert status="danger">{displayError}</Alert>}
       {saveMessage && <Alert status="success">{saveMessage}</Alert>}
 
-      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
+      <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <div className="flex justify-end">
           <Button
             onClick={() => {
@@ -153,38 +152,46 @@ export function ServiceEditPage() {
         </div>
         <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)] lg:items-start">
           <aside className="space-y-4 rounded-2xl border border-default-200/60 bg-background/80 p-4 text-foreground text-sm shadow-inner">
-            <h2 className="font-semibold text-default-700 text-sm uppercase tracking-wide">
+            <span className="font-semibold text-default-700 text-sm uppercase tracking-wide">
               Resumen
-            </h2>
+            </span>
             <div className="space-y-3">
               {summaryCards.map((card) => (
                 <div
                   className="rounded-2xl border border-default-200 bg-default-50 p-3"
                   key={card.label}
                 >
-                  <p className="font-semibold text-default-700 text-xs uppercase tracking-wide">
+                  <span className="block font-semibold text-default-700 text-xs uppercase tracking-wide">
                     {card.label}
-                  </p>
-                  <p className="mt-1 font-semibold text-foreground text-lg">{card.value}</p>
-                  {card.helper && <p className="text-default-400 text-xs">{card.helper}</p>}
+                  </span>
+                  <span className="mt-1 block font-semibold text-foreground text-lg">
+                    {card.value}
+                  </span>
+                  {card.helper && (
+                    <Description className="text-default-400 text-xs">{card.helper}</Description>
+                  )}
                 </div>
               ))}
             </div>
             <div className="space-y-2">
-              <h3 className="font-semibold text-default-700 text-xs uppercase tracking-wide">
+              <span className="font-semibold text-default-700 text-xs uppercase tracking-wide">
                 Historial
-              </h3>
+              </span>
               <ol className="space-y-2 text-default-500 text-xs">
                 {historyItems.map((item) => (
                   <li
                     className="rounded-xl border border-default-200 bg-default-50 p-3"
                     key={item.title}
                   >
-                    <p className="font-semibold text-foreground">{item.title}</p>
+                    <span className="block font-semibold text-foreground">{item.title}</span>
                     {item.description && (
-                      <p className="text-default-400 text-xs">{item.description}</p>
+                      <Description className="text-default-400 text-xs">
+                        {item.description}
+                      </Description>
                     )}
-                    <p className="text-default-300 text-xs uppercase tracking-wide">{item.date}</p>
+                    <Description className="text-default-300 text-xs uppercase tracking-wide">
+                      {item.date}
+                    </Description>
                   </li>
                 ))}
               </ol>
@@ -193,9 +200,9 @@ export function ServiceEditPage() {
 
           <div className="space-y-6">
             <section className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
-              <h2 className="font-semibold text-default-700 text-sm uppercase tracking-wide">
+              <span className="font-semibold text-default-700 text-sm uppercase tracking-wide">
                 Datos generales
-              </h2>
+              </span>
               {initialValues && (
                 <ServiceForm
                   initialValues={initialValues}

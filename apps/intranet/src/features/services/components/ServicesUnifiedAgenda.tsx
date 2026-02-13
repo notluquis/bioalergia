@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { Description, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -129,34 +129,40 @@ export function ServicesUnifiedAgenda({
     <section className="space-y-4">
       <header className="surface-muted grid gap-4 p-4 text-default-600 text-sm sm:grid-cols-3">
         <div>
-          <p className="text-default-400 text-xs uppercase tracking-wide">Pagos hoy</p>
-          <p className="font-semibold text-foreground text-xl">
+          <Description className="text-default-400 text-xs uppercase tracking-wide">
+            Pagos hoy
+          </Description>
+          <span className="block font-semibold text-foreground text-xl">
             {currencyFormatter.format(totals.day)}
-          </p>
+          </span>
         </div>
         <div>
-          <p className="text-default-400 text-xs uppercase tracking-wide">Semana en curso</p>
-          <p className="font-semibold text-foreground text-xl">
+          <Description className="text-default-400 text-xs uppercase tracking-wide">
+            Semana en curso
+          </Description>
+          <span className="block font-semibold text-foreground text-xl">
             {currencyFormatter.format(totals.week)}
-          </p>
+          </span>
         </div>
         <div>
-          <p className="text-default-400 text-xs uppercase tracking-wide">Mes en curso</p>
-          <p className="font-semibold text-foreground text-xl">
+          <Description className="text-default-400 text-xs uppercase tracking-wide">
+            Mes en curso
+          </Description>
+          <span className="block font-semibold text-foreground text-xl">
             {currencyFormatter.format(totals.month)}
-          </p>
+          </span>
         </div>
       </header>
 
       <div className="surface-recessed space-y-3 p-4 text-default-600 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="font-semibold text-default-400 text-sm uppercase tracking-wide">
+            <span className="font-semibold text-default-400 text-sm uppercase tracking-wide">
               Agenda unificada
-            </h2>
-            <p className="text-default-300 text-xs">
+            </span>
+            <Description className="text-default-300 text-xs">
               Visualiza todos los pagos programados por fecha de vencimiento.
-            </p>
+            </Description>
           </div>
           {loading && (
             <div className="flex items-center gap-2 text-default-300 text-xs">
@@ -165,11 +171,11 @@ export function ServicesUnifiedAgenda({
             </div>
           )}
         </div>
-        {error && <p className="text-danger text-xs">{error}</p>}
+        {error && <Description className="text-danger text-xs">{error}</Description>}
         {groups.length === 0 && !loading && !error && (
-          <p className="text-default-300 text-xs">
+          <Description className="text-default-300 text-xs">
             No hay cuotas programadas en el periodo consultado.
-          </p>
+          </Description>
         )}
         {loading && groups.length === 0 && (
           <div className="space-y-2">
@@ -207,12 +213,12 @@ export function ServicesUnifiedAgenda({
                   variant="secondary"
                 >
                   <div>
-                    <p className="font-semibold text-foreground text-sm capitalize">
+                    <span className="block font-semibold text-foreground text-sm capitalize">
                       {group.label}
-                    </p>
-                    <p className="text-default-300 text-xs">
+                    </span>
+                    <Description className="text-default-300 text-xs">
                       {group.entries.length} {group.entries.length === 1 ? "servicio" : "servicios"}
-                    </p>
+                    </Description>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-semibold text-foreground text-sm">
@@ -240,16 +246,18 @@ export function ServicesUnifiedAgenda({
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                              <p className="font-semibold text-foreground text-sm">
+                              <span className="block font-semibold text-foreground text-sm">
                                 {service.name}
-                              </p>
+                              </span>
                               {service.detail && (
-                                <p className="text-default-300 text-xs">{service.detail}</p>
+                                <Description className="text-default-300 text-xs">
+                                  {service.detail}
+                                </Description>
                               )}
-                              <p className="mt-1 text-default-300 text-xs">
+                              <Description className="mt-1 text-default-300 text-xs">
                                 {currencyFormatter.format(schedule.expected_amount)} · Vence el{" "}
                                 {dateFormatter.format(dueDate.toDate())}
-                              </p>
+                              </Description>
                             </div>
                             <span
                               className={`rounded-full px-3 py-1 font-semibold text-xs uppercase tracking-wide ${

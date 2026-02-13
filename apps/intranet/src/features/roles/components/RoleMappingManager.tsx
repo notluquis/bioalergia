@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -105,14 +106,14 @@ export function RoleMappingManager() {
   return (
     <div className="space-y-4 rounded-xl bg-background p-6 shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="font-bold text-foreground text-lg">Mapeo de Roles (Cargo → Rol App)</h3>
+        <span className="font-bold text-foreground text-lg">Mapeo de Roles (Cargo → Rol App)</span>
         {saveErrorMessage && <span className="text-danger text-sm">{saveErrorMessage}</span>}
       </div>
 
-      <p className="text-default-600 text-sm">
+      <Description className="text-default-600 text-sm">
         Asigna qué rol de aplicación tendrán los empleados automáticamente según su cargo en la
         ficha.
-      </p>
+      </Description>
 
       <DataTable
         columns={columns}

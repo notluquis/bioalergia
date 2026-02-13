@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import dayjs from "dayjs";
 import { Button } from "@/components/ui/Button";
 
@@ -100,12 +101,12 @@ export function ServiceTemplateGallery({ onApply }: ServiceTemplateGalleryProps)
   return (
     <section className="space-y-4 border border-default-200 bg-background p-4 text-foreground text-sm">
       <div className="flex flex-col gap-1">
-        <h2 className="font-semibold text-default-500 text-sm uppercase tracking-wide">
+        <span className="font-semibold text-default-500 text-sm uppercase tracking-wide">
           Plantillas rápidas
-        </h2>
-        <p className="text-default-400 text-xs">
+        </span>
+        <Description className="text-default-400 text-xs">
           Usa plantillas predefinidas para acelerar la creación de servicios.
-        </p>
+        </Description>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {SERVICE_TEMPLATES.map((template) => (
@@ -114,8 +115,8 @@ export function ServiceTemplateGallery({ onApply }: ServiceTemplateGalleryProps)
             key={template.id}
           >
             <div className="space-y-2">
-              <p className="font-semibold text-foreground text-sm">{template.name}</p>
-              <p className="text-default-500 text-xs">{template.description}</p>
+              <span className="block font-semibold text-foreground text-sm">{template.name}</span>
+              <Description className="text-default-500 text-xs">{template.description}</Description>
               {template.category && (
                 <span className="inline-flex items-center rounded-full border border-default-200 bg-default-50 px-2 py-1 font-semibold text-default-500 text-xs uppercase tracking-wide">
                   {template.category}

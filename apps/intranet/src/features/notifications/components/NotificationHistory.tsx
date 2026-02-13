@@ -1,4 +1,4 @@
-import { Popover, ScrollShadow } from "@heroui/react";
+import { Description, Popover, ScrollShadow } from "@heroui/react";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { Bell, CheckCheck, Trash2, X } from "lucide-react";
@@ -57,7 +57,7 @@ export function NotificationHistory() {
         offset={20}
       >
         <div className="flex items-center justify-between border-default-100 border-b bg-content1/50 px-4 py-3 backdrop-blur-md">
-          <h3 className="font-semibold text-small">Notificaciones</h3>
+          <span className="font-semibold text-small">Notificaciones</span>
           <div className="flex gap-1">
             {unreadCount > 0 && (
               <Button
@@ -89,7 +89,7 @@ export function NotificationHistory() {
           {!hasNotifications ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-default-400">
               <Bell className="h-8 w-8 opacity-20" />
-              <p className="text-sm">No tienes notificaciones</p>
+              <Description className="text-sm">No tienes notificaciones</Description>
             </div>
           ) : (
             <ul className="flex flex-col">
@@ -141,27 +141,27 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             {notification.title && (
-              <p
+              <span
                 className={cn(
-                  "font-semibold text-xs",
+                  "block font-semibold text-xs",
                   !notification.read ? "text-foreground" : "text-default-600",
                 )}
               >
                 {notification.title}
-              </p>
+              </span>
             )}
             <span className="shrink-0 whitespace-nowrap text-[10px] text-default-400">
               {dayjs(notification.timestamp).format("DD/MM HH:mm")}
             </span>
           </div>
-          <p
+          <Description
             className={cn(
               "mt-0.5 text-xs leading-relaxed",
               !notification.read ? "text-foreground-800" : "text-default-500",
             )}
           >
             {notification.message}
-          </p>
+          </Description>
         </div>
 
         <Button

@@ -1,4 +1,4 @@
-import { Chip, Spinner } from "@heroui/react";
+import { Chip, Description, Spinner } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
@@ -100,7 +100,7 @@ export function ServicesOverviewContent() {
       {globalError && <Alert status="danger">{globalError}</Alert>}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className={TITLE_MD}>Resumen de servicios</h1>
+        <span className={TITLE_MD}>Resumen de servicios</span>
         {canManage && (
           <Link to="/services/create">
             <Button size="sm" variant="primary">
@@ -115,9 +115,13 @@ export function ServicesOverviewContent() {
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {stats.map((stat) => (
               <div className="space-y-1" key={stat.title}>
-                <p className="font-medium text-default-500 text-xs uppercase">{stat.title}</p>
-                <p className="font-bold text-lg text-primary">{stat.value}</p>
-                {stat.helper && <p className="text-default-400 text-xs">{stat.helper}</p>}
+                <span className="block font-medium text-default-500 text-xs uppercase">
+                  {stat.title}
+                </span>
+                <span className="block font-bold text-lg text-primary">{stat.value}</span>
+                {stat.helper && (
+                  <Description className="text-default-400 text-xs">{stat.helper}</Description>
+                )}
               </div>
             ))}
           </div>
@@ -127,7 +131,7 @@ export function ServicesOverviewContent() {
       <div className={CARD_COMPACT}>
         <div className="card-body">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <p className="font-semibold text-foreground text-sm">Filtros</p>
+            <span className="font-semibold text-foreground text-sm">Filtros</span>
             {activeFiltersCount > 0 && (
               <Chip color="accent" size="sm" variant="primary">
                 {activeFiltersCount} activos
@@ -144,10 +148,10 @@ export function ServicesOverviewContent() {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-base text-foreground">
+          <span className="font-semibold text-base text-foreground">
             Servicios{" "}
             {filteredServices.length !== services.length && `(${filteredServices.length})`}
-          </h2>
+          </span>
         </div>
 
         <ServiceList
@@ -176,8 +180,10 @@ export function ServicesOverviewContent() {
         <div className="card-body">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <p className="font-semibold text-foreground text-sm">Agenda unificada</p>
-              <p className="text-default-500 text-xs">Próximos pagos programados</p>
+              <span className="block font-semibold text-foreground text-sm">Agenda unificada</span>
+              <Description className="text-default-500 text-xs">
+                Próximos pagos programados
+              </Description>
             </div>
             <Link to="/services/agenda">
               <Button size="sm" variant="ghost">
@@ -207,9 +213,9 @@ export function ServicesOverviewContent() {
         />
 
         {createError && (
-          <p className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+          <Description className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
             {createError}
-          </p>
+          </Description>
         )}
       </Modal>
 
@@ -267,9 +273,9 @@ export function ServicesOverviewContent() {
             />
 
             {paymentError && (
-              <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+              <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
                 {paymentError}
-              </p>
+              </Description>
             )}
             <div className="flex justify-end gap-3">
               <Button

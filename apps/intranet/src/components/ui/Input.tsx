@@ -6,6 +6,7 @@ import {
   TextArea as HeroTextArea,
   InputGroup,
   Label,
+  SurfaceContext,
   TextField,
 } from "@heroui/react";
 import { Eye, EyeOff } from "lucide-react";
@@ -24,6 +25,7 @@ interface InputBaseProps {
   startContent?: React.ReactNode;
   endContent?: React.ReactNode;
   type?: string;
+  variant?: "primary" | "secondary";
 }
 
 type InputProps = InputBaseProps &
@@ -82,6 +84,7 @@ const renderTextArea = (
     descriptionElement: React.ReactNode;
     errorElement: React.ReactNode;
     commonTextFieldProps: { className?: string; isInvalid: boolean };
+    variant: "primary" | "secondary";
   },
 ) => (
   <TextField {...options.commonTextFieldProps}>
@@ -89,6 +92,7 @@ const renderTextArea = (
     <HeroTextArea
       className={cn("w-full", options.size === "xs" && "text-xs", options.className)}
       placeholder={props.placeholder}
+      variant={options.variant}
       {...props}
     />
 
@@ -111,6 +115,7 @@ const renderGroupedInput = (
     endContent?: React.ReactNode;
     placeholder?: string;
     hasError: boolean;
+    variant: "primary" | "secondary";
   },
 ) => (
   <TextField {...options.commonTextFieldProps}>
@@ -146,6 +151,7 @@ const renderSimpleInput = (
     commonTextFieldProps: { className?: string; isInvalid: boolean };
     inputType?: string;
     placeholder?: string;
+    variant: "primary" | "secondary";
   },
 ) => (
   <TextField {...options.commonTextFieldProps}>
@@ -154,6 +160,7 @@ const renderSimpleInput = (
       className={cn("w-full", options.size === "xs" && "text-xs", options.className)}
       type={options.inputType}
       placeholder={options.placeholder}
+      variant={options.variant}
       {...props}
     />
 
@@ -162,6 +169,7 @@ const renderSimpleInput = (
   </TextField>
 );
 export function Input(props: Props) {
+  const surface = React.useContext(SurfaceContext);
   const {
     as = "input",
     className,
@@ -171,6 +179,7 @@ export function Input(props: Props) {
     label,
     size = "md",
     type,
+    variant,
     ...rest
   } = props;
 
@@ -180,6 +189,7 @@ export function Input(props: Props) {
 
   const finalEndContent = passwordToggle ?? explicitEndContent ?? rightElement;
   const hasGroup = Boolean(startContent) || Boolean(finalEndContent);
+  const resolvedVariant = variant ?? (surface?.variant ? "secondary" : "primary");
 
   const commonTextFieldProps = {
     className: containerClassName,
@@ -198,6 +208,7 @@ export function Input(props: Props) {
       errorElement,
       labelElement,
       size,
+      variant: resolvedVariant,
     });
   }
 
@@ -214,6 +225,7 @@ export function Input(props: Props) {
       placeholder: props.placeholder,
       size,
       startContent,
+      variant: resolvedVariant,
     });
   }
 
@@ -226,5 +238,6 @@ export function Input(props: Props) {
     labelElement,
     placeholder: props.placeholder,
     size,
+    variant: resolvedVariant,
   });
 }

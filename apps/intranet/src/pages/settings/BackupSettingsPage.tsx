@@ -1,4 +1,4 @@
-import { Checkbox } from "@heroui/react";
+import { Checkbox, Description, Link } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -198,7 +198,7 @@ export function BackupSettingsPage() {
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <CheckCircle className="size-5 text-success" />
-              <h3 className="font-semibold text-base">Detalle del último backup</h3>
+              <span className="font-semibold text-base">Detalle del último backup</span>
             </div>
             <span className="text-default-500 text-xs">
               {lastCompletedBackupResult.filename || "-"}
@@ -207,27 +207,27 @@ export function BackupSettingsPage() {
 
           <div className="mb-4 grid gap-3 sm:grid-cols-3">
             <div className="rounded-lg bg-background p-3">
-              <p className="text-default-500 text-xs">Duración</p>
-              <p className="font-semibold">
+              <Description className="text-default-500 text-xs">Duración</Description>
+              <span className="font-semibold">
                 {Math.round((lastCompletedBackupResult.durationMs ?? 0) / 1000)}s
-              </p>
+              </span>
             </div>
             <div className="rounded-lg bg-background p-3">
-              <p className="text-default-500 text-xs">Tamaño</p>
-              <p className="font-semibold">
+              <Description className="text-default-500 text-xs">Tamaño</Description>
+              <span className="font-semibold">
                 {formatFileSize(lastCompletedBackupResult.sizeBytes ?? 0)}
-              </p>
+              </span>
             </div>
             <div className="rounded-lg bg-background p-3">
-              <p className="text-default-500 text-xs">Tablas</p>
-              <p className="font-semibold">{lastCompletedBackupResult.tables?.length ?? 0}</p>
+              <Description className="text-default-500 text-xs">Tablas</Description>
+              <span className="font-semibold">{lastCompletedBackupResult.tables?.length ?? 0}</span>
             </div>
           </div>
 
           {lastCompletedBackupResult.stats &&
           Object.keys(lastCompletedBackupResult.stats).length > 0 ? (
             <div className="rounded-lg border border-default-200 bg-background p-3">
-              <p className="mb-2 font-medium text-sm">Conteo por tabla</p>
+              <span className="mb-2 block font-medium text-sm">Conteo por tabla</span>
               <div className="max-h-56 overflow-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -293,8 +293,8 @@ export function BackupSettingsPage() {
         <div className="rounded-xl bg-default-50/50">
           <div className="flex items-center justify-between border-default-100 border-b p-4">
             <div>
-              <h2 className="font-semibold text-lg">Backups Completos</h2>
-              <p className="text-default-500 text-sm">Snapshots completos</p>
+              <span className="font-semibold text-lg">Backups Completos</span>
+              <Description className="text-default-500 text-sm">Snapshots completos</Description>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -335,8 +335,8 @@ export function BackupSettingsPage() {
           <div className="border-default-100 border-b p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-semibold text-lg">Exports Incrementales</h2>
-                <p className="text-default-500 text-sm">Cambios por hora</p>
+                <span className="font-semibold text-lg">Exports Incrementales</span>
+                <Description className="text-default-500 text-sm">Cambios por hora</Description>
               </div>
               <span className="rounded-full bg-default-100 px-2 py-1 font-medium text-xs">
                 {auditExports.length}
@@ -355,10 +355,10 @@ export function BackupSettingsPage() {
                       <FileText className="size-4" />
                     </div>
                     <div>
-                      <p className="font-medium">{backup.name}</p>
-                      <p className="text-default-500 text-xs">
+                      <span className="block font-medium">{backup.name}</span>
+                      <Description className="text-default-500 text-xs">
                         {dayjs(backup.createdTime).format("DD MMM HH:mm")}
-                      </p>
+                      </Description>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -431,27 +431,27 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
           <div>
             <div className="flex items-center gap-2">
               <CheckCircle className="size-4 text-success" />
-              <p className="font-medium">{backup.name}</p>
+              <span className="font-medium">{backup.name}</span>
             </div>
-            <p className="text-default-500 text-sm">
+            <Description className="text-default-500 text-sm">
               {dayjs(backup.createdTime).format("DD MMM YYYY, HH:mm")} •{" "}
               {formatFileSize(Number(backup.size))}
-            </p>
+            </Description>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {backup.webViewLink && (
-            <a
-              href={backup.webViewLink}
-              target="_blank"
-              rel="noreferrer"
+            <Link
               className="inline-flex h-8 w-8 items-center justify-center rounded-medium hover:bg-default-100"
+              href={backup.webViewLink}
+              rel="noreferrer"
+              target="_blank"
               onClick={(event) => {
                 event.stopPropagation();
               }}
             >
               <Download className="size-4" />
-            </a>
+            </Link>
           )}
         </div>
       </Button>
@@ -538,7 +538,7 @@ function BackupTablesList({
   return (
     <>
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="font-medium text-sm">Seleccionar tablas</h4>
+        <span className="font-medium text-sm">Seleccionar tablas</span>
         <Button
           className="text-primary text-xs hover:underline"
           onPress={selectAll}
@@ -551,13 +551,14 @@ function BackupTablesList({
 
       <div className="mb-3">
         {tables.length === 0 && (
-          <p className="text-default-500 text-sm">No hay tablas en este backup.</p>
+          <Description className="text-default-500 text-sm">
+            No hay tablas en este backup.
+          </Description>
         )}
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
           {tables.map((table) => (
-            // biome-ignore lint/a11y/noLabelWithoutControl: checkbox is interactive
-            <label
+            <div
               className={cn(
                 "flex cursor-pointer items-center gap-2 rounded-lg border border-default-200 p-2 text-sm transition-colors hover:bg-default-50",
                 selectedTables.includes(table) ? "border-primary bg-primary/5" : "",
@@ -567,10 +568,10 @@ function BackupTablesList({
               <Checkbox
                 isSelected={selectedTables.includes(table)}
                 onChange={() => toggleTable(table)}
-              />
-
-              <span className="flex-1 truncate">{table}</span>
-            </label>
+              >
+                <span className="flex-1 truncate">{table}</span>
+              </Checkbox>
+            </div>
           ))}
         </div>
       </div>
@@ -617,8 +618,8 @@ function StatCard({
       <div className="flex items-center gap-3">
         <div className={cn("rounded-lg p-2", bgColors[color])}>{icon}</div>
         <div>
-          <p className="text-default-500 text-sm">{label}</p>
-          <p className="font-bold text-2xl">{value}</p>
+          <Description className="text-default-500 text-sm">{label}</Description>
+          <span className="font-bold text-2xl">{value}</span>
         </div>
       </div>
     </div>

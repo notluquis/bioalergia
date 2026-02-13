@@ -1,4 +1,4 @@
-import { Alert, Spinner } from "@heroui/react";
+import { Alert, Description, Spinner } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, AlertTriangle, ArrowRight } from "lucide-react";
 import { Suspense, useState } from "react";
@@ -44,7 +44,9 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
             fallback={
               <div className="py-8 text-center">
                 <Spinner className="text-primary" size="lg" />
-                <p className="mt-2 text-sm opacity-70">Verificando usuarios afectados...</p>
+                <Description className="mt-2 text-sm opacity-70">
+                  Verificando usuarios afectados...
+                </Description>
               </div>
             }
           >
@@ -105,7 +107,9 @@ function DeleteRoleForm({
   return (
     <>
       <div className="space-y-4 py-2">
-        <p>¿Estás seguro que deseas eliminar este rol? Esta acción no se puede deshacer.</p>
+        <Description>
+          ¿Estás seguro que deseas eliminar este rol? Esta acción no se puede deshacer.
+        </Description>
 
         {hasUsers ? (
           <div className="space-y-3 rounded-lg border border-warning-soft-hover bg-warning/10 p-4">
@@ -113,10 +117,10 @@ function DeleteRoleForm({
               <AlertTriangle className="mt-0.5 h-5 w-5" />
               <div className="font-medium">Usuarios afectados</div>
             </div>
-            <p className="text-sm">
+            <Description className="text-sm">
               Hay <strong>{users.length} usuarios</strong> asignados a este rol. Debes moverlos a
               otro rol antes de eliminarlo.
-            </p>
+            </Description>
 
             <ul className="max-h-32 space-y-1 overflow-y-auto rounded bg-background p-2 text-xs">
               {users.map((u) => (
@@ -128,15 +132,14 @@ function DeleteRoleForm({
             </ul>
 
             <div className="form-control w-full">
-              <label className="label" htmlFor="target-role-select">
-                <span className="label-text flex items-center gap-2 font-medium">
-                  <ArrowRight className="h-4 w-4" />
-                  Mover usuarios a:
-                </span>
-              </label>
+              <span className="mb-1 flex items-center gap-2 font-medium text-sm">
+                <ArrowRight className="h-4 w-4" />
+                Mover usuarios a:
+              </span>
               <Select
                 aria-label="Seleccionar rol de destino"
                 className="w-full"
+                label="Rol de destino"
                 placeholder="Seleccionar rol..."
                 value={targetRoleId}
                 onChange={(key) => setTargetRoleId(key ? String(key) : "")}
@@ -150,9 +153,9 @@ function DeleteRoleForm({
             </div>
           </div>
         ) : (
-          <p className="text-sm opacity-70">
+          <Description className="text-sm opacity-70">
             No hay usuarios asignados a este rol. Es seguro eliminarlo.
-          </p>
+          </Description>
         )}
       </div>
 

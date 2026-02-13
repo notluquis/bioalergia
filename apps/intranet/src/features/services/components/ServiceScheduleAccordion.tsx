@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 
@@ -132,11 +133,13 @@ function ServiceScheduleAccordion({
     return (
       <section className="space-y-3 rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm">
         <header className="flex items-center justify-between">
-          <h2 className="font-semibold text-default-500 text-sm uppercase tracking-wide">
+          <span className="font-semibold text-default-500 text-sm uppercase tracking-wide">
             Agenda de vencimientos
-          </h2>
+          </span>
         </header>
-        <p className="text-default-500 text-xs">No hay cuotas generadas para este servicio.</p>
+        <Description className="text-default-500 text-xs">
+          No hay cuotas generadas para este servicio.
+        </Description>
       </section>
     );
   }
@@ -144,9 +147,9 @@ function ServiceScheduleAccordion({
   return (
     <section className="space-y-3 rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm">
       <header className="flex items-center justify-between">
-        <h2 className="font-semibold text-default-500 text-sm uppercase tracking-wide">
+        <span className="font-semibold text-default-500 text-sm uppercase tracking-wide">
           Agenda de vencimientos
-        </h2>
+        </span>
         <span className="text-default-400 text-xs">
           {service.pending_count + service.overdue_count} pendientes totales
         </span>
@@ -168,10 +171,12 @@ function ServiceScheduleAccordion({
                 variant="ghost"
               >
                 <div>
-                  <p className="font-semibold text-foreground text-sm capitalize">{group.label}</p>
-                  <p className="text-default-400 text-xs">
+                  <span className="block font-semibold text-foreground text-sm capitalize">
+                    {group.label}
+                  </span>
+                  <Description className="text-default-400 text-xs">
                     {group.items.length} {group.items.length === 1 ? "cuota" : "cuotas"}
-                  </p>
+                  </Description>
                 </div>
                 <span
                   className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-default-200 bg-default-50 font-semibold text-default-500 text-xs transition-transform ${
@@ -204,12 +209,12 @@ function ServiceScheduleAccordion({
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="font-semibold text-foreground text-sm">
+                          <span className="block font-semibold text-foreground text-sm">
                             {currencyFormatter.format(item.expected_amount)}
-                          </p>
-                          <p className="text-default-400 text-xs">
+                          </span>
+                          <Description className="text-default-400 text-xs">
                             Vence el {dateFormatter.format(dueDate.toDate())}
-                          </p>
+                          </Description>
                         </div>
                         <span
                           className={`rounded-full px-3 py-1 font-semibold text-xs uppercase tracking-wide ${

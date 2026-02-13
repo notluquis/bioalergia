@@ -1,4 +1,4 @@
-import { Surface } from "@heroui/react";
+import { Description, Surface } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 
 import { Alert } from "@/components/ui/Alert";
@@ -20,10 +20,12 @@ export function ServicesCreateContent() {
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="font-semibold text-foreground text-sm">Plantillas rápidas</p>
-              <p className="text-default-500 text-xs">
+              <span className="block font-semibold text-foreground text-sm">
+                Plantillas rápidas
+              </span>
+              <Description className="text-default-500 text-xs">
                 Aplica una plantilla sugerida y ajusta los datos antes de guardar.
-              </p>
+              </Description>
             </div>
             <Link to="/services/templates">
               <Button size="sm" variant="ghost">
@@ -51,7 +53,9 @@ export function ServicesCreateContent() {
 
       <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <div className="space-y-4">
-          <p className="font-semibold text-foreground text-sm">Formulario de creación</p>
+          <span className="block font-semibold text-foreground text-sm">
+            Formulario de creación
+          </span>
           <ServiceForm
             initialValues={selectedTemplate?.payload}
             onCancel={() => {
@@ -63,7 +67,9 @@ export function ServicesCreateContent() {
             submitLabel="Crear servicio"
           />
 
-          {createError && <p className="text-rose-600 text-sm">{createError}</p>}
+          {createError && (
+            <Description className="text-rose-600 text-sm">{createError}</Description>
+          )}
         </div>
       </Surface>
     </section>

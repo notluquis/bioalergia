@@ -1,4 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
+import { Description } from "@heroui/react";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { PlusCircle } from "lucide-react";
 import { useState } from "react";
@@ -54,32 +55,29 @@ export function InventoryCategoryManager() {
   return (
     <section className="space-y-5 bg-background p-6">
       <div className="space-y-1">
-        <h2 className="font-semibold text-lg text-secondary drop-shadow-sm">
+        <span className="block font-semibold text-lg text-secondary drop-shadow-sm">
           Categorías de Inventario
-        </h2>
-        <p className="text-default-600 text-sm">
+        </span>
+        <Description className="text-default-600 text-sm">
           Administra las categorías para organizar los items del inventario.
-        </p>
+        </Description>
       </div>
 
       <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={handleAddCategory}>
-        <label className="flex-1" htmlFor="new-category-name">
-          <span className="font-semibold text-default-500 text-xs uppercase tracking-wide">
-            Nueva Categoría
-          </span>
-          <Input
-            className="w-full"
-            disabled={createMutation.isPending}
-            enterKeyHint="done"
-            id="new-category-name"
-            onChange={(e) => {
-              setNewCategoryName(e.target.value);
-            }}
-            placeholder="Ej: Insumos Médicos"
-            type="text"
-            value={newCategoryName}
-          />
-        </label>
+        <Input
+          className="w-full flex-1"
+          containerClassName="gap-1"
+          disabled={createMutation.isPending}
+          enterKeyHint="done"
+          id="new-category-name"
+          label="Nueva categoría"
+          onChange={(e) => {
+            setNewCategoryName(e.target.value);
+          }}
+          placeholder="Ej: Insumos Médicos"
+          type="text"
+          value={newCategoryName}
+        />
         <Button
           className="inline-flex items-center gap-2"
           disabled={createMutation.isPending || !newCategoryName.trim()}
@@ -92,12 +90,16 @@ export function InventoryCategoryManager() {
         </Button>
       </form>
 
-      {error && <p className="text-danger text-sm">{error}</p>}
+      {error && <Description className="text-danger text-sm">{error}</Description>}
 
       <div className="max-h-60 overflow-y-auto border border-default-200 bg-background p-3">
-        {loading && <p className="text-foreground text-sm">Cargando categorías...</p>}
+        {loading && (
+          <Description className="text-foreground text-sm">Cargando categorías...</Description>
+        )}
         {!loading && categories.length === 0 && (
-          <p className="text-foreground text-sm">No hay categorías definidas.</p>
+          <Description className="text-foreground text-sm">
+            No hay categorías definidas.
+          </Description>
         )}
         <ul className="space-y-2">
           {categories.map((cat: InventoryCategory) => (

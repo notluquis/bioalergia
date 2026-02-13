@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import type { ChangeEvent } from "react";
 
 import { Button } from "@/components/ui/Button";
@@ -65,10 +66,10 @@ export function ServicesFilterPanel({ filters, onChange, services }: ServicesFil
     <section className="flex flex-col gap-4 border border-default-200 bg-background p-4 text-foreground text-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-semibold text-foreground text-sm">Filtros rápidos</p>
-          <p className="text-default-400 text-xs">
+          <span className="block font-semibold text-foreground text-sm">Filtros rápidos</span>
+          <Description className="text-default-400 text-xs">
             Filtra por estado, tipo o busca por nombre/detalle.
-          </p>
+          </Description>
         </div>
         <Button
           className="font-semibold text-primary text-xs uppercase tracking-wide hover:underline"
@@ -94,7 +95,9 @@ export function ServicesFilterPanel({ filters, onChange, services }: ServicesFil
         </div>
 
         <div>
-          <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">Estado</p>
+          <span className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+            Estado
+          </span>
           <div className="mt-2 flex flex-wrap gap-2">
             {STATUS_ORDER.map((status) => (
               <Button
@@ -118,9 +121,9 @@ export function ServicesFilterPanel({ filters, onChange, services }: ServicesFil
         </div>
 
         <div>
-          <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+          <span className="font-semibold text-default-500 text-xs uppercase tracking-wide">
             Tipo de servicio
-          </p>
+          </span>
           <div className="mt-2 flex flex-wrap gap-2">
             {typeOptions.map(([type, count]) => {
               const isActive = filters.types.size === 0 || filters.types.has(type);

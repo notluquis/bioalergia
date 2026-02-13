@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
@@ -233,11 +234,13 @@ function ServiceHeader({
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="space-y-1">
-        <h1 className="break-all font-bold text-2xl text-primary drop-shadow-sm">{service.name}</h1>
-        <p className="text-foreground text-sm">
+        <span className="block break-all font-bold text-2xl text-primary drop-shadow-sm">
+          {service.name}
+        </span>
+        <Description className="text-foreground text-sm">
           {service.detail || "Gasto"} · {getServiceTypeLabel(service.service_type)} ·{" "}
           {getOwnershipLabel(service.ownership)}
-        </p>
+        </Description>
         <div className="flex flex-wrap items-center gap-3 text-default-500 text-xs">
           <span>Inicio {dayjs(service.start_date).format("DD MMM YYYY")}</span>
           <span>Frecuencia {getFrequencyLabel(service.frequency).toLowerCase()}</span>
@@ -270,36 +273,52 @@ function ServiceSummarySection({ service }: { service: ServiceSummary }) {
   return (
     <section className="grid gap-4 rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm sm:grid-cols-3 lg:grid-cols-5">
       <div>
-        <p className="text-default-400 text-xs uppercase tracking-wide">Monto base</p>
-        <p className="font-semibold text-foreground text-lg">
+        <Description className="text-default-400 text-xs uppercase tracking-wide">
+          Monto base
+        </Description>
+        <span className="block font-semibold text-foreground text-lg">
           ${service.default_amount.toLocaleString("es-CL")}
-        </p>
+        </span>
       </div>
       <div>
-        <p className="text-default-400 text-xs uppercase tracking-wide">Pendientes</p>
-        <p className="font-semibold text-foreground text-lg">{service.pending_count}</p>
+        <Description className="text-default-400 text-xs uppercase tracking-wide">
+          Pendientes
+        </Description>
+        <span className="block font-semibold text-foreground text-lg">{service.pending_count}</span>
       </div>
       <div>
-        <p className="text-default-400 text-xs uppercase tracking-wide">Vencidos</p>
-        <p className="font-semibold text-lg text-rose-600">{service.overdue_count}</p>
+        <Description className="text-default-400 text-xs uppercase tracking-wide">
+          Vencidos
+        </Description>
+        <span className="block font-semibold text-lg text-rose-600">{service.overdue_count}</span>
       </div>
       <div>
-        <p className="text-default-400 text-xs uppercase tracking-wide">Total pagado</p>
-        <p className="font-semibold text-emerald-600 text-lg">
+        <Description className="text-default-400 text-xs uppercase tracking-wide">
+          Total pagado
+        </Description>
+        <span className="block font-semibold text-emerald-600 text-lg">
           ${Number(service.total_paid ?? 0).toLocaleString("es-CL")}
-        </p>
+        </span>
       </div>
       <div>
-        <p className="text-default-400 text-xs uppercase tracking-wide">Modo de cálculo</p>
-        <p className="font-semibold text-foreground text-sm">
+        <Description className="text-default-400 text-xs uppercase tracking-wide">
+          Modo de cálculo
+        </Description>
+        <span className="block font-semibold text-foreground text-sm">
           {getAmountModeLabel(service.amount_indexation)}
-        </p>
+        </span>
       </div>
       <div>
-        <p className="text-default-400 text-xs uppercase tracking-wide">Recargo</p>
-        <p className="font-semibold text-foreground text-sm">{getLateFeeLabel(service)}</p>
+        <Description className="text-default-400 text-xs uppercase tracking-wide">
+          Recargo
+        </Description>
+        <span className="block font-semibold text-foreground text-sm">
+          {getLateFeeLabel(service)}
+        </span>
         {service.late_fee_grace_days != null && service.late_fee_mode !== "NONE" && (
-          <p className="text-default-400 text-xs">Tras {service.late_fee_grace_days} días</p>
+          <Description className="text-default-400 text-xs">
+            Tras {service.late_fee_grace_days} días
+          </Description>
         )}
       </div>
     </section>
@@ -310,30 +329,42 @@ function ServiceMetaSection({ service }: { service: ServiceSummary }) {
   return (
     <section className="grid gap-4 rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm md:grid-cols-3">
       <div>
-        <p className="text-default-400 text-xs uppercase tracking-wide">Contraparte</p>
-        <p className="font-semibold text-foreground">{getCounterpartSummary(service)}</p>
+        <Description className="text-default-400 text-xs uppercase tracking-wide">
+          Contraparte
+        </Description>
+        <span className="block font-semibold text-foreground">
+          {getCounterpartSummary(service)}
+        </span>
         {service.counterpart_account_identifier && (
-          <p className="text-default-500 text-xs">
+          <Description className="text-default-500 text-xs">
             Cuenta {service.counterpart_account_identifier}
             {service.counterpart_account_bank_name
               ? ` · ${service.counterpart_account_bank_name}`
               : ""}
-          </p>
+          </Description>
         )}
         {service.account_reference && (
-          <p className="text-default-500 text-xs">Referencia: {service.account_reference}</p>
+          <Description className="text-default-500 text-xs">
+            Referencia: {service.account_reference}
+          </Description>
         )}
       </div>
       <div>
-        <p className="text-default-400 text-xs uppercase tracking-wide">Emisión</p>
-        <p className="font-semibold text-foreground">{getEmissionSummary(service)}</p>
+        <Description className="text-default-400 text-xs uppercase tracking-wide">
+          Emisión
+        </Description>
+        <span className="block font-semibold text-foreground">{getEmissionSummary(service)}</span>
       </div>
       <div>
-        <p className="text-default-400 text-xs uppercase tracking-wide">Clasificación</p>
-        <p className="font-semibold text-foreground">
+        <Description className="text-default-400 text-xs uppercase tracking-wide">
+          Clasificación
+        </Description>
+        <span className="block font-semibold text-foreground">
           {getObligationLabel(service.obligation_type)}
-        </p>
-        <p className="text-default-500 text-xs">{getRecurrenceLabel(service.recurrence_type)}</p>
+        </span>
+        <Description className="text-default-500 text-xs">
+          {getRecurrenceLabel(service.recurrence_type)}
+        </Description>
       </div>
     </section>
   );
@@ -342,8 +373,8 @@ function ServiceMetaSection({ service }: { service: ServiceSummary }) {
 function ServiceNotes({ notes }: { notes: string }) {
   return (
     <div className="rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm">
-      <p className="text-default-400 text-xs uppercase tracking-wide">Notas</p>
-      <p>{notes}</p>
+      <Description className="text-default-400 text-xs uppercase tracking-wide">Notas</Description>
+      <Description>{notes}</Description>
     </div>
   );
 }
@@ -454,7 +485,11 @@ function RegenerateServiceModal({
             value={values.emissionDay ?? service.emission_day ?? ""}
           />
         )}
-        {error && <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">{error}</p>}
+        {error && (
+          <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+            {error}
+          </Description>
+        )}
         <div className="flex justify-end gap-3">
           <Button disabled={regenerating} onClick={onClose} type="button" variant="secondary">
             Cancelar
@@ -471,9 +506,9 @@ function RegenerateServiceModal({
 function ServiceLoadingOverlay() {
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/40 backdrop-blur-sm">
-      <p className="rounded-full bg-background px-4 py-2 font-semibold text-primary text-sm shadow">
+      <Description className="rounded-full bg-background px-4 py-2 font-semibold text-primary text-sm shadow">
         Cargando servicio...
-      </p>
+      </Description>
     </div>
   );
 }

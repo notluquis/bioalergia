@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
@@ -328,7 +329,11 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
         onChange={handleChange}
       />
 
-      {error && <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">{error}</p>}
+      {error && (
+        <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+          {error}
+        </Description>
+      )}
       <div className="flex justify-end gap-3">
         <Button disabled={submitting} onClick={onCancel} type="button" variant="secondary">
           Cancelar

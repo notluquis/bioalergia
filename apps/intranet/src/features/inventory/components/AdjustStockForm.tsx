@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import type React from "react";
 import { useState } from "react";
 
@@ -28,8 +29,8 @@ export function AdjustStockForm({ item, onCancel, onSave, saving }: AdjustStockF
   return (
     <form className="space-y-4 text-sm" onSubmit={handleSubmit}>
       <div>
-        <h3 className="font-bold text-lg">{item.name}</h3>
-        <p className="text-default-500">Stock actual: {item.current_stock}</p>
+        <span className="block font-bold text-lg">{item.name}</span>
+        <Description className="text-default-500">Stock actual: {item.current_stock}</Description>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Input

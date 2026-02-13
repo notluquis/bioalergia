@@ -1,4 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
+import { Description } from "@heroui/react";
 import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
@@ -153,7 +154,9 @@ export function AddUserFormContainer({
     return (
       <div className="mx-auto max-w-2xl space-y-8">
         <div className="surface-elevated rounded-3xl p-6 shadow-lg">
-          <p className="text-danger">Error al cargar datos: {String(peopleError)}</p>
+          <Description className="text-danger">
+            Error al cargar datos: {String(peopleError)}
+          </Description>
           <Button onClick={onCancel} className="mt-4">
             Volver
           </Button>
@@ -220,11 +223,11 @@ function AddUserFormCard({
     <div className="mx-auto max-w-2xl space-y-8">
       {showPageHeader ? (
         <div className="space-y-2">
-          <h1 className="font-bold text-3xl text-primary">Agregar usuario</h1>
-          <p className="text-default-600">
+          <span className="block font-bold text-3xl text-primary">Agregar usuario</span>
+          <Description className="text-default-600">
             Crea un nuevo usuario en el sistema. Se generará una contraseña temporal y el usuario
             deberá completar su configuración de seguridad al iniciar sesión.
-          </p>
+          </Description>
         </div>
       ) : null}
 
@@ -286,10 +289,10 @@ function PersonLinkSection({
         <Users className="mt-0.5 h-5 w-5 text-info" />
         <div className="flex-1 space-y-3">
           <div>
-            <p className="font-medium text-info">Vincular a persona existente</p>
-            <p className="text-default-600 text-xs">
+            <span className="block font-medium text-info">Vincular a persona existente</span>
+            <Description className="text-default-600 text-xs">
               Si esta persona ya existe en el sistema, puedes vincular el usuario directamente.
-            </p>
+            </Description>
           </div>
           <div className="space-y-2">
             <form.Field name="personId">
@@ -343,7 +346,7 @@ function UserDataFields({
           return (
             <>
               <div className="md:col-span-2">
-                <h3 className="mb-4 font-semibold text-foreground">Datos personales</h3>
+                <span className="mb-4 block font-semibold text-foreground">Datos personales</span>
               </div>
               <form.Field name="names">
                 {(field) => (
@@ -396,7 +399,7 @@ function UserDataFields({
       </form.Subscribe>
 
       <div className="md:col-span-2">
-        <h3 className="mt-2 mb-4 font-semibold text-foreground">Datos de cuenta</h3>
+        <span className="mt-2 mb-4 block font-semibold text-foreground">Datos de cuenta</span>
       </div>
 
       <div className="md:col-span-2">
@@ -466,11 +469,11 @@ function SecuritySection({ form }: Pick<AddUserFormCardProps, "form">) {
       <div className="flex items-start gap-3">
         <Shield className="mt-0.5 h-5 w-5 text-primary" />
         <div className="space-y-1">
-          <p className="font-medium text-primary">Seguridad reforzada</p>
-          <p className="text-default-600 text-xs">
+          <span className="block font-medium text-primary">Seguridad reforzada</span>
+          <Description className="text-default-600 text-xs">
             Si activas esta opción, el usuario estará <strong>obligado</strong> a configurar Passkey
             o MFA (Google Authenticator) antes de poder usar el sistema.
-          </p>
+          </Description>
         </div>
       </div>
       <div className="mt-4 space-y-3 pl-8">

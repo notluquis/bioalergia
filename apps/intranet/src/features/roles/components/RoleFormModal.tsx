@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { Description, Spinner } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, User as UserIcon } from "lucide-react";
@@ -121,7 +121,9 @@ function RoleBaseForm({ onClose, roleEntity, userData }: RoleBaseFormProps) {
       );
     }
 
-    return <p className="text-xs italic opacity-50">No hay usuarios con este rol.</p>;
+    return (
+      <Description className="text-xs italic opacity-50">No hay usuarios con este rol.</Description>
+    );
   };
 
   return (
