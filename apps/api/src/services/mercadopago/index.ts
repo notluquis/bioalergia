@@ -15,9 +15,9 @@ export const MercadoPagoService = {
   /**
    * List available reports from MP API
    */
-  async listReports(type: "release" | "settlement") {
+  async listReports(type: "release" | "settlement", options?: { silent?: boolean }) {
     const baseUrl = type === "release" ? MP_API.RELEASE : MP_API.SETTLEMENT;
-    const res = await mpFetch("/list", baseUrl);
+    const res = await mpFetch("/list", baseUrl, { log: !options?.silent });
     return safeMpJson(res);
   },
 

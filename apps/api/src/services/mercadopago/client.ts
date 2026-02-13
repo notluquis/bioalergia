@@ -14,11 +14,18 @@ export function checkMpConfig() {
 }
 
 // Generic fetcher for both report types
-export async function mpFetch(endpoint: string, baseUrl: string, options: RequestInit = {}) {
+export async function mpFetch(
+  endpoint: string,
+  baseUrl: string,
+  options: RequestInit & { log?: boolean } = {},
+) {
   checkMpConfig();
   const url = endpoint ? `${baseUrl}${endpoint}` : baseUrl;
+  const shouldLog = options.log ?? true;
 
-  console.log(`[MP API] Request: ${options.method || "GET"} ${url}`);
+  if (shouldLog) {
+    console.log(`[MP API] Request: ${options.method || "GET"} ${url}`);
+  }
 
   const res = await fetch(url, {
     ...options,
@@ -31,11 +38,15 @@ export async function mpFetch(endpoint: string, baseUrl: string, options: Reques
 
   if (!res.ok) {
     const text = await res.text();
-    console.error(`[MP API] Error Response: ${res.status} - ${text}`);
+    if (shouldLog) {
+      console.error(`[MP API] Error Response: ${res.status} - ${text}`);
+    }
     throw new Error(`MP API error: ${res.status} - ${text}`);
   }
 
-  console.log(`[MP API] Success Response: ${res.status}`);
+  if (shouldLog) {
+    console.log(`[MP API] Success Response: ${res.status}`);
+  }
   return res;
 }
 

@@ -16,9 +16,7 @@ type ReportType = "release" | "settlement";
 type ProcessedFilesKey = ReportType | "webhook";
 
 const JOB_TYPE = "mp-auto-sync";
-const DEFAULT_CRON = "*/20 * * * *";
-const PEAK_CRON = "*/20 9-23 * * 1-6";
-const OFF_PEAK_CRON = "0 */5 * * *";
+const DEFAULT_CRON = "20 17 * * *";
 const DEFAULT_TIMEZONE = "America/Santiago";
 const MAX_PROCESSED_FILES = 250;
 const MAX_PROCESS_PER_RUN = 4;
@@ -27,9 +25,6 @@ const ADVISORY_LOCK_KEY = 924_017_221;
 const JITTER_MAX_MS = 45_000;
 const PROCESSED_TTL_DAYS = 45;
 const REPORT_READY_REGEX = /ready|generated|available|finished|success/i;
-const REPORT_READY_WAIT_MS = 10 * 60 * 1000;
-const REPORT_READY_POLL_MS = 30 * 1000;
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const SETTINGS_KEYS = {
   lastGenerated: (type: ReportType) => `mp:lastGenerated:${type}`,
@@ -45,51 +40,24 @@ export function startMercadoPagoScheduler() {
   const cronExpression = process.env.MP_AUTO_SYNC_CRON || DEFAULT_CRON;
   const timezone = process.env.MP_AUTO_SYNC_TIMEZONE || DEFAULT_TIMEZONE;
 
-  if (process.env.MP_AUTO_SYNC_CRON) {
-    if (!cron.validate(cronExpression)) {
-      logWarn("mp.scheduler.disabled", {
-        reason: "invalid_cron",
-        cronExpression,
-      });
-      return;
-    }
-
-    cron.schedule(
+  if (!cron.validate(cronExpression)) {
+    logWarn("mp.scheduler.disabled", {
+      reason: "invalid_cron",
       cronExpression,
-      async () => {
-        await runMercadoPagoAutoSync({ trigger: `cron:${cronExpression}` });
-      },
-      { timezone },
-    );
-
-    logEvent("mp.scheduler.started", {
-      cronExpression,
-      timezone,
     });
     return;
   }
 
   cron.schedule(
-    PEAK_CRON,
+    cronExpression,
     async () => {
-      await runMercadoPagoAutoSync({ trigger: `cron:${PEAK_CRON}` });
-    },
-    { timezone },
-  );
-
-  cron.schedule(
-    OFF_PEAK_CRON,
-    async () => {
-      if (isPeakWindow()) {
-        return;
-      }
-      await runMercadoPagoAutoSync({ trigger: `cron:${OFF_PEAK_CRON}` });
+      await runMercadoPagoAutoSync({ trigger: `cron:${cronExpression}` });
     },
     { timezone },
   );
 
   logEvent("mp.scheduler.started", {
-    cronExpression: `${PEAK_CRON} | ${OFF_PEAK_CRON}`,
+    cronExpression,
     timezone,
   });
 }
@@ -208,7 +176,14 @@ async function ensureDailyReport(
       return reports;
     }
 
-    return await waitForReportReady(type, targetDate, jobId);
+    logEvent("mp.autoSync.reportPending", {
+      type,
+      reason: "exists_not_ready",
+      status: existing.status,
+      begin: existing.begin_date,
+      end: existing.end_date,
+    });
+    return reports;
   }
 
   const lastGenerated = await getValidSettingDate(SETTINGS_KEYS.lastGenerated(type));
@@ -246,32 +221,7 @@ async function ensureDailyReport(
   await updateSetting(SETTINGS_KEYS.lastGenerated(type), targetDate.toISOString());
   logEvent("mp.autoSync.reportCreated", { type, begin: beginDate, end: endDate });
 
-  return await waitForReportReady(type, targetDate, jobId);
-}
-
-async function waitForReportReady(type: ReportType, targetDate: Date, jobId: string) {
-  const deadline = Date.now() + REPORT_READY_WAIT_MS;
-  let lastReports: MPReportSummary[] = [];
-
-  while (Date.now() < deadline) {
-    updateJobProgress(jobId, 2, `Esperando reporte ${type} listo`);
-    const reports = (await MercadoPagoService.listReports(type)) as MPReportSummary[];
-    lastReports = reports;
-    const ready = reports.find(
-      (report) =>
-        reportCoversDate(report, targetDate) && report.file_name && isReportReady(report.status),
-    );
-    if (ready) {
-      return reports;
-    }
-    await sleep(REPORT_READY_POLL_MS);
-  }
-
-  logWarn("mp.autoSync.reportWaitTimeout", {
-    type,
-    targetDate: targetDate.toISOString(),
-  });
-  return lastReports;
+  return reports;
 }
 
 async function processReadyReports(
@@ -531,13 +481,6 @@ function isSameDay(a: Date, b: Date) {
 
 function minutesSince(date: Date) {
   return (Date.now() - date.getTime()) / 60000;
-}
-
-function isPeakWindow(date = new Date()) {
-  const day = date.getDay();
-  const hour = date.getHours();
-  const isWeekday = day >= 1 && day <= 6;
-  return isWeekday && hour >= 9 && hour <= 23;
 }
 
 type ImportStatsAggregate = {
