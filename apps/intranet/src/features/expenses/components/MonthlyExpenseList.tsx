@@ -33,17 +33,18 @@ export function MonthlyExpenseList({
         {expenses.map((expense) => {
           const isActive = expense.publicId === selectedId;
           return (
-            <button
+            <Button
               className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-primary/40 bg-primary/15 text-primary shadow"
                   : "border-transparent bg-background/55 text-foreground hover:border-default-200 hover:bg-default-50"
               }`}
               key={expense.publicId}
-              onClick={() => {
+              onPress={() => {
                 onSelect(expense.publicId);
               }}
               type="button"
+              variant="ghost"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -63,7 +64,7 @@ export function MonthlyExpenseList({
                 <span>{expense.transactionCount} transacciones</span>
                 <span>{expense.status === "OPEN" ? "Pendiente" : "Cerrado"}</span>
               </div>
-            </button>
+            </Button>
           );
         })}
         {expenses.length === 0 && (

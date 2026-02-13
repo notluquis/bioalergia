@@ -19,7 +19,7 @@ import {
   RotateCcw,
   Upload,
 } from "lucide-react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { GoogleDriveConnect } from "@/components/backup/GoogleDriveConnect";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
@@ -35,16 +35,7 @@ import "dayjs/locale/es";
 dayjs.extend(relativeTime);
 dayjs.locale("es");
 
-// ==================== MAIN COMPONENT ====================
-export function BackupSettingsPage() {
-  const { can } = useAuth();
-  const { error: showError, success } = useToast();
-  const queryClient = useQueryClient();
-
-  // Permissions
-  const canCreate = can("create", "Backup");
-
-  // SSE state for live progress only
+function useBackupProgress(onRefreshBackups: () => void) {
   const [liveJobs, setLiveJobs] = useState<{
     backup: BackupJob | null;
     restore: null | RestoreJob;
@@ -56,11 +47,10 @@ export function BackupSettingsPage() {
     BackupJob["result"] | null
   >(null);
 
-  // SSE connection for real-time progress
   useEffect(() => {
     const eventSource = new EventSource("/api/backups/progress");
 
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: optimized for integration
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: SSE event parsing with explicit status handling
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data) as {
@@ -68,38 +58,34 @@ export function BackupSettingsPage() {
           jobs: { backup: BackupJob | null; restore: null | RestoreJob };
           type: "backup" | "init" | "restore";
         };
-        switch (data.type) {
-          case "backup": {
-            const backupJob = data.job as BackupJob;
-            setLiveJobs((prev) => ({ ...prev, backup: backupJob }));
-            if (backupJob.status === "completed" || backupJob.status === "failed") {
-              void queryClient.invalidateQueries({ queryKey: ["backups"] });
-            }
-            if (backupJob.status === "completed" && backupJob.result) {
-              setLastCompletedBackupResult(backupJob.result);
-            }
 
-            break;
-          }
-          case "init": {
-            setLiveJobs(data.jobs);
+        if (data.type === "init") {
+          setLiveJobs(data.jobs);
+          return;
+        }
 
-            break;
+        if (data.type === "backup") {
+          const backupJob = data.job as BackupJob;
+          setLiveJobs((prev) => ({ ...prev, backup: backupJob }));
+          if (backupJob.status === "completed" || backupJob.status === "failed") {
+            onRefreshBackups();
           }
-          case "restore": {
-            setLiveJobs((prev) => ({ ...prev, restore: data.job as RestoreJob }));
-            if (data.job.status === "completed" || data.job.status === "failed") {
-              void queryClient.invalidateQueries({ queryKey: ["backups"] });
-            }
+          if (backupJob.status === "completed" && backupJob.result) {
+            setLastCompletedBackupResult(backupJob.result);
+          }
+          return;
+        }
 
-            break;
-          }
-          // No default
+        const restoreJob = data.job as RestoreJob;
+        setLiveJobs((prev) => ({ ...prev, restore: restoreJob }));
+        if (restoreJob.status === "completed" || restoreJob.status === "failed") {
+          onRefreshBackups();
         }
       } catch {
         // Ignore parse errors
       }
     };
+
     const handleError = () => {
       eventSource.close();
     };
@@ -112,7 +98,24 @@ export function BackupSettingsPage() {
       eventSource.removeEventListener("error", handleError);
       eventSource.close();
     };
+  }, [onRefreshBackups]);
+
+  return { lastCompletedBackupResult, liveJobs };
+}
+
+// ==================== MAIN COMPONENT ====================
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: page composes multiple operational panels and live status blocks
+export function BackupSettingsPage() {
+  const { can } = useAuth();
+  const { error: showError, success } = useToast();
+  const queryClient = useQueryClient();
+  const refreshBackups = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["backups"] });
   }, [queryClient]);
+
+  // Permissions
+  const canCreate = can("create", "Backup");
+  const { lastCompletedBackupResult, liveJobs } = useBackupProgress(refreshBackups);
 
   // Queries
   const { data: backups } = useSuspenseQuery({ ...backupKeys.lists(), refetchInterval: 30_000 });
@@ -410,12 +413,14 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
 
   return (
     <div>
-      <button
+      <Button
+        aria-expanded={isExpanded}
         className="flex w-full cursor-pointer items-center justify-between p-4 px-4 text-left transition-colors hover:bg-default-50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset"
-        onClick={() => {
+        onPress={() => {
           setIsExpanded(!isExpanded);
         }}
         type="button"
+        variant="ghost"
       >
         <div className="flex items-center gap-4">
           {isExpanded ? (
@@ -436,20 +441,20 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
         </div>
         <div className="flex items-center gap-2">
           {backup.webViewLink && (
-            <Button
-              onPress={() => {
-                // e contains press event, not mouse event, but propagation works differently
-                // For HeroUI Button, onPress is enough.
-                window.open(backup.webViewLink, "_blank");
+            <a
+              href={backup.webViewLink}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-medium hover:bg-default-100"
+              onClick={(event) => {
+                event.stopPropagation();
               }}
-              size="sm"
-              variant="ghost"
             >
               <Download className="size-4" />
-            </Button>
+            </a>
           )}
         </div>
-      </button>
+      </Button>
 
       {isExpanded && (
         <div className="bg-default-100/30 px-6 py-4">
@@ -534,9 +539,14 @@ function BackupTablesList({
     <>
       <div className="mb-3 flex items-center justify-between">
         <h4 className="font-medium text-sm">Seleccionar tablas</h4>
-        <button className="text-primary text-xs hover:underline" onClick={selectAll} type="button">
+        <Button
+          className="text-primary text-xs hover:underline"
+          onPress={selectAll}
+          type="button"
+          variant="ghost"
+        >
           {selectedTables.length === tables.length ? "Ninguna" : "Todas"}
-        </button>
+        </Button>
       </div>
 
       <div className="mb-3">

@@ -151,12 +151,13 @@ export function PermissionsMatrixTable({
             {/* Section Title & Bulk Toggle */}
             {/* Section Title & Bulk Toggle */}
             <div className="sticky left-0 z-10 flex border-default-200 border-r border-b">
-              <button
+              <Button
                 className="flex flex-1 cursor-pointer items-center gap-2 bg-default-50/50 py-3 pl-4 font-bold text-xs uppercase tracking-widest transition-colors hover:bg-default-50/70"
-                onClick={() => {
+                onPress={() => {
                   toggleSection(section.title);
                 }}
                 type="button"
+                variant="ghost"
               >
                 {openSections[section.title] ? (
                   <ChevronDown className="h-4 w-4" />
@@ -164,7 +165,7 @@ export function PermissionsMatrixTable({
                   <ChevronRight className="h-4 w-4" />
                 )}
                 {section.title}
-              </button>
+              </Button>
             </div>
             {displayRoles.map((role) => (
               <div
@@ -194,19 +195,20 @@ export function PermissionsMatrixTable({
                     return (
                       <Fragment key={item.label}>
                         <div className="sticky left-0 z-10 flex border-default-200 border-r border-b">
-                          <button
+                          <Button
                             className="flex flex-1 cursor-pointer items-center gap-2 bg-background/50 py-3 pl-8 font-semibold text-sm transition-colors hover:bg-default-50/20"
-                            onClick={() => {
+                            onPress={() => {
                               toggleItem(itemKey);
                             }}
                             type="button"
+                            variant="ghost"
                           >
                             <div className="flex h-4 w-4 items-center justify-center text-default-300">
                               {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                             </div>
                             <item.icon className="h-4 w-4 opacity-70" />
                             {item.label}
-                          </button>
+                          </Button>
                         </div>
                         {displayRoles.map((role) => (
                           <div
@@ -304,13 +306,14 @@ function PermissionCell({
 
   return (
     <div className={`flex items-center justify-center ${className || ""}`}>
-      <button
+      <Button
         className="group flex h-8 w-8 items-center justify-center transition-colors"
-        disabled={isUpdating}
-        onClick={() => {
+        isDisabled={isUpdating}
+        onPress={() => {
           onToggle(role, permissionId);
         }}
         type="button"
+        variant="ghost"
       >
         {hasAccess ? (
           <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary shadow-sm transition-transform hover:bg-primary-focus active:scale-95">
@@ -319,7 +322,7 @@ function PermissionCell({
         ) : (
           <div className="h-5 w-5 rounded-md border-2 border-default-200 bg-background transition-colors group-hover:border-primary/50 group-hover:bg-primary/5" />
         )}
-      </button>
+      </Button>
     </div>
   );
 }

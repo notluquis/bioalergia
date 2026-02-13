@@ -222,13 +222,14 @@ function InventoryList({
           <div key={category.id}>
             {/* Category Row */}
             <div className="group flex items-center gap-3 p-4 transition-colors hover:bg-default-50/50">
-              <button
+              <Button
                 className="flex flex-1 items-center gap-3 text-left focus:outline-none"
-                onClick={() => {
+                onPress={() => {
                   toggleCategory(category.id);
                 }}
                 type="button"
                 aria-label={isExpanded ? "Colapsar" : "Expandir"}
+                variant="ghost"
               >
                 <span className="flex h-6 w-6 items-center justify-center text-default-400 transition-transform">
                   {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
@@ -242,7 +243,7 @@ function InventoryList({
                 <Chip size="sm" variant="soft">
                   {catItems.length} items
                 </Chip>
-              </button>
+              </Button>
               <div className="flex gap-1 opacity-100 transition-opacity sm:opacity-70 sm:group-hover:opacity-100">
                 <Button isIconOnly size="sm" variant="ghost">
                   <Edit2 size={14} />
@@ -301,13 +302,14 @@ function InventoryList({
       {uncategorizedItems.length > 0 && (
         <div>
           <div className="group flex items-center gap-3 p-4 transition-colors hover:bg-default-50/50">
-            <button
+            <Button
               className="flex flex-1 items-center gap-3 text-left focus:outline-none"
-              onClick={() => {
+              onPress={() => {
                 toggleCategory(0);
               }}
               type="button"
               aria-label={expandedCategories.has(0) ? "Colapsar" : "Expandir"}
+              variant="ghost"
             >
               <span className="flex h-6 w-6 items-center justify-center text-default-400">
                 {expandedCategories.has(0) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
@@ -321,7 +323,7 @@ function InventoryList({
               <Chip size="sm" variant="soft">
                 {uncategorizedItems.length} items
               </Chip>
-            </button>
+            </Button>
           </div>
 
           {expandedCategories.has(0) && (

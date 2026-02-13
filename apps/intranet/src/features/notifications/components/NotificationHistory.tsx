@@ -164,7 +164,7 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
           </p>
         </div>
 
-        <button
+        <Button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
@@ -172,9 +172,12 @@ function NotificationItem({ notification, onRead, onRemove }: Readonly<Notificat
           }}
           className="absolute top-2 right-2 rounded-full p-1 text-default-400 opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
           title="Eliminar notificación"
+          variant="ghost"
+          isIconOnly
+          size="sm"
         >
           <X className="h-3 w-3" />
-        </button>
+        </Button>
       </article>
     </li>
   );

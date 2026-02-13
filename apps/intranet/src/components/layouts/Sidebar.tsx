@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 import { LogOut, User } from "lucide-react";
 
 import { Backdrop } from "@/components/ui/Backdrop";
+import { Button } from "@/components/ui/Button";
 
 import { useAuth } from "@/context/AuthContext";
 import { useCan } from "@/hooks/use-can";
@@ -134,9 +135,10 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
           >
             <Dropdown>
               <Dropdown.Trigger>
-                <button
+                <Button
                   aria-label="Abrir menu de usuario"
                   type="button"
+                  variant="ghost"
                   className={cn(
                     "group flex cursor-pointer items-center outline-none transition-all hover:bg-default-50/50",
                     isMobile
@@ -158,7 +160,7 @@ export function Sidebar({ isMobile, isOpen, onClose }: SidebarProps) {
                       <span className="truncate text-default-400 text-xs">{user?.email}</span>
                     </div>
                   )}
-                </button>
+                </Button>
               </Dropdown.Trigger>
               <Dropdown.Popover placement="top start">
                 <Dropdown.Menu

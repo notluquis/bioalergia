@@ -239,13 +239,16 @@ const StatusCell = ({
       {status}
       {showBang && (
         <Tooltip content={tooltipContent} placement="top" showArrow>
-          <button
+          <Button
             aria-label="Ver detalles"
             className={`cursor-help font-bold ${bangColor}`}
             type="button"
+            variant="ghost"
+            size="sm"
+            isIconOnly
           >
             !
-          </button>
+          </Button>
         </Tooltip>
       )}
     </div>

@@ -2,6 +2,8 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { BarChart3, Briefcase, Home, type LucideIcon, Users } from "lucide-react";
 import React from "react";
 
+import { Button } from "@/components/ui/Button";
+
 interface NavItem {
   icon: LucideIcon;
   label: string;
@@ -45,16 +47,17 @@ export function BottomNav({ isHidden = false }: Readonly<BottomNavProps>) {
         {NAV_ITEMS.map(({ icon: Icon, label, path }) => {
           const active = isActive(path);
           return (
-            <button
+            <Button
               className={`relative flex flex-1 flex-col items-center justify-center gap-1 rounded-3xl px-1 py-3 font-medium text-[10px] transition-all duration-300 ${
                 active ? "text-primary" : "text-default-400 hover:text-default-700"
               }`}
               key={path}
-              onClick={() => {
+              onPress={() => {
                 setPendingPath(path);
                 void navigate({ to: path });
               }}
               type="button"
+              variant="ghost"
             >
               {/* Active Background Pill */}
               {active && (
@@ -77,7 +80,7 @@ export function BottomNav({ isHidden = false }: Readonly<BottomNavProps>) {
               {pendingPath === path && !active && (
                 <span className="absolute top-2 right-1/4 h-2 w-2 rounded-full bg-primary shadow-lg shadow-primary/50" />
               )}
-            </button>
+            </Button>
           );
         })}
       </div>

@@ -89,17 +89,18 @@ export function ServiceList({
           };
 
           return (
-            <button
+            <Button
               className={`w-full cursor-pointer rounded-2xl border px-4 py-3 text-left transition-all ${
                 isActive
                   ? "border-default-200 bg-primary/20 text-primary"
                   : "border-transparent bg-background/45 text-foreground hover:border-default-200 hover:bg-background/65"
               }`}
               key={service.public_id}
-              onClick={() => {
+              onPress={() => {
                 onSelect(service.public_id);
               }}
               type="button"
+              variant="ghost"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -129,7 +130,7 @@ export function ServiceList({
               <div className="mt-2 text-default-400 text-xs">
                 Pendientes {service.pending_count} · Vencidos {service.overdue_count}
               </div>
-            </button>
+            </Button>
           );
         })}
         {services.length === 0 && (

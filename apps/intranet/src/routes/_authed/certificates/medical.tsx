@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { Select, SelectItem } from "@/components/ui/Select";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
 
@@ -182,51 +183,32 @@ function MedicalCertificatePage() {
 
               <form.Field name="diagnosis">
                 {(field) => (
-                  <div>
-                    <label
-                      htmlFor="diagnosis"
-                      className="mb-2 block font-medium text-foreground text-sm"
-                    >
-                      Diagnóstico <span className="text-danger">*</span>
-                    </label>
-                    <textarea
-                      id="diagnosis"
-                      className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      rows={3}
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                      placeholder="Ej: cuadro compatible con reacción alérgica"
-                    />
-
-                    {field.state.meta.errors.length > 0 && (
-                      <p className="mt-1 text-danger text-sm">
-                        {field.state.meta.errors.join(", ")}
-                      </p>
-                    )}
-                  </div>
+                  <Input
+                    as="textarea"
+                    id="diagnosis"
+                    label="Diagnóstico *"
+                    rows={3}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    error={field.state.meta.errors.join(", ")}
+                    placeholder="Ej: cuadro compatible con reacción alérgica"
+                  />
                 )}
               </form.Field>
 
               <form.Field name="symptoms">
                 {(field) => (
-                  <div>
-                    <label
-                      htmlFor="symptoms"
-                      className="mb-2 block font-medium text-foreground text-sm"
-                    >
-                      Síntomas (opcional)
-                    </label>
-                    <textarea
-                      id="symptoms"
-                      className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      rows={2}
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                      placeholder="Ej: dolor en diversas zonas, predominio de cefalea intensa"
-                    />
-                  </div>
+                  <Input
+                    as="textarea"
+                    id="symptoms"
+                    label="Síntomas (opcional)"
+                    rows={2}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    placeholder="Ej: dolor en diversas zonas, predominio de cefalea intensa"
+                  />
                 )}
               </form.Field>
             </div>
@@ -284,27 +266,26 @@ function MedicalCertificatePage() {
             <div className="grid gap-4">
               <form.Field name="purpose">
                 {(field) => (
-                  <div>
-                    <label
-                      htmlFor="purpose"
-                      className="mb-2 block font-medium text-foreground text-sm"
-                    >
-                      Para ser presentado en
-                    </label>
-                    <select
-                      id="purpose"
-                      className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      value={field.state.value}
-                      onChange={(e) =>
-                        field.handleChange(e.target.value as typeof field.state.value)
+                  <Select
+                    label="Para ser presentado en"
+                    selectedKey={field.state.value}
+                    onSelectionChange={(key) => {
+                      if (typeof key === "string") {
+                        field.handleChange(key as typeof field.state.value);
                       }
-                      onBlur={field.handleBlur}
-                    >
-                      <option value="trabajo">Lugar de trabajo</option>
-                      <option value="estudio">Establecimiento educacional</option>
-                      <option value="otro">Otro</option>
-                    </select>
-                  </div>
+                    }}
+                    onBlur={field.handleBlur}
+                  >
+                    <SelectItem id="trabajo" textValue="Lugar de trabajo">
+                      Lugar de trabajo
+                    </SelectItem>
+                    <SelectItem id="estudio" textValue="Establecimiento educacional">
+                      Establecimiento educacional
+                    </SelectItem>
+                    <SelectItem id="otro" textValue="Otro">
+                      Otro
+                    </SelectItem>
+                  </Select>
                 )}
               </form.Field>
 

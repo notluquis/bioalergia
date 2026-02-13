@@ -739,23 +739,26 @@ function ImportModeCard({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <button
+          <Button
             className={cn(
               "flex-1 rounded-lg border-2 p-4 text-left transition-colors",
               importMode === "insert-only"
                 ? "border-primary/50 bg-primary/5"
                 : "border-default-200 hover:border-default-300",
             )}
-            onClick={() => onModeChange("insert-only")}
+            onPress={() => onModeChange("insert-only")}
             type="button"
+            variant="ghost"
           >
             <div className="flex items-center gap-3">
-              <input
-                checked={importMode === "insert-only"}
-                className="h-4 w-4"
-                onChange={() => onModeChange("insert-only")}
-                type="radio"
-              />
+              <Chip
+                className="min-w-[96px] justify-center text-center"
+                color={importMode === "insert-only" ? "accent" : "default"}
+                size="sm"
+                variant={importMode === "insert-only" ? "primary" : "tertiary"}
+              >
+                {importMode === "insert-only" ? "Seleccionado" : "Elegir"}
+              </Chip>
               <div className="flex-1">
                 <div className="font-semibold text-sm">Solo importar nuevos</div>
                 <div className="text-xs opacity-60">
@@ -763,25 +766,28 @@ function ImportModeCard({
                 </div>
               </div>
             </div>
-          </button>
+          </Button>
 
-          <button
+          <Button
             className={cn(
               "flex-1 rounded-lg border-2 p-4 text-left transition-colors",
               importMode === "insert-or-update"
                 ? "border-primary/50 bg-primary/5"
                 : "border-default-200 hover:border-default-300",
             )}
-            onClick={() => onModeChange("insert-or-update")}
+            onPress={() => onModeChange("insert-or-update")}
             type="button"
+            variant="ghost"
           >
             <div className="flex items-center gap-3">
-              <input
-                checked={importMode === "insert-or-update"}
-                className="h-4 w-4"
-                onChange={() => onModeChange("insert-or-update")}
-                type="radio"
-              />
+              <Chip
+                className="min-w-[96px] justify-center text-center"
+                color={importMode === "insert-or-update" ? "accent" : "default"}
+                size="sm"
+                variant={importMode === "insert-or-update" ? "primary" : "tertiary"}
+              >
+                {importMode === "insert-or-update" ? "Seleccionado" : "Elegir"}
+              </Chip>
               <div className="flex-1">
                 <div className="font-semibold text-sm">Insertar o actualizar</div>
                 <div className="text-xs opacity-60">
@@ -789,7 +795,7 @@ function ImportModeCard({
                 </div>
               </div>
             </div>
-          </button>
+          </Button>
         </div>
       </CardContent>
     </Card>

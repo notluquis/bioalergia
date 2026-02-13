@@ -16,7 +16,7 @@ export function ServicesCreateContent() {
 
   return (
     <section className="space-y-8">
-      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
+      <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -33,22 +33,23 @@ export function ServicesCreateContent() {
           </div>
           <div className="flex flex-wrap gap-2">
             {SERVICE_TEMPLATES.map((template) => (
-              <button
+              <Button
                 className="rounded-full border border-default-200 bg-default-50 px-3 py-1 font-semibold text-foreground text-xs transition hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
                 key={template.id}
-                onClick={() => {
+                onPress={() => {
                   applyTemplate(template);
                 }}
                 type="button"
+                variant="ghost"
               >
                 {template.name}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
       </Surface>
 
-      <Surface className="rounded-[28px] p-6 shadow-inner space-y-6">
+      <Surface className="space-y-6 rounded-[28px] p-6 shadow-inner">
         <div className="space-y-4">
           <p className="font-semibold text-foreground text-sm">Formulario de creación</p>
           <ServiceForm

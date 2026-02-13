@@ -24,6 +24,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
 import React, { type CSSProperties, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
 import { DataTablePagination } from "./DataTablePagination";
@@ -327,9 +328,12 @@ function DataTableContent<TData, TValue>({
                           <ArrowUpDown className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-50" />
                         ) : null)}
                     </div>
-                    <button
-                      type="button"
+                    <Button
                       aria-label="Resize column"
+                      isIconOnly
+                      size="sm"
+                      type="button"
+                      variant="ghost"
                       className={`absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none select-none bg-default-100 opacity-0 group-hover:opacity-100 ${
                         header.column.getIsResizing() ? "w-1.5 bg-primary opacity-100" : ""
                       }`}

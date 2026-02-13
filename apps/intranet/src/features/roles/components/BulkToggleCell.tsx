@@ -1,4 +1,5 @@
 import { CheckCheck, Loader2, Minus } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 import type { Role } from "@/types/roles";
 
@@ -50,17 +51,18 @@ export function BulkToggleCell({
 
   return (
     <div className={`flex items-center justify-center p-0 text-center ${className || ""}`}>
-      <button
+      <Button
         className="mx-auto flex h-8 w-full items-center justify-center rounded-md transition-colors"
-        disabled={isUpdating}
-        onClick={() => {
+        isDisabled={isUpdating}
+        onPress={() => {
           onToggle(role, permissionIds);
         }}
         title={allPresent ? "Desmarcar todos" : "Marcar todos"}
         type="button"
+        variant="ghost"
       >
         {renderIcon()}
-      </button>
+      </Button>
     </div>
   );
 }

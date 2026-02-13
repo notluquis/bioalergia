@@ -14,6 +14,7 @@ import { GRID_2_COL_MD } from "@/lib/styles";
 
 import { Alert } from "../ui/Alert";
 import { Button } from "../ui/Button";
+import { FileInput } from "../ui/FileInput";
 import { Input } from "../ui/Input";
 
 const FALLBACK_LOGO_PATH = "/logo192.png";
@@ -61,9 +62,6 @@ export function SettingsForm() {
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [faviconPreview, setFaviconPreview] = useState<null | string>(null);
   const faviconPreviewRef = useRef<null | string>(null);
-
-  const logoInputRef = useRef<HTMLInputElement | null>(null);
-  const faviconInputRef = useRef<HTMLInputElement | null>(null);
 
   const resetLogoSelection = () => {
     if (logoPreviewRef.current) {
@@ -232,7 +230,6 @@ export function SettingsForm() {
       <div className={GRID_2_COL_MD}>
         <GeneralSettingsFields form={form} onChange={handleChange} />
         <LogoSection
-          logoInputRef={logoInputRef}
           logoMode={logoMode}
           logoPreview={logoPreview}
           logoUrl={form.logoUrl}
@@ -243,7 +240,6 @@ export function SettingsForm() {
         />
 
         <FaviconSection
-          faviconInputRef={faviconInputRef}
           faviconMode={faviconMode}
           faviconPreview={faviconPreview}
           faviconUrl={form.faviconUrl}
@@ -368,7 +364,6 @@ function TextSettingInput({
 }
 
 function LogoSection({
-  logoInputRef,
   logoMode,
   logoPreview,
   logoUrl,
@@ -377,7 +372,6 @@ function LogoSection({
   onUrlChange,
   previewUrl,
 }: {
-  logoInputRef: React.RefObject<HTMLInputElement | null>;
   logoMode: "upload" | "url";
   logoPreview: null | string;
   logoUrl: string | null | undefined;
@@ -429,24 +423,12 @@ function LogoSection({
         </div>
       ) : (
         <div className="space-y-3 text-foreground text-sm">
-          <div>
-            <input
-              accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
-              className="hidden"
-              onChange={onFileChange}
-              ref={logoInputRef}
-              type="file"
-            />
-
-            <Button
-              onClick={() => logoInputRef.current?.click()}
-              size="sm"
-              type="button"
-              variant="secondary"
-            >
-              Seleccionar archivo
-            </Button>
-          </div>
+          <FileInput
+            accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+            className="min-h-20"
+            label="Logo"
+            onChange={onFileChange}
+          />
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-default-200 bg-background p-2">
               <img alt="Vista previa del logo" className="brand-logo--settings" src={previewUrl} />
@@ -467,7 +449,6 @@ function LogoSection({
 }
 
 function FaviconSection({
-  faviconInputRef,
   faviconMode,
   faviconPreview,
   faviconUrl,
@@ -476,7 +457,6 @@ function FaviconSection({
   onUrlChange,
   previewUrl,
 }: {
-  faviconInputRef: React.RefObject<HTMLInputElement | null>;
   faviconMode: "upload" | "url";
   faviconPreview: null | string;
   faviconUrl: string | null | undefined;
@@ -528,24 +508,12 @@ function FaviconSection({
         </div>
       ) : (
         <div className="space-y-3 text-foreground text-sm">
-          <div>
-            <input
-              accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,image/vnd.microsoft.icon"
-              className="hidden"
-              onChange={onFileChange}
-              ref={faviconInputRef}
-              type="file"
-            />
-
-            <Button
-              onClick={() => faviconInputRef.current?.click()}
-              size="sm"
-              type="button"
-              variant="secondary"
-            >
-              Seleccionar archivo
-            </Button>
-          </div>
+          <FileInput
+            accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon,image/vnd.microsoft.icon"
+            className="min-h-20"
+            label="Favicon"
+            onChange={onFileChange}
+          />
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-default-200 bg-background p-2">
               <img

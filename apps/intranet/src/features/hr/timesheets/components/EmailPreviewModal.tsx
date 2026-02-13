@@ -11,6 +11,7 @@ import {
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import type { Employee } from "@/features/hr/employees/types";
 import { fmtCLP } from "@/lib/format";
 import { formatRetentionPercent, getEffectiveRetentionRate } from "~/shared/retention";
@@ -126,12 +127,9 @@ export function EmailPreviewModal({
               <div className="mb-4 rounded-xl border border-default-200 bg-default-50/40 p-4">
                 <p className="mb-3 font-semibold text-sm">Agente local</p>
                 <div className="mb-3">
-                  <label className="mb-1 block text-default-600 text-xs" htmlFor="local-agent-url">
-                    URL del agente
-                  </label>
-                  <input
+                  <Input
                     id="local-agent-url"
-                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-sm"
+                    label="URL del agente"
                     onChange={(event) => {
                       const value = event.target.value;
                       setAgentUrl(value);
@@ -143,15 +141,9 @@ export function EmailPreviewModal({
                   />
                 </div>
                 <div className="mb-3">
-                  <label
-                    className="mb-1 block text-default-600 text-xs"
-                    htmlFor="local-agent-token"
-                  >
-                    Token
-                  </label>
-                  <input
+                  <Input
                     id="local-agent-token"
-                    className="w-full rounded-lg border border-default-200 bg-background px-3 py-2 text-sm"
+                    label="Token"
                     onChange={(event) => {
                       const value = event.target.value;
                       setAgentToken(value);

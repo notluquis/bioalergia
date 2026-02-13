@@ -159,12 +159,13 @@ function ServiceScheduleAccordion({
               className="rounded-xl border border-default-200 bg-default-50 shadow-sm"
               key={group.dateKey}
             >
-              <button
+              <Button
                 className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-default-50"
-                onClick={() => {
+                onPress={() => {
                   toggleGroup(group.dateKey);
                 }}
                 type="button"
+                variant="ghost"
               >
                 <div>
                   <p className="font-semibold text-foreground text-sm capitalize">{group.label}</p>
@@ -179,7 +180,7 @@ function ServiceScheduleAccordion({
                 >
                   ⌃
                 </span>
-              </button>
+              </Button>
               <div
                 className={
                   isExpanded ? "space-y-2 border-default-200 border-t px-4 py-3" : "hidden"

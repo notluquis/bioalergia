@@ -114,15 +114,16 @@ function DayCellButton({
   };
 
   return (
-    <button
+    <Button
       className={cn(
         "relative flex flex-col items-center justify-center rounded-xl p-2 transition-all",
         "hover:bg-default-50 focus:outline-none focus:ring-2 focus:ring-primary/20",
         isSelected && "bg-default-100 ring-2 ring-primary",
         isToday && !isSelected && "ring-1 ring-primary/30",
       )}
-      onClick={onClick}
+      onPress={onClick}
       type="button"
+      variant="ghost"
     >
       {/* Status dot */}
       <div className={cn("absolute top-2 right-2 size-2 rounded-full", statusColors[day.status])} />
@@ -139,6 +140,6 @@ function DayCellButton({
       >
         {day.total === 0 ? "$0" : fmtCLP(day.total)}
       </span>
-    </button>
+    </Button>
   );
 }

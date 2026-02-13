@@ -31,6 +31,7 @@ dayjs.locale("es");
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/DataTable";
+import { Input as AppInput } from "@/components/ui/Input";
 import { calendarQueries } from "@/features/calendar/queries";
 import type { TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { formatCurrency } from "@/lib/utils";
@@ -798,27 +799,23 @@ function AnalyticsFilters({
           </p>
           <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1">
-              <label htmlFor="date-from" className="text-default-500 text-xs">
-                Desde
-              </label>
-              <input
+              <AppInput
                 id="date-from"
                 type="date"
-                className="rounded-md bg-default-100 px-2.5 py-1.5 text-foreground text-sm"
+                label="Desde"
                 value={filters.from || ""}
                 onChange={(e) => onDateChange(e.target.value, filters.to || "")}
+                containerClassName="gap-1"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor="date-to" className="text-default-500 text-xs">
-                Hasta
-              </label>
-              <input
+              <AppInput
                 id="date-to"
                 type="date"
-                className="rounded-md bg-default-100 px-2.5 py-1.5 text-foreground text-sm"
+                label="Hasta"
                 value={filters.to || ""}
                 onChange={(e) => onDateChange(filters.from || "", e.target.value)}
+                containerClassName="gap-1"
               />
             </div>
           </div>

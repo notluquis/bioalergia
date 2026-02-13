@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileUp, Save, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { FileInput } from "@/components/ui/FileInput";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select, SelectItem } from "@/components/ui/Select";
@@ -72,15 +73,15 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                 </Button>
               </div>
             ) : (
-              <label className="flex cursor-pointer flex-col items-center gap-2">
+              <div className="flex w-full flex-col items-center gap-2">
                 <div className="rounded-full bg-primary/10 p-4 text-primary">
                   <FileUp size={32} />
                 </div>
                 <span className="font-medium text-sm">Haga clic para seleccionar un archivo</span>
                 <span className="text-default-300 text-xs">PDF, Imágenes, etc.</span>
-                <input
-                  type="file"
-                  className="hidden"
+                <FileInput
+                  className="min-h-0 border-none bg-transparent p-0"
+                  label=""
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (f) {
@@ -90,8 +91,9 @@ export function NewAttachmentModal({ isOpen, onClose, patientId }: NewAttachment
                       }
                     }
                   }}
+                  accept="application/pdf,image/*"
                 />
-              </label>
+              </div>
             )}
           </div>
 

@@ -165,14 +165,15 @@ function AuthedLayout() {
       {/* Layout Shell: Main Flex Container - Height constrained to dynamic viewport */}
       <div className="layout-shell relative mx-auto flex h-dvh w-full gap-0 overflow-hidden p-0 text-foreground transition-all duration-300 md:gap-4 md:p-4">
         {/* Hamburger button: accessible, compact, always visible on mobile */}
-        <button
+        <Button
           aria-controls="app-sidebar"
           aria-expanded={sidebarOpen}
           aria-label={sidebarOpen ? "Cerrar menú principal" : "Abrir menú principal"}
           aria-pressed={sidebarOpen}
           className="fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-4 z-40 inline-flex items-center gap-2 rounded-full border border-default-200/70 bg-background/85 px-3 py-2 font-semibold text-foreground text-sm shadow-lg backdrop-blur-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 md:hidden"
-          onClick={toggleSidebar}
+          onPress={toggleSidebar}
           type="button"
+          variant="ghost"
         >
           <span
             aria-hidden="true"
@@ -195,7 +196,7 @@ function AuthedLayout() {
           <span className="font-medium text-xs uppercase tracking-wide">
             {sidebarOpen ? "Cerrar" : "Menú"}
           </span>
-        </button>
+        </Button>
 
         {/* Sidebar */}
         <Sidebar isMobile={isMobile} isOpen={sidebarOpen} onClose={closeSidebar} />

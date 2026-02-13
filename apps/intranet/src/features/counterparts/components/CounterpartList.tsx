@@ -53,16 +53,17 @@ export function CounterpartList({
             const isActive = selectedId === item.id;
             return (
               <li key={item.id}>
-                <button
+                <Button
                   className={`group w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition-all ${
                     isActive
                       ? "border-primary/45 bg-primary/10 shadow-sm"
                       : "border-default-200/70 bg-default-50/60 hover:border-default-300 hover:bg-default-100/60"
                   }`}
-                  onClick={() => {
+                  onPress={() => {
                     onSelectCounterpart(item.id);
                   }}
                   type="button"
+                  variant="ghost"
                 >
                   <span className="flex items-start justify-between gap-2">
                     <span className="block font-medium text-foreground tracking-tight">
@@ -77,7 +78,7 @@ export function CounterpartList({
                       RUT {item.identificationNumber}
                     </span>
                   )}
-                </button>
+                </Button>
               </li>
             );
           })}
