@@ -50,7 +50,6 @@ function useBackupProgress(onRefreshBackups: () => void) {
   useEffect(() => {
     const eventSource = new EventSource("/api/backups/progress");
 
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: SSE event parsing with explicit status handling
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data) as {
@@ -104,7 +103,6 @@ function useBackupProgress(onRefreshBackups: () => void) {
 }
 
 // ==================== MAIN COMPONENT ====================
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: page composes multiple operational panels and live status blocks
 export function BackupSettingsPage() {
   const { can } = useAuth();
   const { error: showError, success } = useToast();

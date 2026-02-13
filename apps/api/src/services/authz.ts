@@ -7,6 +7,9 @@ export interface CASLRule {
   conditions?: Record<string, unknown>;
 }
 
+const PERSON_ID_PLACEHOLDER = String.raw`\${personId}`;
+const USER_ID_PLACEHOLDER = String.raw`\${userId}`;
+
 /**
  * Substitutes special placeholders in conditions with actual user values.
  * Supported placeholders:
@@ -21,11 +24,9 @@ function substituteConditionVariables(
 
   for (const [key, value] of Object.entries(conditions)) {
     if (typeof value === "string") {
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional placeholder string stored in DB
-      if (value === "${userId}") {
+      if (value === USER_ID_PLACEHOLDER) {
         result[key] = context.userId;
-        // biome-ignore lint/suspicious/noTemplateCurlyInString: Intentional placeholder string stored in DB
-      } else if (value === "${personId}") {
+      } else if (value === PERSON_ID_PLACEHOLDER) {
         result[key] = context.personId || null;
       } else {
         result[key] = value;

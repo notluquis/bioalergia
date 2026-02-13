@@ -44,6 +44,16 @@ type ReportActions = {
   processingFile: null | string;
 };
 
+const resolveLastReportLabel = (reports: MPReport[]) => {
+  const lastReport = reports[0];
+  if (!lastReport) {
+    return "N/A";
+  }
+
+  const date = lastReport.date_created ?? lastReport.begin_date;
+  return date ? dayjs(date).format("D MMM, HH:mm") : "N/A";
+};
+
 const useReportActions = ({
   queryClient,
   reportType,
@@ -120,7 +130,6 @@ const useReportActions = ({
   };
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: large settings page with multiple sections
 export function MercadoPagoSettingsPage() {
   const queryClient = useQueryClient();
   const { error: showError, success: showSuccess } = useToast();
@@ -190,6 +199,31 @@ export function MercadoPagoSettingsPage() {
 
   const syncColumns = useMemo<ColumnDef<MpSyncLog>[]>(() => buildSyncColumns(), []);
   const syncPageCount = Math.max(1, Math.ceil(syncTotal / syncPagination.pageSize));
+  const onTabChange = (key: React.Key) => setActiveTab(key as MpTab);
+  const closeImportStatsModal = () => setLastImportStats(null);
+  const openGenerateModal = () => setIsGenerateModalOpen(true);
+
+  const handleReportPageSizeChange = (key: React.Key | null) => {
+    if (key === null) {
+      return;
+    }
+    const value = Number(key);
+    setReportPagination((prev) => ({
+      pageIndex: 0,
+      pageSize: Number.isNaN(value) ? prev.pageSize : value,
+    }));
+  };
+
+  const handleSyncPageSizeChange = (key: React.Key | null) => {
+    if (key === null) {
+      return;
+    }
+    const value = Number(key);
+    setSyncPagination((prev) => ({
+      pageIndex: 0,
+      pageSize: Number.isNaN(value) ? prev.pageSize : value,
+    }));
+  };
 
   return (
     <div className="space-y-5">
@@ -198,7 +232,7 @@ export function MercadoPagoSettingsPage() {
         {/* Tabs */}
         <Tabs
           selectedKey={activeTab}
-          onSelectionChange={(key) => setActiveTab(key as MpTab)}
+          onSelectionChange={onTabChange}
           variant="secondary"
           className="w-full sm:w-auto"
         >
@@ -224,9 +258,7 @@ export function MercadoPagoSettingsPage() {
         {activeTab !== "sync" && (
           <Button
             className="w-full sm:w-auto"
-            onClick={() => {
-              setIsGenerateModalOpen(true);
-            }}
+            onClick={openGenerateModal}
             size="sm"
             variant="primary"
           >
@@ -239,9 +271,7 @@ export function MercadoPagoSettingsPage() {
       {/* Import Stats Modal */}
       <Modal
         isOpen={Boolean(lastImportStats)}
-        onClose={() => {
-          setLastImportStats(null);
-        }}
+        onClose={closeImportStatsModal}
         title="Reporte Procesado"
       >
         {lastImportStats && (
@@ -290,9 +320,8 @@ export function MercadoPagoSettingsPage() {
               <div className="rounded-lg bg-danger/10 p-3 text-sm">
                 <span className="mb-2 block font-medium text-danger">Errores encontrados:</span>
                 <ul className="list-inside list-disc space-y-1 text-danger/80 text-xs">
-                  {lastImportStats.errors.slice(0, 5).map((err, i) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: static list
-                    <li key={i}>{err}</li>
+                  {lastImportStats.errors.slice(0, 5).map((err) => (
+                    <li key={err}>{err}</li>
                   ))}
                   {lastImportStats.errors.length > 5 && (
                     <li>...y {lastImportStats.errors.length - 5} más</li>
@@ -302,12 +331,7 @@ export function MercadoPagoSettingsPage() {
             )}
 
             <div className="flex justify-end">
-              <Button
-                onClick={() => {
-                  setLastImportStats(null);
-                }}
-                variant="primary"
-              >
+              <Button onClick={closeImportStatsModal} variant="primary">
                 Cerrar
               </Button>
             </div>
@@ -325,14 +349,7 @@ export function MercadoPagoSettingsPage() {
                   Último Reporte
                 </span>
                 <span className="mt-2 line-clamp-1 block font-semibold text-lg">
-                  {(() => {
-                    const lastReport = reports[0];
-                    if (!lastReport) {
-                      return "N/A";
-                    }
-                    const date = lastReport.date_created ?? lastReport.begin_date;
-                    return date ? dayjs(date).format("D MMM, HH:mm") : "N/A";
-                  })()}
+                  {resolveLastReportLabel(reports)}
                 </span>
               </div>
               <div className="rounded-lg bg-primary/10 p-2 text-primary">
@@ -374,13 +391,7 @@ export function MercadoPagoSettingsPage() {
               <Select
                 aria-label="Cantidad de filas"
                 value={String(reportPagination.pageSize)}
-                onChange={(key) => {
-                  const value = Number(key);
-                  setReportPagination((prev) => ({
-                    pageIndex: 0,
-                    pageSize: Number.isNaN(value) ? prev.pageSize : value,
-                  }));
-                }}
+                onChange={handleReportPageSizeChange}
                 className="w-28"
               >
                 <SelectItem id="10">10</SelectItem>
@@ -419,13 +430,7 @@ export function MercadoPagoSettingsPage() {
             <Select
               aria-label="Cantidad de filas"
               value={String(syncPagination.pageSize)}
-              onChange={(key) => {
-                const value = Number(key);
-                setSyncPagination((prev) => ({
-                  pageIndex: 0,
-                  pageSize: Number.isNaN(value) ? prev.pageSize : value,
-                }));
-              }}
+              onChange={handleSyncPageSizeChange}
               className="w-28"
             >
               <SelectItem id="10">10</SelectItem>

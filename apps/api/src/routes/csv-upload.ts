@@ -260,6 +260,260 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
   dte_sales: { action: "create", subject: "DTESaleDetail" },
 };
 
+type PreviewMode = "insert-only" | "insert-or-update";
+type PreviewCounters = { toInsert: number; toSkip: number; toUpdate: number };
+type PreviewRuntime = {
+  existingWithdrawIds: Set<string>;
+  mode: PreviewMode;
+  seenWithdrawIds: Set<string>;
+};
+
+const emptyPreviewCounters = (): PreviewCounters => ({ toInsert: 0, toSkip: 0, toUpdate: 0 });
+
+const addPreviewCounters = (target: PreviewCounters, source: PreviewCounters) => {
+  target.toInsert += source.toInsert;
+  target.toUpdate += source.toUpdate;
+  target.toSkip += source.toSkip;
+};
+
+async function buildWithdrawPreviewCache(data: object[]) {
+  const requestedIds = [
+    ...new Set(
+      data
+        .map((raw) => normalizeWithdrawId((raw as CSVRow).withdrawId))
+        .filter((value) => value.length > 0),
+    ),
+  ];
+  if (requestedIds.length === 0) {
+    return new Set<string>();
+  }
+  const rows = await db.withdrawTransaction.findMany({
+    select: { withdrawId: true },
+    where: { withdrawId: { in: requestedIds } },
+  });
+  return new Set(rows.map((row) => row.withdrawId));
+}
+
+function parseTimesheetDateForPreview(value: unknown) {
+  const workDateStr = String(value ?? "").trim();
+  const dateMatch = workDateStr.match(HYPHEN_DATE_REGEX);
+  if (!dateMatch) {
+    return { error: `Fecha "${workDateStr}" en formato inválido. Use DD-MM-YYYY (ej: 08-08-2025)` };
+  }
+
+  const [, dayStr, monthStr, yearStr] = dateMatch;
+  const day = Number.parseInt(dayStr, 10);
+  const month = Number.parseInt(monthStr, 10);
+
+  if (month < 1 || month > 12) {
+    return { error: `Mes inválido en "${workDateStr}". Use DD-MM-YYYY (mes 01-12)` };
+  }
+  if (day < 1 || day > 31) {
+    return { error: `Día inválido en "${workDateStr}". Use DD-MM-YYYY (día 01-31)` };
+  }
+
+  const isoDate = `${yearStr}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const testDate = new Date(`${isoDate}T00:00:00Z`);
+  if (Number.isNaN(testDate.getTime())) {
+    return { error: `Fecha inválida "${workDateStr}"` };
+  }
+
+  return { date: testDate };
+}
+
+function countersFromExisting(exists: boolean, mode: PreviewMode): PreviewCounters {
+  if (exists && mode === "insert-only") {
+    return { toInsert: 0, toSkip: 1, toUpdate: 0 };
+  }
+  if (exists) {
+    return { toInsert: 0, toSkip: 0, toUpdate: 1 };
+  }
+  return { toInsert: 1, toSkip: 0, toUpdate: 0 };
+}
+
+async function previewPeopleRow(row: CSVRow, mode: PreviewMode) {
+  if (!row.rut) {
+    return { counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } };
+  }
+  const exists = Boolean(await findPersonByRut(String(row.rut)));
+  return { counters: countersFromExisting(exists, mode) };
+}
+
+async function previewEmployeesOrCounterpartsRow(
+  table: "counterparts" | "employees",
+  row: CSVRow,
+  mode: PreviewMode,
+) {
+  if (!row.rut) {
+    return { counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } };
+  }
+  const person = await findPersonByRut(String(row.rut));
+  if (!person) {
+    return {
+      counters: { toInsert: 0, toSkip: 1, toUpdate: 0 },
+      error: `Persona con RUT ${row.rut} no existe`,
+    };
+  }
+
+  if (table === "employees") {
+    const exists = Boolean(await db.employee.findFirst({ where: { personId: person.id } }));
+    return { counters: countersFromExisting(exists, mode) };
+  }
+
+  const identNumber = String(row.rut).replace(/[^0-9k]/gi, "");
+  const exists = Boolean(
+    await db.counterpart.findFirst({
+      where: { identificationNumber: identNumber },
+    } as never),
+  );
+  return { counters: countersFromExisting(exists, mode) };
+}
+
+async function previewDailyBalanceRow(row: CSVRow, mode: PreviewMode) {
+  if (!row.date) {
+    return { counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } };
+  }
+  const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
+  const exists = Boolean(await db.dailyBalance.findUnique({ where: { date: new Date(dateStr) } }));
+  return { counters: countersFromExisting(exists, mode) };
+}
+
+async function previewDailyProductionBalanceRow(row: CSVRow, mode: PreviewMode) {
+  const dateStr = parseFlexibleDate(row.balanceDate || row.Fecha);
+  if (!dateStr) {
+    return { counters: { toInsert: 0, toSkip: 1, toUpdate: 0 }, error: "Fecha inválida" };
+  }
+  const exists = Boolean(
+    await db.dailyProductionBalance.findUnique({ where: { balanceDate: new Date(dateStr) } }),
+  );
+  return { counters: countersFromExisting(exists, mode) };
+}
+
+function previewWithdrawRow(runtime: PreviewRuntime, row: CSVRow) {
+  const withdrawId = normalizeWithdrawId(row.withdrawId);
+  if (!withdrawId) {
+    return { counters: { toInsert: 0, toSkip: 1, toUpdate: 0 }, error: "withdrawId requerido" };
+  }
+  if (runtime.seenWithdrawIds.has(withdrawId)) {
+    return { counters: { toInsert: 0, toSkip: 1, toUpdate: 0 } };
+  }
+  runtime.seenWithdrawIds.add(withdrawId);
+  const exists = runtime.existingWithdrawIds.has(withdrawId);
+  return { counters: countersFromExisting(exists, runtime.mode) };
+}
+
+async function previewInventoryItemRow(row: CSVRow, mode: PreviewMode) {
+  if (!row.name) {
+    return { counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } };
+  }
+  const exists = Boolean(await db.inventoryItem.findFirst({ where: { name: String(row.name) } }));
+  return { counters: countersFromExisting(exists, mode) };
+}
+
+async function previewEmployeeTimesheetRow(row: CSVRow, mode: PreviewMode) {
+  if (!row.rut || !row.workDate) {
+    return { counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } };
+  }
+
+  const person = await findPersonByRut(String(row.rut));
+  if (!person) {
+    return {
+      counters: { toInsert: 0, toSkip: 1, toUpdate: 0 },
+      error: `Empleado con RUT ${row.rut} no existe`,
+    };
+  }
+
+  const parsed = parseTimesheetDateForPreview(row.workDate);
+  if (!parsed.date) {
+    return { counters: { toInsert: 0, toSkip: 1, toUpdate: 0 }, error: parsed.error };
+  }
+
+  const exists = Boolean(
+    await db.employeeTimesheet.findFirst({
+      where: {
+        employee: { person: { id: person.id } },
+        workDate: parsed.date,
+      },
+    }),
+  );
+  return { counters: countersFromExisting(exists, mode) };
+}
+
+async function previewDtePurchaseRow(row: CSVRow, mode: PreviewMode) {
+  if (!row.providerRUT || !row.folio) {
+    return { counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } };
+  }
+  const dateStr = parseFlexibleDate(row.documentDate);
+  if (!dateStr) {
+    return {
+      counters: { toInsert: 0, toSkip: 1, toUpdate: 0 },
+      error: "Fecha de documento inválida",
+    };
+  }
+  const exists = Boolean(
+    await db.dTEPurchaseDetail.findFirst({
+      where: {
+        providerRUT: String(row.providerRUT),
+        folio: String(row.folio),
+        documentDate: new Date(dateStr),
+      },
+    }),
+  );
+  return { counters: countersFromExisting(exists, mode) };
+}
+
+async function previewDteSaleRow(row: CSVRow, mode: PreviewMode) {
+  if (!row.clientRUT || !row.folio) {
+    return { counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } };
+  }
+  const dateStr = parseFlexibleDate(row.documentDate);
+  if (!dateStr) {
+    return {
+      counters: { toInsert: 0, toSkip: 1, toUpdate: 0 },
+      error: "Fecha de documento inválida",
+    };
+  }
+  const exists = Boolean(
+    await db.dTESaleDetail.findFirst({
+      where: {
+        clientRUT: String(row.clientRUT),
+        folio: String(row.folio),
+        documentDate: new Date(dateStr),
+      },
+    }),
+  );
+  return { counters: countersFromExisting(exists, mode) };
+}
+
+type PreviewRowResult = { counters: PreviewCounters; error?: string };
+
+const previewRowHandlers: Record<
+  TableName,
+  (row: CSVRow, runtime: PreviewRuntime) => Promise<PreviewRowResult> | PreviewRowResult
+> = {
+  counterparts: (row, runtime) =>
+    previewEmployeesOrCounterpartsRow("counterparts", row, runtime.mode),
+  daily_balances: (row, runtime) => previewDailyBalanceRow(row, runtime.mode),
+  daily_production_balances: (row, runtime) => previewDailyProductionBalanceRow(row, runtime.mode),
+  dte_purchases: (row, runtime) => previewDtePurchaseRow(row, runtime.mode),
+  dte_sales: (row, runtime) => previewDteSaleRow(row, runtime.mode),
+  employee_timesheets: (row, runtime) => previewEmployeeTimesheetRow(row, runtime.mode),
+  employees: (row, runtime) => previewEmployeesOrCounterpartsRow("employees", row, runtime.mode),
+  inventory_items: (row, runtime) => previewInventoryItemRow(row, runtime.mode),
+  people: (row, runtime) => previewPeopleRow(row, runtime.mode),
+  services: () => ({ counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } }),
+  transactions: () => ({ counters: { toInsert: 1, toSkip: 0, toUpdate: 0 } }),
+  withdrawals: (row, runtime) => previewWithdrawRow(runtime, row),
+};
+
+async function previewRowByTable(
+  table: TableName,
+  row: CSVRow,
+  runtime: PreviewRuntime,
+): Promise<PreviewRowResult> {
+  return await previewRowHandlers[table](row, runtime);
+}
+
 // ============================================================
 // PREVIEW (VALIDATE WITHOUT INSERTING)
 // ============================================================
@@ -301,277 +555,34 @@ csvUploadRoutes.post("/preview", async (c) => {
   );
 
   const errors: string[] = [];
-  let toInsert = 0;
-  let toUpdate = 0;
-  let toSkip = 0;
-  const seenWithdrawIds = new Set<string>();
-  let existingWithdrawIds = new Set<string>();
-
-  if (table === "withdrawals") {
-    const requestedIds = [
-      ...new Set(
-        data
-          .map((raw) => normalizeWithdrawId((raw as CSVRow).withdrawId))
-          .filter((value) => value.length > 0),
-      ),
-    ];
-    if (requestedIds.length > 0) {
-      const rows = await db.withdrawTransaction.findMany({
-        select: { withdrawId: true },
-        where: { withdrawId: { in: requestedIds } },
-      });
-      existingWithdrawIds = new Set(rows.map((row) => row.withdrawId));
-    }
-  }
+  const counters = emptyPreviewCounters();
+  const runtime: PreviewRuntime = {
+    mode: mode ?? "insert-or-update",
+    seenWithdrawIds: new Set<string>(),
+    existingWithdrawIds:
+      table === "withdrawals" ? await buildWithdrawPreviewCache(data) : new Set<string>(),
+  };
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i] as CSVRow;
 
     try {
-      if (table === "people" && row.rut) {
-        const exists = await findPersonByRut(String(row.rut));
-        if (exists) {
-          if (mode === "insert-only") {
-            toSkip++;
-          } else {
-            toUpdate++;
-          }
-        } else {
-          toInsert++;
-        }
-      } else if ((table === "employees" || table === "counterparts") && row.rut) {
-        const person = await findPersonByRut(String(row.rut));
-        if (!person) {
-          errors.push(`Fila ${i + 1}: Persona con RUT ${row.rut} no existe`);
-          toSkip++;
-        } else {
-          if (table === "employees") {
-            const existingEmployee = await db.employee.findFirst({
-              where: { personId: person.id },
-            });
-            if (existingEmployee) {
-              if (mode === "insert-only") {
-                toSkip++;
-              } else {
-                toUpdate++;
-              }
-            } else {
-              toInsert++;
-            }
-          } else if (table === "counterparts") {
-            const identNumber = String(row.rut).replace(/[^0-9k]/gi, "");
-            const existingCounterpart = await db.counterpart.findFirst({
-              where: { identificationNumber: identNumber },
-            } as never);
-            if (existingCounterpart) {
-              if (mode === "insert-only") {
-                toSkip++;
-              } else {
-                toUpdate++;
-              }
-            } else {
-              toInsert++;
-            }
-          }
-        }
-      } else if (table === "daily_balances" && row.date) {
-        const dateStr = dayjs(String(row.date)).format("YYYY-MM-DD");
-        const exists = await db.dailyBalance.findUnique({
-          where: { date: new Date(dateStr) },
-        });
-        if (exists) {
-          if (mode === "insert-only") {
-            toSkip++;
-          } else {
-            toUpdate++;
-          }
-        } else {
-          toInsert++;
-        }
-      } else if (table === "daily_production_balances") {
-        const dateStr = parseFlexibleDate(row.balanceDate || row.Fecha);
-        if (!dateStr) {
-          errors.push(`Fila ${i + 1}: Fecha inválida`);
-          toSkip++;
-          continue;
-        }
-        const exists = await db.dailyProductionBalance.findUnique({
-          where: { balanceDate: new Date(dateStr) },
-        });
-        if (exists) {
-          if (mode === "insert-only") {
-            toSkip++;
-          } else {
-            toUpdate++;
-          }
-        } else {
-          toInsert++;
-        }
-      } else if (table === "withdrawals") {
-        const withdrawId = normalizeWithdrawId(row.withdrawId);
-        if (!withdrawId) {
-          errors.push(`Fila ${i + 1}: withdrawId requerido`);
-          toSkip++;
-          continue;
-        }
-
-        if (seenWithdrawIds.has(withdrawId)) {
-          toSkip++;
-          continue;
-        }
-        seenWithdrawIds.add(withdrawId);
-
-        const exists = existingWithdrawIds.has(withdrawId);
-        if (exists) {
-          if (mode === "insert-only") {
-            toSkip++;
-          } else {
-            toUpdate++;
-          }
-        } else {
-          toInsert++;
-        }
-      } else if (table === "services" && row.name) {
-        // Services can have duplicate names, so just count as insert
-        toInsert++;
-      } else if (table === "inventory_items" && row.name) {
-        const exists = await db.inventoryItem.findFirst({
-          where: { name: String(row.name) },
-        });
-        if (exists) {
-          if (mode === "insert-only") {
-            toSkip++;
-          } else {
-            toUpdate++;
-          }
-        } else {
-          toInsert++;
-        }
-      } else if (table === "employee_timesheets" && row.rut && row.workDate) {
-        const person = await findPersonByRut(String(row.rut));
-        if (!person) {
-          errors.push(`Fila ${i + 1}: Empleado con RUT ${row.rut} no existe`);
-          toSkip++;
-        } else {
-          // Validate date format is DD-MM-YYYY (e.g., "08-08-2025" = August 8, 2025)
-          const workDateStr = String(row.workDate).trim();
-          const dateMatch = workDateStr.match(HYPHEN_DATE_REGEX);
-          if (!dateMatch) {
-            errors.push(
-              `Fila ${i + 1}: Fecha "${workDateStr}" en formato inválido. Use DD-MM-YYYY (ej: 08-08-2025)`,
-            );
-            toSkip++;
-            continue;
-          }
-
-          const [, dayStr, monthStr, yearStr] = dateMatch;
-          const day = Number.parseInt(dayStr, 10);
-          const month = Number.parseInt(monthStr, 10);
-
-          if (month < 1 || month > 12) {
-            errors.push(
-              `Fila ${i + 1}: Mes inválido en "${workDateStr}". Use DD-MM-YYYY (mes 01-12)`,
-            );
-            toSkip++;
-            continue;
-          }
-          if (day < 1 || day > 31) {
-            errors.push(
-              `Fila ${i + 1}: Día inválido en "${workDateStr}". Use DD-MM-YYYY (día 01-31)`,
-            );
-            toSkip++;
-            continue;
-          }
-
-          // Validate date actually exists
-          const isoDate = `${yearStr}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const testDate = new Date(`${isoDate}T00:00:00Z`);
-          if (Number.isNaN(testDate.getTime())) {
-            errors.push(`Fila ${i + 1}: Fecha inválida "${workDateStr}"`);
-            toSkip++;
-            continue;
-          }
-
-          const exists = await db.employeeTimesheet.findFirst({
-            where: {
-              employee: {
-                person: { id: person.id },
-              },
-              workDate: testDate,
-            },
-          });
-          if (exists) {
-            if (mode === "insert-only") {
-              toSkip++;
-            } else {
-              toUpdate++;
-            }
-          } else {
-            toInsert++;
-          }
-        }
-      } else if (table === "dte_purchases" && row.providerRUT && row.folio) {
-        // DTE Purchases are identified by providerRUT + folio + documentDate
-        const dateStr = parseFlexibleDate(row.documentDate);
-        if (!dateStr) {
-          errors.push(`Fila ${i + 1}: Fecha de documento inválida`);
-          toSkip++;
-          continue;
-        }
-        const exists = await db.dTEPurchaseDetail.findFirst({
-          where: {
-            providerRUT: String(row.providerRUT),
-            folio: String(row.folio),
-            documentDate: new Date(dateStr),
-          },
-        });
-        if (exists) {
-          if (mode === "insert-only") {
-            toSkip++;
-          } else {
-            toUpdate++;
-          }
-        } else {
-          toInsert++;
-        }
-      } else if (table === "dte_sales" && row.clientRUT && row.folio) {
-        // DTE Sales are identified by clientRUT + folio + documentDate
-        const dateStr = parseFlexibleDate(row.documentDate);
-        if (!dateStr) {
-          errors.push(`Fila ${i + 1}: Fecha de documento inválida`);
-          toSkip++;
-          continue;
-        }
-        const exists = await db.dTESaleDetail.findFirst({
-          where: {
-            clientRUT: String(row.clientRUT),
-            folio: String(row.folio),
-            documentDate: new Date(dateStr),
-          },
-        });
-        if (exists) {
-          if (mode === "insert-only") {
-            toSkip++;
-          } else {
-            toUpdate++;
-          }
-        } else {
-          toInsert++;
-        }
-      } else {
-        toInsert++;
+      const result = await previewRowByTable(table, row, runtime);
+      addPreviewCounters(counters, result.counters);
+      if (result.error) {
+        errors.push(`Fila ${i + 1}: ${result.error}`);
       }
     } catch (_e) {
       errors.push(`Fila ${i + 1}: Error de validación`);
-      toSkip++;
+      counters.toSkip += 1;
     }
   }
 
   return reply(c, {
     status: "ok",
-    toInsert,
-    toUpdate,
-    toSkip,
+    toInsert: counters.toInsert,
+    toUpdate: counters.toUpdate,
+    toSkip: counters.toSkip,
     errors: errors.slice(0, 20), // Limit errors
   });
 });

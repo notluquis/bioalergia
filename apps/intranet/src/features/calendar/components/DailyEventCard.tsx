@@ -11,7 +11,6 @@ interface DailyEventCardProps {
   readonly event: CalendarEventDetail;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export function DailyEventCard({ event }: DailyEventCardProps) {
   const isSubcutaneous = event.category === "Tratamiento subcutáneo";
   const hasControl = event.controlIncluded === true;

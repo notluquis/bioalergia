@@ -1225,39 +1225,61 @@ export function CSVUploadPage() {
 
       {/* 7. Actions */}
       {uploadedFiles.length > 0 && (
-        <div className="sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-default-100 border-t bg-background/80 p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
-          <Button
-            disabled={!isValidMapping || isProcessing || uploadedFiles.length === 0}
-            onClick={handlePreview}
-            variant="secondary"
-          >
-            {isProcessing ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <FileUp className="mr-2 h-4 w-4" />
-            )}
-            {hasPreviewData ? "Recalcular vista previa" : "Generar vista previa"}
-          </Button>
-
-          <Button
-            disabled={
-              !hasPreviewData ||
-              !isValidMapping ||
-              isProcessing ||
-              uploadedFiles.length === 0 ||
-              (batchPreviewData?.errors?.length ?? 0) > 0
-            }
-            onClick={handleImport}
-          >
-            {isProcessing ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCircle className="mr-2 h-4 w-4" />
-            )}
-            Confirmar Importación
-          </Button>
-        </div>
+        <ImportActionsBar
+          batchPreviewData={batchPreviewData}
+          hasPreviewData={hasPreviewData}
+          isProcessing={isProcessing}
+          isValidMapping={isValidMapping}
+          onImport={handleImport}
+          onPreview={handlePreview}
+          uploadedFilesCount={uploadedFiles.length}
+        />
       )}
+    </div>
+  );
+}
+
+function ImportActionsBar(props: {
+  batchPreviewData: CsvPreviewResponse | null;
+  hasPreviewData: boolean;
+  isProcessing: boolean;
+  isValidMapping: boolean;
+  onImport: () => void;
+  onPreview: () => void;
+  uploadedFilesCount: number;
+}) {
+  return (
+    <div className="sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-default-100 border-t bg-background/80 p-4 shadow-lg backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border">
+      <Button
+        disabled={!props.isValidMapping || props.isProcessing || props.uploadedFilesCount === 0}
+        onClick={props.onPreview}
+        variant="secondary"
+      >
+        {props.isProcessing ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <FileUp className="mr-2 h-4 w-4" />
+        )}
+        {props.hasPreviewData ? "Recalcular vista previa" : "Generar vista previa"}
+      </Button>
+
+      <Button
+        disabled={
+          !props.hasPreviewData ||
+          !props.isValidMapping ||
+          props.isProcessing ||
+          props.uploadedFilesCount === 0 ||
+          (props.batchPreviewData?.errors?.length ?? 0) > 0
+        }
+        onClick={props.onImport}
+      >
+        {props.isProcessing ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <CheckCircle className="mr-2 h-4 w-4" />
+        )}
+        Confirmar Importación
+      </Button>
     </div>
   );
 }

@@ -634,7 +634,6 @@ function ReportsResultsPanel({
   );
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legitimate data processing complexity
 function processRawEntries(
   entries: RawTimesheetEntry[],
   employeeIds: number[],
@@ -672,8 +671,10 @@ function processRawEntries(
     if (!map.has(entry.employee_id)) {
       continue;
     }
-    // biome-ignore lint/style/noNonNullAssertion: checked by map.has
-    const data = map.get(entry.employee_id)!;
+    const data = map.get(entry.employee_id);
+    if (!data) {
+      continue;
+    }
 
     data.totalMinutes += entry.worked_minutes;
     data.totalOvertimeMinutes += entry.overtime_minutes;

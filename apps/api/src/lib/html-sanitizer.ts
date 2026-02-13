@@ -1,3 +1,4 @@
+import type { MiddlewareHandler } from "hono";
 import { clearWindow, sanitize } from "isomorphic-dompurify";
 import type { LinkValidationConfig } from "./sanitizer-hooks";
 import { clearAllHooks, registerLinkValidationHook } from "./sanitizer-hooks";
@@ -320,8 +321,7 @@ export function clearWindowState(): void {
  * app.use('*', htmlSanitizerMiddleware());
  * ```
  */
-// biome-ignore lint/suspicious/noExplicitAny: Hono middleware typing
-export function htmlSanitizerMiddleware(): (c: any, next: any) => Promise<void> {
+export function htmlSanitizerMiddleware(): MiddlewareHandler {
   return async (_c, next) => {
     try {
       await next();

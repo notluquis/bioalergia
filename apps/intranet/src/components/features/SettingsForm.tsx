@@ -171,7 +171,6 @@ export function SettingsForm() {
   const displayedLogo = logoPreview ?? (form.logoUrl || FALLBACK_LOGO_PATH);
   const displayedFavicon = faviconPreview ?? (form.faviconUrl || FALLBACK_FAVICON_PATH);
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy logic
   const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("saving");

@@ -5,7 +5,11 @@
  */
 
 import { db } from "@finanzas/db";
-import type { AuthenticatorTransportFuture } from "@simplewebauthn/server";
+import type {
+  AuthenticationResponseJSON,
+  AuthenticatorTransportFuture,
+  RegistrationResponseJSON,
+} from "@simplewebauthn/server";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { signToken, verifyToken } from "../lib/paseto";
@@ -489,8 +493,7 @@ authRoutes.post("/passkey/login/verify", zValidator("json", passkeyVerifySchema)
     // Find passkey by credential ID
     // Note: authResponse is typed as unknown in schema, but we cast it or use it assuming structure matches simplewebauthn expectations
     // We need to access id safely.
-    // biome-ignore lint/suspicious/noExplicitAny: simplewebauthn library requires any cast for response validation
-    const responseBody = authResponse as any;
+    const responseBody = authResponse as unknown as AuthenticationResponseJSON;
     const credentialID = responseBody.id;
 
     const passkey = await db.passkey.findUnique({
@@ -648,8 +651,7 @@ authRoutes.post(
 
       // Note: regResponse is typed as unknown by Zod, but simplewebauthn expects a specific structure.
       // We cast it to `any` for library compatibility, as the library itself performs validation.
-      // biome-ignore lint/suspicious/noExplicitAny: simplewebauthn library requires any cast for response validation
-      const responseBody = regResponse as any;
+      const responseBody = regResponse as unknown as RegistrationResponseJSON;
 
       const verification = await verifyRegistrationResponse({
         response: responseBody,
@@ -672,7 +674,7 @@ authRoutes.post(
           credentialId: credential.id,
           publicKey: Buffer.from(credential.publicKey),
           counter: BigInt(credential.counter),
-          transports: responseBody.response.transports || undefined,
+          transports: responseBody.response.transports ?? undefined,
           webAuthnUserID: String(userId),
           deviceType: credentialDeviceType,
           backedUp: credentialBackedUp,

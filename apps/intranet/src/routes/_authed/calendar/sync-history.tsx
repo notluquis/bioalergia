@@ -1,13 +1,7 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
 import { calendarSyncQueries } from "@/features/calendar/queries";
-
-const CalendarSyncHistoryPage = lazy(() =>
-  // biome-ignore lint/security/noSecrets: Import path, not a secret.
-  import("@/pages/CalendarSyncHistoryPage").then((m) => ({ default: m.CalendarSyncHistoryPage })),
-);
+import { CalendarSyncHistoryPage } from "@/pages/CalendarSyncHistoryPage";
 
 export const Route = createFileRoute("/_authed/calendar/sync-history")({
   staticData: {
@@ -22,11 +16,7 @@ export const Route = createFileRoute("/_authed/calendar/sync-history")({
       throw routeApi.redirect({ to: "/" });
     }
   },
-  component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <CalendarSyncHistoryPage />
-    </Suspense>
-  ),
+  component: () => <CalendarSyncHistoryPage />,
 
   loader: ({ context }) => context.queryClient.ensureQueryData(calendarSyncQueries.logs(50)),
 });

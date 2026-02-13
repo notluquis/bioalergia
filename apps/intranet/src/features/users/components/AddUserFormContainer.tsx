@@ -149,8 +149,7 @@ export function AddUserFormContainer({
   }
 
   if (peopleError) {
-    // biome-ignore lint/security/noSecrets: Log label, not a secret.
-    console.error("[AddUserPage] Error:", peopleError);
+    console.error(peopleError);
     return (
       <div className="mx-auto max-w-2xl space-y-8">
         <div className="surface-elevated rounded-3xl p-6 shadow-lg">

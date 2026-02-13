@@ -215,9 +215,10 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   const { data: accounts = [] } = useQuery<CounterpartAccount[]>({
     enabled: Boolean(form.counterpartId),
     queryFn: async () => {
-      // safe assurance due to enabled check
-      // biome-ignore lint/style/noNonNullAssertion: safe assurance due to enabled check
-      const detail = await fetchCounterpart(form.counterpartId!);
+      if (!form.counterpartId) {
+        return [];
+      }
+      const detail = await fetchCounterpart(form.counterpartId);
       return detail.accounts;
     },
     queryKey: ["counterpart-accounts", form.counterpartId],

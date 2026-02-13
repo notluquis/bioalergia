@@ -85,7 +85,6 @@ export function SyncProgressPanel({
     updated: "Actualizadas",
   };
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy logic
   const formatDetails = (details: Record<string, unknown>) => {
     const parts: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- details can be null/undefined

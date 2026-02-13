@@ -21,6 +21,7 @@ import { PageLoader } from "./components/ui/PageLoader";
 import { useAuth } from "./context/AuthContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import { ToastProvider } from "./context/ToastContext";
+import type { AuthContextType } from "./features/auth/hooks/use-auth";
 import { signalAppFallback } from "./lib/app-recovery";
 import { AbilityProvider } from "./lib/authz/AbilityProvider";
 import { createLogger } from "./lib/logger";
@@ -133,8 +134,7 @@ const queryClient = new QueryClient({
 const router = createRouter({
   context: {
     // Auth will be injected at runtime via InnerApp
-    // biome-ignore lint/style/noNonNullAssertion: context injection
-    auth: undefined!,
+    auth: undefined as unknown as AuthContextType,
     queryClient,
   },
   defaultPendingComponent: PageLoader,
@@ -204,8 +204,12 @@ const ReactQueryDevtools =
 initPerformanceMonitoring();
 
 // Render the app
-// biome-ignore lint/style/noNonNullAssertion: root element exists
-ReactDOM.createRoot(document.querySelector("#root")!).render(
+const rootElement = document.querySelector("#root");
+if (!rootElement) {
+  throw new Error("Root element #root no encontrado");
+}
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <AppFallback />
     <GlobalError>

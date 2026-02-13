@@ -85,100 +85,121 @@ export function parseDate(value: unknown): Date | null {
   return null;
 }
 
+function toNumber(value: unknown, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function toRequiredString(value: unknown, fallback = "") {
+  if (value == null) {
+    return fallback;
+  }
+  return String(value);
+}
+
+function toOptionalString(value: unknown) {
+  if (value == null || value === "") {
+    return undefined;
+  }
+  return String(value);
+}
+
+function toDecimalOrZero(value: unknown) {
+  return parseAmount(value) ?? new Decimal(0);
+}
+
+function isDecimalLike(value: unknown): value is { constructor: { name: string } } {
+  return value instanceof Object && value.constructor.name === "Decimal";
+}
+
 /**
  * Build DTESaleDetail data from CSV/Haulmer row
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: field mapping required
 export function buildDteSaleDetail(row: Record<string, unknown>): Record<string, unknown> {
   return {
-    registerNumber: Number(row.registerNumber || 0),
-    documentType: Number(row.documentType || 41),
-    saleType: String(row.saleType || "Del Giro"),
-    clientRUT: String(row.clientRUT || ""),
-    clientName: String(row.clientName || ""),
-    folio: String(row.folio || ""),
+    registerNumber: toNumber(row.registerNumber),
+    documentType: toNumber(row.documentType, 41),
+    saleType: toRequiredString(row.saleType, "Del Giro"),
+    clientRUT: toRequiredString(row.clientRUT),
+    clientName: toRequiredString(row.clientName),
+    folio: toRequiredString(row.folio),
     documentDate: parseDate(row.documentDate),
     receiptDate: parseDate(row.receiptDate),
     receiptAcknowledgeDate: parseDate(row.receiptAcknowledgeDate),
     claimDate: parseDate(row.claimDate),
-    period: String(row.period || ""),
-    exemptAmount: parseAmount(row.exemptAmount) || new Decimal(0),
-    netAmount: parseAmount(row.netAmount) || new Decimal(0),
-    ivaAmount: parseAmount(row.ivaAmount) || new Decimal(0),
-    totalAmount: parseAmount(row.totalAmount) || new Decimal(0),
-    totalRetainedIVA: parseAmount(row.totalRetainedIVA) || new Decimal(0),
-    partialRetainedIVA: parseAmount(row.partialRetainedIVA) || new Decimal(0),
-    nonRetainedIVA: parseAmount(row.nonRetainedIVA) || new Decimal(0),
-    ownIVA: parseAmount(row.ownIVA) || new Decimal(0),
-    thirdPartyIVA: parseAmount(row.thirdPartyIVA) || new Decimal(0),
-    lateIVA: parseAmount(row.lateIVA) || new Decimal(0),
-    emitterRUT: row.emitterRUT ? String(row.emitterRUT) : undefined,
-    commissionNetAmount: parseAmount(row.commissionNetAmount) || new Decimal(0),
-    commissionExemptAmount: parseAmount(row.commissionExemptAmount) || new Decimal(0),
-    commissionIVA: parseAmount(row.commissionIVA) || new Decimal(0),
-    referenceDocType: row.referenceDocType ? String(row.referenceDocType) : undefined,
-    referenceDocFolio: row.referenceDocFolio ? String(row.referenceDocFolio) : undefined,
-    foreignBuyerIdentifier: row.foreignBuyerIdentifier
-      ? String(row.foreignBuyerIdentifier)
-      : undefined,
-    foreignBuyerNationality: row.foreignBuyerNationality
-      ? String(row.foreignBuyerNationality)
-      : undefined,
-    constructorCreditAmount: parseAmount(row.constructorCreditAmount) || new Decimal(0),
-    freeTradeZoneAmount: parseAmount(row.freeTradeZoneAmount) || new Decimal(0),
-    containerGuaranteeAmount: parseAmount(row.containerGuaranteeAmount) || new Decimal(0),
-    nonBillableAmount: parseAmount(row.nonBillableAmount) || new Decimal(0),
-    internationalTransportAmount: parseAmount(row.internationalTransportAmount) || new Decimal(0),
-    nonCostSaleIndicator: Number(row.nonCostSaleIndicator || 0),
-    periodicServiceIndicator: Number(row.periodicServiceIndicator || 0),
-    totalPeriodAmount: parseAmount(row.totalPeriodAmount) || new Decimal(0),
-    nationalTransportPassageAmount:
-      parseAmount(row.nationalTransportPassageAmount) || new Decimal(0),
-    internalNumber: row.internalNumber ? Number(row.internalNumber) : undefined,
-    branchCode: row.branchCode ? String(row.branchCode) : undefined,
-    origin: row.origin || "UPLOAD",
-    informativeNote: row.informativeNote ? String(row.informativeNote) : undefined,
-    paymentNote: row.paymentNote ? String(row.paymentNote) : undefined,
-    notes: row.notes ? String(row.notes) : undefined,
+    period: toRequiredString(row.period),
+    exemptAmount: toDecimalOrZero(row.exemptAmount),
+    netAmount: toDecimalOrZero(row.netAmount),
+    ivaAmount: toDecimalOrZero(row.ivaAmount),
+    totalAmount: toDecimalOrZero(row.totalAmount),
+    totalRetainedIVA: toDecimalOrZero(row.totalRetainedIVA),
+    partialRetainedIVA: toDecimalOrZero(row.partialRetainedIVA),
+    nonRetainedIVA: toDecimalOrZero(row.nonRetainedIVA),
+    ownIVA: toDecimalOrZero(row.ownIVA),
+    thirdPartyIVA: toDecimalOrZero(row.thirdPartyIVA),
+    lateIVA: toDecimalOrZero(row.lateIVA),
+    emitterRUT: toOptionalString(row.emitterRUT),
+    commissionNetAmount: toDecimalOrZero(row.commissionNetAmount),
+    commissionExemptAmount: toDecimalOrZero(row.commissionExemptAmount),
+    commissionIVA: toDecimalOrZero(row.commissionIVA),
+    referenceDocType: toOptionalString(row.referenceDocType),
+    referenceDocFolio: toOptionalString(row.referenceDocFolio),
+    foreignBuyerIdentifier: toOptionalString(row.foreignBuyerIdentifier),
+    foreignBuyerNationality: toOptionalString(row.foreignBuyerNationality),
+    constructorCreditAmount: toDecimalOrZero(row.constructorCreditAmount),
+    freeTradeZoneAmount: toDecimalOrZero(row.freeTradeZoneAmount),
+    containerGuaranteeAmount: toDecimalOrZero(row.containerGuaranteeAmount),
+    nonBillableAmount: toDecimalOrZero(row.nonBillableAmount),
+    internationalTransportAmount: toDecimalOrZero(row.internationalTransportAmount),
+    nonCostSaleIndicator: toNumber(row.nonCostSaleIndicator),
+    periodicServiceIndicator: toNumber(row.periodicServiceIndicator),
+    totalPeriodAmount: toDecimalOrZero(row.totalPeriodAmount),
+    nationalTransportPassageAmount: toDecimalOrZero(row.nationalTransportPassageAmount),
+    internalNumber: row.internalNumber == null ? undefined : toNumber(row.internalNumber),
+    branchCode: toOptionalString(row.branchCode),
+    origin: toRequiredString(row.origin, "UPLOAD"),
+    informativeNote: toOptionalString(row.informativeNote),
+    paymentNote: toOptionalString(row.paymentNote),
+    notes: toOptionalString(row.notes),
   };
 }
 
 /**
  * Build DTEPurchaseDetail data from CSV/Haulmer row
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: field mapping required
 export function buildDtePurchaseDetail(row: Record<string, unknown>): Record<string, unknown> {
   return {
-    registerNumber: Number(row.registerNumber || 0),
-    documentType: Number(row.documentType || 33),
-    purchaseType: String(row.purchaseType || "Compras del Giro"),
-    providerRUT: String(row.providerRUT || ""),
-    providerName: String(row.providerName || ""),
-    folio: String(row.folio || ""),
+    registerNumber: toNumber(row.registerNumber),
+    documentType: toNumber(row.documentType, 33),
+    purchaseType: toRequiredString(row.purchaseType, "Compras del Giro"),
+    providerRUT: toRequiredString(row.providerRUT),
+    providerName: toRequiredString(row.providerName),
+    folio: toRequiredString(row.folio),
     documentDate: parseDate(row.documentDate),
     receiptDate: parseDate(row.receiptDate),
     acknowledgeDate: parseDate(row.acknowledgeDate),
-    period: String(row.period || ""),
-    exemptAmount: parseAmount(row.exemptAmount) || new Decimal(0),
-    netAmount: parseAmount(row.netAmount) || new Decimal(0),
-    recoverableIVA: parseAmount(row.recoverableIVA) || new Decimal(0),
-    nonRecoverableIVA: parseAmount(row.nonRecoverableIVA) || new Decimal(0),
-    nonRecoverableIVACode: row.nonRecoverableIVACode
-      ? String(row.nonRecoverableIVACode)
-      : undefined,
-    totalAmount: parseAmount(row.totalAmount) || new Decimal(0),
-    fixedAssetNetAmount: parseAmount(row.fixedAssetNetAmount) || new Decimal(0),
-    commonUseIVA: parseAmount(row.commonUseIVA) || new Decimal(0),
-    nonCreditableTax: parseAmount(row.nonCreditableTax) || new Decimal(0),
-    nonRetainedIVA: parseAmount(row.nonRetainedIVA) || new Decimal(0),
-    pureTobacco: parseAmount(row.pureTobacco) || new Decimal(0),
-    cigaretteTobacco: parseAmount(row.cigaretteTobacco) || new Decimal(0),
-    elaboratedTobacco: parseAmount(row.elaboratedTobacco) || new Decimal(0),
-    otherTaxCode: row.otherTaxCode ? String(row.otherTaxCode) : undefined,
-    otherTaxAmount: parseAmount(row.otherTaxAmount) || new Decimal(0),
-    otherTaxRate: row.otherTaxRate ? new Decimal(String(row.otherTaxRate)) : undefined,
-    referenceDocNote: row.referenceDocNote ? String(row.referenceDocNote) : undefined,
-    notes: row.notes ? String(row.notes) : undefined,
+    period: toRequiredString(row.period),
+    exemptAmount: toDecimalOrZero(row.exemptAmount),
+    netAmount: toDecimalOrZero(row.netAmount),
+    recoverableIVA: toDecimalOrZero(row.recoverableIVA),
+    nonRecoverableIVA: toDecimalOrZero(row.nonRecoverableIVA),
+    nonRecoverableIVACode: toOptionalString(row.nonRecoverableIVACode),
+    totalAmount: toDecimalOrZero(row.totalAmount),
+    fixedAssetNetAmount: toDecimalOrZero(row.fixedAssetNetAmount),
+    commonUseIVA: toDecimalOrZero(row.commonUseIVA),
+    nonCreditableTax: toDecimalOrZero(row.nonCreditableTax),
+    nonRetainedIVA: toDecimalOrZero(row.nonRetainedIVA),
+    pureTobacco: toDecimalOrZero(row.pureTobacco),
+    cigaretteTobacco: toDecimalOrZero(row.cigaretteTobacco),
+    elaboratedTobacco: toDecimalOrZero(row.elaboratedTobacco),
+    otherTaxCode: toOptionalString(row.otherTaxCode),
+    otherTaxAmount: toDecimalOrZero(row.otherTaxAmount),
+    otherTaxRate:
+      row.otherTaxRate == null || row.otherTaxRate === ""
+        ? undefined
+        : new Decimal(String(row.otherTaxRate)),
+    referenceDocNote: toOptionalString(row.referenceDocNote),
+    notes: toOptionalString(row.notes),
   };
 }
 
@@ -186,38 +207,30 @@ export function buildDtePurchaseDetail(row: Record<string, unknown>): Record<str
  * Compare two data objects, ignoring system fields (id, createdAt, updatedAt)
  * Returns true if any content field differs, false if all are identical
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: comparison logic
 export function areDataDifferent(
   existing: Record<string, unknown>,
   newData: Record<string, unknown>,
 ): boolean {
   const systemFields = new Set(["id", "createdAt", "updatedAt"]);
 
+  const valuesDiffer = (existingValue: unknown, nextValue: unknown) => {
+    if (isDecimalLike(existingValue)) {
+      if (nextValue == null) {
+        return true;
+      }
+      return String(existingValue) !== String(nextValue);
+    }
+    if (existingValue instanceof Date && nextValue instanceof Date) {
+      return existingValue.getTime() !== nextValue.getTime();
+    }
+    return existingValue !== nextValue;
+  };
+
   for (const key of Object.keys(newData)) {
     if (systemFields.has(key)) {
       continue;
     }
-    const existingValue = existing[key];
-    const newValue = newData[key];
-
-    if (existingValue instanceof Object && existingValue.constructor.name === "Decimal") {
-      if (newValue === null || newValue === undefined) {
-        return true;
-      }
-      if (String(existingValue) !== String(newValue)) {
-        return true;
-      }
-      continue;
-    }
-
-    if (existingValue instanceof Date && newValue instanceof Date) {
-      if (existingValue.getTime() !== newValue.getTime()) {
-        return true;
-      }
-      continue;
-    }
-
-    if (existingValue !== newValue) {
+    if (valuesDiffer(existing[key], newData[key])) {
       return true;
     }
   }
@@ -272,8 +285,7 @@ export async function importDteSaleRow(
     }
 
     await db.dTESaleDetail.create({
-      // biome-ignore lint/suspicious/noExplicitAny: Zenstack type narrowing
-      data: saleData as any,
+      data: saleData as never,
     });
     return { inserted: 1, updated: 0, skipped: 0 };
   } catch (error) {
@@ -343,8 +355,7 @@ export async function importDtePurchaseRow(
     }
 
     await db.dTEPurchaseDetail.create({
-      // biome-ignore lint/suspicious/noExplicitAny: Zenstack type narrowing
-      data: purchaseData as any,
+      data: purchaseData as never,
     });
     return { inserted: 1, updated: 0, skipped: 0 };
   } catch (error) {

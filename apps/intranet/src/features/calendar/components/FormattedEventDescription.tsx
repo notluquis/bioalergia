@@ -11,7 +11,7 @@ export function FormattedEventDescription({
   className,
   text,
 }: Readonly<FormattedEventDescriptionProps>) {
-  const htmlContent = (() => {
+  const plainContent = (() => {
     let html = text;
 
     // Preserve line breaks from calendar descriptions
@@ -42,21 +42,31 @@ export function FormattedEventDescription({
     // 3. Remove empty spans (cleanup)
     html = html.replaceAll(/<span>\s*<\/span>/g, "");
 
-    // 4. Sanitize to prevent XSS attacks
-    return DOMPurify.sanitize(html, {
+    // 4. Sanitize HTML first
+    const sanitizedHtml = DOMPurify.sanitize(html, {
       ALLOWED_ATTR: ["class", "href", "target", "rel"],
       ALLOWED_TAGS: ["span", "div", "a", "br", "strong", "em", "ul", "li"],
+    });
+
+    // 5. Convert to plain text while preserving basic line breaks
+    const withLineBreaks = sanitizedHtml
+      .replaceAll(/<br\s*\/?>/gi, "\n")
+      .replaceAll(/<\/div>/gi, "\n");
+
+    return DOMPurify.sanitize(withLineBreaks, {
+      ALLOWED_ATTR: [],
+      ALLOWED_TAGS: [],
     });
   })();
 
   return (
     <div
       className={cn(
-        "font-normal text-foreground-500 text-xs leading-relaxed transition-all [&_a]:text-primary [&_a]:underline",
+        "whitespace-pre-wrap font-normal text-foreground-500 text-xs leading-relaxed transition-all",
         className,
       )}
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: Sanitized with DOMPurify
-      dangerouslySetInnerHTML={{ __html: htmlContent }}
-    />
+    >
+      {plainContent}
+    </div>
   );
 }

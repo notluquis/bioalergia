@@ -308,13 +308,13 @@ export async function verifyBackupFolder(): Promise<{
       fileId: folderId,
       fields: "id, name, webViewLink",
     });
+    const resolvedFolderId = response.data.id ?? folderId;
+    const resolvedFolderName = response.data.name ?? "Backup";
 
     return {
       ok: true,
-      // biome-ignore lint/style/noNonNullAssertion: response guaranteed by Google API
-      folderId: response.data.id!,
-      // biome-ignore lint/style/noNonNullAssertion: response guaranteed by Google API
-      folderName: response.data.name!,
+      folderId: resolvedFolderId,
+      folderName: resolvedFolderName,
     };
   } catch (error) {
     const parsed = parseGoogleError(error);

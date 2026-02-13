@@ -43,11 +43,10 @@ export function MovementTypeList({ data }: MovementTypeListProps) {
           {title}
         </h3>
         <div className="space-y-1">
-          {items.map((item, index) => (
+          {items.map((item) => (
             <div
               className="flex items-center justify-between rounded-lg border border-transparent p-2 transition-colors hover:bg-default-50/50"
-              // biome-ignore lint/suspicious/noArrayIndexKey: simple list
-              key={index}
+              key={`${item.description ?? "Sin categoría"}-${item.total}`}
             >
               <span className="text-sm">{item.description ?? "Sin categoría"}</span>
               <span className={`font-mono font-semibold text-sm ${colorClass}`}>

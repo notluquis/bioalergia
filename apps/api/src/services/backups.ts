@@ -27,9 +27,13 @@ type ProgressCallback = (progress: BackupProgress) => void;
 const getDelegateName = (modelName: string) =>
   modelName.charAt(0).toLowerCase() + modelName.slice(1);
 
+type ModelDelegate = {
+  findMany: (args?: Record<string, unknown>) => Promise<unknown[]>;
+  count: (args?: Record<string, unknown>) => Promise<number>;
+};
+
 const getModelDelegate = (modelName: string) => {
-  // biome-ignore lint/suspicious/noExplicitAny: dynamic delegate lookup by model name
-  const dbRecord = db as Record<string, any>;
+  const dbRecord = db as unknown as Record<string, ModelDelegate | undefined>;
   return dbRecord[getDelegateName(modelName)];
 };
 
@@ -41,7 +45,6 @@ function getAllModelNames(): string[] {
 /**
  * Creates a database backup.
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy backup logic
 export async function createBackup(onProgress?: ProgressCallback): Promise<BackupResult> {
   const startTime = Date.now();
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
@@ -499,7 +502,7 @@ export async function getBackupDiff(fileId: string) {
     // Counts match, verify content hash (expensive)
     // We only do this for small tables or if requested?
     // For now, let's do it regardless but warn.
-    const data = await modelDelegate.findMany();
+    const data = await modelDelegate.findMany({});
     const jsonString = JSON.stringify(data, (_, value) =>
       typeof value === "bigint" ? value.toString() : value,
     );

@@ -67,7 +67,6 @@ export function useFileUpload({
     }
   };
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: validation logic
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = [...(event.target.files ?? [])];
     reset();
@@ -77,13 +76,15 @@ export function useFileUpload({
       return;
     }
 
-    // Validación opcional de archivos
-    if (validator) {
+    const validateSelectedFiles = async () => {
+      if (!validator) {
+        return true;
+      }
       const analyses = await Promise.all(
         selected.map(async (file) => ({ file, ...(await validator(file)) })),
       );
+      const problematic = analyses.filter((item) => item.missing.length > 0);
 
-      const problematic = analyses.filter((item) => item.missing.length);
       logger.info(
         `${logContext} archivos seleccionados`,
         analyses.map(({ file, headersCount, missing }) => ({
@@ -93,24 +94,27 @@ export function useFileUpload({
         })),
       );
 
-      if (problematic.length > 0 && confirmOnValidationWarning) {
-        const message = problematic
-          .map(
-            ({ file, headersCount, missing }) =>
-              `${file.name}: faltan ${missing.join(", ")} · columnas detectadas: ${headersCount}`,
-          )
-          .join("\n");
-
-        const proceed = globalThis.confirm(
-          `Advertencia: algunos archivos no contienen todas las columnas esperadas.\n\n${message}\n\n¿Deseas continuar igualmente?`,
-        );
-
-        if (!proceed) {
-          setFiles([]);
-          event.target.value = "";
-          return;
-        }
+      if (problematic.length === 0 || !confirmOnValidationWarning) {
+        return true;
       }
+
+      const message = problematic
+        .map(
+          ({ file, headersCount, missing }) =>
+            `${file.name}: faltan ${missing.join(", ")} · columnas detectadas: ${headersCount}`,
+        )
+        .join("\n");
+
+      return globalThis.confirm(
+        `Advertencia: algunos archivos no contienen todas las columnas esperadas.\n\n${message}\n\n¿Deseas continuar igualmente?`,
+      );
+    };
+
+    const canContinue = await validateSelectedFiles();
+    if (!canContinue) {
+      setFiles([]);
+      event.target.value = "";
+      return;
     }
 
     const firstFile = selected[0];

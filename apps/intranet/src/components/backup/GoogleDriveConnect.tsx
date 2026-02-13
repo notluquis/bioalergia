@@ -82,11 +82,10 @@ function GoogleDriveConnect() {
     }
 
     if (error) {
-      const errorMessage = Object.hasOwn(ERROR_MESSAGES, error)
-        ? // eslint-disable-next-line security/detect-object-injection, @typescript-eslint/no-non-null-assertion
-          // biome-ignore lint/style/noNonNullAssertion: legacy logic
-          ERROR_MESSAGES[error]!
-        : `Error de conexión: ${error}`;
+      const mappedError = Object.hasOwn(ERROR_MESSAGES, error)
+        ? ERROR_MESSAGES[error as keyof typeof ERROR_MESSAGES]
+        : undefined;
+      const errorMessage = mappedError ?? `Error de conexión: ${error}`;
       showError(errorMessage);
       // Clean URL
       const url = new URL(globalThis.location.href);

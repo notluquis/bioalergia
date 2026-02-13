@@ -150,7 +150,6 @@ export class CalendarSyncService {
   /**
    * Internal sync execution loop handling pagination and syncToken
    */
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy sync logic
   private async performSync(
     calendarId: string,
     syncToken: string | null | undefined,

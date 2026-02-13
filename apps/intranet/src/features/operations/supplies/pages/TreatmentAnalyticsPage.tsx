@@ -96,7 +96,6 @@ interface PieChartData {
 
 // --- Main Page Component ---
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Component logic is centralized for analytics
 export function TreatmentAnalyticsPage() {
   const navigate = routeApi.useNavigate();
   const searchParams = routeApi.useSearch();

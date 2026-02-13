@@ -133,7 +133,6 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
 
   // Calculate time bounds based based on events AND current time
   // eslint-disable-next-line sonarjs/cognitive-complexity
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy time calculation
   const { endHour, startHour } = (() => {
     const businessStart = 9;
     const businessEnd = 20;
@@ -261,15 +260,9 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
 
 function WeekGridHeader({ days }: { days: DayInfo[] }) {
   return (
-    // biome-ignore lint/a11y/useSemanticElements: grid layout
-    <div
-      className="grid grid-cols-[52px_repeat(6,1fr)] border-default-200 border-b bg-content2/60 backdrop-blur-md"
-      role="row"
-      tabIndex={0}
-    >
+    <div className="grid grid-cols-[52px_repeat(6,1fr)] border-default-200 border-b bg-content2/60 backdrop-blur-md">
       <div className="border-default-200 border-r" />
       {days.map((day) => (
-        // biome-ignore lint/a11y/useSemanticElements: grid layout
         <div
           aria-current={day.isToday ? "date" : undefined}
           className={cn(
@@ -277,8 +270,6 @@ function WeekGridHeader({ days }: { days: DayInfo[] }) {
             day.isToday && "relative border-primary border-t-4 bg-primary/20",
           )}
           key={day.key}
-          role="columnheader"
-          tabIndex={0}
         >
           <abbr
             className="font-bold text-[0.65rem] text-foreground-400 uppercase tracking-wider"

@@ -32,14 +32,11 @@ if (!haulmerPassword) {
 }
 
 export const haulmerConfig: HaulmerEnvConfig | null =
-  haulmerEnvMissing.length === 0
+  haulmerRut && haulmerEmail && haulmerPassword
     ? {
-        // biome-ignore lint/style/noNonNullAssertion: env var validated
-        rut: haulmerRut!,
-        // biome-ignore lint/style/noNonNullAssertion: env var validated
-        email: haulmerEmail!,
-        // biome-ignore lint/style/noNonNullAssertion: env var validated
-        password: haulmerPassword!,
+        rut: haulmerRut,
+        email: haulmerEmail,
+        password: haulmerPassword,
         workspaceId: process.env.HAULMER_WORKSPACE_ID,
       }
     : null;
@@ -124,14 +121,11 @@ const syncLookAheadDays =
     : 365;
 
 export const googleCalendarConfig: GoogleCalendarConfig | null =
-  googleCalendarEnvMissing.length === 0
+  googleServiceAccountEmail && googleServiceAccountPrivateKey && googleCalendarIds
     ? {
-        // biome-ignore lint/style/noNonNullAssertion: env var validated
-        serviceAccountEmail: googleServiceAccountEmail!,
-        // biome-ignore lint/style/noNonNullAssertion: env var validated
-        privateKey: googleServiceAccountPrivateKey!,
-        // biome-ignore lint/style/noNonNullAssertion: env var validated
-        calendarIds: googleCalendarIds!,
+        serviceAccountEmail: googleServiceAccountEmail,
+        privateKey: googleServiceAccountPrivateKey,
+        calendarIds: googleCalendarIds,
         timeZone: process.env.GOOGLE_CALENDAR_TIMEZONE ?? "America/Santiago",
         syncStartDate,
         syncLookAheadDays,

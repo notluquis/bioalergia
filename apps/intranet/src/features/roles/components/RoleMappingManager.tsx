@@ -1,6 +1,6 @@
 import { Description } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
 import type { Employee } from "@/features/hr/employees/api";
@@ -72,17 +72,16 @@ export function RoleMappingManager() {
     setMappings(allRoles);
   }, [data]);
 
-  const handleRoleChange = (employeeRole: string, newAppRole: string) => {
+  const handleRoleChange = useCallback((employeeRole: string, newAppRole: string) => {
     setMappings((prev) =>
       prev.map((m) =>
         m.employee_role === employeeRole ? { ...m, app_role: newAppRole, isModified: !m.isNew } : m,
       ),
     );
-  };
+  }, []);
 
   const columns = useMemo(
     () => getColumns(availableRoles, handleRoleChange),
-    // biome-ignore lint/correctness/useExhaustiveDependencies: legacy hook
     [availableRoles, handleRoleChange],
   );
 

@@ -54,7 +54,6 @@ export function EmployeeForm({ employee, onCancel, onSave }: EmployeeFormProps) 
   });
 
   const [rutError, setRutError] = useState<null | string>(null);
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy form initialization
   useEffect(() => {
     if (employee) {
       const employeeRate = getEmployeeRetentionRate(employee);
@@ -161,7 +160,6 @@ export function EmployeeForm({ employee, onCancel, onSave }: EmployeeFormProps) 
   });
 
   const isMutating = createMutation.isPending || updateMutation.isPending;
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy form validation
   const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!hasPermission) {

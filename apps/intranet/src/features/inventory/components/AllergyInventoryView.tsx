@@ -55,8 +55,7 @@ function AllergyInventoryView() {
           </Description>
         </div>
         <Button disabled={isFetching} onClick={() => void refetch()} size="sm" variant="ghost">
-          {/* biome-ignore lint/security/noSecrets: UI label, not a secret */}{" "}
-          {isFetching ? "Actualizando…" : "Refrescar"}
+          {isFetching ? "Actualizando" : "Refrescar"}
         </Button>
       </div>
       {errorMessage && <Alert status="danger">{errorMessage}</Alert>}

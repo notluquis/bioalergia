@@ -407,7 +407,6 @@ function normalizeAmountRaw(raw: string): number | null {
   return normalized;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy parser
 function extractAmounts(summary: string, description: string) {
   let amountExpected: number | null = null;
   let amountPaid: number | null = null;

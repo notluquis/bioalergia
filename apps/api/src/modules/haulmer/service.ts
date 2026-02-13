@@ -48,10 +48,89 @@ async function getJWT(config: HaulmerConfig) {
   return cachedJWT;
 }
 
+function normalizeParsedRows(rows: Record<string, unknown>[], period: string) {
+  let columnsNormalized = 0;
+  for (const [index, row] of rows.entries()) {
+    row.period = period;
+    if (index === 0) {
+      console.log(`[Haulmer Sync] Raw columns: ${Object.keys(row).join(", ")}`);
+    }
+
+    const normalizedRow: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(row)) {
+      const normalizedKey = normalizeColumnName(key);
+      if (normalizedKey !== key) {
+        columnsNormalized++;
+      }
+      normalizedRow[normalizedKey] = value;
+    }
+    for (const key of Object.keys(row)) {
+      delete row[key];
+    }
+    Object.assign(row, normalizedRow);
+  }
+  return columnsNormalized;
+}
+
+async function importParsedRows(rows: Record<string, unknown>[], docType: "sales" | "purchases") {
+  let rowsInserted = 0;
+  let rowsUpdated = 0;
+  let rowsSkipped = 0;
+
+  for (const row of rows) {
+    try {
+      const result =
+        docType === "sales"
+          ? await importDteSaleRow(row, "insert-or-update")
+          : await importDtePurchaseRow(row, "insert-or-update");
+      rowsInserted += result.inserted;
+      rowsUpdated += result.updated;
+      rowsSkipped += result.skipped;
+    } catch (err) {
+      rowsSkipped++;
+      console.warn(`[Haulmer] Skip row for ${docType}:`, err);
+    }
+  }
+
+  return { rowsInserted, rowsSkipped, rowsUpdated };
+}
+
+async function saveSyncSuccessLog(params: {
+  csvSize: number;
+  docType: "sales" | "purchases";
+  period: string;
+  rowsInserted: number;
+  rowsSkipped: number;
+  rowsUpdated: number;
+  rut: string;
+}) {
+  await db.haulmerSyncLog.upsert({
+    where: {
+      period_rut_docType: { period: params.period, rut: params.rut, docType: params.docType },
+    },
+    create: {
+      period: params.period,
+      rut: params.rut,
+      docType: params.docType,
+      rowsCreated: params.rowsInserted,
+      rowsUpdated: params.rowsUpdated,
+      rowsSkipped: params.rowsSkipped,
+      status: "success",
+      csvSize: params.csvSize,
+    },
+    update: {
+      rowsCreated: params.rowsInserted,
+      rowsUpdated: params.rowsUpdated,
+      rowsSkipped: params.rowsSkipped,
+      status: "success",
+      csvSize: params.csvSize,
+    },
+  });
+}
+
 /**
  * Sync a single period and document type
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: error handling pattern
 export async function syncPeriod(
   rut: string,
   period: string,
@@ -73,32 +152,7 @@ export async function syncPeriod(
     const rows = parseCSVText(csvText);
 
     // Normalize column names and add period to each row
-    let columnsNormalized = 0;
-    for (const row of rows) {
-      // Add period field (required for import functions)
-      row.period = period;
-
-      // Log raw column names before normalization (first row only for debugging)
-      if (rows.indexOf(row) === 0) {
-        console.log(`[Haulmer Sync] Raw columns: ${Object.keys(row).join(", ")}`);
-      }
-
-      // Normalize column names
-      const normalizedRow: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(row)) {
-        const normalizedKey = normalizeColumnName(key);
-        if (normalizedKey !== key) {
-          columnsNormalized++;
-        }
-        normalizedRow[normalizedKey] = value;
-      }
-
-      // Replace row with normalized version
-      for (const k of Object.keys(row)) {
-        delete row[k];
-      }
-      Object.assign(row, normalizedRow);
-    }
+    const columnsNormalized = normalizeParsedRows(rows, period);
 
     console.log(
       `[Haulmer Sync] Downloaded and parsed ${rows.length} rows for ${docType}/${period} (normalized ${columnsNormalized} fields)`,
@@ -111,21 +165,7 @@ export async function syncPeriod(
       );
     }
 
-    // Process rows using shared library functions
-    for (const row of rows) {
-      try {
-        const result =
-          docType === "sales"
-            ? await importDteSaleRow(row, "insert-or-update")
-            : await importDtePurchaseRow(row, "insert-or-update");
-        rowsInserted += result.inserted;
-        rowsUpdated += result.updated;
-        rowsSkipped += result.skipped;
-      } catch (err) {
-        rowsSkipped++;
-        console.warn(`[Haulmer] Skip row for ${docType}:`, err);
-      }
-    }
+    ({ rowsInserted, rowsSkipped, rowsUpdated } = await importParsedRows(rows, docType));
 
     console.log(
       `[Haulmer Sync] Completed ${docType}/${period}: ${rowsInserted} inserted, ${rowsUpdated} updated, ${rowsSkipped} skipped`,
@@ -140,26 +180,14 @@ export async function syncPeriod(
       rowsUpdated,
     };
 
-    // Save sync log (upsert to handle re-syncing)
-    await db.haulmerSyncLog.upsert({
-      where: { period_rut_docType: { period, rut, docType } },
-      create: {
-        period,
-        rut,
-        docType,
-        rowsCreated: rowsInserted,
-        rowsUpdated,
-        rowsSkipped,
-        status: "success",
-        csvSize: csvText.length,
-      },
-      update: {
-        rowsCreated: rowsInserted,
-        rowsUpdated,
-        rowsSkipped,
-        status: "success",
-        csvSize: csvText.length,
-      },
+    await saveSyncSuccessLog({
+      csvSize: csvText.length,
+      docType,
+      period,
+      rowsInserted,
+      rowsSkipped,
+      rowsUpdated,
+      rut,
     });
 
     return result;

@@ -77,6 +77,47 @@ const toggleMfaSchema = z.object({
   enabled: z.boolean(),
 });
 
+type InviteUserPayload = z.infer<typeof inviteUserSchema>;
+
+async function resolveInvitePersonId(
+  personId: number | undefined,
+  email: string,
+  payload: InviteUserPayload,
+) {
+  if (!personId) {
+    const person = await db.person.create({
+      data: {
+        names: payload.names || "Nuevo Usuario",
+        fatherName: payload.fatherName || "",
+        motherName: payload.motherName || "",
+        email,
+        rut: payload.rut || `TEMP-${Date.now()}`,
+      },
+    });
+    return person.id;
+  }
+
+  const linkedPerson = await db.person.findUnique({ where: { id: personId } });
+  if (!linkedPerson) {
+    throw new Error("PERSON_NOT_FOUND");
+  }
+
+  const linkedEmail = linkedPerson.email?.toLowerCase().trim();
+  if (!linkedEmail) {
+    await db.person.update({
+      where: { id: linkedPerson.id },
+      data: { email },
+    });
+    return linkedPerson.id;
+  }
+
+  if (linkedEmail !== email) {
+    throw new Error("PERSON_EMAIL_CONFLICT");
+  }
+
+  return linkedPerson.id;
+}
+
 // ============================================================
 // LIST USERS
 // ============================================================
@@ -198,31 +239,24 @@ userRoutes.post("/invite", zValidator("json", inviteUserSchema), async (c) => {
   const tempPassword = crypto.randomBytes(12).toString("hex");
   const tempPasswordHash = await hashPassword(tempPassword);
 
-  // Create user
   let targetPersonId = personId;
-  if (!targetPersonId) {
-    const person = await db.person.create({
-      data: {
-        names: names || "Nuevo Usuario",
-        fatherName: fatherName || "",
-        motherName: motherName || "",
-        email: normalizedEmail,
-        rut: rut || `TEMP-${Date.now()}`,
-      },
+  try {
+    targetPersonId = await resolveInvitePersonId(targetPersonId, normalizedEmail, {
+      email,
+      fatherName,
+      mfaEnforced,
+      motherName,
+      names,
+      personId,
+      position,
+      role,
+      rut,
     });
-    targetPersonId = person.id;
-  } else {
-    const linkedPerson = await db.person.findUnique({ where: { id: targetPersonId } });
-    if (!linkedPerson) {
+  } catch (error) {
+    if (error instanceof Error && error.message === "PERSON_NOT_FOUND") {
       return reply(c, { status: "error", message: "Persona no encontrada" }, 404);
     }
-    const linkedEmail = linkedPerson.email?.toLowerCase().trim();
-    if (!linkedEmail) {
-      await db.person.update({
-        where: { id: linkedPerson.id },
-        data: { email: normalizedEmail },
-      });
-    } else if (linkedEmail !== normalizedEmail) {
+    if (error instanceof Error && error.message === "PERSON_EMAIL_CONFLICT") {
       return reply(
         c,
         {
@@ -233,6 +267,7 @@ userRoutes.post("/invite", zValidator("json", inviteUserSchema), async (c) => {
         409,
       );
     }
+    throw error;
   }
 
   const user = await db.user.create({

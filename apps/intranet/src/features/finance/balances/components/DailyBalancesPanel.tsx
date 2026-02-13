@@ -56,13 +56,13 @@ export const DailyBalancesPanel = function DailyBalancesPanel({
 
   function renderContent() {
     if (loading) {
+      const skeletonKeys = Array.from({ length: 6 }, () => globalThis.crypto.randomUUID());
       return (
         <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, idx) => (
+          {skeletonKeys.map((key) => (
             <div
               className="flex flex-wrap items-center gap-3 rounded-2xl border border-default-200 bg-default-50/60 px-4 py-3"
-              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton items
-              key={`skeleton-balance-${idx}`}
+              key={key}
             >
               <span className="skeleton-line w-24" />
               <span className="skeleton-line w-16" />

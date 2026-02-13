@@ -103,7 +103,7 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
     const refreshedReportsByType = new Map<ReportType, MPReportSummary[]>();
     for (const [index, type] of types.entries()) {
       const reports = lists[index] as MPReportSummary[];
-      const refreshed = await ensureDailyReport(type, reports, jobId);
+      const refreshed = await ensureDailyReport(type, reports);
       refreshedReportsByType.set(type, refreshed);
     }
     updateJobProgress(jobId, 2, "Reportes diarios verificados");
@@ -161,7 +161,6 @@ interface MPReportSummary {
 async function ensureDailyReport(
   type: ReportType,
   reports: MPReportSummary[],
-  jobId: string,
 ): Promise<MPReportSummary[]> {
   const targetDate = getYesterdayDate();
   const existing = reports.find((report) => reportCoversDate(report, targetDate));

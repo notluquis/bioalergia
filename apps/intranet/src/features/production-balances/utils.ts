@@ -83,7 +83,5 @@ export function formatSaveTime(date: Date): string {
  */
 export function getDayAbbrev(date: Date): string {
   const day = date.getDay();
-  // getDay() always returns 0-6, so this is safe
-  // biome-ignore lint/style/noNonNullAssertion: safe index
-  return ["D", "L", "M", "X", "J", "V", "S"][day]!;
+  return ["D", "L", "M", "X", "J", "V", "S"][day] ?? "D";
 }

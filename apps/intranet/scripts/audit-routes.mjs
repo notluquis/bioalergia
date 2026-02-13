@@ -37,7 +37,6 @@ function isLayoutRoute(absolutePath) {
   return existsSync(potentialDir) && statSync(potentialDir).isDirectory();
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: script logic
 async function main() {
   console.log("🔍 Auditing route navigation metadata...\n");
 

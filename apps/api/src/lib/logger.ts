@@ -21,10 +21,24 @@ export const logger = {
   child: () => logger, // Dummy child
 };
 
-// biome-ignore lint/suspicious/noExplicitAny: Hono context dynamic
-export function requestContext(c: Context | any, extra: Record<string, unknown> = {}) {
+type RequestLikeContext = {
+  get?: (key: string) => unknown;
+  req?: {
+    method?: string;
+    path?: string;
+  };
+};
+
+export function requestContext(
+  c: Context | RequestLikeContext,
+  extra: Record<string, unknown> = {},
+) {
   // Try to extract user from context if available (depends on middleware)
-  const user = c.get?.("user") || null;
+  const maybeUser = c.get?.("user");
+  const user =
+    maybeUser && typeof maybeUser === "object"
+      ? (maybeUser as { email?: string; id?: number | string })
+      : null;
 
   return {
     method: c.req?.method,

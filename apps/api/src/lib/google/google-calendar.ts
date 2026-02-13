@@ -207,7 +207,6 @@ function buildFetchRange(runtime: CalendarRuntimeConfig, lastFetchedAt: Date | n
   };
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy pagination logic
 async function fetchCalendarEventsForId(
   client: CalendarClient,
   calendarId: string,
@@ -234,28 +233,75 @@ async function fetchCalendarEventsForId(
   let pageCount = 0;
   let nextSyncToken: string | undefined;
 
-  do {
-    const requestParams: GoogleCalendarListParams = {
+  const buildRequestParams = (currentPageToken?: string): GoogleCalendarListParams => {
+    const params: GoogleCalendarListParams = {
       calendarId,
-      pageToken,
+      pageToken: currentPageToken,
       singleEvents: true,
       showDeleted: true,
       maxResults: 2500,
     };
-
-    // If we have a syncToken, use incremental sync (ignores timeMin/timeMax)
     if (syncToken) {
-      requestParams.syncToken = syncToken;
-    } else {
-      // Full sync with time range
-      requestParams.timeMin = range.timeMin;
-      requestParams.timeMax = range.timeMax;
-      requestParams.timeZone = range.timeZone;
-      requestParams.orderBy = "startTime";
-      if (range.updatedMin) {
-        requestParams.updatedMin = range.updatedMin;
-      }
+      params.syncToken = syncToken;
+      return params;
     }
+    params.timeMin = range.timeMin;
+    params.timeMax = range.timeMax;
+    params.timeZone = range.timeZone;
+    params.orderBy = "startTime";
+    if (range.updatedMin) {
+      params.updatedMin = range.updatedMin;
+    }
+    return params;
+  };
+
+  const collectEventFromItem = (item: calendar_v3.Schema$Event) => {
+    if (!item.id) {
+      return;
+    }
+    if (item.status === "cancelled" || isEventExcluded(item, patterns)) {
+      excluded.push({ calendarId, eventId: item.id, summary: item.summary });
+      return;
+    }
+
+    const summary = item.summary ?? "";
+    const description = item.description ?? "";
+    const metadata = parseCalendarMetadata({ summary, description });
+    let { amountExpected, amountPaid } = metadata;
+    if (amountPaid != null && amountExpected == null) {
+      amountExpected = amountPaid;
+    }
+
+    events.push({
+      calendarId,
+      eventId: item.id,
+      status: item.status,
+      eventType: item.eventType,
+      summary,
+      description,
+      start: item.start ?? null,
+      end: item.end ?? null,
+      created: item.created,
+      updated: item.updated,
+      colorId: item.colorId,
+      location: item.location,
+      transparency: item.transparency,
+      visibility: item.visibility,
+      hangoutLink: item.hangoutLink,
+      category: metadata.category,
+      amountExpected,
+      amountPaid,
+      attended: metadata.attended,
+      dosageValue: metadata.dosageValue,
+      dosageUnit: metadata.dosageUnit,
+      treatmentStage: metadata.treatmentStage,
+      controlIncluded: metadata.controlIncluded,
+      isDomicilio: metadata.isDomicilio,
+    });
+  };
+
+  do {
+    const requestParams = buildRequestParams(pageToken);
 
     const response = await retryGoogleCall(() => client.events.list(requestParams), {
       context: "calendar.events.list",
@@ -264,54 +310,7 @@ async function fetchCalendarEventsForId(
     const items = response.data.items ?? [];
 
     for (const item of items) {
-      if (!item.id) {
-        continue;
-      }
-
-      if (item.status === "cancelled") {
-        excluded.push({ calendarId, eventId: item.id, summary: item.summary });
-        continue;
-      }
-
-      if (isEventExcluded(item, patterns)) {
-        excluded.push({ calendarId, eventId: item.id, summary: item.summary });
-        continue;
-      }
-
-      const summary = item.summary ?? "";
-      const description = item.description ?? "";
-      const metadata = parseCalendarMetadata({ summary, description });
-      let { amountExpected, amountPaid } = metadata;
-      if (amountPaid != null && amountExpected == null) {
-        amountExpected = amountPaid;
-      }
-
-      events.push({
-        calendarId,
-        eventId: item.id,
-        status: item.status,
-        eventType: item.eventType,
-        summary: summary,
-        description: description,
-        start: item.start ?? null,
-        end: item.end ?? null,
-        created: item.created,
-        updated: item.updated,
-        colorId: item.colorId,
-        location: item.location,
-        transparency: item.transparency,
-        visibility: item.visibility,
-        hangoutLink: item.hangoutLink,
-        category: metadata.category,
-        amountExpected,
-        amountPaid,
-        attended: metadata.attended,
-        dosageValue: metadata.dosageValue,
-        dosageUnit: metadata.dosageUnit,
-        treatmentStage: metadata.treatmentStage,
-        controlIncluded: metadata.controlIncluded,
-        isDomicilio: metadata.isDomicilio,
-      });
+      collectEventFromItem(item);
     }
 
     pageToken = response.data.nextPageToken ?? undefined;
@@ -337,7 +336,63 @@ async function fetchCalendarEventsForId(
   return { events, excluded, nextSyncToken };
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy sync logic
+async function fetchCalendarWithFallback(
+  client: CalendarClient,
+  calendarId: string,
+  range: FetchRange,
+  patterns: RegExp[],
+): Promise<{
+  events: CalendarEventRecord[];
+  excluded: Array<{ calendarId: string; eventId: string; summary?: string | null }>;
+  nextSyncToken?: string;
+}> {
+  const calendar = await db.calendar.findUnique({
+    where: { googleId: calendarId },
+    select: { syncToken: true },
+  });
+  const savedSyncToken = calendar?.syncToken;
+
+  const runFetch = (token?: null | string) =>
+    fetchCalendarEventsForId(client, calendarId, range, patterns, token ?? undefined);
+
+  logEvent("googleCalendar.fetch.start", {
+    calendarId,
+    usingSyncToken: Boolean(savedSyncToken),
+    timeMin: savedSyncToken ? undefined : range.timeMin,
+    timeMax: savedSyncToken ? undefined : range.timeMax,
+  });
+
+  try {
+    return await runFetch(savedSyncToken);
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("410")) {
+      throw error;
+    }
+    logWarn("googleCalendar.fetch.syncTokenExpired", {
+      calendarId,
+      message: "Sync token expired, performing full sync",
+    });
+    return await runFetch(null);
+  }
+}
+
+async function saveSyncTokens(syncTokens: Record<string, string>) {
+  for (const [calendarId, syncToken] of Object.entries(syncTokens)) {
+    try {
+      await db.calendar.upsert({
+        where: { googleId: calendarId },
+        update: { syncToken },
+        create: { googleId: calendarId, syncToken },
+      });
+    } catch (error) {
+      logWarn("googleCalendar.syncToken.saveFailed", {
+        calendarId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+}
+
 export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPayload> {
   if (!googleCalendarConfig) {
     throw new Error("Google Calendar config not available. Check environment variables.");
@@ -366,26 +421,11 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
 
   for (const calendarId of googleCalendarConfig.calendarIds) {
     try {
-      // Get saved syncToken for this calendar
-      const calendar = await db.calendar.findUnique({
-        where: { googleId: calendarId },
-        select: { syncToken: true },
-      });
-      const savedSyncToken = calendar?.syncToken;
-
-      logEvent("googleCalendar.fetch.start", {
-        calendarId,
-        usingSyncToken: Boolean(savedSyncToken),
-        timeMin: savedSyncToken ? undefined : range.timeMin,
-        timeMax: savedSyncToken ? undefined : range.timeMax,
-      });
-
-      const result = await fetchCalendarEventsForId(
+      const result = await fetchCalendarWithFallback(
         client,
         calendarId,
         range,
         runtime.excludeSummaryPatterns,
-        savedSyncToken,
       );
 
       events.push(...result.events);
@@ -405,61 +445,14 @@ export async function fetchGoogleCalendarData(): Promise<GoogleCalendarSyncPaylo
       });
     } catch (error) {
       // TODO: Parse GaxiosError and retry 429/503 using retryAfterSeconds + exponential backoff.
-      // If syncToken is invalid (e.g., expired), reset and do full sync
-      if (error instanceof Error && error.message.includes("410")) {
-        logWarn("googleCalendar.fetch.syncTokenExpired", {
-          calendarId,
-          message: "Sync token expired, performing full sync",
-        });
-
-        // Retry without syncToken
-        try {
-          const result = await fetchCalendarEventsForId(
-            client,
-            calendarId,
-            range,
-            runtime.excludeSummaryPatterns,
-            null,
-          );
-          events.push(...result.events);
-          excludedEvents.push(...result.excluded);
-          calendarsSummary.push({
-            calendarId,
-            totalEvents: result.events.length,
-          });
-          if (result.nextSyncToken) {
-            syncTokensToSave[calendarId] = result.nextSyncToken;
-          }
-        } catch (retryError) {
-          logWarn("googleCalendar.fetch.error", {
-            calendarId,
-            error: retryError instanceof Error ? retryError.message : String(retryError),
-          });
-        }
-      } else {
-        logWarn("googleCalendar.fetch.error", {
-          calendarId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-  }
-
-  // Save all new syncTokens
-  for (const [calendarId, syncToken] of Object.entries(syncTokensToSave)) {
-    try {
-      await db.calendar.upsert({
-        where: { googleId: calendarId },
-        update: { syncToken },
-        create: { googleId: calendarId, syncToken },
-      });
-    } catch (error) {
-      logWarn("googleCalendar.syncToken.saveFailed", {
+      logWarn("googleCalendar.fetch.error", {
         calendarId,
         error: error instanceof Error ? error.message : String(error),
       });
     }
   }
+
+  await saveSyncTokens(syncTokensToSave);
 
   return {
     fetchedAt: new Date().toISOString(),

@@ -33,14 +33,15 @@ export function useSupplyManagement(): UseSupplyManagementResult {
         acc[supply.name] = {};
       }
       const brand = supply.brand || "N/A";
-      // biome-ignore lint/style/noNonNullAssertion: key exists
-      if (!acc[supply.name]![brand]) {
-        // biome-ignore lint/style/noNonNullAssertion: key exists
-        acc[supply.name]![brand] = [];
+      const supplyGroup = acc[supply.name];
+      if (!supplyGroup) {
+        return acc;
+      }
+      if (!supplyGroup[brand]) {
+        supplyGroup[brand] = [];
       }
       if (supply.model) {
-        // biome-ignore lint/style/noNonNullAssertion: key exists
-        acc[supply.name]![brand]!.push(supply.model);
+        supplyGroup[brand]?.push(supply.model);
       }
       return acc;
     },

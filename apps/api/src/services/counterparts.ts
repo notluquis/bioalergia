@@ -76,6 +76,12 @@ type CounterpartAccumulator = {
   holder: string;
 };
 
+type CounterpartSyncCounters = {
+  conflictCount: number;
+  syncedAccounts: number;
+  syncedCounterparts: number;
+};
+
 const ensureAccumulator = (
   map: Map<string, CounterpartAccumulator>,
   rut: string,
@@ -115,23 +121,19 @@ const addAccountToAccumulator = (
   });
 };
 
-export async function syncCounterpartsFromTransactions() {
-  const withdrawals = await db.withdrawTransaction.findMany({
-    orderBy: { dateCreated: "desc" },
-    select: {
-      bankAccountHolder: true,
-      bankAccountNumber: true,
-      bankAccountType: true,
-      bankName: true,
-      identificationNumber: true,
-    },
-    where: {
-      identificationNumber: {
-        not: null,
-      },
-    },
-  });
+const toNumericAmount = (amount: unknown): number => {
+  return amount ? Number(amount) : 0;
+};
 
+const buildCounterpartAccumulatorMap = (
+  withdrawals: Array<{
+    bankAccountHolder: null | string;
+    bankAccountNumber: null | string;
+    bankAccountType: null | string;
+    bankName: null | string;
+    identificationNumber: null | string;
+  }>,
+) => {
   const byRut = new Map<string, CounterpartAccumulator>();
 
   for (const row of withdrawals) {
@@ -152,42 +154,179 @@ export async function syncCounterpartsFromTransactions() {
     );
   }
 
-  let conflictCount = 0;
-  let syncedCounterparts = 0;
-  let syncedAccounts = 0;
+  return byRut;
+};
 
-  for (const [rut, counterpartData] of byRut.entries()) {
-    const counterpart = await db.counterpart.upsert({
-      create: {
-        bankAccountHolder: counterpartData.holder || rut,
-        category: "SUPPLIER",
-        identificationNumber: rut,
-      },
-      update: {},
-      where: { identificationNumber: rut },
-    });
-    syncedCounterparts += 1;
+const upsertCounterpartFromAccumulator = async (rut: string, data: CounterpartAccumulator) => {
+  return await db.counterpart.upsert({
+    create: {
+      bankAccountHolder: data.holder || rut,
+      category: "SUPPLIER",
+      identificationNumber: rut,
+    },
+    update: {},
+    where: { identificationNumber: rut },
+  });
+};
 
-    for (const account of counterpartData.accountMap.values()) {
-      try {
-        await upsertCounterpartAccount(counterpart.id, {
-          accountNumber: account.accountNumber,
-          accountType: account.accountType,
-          bankName: account.bankName,
-        });
-        syncedAccounts += 1;
-      } catch (error) {
-        if (error instanceof CounterpartAccountConflictError) {
-          conflictCount += 1;
-          continue;
-        }
-        throw error;
+const syncAccountsForCounterpart = async (
+  counterpartId: number,
+  accounts: CounterpartAccumulator["accountMap"],
+) => {
+  const counters = { conflictCount: 0, syncedAccounts: 0 };
+  for (const account of accounts.values()) {
+    try {
+      await upsertCounterpartAccount(counterpartId, {
+        accountNumber: account.accountNumber,
+        accountType: account.accountType,
+        bankName: account.bankName,
+      });
+      counters.syncedAccounts += 1;
+    } catch (error) {
+      if (error instanceof CounterpartAccountConflictError) {
+        counters.conflictCount += 1;
+        continue;
       }
+      throw error;
     }
   }
+  return counters;
+};
 
-  return { conflictCount, syncedAccounts, syncedCounterparts };
+export async function syncCounterpartsFromTransactions() {
+  const withdrawals = await db.withdrawTransaction.findMany({
+    orderBy: { dateCreated: "desc" },
+    select: {
+      bankAccountHolder: true,
+      bankAccountNumber: true,
+      bankAccountType: true,
+      bankName: true,
+      identificationNumber: true,
+    },
+    where: {
+      identificationNumber: {
+        not: null,
+      },
+    },
+  });
+
+  const byRut = buildCounterpartAccumulatorMap(withdrawals);
+  const counters: CounterpartSyncCounters = {
+    conflictCount: 0,
+    syncedAccounts: 0,
+    syncedCounterparts: 0,
+  };
+
+  for (const [rut, counterpartData] of byRut.entries()) {
+    const counterpart = await upsertCounterpartFromAccumulator(rut, counterpartData);
+    counters.syncedCounterparts += 1;
+    const accountCounters = await syncAccountsForCounterpart(
+      counterpart.id,
+      counterpartData.accountMap,
+    );
+    counters.conflictCount += accountCounters.conflictCount;
+    counters.syncedAccounts += accountCounters.syncedAccounts;
+  }
+
+  return counters;
 }
+
+const buildPayoutBankAccountWhere = (query: string) => {
+  if (!query) {
+    return { not: null } as const;
+  }
+
+  return {
+    contains: query,
+    mode: "insensitive" as const,
+  };
+};
+
+const buildWithdrawRutByAccount = (
+  withdrawRows: Array<{ bankAccountNumber: null | string; identificationNumber: null | string }>,
+) => {
+  const map = new Map<string, string>();
+  for (const row of withdrawRows) {
+    const account = normalizeAccountNumber(row.bankAccountNumber ?? "");
+    if (!account || !row.identificationNumber) {
+      continue;
+    }
+    const rut = normalizeRut(row.identificationNumber);
+    if (!rut) {
+      continue;
+    }
+    map.set(account, rut);
+  }
+  return map;
+};
+
+const shouldSkipPayoutAccount = (
+  account: string,
+  conflict: boolean,
+  accountsWithRut: Set<string>,
+  linkedAccounts: Set<string>,
+) => {
+  if (conflict) {
+    return false;
+  }
+
+  return accountsWithRut.has(account) || linkedAccounts.has(account);
+};
+
+const updateOrCreateUnassignedPayoutEntry = (
+  grouped: Map<string, UnassignedPayoutAccount>,
+  params: {
+    account: string;
+    conflict: boolean;
+    grossAmount: unknown;
+    linked:
+      | {
+          counterpart?: {
+            bankAccountHolder: string;
+            id: number;
+            identificationNumber: string;
+          } | null;
+        }
+      | undefined;
+    linkedRut: null | string;
+    withdrawRut: null | string;
+  },
+) => {
+  const existing = grouped.get(params.account);
+  const amount = toNumericAmount(params.grossAmount);
+
+  if (existing) {
+    existing.movementCount += 1;
+    existing.totalGrossAmount += amount;
+    existing.conflict = existing.conflict || params.conflict;
+    return;
+  }
+
+  grouped.set(params.account, {
+    conflict: params.conflict,
+    counterpartId: params.linked?.counterpart?.id ?? null,
+    counterpartName: params.linked?.counterpart?.bankAccountHolder ?? null,
+    counterpartRut: params.linkedRut,
+    movementCount: 1,
+    payoutBankAccountNumber: params.account,
+    totalGrossAmount: amount,
+    withdrawRut: params.withdrawRut,
+  });
+};
+
+const sortUnassignedPayoutAccounts = (rows: UnassignedPayoutAccount[]) => {
+  return rows.toSorted((a, b) => {
+    if (a.conflict !== b.conflict) {
+      return Number(b.conflict) - Number(a.conflict);
+    }
+    if (b.movementCount !== a.movementCount) {
+      return b.movementCount - a.movementCount;
+    }
+    return a.payoutBankAccountNumber.localeCompare(b.payoutBankAccountNumber, "es", {
+      sensitivity: "base",
+    });
+  });
+};
 
 export async function listUnassignedPayoutAccounts(params: {
   page: number;
@@ -203,14 +342,7 @@ export async function listUnassignedPayoutAccounts(params: {
         payoutBankAccountNumber: true,
       },
       where: {
-        payoutBankAccountNumber: q
-          ? {
-              contains: q,
-              mode: "insensitive",
-            }
-          : {
-              not: null,
-            },
+        payoutBankAccountNumber: buildPayoutBankAccountWhere(q),
       },
     }),
     db.withdrawTransaction.findMany({
@@ -250,18 +382,7 @@ export async function listUnassignedPayoutAccounts(params: {
   const linkedByAccount = new Map(
     linkedRows.map((row) => [normalizeAccountNumber(row.accountNumber), row]),
   );
-  const withdrawRutByAccount = new Map<string, string>();
-  for (const row of withdrawRows) {
-    const account = normalizeAccountNumber(row.bankAccountNumber ?? "");
-    if (!account || !row.identificationNumber) {
-      continue;
-    }
-    const rut = normalizeRut(row.identificationNumber);
-    if (!rut) {
-      continue;
-    }
-    withdrawRutByAccount.set(account, rut);
-  }
+  const withdrawRutByAccount = buildWithdrawRutByAccount(withdrawRows);
 
   const grouped = new Map<string, UnassignedPayoutAccount>();
   for (const row of releaseRows) {
@@ -274,41 +395,21 @@ export async function listUnassignedPayoutAccounts(params: {
     const linkedRut = linked?.counterpart?.identificationNumber ?? null;
     const conflict = Boolean(linked && withdrawRut && linkedRut && linkedRut !== withdrawRut);
 
-    if (!conflict && (accountsWithRut.has(account) || linkedAccounts.has(account))) {
+    if (shouldSkipPayoutAccount(account, conflict, accountsWithRut, linkedAccounts)) {
       continue;
     }
 
-    const existing = grouped.get(account);
-    if (existing) {
-      existing.movementCount += 1;
-      existing.totalGrossAmount += row.grossAmount ? Number(row.grossAmount) : 0;
-      existing.conflict = existing.conflict || conflict;
-      continue;
-    }
-
-    grouped.set(account, {
+    updateOrCreateUnassignedPayoutEntry(grouped, {
+      account,
       conflict,
-      counterpartId: linked?.counterpart?.id ?? null,
-      counterpartName: linked?.counterpart?.bankAccountHolder ?? null,
-      counterpartRut: linkedRut,
-      movementCount: 1,
-      payoutBankAccountNumber: account,
-      totalGrossAmount: row.grossAmount ? Number(row.grossAmount) : 0,
+      grossAmount: row.grossAmount,
+      linked,
+      linkedRut,
       withdrawRut,
     });
   }
 
-  const sorted = [...grouped.values()].toSorted((a, b) => {
-    if (a.conflict !== b.conflict) {
-      return Number(b.conflict) - Number(a.conflict);
-    }
-    if (b.movementCount !== a.movementCount) {
-      return b.movementCount - a.movementCount;
-    }
-    return a.payoutBankAccountNumber.localeCompare(b.payoutBankAccountNumber, "es", {
-      sensitivity: "base",
-    });
-  });
+  const sorted = sortUnassignedPayoutAccounts([...grouped.values()]);
   const total = sorted.length;
   const safePageSize = Math.max(params.pageSize, 1);
   const safePage = Math.max(params.page, 1);
@@ -349,6 +450,24 @@ export async function getCounterpartSuggestions(query: string, limit: number) {
     },
   });
 
+  const grouped = buildCounterpartSuggestions(rows);
+  await attachCounterpartAssignments(grouped);
+
+  return [...grouped.values()]
+    .toSorted((a, b) => b.totalAmount - a.totalAmount)
+    .slice(0, Math.max(limit, 1));
+}
+
+const buildCounterpartSuggestions = (
+  rows: Array<{
+    amount: unknown;
+    bankAccountNumber: null | string;
+    bankAccountType: null | string;
+    bankName: null | string;
+    identificationNumber: null | string;
+    withdrawId: null | string;
+  }>,
+) => {
   const grouped = new Map<string, CounterpartAccountSuggestion>();
   for (const row of rows) {
     const accountIdentifier = row.bankAccountNumber?.trim() || row.withdrawId?.trim() || "";
@@ -357,7 +476,7 @@ export async function getCounterpartSuggestions(query: string, limit: number) {
     }
     const existing = grouped.get(accountIdentifier);
     if (existing) {
-      existing.totalAmount += row.amount ? Number(row.amount) : 0;
+      existing.totalAmount += toNumericAmount(row.amount);
       continue;
     }
 
@@ -370,28 +489,29 @@ export async function getCounterpartSuggestions(query: string, limit: number) {
       identificationNumber: row.identificationNumber
         ? normalizeRut(row.identificationNumber)
         : null,
-      totalAmount: row.amount ? Number(row.amount) : 0,
+      totalAmount: toNumericAmount(row.amount),
       withdrawId: row.withdrawId ?? null,
     });
   }
+  return grouped;
+};
 
+const attachCounterpartAssignments = async (grouped: Map<string, CounterpartAccountSuggestion>) => {
   const identifiers = [...grouped.keys()];
-  if (identifiers.length > 0) {
-    const linkedAccounts = await db.counterpartAccount.findMany({
-      select: { accountNumber: true, counterpartId: true },
-      where: { accountNumber: { in: identifiers } },
-    });
-    const linkedMap = new Map(linkedAccounts.map((row) => [row.accountNumber, row.counterpartId]));
-
-    for (const suggestion of grouped.values()) {
-      suggestion.assignedCounterpartId = linkedMap.get(suggestion.accountIdentifier) ?? null;
-    }
+  if (identifiers.length === 0) {
+    return;
   }
 
-  return [...grouped.values()]
-    .toSorted((a, b) => b.totalAmount - a.totalAmount)
-    .slice(0, Math.max(limit, 1));
-}
+  const linkedAccounts = await db.counterpartAccount.findMany({
+    select: { accountNumber: true, counterpartId: true },
+    where: { accountNumber: { in: identifiers } },
+  });
+  const linkedMap = new Map(linkedAccounts.map((row) => [row.accountNumber, row.counterpartId]));
+
+  for (const suggestion of grouped.values()) {
+    suggestion.assignedCounterpartId = linkedMap.get(suggestion.accountIdentifier) ?? null;
+  }
+};
 
 export async function listCounterparts() {
   return await db.counterpart.findMany({

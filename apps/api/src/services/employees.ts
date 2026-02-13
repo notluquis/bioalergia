@@ -40,44 +40,50 @@ function toJsonValue(value: Record<string, unknown> | null | undefined): JsonVal
   return value as unknown as JsonValue;
 }
 
+function setIfDefined<T extends object, K extends keyof T>(
+  target: T,
+  key: K,
+  value: T[K] | undefined,
+) {
+  if (value !== undefined) {
+    target[key] = value;
+  }
+}
+
 // Map frontend payload to ZenStack Employee update data
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy mapping
 function mapToEmployeeData(payload: EmployeePayload): EmployeeUpdateInput {
   const data: EmployeeUpdateInput = {};
-
-  if (payload.role !== undefined) {
-    data.position = payload.role;
-  }
-  if (payload.bank_name !== undefined) {
-    data.bankName = payload.bank_name;
-  }
-  if (payload.bank_account_type !== undefined) {
-    data.bankAccountType = payload.bank_account_type;
-  }
-  if (payload.bank_account_number !== undefined) {
-    data.bankAccountNumber = payload.bank_account_number;
-  }
-  if (payload.salary_type !== undefined) {
-    data.salaryType = payload.salary_type as EmployeeSalaryType;
-  }
-  if (payload.hourly_rate !== undefined) {
-    data.hourlyRate = new Decimal(payload.hourly_rate ?? 0);
-  }
-  if (payload.fixed_salary !== undefined) {
-    data.baseSalary = new Decimal(payload.fixed_salary ?? 0);
-  }
-  if (payload.overtime_rate !== undefined) {
-    data.overtimeRate = new Decimal(payload.overtime_rate ?? 0);
-  }
-  if (payload.retention_rate !== undefined) {
-    data.retentionRate = new Decimal(payload.retention_rate ?? 0);
-  }
-  if (payload.metadata !== undefined) {
-    data.metadata = toJsonValue(payload.metadata) ?? undefined;
-  }
-  if (payload.status !== undefined) {
-    data.status = payload.status as EmployeeStatus;
-  }
+  setIfDefined(data, "position", payload.role);
+  setIfDefined(data, "bankName", payload.bank_name ?? undefined);
+  setIfDefined(data, "bankAccountType", payload.bank_account_type ?? undefined);
+  setIfDefined(data, "bankAccountNumber", payload.bank_account_number ?? undefined);
+  setIfDefined(data, "salaryType", payload.salary_type as EmployeeSalaryType | undefined);
+  setIfDefined(
+    data,
+    "hourlyRate",
+    payload.hourly_rate !== undefined ? new Decimal(payload.hourly_rate ?? 0) : undefined,
+  );
+  setIfDefined(
+    data,
+    "baseSalary",
+    payload.fixed_salary !== undefined ? new Decimal(payload.fixed_salary ?? 0) : undefined,
+  );
+  setIfDefined(
+    data,
+    "overtimeRate",
+    payload.overtime_rate !== undefined ? new Decimal(payload.overtime_rate ?? 0) : undefined,
+  );
+  setIfDefined(
+    data,
+    "retentionRate",
+    payload.retention_rate !== undefined ? new Decimal(payload.retention_rate ?? 0) : undefined,
+  );
+  setIfDefined(
+    data,
+    "metadata",
+    payload.metadata !== undefined ? (toJsonValue(payload.metadata) ?? undefined) : undefined,
+  );
+  setIfDefined(data, "status", payload.status as EmployeeStatus | undefined);
 
   return data;
 }

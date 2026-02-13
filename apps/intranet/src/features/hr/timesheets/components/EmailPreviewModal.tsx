@@ -45,7 +45,6 @@ type AgentStatus = {
   message: string;
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy component
 export function EmailPreviewModal({
   employee,
   isOpen,

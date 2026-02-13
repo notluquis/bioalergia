@@ -86,9 +86,8 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
                     Nuevos eventos ({log.changeDetails.inserted.length})
                   </h4>
                   <ul className="list-disc space-y-1 pl-4 opacity-80">
-                    {log.changeDetails.inserted.map((item, i) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: static string list
-                      <li key={i}>{item}</li>
+                    {log.changeDetails.inserted.map((item) => (
+                      <li key={`inserted-${item}`}>{item}</li>
                     ))}
                   </ul>
                 </div>
@@ -100,10 +99,9 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
                     Actualizados ({log.changeDetails.updated.length})
                   </h4>
                   <ul className="list-disc space-y-1 pl-4 opacity-80">
-                    {log.changeDetails.updated.map((item, i) => {
+                    {log.changeDetails.updated.map((item) => {
                       const summary = typeof item === "string" ? item : item.summary;
-                      // biome-ignore lint/suspicious/noArrayIndexKey: no unique id available
-                      return <li key={i}>{summary}</li>;
+                      return <li key={`updated-${summary}`}>{summary}</li>;
                     })}
                   </ul>
                 </div>
@@ -115,9 +113,8 @@ export function SyncDetailModal({ isOpen, log, onClose }: Readonly<SyncDetailMod
                     Excluidos ({log.changeDetails.excluded.length})
                   </h4>
                   <ul className="list-disc space-y-1 pl-4 opacity-80">
-                    {log.changeDetails.excluded.map((item, i) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: no unique id available
-                      <li key={i}>{item}</li>
+                    {log.changeDetails.excluded.map((item) => (
+                      <li key={`excluded-${item}`}>{item}</li>
                     ))}
                   </ul>
                 </div>

@@ -163,39 +163,25 @@ function isTestLike(tx: UnifiedTransaction) {
 }
 
 function matchesFilter(tx: UnifiedTransaction, filters: TransactionFilters) {
-  if (filters.from && tx.transactionDate < filters.from) {
+  const checks = [
+    () => !filters.from || tx.transactionDate >= filters.from,
+    () => !filters.to || tx.transactionDate <= filters.to,
+    () => filters.minAmount === undefined || tx.transactionAmount >= filters.minAmount,
+    () => filters.maxAmount === undefined || tx.transactionAmount <= filters.maxAmount,
+    () => !filters.status || toLower(tx.status) === toLower(filters.status),
+    () =>
+      !filters.transactionType ||
+      toLower(tx.transactionType).includes(toLower(filters.transactionType)),
+    () => !filters.description || toLower(tx.description).includes(toLower(filters.description)),
+    () =>
+      !filters.externalReference ||
+      toLower(tx.externalReference).includes(toLower(filters.externalReference)),
+    () => !filters.sourceId || toLower(tx.sourceId).includes(toLower(filters.sourceId)),
+  ];
+  if (checks.some((check) => !check())) {
     return false;
   }
-  if (filters.to && tx.transactionDate > filters.to) {
-    return false;
-  }
-  if (filters.minAmount !== undefined && tx.transactionAmount < filters.minAmount) {
-    return false;
-  }
-  if (filters.maxAmount !== undefined && tx.transactionAmount > filters.maxAmount) {
-    return false;
-  }
-  if (filters.status && toLower(tx.status) !== toLower(filters.status)) {
-    return false;
-  }
-  if (
-    filters.transactionType &&
-    !toLower(tx.transactionType).includes(toLower(filters.transactionType))
-  ) {
-    return false;
-  }
-  if (filters.description && !toLower(tx.description).includes(toLower(filters.description))) {
-    return false;
-  }
-  if (
-    filters.externalReference &&
-    !toLower(tx.externalReference).includes(toLower(filters.externalReference))
-  ) {
-    return false;
-  }
-  if (filters.sourceId && !toLower(tx.sourceId).includes(toLower(filters.sourceId))) {
-    return false;
-  }
+
   if (filters.search) {
     const search = toLower(filters.search);
     const text = [tx.description, tx.externalReference, tx.paymentMethod, tx.sourceId]

@@ -112,7 +112,6 @@ export function TimesheetExportPDF({
     pageSize?: JsPdfPageSize;
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: pdf generation requires sequential steps
   async function handleExport(preview = true) {
     try {
       const libs = await loadPdfLibs();

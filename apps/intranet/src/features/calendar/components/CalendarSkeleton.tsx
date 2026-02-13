@@ -5,11 +5,11 @@ interface CalendarSkeletonProps {
 }
 
 export function CalendarSkeleton({ days = 3 }: Readonly<CalendarSkeletonProps>) {
+  const skeletonKeys = Array.from({ length: days }, () => globalThis.crypto.randomUUID());
   return (
     <div className="space-y-6">
-      {Array.from({ length: days }).map((_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: skeleton items
-        <div className="space-y-3" key={i}>
+      {skeletonKeys.map((key) => (
+        <div className="space-y-3" key={key}>
           {/* Day Header Skeleton */}
           <Skeleton className="h-4 w-32 rounded-lg" />
 

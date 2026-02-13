@@ -65,9 +65,13 @@ export async function uploadToDrive(
       },
     );
 
+    const fileId = response.data.id;
+    if (!fileId) {
+      throw new Error("Google Drive no devolvió ID del archivo");
+    }
+
     return {
-      // biome-ignore lint/style/noNonNullAssertion: legacy google types
-      fileId: response.data.id!,
+      fileId,
       webViewLink: response.data.webViewLink || null,
       md5Checksum: response.data.md5Checksum || null,
     };
@@ -117,17 +121,16 @@ export async function listBackups(): Promise<BackupFile[]> {
       { context: "drive.files.list" },
     );
 
-    return (response.data.files || []).map((f) => ({
-      // biome-ignore lint/style/noNonNullAssertion: legacy google types
-      id: f.id!,
-      // biome-ignore lint/style/noNonNullAssertion: legacy google types
-      name: f.name!,
-      // biome-ignore lint/style/noNonNullAssertion: legacy google types
-      createdTime: f.createdTime!,
-      size: f.size || "0",
-      webViewLink: f.webViewLink || undefined,
-      customChecksum: f.appProperties?.customChecksum,
-    }));
+    return (response.data.files || [])
+      .filter((file) => file.id && file.name && file.createdTime)
+      .map((file) => ({
+        id: file.id as string,
+        name: file.name as string,
+        createdTime: file.createdTime as string,
+        size: file.size || "0",
+        webViewLink: file.webViewLink || undefined,
+        customChecksum: file.appProperties?.customChecksum,
+      }));
   } catch (error) {
     throw parseGoogleError(error);
   }
@@ -329,7 +332,6 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
           const decompressed: Buffer[] = [];
 
           gunzip.on("data", (chunk: Buffer) => decompressed.push(chunk));
-          // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy stream processing
           gunzip.on("end", () => {
             try {
               // We only have the beginning of the file, so it's invalid JSON.

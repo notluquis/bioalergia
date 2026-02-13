@@ -22,11 +22,9 @@ const form: FormApi<FormValues> // ❌ Incomplete
 - `FormApi<T>` is internal generic of TanStack Form
 - Full signature: `FormApi<TData, TValidator?, TJSON?, TJSON2?, ...>` (11+ params)
 - No public type exports for all parameters
-- Even with `@ts-ignore`, the type is unusable
 
 **Approved Solution:**
 ```typescript
-// biome-ignore lint/suspicious/noExplicitAny: TanStack Form FormApi has complex generic constraints
 form: any
 ```
 
@@ -59,7 +57,6 @@ const onNavigate = (search: any) => void // ❌ Cannot be typed
 
 **Approved Solution:**
 ```typescript
-// biome-ignore lint/suspicious/noExplicitAny: TanStack Router navigate type is complex with search params mutations
 onNavigate: (search: any) => void
 ```
 
@@ -92,7 +89,6 @@ const where = (eb: any) => eb.fn.count('id') // ❌ Cannot type eb
 **Approved Solution:**
 ```typescript
 .where((eb: any) => // ... builder expression ...)
-  // biome-ignore: Kysely ExpressionBuilder not exported
 ```
 
 **Justification:**
@@ -123,7 +119,6 @@ const delegate = (db as any).modelName // ❌ No way to type this generically
 
 **Approved Solution:**
 ```typescript
-// biome-ignore lint/suspicious/noExplicitAny: Dynamic model access for reflection pattern
 const delegate = (db as any)[modelName]
 ```
 
@@ -226,7 +221,6 @@ data: {
 2. Dynamic reflection patterns (model access, configuration objects)
 3. Legacy migrations (import scripts, data transformations)
 4. Proven safe by runtime validation (Zod schemas, library validation)
-5. Clearly documented with `// biome-ignore` comment
 
 ❌ **NOT ACCEPTABLE:**
 1. Lazy typing to avoid thinking about structure
@@ -241,31 +235,26 @@ data: {
 
 ### ✅ GOOD
 ```typescript
-// biome-ignore lint/suspicious/noExplicitAny: TanStack Form FormApi requires 11+ generics, not publicly available
 form: any
 ```
 
 ### ❌ BAD
 ```typescript
-// biome-ignore lint/suspicious/noExplicitAny
 form: any
 ```
 
 ### ✅ GOOD
 ```typescript
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy bill calculation logic, refactor tracked in issue #2847
 function calculateBill(): void {
 ```
 
 ### ❌ BAD
 ```typescript
-// biome-ignore
 function calculateBill(): void {
 ```
 
 **Format:**
 ```
-// biome-ignore lint/<rule>: <specific reason why this is acceptable>
 ```
 
 ---
@@ -279,7 +268,6 @@ When you encounter a situation where `any` seems necessary:
    - No → Go to step 2
 
 2. **Ask:** Is this a known library limitation?
-   - Yes → Document it, add `biome-ignore` (see approved patterns above)
    - No → Go to step 3
 
 3. **Ask:** Can I restructure to avoid `any`?
@@ -292,7 +280,6 @@ When you encounter a situation where `any` seems necessary:
 
 5. **Document:** If you decide `any` is necessary:
    ```typescript
-   // biome-ignore lint/suspicious/noExplicitAny: <reason>/<issue>/<ticket>
    something: any
    ```
 
@@ -360,7 +347,6 @@ When you encounter a situation where `any` seems necessary:
 ## FAQ
 
 **Q: Why not use `unknown` instead of `any`?**
-A: For library generics, `unknown` requires more casting at every use site. The library itself validates at runtime, so `any` with `biome-ignore` is cleaner.
 
 **Q: Doesn't `any` defeat the purpose of TypeScript?**
 A: Not when used pragmatically. The validated 90% is still type-safe. The 10% is either library-constrained or runtime-validated.

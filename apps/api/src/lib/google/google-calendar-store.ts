@@ -9,8 +9,7 @@ async function getCalendarInternalId(googleId: string): Promise<number | null> {
   // Revisar cache primero
   if (calendarIdCache.has(googleId)) {
     const id = calendarIdCache.get(googleId);
-    // biome-ignore lint/style/noNonNullAssertion: cache hit guaranteed
-    return id!;
+    return id ?? null;
   }
 
   try {
@@ -33,6 +32,129 @@ async function getCalendarInternalId(googleId: string): Promise<number | null> {
   }
 }
 
+type UpsertStats = {
+  inserted: number;
+  insertedSummaries: string[];
+  skipped: number;
+  updated: number;
+  updatedSummaries: Array<string | { summary: string; changes: string[] }>;
+};
+
+function buildEventUpsertData(event: CalendarEventRecord, calendarInternalId: number) {
+  return {
+    calendarId: calendarInternalId,
+    externalEventId: event.eventId,
+    eventStatus: event.status,
+    eventType: event.eventType,
+    summary: event.summary,
+    description: event.description,
+    startDate: event.start?.date ? new Date(event.start.date) : null,
+    startDateTime: event.start?.dateTime ? new Date(event.start.dateTime) : null,
+    startTimeZone: event.start?.timeZone,
+    endDate: event.end?.date ? new Date(event.end.date) : null,
+    endDateTime: event.end?.dateTime ? new Date(event.end.dateTime) : null,
+    endTimeZone: event.end?.timeZone,
+    eventCreatedAt: event.created ? new Date(event.created) : null,
+    eventUpdatedAt: event.updated ? new Date(event.updated) : null,
+    colorId: event.colorId,
+    location: event.location,
+    transparency: event.transparency,
+    visibility: event.visibility,
+    hangoutLink: event.hangoutLink,
+    category: event.category,
+    amountExpected: event.amountExpected,
+    amountPaid: event.amountPaid,
+    attended: event.attended,
+    dosageValue: event.dosageValue,
+    dosageUnit: event.dosageUnit,
+    treatmentStage: event.treatmentStage,
+    controlIncluded: event.controlIncluded ?? false,
+    isDomicilio: event.isDomicilio ?? false,
+    lastSyncedAt: new Date(),
+  };
+}
+
+async function findExistingEvent(calendarInternalId: number, eventId: string) {
+  return db.event.findUnique({
+    where: {
+      calendarId_externalEventId: {
+        calendarId: calendarInternalId,
+        externalEventId: eventId,
+      },
+    },
+    select: {
+      id: true,
+      summary: true,
+      description: true,
+      location: true,
+      eventStatus: true,
+      startDateTime: true,
+      startDate: true,
+      endDateTime: true,
+      endDate: true,
+      transparency: true,
+      visibility: true,
+      category: true,
+      amountExpected: true,
+      amountPaid: true,
+      attended: true,
+      dosageValue: true,
+      dosageUnit: true,
+      treatmentStage: true,
+      controlIncluded: true,
+      isDomicilio: true,
+    },
+  });
+}
+
+async function processEventUpsert(
+  event: CalendarEventRecord,
+  calendarInternalId: number,
+  stats: UpsertStats,
+) {
+  const data = buildEventUpsertData(event, calendarInternalId);
+
+  try {
+    const existing = await findExistingEvent(calendarInternalId, event.eventId);
+    const summaryText = event.summary?.slice(0, 50) || "(sin título)";
+
+    if (!existing) {
+      await db.event.create({ data });
+      stats.inserted += 1;
+      if (stats.insertedSummaries.length < 20) {
+        stats.insertedSummaries.push(summaryText);
+      }
+      return;
+    }
+
+    const changes = computeEventDiff(existing, data);
+    if (changes.length === 0) {
+      stats.skipped += 1;
+      return;
+    }
+
+    await db.event.update({
+      where: {
+        calendarId_externalEventId: {
+          calendarId: calendarInternalId,
+          externalEventId: event.eventId,
+        },
+      },
+      data,
+    });
+    stats.updated += 1;
+    if (stats.updatedSummaries.length < 20) {
+      stats.updatedSummaries.push({ summary: summaryText, changes });
+    }
+  } catch (error) {
+    console.error(
+      `Error upserting event ${event.eventId}:`,
+      error instanceof Error ? error.message : String(error),
+    );
+    stats.skipped += 1;
+  }
+}
+
 export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) {
   if (events.length === 0) {
     return {
@@ -43,11 +165,13 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
     };
   }
 
-  let inserted = 0;
-  let updated = 0;
-  let skipped = 0;
-  const insertedSummaries: string[] = [];
-  const updatedSummaries: (string | { summary: string; changes: string[] })[] = [];
+  const stats: UpsertStats = {
+    inserted: 0,
+    insertedSummaries: [],
+    skipped: 0,
+    updated: 0,
+    updatedSummaries: [],
+  };
 
   // 1. Pre-resolve all calendars
   const distinctCalendarIds = Array.from(new Set(events.map((e) => e.calendarId)));
@@ -66,141 +190,28 @@ export async function upsertGoogleCalendarEvents(events: CalendarEventRecord[]) 
 
     // Process batch in parallel
     await Promise.all(
-      batch.map(
-        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy logic
-        async (event) => {
-          const calendarInternalId = calendarIdCache.get(event.calendarId);
+      batch.map(async (event) => {
+        const calendarInternalId = calendarIdCache.get(event.calendarId);
 
-          if (!calendarInternalId) {
-            console.warn(
-              `Skipping event ${event.eventId}: Could not resolve calendar ${event.calendarId}`,
-            );
-            skipped++;
-            return;
-          }
-
-          const data = {
-            calendarId: calendarInternalId,
-            externalEventId: event.eventId,
-            eventStatus: event.status,
-            eventType: event.eventType,
-            summary: event.summary,
-            description: event.description,
-            startDate: event.start?.date ? new Date(event.start.date) : null,
-            startDateTime: event.start?.dateTime ? new Date(event.start.dateTime) : null,
-            startTimeZone: event.start?.timeZone,
-            endDate: event.end?.date ? new Date(event.end.date) : null,
-            endDateTime: event.end?.dateTime ? new Date(event.end.dateTime) : null,
-            endTimeZone: event.end?.timeZone,
-            eventCreatedAt: event.created ? new Date(event.created) : null,
-            eventUpdatedAt: event.updated ? new Date(event.updated) : null,
-            colorId: event.colorId,
-            location: event.location,
-            transparency: event.transparency,
-            visibility: event.visibility,
-            hangoutLink: event.hangoutLink,
-            category: event.category,
-            amountExpected: event.amountExpected,
-            amountPaid: event.amountPaid,
-            attended: event.attended,
-            dosageValue: event.dosageValue,
-            dosageUnit: event.dosageUnit,
-            treatmentStage: event.treatmentStage,
-            controlIncluded: event.controlIncluded ?? false,
-            isDomicilio: event.isDomicilio ?? false,
-            lastSyncedAt: new Date(),
-          };
-
-          try {
-            // Check for existence first to compute diffs (optional but good for logs)
-            const existing = await db.event.findUnique({
-              where: {
-                calendarId_externalEventId: {
-                  calendarId: calendarInternalId,
-                  externalEventId: event.eventId,
-                },
-              },
-              select: {
-                id: true,
-                summary: true,
-                description: true,
-                location: true,
-                eventStatus: true,
-                startDateTime: true,
-                startDate: true,
-                endDateTime: true,
-                endDate: true,
-                transparency: true,
-                visibility: true,
-                category: true,
-                amountExpected: true,
-                amountPaid: true,
-                attended: true,
-                dosageValue: true,
-                dosageUnit: true,
-                treatmentStage: true,
-                controlIncluded: true,
-                isDomicilio: true,
-              },
-            });
-
-            const summaryText = event.summary?.slice(0, 50) || "(sin título)";
-
-            if (existing) {
-              // Check if there are actual changes before updating
-              const changes = computeEventDiff(existing, data);
-
-              if (changes.length > 0) {
-                // Has changes - perform update
-                await db.event.update({
-                  where: {
-                    calendarId_externalEventId: {
-                      calendarId: calendarInternalId,
-                      externalEventId: event.eventId,
-                    },
-                  },
-                  data: data,
-                });
-
-                updated++;
-                // Only log detailed changes for the first 20 to save memory/logs
-                if (updatedSummaries.length < 20) {
-                  updatedSummaries.push({ summary: summaryText, changes });
-                }
-              } else {
-                // No changes detected - mark as skipped (no DB write)
-                skipped++;
-              }
-            } else {
-              // New event - create it
-              await db.event.create({
-                data: data,
-              });
-
-              inserted++;
-              if (insertedSummaries.length < 20) {
-                insertedSummaries.push(summaryText);
-              }
-            }
-          } catch (error) {
-            console.error(
-              `Error upserting event ${event.eventId}:`,
-              error instanceof Error ? error.message : String(error),
-            );
-            skipped++;
-          }
-        },
-      ),
+        if (!calendarInternalId) {
+          console.warn(
+            `Skipping event ${event.eventId}: Could not resolve calendar ${event.calendarId}`,
+          );
+          stats.skipped += 1;
+          return;
+        }
+        await processEventUpsert(event, calendarInternalId, stats);
+      }),
     );
   }
 
   return {
-    inserted,
-    updated,
-    skipped,
+    inserted: stats.inserted,
+    updated: stats.updated,
+    skipped: stats.skipped,
     details: {
-      inserted: insertedSummaries,
-      updated: updatedSummaries,
+      inserted: stats.insertedSummaries,
+      updated: stats.updatedSummaries,
     },
   };
 }

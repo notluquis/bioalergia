@@ -185,7 +185,6 @@ type MissingFieldFilter = {
   filterMode?: "AND" | "OR";
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy logic
 export async function listUnclassifiedCalendarEvents(
   limit: number,
   offset: number = 0,

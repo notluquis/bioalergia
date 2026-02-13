@@ -366,7 +366,6 @@ const PENDING_WEBHOOKS_KEY = "mp:webhook:pending";
 const MAX_PENDING_WEBHOOKS = 50;
 const PROCESSED_TTL_DAYS = 45;
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy webhook logic
 mercadopagoRoutes.post("/webhook", async (c) => {
   if (process.env.NODE_ENV === "production" && !MP_WEBHOOK_PASSWORD) {
     return reply(c, { status: "error", message: "Webhook not configured" }, 500);

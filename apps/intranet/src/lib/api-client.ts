@@ -44,27 +44,26 @@ export class ApiError extends Error {
 }
 
 // Helper for building query strings with custom array handling (preserved for safety)
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: url building logic
 function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
   if (!query) {
     return url;
   }
 
+  const appendParam = (params: URLSearchParams, key: string, value: unknown) => {
+    if (value !== undefined && value !== null) {
+      params.append(key, String(value));
+    }
+  };
+
   const params = new URLSearchParams();
   for (const [key, rawValue] of Object.entries(query)) {
-    if (rawValue === undefined || rawValue === null) {
-      continue;
-    }
     if (Array.isArray(rawValue)) {
       for (const value of rawValue) {
-        if (value === undefined || value === null) {
-          continue;
-        }
-        params.append(key, String(value));
+        appendParam(params, key, value);
       }
       continue;
     }
-    params.append(key, String(rawValue));
+    appendParam(params, key, rawValue);
   }
 
   const queryString = params.toString();
@@ -73,6 +72,22 @@ function buildUrlWithQuery(url: string, query?: Record<string, unknown>) {
   }
 
   return url.includes("?") ? `${url}&${queryString}` : `${url}?${queryString}`;
+}
+
+function parseErrorDataFromBody(rawBody: string): null | ErrorData {
+  const trimmedBody = rawBody.trim();
+  try {
+    const parsed = JSON.parse(trimmedBody) as unknown;
+    if (parsed && typeof parsed === "object") {
+      return parsed as ErrorData;
+    }
+    if (typeof parsed === "string") {
+      return { message: parsed };
+    }
+    return null;
+  } catch {
+    return { message: trimmedBody };
+  }
 }
 
 // Custom hook to transform Ky errors into ApiError
@@ -86,20 +101,7 @@ async function handleKyError(error: HTTPError) {
   try {
     rawBody = await response.text();
     if (rawBody) {
-      const trimmedBody = rawBody.trim();
-      let errorData: ErrorData | null = null;
-
-      try {
-        const parsed = JSON.parse(trimmedBody) as unknown;
-        if (parsed && typeof parsed === "object") {
-          errorData = parsed as ErrorData;
-        } else if (typeof parsed === "string") {
-          errorData = { message: parsed };
-        }
-      } catch {
-        // If not JSON, treat body as simple message
-        errorData = { message: trimmedBody };
-      }
+      const errorData = parseErrorDataFromBody(rawBody);
 
       if (errorData) {
         serverMessage = errorData.message ?? errorData.error ?? serverMessage;

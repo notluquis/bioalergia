@@ -26,7 +26,6 @@ dayjs.locale("es");
 
 type RoleOption = { id: number; name: string };
 
-// biome-ignore lint/complexity/noExcessiveLinesPerFunction: page-level orchestration for table actions and modal flows
 export function UserManagementPage() {
   const client = useClientQueries(schemaLite);
 

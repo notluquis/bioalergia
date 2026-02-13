@@ -79,8 +79,10 @@ export function SupplyRequestForm({ commonSupplies, onSuccess }: SupplyRequestFo
       acc[supply.name] = {};
     }
     const brand = supply.brand || "N/A";
-    // biome-ignore lint/style/noNonNullAssertion: key exists
-    const brandGroup = acc[supply.name]!;
+    const brandGroup = acc[supply.name];
+    if (!brandGroup) {
+      return acc;
+    }
     if (!brandGroup[brand]) {
       brandGroup[brand] = [];
     }

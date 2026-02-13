@@ -129,7 +129,6 @@ export function CalendarSyncHistoryPage() {
 
           return (
             <Accordion className="divide-y divide-default-100" variant="surface">
-              {/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: row rendering logic */}
               {syncLogs.map((log, index) => {
                 const duration = log.finishedAt
                   ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s")

@@ -84,7 +84,6 @@ export function useParticipantInsightsData() {
   });
 
   // RUT Grouping
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy function
   const rutRows = (() => {
     const map = new Map<
       string,
@@ -110,8 +109,10 @@ export function useParticipantInsightsData() {
           selectKey: row.selectKey,
         });
       }
-      // biome-ignore lint/style/noNonNullAssertion: map has key
-      const entry = map.get(key)!;
+      const entry = map.get(key);
+      if (!entry) {
+        continue;
+      }
       entry.outgoingCount += row.outgoingCount;
       entry.outgoingAmount += row.outgoingAmount;
       if (row.account && row.account !== "-") {

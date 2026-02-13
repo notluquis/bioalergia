@@ -131,9 +131,10 @@ const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRan
   const { data: quickViewRows = [] } = useQuery({
     enabled: Boolean(quickViewGroup),
     queryFn: async () => {
-      // safe to assert quickViewGroup is present due to enabled
-      // biome-ignore lint/style/noNonNullAssertion: enabled check
-      const accounts = quickViewGroup!.accounts;
+      if (!quickViewGroup) {
+        return [];
+      }
+      const accounts = quickViewGroup.accounts;
       const filters = accounts.map((account) => buildAccountTransactionFilter(account));
       const normalized: Record<string, AccountTransactionFilter> = {};
       for (const filter of filters) {

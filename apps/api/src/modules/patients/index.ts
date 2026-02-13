@@ -2,12 +2,13 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import type { User } from "@finanzas/db";
+import type { AttachmentType, User } from "@finanzas/db";
 import { db } from "@finanzas/db";
 import type { PatientWhereInput } from "@finanzas/db/input";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
+import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { sql } from "kysely";
 import { getSessionUser } from "../../auth.js";
@@ -565,12 +566,9 @@ patientsRoutes.post("/:id/budgets", zValidator("json", createBudgetSchema), asyn
       data: {
         patientId,
         title: input.title,
-        // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
-        totalAmount: totalAmount as any,
-        // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
-        discount: input.discount as any,
-        // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
-        finalAmount: finalAmount as any,
+        totalAmount: new Decimal(totalAmount),
+        discount: new Decimal(input.discount),
+        finalAmount: new Decimal(finalAmount),
         notes: input.notes,
       },
     });
@@ -607,8 +605,7 @@ patientsRoutes.post("/:id/payments", zValidator("json", createPaymentSchema), as
       data: {
         patientId,
         budgetId: input.budgetId,
-        // biome-ignore lint/suspicious/noExplicitAny: Decimal type cast required
-        amount: input.amount as any,
+        amount: new Decimal(input.amount),
         paymentDate: parseDateOnly(input.paymentDate),
         paymentMethod: input.paymentMethod,
         reference: input.reference,
@@ -674,13 +671,15 @@ patientsRoutes.post("/:id/attachments", async (c) => {
       );
 
       // Save to DB
-      // biome-ignore lint/suspicious/noExplicitAny: ZenStack client types might be stale after schema changes
-      const attachment = await (db as any).patientAttachment.create({
+      const attachmentType: AttachmentType =
+        type === "CONSENT" || type === "EXAM" || type === "RECIPE" || type === "OTHER"
+          ? type
+          : "OTHER";
+      const attachment = await db.patientAttachment.create({
         data: {
           patientId: Number(id),
           name: name,
-          // biome-ignore lint/suspicious/noExplicitAny: Type conversion for enum
-          type: type as any,
+          type: attachmentType,
           driveFileId: fileId,
           mimeType: file.type,
           uploadedBy: user.id,

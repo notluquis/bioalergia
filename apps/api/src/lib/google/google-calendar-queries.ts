@@ -380,33 +380,35 @@ export type CalendarEventsByDateResult = {
   };
 };
 
-// Helper: Apply filters to a Kysely query
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy query builder
+function applyCategoryFilter(query: EventBaseQuery, categories: string[]) {
+  const hasNull =
+    categories.includes("null") ||
+    categories.includes("Uncategorized") ||
+    categories.includes("__NULL_CATEGORY__");
+  const validCategories = categories.filter(
+    (c) => c !== "null" && c !== "Uncategorized" && c !== "__NULL_CATEGORY__",
+  );
+
+  if (hasNull && validCategories.length > 0) {
+    return query.where((eb) =>
+      eb.or([eb("e.category", "in", validCategories), eb("e.category", "is", null)]),
+    );
+  }
+  if (hasNull) {
+    return query.where("e.category", "is", null);
+  }
+  return query.where("e.category", "in", validCategories);
+}
+
+function applySearchFilter(query: EventBaseQuery, search: string) {
+  const term = `%${search}%`;
+  return query.where((eb) =>
+    eb.or([eb("e.summary", "ilike", term), eb("e.description", "ilike", term)]),
+  );
+}
+
 function applyFilters(query: EventBaseQuery, filters: CalendarEventFilters): EventBaseQuery {
-  let q = query;
-
-  if (filters.from) {
-    // Use startOf('day') to get 00:00:00 UTC for date comparisons
-    const fromDate = dayjs(filters.from).isValid()
-      ? dayjs(filters.from).startOf("day").toISOString()
-      : null;
-
-    if (fromDate) {
-      // Use coalesce to handle both all-day and timed events
-      q = q.where(sql`coalesce(e.start_date_time, e.start_date)`, ">=", fromDate);
-    }
-  }
-  if (filters.to) {
-    // Use endOf('day') to get 23:59:59.999 UTC for date comparisons
-    const toDate = dayjs(filters.to).isValid()
-      ? dayjs(filters.to).endOf("day").toISOString()
-      : null;
-
-    if (toDate) {
-      // Use coalesce to handle both all-day and timed events
-      q = q.where(sql`coalesce(e.start_date_time, e.start_date)`, "<=", toDate);
-    }
-  }
+  let q = applyDateRangeFilters(query, filters);
 
   // Implementation note: The caller should handle joining if needed.
   // Here we just add where clauses assuming table aliases 'e' (Event) and 'c' (Calendar)
@@ -420,30 +422,11 @@ function applyFilters(query: EventBaseQuery, filters: CalendarEventFilters): Eve
   }
 
   if (filters.categories && filters.categories.length > 0) {
-    const hasNull =
-      filters.categories.includes("null") ||
-      filters.categories.includes("Uncategorized") ||
-      filters.categories.includes("__NULL_CATEGORY__");
-    const validCategories = filters.categories.filter(
-      (c) => c !== "null" && c !== "Uncategorized" && c !== "__NULL_CATEGORY__",
-    );
-
-    if (hasNull && validCategories.length > 0) {
-      q = q.where((eb) =>
-        eb.or([eb("e.category", "in", validCategories), eb("e.category", "is", null)]),
-      );
-    } else if (hasNull) {
-      q = q.where("e.category", "is", null);
-    } else {
-      q = q.where("e.category", "in", validCategories);
-    }
+    q = applyCategoryFilter(q, filters.categories);
   }
 
   if (filters.search) {
-    const term = `%${filters.search}%`;
-    q = q.where((eb) =>
-      eb.or([eb("e.summary", "ilike", term), eb("e.description", "ilike", term)]),
-    );
+    q = applySearchFilter(q, filters.search);
   }
 
   if (filters.dates && filters.dates.length > 0) {
@@ -774,6 +757,245 @@ export type TreatmentAnalyticsResult = {
   }>;
 };
 
+type TreatmentTotalRow = {
+  amountExpected: number | string;
+  amountPaid: number | string;
+  domicilioCount: number | string;
+  dosageMl: number | string;
+  events: number | string;
+  induccionCount: number | string;
+  mantencionCount: number | string;
+};
+
+type TreatmentDateRow = {
+  amountExpected: number | string;
+  amountPaid: number | string;
+  date: string | Date;
+  domicilioCount: number | string;
+  dosageMl: number | string;
+  events: number | string;
+  induccionCount: number | string;
+  mantencionCount: number | string;
+};
+
+type TreatmentWeekRow = {
+  amountExpected: number | string;
+  amountPaid: number | string;
+  domicilioCount: number | string;
+  dosageMl: number | string;
+  events: number | string;
+  induccionCount: number | string;
+  isoWeek: number | string;
+  isoYear: number | string;
+  mantencionCount: number | string;
+};
+
+type TreatmentMonthRow = {
+  amountExpected: number | string;
+  amountPaid: number | string;
+  domicilioCount: number | string;
+  dosageMl: number | string;
+  events: number | string;
+  induccionCount: number | string;
+  mantencionCount: number | string;
+  month: number | string;
+  year: number | string;
+};
+
+const dosageAggregateSql = sql<number>`
+  COALESCE(
+    SUM(CASE WHEN e.dosage_value IS NOT NULL THEN e.dosage_value ELSE 0 END),
+    0
+  )
+`;
+
+const treatDateExpression = sql`coalesce(e.start_date_time, e.start_date)`;
+
+function buildTreatmentBaseQuery(filters: TreatmentAnalyticsFilters) {
+  let baseQuery = db.$qb
+    .selectFrom("Event as e")
+    .leftJoin("Calendar as c", "e.calendarId", "c.id")
+    .where("e.category", "=", "Tratamiento subcutáneo");
+
+  if (filters.from && dayjs(filters.from).isValid()) {
+    baseQuery = baseQuery.where(
+      treatDateExpression,
+      ">=",
+      dayjs(filters.from).startOf("day").toISOString(),
+    );
+  }
+  if (filters.to && dayjs(filters.to).isValid()) {
+    baseQuery = baseQuery.where(
+      treatDateExpression,
+      "<=",
+      dayjs(filters.to).endOf("day").toISOString(),
+    );
+  }
+  if (filters.calendarIds && filters.calendarIds.length > 0) {
+    baseQuery = baseQuery.where("c.googleId", "in", filters.calendarIds);
+  }
+  return baseQuery;
+}
+
+async function getTreatmentTotals(baseQuery: ReturnType<typeof buildTreatmentBaseQuery>) {
+  return baseQuery
+    .select([
+      sql<number>`count(e.id)`.as("events"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+      dosageAggregateSql.as("dosageMl"),
+      sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
+      sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
+        "induccionCount",
+      ),
+      sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
+        "mantencionCount",
+      ),
+    ])
+    .executeTakeFirst();
+}
+
+async function getTreatmentByDate(baseQuery: ReturnType<typeof buildTreatmentBaseQuery>) {
+  const byDateBase = baseQuery.select([
+    EVENT_DATE_SQL.as("date"),
+    sql<number>`e.amount_expected`.as("amountExpectedRaw"),
+    sql<number>`e.amount_paid`.as("amountPaidRaw"),
+    sql<number>`e.dosage_value`.as("dosageValueRaw"),
+    sql<boolean>`e.is_domicilio`.as("isDomicilioRaw"),
+    sql<string>`e.treatment_stage`.as("treatmentStageRaw"),
+  ]);
+
+  return db.$qb
+    .selectFrom(byDateBase.as("b"))
+    .select([
+      sql`b.date`.as("date"),
+      sql<number>`count(*)`.as("events"),
+      sql<number>`coalesce(sum(b."amountExpectedRaw"), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(b."amountPaidRaw"), 0)`.as("amountPaid"),
+      sql<number>`
+        COALESCE(
+          SUM(CASE WHEN b."dosageValueRaw" IS NOT NULL THEN b."dosageValueRaw" ELSE 0 END),
+          0
+        )
+      `.as("dosageMl"),
+      sql<number>`sum(case when b."isDomicilioRaw" = true then 1 else 0 end)`.as("domicilioCount"),
+      sql<number>`sum(case when b."treatmentStageRaw" = 'Inducción' then 1 else 0 end)`.as(
+        "induccionCount",
+      ),
+      sql<number>`sum(case when b."treatmentStageRaw" = 'Mantención' then 1 else 0 end)`.as(
+        "mantencionCount",
+      ),
+    ])
+    .groupBy("b.date")
+    .orderBy("b.date", "desc")
+    .execute();
+}
+
+async function getTreatmentByWeek(baseQuery: ReturnType<typeof buildTreatmentBaseQuery>) {
+  return baseQuery
+    .select([
+      sql<number>`extract(isoyear from coalesce(e.start_date_time, e.start_date))`.as("isoYear"),
+      sql<number>`extract(week from coalesce(e.start_date_time, e.start_date))`.as("isoWeek"),
+      sql<number>`count(e.id)`.as("events"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+      dosageAggregateSql.as("dosageMl"),
+      sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
+      sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
+        "induccionCount",
+      ),
+      sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
+        "mantencionCount",
+      ),
+    ])
+    .groupBy([
+      sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`,
+      sql`extract(week from coalesce(e.start_date_time, e.start_date))`,
+    ])
+    .orderBy(sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`, "desc")
+    .orderBy(sql`extract(week from coalesce(e.start_date_time, e.start_date))`, "desc")
+    .execute();
+}
+
+async function getTreatmentByMonth(baseQuery: ReturnType<typeof buildTreatmentBaseQuery>) {
+  return baseQuery
+    .select([
+      sql<number>`extract(year from coalesce(e.start_date_time, e.start_date))`.as("year"),
+      sql<number>`extract(month from coalesce(e.start_date_time, e.start_date))`.as("month"),
+      sql<number>`count(e.id)`.as("events"),
+      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
+      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
+      dosageAggregateSql.as("dosageMl"),
+      sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
+      sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
+        "induccionCount",
+      ),
+      sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
+        "mantencionCount",
+      ),
+    ])
+    .groupBy([
+      sql`extract(year from coalesce(e.start_date_time, e.start_date))`,
+      sql`extract(month from coalesce(e.start_date_time, e.start_date))`,
+    ])
+    .orderBy(sql`extract(year from coalesce(e.start_date_time, e.start_date))`, "desc")
+    .orderBy(sql`extract(month from coalesce(e.start_date_time, e.start_date))`, "desc")
+    .execute();
+}
+
+function mapTotals(row: null | TreatmentTotalRow | undefined): TreatmentAnalyticsResult["totals"] {
+  return {
+    events: Number(row?.events || 0),
+    amountExpected: Number(row?.amountExpected || 0),
+    amountPaid: Number(row?.amountPaid || 0),
+    dosageMl: Number(row?.dosageMl || 0),
+    domicilioCount: Number(row?.domicilioCount || 0),
+    induccionCount: Number(row?.induccionCount || 0),
+    mantencionCount: Number(row?.mantencionCount || 0),
+  };
+}
+
+function mapByDate(rows: TreatmentDateRow[] | null | undefined) {
+  return rows?.map((r) => ({
+    date: formatDateOnly(r.date),
+    events: Number(r.events),
+    amountExpected: Number(r.amountExpected),
+    amountPaid: Number(r.amountPaid),
+    dosageMl: Number(r.dosageMl),
+    domicilioCount: Number(r.domicilioCount),
+    induccionCount: Number(r.induccionCount),
+    mantencionCount: Number(r.mantencionCount),
+  }));
+}
+
+function mapByWeek(rows: TreatmentWeekRow[] | null | undefined) {
+  return rows?.map((r) => ({
+    isoYear: Number(r.isoYear),
+    isoWeek: Number(r.isoWeek),
+    events: Number(r.events),
+    amountExpected: Number(r.amountExpected),
+    amountPaid: Number(r.amountPaid),
+    dosageMl: Number(r.dosageMl),
+    domicilioCount: Number(r.domicilioCount),
+    induccionCount: Number(r.induccionCount),
+    mantencionCount: Number(r.mantencionCount),
+  }));
+}
+
+function mapByMonth(rows: TreatmentMonthRow[] | null | undefined) {
+  return rows?.map((r) => ({
+    year: Number(r.year),
+    month: Number(r.month),
+    events: Number(r.events),
+    amountExpected: Number(r.amountExpected),
+    amountPaid: Number(r.amountPaid),
+    dosageMl: Number(r.dosageMl),
+    domicilioCount: Number(r.domicilioCount),
+    induccionCount: Number(r.induccionCount),
+    mantencionCount: Number(r.mantencionCount),
+  }));
+}
+
 /**
  * Get analytics for subcutaneous treatment events
  * Aggregates treatments by date, week, and month with metrics like dosage, home delivery, and treatment stage
@@ -786,241 +1008,19 @@ export async function getTreatmentAnalytics(
   const includeByDate = granularity === "all" || granularity === "day";
   const includeByWeek = granularity === "all" || granularity === "week";
   const includeByMonth = granularity === "all" || granularity === "month";
-
-  let baseQuery = db.$qb
-    .selectFrom("Event as e")
-    .leftJoin("Calendar as c", "e.calendarId", "c.id")
-    .where("e.category", "=", "Tratamiento subcutáneo");
-
-  // Apply filters
-  if (filters.from && dayjs(filters.from).isValid()) {
-    const fromDate = dayjs(filters.from).startOf("day").toISOString();
-    baseQuery = baseQuery.where(sql`coalesce(e.start_date_time, e.start_date)`, ">=", fromDate);
-  }
-  if (filters.to && dayjs(filters.to).isValid()) {
-    const toDate = dayjs(filters.to).endOf("day").toISOString();
-    baseQuery = baseQuery.where(sql`coalesce(e.start_date_time, e.start_date)`, "<=", toDate);
-  }
-  if (filters.calendarIds && filters.calendarIds.length > 0) {
-    baseQuery = baseQuery.where("c.googleId", "in", filters.calendarIds);
-  }
-
-  // SQL expression for extracting dosage value as number (in ml)
-  // Now simply sums the dosage_value column directly
-  const dosageSql = sql<number>`
-    COALESCE(
-      SUM(CASE WHEN e.dosage_value IS NOT NULL THEN e.dosage_value ELSE 0 END),
-      0
-    )
-  `;
-
-  // 1. Totals
-  const totals = await baseQuery
-    .select([
-      sql<number>`count(e.id)`.as("events"),
-      sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-      sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
-      dosageSql.as("dosageMl"),
-      sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
-      sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
-        "induccionCount",
-      ),
-      sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
-        "mantencionCount",
-      ),
-    ])
-    .executeTakeFirst();
-
-  // 2. By Date
-  // Use a subquery to avoid GROUP BY issues with COALESCE(e.start_date, ...)
-  const byDateBase = baseQuery.select([
-    EVENT_DATE_SQL.as("date"),
-    sql<number>`e.amount_expected`.as("amountExpectedRaw"),
-    sql<number>`e.amount_paid`.as("amountPaidRaw"),
-    sql<number>`e.dosage_value`.as("dosageValueRaw"),
-    sql<boolean>`e.is_domicilio`.as("isDomicilioRaw"),
-    sql<string>`e.treatment_stage`.as("treatmentStageRaw"),
+  const baseQuery = buildTreatmentBaseQuery(filters);
+  const [totals, byDate, byWeek, byMonth] = await Promise.all([
+    getTreatmentTotals(baseQuery),
+    includeByDate ? getTreatmentByDate(baseQuery) : Promise.resolve(null),
+    includeByWeek ? getTreatmentByWeek(baseQuery) : Promise.resolve(null),
+    includeByMonth ? getTreatmentByMonth(baseQuery) : Promise.resolve(null),
   ]);
 
-  const byDate = includeByDate
-    ? await db.$qb
-        .selectFrom(byDateBase.as("b"))
-        .select([
-          sql`b.date`.as("date"),
-          sql<number>`count(*)`.as("events"),
-          sql<number>`coalesce(sum(b."amountExpectedRaw"), 0)`.as("amountExpected"),
-          sql<number>`coalesce(sum(b."amountPaidRaw"), 0)`.as("amountPaid"),
-          sql<number>`
-            COALESCE(
-              SUM(CASE WHEN b."dosageValueRaw" IS NOT NULL THEN b."dosageValueRaw" ELSE 0 END),
-              0
-            )
-          `.as("dosageMl"),
-          sql<number>`sum(case when b."isDomicilioRaw" = true then 1 else 0 end)`.as(
-            "domicilioCount",
-          ),
-          sql<number>`sum(case when b."treatmentStageRaw" = 'Inducción' then 1 else 0 end)`.as(
-            "induccionCount",
-          ),
-          sql<number>`sum(case when b."treatmentStageRaw" = 'Mantención' then 1 else 0 end)`.as(
-            "mantencionCount",
-          ),
-        ])
-        .groupBy("b.date")
-        .orderBy("b.date", "desc")
-        .execute()
-    : null;
-
-  // 3. By Week
-  const byWeek = includeByWeek
-    ? await baseQuery
-        .select([
-          sql<number>`extract(isoyear from coalesce(e.start_date_time, e.start_date))`.as(
-            "isoYear",
-          ),
-          sql<number>`extract(week from coalesce(e.start_date_time, e.start_date))`.as("isoWeek"),
-          sql<number>`count(e.id)`.as("events"),
-          sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-          sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
-          dosageSql.as("dosageMl"),
-          sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
-          sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
-            "induccionCount",
-          ),
-          sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
-            "mantencionCount",
-          ),
-        ])
-        .groupBy([
-          sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`,
-          sql`extract(week from coalesce(e.start_date_time, e.start_date))`,
-        ])
-        .orderBy(sql`extract(isoyear from coalesce(e.start_date_time, e.start_date))`, "desc")
-        .orderBy(sql`extract(week from coalesce(e.start_date_time, e.start_date))`, "desc")
-        .execute()
-    : null;
-
-  // 4. By Month
-  const byMonth = includeByMonth
-    ? await baseQuery
-        .select([
-          sql<number>`extract(year from coalesce(e.start_date_time, e.start_date))`.as("year"),
-          sql<number>`extract(month from coalesce(e.start_date_time, e.start_date))`.as("month"),
-          sql<number>`count(e.id)`.as("events"),
-          sql<number>`coalesce(sum(e.amount_expected), 0)`.as("amountExpected"),
-          sql<number>`coalesce(sum(e.amount_paid), 0)`.as("amountPaid"),
-          dosageSql.as("dosageMl"),
-          sql<number>`sum(case when e.is_domicilio = true then 1 else 0 end)`.as("domicilioCount"),
-          sql<number>`sum(case when e.treatment_stage = 'Inducción' then 1 else 0 end)`.as(
-            "induccionCount",
-          ),
-          sql<number>`sum(case when e.treatment_stage = 'Mantención' then 1 else 0 end)`.as(
-            "mantencionCount",
-          ),
-        ])
-        .groupBy([
-          sql`extract(year from coalesce(e.start_date_time, e.start_date))`,
-          sql`extract(month from coalesce(e.start_date_time, e.start_date))`,
-        ])
-        .orderBy(sql`extract(year from coalesce(e.start_date_time, e.start_date))`, "desc")
-        .orderBy(sql`extract(month from coalesce(e.start_date_time, e.start_date))`, "desc")
-        .execute()
-    : null;
-
-  // Type casting for query results
-  type TotalRow = {
-    events: number | string;
-    amountExpected: number | string;
-    amountPaid: number | string;
-    dosageMl: number | string;
-    domicilioCount: number | string;
-    induccionCount: number | string;
-    mantencionCount: number | string;
-  };
-
-  type DateRow = {
-    date: string | Date;
-    events: number | string;
-    amountExpected: number | string;
-    amountPaid: number | string;
-    dosageMl: number | string;
-    domicilioCount: number | string;
-    induccionCount: number | string;
-    mantencionCount: number | string;
-  };
-
-  type WeekRow = {
-    isoYear: number | string;
-    isoWeek: number | string;
-    events: number | string;
-    amountExpected: number | string;
-    amountPaid: number | string;
-    dosageMl: number | string;
-    domicilioCount: number | string;
-    induccionCount: number | string;
-    mantencionCount: number | string;
-  };
-
-  type MonthRow = {
-    year: number | string;
-    month: number | string;
-    events: number | string;
-    amountExpected: number | string;
-    amountPaid: number | string;
-    dosageMl: number | string;
-    domicilioCount: number | string;
-    induccionCount: number | string;
-    mantencionCount: number | string;
-  };
-
   return {
-    totals: {
-      events: Number((totals as unknown as TotalRow)?.events || 0),
-      amountExpected: Number((totals as unknown as TotalRow)?.amountExpected || 0),
-      amountPaid: Number((totals as unknown as TotalRow)?.amountPaid || 0),
-      dosageMl: Number((totals as unknown as TotalRow)?.dosageMl || 0),
-      domicilioCount: Number((totals as unknown as TotalRow)?.domicilioCount || 0),
-      induccionCount: Number((totals as unknown as TotalRow)?.induccionCount || 0),
-      mantencionCount: Number((totals as unknown as TotalRow)?.mantencionCount || 0),
-    },
-    byDate: byDate
-      ? (byDate as unknown as DateRow[]).map((r: DateRow) => ({
-          date: formatDateOnly(r.date as string | Date),
-          events: Number(r.events),
-          amountExpected: Number(r.amountExpected),
-          amountPaid: Number(r.amountPaid),
-          dosageMl: Number(r.dosageMl),
-          domicilioCount: Number(r.domicilioCount),
-          induccionCount: Number(r.induccionCount),
-          mantencionCount: Number(r.mantencionCount),
-        }))
-      : undefined,
-    byWeek: byWeek
-      ? (byWeek as unknown as WeekRow[]).map((r: WeekRow) => ({
-          isoYear: Number(r.isoYear),
-          isoWeek: Number(r.isoWeek),
-          events: Number(r.events),
-          amountExpected: Number(r.amountExpected),
-          amountPaid: Number(r.amountPaid),
-          dosageMl: Number(r.dosageMl),
-          domicilioCount: Number(r.domicilioCount),
-          induccionCount: Number(r.induccionCount),
-          mantencionCount: Number(r.mantencionCount),
-        }))
-      : undefined,
-    byMonth: byMonth
-      ? (byMonth as unknown as MonthRow[]).map((r: MonthRow) => ({
-          year: Number(r.year),
-          month: Number(r.month),
-          events: Number(r.events),
-          amountExpected: Number(r.amountExpected),
-          amountPaid: Number(r.amountPaid),
-          dosageMl: Number(r.dosageMl),
-          domicilioCount: Number(r.domicilioCount),
-          induccionCount: Number(r.induccionCount),
-          mantencionCount: Number(r.mantencionCount),
-        }))
-      : undefined,
+    totals: mapTotals(totals as TreatmentTotalRow | null | undefined),
+    byDate: mapByDate(byDate as TreatmentDateRow[] | null | undefined),
+    byWeek: mapByWeek(byWeek as TreatmentWeekRow[] | null | undefined),
+    byMonth: mapByMonth(byMonth as TreatmentMonthRow[] | null | undefined),
   };
 }
 

@@ -189,11 +189,7 @@ export function App() {
               <PerformanceIndicator />
               <Tooltip content="Sistema operativo">
                 <div className="flex cursor-help items-center gap-2 text-default-600 text-xs">
-                  {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: legacy tooltip */}
-                  <span
-                    aria-label="Sistema operativo"
-                    className="inline-flex h-2 w-2 rounded-full bg-success/70"
-                  />
+                  <span className="inline-flex h-2 w-2 rounded-full bg-success/70" />
                 </div>
               </Tooltip>
             </div>

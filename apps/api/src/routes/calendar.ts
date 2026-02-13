@@ -77,7 +77,6 @@ function sanitizeOptionalSelectionValue(value: null | string | undefined): null 
   return trimmed;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy filter building logic
 async function buildFiltersFromValidQuery(query: CalendarQuery) {
   const settings = await loadSettings();
   const configStart =
@@ -891,7 +890,6 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
   // In Node, we can just not await the async IIFE.
 
   // Background Process
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy background job
   void (async () => {
     try {
       type EventUpdate = {
@@ -1031,7 +1029,6 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
 
   const jobId = startJob("reclassify-all", events.length);
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy background job
   void (async () => {
     try {
       type EventUpdate = {

@@ -14,48 +14,19 @@ import type { RoutePermission } from "@/types/navigation";
  *
  * Based on TanStack Router file-based routing conventions.
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: route matching logic
 export function isTechnicalRoute(fullPath: string): boolean {
   const segments = fullPath.split("/").filter(Boolean);
+  const isSpecialSegment = (segment: string) =>
+    segment.startsWith("_") ||
+    segment.startsWith("$") ||
+    segment.includes(".edit") ||
+    segment === "edit" ||
+    segment === "create" ||
+    segment.includes(".add") ||
+    segment === "add" ||
+    segment === "index";
 
-  for (const segment of segments) {
-    // Layout routes (e.g., _authed, _pathlessLayout)
-    if (segment.startsWith("_")) {
-      return true;
-    }
-
-    // Dynamic params (e.g., $id, $postId)
-    if (segment.startsWith("$")) {
-      return true;
-    }
-
-    // Edit pages (e.g., edit, $id.edit)
-    if (segment.includes(".edit") || segment === "edit") {
-      return true;
-    }
-
-    // Create pages
-    if (segment === "create") {
-      return true;
-    }
-
-    // Add pages (similar to create)
-    if (segment.includes(".add") || segment === "add") {
-      return true;
-    }
-
-    // Index routes (usually just containers/redirects)
-    if (segment === "index") {
-      return true;
-    }
-  }
-
-  // Catch-all routes
-  if (fullPath.endsWith("/$")) {
-    return true;
-  }
-
-  return false;
+  return segments.some(isSpecialSegment) || fullPath.endsWith("/$");
 }
 
 /**

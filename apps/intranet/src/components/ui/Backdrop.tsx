@@ -17,15 +17,12 @@ export function Backdrop({ className, isVisible, onClose, zIndex = 40 }: Readonl
   }
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: backdrop div
-    <div
+    <button
       aria-label="Close"
       className={cn("fixed inset-0", className)}
       onClick={() => onClose?.()}
-      onKeyDown={(e) => e.key === "Escape" && onClose?.()}
-      role="button"
       style={{ zIndex }}
-      tabIndex={0}
+      type="button"
     />
   );
 }

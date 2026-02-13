@@ -50,9 +50,8 @@ function ChangeGroup({ action, items }: Readonly<{ action: string; items: Change
         <div className="h-px flex-1 bg-default-100" />
       </div>
       <div className="space-y-4">
-        {items.map((item, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: display list only
-          <div key={i} className="flex gap-3">
+        {items.map((item) => (
+          <div key={`${cfg.label}-${item.summary}`} className="flex gap-3">
             <div
               className={cn(
                 "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border bg-content1 shadow-sm",

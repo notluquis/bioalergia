@@ -150,10 +150,11 @@ function normalizeTimeString(time: string): string | null {
   }
 
   const [, hours, minutes, seconds = "00"] = match;
-  // biome-ignore lint/style/noNonNullAssertion: regex match guarantee
-  const h = Number.parseInt(hours!, 10);
-  // biome-ignore lint/style/noNonNullAssertion: regex match guarantee
-  const m = Number.parseInt(minutes!, 10);
+  if (!hours || !minutes) {
+    return null;
+  }
+  const h = Number.parseInt(hours, 10);
+  const m = Number.parseInt(minutes, 10);
   const s = Number.parseInt(seconds, 10);
 
   // Validate ranges
@@ -223,8 +224,10 @@ function dateToTimeString(date: Date | string | null): string | null {
     const match = date.match(TIME_ONLY_PATTERN);
     if (match) {
       const [, hours, minutes] = match;
-      // biome-ignore lint/style/noNonNullAssertion: regex match guarantee
-      return `${hours!.padStart(2, "0")}:${minutes}`;
+      if (hours && minutes) {
+        return `${hours.padStart(2, "0")}:${minutes}`;
+      }
+      return null;
     }
     // Try parsing as date/time
     const d = dayjs(date);
@@ -349,7 +352,6 @@ export async function listTimesheetEntries(
   return entries.map(mapTimesheetEntry);
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy timesheet mutation logic
 export async function upsertTimesheetEntry(
   payload: UpsertTimesheetPayload,
 ): Promise<TimesheetEntry> {
@@ -359,6 +361,7 @@ export async function upsertTimesheetEntry(
   // No timezone conversion - keep as-is from user input
   const startTimeStr = payload.start_time ? normalizeTimeString(payload.start_time) : null;
   const endTimeStr = payload.end_time ? normalizeTimeString(payload.end_time) : null;
+  const workDateDb = dayjs(workDateObj).format("YYYY-MM-DD");
 
   console.log("[timesheets] upsert input:", {
     payload_start: payload.start_time,
@@ -384,22 +387,17 @@ export async function upsertTimesheetEntry(
       .insertInto("EmployeeTimesheet")
       .values({
         employeeId: payload.employee_id,
-        // biome-ignore lint/suspicious/noExplicitAny: Kysely Date strictness
-        workDate: workDateObj as any,
-        // biome-ignore lint/suspicious/noExplicitAny: PG TIME requires string, Schema expects Date
-        startTime: startTimeStr as any,
-        // biome-ignore lint/suspicious/noExplicitAny: PG TIME requires string, Schema expects Date
-        endTime: endTimeStr as any,
+        workDate: workDateDb,
+        startTime: startTimeStr,
+        endTime: endTimeStr,
         workedMinutes: workedMinutes,
         overtimeMinutes: payload.overtime_minutes,
         comment: payload.comment ?? null,
       })
       .onConflict((oc) =>
         oc.columns(["employeeId", "workDate"]).doUpdateSet({
-          // biome-ignore lint/suspicious/noExplicitAny: PG TIME requires string
-          startTime: startTimeStr as any,
-          // biome-ignore lint/suspicious/noExplicitAny: PG TIME requires string
-          endTime: endTimeStr as any,
+          startTime: startTimeStr,
+          endTime: endTimeStr,
           workedMinutes: workedMinutes,
           overtimeMinutes: payload.overtime_minutes,
           comment: payload.comment ?? null,
@@ -727,10 +725,53 @@ export function buildEmployeeSummary(
   };
 }
 
+type MonthlySummaryTotals = {
+  workedMinutes: number;
+  overtimeMinutes: number;
+  extraAmount: number;
+  subtotal: number;
+  retention: number;
+  net: number;
+};
+
+const createMonthlySummaryTotals = (): MonthlySummaryTotals => ({
+  workedMinutes: 0,
+  overtimeMinutes: 0,
+  extraAmount: 0,
+  subtotal: 0,
+  retention: 0,
+  net: 0,
+});
+
+const addSummaryTotals = (
+  totals: MonthlySummaryTotals,
+  summary: ReturnType<typeof buildEmployeeSummary>,
+) => {
+  totals.workedMinutes += summary.workedMinutes;
+  totals.overtimeMinutes += summary.overtimeMinutes;
+  totals.extraAmount += summary.extraAmount;
+  totals.subtotal += summary.subtotal;
+  totals.retention += summary.retention;
+  totals.net += summary.net;
+};
+
+const shouldIncludeActiveEmployee = (
+  employee: Awaited<ReturnType<typeof getEmployeeById>>,
+  employeesWithTimesheets: Set<number>,
+  employeeId?: number,
+) => {
+  if (employeesWithTimesheets.has(employee.id) || employee.status !== "ACTIVE") {
+    return false;
+  }
+  if (employeeId && employee.id !== employeeId) {
+    return false;
+  }
+  return true;
+};
+
 /**
  * Build monthly summary for all employees (or a specific one)
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy builder
 export async function buildMonthlySummary(from: string, to: string, employeeId?: number) {
   const employees = await listEmployees();
   const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
@@ -751,14 +792,7 @@ export async function buildMonthlySummary(from: string, to: string, employeeId?:
   });
 
   const results: ReturnType<typeof buildEmployeeSummary>[] = [];
-  const totals = {
-    workedMinutes: 0,
-    overtimeMinutes: 0,
-    extraAmount: 0,
-    subtotal: 0,
-    retention: 0,
-    net: 0,
-  };
+  const totals = createMonthlySummaryTotals();
 
   // Track which employees have timesheets
   const employeesWithTimesheets = new Set<number>();
@@ -775,28 +809,15 @@ export async function buildMonthlySummary(from: string, to: string, employeeId?:
       periodStart: from,
     });
     results.push(summary);
-    totals.workedMinutes += summary.workedMinutes;
-    totals.overtimeMinutes += summary.overtimeMinutes;
-    totals.extraAmount += summary.extraAmount;
-    totals.subtotal += summary.subtotal;
-    totals.retention += summary.retention;
-    totals.net += summary.net;
+    addSummaryTotals(totals, summary);
   }
 
-  // Include FIXED salary employees without timesheets
+  // Include active employees without timesheets
   for (const employee of employees) {
-    // Skip if already processed or not active
-    if (employeesWithTimesheets.has(employee.id) || employee.status !== "ACTIVE") {
+    if (!shouldIncludeActiveEmployee(employee, employeesWithTimesheets, employeeId)) {
       continue;
     }
-    // Skip if filtering by specific employee and this isn't it
-    if (employeeId && employee.id !== employeeId) {
-      continue;
-    }
-    // Include ALL active employees without timesheets (show as 0 hours)
-    // previously only: if (employee.salaryType === "FIXED") {
 
-    // Use generic summary for 0 hours
     const summary = buildEmployeeSummary(employee, {
       workedMinutes: 0,
       overtimeMinutes: 0,
