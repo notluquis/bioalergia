@@ -1,4 +1,4 @@
-import { Button, Card, Spinner } from "@heroui/react";
+import { Button, Card, Description, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -247,10 +247,10 @@ export function TreatmentAnalyticsPage() {
           {data && trendData?.length === 0 ? (
             <Card className="border-default-100">
               <Card.Content className="p-8 text-center">
-                <p className="text-default-500">
+                <Description className="text-default-500">
                   No hay datos disponibles para el período seleccionado. Intenta ajustar los filtros
                   o seleccionar otro rango de fechas.
-                </p>
+                </Description>
               </Card.Content>
             </Card>
           ) : (
@@ -306,9 +306,9 @@ function AnalyticsCharts({
       {/* Trend Chart */}
       <Card className="border-default-200 shadow-sm">
         <Card.Header className="pb-1.5">
-          <h3 className="font-semibold text-foreground text-sm sm:text-base">
+          <span className="font-semibold text-foreground text-sm sm:text-base">
             Tendencia de Actividad
-          </h3>
+          </span>
         </Card.Header>
         <Card.Content>
           <div className="h-52 min-h-52 w-full min-w-0">
@@ -404,7 +404,7 @@ function AnalyticsCharts({
         <>
           {/* Por Etapa - Monthly */}
           <div className="space-y-2.5">
-            <h3 className="font-semibold text-foreground text-sm">Por Etapa</h3>
+            <span className="font-semibold text-foreground text-sm">Por Etapa</span>
             <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {monthlyData.map((month) => (
                 <PieChartCard
@@ -419,7 +419,7 @@ function AnalyticsCharts({
 
           {/* Por Ubicación - Monthly */}
           <div className="space-y-2.5">
-            <h3 className="font-semibold text-foreground text-sm">Por Ubicación</h3>
+            <span className="font-semibold text-foreground text-sm">Por Ubicación</span>
             <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {monthlyData.map((month) => (
                 <PieChartCard
@@ -449,7 +449,7 @@ function PieChartCard({
   return (
     <Card className="flex-1 border-default-200 shadow-sm">
       <Card.Header className="pb-1.5">
-        <h3 className="font-semibold text-foreground text-xs sm:text-sm">{title}</h3>
+        <span className="font-semibold text-foreground text-xs sm:text-sm">{title}</span>
       </Card.Header>
       <Card.Content className="p-2">
         <div className="h-24 min-h-24 w-full min-w-0">
@@ -493,9 +493,9 @@ const CustomTooltip = ({
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border border-default-200 bg-content1 p-2 text-xs shadow-lg">
-        <p className="mb-1.5 font-semibold text-foreground text-xs">
+        <Description className="mb-1.5 font-semibold text-foreground text-xs">
           {dayjs(label).isValid() ? dayjs(label).format("DD MMM YYYY") : label}
-        </p>
+        </Description>
         <div className="space-y-1">
           {payload.map((p) => (
             <div key={p.name} className="flex items-center gap-1.5">
@@ -577,7 +577,7 @@ function AnalyticsDetailTable({
   return (
     <Card className="border-default-200 shadow-sm">
       <Card.Header className="pb-1.5">
-        <h3 className="font-semibold text-base text-foreground">Detalle del Periodo</h3>
+        <span className="font-semibold text-base text-foreground">Detalle del Periodo</span>
       </Card.Header>
       <Card.Content>
         <DataTable
@@ -619,7 +619,9 @@ function PeriodIndicator({
   return (
     <div className="flex w-fit items-center gap-2 rounded-lg bg-primary/10 px-3 py-2">
       <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-      <p className="font-semibold text-foreground text-xs sm:text-sm">{displayText}</p>
+      <Description className="font-semibold text-foreground text-xs sm:text-sm">
+        {displayText}
+      </Description>
     </div>
   );
 }
@@ -753,17 +755,17 @@ function AnalyticsFilters({
       <Card.Content className="space-y-4 p-3 sm:p-4">
         {/* Current Range Indicator */}
         <div className="rounded-lg bg-default-50 p-2.5">
-          <p className="text-default-500 text-xs">
+          <Description className="text-default-500 text-xs">
             <span className="font-semibold">Rango actual:</span>{" "}
             {dayjs(filters.from).format("D MMM")} - {dayjs(filters.to).format("D MMM YYYY")}
-          </p>
+          </Description>
         </div>
 
         {/* Quick Range Presets */}
         <div className="space-y-2">
-          <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+          <Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
             Rangos rápidos
-          </p>
+          </Description>
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
@@ -794,9 +796,9 @@ function AnalyticsFilters({
 
         {/* Date Inputs */}
         <div className="space-y-3">
-          <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+          <Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
             Rango personalizado
-          </p>
+          </Description>
           <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1">
               <AppInput
@@ -822,15 +824,17 @@ function AnalyticsFilters({
 
           {/* Error Message */}
           {dateRangeError && (
-            <p className="rounded-md bg-danger/10 p-2 text-danger text-xs">{dateRangeError}</p>
+            <Description className="rounded-md bg-danger/10 p-2 text-danger text-xs">
+              {dateRangeError}
+            </Description>
           )}
         </div>
 
         {/* Month Shortcuts */}
         <div className="space-y-2 border-default-200 border-t pt-3">
-          <p className="font-semibold text-default-500 text-xs uppercase tracking-wide">
+          <Description className="font-semibold text-default-500 text-xs uppercase tracking-wide">
             Atajos de mes
-          </p>
+          </Description>
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
@@ -940,9 +944,11 @@ function KpiCard({
           <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
         <div className="flex flex-col justify-center gap-0.5">
-          <p className="font-medium text-default-500 text-xs uppercase">{title}</p>
-          <p className="font-bold text-foreground text-lg sm:text-xl">{value}</p>
-          <p className="text-default-400 text-xs">{trend}</p>
+          <Description className="font-medium text-default-500 text-xs uppercase">
+            {title}
+          </Description>
+          <span className="font-bold text-foreground text-lg sm:text-xl">{value}</span>
+          <Description className="text-default-400 text-xs">{trend}</Description>
         </div>
       </Card.Content>
     </Card>

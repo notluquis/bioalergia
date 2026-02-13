@@ -3,7 +3,7 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
-import { ButtonGroup, Chip, Spinner } from "@heroui/react";
+import { ButtonGroup, Chip, Description, Spinner } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -284,7 +284,7 @@ function PeriodSelectionPanel({
         <Chip color="accent" size="lg" variant="primary">
           1
         </Chip>
-        <h2 className="font-semibold text-foreground text-lg">Selecciona el periodo</h2>
+        <span className="font-semibold text-foreground text-lg">Selecciona el periodo</span>
         {rangeSummary && <span className="ml-auto text-default-500 text-sm">({rangeSummary})</span>}
       </div>
 
@@ -378,7 +378,9 @@ function PeriodSelectionPanel({
               </div>
 
               {selectedWeekKeys.length === 0 && (
-                <p className="text-sm text-warning">Selecciona al menos una semana</p>
+                <Description className="text-sm text-warning">
+                  Selecciona al menos una semana
+                </Description>
               )}
             </div>
           </SmoothCollapse>
@@ -411,7 +413,7 @@ function EmployeeSelectionPanel({
         <Chip color="accent" size="lg" variant="primary">
           2
         </Chip>
-        <h2 className="font-semibold text-foreground text-lg">Selecciona empleados</h2>
+        <span className="font-semibold text-foreground text-lg">Selecciona empleados</span>
         <span className="ml-auto text-default-500 text-sm">
           {selectedEmployeeIds.length}/{MAX_EMPLOYEES}
         </span>
@@ -466,15 +468,15 @@ function EmployeeSelectionPanel({
       )}
 
       {selectedEmployeeIds.length === 0 && (
-        <p className="mt-2 text-sm text-warning">
+        <Description className="mt-2 text-sm text-warning">
           Selecciona al menos 1 empleado para ver la auditoría
-        </p>
+        </Description>
       )}
 
       {isMaxEmployees && (
-        <p className="mt-2 text-default-500 text-sm">
+        <Description className="mt-2 text-default-500 text-sm">
           Máximo {MAX_EMPLOYEES} empleados simultáneos
-        </p>
+        </Description>
       )}
     </div>
   );
@@ -502,7 +504,7 @@ function ResultsSummaryPanel({
         <Chip color="accent" size="lg" variant="primary">
           3
         </Chip>
-        <h2 className="font-semibold text-foreground text-lg">Resultados del análisis</h2>
+        <span className="font-semibold text-foreground text-lg">Resultados del análisis</span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -547,11 +549,11 @@ function AuditEmptyState({
       <Card className="shadow-sm">
         <CardContent className="flex flex-col items-center py-16 text-center">
           <Users className="mb-4 h-12 w-12 text-default-200" />
-          <h3 className="font-semibold text-default-600 text-lg">Selecciona empleados</h3>
-          <p className="max-w-md text-default-400 text-sm">
+          <span className="font-semibold text-default-600 text-lg">Selecciona empleados</span>
+          <Description className="max-w-md text-default-400 text-sm">
             Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar
             solapamientos
-          </p>
+          </Description>
         </CardContent>
       </Card>
     );
@@ -584,7 +586,9 @@ function CalendarPanel({
   }
   return (
     <div className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
-      <h2 className="mb-6 font-semibold text-foreground text-lg">Calendario de auditoría</h2>
+      <span className="mb-6 block font-semibold text-foreground text-lg">
+        Calendario de auditoría
+      </span>
       <Suspense
         fallback={
           <div className="flex h-64 items-center justify-center">
@@ -633,31 +637,37 @@ function LegendPanel({
             <div className="flex items-start gap-3">
               <div className="mt-1 h-4 w-4 shrink-0 rounded bg-success" />
               <div>
-                <p className="font-semibold text-foreground">Sin conflicto</p>
-                <p className="text-default-600 text-sm">Turnos sin solapamiento</p>
+                <span className="font-semibold text-foreground">Sin conflicto</span>
+                <Description className="text-default-600 text-sm">
+                  Turnos sin solapamiento
+                </Description>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div className="mt-1 h-4 w-4 shrink-0 rounded bg-danger" />
               <div>
-                <p className="font-semibold text-foreground">Conflicto detectado</p>
-                <p className="text-default-600 text-sm">Horarios traslapados entre empleados</p>
+                <span className="font-semibold text-foreground">Conflicto detectado</span>
+                <Description className="text-default-600 text-sm">
+                  Horarios traslapados entre empleados
+                </Description>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-lg">👩‍⚕️</span>
               <div>
-                <p className="font-semibold text-foreground">Compatibles</p>
-                <p className="text-default-600 text-sm">Enfermero + TENS pueden coexistir</p>
+                <span className="font-semibold text-foreground">Compatibles</span>
+                <Description className="text-default-600 text-sm">
+                  Enfermero + TENS pueden coexistir
+                </Description>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span className="text-lg">⌛</span>
               <div>
-                <p className="font-semibold text-foreground">Tooltip</p>
-                <p className="text-default-600 text-sm">
+                <span className="font-semibold text-foreground">Tooltip</span>
+                <Description className="text-default-600 text-sm">
                   Pasa el cursor o toca un bloque para ver detalles del conflicto
-                </p>
+                </Description>
               </div>
             </div>
           </div>
