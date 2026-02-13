@@ -394,7 +394,6 @@ export async function getCounterpartSuggestions(query: string, limit: number) {
 }
 
 export async function listCounterparts() {
-  await syncCounterpartsFromTransactions();
   return await db.counterpart.findMany({
     orderBy: { bankAccountHolder: "asc" },
     include: {
