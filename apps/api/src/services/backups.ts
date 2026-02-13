@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream, statSync, unlinkSync } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
-import { db } from "@finanzas/db";
+import { db, schema } from "@finanzas/db";
 
 import { uploadToDrive } from "./drive";
 
@@ -24,51 +24,18 @@ export interface BackupProgress {
 
 type ProgressCallback = (progress: BackupProgress) => void;
 
-/**
- * Gets model names statically or from schema.
- * ZenStack doesn't expose DMMF directly via the client,
- * so we maintain a list of critical models or try to infer.
- * For now, using a static list of known models is safer and cleaner.
- */
-function getAllModelNames(): string[] {
-  // All models from schema.zmodel in dependency order
-  return [
-    "Person",
-    "User",
-    "Passkey",
-    "Role",
-    "Permission",
-    "RolePermission",
-    "UserRoleAssignment",
-    "UserPermissionVersion",
-    "Employee",
-    "EmployeeTimesheet",
-    "Counterpart",
-    "CounterpartAccount",
-    "DailyBalance",
-    "Service",
-    "Loan",
-    "LoanSchedule",
+const getDelegateName = (modelName: string) =>
+  modelName.charAt(0).toLowerCase() + modelName.slice(1);
 
-    "Setting",
-    "PushSubscription",
-    "Calendar",
-    "CalendarWatchChannel",
-    "Event",
-    "CalendarSyncLog",
-    "SyncLog",
-    "BackupLog",
-    "InventoryCategory",
-    "InventoryItem",
-    "InventoryMovement",
-    "DailyProductionBalance",
-    "SupplyRequest",
-    "CommonSupply",
-    "SettlementTransaction",
-    "ReleaseTransaction",
-    "WithdrawTransaction",
-    "CalendarSyncLog",
-  ];
+const getModelDelegate = (modelName: string) => {
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic delegate lookup by model name
+  const dbRecord = db as Record<string, any>;
+  return dbRecord[getDelegateName(modelName)];
+};
+
+function getAllModelNames(): string[] {
+  // Always use all runtime schema models to avoid stale manual lists.
+  return Object.keys(schema.models).sort((a, b) => a.localeCompare(b));
 }
 
 /**
@@ -117,7 +84,6 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
 
     for (let i = 0; i < totalModels; i++) {
       const modelName = allModels[i];
-      const camelModelName = modelName.charAt(0).toLowerCase() + modelName.slice(1);
       const progress = Math.round(10 + (i / totalModels) * 50);
 
       onProgress?.({
@@ -133,9 +99,7 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
       writeStream.write(`"${modelName}":`);
 
       try {
-        // biome-ignore lint/suspicious/noExplicitAny: dynamic db access
-        const dbRecord = db as Record<string, any>;
-        const modelDelegate = dbRecord[camelModelName];
+        const modelDelegate = getModelDelegate(modelName);
 
         if (modelDelegate && typeof modelDelegate.findMany === "function") {
           const modelHash = createHash("sha256");
@@ -197,7 +161,9 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
           }
         } else {
           writeStream.write("[]"); // Empty array for missing delegate
-          console.warn(`⚠️ Model delegate not found for ${modelName} (tried ${camelModelName})`);
+          console.warn(
+            `⚠️ Model delegate not found for ${modelName} (tried ${getDelegateName(modelName)})`,
+          );
         }
       } catch (error) {
         writeStream.write("[]"); // Fail safe
@@ -500,9 +466,7 @@ export async function getBackupDiff(fileId: string) {
 
   for (const model of allModels) {
     const remote = backupStats[model];
-    // Cast strict type
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic db model access
-    const modelDelegate = (db as any)[model];
+    const modelDelegate = getModelDelegate(model);
 
     if (!modelDelegate || typeof modelDelegate.findMany !== "function") {
       continue;
