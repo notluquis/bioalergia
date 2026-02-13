@@ -12,6 +12,7 @@ import {
   createCounterpart,
   getCounterpartById,
   getCounterpartSuggestions,
+  getCounterpartSummary,
   listCounterparts,
   listUnassignedPayoutAccounts,
   syncCounterpartsFromTransactions,
@@ -284,27 +285,10 @@ app.get("/:id/summary", async (c) => {
   }
 
   try {
-    const counterpart = await getCounterpartById(id);
-    // Get summary of transactions for this counterpart
-    const withdrawTotal =
-      counterpart.counterpart.withdrawTransactions?.reduce(
-        (sum, tx) => sum + (tx.amount ? Number(tx.amount) : 0),
-        0,
-      ) ?? 0;
-
-    const releaseTotal =
-      counterpart.counterpart.releaseTransactions?.reduce(
-        (sum, tx) => sum + (tx.grossAmount ? Number(tx.grossAmount) : 0),
-        0,
-      ) ?? 0;
-
+    const summary = await getCounterpartSummary(id);
     return reply(c, {
       status: "ok",
-      summary: {
-        withdrawTotal,
-        releaseTotal,
-        settlementCount: counterpart.counterpart.settlementTransactions?.length ?? 0,
-      },
+      summary,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Not found";

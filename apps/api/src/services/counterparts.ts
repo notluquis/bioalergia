@@ -398,10 +398,17 @@ export async function listCounterparts() {
   return await db.counterpart.findMany({
     orderBy: { bankAccountHolder: "asc" },
     include: {
-      accounts: true,
-      withdrawTransactions: true,
-      releaseTransactions: true,
-      settlementTransactions: true,
+      accounts: {
+        select: {
+          accountNumber: true,
+          accountType: true,
+          bankName: true,
+          counterpartId: true,
+          createdAt: true,
+          id: true,
+          updatedAt: true,
+        },
+      },
     },
   });
 }
@@ -410,10 +417,17 @@ export async function getCounterpartById(id: number) {
   const counterpart = await db.counterpart.findUnique({
     where: { id },
     include: {
-      accounts: true,
-      withdrawTransactions: true,
-      releaseTransactions: true,
-      settlementTransactions: true,
+      accounts: {
+        select: {
+          accountNumber: true,
+          accountType: true,
+          bankName: true,
+          counterpartId: true,
+          createdAt: true,
+          id: true,
+          updatedAt: true,
+        },
+      },
     },
   });
 
@@ -431,10 +445,17 @@ export async function getCounterpartByRut(identificationNumber: string) {
   const counterpart = await db.counterpart.findUnique({
     where: { identificationNumber },
     include: {
-      accounts: true,
-      withdrawTransactions: true,
-      releaseTransactions: true,
-      settlementTransactions: true,
+      accounts: {
+        select: {
+          accountNumber: true,
+          accountType: true,
+          bankName: true,
+          counterpartId: true,
+          createdAt: true,
+          id: true,
+          updatedAt: true,
+        },
+      },
     },
   });
 
@@ -680,4 +701,52 @@ export async function assignRutToPayoutAccounts(params: {
   }
 
   return { assignedCount, conflicts, counterpart };
+}
+
+export async function getCounterpartSummary(counterpartId: number) {
+  const counterpart = await db.counterpart.findUnique({
+    select: { identificationNumber: true },
+    where: { id: counterpartId },
+  });
+
+  if (!counterpart) {
+    throw new Error(`Counterpart with ID ${counterpartId} not found`);
+  }
+
+  const identificationNumber = counterpart.identificationNumber;
+
+  const [withdrawGrouped, releaseGrouped, settlementCount] = await Promise.all([
+    db.withdrawTransaction.groupBy({
+      by: ["identificationNumber"],
+      where: {
+        identificationNumber,
+      },
+      _sum: {
+        amount: true,
+      },
+    }),
+    db.releaseTransaction.groupBy({
+      by: ["identificationNumber"],
+      where: {
+        identificationNumber,
+      },
+      _sum: {
+        grossAmount: true,
+      },
+    }),
+    db.settlementTransaction.count({
+      where: {
+        identificationNumber,
+      },
+    }),
+  ]);
+
+  const withdrawTotal = Number(withdrawGrouped[0]?._sum.amount ?? 0);
+  const releaseTotal = Number(releaseGrouped[0]?._sum.grossAmount ?? 0);
+
+  return {
+    releaseTotal,
+    settlementCount,
+    withdrawTotal,
+  };
 }
