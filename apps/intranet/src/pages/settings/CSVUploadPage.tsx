@@ -95,6 +95,41 @@ const buildTransformedData = (
     return transformed;
   });
 
+const normalizeWithdrawIdForBatch = (value: unknown) => String(value ?? "").trim();
+
+function buildBatchRows(
+  selectedTable: string,
+  files: UploadedFile[],
+): { droppedDuplicates: number; rows: Record<string, number | string>[] } {
+  const allRows = files
+    .filter((file) => file.status !== "error")
+    .flatMap((file) => buildTransformedData(file.csvData, file.columnMapping));
+
+  if (selectedTable !== "withdrawals") {
+    return { droppedDuplicates: 0, rows: allRows };
+  }
+
+  const seen = new Set<string>();
+  const deduped: Record<string, number | string>[] = [];
+  let droppedDuplicates = 0;
+
+  for (const row of allRows) {
+    const key = normalizeWithdrawIdForBatch(row.withdrawId);
+    if (!key) {
+      deduped.push(row);
+      continue;
+    }
+    if (seen.has(key)) {
+      droppedDuplicates += 1;
+      continue;
+    }
+    seen.add(key);
+    deduped.push(row);
+  }
+
+  return { droppedDuplicates, rows: deduped };
+}
+
 const isValidColumnMapping = (
   table: TableOption | undefined,
   columnMapping: Record<string, string>,
@@ -653,61 +688,57 @@ function FilesListSection({
   );
 }
 
-function ImportSummaryCard({ uploadedFiles }: { uploadedFiles: UploadedFile[] }) {
-  const hasPreviewData = uploadedFiles.some((f) => f.previewData);
-
-  if (!hasPreviewData) {
+function ImportSummaryCard({
+  droppedDuplicates,
+  previewData,
+}: {
+  droppedDuplicates: number;
+  previewData: CsvPreviewResponse | null;
+}) {
+  if (!previewData) {
     return null;
   }
-
-  // Aggregate preview data across all files
-  const aggregated = uploadedFiles.reduce(
-    (acc, file) => {
-      if (file.previewData) {
-        acc.toInsert += file.previewData.toInsert ?? 0;
-        acc.toUpdate += file.previewData.toUpdate ?? 0;
-        acc.toSkip += file.previewData.toSkip ?? 0;
-        if (file.previewData.errors) {
-          acc.errors.push(...file.previewData.errors);
-        }
-      }
-      return acc;
-    },
-    { errors: [] as string[], toInsert: 0, toSkip: 0, toUpdate: 0 },
-  );
 
   return (
     <Card className="border-primary/20 bg-primary/5">
       <Card.Content className="p-6">
         <span className="mb-4 block font-semibold text-lg">Vista Previa de Importación</span>
+        {droppedDuplicates > 0 && (
+          <div className="mb-3 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-warning text-xs">
+            Se detectaron {droppedDuplicates} filas repetidas por <code>withdrawId</code> entre
+            archivos y se omitieron del cálculo del lote.
+          </div>
+        )}
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
           <div className="rounded-lg border border-default-100 bg-background p-3 shadow-sm">
             <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Insertar</div>
-            <div className="font-bold text-2xl text-success">{aggregated.toInsert}</div>
+            <div className="font-bold text-2xl text-success">{previewData.toInsert ?? 0}</div>
           </div>
           <div className="rounded-lg border border-default-100 bg-background p-3 shadow-sm">
             <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Actualizar</div>
-            <div className="font-bold text-2xl text-info">{aggregated.toUpdate}</div>
+            <div className="font-bold text-2xl text-info">{previewData.toUpdate ?? 0}</div>
           </div>
           <div className="rounded-lg border border-default-100 bg-background p-3 shadow-sm">
             <div className="mb-1 text-xs uppercase tracking-wider opacity-70">Omitir</div>
-            <div className="font-bold text-2xl text-warning">{aggregated.toSkip}</div>
+            <div className="font-bold text-2xl text-warning">{previewData.toSkip ?? 0}</div>
           </div>
         </div>
 
-        {aggregated.errors.length > 0 && (
+        {(previewData.errors?.length ?? 0) > 0 && (
           <Alert className="mb-0" status="warning">
             <div className="flex w-full flex-col gap-2">
               <div className="flex items-center gap-2 font-medium">
                 <AlertCircle className="h-4 w-4" />
-                Errores de validación ({aggregated.errors.length})
+                Errores de validación ({previewData.errors?.length ?? 0})
               </div>
               <ul className="max-h-32 list-inside list-disc overflow-y-auto rounded bg-background/50 p-2 text-xs opacity-90">
-                {aggregated.errors.slice(0, 50).map((err: string, i: number) => (
+                {(previewData.errors ?? []).slice(0, 50).map((err: string, i: number) => (
                   <li key={`${i}-${err.substring(0, 20)}`}>{err}</li>
                 ))}
-                {aggregated.errors.length > 50 && (
-                  <li className="text-default-500">...y {aggregated.errors.length - 50} más</li>
+                {(previewData.errors?.length ?? 0) > 50 && (
+                  <li className="text-default-500">
+                    ...y {(previewData.errors?.length ?? 0) - 50} más
+                  </li>
                 )}
               </ul>
             </div>
@@ -803,9 +834,11 @@ function ImportModeCard({
 
 function buildMappingColumns({
   firstFile,
+  onMappingChanged,
   setUploadedFiles,
 }: {
   firstFile: UploadedFile | undefined;
+  onMappingChanged: () => void;
   setUploadedFiles: React.Dispatch<React.SetStateAction<UploadedFile[]>>;
 }): ColumnDef<FieldDefinition>[] {
   const UNMAPPED_COLUMN_KEY = "__unmapped_column__";
@@ -846,6 +879,7 @@ function buildMappingColumns({
           className="w-full min-w-35"
           label="Columna CSV"
           onChange={(val) => {
+            onMappingChanged();
             setUploadedFiles((prev) =>
               prev.map((file, idx) => {
                 if (idx === 0) {
@@ -963,12 +997,14 @@ async function parseFile(
 // Separated from component to reduce complexity
 export function CSVUploadPage() {
   const { can } = useAuth();
-  const { success } = useToast();
+  const { error: toastError, success } = useToast();
 
   // State
   const [selectedTable, setSelectedTable] = useState<string>("");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [batchDroppedDuplicates, setBatchDroppedDuplicates] = useState(0);
+  const [batchPreviewData, setBatchPreviewData] = useState<CsvPreviewResponse | null>(null);
   const [importMode, setImportMode] = useState<"insert-only" | "insert-or-update">(
     "insert-or-update",
   );
@@ -989,6 +1025,8 @@ export function CSVUploadPage() {
   // Handlers
   const resetState = () => {
     setUploadedFiles([]);
+    setBatchDroppedDuplicates(0);
+    setBatchPreviewData(null);
   };
 
   const handleTableChange = (value: string) => {
@@ -1006,12 +1044,16 @@ export function CSVUploadPage() {
     const parsePromises = files.map((file) => parseFile(file, currentTable, selectedTable));
     const newFiles = await Promise.all(parsePromises);
 
+    setBatchDroppedDuplicates(0);
+    setBatchPreviewData(null);
     setUploadedFiles((prev) => [...prev, ...newFiles]);
     e.target.value = "";
   };
 
   const handleRemoveFile = (id: string) => {
     setUploadedFiles((prev) => prev.filter((f) => f.id !== id));
+    setBatchDroppedDuplicates(0);
+    setBatchPreviewData(null);
   };
 
   const handlePreview = async () => {
@@ -1020,114 +1062,84 @@ export function CSVUploadPage() {
     }
 
     setIsProcessing(true);
-
-    // Process files sequentially
-    for (const file of uploadedFiles) {
-      if (file.status === "error") {
-        continue;
-      }
-
-      // Update status to previewing
-      setUploadedFiles((prev) =>
-        prev.map((f) => (f.id === file.id ? { ...f, status: "previewing" as FileStatus } : f)),
-      );
-
-      try {
-        const transformedData = buildTransformedData(file.csvData, file.columnMapping);
-        const previewData = await previewMutateAsync({
-          data: transformedData,
-          table: selectedTable,
-          mode: importMode,
-        });
-
-        // Update with preview data
-        setUploadedFiles((prev) =>
-          prev.map((f) =>
-            f.id === file.id ? { ...f, previewData, status: "ready" as FileStatus } : f,
-          ),
-        );
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : "Error en vista previa";
-        setUploadedFiles((prev) =>
-          prev.map((f) =>
-            f.id === file.id ? { ...f, error: errorMsg, status: "error" as FileStatus } : f,
-          ),
-        );
-      }
-    }
-
-    setIsProcessing(false);
-  };
-
-  const importFile = async (file: UploadedFile, selectedTable: string) => {
-    if (file.status === "error" || !file.previewData) {
-      return { inserted: 0, updated: 0, skipped: 0 };
-    }
-
     setUploadedFiles((prev) =>
-      prev.map((f) => (f.id === file.id ? { ...f, status: "importing" as FileStatus } : f)),
+      prev.map((f) => (f.status === "error" ? f : { ...f, status: "previewing" as FileStatus })),
     );
 
     try {
-      const transformedData = buildTransformedData(file.csvData, file.columnMapping);
-      const result = await importMutateAsync({
-        data: transformedData,
+      const batch = buildBatchRows(selectedTable, uploadedFiles);
+      const previewData = await previewMutateAsync({
+        data: batch.rows,
         table: selectedTable,
         mode: importMode,
       });
 
+      setBatchDroppedDuplicates(batch.droppedDuplicates);
+      setBatchPreviewData(previewData);
       setUploadedFiles((prev) =>
-        prev.map((f) =>
-          f.id === file.id ? { ...f, previewData: result, status: "success" as FileStatus } : f,
-        ),
+        prev.map((f) => (f.status === "error" ? f : { ...f, status: "ready" as FileStatus })),
       );
-
-      return {
-        inserted: result.inserted ?? 0,
-        updated: result.updated ?? 0,
-        skipped: result.skipped ?? 0,
-      };
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Error al importar";
-      success(`${file.file.name}: ${errorMsg}`, "Error");
+      const errorMsg = error instanceof Error ? error.message : "Error en vista previa";
+      toastError(errorMsg);
       setUploadedFiles((prev) =>
-        prev.map((f) => (f.id === file.id ? { ...f, status: "error" as FileStatus } : f)),
+        prev.map((f) => (f.status === "error" ? f : { ...f, status: "error" as FileStatus })),
       );
-      return { inserted: 0, updated: 0, skipped: 0 };
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleImport = async () => {
-    if (!selectedTable || uploadedFiles.length === 0) {
+    if (!selectedTable || uploadedFiles.length === 0 || !batchPreviewData) {
       return;
     }
     setIsProcessing(true);
 
-    const results = await Promise.all(uploadedFiles.map((f) => importFile(f, selectedTable)));
-    const totals = results.reduce(
-      (acc, result) => ({
-        inserted: acc.inserted + result.inserted,
-        updated: acc.updated + result.updated,
-        skipped: acc.skipped + result.skipped,
-      }),
-      { inserted: 0, updated: 0, skipped: 0 },
+    setUploadedFiles((prev) =>
+      prev.map((f) => (f.status === "error" ? f : { ...f, status: "importing" as FileStatus })),
     );
 
-    setIsProcessing(false);
-    success(
-      `Completado: ${totals.inserted} insertados, ${totals.updated} actualizados, ${totals.skipped} omitidos.`,
-      "Importación",
-    );
+    try {
+      const batch = buildBatchRows(selectedTable, uploadedFiles);
+      const totals = await importMutateAsync({
+        data: batch.rows,
+        table: selectedTable,
+        mode: importMode,
+      });
+
+      setBatchDroppedDuplicates(batch.droppedDuplicates);
+      setBatchPreviewData(totals);
+      setUploadedFiles((prev) =>
+        prev.map((f) => (f.status === "error" ? f : { ...f, status: "success" as FileStatus })),
+      );
+      success(
+        `Completado: ${totals.inserted ?? 0} insertados, ${totals.updated ?? 0} actualizados, ${totals.skipped ?? 0} omitidos.`,
+        "Importación",
+      );
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Error al importar";
+      toastError(errorMsg);
+      setUploadedFiles((prev) =>
+        prev.map((f) => (f.status === "error" ? f : { ...f, status: "error" as FileStatus })),
+      );
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // Computed values
   const totalRows = uploadedFiles.reduce((sum, f) => sum + f.rowCount, 0);
   const isValidMapping =
     firstFile && currentTable ? isValidColumnMapping(currentTable, firstFile.columnMapping) : false;
-  const hasPreviewData = uploadedFiles.some((f) => f.previewData);
+  const hasPreviewData = batchPreviewData !== null;
 
   const columns = buildMappingColumns({
     firstFile,
+    onMappingChanged: () => {
+      setBatchDroppedDuplicates(0);
+      setBatchPreviewData(null);
+    },
     setUploadedFiles,
   });
 
@@ -1162,10 +1174,22 @@ export function CSVUploadPage() {
       )}
 
       {/* 5. Preview Summary */}
-      <ImportSummaryCard uploadedFiles={uploadedFiles} />
+      <ImportSummaryCard
+        droppedDuplicates={batchDroppedDuplicates}
+        previewData={batchPreviewData}
+      />
 
       {/* 6. Import Mode Selection */}
-      {hasPreviewData && <ImportModeCard importMode={importMode} onModeChange={setImportMode} />}
+      {hasPreviewData && (
+        <ImportModeCard
+          importMode={importMode}
+          onModeChange={(mode) => {
+            setImportMode(mode);
+            setBatchDroppedDuplicates(0);
+            setBatchPreviewData(null);
+          }}
+        />
+      )}
 
       {/* 7. Actions */}
       {uploadedFiles.length > 0 && (
@@ -1189,9 +1213,7 @@ export function CSVUploadPage() {
               !isValidMapping ||
               isProcessing ||
               uploadedFiles.length === 0 ||
-              uploadedFiles.some((f) =>
-                f.previewData?.errors ? f.previewData.errors.length > 0 : false,
-              )
+              (batchPreviewData?.errors?.length ?? 0) > 0
             }
             onClick={handleImport}
           >

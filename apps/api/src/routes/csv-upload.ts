@@ -298,6 +298,25 @@ csvUploadRoutes.post("/preview", async (c) => {
   let toInsert = 0;
   let toUpdate = 0;
   let toSkip = 0;
+  const seenWithdrawIds = new Set<string>();
+  let existingWithdrawIds = new Set<string>();
+
+  if (table === "withdrawals") {
+    const requestedIds = [
+      ...new Set(
+        data
+          .map((raw) => normalizeWithdrawId((raw as CSVRow).withdrawId))
+          .filter((value) => value.length > 0),
+      ),
+    ];
+    if (requestedIds.length > 0) {
+      const rows = await db.withdrawTransaction.findMany({
+        select: { withdrawId: true },
+        where: { withdrawId: { in: requestedIds } },
+      });
+      existingWithdrawIds = new Set(rows.map((row) => row.withdrawId));
+    }
+  }
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i] as CSVRow;
@@ -383,14 +402,20 @@ csvUploadRoutes.post("/preview", async (c) => {
           toInsert++;
         }
       } else if (table === "withdrawals") {
-        if (!row.withdrawId) {
+        const withdrawId = normalizeWithdrawId(row.withdrawId);
+        if (!withdrawId) {
           errors.push(`Fila ${i + 1}: withdrawId requerido`);
           toSkip++;
           continue;
         }
-        const exists = await db.withdrawTransaction.findUnique({
-          where: { withdrawId: String(row.withdrawId) },
-        });
+
+        if (seenWithdrawIds.has(withdrawId)) {
+          toSkip++;
+          continue;
+        }
+        seenWithdrawIds.add(withdrawId);
+
+        const exists = existingWithdrawIds.has(withdrawId);
         if (exists) {
           if (mode === "insert-only") {
             toSkip++;
@@ -625,6 +650,10 @@ async function importCsvRows(
   auth: AuthContext,
   mode: "insert-only" | "insert-or-update" = "insert-or-update",
 ): Promise<ImportResult> {
+  if (table === "withdrawals") {
+    return await importWithdrawalsRowsBatch(data, mode);
+  }
+
   const totals = emptyOutcome();
   const errors: string[] = [];
 
@@ -657,7 +686,8 @@ const importRowHandlers: Record<TableName, ImportRowHandler> = {
   daily_production_balances: (row, auth, mode) =>
     importDailyProductionBalancesRow(row, auth.userId, mode),
   transactions: async () => ({ inserted: 0, updated: 0, skipped: 1 }),
-  withdrawals: (row, _, mode) => importWithdrawalsRow(row, mode),
+  // Handled in batch path at importCsvRows() for consistent dedupe.
+  withdrawals: async () => ({ inserted: 0, updated: 0, skipped: 1 }),
   services: (row) => importServicesRow(row),
   inventory_items: (row, _, mode) => importInventoryItemsRow(row, mode),
   employee_timesheets: (row, _, mode) => importEmployeeTimesheetsRow(row, mode),
@@ -881,35 +911,87 @@ function buildWithdrawData(row: CSVRow) {
   };
 }
 
-async function importWithdrawalsRow(
-  row: CSVRow,
+function normalizeWithdrawId(value: unknown) {
+  if (value == null) {
+    return "";
+  }
+  return String(value).trim();
+}
+
+async function importWithdrawalsRowsBatch(
+  data: object[],
   mode: "insert-only" | "insert-or-update",
-): Promise<ImportOutcome> {
-  if (!row.withdrawId) {
-    throw new Error("withdrawId requerido");
-  }
+): Promise<ImportResult> {
+  const totals = emptyOutcome();
+  const errors: string[] = [];
+  const seenWithdrawIds = new Set<string>();
+  const preparedRows: Array<{
+    withdrawData: ReturnType<typeof buildWithdrawData>;
+    withdrawId: string;
+  }> = [];
 
-  const withdrawData = buildWithdrawData(row);
-  const withdrawId = String(row.withdrawId);
-  const existing = await db.withdrawTransaction.findUnique({
-    where: { withdrawId },
-  });
-
-  if (existing) {
-    if (mode === "insert-only") {
-      return { inserted: 0, updated: 0, skipped: 1 };
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i] as CSVRow;
+    const withdrawId = normalizeWithdrawId(row.withdrawId);
+    if (!withdrawId) {
+      errors.push(`Fila ${i + 1}: withdrawId requerido`);
+      totals.skipped += 1;
+      continue;
     }
-    await db.withdrawTransaction.update({
-      where: { withdrawId },
-      data: withdrawData,
-    });
-    return { inserted: 0, updated: 1, skipped: 0 };
+    if (seenWithdrawIds.has(withdrawId)) {
+      totals.skipped += 1;
+      continue;
+    }
+    seenWithdrawIds.add(withdrawId);
+
+    try {
+      preparedRows.push({
+        withdrawData: buildWithdrawData(row),
+        withdrawId,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Error desconocido";
+      errors.push(`Fila ${i + 1}: ${message}`);
+      totals.skipped += 1;
+    }
   }
 
-  await db.withdrawTransaction.create({
-    data: { withdrawId, ...withdrawData },
+  if (preparedRows.length === 0) {
+    return { ...totals, errors };
+  }
+
+  const existingRows = await db.withdrawTransaction.findMany({
+    select: { withdrawId: true },
+    where: {
+      withdrawId: {
+        in: preparedRows.map((row) => row.withdrawId),
+      },
+    },
   });
-  return { inserted: 1, updated: 0, skipped: 0 };
+  const existingIds = new Set(existingRows.map((row) => row.withdrawId));
+
+  for (const row of preparedRows) {
+    if (existingIds.has(row.withdrawId)) {
+      if (mode === "insert-only") {
+        totals.skipped += 1;
+        continue;
+      }
+
+      await db.withdrawTransaction.update({
+        where: { withdrawId: row.withdrawId },
+        data: row.withdrawData,
+      });
+      totals.updated += 1;
+      continue;
+    }
+
+    await db.withdrawTransaction.create({
+      data: { withdrawId: row.withdrawId, ...row.withdrawData },
+    });
+    totals.inserted += 1;
+  }
+
+  return { ...totals, errors };
 }
 
 function parseProductionBalanceDate(row: CSVRow) {
