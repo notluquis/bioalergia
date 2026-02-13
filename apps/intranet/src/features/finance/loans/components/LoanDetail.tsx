@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { useState } from "react";
@@ -82,7 +83,7 @@ export function LoanDetail({
   if (!loan) {
     return (
       <section className="flex h-full flex-col items-center justify-center rounded-3xl bg-background p-10 text-default-500 text-sm">
-        <p>Selecciona un préstamo para ver el detalle.</p>
+        <Description>Selecciona un préstamo para ver el detalle.</Description>
       </section>
     );
   }
@@ -91,10 +92,10 @@ export function LoanDetail({
     <section className="relative flex h-full flex-col gap-6 rounded-3xl bg-background p-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <h1 className="font-bold text-2xl text-primary drop-shadow-sm">{loan.title}</h1>
-          <p className="text-foreground/90 text-sm">
+          <span className="block font-bold text-2xl text-primary drop-shadow-sm">{loan.title}</span>
+          <Description className="text-foreground/90 text-sm">
             {loan.borrower_name} · {loan.borrower_type === "PERSON" ? "Persona natural" : "Empresa"}
-          </p>
+          </Description>
           <div className="flex flex-wrap items-center gap-3 text-default-500 text-xs">
             <span>Inicio {dayjs(loan.start_date, "YYYY-MM-DD").format("DD MMM YYYY")}</span>
             <span>
@@ -132,28 +133,36 @@ export function LoanDetail({
 
       <section className="grid gap-4 rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm sm:grid-cols-4">
         <div>
-          <p className="text-default-400 text-xs uppercase tracking-wide">Capital</p>
-          <p className="font-semibold text-foreground text-lg">
+          <Description className="text-default-400 text-xs uppercase tracking-wide">
+            Capital
+          </Description>
+          <span className="block font-semibold text-foreground text-lg">
             ${loan.principal_amount.toLocaleString("es-CL")}
-          </p>
+          </span>
         </div>
         <div>
-          <p className="text-default-400 text-xs uppercase tracking-wide">Total esperado</p>
-          <p className="font-semibold text-foreground text-lg">
+          <Description className="text-default-400 text-xs uppercase tracking-wide">
+            Total esperado
+          </Description>
+          <span className="block font-semibold text-foreground text-lg">
             ${(summary?.total_expected ?? 0).toLocaleString("es-CL")}
-          </p>
+          </span>
         </div>
         <div>
-          <p className="text-default-400 text-xs uppercase tracking-wide">Pagado</p>
-          <p className="font-semibold text-lg text-success">
+          <Description className="text-default-400 text-xs uppercase tracking-wide">
+            Pagado
+          </Description>
+          <span className="block font-semibold text-lg text-success">
             ${(summary?.total_paid ?? 0).toLocaleString("es-CL")}
-          </p>
+          </span>
         </div>
         <div>
-          <p className="text-default-400 text-xs uppercase tracking-wide">Saldo</p>
-          <p className="font-semibold text-danger text-lg">
+          <Description className="text-default-400 text-xs uppercase tracking-wide">
+            Saldo
+          </Description>
+          <span className="block font-semibold text-danger text-lg">
             ${(summary?.remaining_amount ?? 0).toLocaleString("es-CL")}
-          </p>
+          </span>
         </div>
       </section>
 
@@ -166,8 +175,10 @@ export function LoanDetail({
 
       {loan.notes && (
         <div className="rounded-2xl border border-default-200 bg-default-50 p-4 text-foreground text-sm">
-          <p className="text-default-400 text-xs uppercase tracking-wide">Notas</p>
-          <p>{loan.notes}</p>
+          <Description className="text-default-400 text-xs uppercase tracking-wide">
+            Notas
+          </Description>
+          <Description>{loan.notes}</Description>
         </div>
       )}
 
@@ -231,9 +242,9 @@ export function LoanDetail({
             <SelectItem key="MONTHLY">Mensual</SelectItem>
           </Select>
           {regenerateError && (
-            <p className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+            <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
               {regenerateError}
-            </p>
+            </Description>
           )}
           <div className="flex justify-end gap-3">
             <Button
@@ -255,9 +266,9 @@ export function LoanDetail({
 
       {loading && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/40 backdrop-blur-sm">
-          <p className="rounded-full bg-background px-4 py-2 font-semibold text-primary text-sm shadow">
+          <Description className="rounded-full bg-background px-4 py-2 font-semibold text-primary text-sm shadow">
             Cargando préstamo...
-          </p>
+          </Description>
         </div>
       )}
     </section>

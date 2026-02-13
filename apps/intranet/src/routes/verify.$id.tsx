@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { Description, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -52,7 +52,7 @@ function VerifyCertificatePage() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <Spinner size="lg" />
-          <p className="mt-4 text-foreground/70">Verificando certificado...</p>
+          <Description className="mt-4 text-foreground/70">Verificando certificado...</Description>
         </div>
       </div>
     );
@@ -67,8 +67,8 @@ function VerifyCertificatePage() {
       <div className="flex min-h-screen items-center justify-center bg-danger/10">
         <div className="max-w-md rounded-2xl bg-background p-8 text-center shadow-xl">
           <div className="mb-4 text-6xl">❌</div>
-          <h1 className="mb-2 font-bold text-3xl text-danger">Certificado Inválido</h1>
-          <p className="text-foreground/70">{invalidMessage}</p>
+          <span className="mb-2 block font-bold text-3xl text-danger">Certificado Inválido</span>
+          <Description className="text-foreground/70">{invalidMessage}</Description>
         </div>
       </div>
     );
@@ -79,66 +79,68 @@ function VerifyCertificatePage() {
       <div className="w-full max-w-2xl rounded-2xl bg-background p-8 shadow-xl">
         <div className="mb-6 text-center">
           <div className="mb-2 text-6xl">✅</div>
-          <h1 className="font-bold text-3xl text-success">Certificado Válido</h1>
+          <span className="block font-bold text-3xl text-success">Certificado Válido</span>
         </div>
 
         <div className="space-y-6">
           <div className="border-default-200 border-b pb-4">
-            <h3 className="mb-1 font-semibold text-foreground/70 text-sm uppercase tracking-wide">
+            <span className="mb-1 block font-semibold text-foreground/70 text-sm uppercase tracking-wide">
               Paciente
-            </h3>
-            <p className="font-medium text-xl">{data.patient.name}</p>
+            </span>
+            <span className="font-medium text-xl">{data.patient.name}</span>
           </div>
 
           <div className="border-default-200 border-b pb-4">
-            <h3 className="mb-1 font-semibold text-foreground/70 text-sm uppercase tracking-wide">
+            <span className="mb-1 block font-semibold text-foreground/70 text-sm uppercase tracking-wide">
               Diagnóstico
-            </h3>
-            <p className="text-lg">{data.diagnosis}</p>
+            </span>
+            <span className="text-lg">{data.diagnosis}</span>
           </div>
 
           {data.restDays && (
             <div className="border-default-200 border-b pb-4">
-              <h3 className="mb-1 font-semibold text-foreground/70 text-sm uppercase tracking-wide">
+              <span className="mb-1 block font-semibold text-foreground/70 text-sm uppercase tracking-wide">
                 Reposo Médico
-              </h3>
-              <p className="font-medium text-lg">{data.restDays} días</p>
+              </span>
+              <span className="font-medium text-lg">{data.restDays} días</span>
               {data.restStartDate && data.restEndDate && (
-                <p className="mt-1 text-foreground/60 text-sm">
+                <Description className="mt-1 text-foreground/60 text-sm">
                   Desde {dayjs(data.restStartDate).format("DD/MM/YYYY")} hasta{" "}
                   {dayjs(data.restEndDate).format("DD/MM/YYYY")}
-                </p>
+                </Description>
               )}
             </div>
           )}
 
           <div className="border-default-200 border-b pb-4">
-            <h3 className="mb-1 font-semibold text-foreground/70 text-sm uppercase tracking-wide">
+            <span className="mb-1 block font-semibold text-foreground/70 text-sm uppercase tracking-wide">
               Propósito
-            </h3>
-            <p className="text-lg capitalize">{data.purpose}</p>
+            </span>
+            <span className="text-lg capitalize">{data.purpose}</span>
           </div>
 
           <div className="border-default-200 border-b pb-4">
-            <h3 className="mb-1 font-semibold text-foreground/70 text-sm uppercase tracking-wide">
+            <span className="mb-1 block font-semibold text-foreground/70 text-sm uppercase tracking-wide">
               Emitido por
-            </h3>
-            <p className="font-medium text-lg">{data.doctor.name}</p>
-            <p className="text-foreground/60 text-sm">{data.doctor.specialty}</p>
+            </span>
+            <span className="block font-medium text-lg">{data.doctor.name}</span>
+            <Description className="text-foreground/60 text-sm">
+              {data.doctor.specialty}
+            </Description>
           </div>
 
           <div>
-            <h3 className="mb-1 font-semibold text-foreground/70 text-sm uppercase tracking-wide">
+            <span className="mb-1 block font-semibold text-foreground/70 text-sm uppercase tracking-wide">
               Fecha de emisión
-            </h3>
-            <p className="text-lg">{dayjs(data.issuedAt).format("DD [de] MMMM [de] YYYY")}</p>
+            </span>
+            <span className="text-lg">{dayjs(data.issuedAt).format("DD [de] MMMM [de] YYYY")}</span>
           </div>
         </div>
 
         <div className="mt-8 rounded-lg bg-info/10 p-4">
-          <p className="text-center text-info text-sm">
+          <Description className="text-center text-info text-sm">
             Este certificado ha sido verificado digitalmente y es auténtico
-          </p>
+          </Description>
         </div>
       </div>
     </div>

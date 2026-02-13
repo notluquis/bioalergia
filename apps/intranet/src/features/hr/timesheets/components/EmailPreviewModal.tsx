@@ -1,5 +1,6 @@
 import {
   Chip,
+  Description,
   ModalBackdrop,
   ModalBody,
   ModalContainer,
@@ -117,15 +118,15 @@ export function EmailPreviewModal({
           <ModalDialog className="relative w-full max-w-2xl overflow-hidden rounded-2xl bg-background p-0 shadow-2xl">
             {/* Custom Header with Gradient */}
             <div className="bg-linear-to-r from-primary to-primary/80 px-6 py-5 text-primary-foreground">
-              <h2 className="font-bold text-xl">Vista previa del correo</h2>
-              <p className="mt-1 text-sm opacity-90">
+              <span className="block font-bold text-xl">Vista previa del correo</span>
+              <Description className="mt-1 text-sm opacity-90">
                 Servicios de {summary.role} - {monthLabelEs}
-              </p>
+              </Description>
             </div>
 
             <ModalBody className="block max-h-[60vh] overflow-y-auto p-6">
               <div className="mb-4 rounded-xl border border-default-200 bg-default-50/40 p-4">
-                <p className="mb-3 font-semibold text-sm">Agente local</p>
+                <span className="mb-3 block font-semibold text-sm">Agente local</span>
                 <div className="mb-3">
                   <Input
                     id="local-agent-url"
@@ -268,64 +269,68 @@ export function EmailPreviewModal({
                   </div>
                 )}
                 {isHttpsPage && isHttpAgent && (
-                  <p className="mt-2 text-amber-600 text-xs">
+                  <Description className="mt-2 text-amber-600 text-xs">
                     El navegador bloquea HTTP desde una página HTTPS. Usa HTTPS en el agente local.
-                  </p>
+                  </Description>
                 )}
               </div>
 
               {/* Content wraps in ModalBody for spacing/scroll */}
               {/* Destinatario */}
               <div className="mb-4 rounded-xl bg-default-50/50 p-4">
-                <p className="text-default-600 text-sm">
+                <Description className="text-default-600 text-sm">
                   <strong>Para:</strong>{" "}
                   {employeeEmail ? (
                     <span className="font-medium text-foreground">{employeeEmail}</span>
                   ) : (
                     <span className="text-danger">⚠️ Sin email registrado</span>
                   )}
-                </p>
-                <p className="mt-1 text-default-600 text-sm">
+                </Description>
+                <Description className="mt-1 text-default-600 text-sm">
                   <strong>Asunto:</strong>{" "}
                   <span className="font-medium text-foreground">
                     Boleta de Honorarios - {monthLabelEs} - {employee.full_name}
                   </span>
-                </p>
+                </Description>
               </div>
 
               {/* Preview del email - simula cómo se verá en el cliente de correo */}
               <div className="rounded-xl border border-default-200 bg-background p-5">
-                <p className="mb-4 text-foreground">
+                <Description className="mb-4 text-foreground">
                   Estimado/a <strong>{employee.full_name}</strong>,
-                </p>
-                <p className="mb-4 text-foreground text-sm">
+                </Description>
+                <Description className="mb-4 text-foreground text-sm">
                   Junto con saludar, comparto el resumen de prestaciones de servicios profesionales
                   a honorarios correspondientes al periodo <strong>{monthLabelEs}</strong>, para su
                   revisión.
-                </p>
-                <p className="mb-4 text-foreground text-sm">
+                </Description>
+                <Description className="mb-4 text-foreground text-sm">
                   Si está conforme, agradeceré emitir la Boleta de Honorarios Electrónica (BHE) por
                   el monto bruto indicado, considerando la retención vigente según corresponda en la
                   emisión.
-                </p>
+                </Description>
 
                 {/* Caja verde para la boleta */}
                 <div className="mb-4 rounded-lg border-2 border-green-500 bg-green-100 p-4">
-                  <p className="mb-3 font-semibold text-green-800 text-xs uppercase tracking-wider">
+                  <Description className="mb-3 font-semibold text-green-800 text-xs uppercase tracking-wider">
                     🧾 Datos para emitir BHE
-                  </p>
+                  </Description>
                   <div className="space-y-2">
                     <div>
-                      <p className="mb-1 text-green-800 text-xs">Descripción sugerida:</p>
-                      <p className="font-bold font-mono text-green-800 text-sm">
+                      <Description className="mb-1 text-green-800 text-xs">
+                        Descripción sugerida:
+                      </Description>
+                      <span className="font-bold font-mono text-green-800 text-sm">
                         {boletaDescription}
-                      </p>
+                      </span>
                     </div>
                     <div>
-                      <p className="mb-1 text-green-800 text-xs">Monto bruto honorarios:</p>
-                      <p className="font-bold font-mono text-green-800 text-xl">
+                      <Description className="mb-1 text-green-800 text-xs">
+                        Monto bruto honorarios:
+                      </Description>
+                      <span className="font-bold font-mono text-green-800 text-xl">
                         {fmtCLP(summary.subtotal)}
-                      </p>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -382,22 +387,22 @@ export function EmailPreviewModal({
                 </div>
 
                 {/* Nota legal */}
-                <p className="mt-3 text-default-600 text-xs">
+                <Description className="mt-3 text-default-600 text-xs">
                   Nota: El detalle de tramos horarios se incluye únicamente para fines de
                   respaldo/conciliación de honorarios y no constituye control de jornada ni implica
                   subordinación o dependencia.
-                </p>
+                </Description>
               </div>
             </ModalBody>
 
             <ModalFooter className="flex items-center justify-between border-default-200 border-t bg-background px-6 py-4">
-              <p className="mr-4 flex-1 text-default-400 text-xs">
+              <Description className="mr-4 flex-1 text-default-400 text-xs">
                 {prepareStatus === "generating-pdf" && "Generando documento PDF..."}
                 {prepareStatus === "preparing-payload" && "Preparando contenido del email..."}
                 {prepareStatus === "sending" && "Enviando correo desde el agente local..."}
                 {prepareStatus === "done" && "✅ Email enviado correctamente"}
                 {!prepareStatus && "Se enviará el correo desde tu Mac usando el agente local."}
-              </p>
+              </Description>
               <div className="flex shrink-0 gap-3">
                 <Button disabled={isPreparing} onClick={onClose} variant="secondary">
                   {prepareStatus === "done" ? "Cerrar" : "Cancelar"}
