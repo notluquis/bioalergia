@@ -30,6 +30,11 @@ const SummaryResponseSchema = z.object({
   summary: z.unknown(),
 });
 
+const CounterpartsSyncResponseSchema = z.object({
+  syncedAccounts: z.number(),
+  syncedCounterparts: z.number(),
+});
+
 const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
 
 export interface CounterpartUpsertPayload {
@@ -97,6 +102,14 @@ export async function fetchCounterparts() {
     responseSchema: CounterpartsResponseSchema,
   });
   return data.counterparts;
+}
+
+export async function syncCounterparts() {
+  return await apiClient.post<{ syncedAccounts: number; syncedCounterparts: number }>(
+    "/api/counterparts/sync",
+    {},
+    { responseSchema: CounterpartsSyncResponseSchema },
+  );
 }
 
 export async function fetchCounterpartSummary(

@@ -14,7 +14,7 @@ import type { Transaction } from "@/features/finance/types";
 import { today } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
-import { addCounterpartAccount, fetchAccountSuggestions } from "../api";
+import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions } from "../api";
 import type {
   Counterpart,
   CounterpartAccount,
@@ -216,11 +216,7 @@ const useAssociatedAccountsModel = ({
   });
 
   const attachRutMutation = useMutation({
-    mutationFn: ({ id: _id, rut: _rut }: { id: number; rut: string }) => {
-      // Placeholder: attach RUT functionality
-      // This would call API to attach RUT to counterpart
-      return Promise.resolve();
-    },
+    mutationFn: ({ id, rut }: { id: number; rut: string }) => attachCounterpartRut(id, rut),
     onError: (attachError: Error) => {
       setError(attachError.message);
       toastError(attachError.message);

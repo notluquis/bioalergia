@@ -1,7 +1,5 @@
-import { schema as schemaLite } from "@finanzas/db/schema-lite";
 import { Chip } from "@heroui/react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useClientQueries } from "@zenstackhq/tanstack-query/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Search } from "lucide-react";
 import { Suspense, useState } from "react";
@@ -15,6 +13,7 @@ import {
   attachCounterpartRut,
   type CounterpartUpsertPayload,
   createCounterpart,
+  fetchCounterparts,
   updateCounterpart,
 } from "@/features/counterparts/api";
 import { CounterpartForm } from "@/features/counterparts/components/CounterpartForm";
@@ -87,7 +86,7 @@ async function saveCounterpartWithFeedback({
   if (isNew && payload.identificationNumber) {
     try {
       await attachCounterpartRut(savedId, payload.identificationNumber);
-      void queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
+      void queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
       toastInfo("Cuentas detectadas vinculadas automáticamente");
     } catch {
       // Auto-attach failed, silently continue
@@ -98,8 +97,6 @@ async function saveCounterpartWithFeedback({
 }
 
 export function CounterpartsPage() {
-  const client = useClientQueries(schemaLite);
-
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<null | number>(null);
@@ -128,31 +125,14 @@ export function CounterpartsPage() {
     setFormCounterpart(null);
   };
 
-  // ZenStack hook for list query
-  const { data: counterpartsData, error: listError } = client.counterpart.useFindMany({
-    // Keep list query lean: detail/accounts are fetched in the detail section.
-    // Avoids oversized generated SQL payloads in ZenStack/Postgres.
-    select: {
-      id: true,
-      identificationNumber: true,
-      bankAccountHolder: true,
-      category: true,
-      notes: true,
-      createdAt: true,
-      updatedAt: true,
-    },
+  const {
+    data: counterparts = [],
+    error: listError,
+    isLoading: isListLoading,
+  } = useQuery({
+    queryFn: fetchCounterparts,
+    queryKey: counterpartKeys.lists(),
   });
-
-  // Transform ZenStack data to match frontend Counterpart type
-  const counterparts: Counterpart[] = (counterpartsData ?? []).map((row) => ({
-    id: row.id,
-    identificationNumber: row.identificationNumber,
-    bankAccountHolder: row.bankAccountHolder,
-    category: row.category,
-    notes: row.notes ?? null,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  }));
 
   // Derived error state (combine/prioritize)
   const displayError = error || (listError instanceof Error ? listError.message : null);
@@ -161,7 +141,7 @@ export function CounterpartsPage() {
   const createMutation = useMutation({
     mutationFn: createCounterpart,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
+      void queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
     },
   });
 
@@ -169,7 +149,7 @@ export function CounterpartsPage() {
     mutationFn: ({ id, payload }: { id: number; payload: Partial<CounterpartUpsertPayload> }) =>
       updateCounterpart(id, payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["Counterpart"] });
+      void queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
       // Detail invalidation
       if (selectedId) {
         void queryClient.invalidateQueries({
@@ -254,6 +234,7 @@ export function CounterpartsPage() {
 
       <div className="grid min-h-0 items-start gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <section className="surface-recessed h-full rounded-[28px] p-6 shadow-inner">
+          {isListLoading ? <Skeleton className="mb-4 h-8 w-44" /> : null}
           <CounterpartList
             className="max-h-[calc(100vh-220px)]"
             counterparts={visibleCounterparts}

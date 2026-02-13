@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { fetchCounterpart, fetchCounterpartSummary } from "./api";
+import { fetchCounterpart, fetchCounterpartSummary, fetchCounterparts } from "./api";
 
 export const counterpartKeys = {
   all: ["counterpart"] as const,
@@ -19,16 +19,11 @@ export const counterpartKeys = {
     }),
 };
 
-// Note: Counterparts page uses ZenStack useFindManyCounterpart hook directly
-// For loader, we'll use the DB query approach
+// Counterparts list now uses REST to trigger backend auto-sync by RUT.
 export const counterpartQueries = {
   list: () =>
     queryOptions({
-      queryFn: async () => {
-        // This will be handled by ZenStack in the component
-        // For now, return empty array to avoid breaking loader
-        return [];
-      },
+      queryFn: fetchCounterparts,
       queryKey: counterpartKeys.lists(),
     }),
 };

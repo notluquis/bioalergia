@@ -294,7 +294,7 @@ export function BackupSettingsPage() {
           <div className="flex items-center justify-between border-default-100 border-b p-4">
             <div>
               <span className="font-semibold text-lg">Backups Completos</span>
-              <Description className="text-default-500 text-sm">Snapshots completos</Description>
+              <span className="block text-default-500 text-sm">Snapshots completos</span>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -336,7 +336,7 @@ export function BackupSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <span className="font-semibold text-lg">Exports Incrementales</span>
-                <Description className="text-default-500 text-sm">Cambios por hora</Description>
+                <span className="block text-default-500 text-sm">Cambios por hora</span>
               </div>
               <span className="rounded-full bg-default-100 px-2 py-1 font-medium text-xs">
                 {auditExports.length}
@@ -618,8 +618,8 @@ function StatCard({
       <div className="flex items-center gap-3">
         <div className={cn("rounded-lg p-2", bgColors[color])}>{icon}</div>
         <div>
-          <Description className="text-default-500 text-sm">{label}</Description>
-          <span className="font-bold text-2xl">{value}</span>
+          <span className="block text-default-500 text-sm">{label}</span>
+          <span className="block font-bold text-2xl">{value}</span>
         </div>
       </div>
     </div>

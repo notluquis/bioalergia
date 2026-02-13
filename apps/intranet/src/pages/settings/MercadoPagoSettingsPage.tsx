@@ -339,9 +339,11 @@ export function MercadoPagoSettingsPage() {
                 <Clock className="h-5 w-5" />
               </div>
             </div>
-            <Description className="mt-4 truncate border-default-200/50 border-t pt-4 text-default-400 text-xs">
-              {reports[0]?.file_name ?? "Sin reportes recientes"}
-            </Description>
+            <div className="mt-4 border-default-200/50 border-t pt-4">
+              <Description className="truncate text-default-400 text-xs">
+                {reports[0]?.file_name ?? "Sin reportes recientes"}
+              </Description>
+            </div>
           </article>
 
           {/* Total Reports Card */}

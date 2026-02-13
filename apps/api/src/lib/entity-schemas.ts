@@ -117,8 +117,9 @@ export const counterpartPayloadSchema = z.object({
   notes: z.string().max(500).optional().nullable(),
 });
 
-export const counterpartAccountPayloadSchema = z.object({
-  accountIdentifier: z.string().trim().min(1).max(191),
+const counterpartAccountBaseSchema = z.object({
+  accountIdentifier: z.string().trim().min(1).max(191).optional(),
+  accountNumber: z.string().trim().min(1).max(191).optional(),
   bankName: z.string().max(191).optional().nullable(),
   accountType: z.string().max(64).optional().nullable(),
   holder: z.string().max(191).optional().nullable(),
@@ -132,9 +133,17 @@ export const counterpartAccountPayloadSchema = z.object({
     .nullable(),
 });
 
-export const counterpartAccountUpdateSchema = counterpartAccountPayloadSchema.partial().extend({
+export const counterpartAccountPayloadSchema = counterpartAccountBaseSchema.refine(
+  (data) => Boolean(data.accountIdentifier || data.accountNumber),
+  {
+    message: "Ingresa un identificador de cuenta",
+    path: ["accountIdentifier"],
+  },
+);
+
+export const counterpartAccountUpdateSchema = counterpartAccountBaseSchema.partial().extend({
   concept: z.string().max(191).optional().nullable(),
-  metadata: counterpartAccountPayloadSchema.shape.metadata.optional(),
+  metadata: counterpartAccountBaseSchema.shape.metadata.optional(),
 });
 
 // --- Role Schemas ---

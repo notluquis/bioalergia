@@ -6,9 +6,12 @@ import {
   counterpartPayloadSchema,
 } from "../lib/entity-schemas";
 import {
+  attachRutToCounterpart,
   createCounterpart,
   getCounterpartById,
+  getCounterpartSuggestions,
   listCounterparts,
+  syncCounterpartsFromTransactions,
   updateCounterpart,
   updateCounterpartAccount,
   upsertCounterpartAccount,
@@ -32,6 +35,26 @@ app.get("/", async (c) => {
   return reply(c, { status: "ok", counterparts: items });
 });
 
+app.post("/sync", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canUpdate = await hasPermission(user.id, "update", "Counterpart");
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  try {
+    const result = await syncCounterpartsFromTransactions();
+    return reply(c, { status: "ok", ...result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to sync counterparts";
+    return reply(c, { status: "error", message }, 500);
+  }
+});
+
 app.get("/suggestions", async (c) => {
   const user = await getSessionUser(c);
   if (!user) {
@@ -44,14 +67,15 @@ app.get("/suggestions", async (c) => {
   }
 
   const query = c.req.query("q");
+  const limitRaw = Number(c.req.query("limit") ?? 10);
+  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 50) : 10;
 
   if (!query || query.trim().length === 0) {
     return reply(c, { status: "ok", suggestions: [] });
   }
 
-  // Return empty array for now - this would search withdraw_transactions
-  // and return unique counterpart suggestions
-  return reply(c, { status: "ok", suggestions: [] });
+  const suggestions = await getCounterpartSuggestions(query, limit);
+  return reply(c, { status: "ok", suggestions });
 });
 
 app.get("/:id", async (c) => {
@@ -166,6 +190,11 @@ app.post("/:id/attach-rut", async (c) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
+  const id = Number(c.req.param("id"));
+  if (Number.isNaN(id)) {
+    return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  }
+
   const body = await c.req.json();
   const { rut } = body;
 
@@ -174,8 +203,8 @@ app.post("/:id/attach-rut", async (c) => {
   }
 
   try {
-    // This endpoint would merge RUT identification with existing counterpart
-    return reply(c, { status: "ok", message: "RUT attached successfully" });
+    const accounts = await attachRutToCounterpart(id, rut);
+    return reply(c, { status: "ok", accounts });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to attach RUT";
     return reply(c, { status: "error", message }, 400);
@@ -195,6 +224,9 @@ app.get("/:id/summary", async (c) => {
   }
 
   const id = Number(c.req.param("id"));
+  if (Number.isNaN(id)) {
+    return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  }
 
   try {
     const counterpart = await getCounterpartById(id);
@@ -239,6 +271,9 @@ app.post("/:id/accounts", async (c) => {
   }
 
   const id = Number(c.req.param("id"));
+  if (Number.isNaN(id)) {
+    return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  }
   const body = await c.req.json();
   const parsed = counterpartAccountPayloadSchema.safeParse(body);
 
@@ -247,7 +282,7 @@ app.post("/:id/accounts", async (c) => {
   }
 
   const result = await upsertCounterpartAccount(id, {
-    accountNumber: parsed.data.accountIdentifier,
+    accountNumber: parsed.data.accountIdentifier ?? parsed.data.accountNumber ?? "",
     bankName: parsed.data.bankName,
     accountType: parsed.data.accountType,
   });
@@ -266,6 +301,9 @@ app.put("/accounts/:accountId", async (c) => {
   }
 
   const accountId = Number(c.req.param("accountId"));
+  if (Number.isNaN(accountId)) {
+    return reply(c, { status: "error", message: "Invalid account ID" }, 400);
+  }
   const body = await c.req.json();
   const parsed = counterpartAccountUpdateSchema.safeParse(body);
 
