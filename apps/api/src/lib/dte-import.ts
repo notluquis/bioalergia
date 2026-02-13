@@ -50,9 +50,6 @@ export function parseDate(value: unknown): Date | null {
     const [, year, month, day] = match;
     const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
     if (date.toString() !== "Invalid Date") {
-      console.log(
-        `[Date Parse] "${str}" (YYYY-MM-DD${str !== dateOnly ? " HH:MM:SS" : ""}) → ${date.toISOString()}`,
-      );
       return date;
     }
   }
@@ -63,7 +60,6 @@ export function parseDate(value: unknown): Date | null {
     const [, day, month, year] = match;
     const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
     if (date.toString() !== "Invalid Date") {
-      console.log(`[Date Parse] "${str}" (DD/MM/YYYY) → ${date.toISOString()}`);
       return date;
     }
   }
@@ -74,7 +70,6 @@ export function parseDate(value: unknown): Date | null {
     const [, day, month, year] = match;
     const date = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`);
     if (date.toString() !== "Invalid Date") {
-      console.log(`[Date Parse] "${str}" (DD-MM-YYYY or DD.MM.YYYY) → ${date.toISOString()}`);
       return date;
     }
   }
@@ -253,18 +248,7 @@ export async function importDteSaleRow(
       );
       return { inserted: 0, updated: 0, skipped: 1 };
     }
-    // Log raw date values before processing
-    const rawDocDate = row.documentDate;
-    const rawRecDate = row.receiptDate;
-    console.log(
-      `[DTE] Sale row ${row.folio} - documentDate raw: "${rawDocDate}" (type: ${typeof rawDocDate}, length: ${String(rawDocDate).length}), receiptDate raw: "${rawRecDate}" (type: ${typeof rawRecDate}, length: ${String(rawRecDate).length})`,
-    );
     const saleData = buildDteSaleDetail(row);
-
-    // Log parsed date values for debugging
-    console.log(
-      `[DTE] Sale row ${row.folio} - documentDate parsed: ${saleData.documentDate}, receiptDate parsed: ${saleData.receiptDate}`,
-    );
 
     const existing = await db.dTESaleDetail.findFirst({
       where: { folio: String(saleData.folio) },
@@ -319,19 +303,7 @@ export async function importDtePurchaseRow(
       return { inserted: 0, updated: 0, skipped: 1 };
     }
 
-    // Log raw date values before processing
-    const rawDocDate = row.documentDate;
-    const rawRecDate = row.receiptDate;
-    console.log(
-      `[DTE] Purchase row ${row.providerRUT}/${row.folio} - documentDate raw: "${rawDocDate}" (type: ${typeof rawDocDate}, length: ${String(rawDocDate).length}), receiptDate raw: "${rawRecDate}" (type: ${typeof rawRecDate}, length: ${String(rawRecDate).length})`,
-    );
-
     const purchaseData = buildDtePurchaseDetail(row);
-
-    // Log parsed date values for debugging
-    console.log(
-      `[DTE] Purchase row ${row.providerRUT}/${row.folio} - documentDate parsed: ${purchaseData.documentDate}, receiptDate parsed: ${purchaseData.receiptDate}`,
-    );
 
     const existing = await db.dTEPurchaseDetail.findFirst({
       where: {
