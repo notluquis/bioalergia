@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { CardDescription, CardTitle } from "./Card";
 
 interface SectionErrorProps {
   title?: string;
@@ -53,8 +54,8 @@ export function SectionError({
         <AlertTriangle className="h-6 w-6" />
       </div>
 
-      <h3 className="mb-2 font-semibold text-foreground text-lg">{title}</h3>
-      <p className="mb-6 max-w-md text-default-500 text-sm">{message}</p>
+      <CardTitle className="mb-2 text-lg">{title}</CardTitle>
+      <CardDescription className="mb-6 max-w-md text-sm">{message}</CardDescription>
 
       {errorMessage && (
         <div className="mb-6 w-full max-w-md overflow-hidden rounded-lg bg-default-50 p-2 text-left">

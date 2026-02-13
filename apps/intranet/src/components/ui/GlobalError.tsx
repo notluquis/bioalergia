@@ -1,9 +1,11 @@
+import { Description } from "@heroui/react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import { signalAppFallback } from "@/lib/app-recovery";
 import { logger } from "@/lib/logger";
 
 import { Button } from "./Button";
+import { Card, CardDescription, CardTitle } from "./Card";
 
 interface Props {
   children: ReactNode;
@@ -54,7 +56,7 @@ export class GlobalError extends Component<Props, State> {
       // Error genérico o de deploy - mostrar UI con opción de recarga
       return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
-          <div className="max-w-md space-y-6">
+          <Card className="max-w-md space-y-6 border-none bg-transparent shadow-none">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-danger/10 text-danger">
               <svg
                 className="h-10 w-10"
@@ -74,21 +76,21 @@ export class GlobalError extends Component<Props, State> {
             </div>
 
             <div className="space-y-2">
-              <h1 className="font-bold text-3xl text-foreground">
+              <CardTitle className="font-bold text-3xl text-foreground">
                 {isDeployIssue ? "Nueva versión disponible" : "Algo salió mal"}
-              </h1>
-              <p className="text-default-500">
+              </CardTitle>
+              <CardDescription className="text-default-500">
                 {isDeployIssue
                   ? "Hay una nueva versión de la aplicación. Por favor, recarga la página para actualizar."
                   : "Ha ocurrido un error inesperado. Hemos registrado el problema y nuestro equipo lo revisará."}
-              </p>
+              </CardDescription>
             </div>
 
             {!isDeployIssue && this.state.error && (
               <div className="rounded-xl bg-default-50 p-4 text-left">
-                <p className="whitespace-pre-wrap break-all font-mono text-danger text-xs">
+                <Description className="whitespace-pre-wrap break-all font-mono text-danger text-xs">
                   {this.state.error.toString()}
-                </p>
+                </Description>
               </div>
             )}
 
@@ -106,7 +108,7 @@ export class GlobalError extends Component<Props, State> {
                 </Button>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       );
     }

@@ -1,4 +1,5 @@
 import {
+  Button,
   Description,
   FieldError,
   Input as HeroInput,
@@ -36,14 +37,16 @@ type Props = (InputProps & { as?: "input" }) | (TextareaProps & { as: "textarea"
 
 // Helper: Password toggle
 const createPasswordToggle = (isVisible: boolean, onToggle: () => void) => (
-  <button
+  <Button
     aria-label="Toggle password visibility"
-    className="flex items-center justify-center p-1 text-default-400 hover:text-default-600 focus:outline-none"
-    onClick={onToggle}
-    type="button"
+    isIconOnly
+    size="sm"
+    variant="ghost"
+    className="text-default-400 hover:text-default-600"
+    onPress={onToggle}
   >
     {isVisible ? <EyeOff size={18} /> : <Eye size={18} />}
-  </button>
+  </Button>
 );
 
 const getInputExtras = (props: Props) => {

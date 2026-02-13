@@ -33,7 +33,7 @@ CardHeader.displayName = "CardHeader";
 // Card Title (Keeping as h3, HeroUI allows composition)
 const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3
+    <HeroCard.Title
       className={cn("font-semibold text-lg leading-none tracking-tight", className)}
       ref={ref}
       {...props}
@@ -45,7 +45,11 @@ CardTitle.displayName = "CardTitle";
 // Card Description
 const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p className={cn("text-default-500 text-sm", className)} ref={ref} {...props} />
+    <HeroCard.Description
+      className={cn("text-default-500 text-sm", className)}
+      ref={ref}
+      {...props}
+    />
   ),
 );
 CardDescription.displayName = "CardDescription";

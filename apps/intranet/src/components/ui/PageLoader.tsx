@@ -1,3 +1,4 @@
+import { Description } from "@heroui/react";
 import { Loader2 } from "lucide-react";
 export function PageLoader() {
   return (
@@ -7,7 +8,9 @@ export function PageLoader() {
         <div className="absolute inset-0 animate-pulse rounded-2xl bg-primary/5" />
       </div>
       <div className="flex flex-col items-center gap-1">
-        <p className="animate-pulse font-medium text-default-600 text-sm">Cargando...</p>
+        <Description className="animate-pulse font-medium text-default-600 text-sm">
+          Cargando...
+        </Description>
       </div>
     </div>
   );

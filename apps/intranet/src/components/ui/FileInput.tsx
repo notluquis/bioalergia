@@ -1,4 +1,4 @@
-import { Label } from "@heroui/react";
+import { Description, Label, Surface } from "@heroui/react";
 import { Upload } from "lucide-react";
 import type React from "react";
 import { useRef, useState } from "react";
@@ -63,8 +63,9 @@ export function FileInput({ className, label, multiple, ...props }: Readonly<Fil
   return (
     <div className="flex w-full flex-col gap-3">
       {label && <Label className="font-semibold text-sm uppercase tracking-wide">{label}</Label>}
-      <section
+      <Surface
         aria-label="Área de carga de archivos"
+        variant="secondary"
         className={cn(
           "group relative flex min-h-32 w-full flex-col items-center justify-center gap-3 rounded-large border-2 border-default-300 border-dashed bg-default-50 p-6 transition-all duration-200",
           isDragActive && "scale-[1.01] border-primary bg-primary-50/30",
@@ -97,9 +98,9 @@ export function FileInput({ className, label, multiple, ...props }: Readonly<Fil
                 ? "Arrastra archivos aquí"
                 : "Arrastra un archivo aquí"}
           </p>
-          <p className="text-default-500 text-xs">
+          <Description className="text-default-500 text-xs">
             {props.accept ? `Formatos: ${props.accept}` : "Todos los formatos"}
-          </p>
+          </Description>
         </div>
         <Button
           variant="ghost"
@@ -112,7 +113,7 @@ export function FileInput({ className, label, multiple, ...props }: Readonly<Fil
         </Button>
         {/* Hidden native input - required for file upload functionality */}
         <input ref={inputRef} className="hidden" multiple={multiple} type="file" {...props} />
-      </section>
+      </Surface>
     </div>
   );
 }
