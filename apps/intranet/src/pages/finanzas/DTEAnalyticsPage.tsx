@@ -1,4 +1,4 @@
-import { Tabs } from "@heroui/react";
+import { Card, Tabs } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { BarChart3, TrendingUp } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -15,7 +15,6 @@ import {
   YAxis,
 } from "recharts";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { dteAnalyticsKeys } from "@/features/finance/dte-analytics/queries";
 import type {
@@ -161,52 +160,52 @@ function PurchasesMonthlySummary({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Total Compras</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title className="text-sm">Total Compras</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <span className="font-bold text-2xl">{formatCurrency(totals.totalAmount)}</span>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Exento</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title className="text-sm">Exento</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <span className="font-bold text-2xl">{formatCurrency(totals.exemptAmount)}</span>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Neto</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title className="text-sm">Neto</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <span className="font-bold text-2xl">{formatCurrency(totals.netAmount)}</span>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">IVA Recuperable</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title className="text-sm">IVA Recuperable</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <span className="font-bold text-2xl">{formatCurrency(totals.taxAmount)}</span>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Documentos</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title className="text-sm">Documentos</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <span className="font-bold text-2xl">{formatNumber(totals.count)}</span>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Compras Mensuales {selectedYear} (Exento + Neto + IVA)</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <Card.Header>
+          <Card.Title>Compras Mensuales {selectedYear} (Exento + Neto + IVA)</Card.Title>
+        </Card.Header>
+        <Card.Content>
           <ResponsiveContainer height={400} width="100%">
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -225,7 +224,7 @@ function PurchasesMonthlySummary({
               <Bar dataKey="taxAmount" stackId="total" fill="#f59e0b" name="IVA" />
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
+        </Card.Content>
       </Card>
     </div>
   );
@@ -273,52 +272,52 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Total Ventas</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title className="text-sm">Total Ventas</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <span className="font-bold text-2xl">{formatCurrency(totals.totalAmount)}</span>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Exento</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title className="text-sm">Exento</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <span className="font-bold text-2xl">{formatCurrency(totals.exemptAmount)}</span>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Neto</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title className="text-sm">Neto</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <span className="font-bold text-2xl">{formatCurrency(totals.netAmount)}</span>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">IVA</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title className="text-sm">IVA</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <span className="font-bold text-2xl">{formatCurrency(totals.taxAmount)}</span>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Documentos</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title className="text-sm">Documentos</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <span className="font-bold text-2xl">{formatNumber(totals.count)}</span>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Ventas Mensuales {selectedYear} (Exento + Neto + IVA)</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <Card.Header>
+          <Card.Title>Ventas Mensuales {selectedYear} (Exento + Neto + IVA)</Card.Title>
+        </Card.Header>
+        <Card.Content>
           <ResponsiveContainer height={400} width="100%">
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -337,7 +336,7 @@ function SalesMonthlySummary({ selectedYear, setSelectedYear, yearOptions }: Mon
               <Bar dataKey="taxAmount" stackId="total" fill="#f59e0b" name="IVA" />
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
+        </Card.Content>
       </Card>
     </div>
   );
@@ -360,10 +359,10 @@ function PurchasesComparison() {
   return (
     <div className="space-y-4 pt-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Comparación de Compras (Todos los Años)</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <Card.Header>
+          <Card.Title>Comparación de Compras (Todos los Años)</Card.Title>
+        </Card.Header>
+        <Card.Content>
           <ResponsiveContainer height={400} width="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -388,7 +387,7 @@ function PurchasesComparison() {
               ))}
             </LineChart>
           </ResponsiveContainer>
-        </CardContent>
+        </Card.Content>
       </Card>
     </div>
   );
@@ -411,10 +410,10 @@ function SalesComparison() {
   return (
     <div className="space-y-4 pt-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Comparación de Ventas (Todos los Años)</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <Card.Header>
+          <Card.Title>Comparación de Ventas (Todos los Años)</Card.Title>
+        </Card.Header>
+        <Card.Content>
           <ResponsiveContainer height={400} width="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -439,7 +438,7 @@ function SalesComparison() {
               ))}
             </LineChart>
           </ResponsiveContainer>
-        </CardContent>
+        </Card.Content>
       </Card>
     </div>
   );

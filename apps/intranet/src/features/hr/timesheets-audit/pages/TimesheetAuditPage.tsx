@@ -3,7 +3,7 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
-import { ButtonGroup, Chip, Description, Spinner } from "@heroui/react";
+import { ButtonGroup, Card, Chip, Description, Spinner } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -11,7 +11,6 @@ import { ChevronDown, Users, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { SmoothCollapse } from "@/components/ui/SmoothCollapse";
 import { useAuth } from "@/context/AuthContext";
@@ -547,14 +546,14 @@ function AuditEmptyState({
   if (selectedEmployeeCount === 0) {
     return (
       <Card className="shadow-sm">
-        <CardContent className="flex flex-col items-center py-16 text-center">
+        <Card.Content className="flex flex-col items-center py-16 text-center">
           <Users className="mb-4 h-12 w-12 text-default-200" />
           <span className="font-semibold text-default-600 text-lg">Selecciona empleados</span>
           <Description className="max-w-md text-default-400 text-sm">
             Elige hasta {MAX_EMPLOYEES} empleados para analizar sus horarios y detectar
             solapamientos
           </Description>
-        </CardContent>
+        </Card.Content>
       </Card>
     );
   }

@@ -11,6 +11,7 @@ import {
   getCounterpartById,
   getCounterpartSuggestions,
   listCounterparts,
+  listUnassignedPayoutAccounts,
   syncCounterpartsFromTransactions,
   updateCounterpart,
   updateCounterpartAccount,
@@ -76,6 +77,32 @@ app.get("/suggestions", async (c) => {
 
   const suggestions = await getCounterpartSuggestions(query, limit);
   return reply(c, { status: "ok", suggestions });
+});
+
+app.get("/unassigned-payout-accounts", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canRead = await hasPermission(user.id, "read", "Counterpart");
+  if (!canRead) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const query = c.req.query("q");
+  const pageRaw = Number(c.req.query("page") ?? 1);
+  const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+  const pageSizeRaw = Number(c.req.query("pageSize") ?? 20);
+  const pageSize = Number.isFinite(pageSizeRaw) ? Math.min(Math.max(pageSizeRaw, 1), 100) : 20;
+
+  const rows = await listUnassignedPayoutAccounts({
+    page,
+    pageSize,
+    query,
+  });
+
+  return reply(c, { status: "ok", ...rows });
 });
 
 app.get("/:id", async (c) => {

@@ -1,4 +1,4 @@
-import { Chip } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -8,7 +8,6 @@ import { Suspense } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { formatCurrency } from "@/lib/utils";
 
 import { PayInstallmentModal } from "../components/PayInstallmentModal";
@@ -102,20 +101,20 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="font-medium text-sm">Monto Total</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card.Title className="font-medium text-sm">Monto Total</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <div className="font-bold text-2xl">
               {formatCurrency(Number(credit.totalAmount), credit.currency)}
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="font-medium text-sm">Cuotas</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <Card.Title className="font-medium text-sm">Cuotas</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <div className="font-bold text-2xl">
               {
                 credit.installments?.filter((i: PersonalCreditInstallment) => i.status === "PAID")
@@ -123,15 +122,15 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
               }{" "}
               / {credit.totalInstallments}
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Tabla de Amortización</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <Card.Header>
+          <Card.Title>Tabla de Amortización</Card.Title>
+        </Card.Header>
+        <Card.Content>
           <DataTable
             columns={columns}
             data={credit.installments || []}
@@ -140,7 +139,7 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
             enableVirtualization={false}
             pageCount={-1}
           />
-        </CardContent>
+        </Card.Content>
       </Card>
     </div>
   );

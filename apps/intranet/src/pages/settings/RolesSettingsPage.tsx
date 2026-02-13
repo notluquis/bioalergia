@@ -1,11 +1,11 @@
 // No ListBox needed here
+import { Card } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type { AnyRoute } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
 import { Plus, RotateCw, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -182,7 +182,7 @@ export function RolesSettingsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4 border-b pb-4">
+        <Card.Header className="flex flex-row items-center justify-between gap-4 border-b pb-4">
           <div className="space-y-1">
             <span className="block font-semibold text-lg">Listado de roles</span>
             <span className="hidden text-default-600 text-sm md:block">
@@ -229,8 +229,8 @@ export function RolesSettingsPage() {
               </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="overflow-hidden p-0">
+        </Card.Header>
+        <Card.Content className="overflow-hidden p-0">
           <PermissionsMatrixTable
             isUpdatingPermissions={isUpdatingPermissions}
             onBulkToggle={handleBulkToggle}
@@ -250,7 +250,7 @@ export function RolesSettingsPage() {
               {unmappedSubjects.length > 8 && ` +${unmappedSubjects.length - 8} más`}
             </div>
           )}
-        </CardContent>
+        </Card.Content>
       </Card>
 
       {isRoleModalOpen && (

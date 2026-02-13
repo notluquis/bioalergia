@@ -1,8 +1,10 @@
 import { Chip } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Search } from "lucide-react";
 import { Suspense, useState } from "react";
+import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -10,17 +12,25 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import {
+  addCounterpartAccount,
   attachCounterpartRut,
   type CounterpartUpsertPayload,
   createCounterpart,
   fetchCounterparts,
+  fetchUnassignedPayoutAccounts,
   updateCounterpart,
 } from "@/features/counterparts/api";
 import { CounterpartForm } from "@/features/counterparts/components/CounterpartForm";
 import { CounterpartList } from "@/features/counterparts/components/CounterpartList";
 import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
 import { counterpartKeys } from "@/features/counterparts/queries";
-import type { Counterpart, CounterpartCategory } from "@/features/counterparts/types";
+import type {
+  Counterpart,
+  CounterpartCategory,
+  UnassignedPayoutAccount,
+} from "@/features/counterparts/types";
+import { fmtCLP } from "@/lib/format";
+import { normalizeRut, validateRut } from "@/lib/rut";
 import { CounterpartDetailSection } from "../components/CounterpartDetailSection";
 
 const CATEGORY_FILTERS: { label: string; value: "ALL" | CounterpartCategory }[] = [
@@ -112,8 +122,17 @@ export function CounterpartsPage() {
   const { error: toastError, info: toastInfo, success: toastSuccess } = useToast();
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | CounterpartCategory>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [payoutSearchQuery, setPayoutSearchQuery] = useState("");
+  const [payoutPagination, setPayoutPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 20,
+  });
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formCounterpart, setFormCounterpart] = useState<Counterpart | null>(null);
+  const [isAssignRutModalOpen, setIsAssignRutModalOpen] = useState(false);
+  const [assigningPayoutAccount, setAssigningPayoutAccount] = useState<null | string>(null);
+  const [assignRutValue, setAssignRutValue] = useState("");
+  const [assignHolderValue, setAssignHolderValue] = useState("");
 
   const openFormModal = (target: Counterpart | null = null) => {
     setFormCounterpart(target);
@@ -132,6 +151,21 @@ export function CounterpartsPage() {
   } = useQuery({
     queryFn: fetchCounterparts,
     queryKey: counterpartKeys.lists(),
+  });
+  const { data: unassignedPayoutData, isLoading: isUnassignedPayoutLoading } = useQuery({
+    queryFn: () =>
+      fetchUnassignedPayoutAccounts({
+        page: payoutPagination.pageIndex + 1,
+        pageSize: payoutPagination.pageSize,
+        query: payoutSearchQuery,
+      }),
+    queryKey: [
+      ...counterpartKeys.all,
+      "unassigned-payout",
+      payoutSearchQuery,
+      payoutPagination.pageIndex,
+      payoutPagination.pageSize,
+    ],
   });
 
   // Derived error state (combine/prioritize)
@@ -208,6 +242,81 @@ export function CounterpartsPage() {
   const supplierCount = counterparts.filter((item) => item.category === "SUPPLIER").length;
   const clientCount = counterparts.filter((item) => item.category === "CLIENT").length;
   const lenderCount = counterparts.filter((item) => item.category === "LENDER").length;
+  const normalizedAssignRut = normalizeRut(assignRutValue);
+  const assignRutIsValid = validateRut(assignRutValue);
+  const assignRutCompact = normalizedAssignRut?.replaceAll("-", "") ?? "";
+  const assignExistingCounterpart =
+    assignRutCompact.length > 0
+      ? (counterparts.find(
+          (item) => item.identificationNumber.toUpperCase() === assignRutCompact.toUpperCase(),
+        ) ?? null)
+      : null;
+  const assignPreviewMessage =
+    assignRutValue.trim().length === 0
+      ? "Ingresa un RUT para ver qué acción se aplicará."
+      : !assignRutIsValid
+        ? "RUT inválido. Corrige el formato/verificador para continuar."
+        : assignExistingCounterpart
+          ? `Se asociará a contraparte existente: ${assignExistingCounterpart.bankAccountHolder}.`
+          : "Se creará una nueva contraparte con este RUT y se asociará la cuenta payout.";
+  const handleCreateFromPayout = (payoutBankAccountNumber: string) => {
+    setAssigningPayoutAccount(payoutBankAccountNumber);
+    setAssignRutValue("");
+    setAssignHolderValue("");
+    setIsAssignRutModalOpen(true);
+  };
+  const handleAssignRutToPayout = async () => {
+    if (!assigningPayoutAccount) {
+      return;
+    }
+    if (!assignRutIsValid) {
+      setError("RUT inválido");
+      toastError("Ingresa un RUT válido para asignar la contraparte");
+      return;
+    }
+
+    const normalized = normalizedAssignRut;
+    if (!normalized) {
+      setError("RUT inválido");
+      toastError("Ingresa un RUT válido para asignar la contraparte");
+      return;
+    }
+
+    const compactRut = normalized.replaceAll("-", "");
+    const existing = counterparts.find(
+      (item) => item.identificationNumber.toUpperCase() === compactRut.toUpperCase(),
+    );
+    setError(null);
+
+    try {
+      if (existing) {
+        await addCounterpartAccount(existing.id, { accountNumber: assigningPayoutAccount });
+        setSelectedId(existing.id);
+        toastSuccess("Cuenta payout asociada a contraparte existente");
+      } else {
+        const created = await createMutation.mutateAsync({
+          identificationNumber: normalized,
+          bankAccountHolder: assignHolderValue.trim() || `Titular ${compactRut}`,
+        });
+        await addCounterpartAccount(created.counterpart.id, {
+          accountNumber: assigningPayoutAccount,
+        });
+        setSelectedId(created.counterpart.id);
+        toastSuccess("Contraparte creada y cuenta payout asociada");
+      }
+
+      setIsAssignRutModalOpen(false);
+      setAssigningPayoutAccount(null);
+      setAssignRutValue("");
+      setAssignHolderValue("");
+      void queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
+    } catch (error_) {
+      const message =
+        error_ instanceof Error ? error_.message : "No se pudo asignar el RUT a la cuenta payout";
+      setError(message);
+      toastError(message);
+    }
+  };
 
   return (
     <section className="space-y-6">
@@ -230,6 +339,25 @@ export function CounterpartsPage() {
         supplierCount={supplierCount}
         totalCount={counterparts.length}
         visibleCount={visibleCounterparts.length}
+      />
+      <UnassignedPayoutAccountsTable
+        canCreate={canCreate}
+        loading={isUnassignedPayoutLoading}
+        onCreateFromPayout={handleCreateFromPayout}
+        onPaginationChange={setPayoutPagination}
+        onSearchQueryChange={(value) => {
+          setPayoutSearchQuery(value);
+          setPayoutPagination((prev) => ({ ...prev, pageIndex: 0 }));
+        }}
+        pageCount={
+          unassignedPayoutData
+            ? Math.max(Math.ceil(unassignedPayoutData.total / unassignedPayoutData.pageSize), 1)
+            : 0
+        }
+        pagination={payoutPagination}
+        rows={unassignedPayoutData?.rows ?? []}
+        searchQuery={payoutSearchQuery}
+        total={unassignedPayoutData?.total ?? 0}
       />
 
       <div className="grid min-h-0 items-start gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
@@ -272,6 +400,155 @@ export function CounterpartsPage() {
           saving={createMutation.isPending || updateMutation.isPending}
         />
       </Modal>
+      <Modal
+        isOpen={isAssignRutModalOpen}
+        onClose={() => {
+          setIsAssignRutModalOpen(false);
+          setAssigningPayoutAccount(null);
+          setAssignRutValue("");
+          setAssignHolderValue("");
+        }}
+        title="Asignar RUT a cuenta payout"
+      >
+        <div className="space-y-4">
+          <Input readOnly label="Cuenta payout" value={assigningPayoutAccount ?? ""} />
+          <Input
+            label="RUT de contraparte"
+            onChange={(event) => {
+              setAssignRutValue(event.target.value);
+            }}
+            placeholder="12.345.678-5"
+            value={assignRutValue}
+          />
+          <Input
+            label="Titular (opcional)"
+            onChange={(event) => {
+              setAssignHolderValue(event.target.value);
+            }}
+            placeholder="Nombre contraparte"
+            value={assignHolderValue}
+          />
+          <p
+            className={`text-xs ${
+              assignRutIsValid || assignRutValue.trim().length === 0
+                ? "text-default-500"
+                : "text-danger"
+            }`}
+          >
+            {assignPreviewMessage}
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button
+              onClick={() => {
+                setIsAssignRutModalOpen(false);
+                setAssigningPayoutAccount(null);
+                setAssignRutValue("");
+                setAssignHolderValue("");
+              }}
+              variant="ghost"
+            >
+              Cancelar
+            </Button>
+            <Button disabled={!assignRutIsValid} onClick={handleAssignRutToPayout}>
+              Confirmar asignación
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </section>
+  );
+}
+
+function UnassignedPayoutAccountsTable({
+  canCreate,
+  loading,
+  onCreateFromPayout,
+  onPaginationChange,
+  onSearchQueryChange,
+  pageCount,
+  pagination,
+  rows,
+  searchQuery,
+  total,
+}: {
+  canCreate: boolean;
+  loading: boolean;
+  onCreateFromPayout: (payoutBankAccountNumber: string) => void;
+  onPaginationChange: OnChangeFn<PaginationState>;
+  onSearchQueryChange: (value: string) => void;
+  pageCount: number;
+  pagination: PaginationState;
+  rows: UnassignedPayoutAccount[];
+  searchQuery: string;
+  total: number;
+}) {
+  const columns: ColumnDef<UnassignedPayoutAccount>[] = [
+    {
+      accessorKey: "payoutBankAccountNumber",
+      header: "Cuenta payout",
+    },
+    {
+      accessorKey: "movementCount",
+      header: "Movimientos",
+    },
+    {
+      accessorKey: "totalGrossAmount",
+      cell: ({ row }) => fmtCLP(row.original.totalGrossAmount),
+      header: "Total bruto",
+    },
+    {
+      cell: ({ row }) =>
+        canCreate ? (
+          <Button
+            size="sm"
+            onClick={() => {
+              onCreateFromPayout(row.original.payoutBankAccountNumber);
+            }}
+          >
+            Asignar RUT
+          </Button>
+        ) : null,
+      header: "Acciones",
+      id: "actions",
+    },
+  ];
+
+  return (
+    <section className="surface-recessed rounded-[28px] p-5 shadow-inner sm:p-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-base">Vista Payouts Sin RUT</h3>
+          <p className="text-default-500 text-xs">
+            `payout_bank_account_number` detectados en release y aún sin vínculo por RUT.
+          </p>
+        </div>
+        <Chip size="sm" variant="soft">
+          {total} pendientes
+        </Chip>
+      </div>
+      <div className="mb-3">
+        <Input
+          placeholder="Buscar cuenta payout"
+          startContent={<Search className="h-4 w-4 text-default-400" />}
+          value={searchQuery}
+          onChange={(event) => {
+            onSearchQueryChange(event.target.value);
+          }}
+        />
+      </div>
+      <DataTable
+        columns={columns}
+        data={rows}
+        containerVariant="plain"
+        enableExport={false}
+        enableGlobalFilter={false}
+        isLoading={loading}
+        onPaginationChange={onPaginationChange}
+        pageCount={pageCount}
+        pagination={pagination}
+        pageSizeOptions={[10, 20, 50, 100]}
+        noDataMessage="No hay cuentas payout pendientes."
+      />
     </section>
   );
 }

@@ -7,6 +7,7 @@ import type {
   CounterpartAccountSuggestion,
   CounterpartCategory,
   CounterpartSummary,
+  UnassignedPayoutAccount,
 } from "./types";
 
 const AccountsResponseSchema = z.object({
@@ -33,6 +34,13 @@ const SummaryResponseSchema = z.object({
 const CounterpartsSyncResponseSchema = z.object({
   syncedAccounts: z.number(),
   syncedCounterparts: z.number(),
+});
+
+const UnassignedPayoutAccountsResponseSchema = z.object({
+  page: z.number(),
+  pageSize: z.number(),
+  rows: z.array(z.unknown()),
+  total: z.number(),
 });
 
 const StatusResponseSchema = z.looseObject({ status: z.string().optional() });
@@ -110,6 +118,28 @@ export async function syncCounterparts() {
     {},
     { responseSchema: CounterpartsSyncResponseSchema },
   );
+}
+
+export async function fetchUnassignedPayoutAccounts(params?: {
+  page?: number;
+  pageSize?: number;
+  query?: string;
+}) {
+  const searchParams = new URLSearchParams();
+  if (params?.query?.trim()) {
+    searchParams.set("q", params.query.trim());
+  }
+  searchParams.set("page", String(params?.page ?? 1));
+  searchParams.set("pageSize", String(params?.pageSize ?? 20));
+  const data = await apiClient.get<{
+    page: number;
+    pageSize: number;
+    rows: UnassignedPayoutAccount[];
+    total: number;
+  }>(`/api/counterparts/unassigned-payout-accounts?${searchParams.toString()}`, {
+    responseSchema: UnassignedPayoutAccountsResponseSchema,
+  });
+  return data;
 }
 
 export async function fetchCounterpartSummary(

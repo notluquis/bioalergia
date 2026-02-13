@@ -1,4 +1,4 @@
-import { Chip } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import {
   Box,
@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/context/ToastContext";
 import { createInventoryCategory, deleteInventoryCategory } from "@/features/inventory/api";
@@ -114,10 +113,10 @@ export function InventorySettingsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <Card.Header className="flex flex-row items-center justify-between pb-4">
           <div className="space-y-1">
-            <CardTitle>Parámetros de inventario</CardTitle>
-            <CardDescription>Gestiona las categorías y productos del inventario.</CardDescription>
+            <Card.Title>Parámetros de inventario</Card.Title>
+            <Card.Description>Gestiona las categorías y productos del inventario.</Card.Description>
           </div>
           <Button
             className="gap-2"
@@ -128,8 +127,8 @@ export function InventorySettingsPage() {
             <Plus size={16} />
             Nueva Categoría
           </Button>
-        </CardHeader>
-        <CardContent className="p-0">
+        </Card.Header>
+        <Card.Content className="p-0">
           {isCreating && (
             <div className="fade-in slide-in-from-top-2 animate-in border-b bg-default-50/30 p-4">
               <form className="flex items-end gap-3" onSubmit={handleCreate}>
@@ -180,7 +179,7 @@ export function InventorySettingsPage() {
             toggleCategory={toggleCategory}
             uncategorizedItems={uncategorizedItems}
           />
-        </CardContent>
+        </Card.Content>
       </Card>
     </div>
   );

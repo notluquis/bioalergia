@@ -1,7 +1,7 @@
+import { Card } from "@heroui/react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import {
@@ -40,19 +40,12 @@ export function ParticipantInsightsPage() {
 
   const leaderboardColumns = getLeaderboardColumns();
   const monthlyColumns = getMonthlyColumns();
-  // const counterpartsColumns = getCounterpartsColumns(); // Removed as it was unused in logic but used in render?
-  // Wait, counterpartsColumns IS used in render at line 197.
-  // Lint error said "Several of these imports are unused" at line 4 (CardTitle etc).
-  // AND "getCounterpartsColumns" at line 8 was likely unused?
-  // Actually, let's keep it if used.
-  // The lint was about `CardTitle`, `CardDescription`.
-  // I will focus on replacing Imports to clean up unused UI components.
   const counterpartsColumns = getCounterpartsColumns();
 
   return (
     <section className={PAGE_CONTAINER}>
       <Card>
-        <CardContent className="p-6">
+        <Card.Content className="p-6">
           <form
             className="grid items-end gap-6 sm:grid-cols-2 lg:grid-cols-4"
             onSubmit={handleSubmit}
@@ -106,7 +99,7 @@ export function ParticipantInsightsPage() {
               </Button>
             </div>
           </form>
-        </CardContent>
+        </Card.Content>
       </Card>
 
       <div className="space-y-6">
@@ -152,7 +145,7 @@ export function ParticipantInsightsPage() {
         {leaderboardError && <Alert status="danger">{leaderboardError}</Alert>}
 
         <Card>
-          <CardContent className="p-0">
+          <Card.Content className="p-0">
             <DataTable
               columns={leaderboardColumns}
               data={displayedLeaderboard}
@@ -171,7 +164,7 @@ export function ParticipantInsightsPage() {
                   : "Sin participantes en el rango seleccionado."
               }
             />
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
 
@@ -182,7 +175,7 @@ export function ParticipantInsightsPage() {
           <section className="space-y-4">
             <h2 className="font-semibold text-lg">Resumen mensual</h2>
             <Card>
-              <CardContent className="p-0">
+              <Card.Content className="p-0">
                 <DataTable
                   columns={monthlyColumns}
                   data={monthly}
@@ -191,14 +184,14 @@ export function ParticipantInsightsPage() {
                   isLoading={detailLoading}
                   noDataMessage="Sin movimientos."
                 />
-              </CardContent>
+              </Card.Content>
             </Card>
           </section>
 
           <section className="space-y-4">
             <h2 className="font-semibold text-lg">Contrapartes</h2>
             <Card>
-              <CardContent className="p-0">
+              <Card.Content className="p-0">
                 <DataTable
                   columns={counterpartsColumns}
                   data={counterparts}
@@ -207,7 +200,7 @@ export function ParticipantInsightsPage() {
                   isLoading={detailLoading}
                   noDataMessage="No hay contrapartes."
                 />
-              </CardContent>
+              </Card.Content>
             </Card>
           </section>
         </div>

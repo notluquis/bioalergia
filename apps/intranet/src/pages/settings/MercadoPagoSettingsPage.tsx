@@ -254,34 +254,34 @@ export function MercadoPagoSettingsPage() {
             <div className="grid grid-cols-2 gap-3 rounded-lg bg-default-50/50 p-4 sm:grid-cols-3">
               <div className="text-center">
                 <span className="block font-bold text-2xl">{lastImportStats.totalRows}</span>
-                <Description className="text-default-500 text-xs">Total filas</Description>
+                <span className="block text-default-500 text-xs">Total filas</span>
               </div>
               <div className="text-center">
                 <span className="block font-bold text-2xl">{lastImportStats.validRows}</span>
-                <Description className="text-default-500 text-xs">Válidas</Description>
+                <span className="block text-default-500 text-xs">Válidas</span>
               </div>
               <div className="text-center">
                 <span className="block font-bold text-2xl text-success">
                   {lastImportStats.insertedRows}
                 </span>
-                <Description className="text-success/70 text-xs">Insertadas</Description>
+                <span className="block text-success/70 text-xs">Insertadas</span>
               </div>
               <div className="text-center">
                 <span className="block font-bold text-2xl text-warning">
                   {lastImportStats.duplicateRows}
                 </span>
-                <Description className="text-warning/70 text-xs">Duplicados</Description>
+                <span className="block text-warning/70 text-xs">Duplicados</span>
               </div>
               <div className="text-center">
                 <span className="block font-bold text-2xl">{lastImportStats.skippedRows}</span>
-                <Description className="text-default-500 text-xs">Omitidas</Description>
+                <span className="block text-default-500 text-xs">Omitidas</span>
               </div>
               {lastImportStats.errors.length > 0 && (
                 <div className="text-center">
                   <span className="block font-bold text-2xl text-danger">
                     {lastImportStats.errors.length}
                   </span>
-                  <Description className="text-danger/70 text-xs">Errores</Description>
+                  <span className="block text-danger/70 text-xs">Errores</span>
                 </div>
               )}
             </div>
@@ -366,7 +366,7 @@ export function MercadoPagoSettingsPage() {
               <FileText className="h-4 w-4 text-primary" />
               <div>
                 <span className="block font-semibold text-lg">Historial de Reportes</span>
-                <Description className="text-default-500 text-xs">Total: {reportTotal}</Description>
+                <span className="block text-default-500 text-xs">Total: {reportTotal}</span>
               </div>
             </div>
 
@@ -413,7 +413,7 @@ export function MercadoPagoSettingsPage() {
               <Clock className="h-4 w-4 text-primary" />
               <div>
                 <span className="block font-semibold text-lg">Historial de Sync</span>
-                <Description className="text-default-500 text-xs">Total: {syncTotal}</Description>
+                <span className="block text-default-500 text-xs">Total: {syncTotal}</span>
               </div>
             </div>
             <Select

@@ -207,19 +207,19 @@ export function BackupSettingsPage() {
 
           <div className="mb-4 grid gap-3 sm:grid-cols-3">
             <div className="rounded-lg bg-background p-3">
-              <Description className="text-default-500 text-xs">Duración</Description>
+              <span className="block text-default-500 text-xs">Duración</span>
               <span className="font-semibold">
                 {Math.round((lastCompletedBackupResult.durationMs ?? 0) / 1000)}s
               </span>
             </div>
             <div className="rounded-lg bg-background p-3">
-              <Description className="text-default-500 text-xs">Tamaño</Description>
+              <span className="block text-default-500 text-xs">Tamaño</span>
               <span className="font-semibold">
                 {formatFileSize(lastCompletedBackupResult.sizeBytes ?? 0)}
               </span>
             </div>
             <div className="rounded-lg bg-background p-3">
-              <Description className="text-default-500 text-xs">Tablas</Description>
+              <span className="block text-default-500 text-xs">Tablas</span>
               <span className="font-semibold">{lastCompletedBackupResult.tables?.length ?? 0}</span>
             </div>
           </div>

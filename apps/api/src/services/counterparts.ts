@@ -31,38 +31,11 @@ export interface CounterpartAccountSuggestion {
   withdrawId: null | string;
 }
 
-const getValueFromJson = (value: unknown, key: string): null | string => {
-  if (Array.isArray(value)) {
-    for (const entry of value) {
-      const found = getValueFromJson(entry, key);
-      if (found) {
-        return found;
-      }
-    }
-    return null;
-  }
-
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-
-  const record = value as Record<string, unknown>;
-  const raw = record[key];
-  if (typeof raw === "string" && raw.trim().length > 0) {
-    return raw.trim();
-  }
-  return null;
-};
-
-const getFirstJsonValue = (value: unknown, keys: string[]): null | string => {
-  for (const key of keys) {
-    const found = getValueFromJson(value, key);
-    if (found) {
-      return found;
-    }
-  }
-  return null;
-};
+export interface UnassignedPayoutAccount {
+  movementCount: number;
+  payoutBankAccountNumber: string;
+  totalGrossAmount: number;
+}
 
 type CounterpartAccumulator = {
   accountMap: Map<
@@ -116,48 +89,21 @@ const addAccountToAccumulator = (
 };
 
 export async function syncCounterpartsFromTransactions() {
-  const [withdrawals, releaseRows, settlementRows] = await Promise.all([
-    db.withdrawTransaction.findMany({
-      orderBy: { dateCreated: "desc" },
-      select: {
-        bankAccountHolder: true,
-        bankAccountNumber: true,
-        bankAccountType: true,
-        bankName: true,
-        identificationNumber: true,
+  const withdrawals = await db.withdrawTransaction.findMany({
+    orderBy: { dateCreated: "desc" },
+    select: {
+      bankAccountHolder: true,
+      bankAccountNumber: true,
+      bankAccountType: true,
+      bankName: true,
+      identificationNumber: true,
+    },
+    where: {
+      identificationNumber: {
+        not: null,
       },
-      where: {
-        identificationNumber: {
-          not: null,
-        },
-      },
-    }),
-    db.releaseTransaction.findMany({
-      orderBy: { date: "desc" },
-      select: {
-        identificationNumber: true,
-        metadata: true,
-        payoutBankAccountNumber: true,
-      },
-      where: {
-        identificationNumber: {
-          not: null,
-        },
-      },
-    }),
-    db.settlementTransaction.findMany({
-      orderBy: { transactionDate: "desc" },
-      select: {
-        identificationNumber: true,
-        metadata: true,
-      },
-      where: {
-        identificationNumber: {
-          not: null,
-        },
-      },
-    }),
-  ]);
+    },
+  });
 
   const byRut = new Map<string, CounterpartAccumulator>();
 
@@ -176,72 +122,6 @@ export async function syncCounterpartsFromTransactions() {
       row.bankAccountNumber,
       row.bankAccountType ?? null,
       row.bankName ?? null,
-    );
-  }
-
-  for (const row of releaseRows) {
-    if (!row.identificationNumber) {
-      continue;
-    }
-    const rut = normalizeRut(row.identificationNumber);
-    if (!rut) {
-      continue;
-    }
-
-    const accumulator = ensureAccumulator(
-      byRut,
-      rut,
-      getFirstJsonValue(row.metadata, [
-        "bank_account_holder_name",
-        "bank_account_holder",
-        "holder",
-        "name",
-      ]),
-    );
-    addAccountToAccumulator(
-      accumulator,
-      row.payoutBankAccountNumber ??
-        getFirstJsonValue(row.metadata, [
-          "bank_account_number",
-          "account_number",
-          "payout_bank_account_number",
-          "bankAccountNumber",
-          "accountNumber",
-        ]),
-      getFirstJsonValue(row.metadata, ["bank_account_type", "account_type"]),
-      getFirstJsonValue(row.metadata, ["bank_name", "bank"]),
-    );
-  }
-
-  for (const row of settlementRows) {
-    if (!row.identificationNumber) {
-      continue;
-    }
-    const rut = normalizeRut(row.identificationNumber);
-    if (!rut) {
-      continue;
-    }
-
-    const accumulator = ensureAccumulator(
-      byRut,
-      rut,
-      getFirstJsonValue(row.metadata, [
-        "bank_account_holder_name",
-        "bank_account_holder",
-        "holder",
-        "name",
-      ]),
-    );
-    addAccountToAccumulator(
-      accumulator,
-      getFirstJsonValue(row.metadata, [
-        "bank_account_number",
-        "account_number",
-        "bankAccountNumber",
-        "accountNumber",
-      ]),
-      getFirstJsonValue(row.metadata, ["bank_account_type", "account_type"]),
-      getFirstJsonValue(row.metadata, ["bank_name", "bank"]),
     );
   }
 
@@ -271,6 +151,103 @@ export async function syncCounterpartsFromTransactions() {
   }
 
   return { syncedAccounts, syncedCounterparts };
+}
+
+export async function listUnassignedPayoutAccounts(params: {
+  page: number;
+  pageSize: number;
+  query?: string;
+}) {
+  const q = params.query?.trim() ?? "";
+
+  const [releaseRows, withdrawRows, linkedRows] = await Promise.all([
+    db.releaseTransaction.findMany({
+      select: {
+        grossAmount: true,
+        payoutBankAccountNumber: true,
+      },
+      where: {
+        payoutBankAccountNumber: q
+          ? {
+              contains: q,
+              mode: "insensitive",
+            }
+          : {
+              not: null,
+            },
+      },
+    }),
+    db.withdrawTransaction.findMany({
+      select: {
+        bankAccountNumber: true,
+      },
+      where: {
+        bankAccountNumber: { not: null },
+        identificationNumber: { not: null },
+      },
+    }),
+    db.counterpartAccount.findMany({
+      select: {
+        accountNumber: true,
+      },
+    }),
+  ]);
+
+  const accountsWithRut = new Set(
+    withdrawRows
+      .map((row) => normalizeAccountNumber(row.bankAccountNumber ?? ""))
+      .filter((value) => value.length > 0),
+  );
+  const linkedAccounts = new Set(
+    linkedRows
+      .map((row) => normalizeAccountNumber(row.accountNumber))
+      .filter((value) => value.length > 0),
+  );
+
+  const grouped = new Map<string, UnassignedPayoutAccount>();
+  for (const row of releaseRows) {
+    const account = normalizeAccountNumber(row.payoutBankAccountNumber ?? "");
+    if (!account) {
+      continue;
+    }
+    if (accountsWithRut.has(account) || linkedAccounts.has(account)) {
+      continue;
+    }
+
+    const existing = grouped.get(account);
+    if (existing) {
+      existing.movementCount += 1;
+      existing.totalGrossAmount += row.grossAmount ? Number(row.grossAmount) : 0;
+      continue;
+    }
+
+    grouped.set(account, {
+      movementCount: 1,
+      payoutBankAccountNumber: account,
+      totalGrossAmount: row.grossAmount ? Number(row.grossAmount) : 0,
+    });
+  }
+
+  const sorted = [...grouped.values()].toSorted((a, b) => {
+    if (b.movementCount !== a.movementCount) {
+      return b.movementCount - a.movementCount;
+    }
+    return a.payoutBankAccountNumber.localeCompare(b.payoutBankAccountNumber, "es", {
+      sensitivity: "base",
+    });
+  });
+  const total = sorted.length;
+  const safePageSize = Math.max(params.pageSize, 1);
+  const safePage = Math.max(params.page, 1);
+  const start = (safePage - 1) * safePageSize;
+  const rows = sorted.slice(start, start + safePageSize);
+
+  return {
+    page: safePage,
+    pageSize: safePageSize,
+    rows,
+    total,
+  };
 }
 
 export async function getCounterpartSuggestions(query: string, limit: number) {

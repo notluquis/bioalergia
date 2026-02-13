@@ -49,6 +49,12 @@ export interface CounterpartAccountSuggestion {
   withdrawId: null | string;
 }
 
+export interface UnassignedPayoutAccount {
+  movementCount: number;
+  payoutBankAccountNumber: string;
+  totalGrossAmount: number;
+}
+
 export interface CounterpartDetail {
   accounts: CounterpartAccount[];
   counterpart: Counterpart;

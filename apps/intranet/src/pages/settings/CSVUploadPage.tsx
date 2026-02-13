@@ -1,4 +1,4 @@
-import { Chip } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { AlertCircle, CheckCircle, FileUp, Loader2, Lock } from "lucide-react";
@@ -8,7 +8,6 @@ import { useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { FileInput } from "@/components/ui/FileInput";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -475,14 +474,14 @@ function TableSelectionCard({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+      <Card.Header>
+        <Card.Title className="flex items-center gap-2">
           <FileUp className="h-5 w-5 text-primary" />
           1. Seleccionar destino
-        </CardTitle>
-        <CardDescription>Elige la tabla donde deseas importar los datos.</CardDescription>
-      </CardHeader>
-      <CardContent>
+        </Card.Title>
+        <Card.Description>Elige la tabla donde deseas importar los datos.</Card.Description>
+      </Card.Header>
+      <Card.Content>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <div className="w-full sm:w-1/3">
             <Select
@@ -526,7 +525,7 @@ function TableSelectionCard({
             </div>
           )}
         </div>
-      </CardContent>
+      </Card.Content>
     </Card>
   );
 }
@@ -542,14 +541,14 @@ function ColumnMappingCard({
 }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Mapeo de columnas</CardTitle>
-        <CardDescription>
+      <Card.Header>
+        <Card.Title>Mapeo de columnas</Card.Title>
+        <Card.Description>
           Relaciona las columnas de tu CSV con los campos de la base de datos.
           <br />
           <span className="text-xs opacity-70">Total de filas: {totalRows}</span>
-        </CardDescription>
-      </CardHeader>
+        </Card.Description>
+      </Card.Header>
       <div className="border-t">
         <DataTable
           columns={columns}
@@ -578,15 +577,15 @@ function FileUploadSection({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Cargar archivos</CardTitle>
-        <CardDescription>
+      <Card.Header>
+        <Card.Title>Cargar archivos</Card.Title>
+        <Card.Description>
           Arrastra uno o más archivos CSV aquí o haz clic para seleccionar
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </Card.Description>
+      </Card.Header>
+      <Card.Content>
         <FileInput accept=".csv" disabled={disabled} multiple onChange={onFileChange} />
-      </CardContent>
+      </Card.Content>
     </Card>
   );
 }
@@ -608,14 +607,14 @@ function FilesListSection({
 
   return (
     <Card>
-      <CardHeader>
+      <Card.Header>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Archivos cargados</CardTitle>
-            <CardDescription>
+            <Card.Title>Archivos cargados</Card.Title>
+            <Card.Description>
               {uploadedFiles.length} archivo{uploadedFiles.length !== 1 ? "s" : ""} · {totalRows}{" "}
               filas totales
-            </CardDescription>
+            </Card.Description>
           </div>
           {(successCount > 0 || errorCount > 0) && (
             <div className="flex gap-2 text-sm">
@@ -636,8 +635,8 @@ function FilesListSection({
             </div>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
+      </Card.Header>
+      <Card.Content className="space-y-2">
         {uploadedFiles.map((uploadedFile) => (
           <FileListItem
             key={uploadedFile.id}
@@ -649,7 +648,7 @@ function FilesListSection({
             statusMessage={uploadedFile.error}
           />
         ))}
-      </CardContent>
+      </Card.Content>
     </Card>
   );
 }
@@ -679,7 +678,7 @@ function ImportSummaryCard({ uploadedFiles }: { uploadedFiles: UploadedFile[] })
 
   return (
     <Card className="border-primary/20 bg-primary/5">
-      <CardContent className="p-6">
+      <Card.Content className="p-6">
         <span className="mb-4 block font-semibold text-lg">Vista Previa de Importación</span>
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
           <div className="rounded-lg border border-default-100 bg-background p-3 shadow-sm">
@@ -714,7 +713,7 @@ function ImportSummaryCard({ uploadedFiles }: { uploadedFiles: UploadedFile[] })
             </div>
           </Alert>
         )}
-      </CardContent>
+      </Card.Content>
     </Card>
   );
 }
@@ -728,16 +727,16 @@ function ImportModeCard({
 }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+      <Card.Header>
+        <Card.Title className="flex items-center gap-2">
           <CheckCircle className="h-5 w-5 text-primary" />
           Modo de importación
-        </CardTitle>
-        <CardDescription>
+        </Card.Title>
+        <Card.Description>
           Elige cómo deseas procesar los datos: solo nuevos o actualizar existentes
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </Card.Description>
+      </Card.Header>
+      <Card.Content>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Button
             className={cn(
@@ -797,7 +796,7 @@ function ImportModeCard({
             </div>
           </Button>
         </div>
-      </CardContent>
+      </Card.Content>
     </Card>
   );
 }

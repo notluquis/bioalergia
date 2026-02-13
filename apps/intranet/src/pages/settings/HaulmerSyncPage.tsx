@@ -196,10 +196,12 @@ function SyncAllCard({
         <div className="flex items-center justify-between">
           <div>
             <span className="block font-semibold text-default-700">Sincronización Masiva</span>
-            <Description className="mt-1 text-default-500 text-sm">
-              Datos disponibles: {availablePeriods.sales.length} períodos de ventas +{" "}
-              {availablePeriods.purchases.length} períodos de compras
-            </Description>
+            <div className="mt-1">
+              <Description className="text-default-500 text-sm">
+                Datos disponibles: {availablePeriods.sales.length} períodos de ventas +{" "}
+                {availablePeriods.purchases.length} períodos de compras
+              </Description>
+            </div>
           </div>
           <Button
             isDisabled={isSyncingAll}
@@ -302,16 +304,16 @@ function PeriodCard({
           </Button>
           {lastSyncs[`${period.period}-sales`] && (
             <div className="space-y-1 text-default-600 text-xs">
-              <Description>
+              <span className="block">
                 Creados: {lastSyncs[`${period.period}-sales`]?.rowsInserted}
-              </Description>
-              <Description>
+              </span>
+              <span className="block">
                 Actualizados: {lastSyncs[`${period.period}-sales`]?.rowsUpdated}
-              </Description>
+              </span>
               {lastSyncs[`${period.period}-sales`]?.error && (
-                <Description className="text-red-500">
+                <span className="block text-red-500">
                   Error: {lastSyncs[`${period.period}-sales`]?.error}
-                </Description>
+                </span>
               )}
             </div>
           )}
@@ -350,16 +352,16 @@ function PeriodCard({
           </Button>
           {lastSyncs[`${period.period}-purchases`] && (
             <div className="space-y-1 text-default-600 text-xs">
-              <Description>
+              <span className="block">
                 Creados: {lastSyncs[`${period.period}-purchases`]?.rowsInserted}
-              </Description>
-              <Description>
+              </span>
+              <span className="block">
                 Actualizados: {lastSyncs[`${period.period}-purchases`]?.rowsUpdated}
-              </Description>
+              </span>
               {lastSyncs[`${period.period}-purchases`]?.error && (
-                <Description className="text-red-500">
+                <span className="block text-red-500">
                   Error: {lastSyncs[`${period.period}-purchases`]?.error}
-                </Description>
+                </span>
               )}
             </div>
           )}
@@ -562,9 +564,11 @@ export function HaulmerSyncPage() {
             <span className="block font-semibold text-danger text-sm">
               Error al cargar períodos
             </span>
-            <Description className="mt-1 text-danger text-xs">
-              {periodsError instanceof Error ? periodsError.message : "Error desconocido"}
-            </Description>
+            <div className="mt-1">
+              <Description className="text-danger text-xs">
+                {periodsError instanceof Error ? periodsError.message : "Error desconocido"}
+              </Description>
+            </div>
             <details className="mt-2">
               <summary className="cursor-pointer font-mono text-danger text-xs">
                 Respuesta del servidor
