@@ -264,7 +264,8 @@ const TABLE_PERMISSIONS: Record<TableName, { action: string; subject: string }> 
 // PREVIEW (VALIDATE WITHOUT INSERTING)
 // ============================================================
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy csv preview
+// biome-ignore lint/complexity/noExcessiveLinesPerFunction: csv preview has explicit per-table validations
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: csv preview branches by table
 csvUploadRoutes.post("/preview", async (c) => {
   const auth = await getAuth(c);
   if (!auth) {
@@ -279,6 +280,13 @@ csvUploadRoutes.post("/preview", async (c) => {
 
   if (!table || !data || !Array.isArray(data)) {
     return reply(c, { status: "error", message: "Table and data array required" }, 400);
+  }
+  if (table === "transactions") {
+    return reply(
+      c,
+      { status: "error", message: "Table 'transactions' is no longer supported" },
+      400,
+    );
   }
 
   // Check permissions
@@ -589,6 +597,13 @@ csvUploadRoutes.post("/import", async (c) => {
   if (!table || !data || !Array.isArray(data)) {
     return reply(c, { status: "error", message: "Table and data array required" }, 400);
   }
+  if (table === "transactions") {
+    return reply(
+      c,
+      { status: "error", message: "Table 'transactions' is no longer supported" },
+      400,
+    );
+  }
 
   // Check permissions
   const required = TABLE_PERMISSIONS[table];
@@ -650,6 +665,12 @@ async function importCsvRows(
   auth: AuthContext,
   mode: "insert-only" | "insert-or-update" = "insert-or-update",
 ): Promise<ImportResult> {
+  if (table === "transactions") {
+    return {
+      ...emptyOutcome(),
+      errors: ["Tabla 'transactions' no soportada"],
+    };
+  }
   if (table === "withdrawals") {
     return await importWithdrawalsRowsBatch(data, mode);
   }
@@ -660,7 +681,7 @@ async function importCsvRows(
   for (let i = 0; i < data.length; i++) {
     const row = data[i] as CSVRow;
     try {
-      const outcome = await importCsvRow(table, row, auth, mode);
+      const outcome = await importCsvRow(table as ImportRowTable, row, auth, mode);
       addOutcome(totals, outcome);
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Error desconocido";
@@ -678,16 +699,15 @@ type ImportRowHandler = (
   mode: "insert-only" | "insert-or-update",
 ) => Promise<ImportOutcome>;
 
-const importRowHandlers: Record<TableName, ImportRowHandler> = {
+type ImportRowTable = Exclude<TableName, "transactions" | "withdrawals">;
+
+const importRowHandlers: Record<ImportRowTable, ImportRowHandler> = {
   people: (row, _, mode) => importPeopleRow(row, mode),
   employees: (row, _, mode) => importEmployeesRow(row, mode),
   counterparts: (row, _, mode) => importCounterpartsRow(row, mode),
   daily_balances: (row, _, mode) => importDailyBalancesRow(row, mode),
   daily_production_balances: (row, auth, mode) =>
     importDailyProductionBalancesRow(row, auth.userId, mode),
-  transactions: async () => ({ inserted: 0, updated: 0, skipped: 1 }),
-  // Handled in batch path at importCsvRows() for consistent dedupe.
-  withdrawals: async () => ({ inserted: 0, updated: 0, skipped: 1 }),
   services: (row) => importServicesRow(row),
   inventory_items: (row, _, mode) => importInventoryItemsRow(row, mode),
   employee_timesheets: (row, _, mode) => importEmployeeTimesheetsRow(row, mode),
@@ -696,13 +716,12 @@ const importRowHandlers: Record<TableName, ImportRowHandler> = {
 };
 
 async function importCsvRow(
-  table: TableName,
+  table: ImportRowTable,
   row: CSVRow,
   auth: AuthContext,
   mode: "insert-only" | "insert-or-update",
 ): Promise<ImportOutcome> {
-  const handler = importRowHandlers[table];
-  return handler ? handler(row, auth, mode) : { inserted: 0, updated: 0, skipped: 1 };
+  return await importRowHandlers[table](row, auth, mode);
 }
 
 async function importPeopleRow(
@@ -922,55 +941,85 @@ async function importWithdrawalsRowsBatch(
   data: object[],
   mode: "insert-only" | "insert-or-update",
 ): Promise<ImportResult> {
+  const prepared = prepareWithdrawBatchRows(data);
   const totals = emptyOutcome();
-  const errors: string[] = [];
-  const seenWithdrawIds = new Set<string>();
-  const preparedRows: Array<{
+  totals.skipped += prepared.skipped;
+
+  if (prepared.rows.length === 0) {
+    return { ...totals, errors: prepared.errors };
+  }
+
+  const existingIds = await findExistingWithdrawIds(prepared.rows.map((row) => row.withdrawId));
+  const applied = await applyWithdrawBatchRows(prepared.rows, existingIds, mode);
+  addOutcome(totals, applied);
+
+  return { ...totals, errors: prepared.errors };
+}
+
+type PreparedWithdrawBatch = {
+  errors: string[];
+  rows: Array<{
     withdrawData: ReturnType<typeof buildWithdrawData>;
     withdrawId: string;
-  }> = [];
+  }>;
+  skipped: number;
+};
+
+function prepareWithdrawBatchRows(data: object[]): PreparedWithdrawBatch {
+  const errors: string[] = [];
+  const rows: PreparedWithdrawBatch["rows"] = [];
+  const seenWithdrawIds = new Set<string>();
+  let skipped = 0;
 
   for (let i = 0; i < data.length; i++) {
     const row = data[i] as CSVRow;
     const withdrawId = normalizeWithdrawId(row.withdrawId);
     if (!withdrawId) {
       errors.push(`Fila ${i + 1}: withdrawId requerido`);
-      totals.skipped += 1;
+      skipped += 1;
       continue;
     }
     if (seenWithdrawIds.has(withdrawId)) {
-      totals.skipped += 1;
+      skipped += 1;
       continue;
     }
     seenWithdrawIds.add(withdrawId);
 
     try {
-      preparedRows.push({
+      rows.push({
         withdrawData: buildWithdrawData(row),
         withdrawId,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Error desconocido";
       errors.push(`Fila ${i + 1}: ${message}`);
-      totals.skipped += 1;
+      skipped += 1;
     }
   }
 
-  if (preparedRows.length === 0) {
-    return { ...totals, errors };
-  }
+  return { errors, rows, skipped };
+}
 
+async function findExistingWithdrawIds(withdrawIds: string[]) {
   const existingRows = await db.withdrawTransaction.findMany({
     select: { withdrawId: true },
     where: {
       withdrawId: {
-        in: preparedRows.map((row) => row.withdrawId),
+        in: withdrawIds,
       },
     },
   });
-  const existingIds = new Set(existingRows.map((row) => row.withdrawId));
+  return new Set(existingRows.map((row) => row.withdrawId));
+}
 
-  for (const row of preparedRows) {
+async function applyWithdrawBatchRows(
+  rows: PreparedWithdrawBatch["rows"],
+  existingIds: Set<string>,
+  mode: "insert-only" | "insert-or-update",
+): Promise<ImportOutcome> {
+  const totals = emptyOutcome();
+
+  for (const row of rows) {
     if (existingIds.has(row.withdrawId)) {
       if (mode === "insert-only") {
         totals.skipped += 1;
@@ -991,7 +1040,7 @@ async function importWithdrawalsRowsBatch(
     totals.inserted += 1;
   }
 
-  return { ...totals, errors };
+  return totals;
 }
 
 function parseProductionBalanceDate(row: CSVRow) {
