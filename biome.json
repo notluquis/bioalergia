@@ -27,14 +27,20 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": false,
+      "recommended": true,
       "performance": {
         "recommended": true,
         "noAccumulatingSpread": "warn",
+        "noAwaitInLoops": "warn",
         "noBarrelFile": "error",
         "noDelete": "error",
+        "noDynamicNamespaceImportAccess": "warn",
+        "noImgElement": "warn",
         "noNamespaceImport": "error",
         "noReExportAll": "error",
+        "noUnwantedPolyfillio": "warn",
+        "useGoogleFontPreconnect": "warn",
+        "useSolidForComponent": "warn",
         "useTopLevelRegex": "warn"
       }
     }
