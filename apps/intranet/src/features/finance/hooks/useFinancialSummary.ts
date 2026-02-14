@@ -36,7 +36,9 @@ export function useFinancialSummary(dateRange: DateRange) {
     let totalIncome = 0;
 
     for (const item of items) {
-      (grouped[item.category] ??= []).push(item);
+      const bucket = grouped[item.category] ?? [];
+      bucket.push(item);
+      grouped[item.category] = bucket;
       totalIncome += item.amount;
     }
 

@@ -15,6 +15,13 @@
 		Cross-Origin-Resource-Policy "same-origin"
 	}
 
+	# Allow embedding signature image from external origins (webmail/email clients)
+	@signature path /firma-lucas-signature.png
+	header @signature {
+		Access-Control-Allow-Origin "*"
+		Cross-Origin-Resource-Policy "cross-origin"
+	}
+
 	# ========== LOGGING CONFIGURATION ==========
 	# Skip health checks and favicon (high-frequency, low-value logs)
 	# These go to HTTP Logs in Railway but generate noise

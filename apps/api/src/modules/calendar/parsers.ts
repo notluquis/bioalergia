@@ -414,8 +414,11 @@ type AmountExtraction = {
 
 function applySlashAmounts(text: string, amounts: AmountExtraction) {
   const slashPattern = /\((\d+)\s*\/\s*(\d+)\)/gi;
-  let slashMatch: RegExpExecArray | null;
-  while ((slashMatch = slashPattern.exec(text)) !== null) {
+  for (
+    let slashMatch = slashPattern.exec(text);
+    slashMatch !== null;
+    slashMatch = slashPattern.exec(text)
+  ) {
     const paid = normalizeAmountRaw(slashMatch[1]);
     const expected = normalizeAmountRaw(slashMatch[2]);
     if (paid != null && amounts.amountPaid == null) {
@@ -429,8 +432,7 @@ function applySlashAmounts(text: string, amounts: AmountExtraction) {
 
 function applyParenAmounts(text: string, amounts: AmountExtraction) {
   const parenPattern = /\(([^)]+)\)/gi;
-  let match: RegExpExecArray | null;
-  while ((match = parenPattern.exec(text)) !== null) {
+  for (let match = parenPattern.exec(text); match !== null; match = parenPattern.exec(text)) {
     let content = match[1];
     if (SLASH_FORMAT_REGEX.test(content)) {
       continue;
@@ -463,8 +465,11 @@ function applyTypoFallback(text: string, amounts: AmountExtraction) {
   }
 
   const typoPattern = /[a-z](\d+)\)/gi;
-  let typoMatch: RegExpExecArray | null;
-  while ((typoMatch = typoPattern.exec(text)) !== null) {
+  for (
+    let typoMatch = typoPattern.exec(text);
+    typoMatch !== null;
+    typoMatch = typoPattern.exec(text)
+  ) {
     const digits = typoMatch[1];
     const lastTwo = digits.length >= 2 ? digits.slice(-2) : digits;
     const amount = normalizeAmountRaw(lastTwo);
@@ -480,8 +485,11 @@ function applyUnclosedParenFallback(text: string, amounts: AmountExtraction) {
   }
 
   const unclosedParenPattern = /\((\d+)mil[:\s.]/gi;
-  let unclosedMatch: RegExpExecArray | null;
-  while ((unclosedMatch = unclosedParenPattern.exec(text)) !== null) {
+  for (
+    let unclosedMatch = unclosedParenPattern.exec(text);
+    unclosedMatch !== null;
+    unclosedMatch = unclosedParenPattern.exec(text)
+  ) {
     const amount = normalizeAmountRaw(unclosedMatch[1]);
     if (amount != null) {
       amounts.amountExpected = amount;
@@ -497,8 +505,11 @@ function applyKeywordFallback(text: string, amounts: AmountExtraction) {
 
   const keywordPattern =
     /(?:cl[au]s[i]?t[oau]?id[eo]?|cluxin|alxoid|oral[-\s]?tec|vacuna)\s+(\d{2,3})\b/gi;
-  let kwMatch: RegExpExecArray | null;
-  while ((kwMatch = keywordPattern.exec(text)) !== null) {
+  for (
+    let kwMatch = keywordPattern.exec(text);
+    kwMatch !== null;
+    kwMatch = keywordPattern.exec(text)
+  ) {
     const amount = normalizeAmountRaw(kwMatch[1]);
     if (amount != null) {
       amounts.amountExpected = amount;
@@ -525,8 +536,11 @@ function applyEndAmountFallback(text: string, amounts: AmountExtraction) {
 
 function applyPaidPattern(text: string, amounts: AmountExtraction) {
   const paidPattern = /pagado\s*(\d+)/gi;
-  let matchPaid: RegExpExecArray | null;
-  while ((matchPaid = paidPattern.exec(text)) !== null) {
+  for (
+    let matchPaid = paidPattern.exec(text);
+    matchPaid !== null;
+    matchPaid = paidPattern.exec(text)
+  ) {
     const amount = normalizeAmountRaw(matchPaid[1]);
     if (amount == null) {
       continue;

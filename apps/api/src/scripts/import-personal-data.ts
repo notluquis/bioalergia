@@ -179,8 +179,7 @@ async function main() {
 
     // Parse BCI Rows
     const bciRegex = /(\d+)\/48\s+(\d{2}\/\d{2}\/\d{4})\s+\$\s+([\d.]+)\s+(?:--|\$\s+([\d.]+))/g;
-    let match: RegExpExecArray | null;
-    while ((match = bciRegex.exec(RAW_BCI)) !== null) {
+    for (let match = bciRegex.exec(RAW_BCI); match !== null; match = bciRegex.exec(RAW_BCI)) {
       const [_, num, dateStr, amountStr, paidAmountStr] = match;
       const amount = parseCurrency(amountStr);
       const paidAmount = paidAmountStr ? parseCurrency(paidAmountStr) : null;
@@ -219,8 +218,11 @@ async function main() {
     });
 
     const falaRegex = /(\d+)\s+\$([\d.]+)\s+(\d{2}\/\d{2}\/\d{4})\s+(Vigente|Pagada vigente)/g;
-    let matchF: RegExpExecArray | null;
-    while ((matchF = falaRegex.exec(RAW_FALABELLA)) !== null) {
+    for (
+      let matchF = falaRegex.exec(RAW_FALABELLA);
+      matchF !== null;
+      matchF = falaRegex.exec(RAW_FALABELLA)
+    ) {
       const [_, num, amountStr, dateStr, statusStr] = matchF;
       const amount = parseCurrency(amountStr);
       const isPaid = statusStr.includes("Pagada");

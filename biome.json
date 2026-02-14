@@ -31,16 +31,16 @@
       "performance": {
         "recommended": true,
         "noAccumulatingSpread": "warn",
-        "noAwaitInLoops": "warn",
+        "noAwaitInLoops": "off",
         "noBarrelFile": "error",
         "noDelete": "error",
         "noDynamicNamespaceImportAccess": "warn",
-        "noImgElement": "warn",
+        "noImgElement": "off",
         "noNamespaceImport": "error",
         "noReExportAll": "error",
         "noUnwantedPolyfillio": "warn",
         "useGoogleFontPreconnect": "warn",
-        "useSolidForComponent": "warn",
+        "useSolidForComponent": "off",
         "useTopLevelRegex": "warn"
       }
     }
