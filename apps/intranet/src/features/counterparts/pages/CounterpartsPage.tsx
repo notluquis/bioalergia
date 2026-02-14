@@ -86,20 +86,36 @@ async function saveCounterpartWithFeedback({
   return savedId;
 }
 
-export function CounterpartsPage() {
-  const { can } = useAuth();
-  const queryClient = useQueryClient();
-  const [selectedId, setSelectedId] = useState<null | number>(null);
+type SummaryRange = { from: string; to: string };
 
-  const canCreate = can("create", "Counterpart");
-  const canUpdate = can("update", "Counterpart");
-  const [error, setError] = useState<null | string>(null);
-
-  const [summaryRange, setSummaryRange] = useState<{ from: string; to: string }>(() => ({
+function createInitialSummaryRange(): SummaryRange {
+  return {
     from: dayjs().subtract(SUMMARY_RANGE_MONTHS, "month").startOf("month").format("YYYY-MM-DD"),
     to: dayjs().endOf("month").format("YYYY-MM-DD"),
-  }));
-  const { error: toastError, info: toastInfo, success: toastSuccess } = useToast();
+  };
+}
+
+function buildAssignPreviewMessage(params: {
+  assignExistingCounterpart: Counterpart | null;
+  assignRutIsValid: boolean;
+  assignRutValue: string;
+}) {
+  if (params.assignRutValue.trim().length === 0) {
+    return "Ingresa un RUT para ver qué acción se aplicará.";
+  }
+  if (!params.assignRutIsValid) {
+    return "RUT inválido. Corrige el formato/verificador para continuar.";
+  }
+  if (params.assignExistingCounterpart) {
+    return `Se asociará a contraparte existente: ${params.assignExistingCounterpart.bankAccountHolder}.`;
+  }
+  return "Se creará una nueva contraparte con este RUT y se asociarán las cuentas payout.";
+}
+
+function useCounterpartsState() {
+  const [selectedId, setSelectedId] = useState<null | number>(null);
+  const [error, setError] = useState<null | string>(null);
+  const [summaryRange, setSummaryRange] = useState<SummaryRange>(createInitialSummaryRange);
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | CounterpartCategory>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [payoutSearchQuery, setPayoutSearchQuery] = useState("");
@@ -125,6 +141,48 @@ export function CounterpartsPage() {
     setFormCounterpart(null);
   };
 
+  const resetAssignRutModalState = () => {
+    setIsAssignRutModalOpen(false);
+    setAssigningPayoutAccounts([]);
+    setAssignRutValue("");
+    setAssignHolderValue("");
+  };
+
+  return {
+    assignHolderValue,
+    assigningPayoutAccounts,
+    assignRutValue,
+    categoryFilter,
+    closeFormModal,
+    error,
+    formCounterpart,
+    isAssignRutModalOpen,
+    isFormModalOpen,
+    openFormModal,
+    payoutPagination,
+    payoutSearchQuery,
+    resetAssignRutModalState,
+    searchQuery,
+    selectedId,
+    selectedPayoutAccounts,
+    setAssignHolderValue,
+    setAssigningPayoutAccounts,
+    setAssignRutValue,
+    setCategoryFilter,
+    setError,
+    setIsAssignRutModalOpen,
+    setIsFormModalOpen,
+    setPayoutPagination,
+    setPayoutSearchQuery,
+    setSearchQuery,
+    setSelectedId,
+    setSelectedPayoutAccounts,
+    setSummaryRange,
+    summaryRange,
+  };
+}
+
+function useCounterpartsData(payoutPagination: PaginationState, payoutSearchQuery: string) {
   const {
     data: counterparts = [],
     error: listError,
@@ -133,6 +191,7 @@ export function CounterpartsPage() {
     queryFn: fetchCounterparts,
     queryKey: counterpartKeys.lists(),
   });
+
   const { data: unassignedPayoutData, isLoading: isUnassignedPayoutLoading } = useQuery({
     queryFn: () =>
       fetchUnassignedPayoutAccounts({
@@ -149,14 +208,26 @@ export function CounterpartsPage() {
     ],
   });
 
-  // Derived error state (combine/prioritize)
-  const displayError = error || (listError instanceof Error ? listError.message : null);
+  return {
+    counterparts,
+    isListLoading,
+    isUnassignedPayoutLoading,
+    listError,
+    unassignedPayoutData,
+  };
+}
 
-  // Use REST API mutations
+function useCounterpartsMutations(params: {
+  queryClient: ReturnType<typeof useQueryClient>;
+  selectedId: null | number;
+  setError: (value: null | string) => void;
+  toastError: (message: string) => void;
+  toastSuccess: (message: string) => void;
+}) {
   const createMutation = useMutation({
     mutationFn: createCounterpart,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
+      void params.queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
     },
   });
 
@@ -164,11 +235,10 @@ export function CounterpartsPage() {
     mutationFn: ({ id, payload }: { id: number; payload: Partial<CounterpartUpsertPayload> }) =>
       updateCounterpart(id, payload),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
-      // Detail invalidation
-      if (selectedId) {
-        void queryClient.invalidateQueries({
-          queryKey: counterpartKeys.detail(selectedId).queryKey,
+      void params.queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
+      if (params.selectedId) {
+        void params.queryClient.invalidateQueries({
+          queryKey: counterpartKeys.detail(params.selectedId).queryKey,
         });
       }
     },
@@ -177,62 +247,40 @@ export function CounterpartsPage() {
   const syncMutation = useMutation({
     mutationFn: syncCounterparts,
     onSuccess: (result) => {
-      void queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
-      void queryClient.invalidateQueries({
+      void params.queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
+      void params.queryClient.invalidateQueries({
         queryKey: [...counterpartKeys.all, "unassigned-payout"],
       });
-      toastSuccess(
+      params.toastSuccess(
         `Sync completado: ${result.syncedCounterparts} contrapartes, ${result.syncedAccounts} cuentas, ${result.conflictCount ?? 0} conflictos.`,
       );
     },
     onError: (error_) => {
       const message =
         error_ instanceof Error ? error_.message : "No se pudo sincronizar contrapartes";
-      setError(message);
-      toastError(message);
+      params.setError(message);
+      params.toastError(message);
     },
   });
 
-  const handleSaveCounterpart = async (payload: CounterpartUpsertPayload) => {
-    setError(null);
+  return { createMutation, syncMutation, updateMutation };
+}
 
-    try {
-      const wasUpdating = Boolean(selectedId);
-      const savedId = await saveCounterpartWithFeedback({
-        createMutation,
-        payload,
-        selectedId,
-        updateMutation,
-      });
-      toastSuccess(
-        wasUpdating ? "Contraparte actualizada correctamente" : "Contraparte creada correctamente",
-      );
-
-      setSelectedId(savedId);
-      setIsFormModalOpen(false);
-    } catch (error_) {
-      const message = error_ instanceof Error ? error_.message : "Error al guardar contraparte";
-      setError(message);
-      toastError(message);
-    }
-  };
-
-  const handleSelectCounterpart = (id: null | number) => {
-    setSelectedId(id);
-  };
-
-  const handleSummaryRangeChange = (update: Partial<{ from: string; to: string }>) => {
-    setSummaryRange((prev) => ({ ...prev, ...update }));
-  };
-
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-  const selectedCounterpart = selectedId
-    ? (counterparts.find((counterpart) => counterpart.id === selectedId) ?? null)
+function useCounterpartsDerived(params: {
+  assignRutValue: string;
+  categoryFilter: "ALL" | CounterpartCategory;
+  counterparts: Counterpart[];
+  searchQuery: string;
+  selectedId: null | number;
+}) {
+  const normalizedQuery = params.searchQuery.trim().toLowerCase();
+  const selectedCounterpart = params.selectedId
+    ? (params.counterparts.find((counterpart) => counterpart.id === params.selectedId) ?? null)
     : null;
 
-  // Filter counterparts by category + search
-  const visibleCounterparts = counterparts.filter((item) => {
-    const matchesCategory = categoryFilter === "ALL" || item.category === categoryFilter;
+  const visibleCounterparts = params.counterparts.filter((item) => {
+    const matchesCategory =
+      params.categoryFilter === "ALL" || item.category === params.categoryFilter;
     const matchesQuery =
       normalizedQuery.length === 0 ||
       item.bankAccountHolder.toLowerCase().includes(normalizedQuery) ||
@@ -240,139 +288,260 @@ export function CounterpartsPage() {
     return matchesCategory && matchesQuery;
   });
 
-  const supplierCount = counterparts.filter((item) => item.category === "SUPPLIER").length;
-  const clientCount = counterparts.filter((item) => item.category === "CLIENT").length;
-  const lenderCount = counterparts.filter((item) => item.category === "LENDER").length;
-  const normalizedAssignRut = normalizeRut(assignRutValue);
-  const assignRutIsValid = validateRut(assignRutValue);
+  const supplierCount = params.counterparts.filter((item) => item.category === "SUPPLIER").length;
+  const clientCount = params.counterparts.filter((item) => item.category === "CLIENT").length;
+  const lenderCount = params.counterparts.filter((item) => item.category === "LENDER").length;
+  const normalizedAssignRut = normalizeRut(params.assignRutValue);
+  const assignRutIsValid = validateRut(params.assignRutValue);
   const assignRutCompact = normalizedAssignRut?.replaceAll("-", "") ?? "";
   const assignExistingCounterpart =
     assignRutCompact.length > 0
-      ? (counterparts.find(
+      ? (params.counterparts.find(
           (item) => item.identificationNumber.toUpperCase() === assignRutCompact.toUpperCase(),
         ) ?? null)
       : null;
-  const assignPreviewMessage =
-    assignRutValue.trim().length === 0
-      ? "Ingresa un RUT para ver qué acción se aplicará."
-      : !assignRutIsValid
-        ? "RUT inválido. Corrige el formato/verificador para continuar."
-        : assignExistingCounterpart
-          ? `Se asociará a contraparte existente: ${assignExistingCounterpart.bankAccountHolder}.`
-          : "Se creará una nueva contraparte con este RUT y se asociarán las cuentas payout.";
+  const assignPreviewMessage = buildAssignPreviewMessage({
+    assignExistingCounterpart,
+    assignRutIsValid,
+    assignRutValue: params.assignRutValue,
+  });
+
+  return {
+    assignExistingCounterpart,
+    assignPreviewMessage,
+    assignRutIsValid,
+    clientCount,
+    lenderCount,
+    normalizedAssignRut,
+    normalizedQuery,
+    selectedCounterpart,
+    supplierCount,
+    visibleCounterparts,
+  };
+}
+
+function useCounterpartsActions(params: {
+  assignHolderValue: string;
+  assigningPayoutAccounts: string[];
+  assignRutIsValid: boolean;
+  createMutation: SaveCounterpartArgs["createMutation"];
+  normalizedAssignRut: null | string;
+  queryClient: ReturnType<typeof useQueryClient>;
+  resetAssignRutModalState: () => void;
+  selectedId: null | number;
+  selectedPayoutAccounts: string[];
+  setAssignHolderValue: (value: string) => void;
+  setAssigningPayoutAccounts: (value: string[]) => void;
+  setAssignRutValue: (value: string) => void;
+  setError: (value: null | string) => void;
+  setIsAssignRutModalOpen: (value: boolean) => void;
+  setIsFormModalOpen: (value: boolean) => void;
+  setSelectedId: (value: null | number) => void;
+  setSelectedPayoutAccounts: (value: string[]) => void;
+  setSummaryRange: (updater: (prev: SummaryRange) => SummaryRange) => void;
+  syncMutate: () => void;
+  toastError: (message: string) => void;
+  toastInfo: (message: string) => void;
+  toastSuccess: (message: string) => void;
+  updateMutation: SaveCounterpartArgs["updateMutation"];
+}) {
+  const handleSaveCounterpart = async (payload: CounterpartUpsertPayload) => {
+    params.setError(null);
+
+    try {
+      const wasUpdating = Boolean(params.selectedId);
+      const savedId = await saveCounterpartWithFeedback({
+        createMutation: params.createMutation,
+        payload,
+        selectedId: params.selectedId,
+        updateMutation: params.updateMutation,
+      });
+      params.toastSuccess(
+        wasUpdating ? "Contraparte actualizada correctamente" : "Contraparte creada correctamente",
+      );
+
+      params.setSelectedId(savedId);
+      params.setIsFormModalOpen(false);
+    } catch (error_) {
+      const message = error_ instanceof Error ? error_.message : "Error al guardar contraparte";
+      params.setError(message);
+      params.toastError(message);
+    }
+  };
+
+  const handleSummaryRangeChange = (update: Partial<SummaryRange>) => {
+    params.setSummaryRange((prev) => ({ ...prev, ...update }));
+  };
+
   const handleCreateFromPayout = (payoutBankAccountNumber: string) => {
-    setAssigningPayoutAccounts([payoutBankAccountNumber]);
-    setAssignRutValue("");
-    setAssignHolderValue("");
-    setIsAssignRutModalOpen(true);
+    params.setAssigningPayoutAccounts([payoutBankAccountNumber]);
+    params.setAssignRutValue("");
+    params.setAssignHolderValue("");
+    params.setIsAssignRutModalOpen(true);
   };
+
   const handleBulkAssignFromSelection = () => {
-    if (selectedPayoutAccounts.length === 0) {
+    if (params.selectedPayoutAccounts.length === 0) {
       return;
     }
-    setAssigningPayoutAccounts(selectedPayoutAccounts);
-    setAssignRutValue("");
-    setAssignHolderValue("");
-    setIsAssignRutModalOpen(true);
+    params.setAssigningPayoutAccounts(params.selectedPayoutAccounts);
+    params.setAssignRutValue("");
+    params.setAssignHolderValue("");
+    params.setIsAssignRutModalOpen(true);
   };
+
   const handleAssignRutToPayout = async () => {
-    if (assigningPayoutAccounts.length === 0) {
+    if (params.assigningPayoutAccounts.length === 0) {
       return;
     }
-    if (!assignRutIsValid) {
-      setError("RUT inválido");
-      toastError("Ingresa un RUT válido para asignar la contraparte");
-      return;
-    }
-
-    const normalized = normalizedAssignRut;
-    if (!normalized) {
-      setError("RUT inválido");
-      toastError("Ingresa un RUT válido para asignar la contraparte");
+    if (!params.assignRutIsValid || !params.normalizedAssignRut) {
+      params.setError("RUT inválido");
+      params.toastError("Ingresa un RUT válido para asignar la contraparte");
       return;
     }
 
-    setError(null);
+    params.setError(null);
 
     try {
       const result = await assignRutToPayouts({
-        accountNumbers: assigningPayoutAccounts,
-        bankAccountHolder: assignHolderValue.trim() || undefined,
-        rut: normalized,
+        accountNumbers: params.assigningPayoutAccounts,
+        bankAccountHolder: params.assignHolderValue.trim() || undefined,
+        rut: params.normalizedAssignRut,
       });
-      setSelectedId(result.counterpart.id);
+      params.setSelectedId(result.counterpart.id);
       if (result.conflicts.length > 0) {
-        toastInfo(
+        params.toastInfo(
           `Asignadas ${result.assignedCount}. ${result.conflicts.length} cuentas quedaron en conflicto.`,
         );
       } else {
-        toastSuccess(`Asignadas ${result.assignedCount} cuentas a la contraparte.`);
+        params.toastSuccess(`Asignadas ${result.assignedCount} cuentas a la contraparte.`);
       }
 
-      setIsAssignRutModalOpen(false);
-      setAssigningPayoutAccounts([]);
-      setSelectedPayoutAccounts([]);
-      setAssignRutValue("");
-      setAssignHolderValue("");
-      void queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
-      void queryClient.invalidateQueries({
+      params.resetAssignRutModalState();
+      params.setSelectedPayoutAccounts([]);
+      void params.queryClient.invalidateQueries({ queryKey: counterpartKeys.lists() });
+      void params.queryClient.invalidateQueries({
         queryKey: [...counterpartKeys.all, "unassigned-payout"],
       });
     } catch (error_) {
       const message =
         error_ instanceof Error ? error_.message : "No se pudo asignar el RUT a la cuenta payout";
-      setError(message);
-      toastError(message);
+      params.setError(message);
+      params.toastError(message);
     }
   };
+
+  return {
+    handleAssignRutToPayout,
+    handleBulkAssignFromSelection,
+    handleCreateFromPayout,
+    handleSaveCounterpart,
+    handleSummaryRangeChange,
+    triggerSync: params.syncMutate,
+  };
+}
+
+export function CounterpartsPage() {
+  const { can } = useAuth();
+  const queryClient = useQueryClient();
+  const state = useCounterpartsState();
+  const { error: toastError, info: toastInfo, success: toastSuccess } = useToast();
+  const canCreate = can("create", "Counterpart");
+  const canUpdate = can("update", "Counterpart");
+  const {
+    counterparts,
+    isListLoading,
+    isUnassignedPayoutLoading,
+    listError,
+    unassignedPayoutData,
+  } = useCounterpartsData(state.payoutPagination, state.payoutSearchQuery);
+  const mutations = useCounterpartsMutations({
+    queryClient,
+    selectedId: state.selectedId,
+    setError: state.setError,
+    toastError,
+    toastSuccess,
+  });
+  const derived = useCounterpartsDerived({
+    assignRutValue: state.assignRutValue,
+    categoryFilter: state.categoryFilter,
+    counterparts,
+    searchQuery: state.searchQuery,
+    selectedId: state.selectedId,
+  });
+  const actions = useCounterpartsActions({
+    assignHolderValue: state.assignHolderValue,
+    assigningPayoutAccounts: state.assigningPayoutAccounts,
+    assignRutIsValid: derived.assignRutIsValid,
+    createMutation: mutations.createMutation,
+    normalizedAssignRut: derived.normalizedAssignRut,
+    queryClient,
+    resetAssignRutModalState: state.resetAssignRutModalState,
+    selectedId: state.selectedId,
+    selectedPayoutAccounts: state.selectedPayoutAccounts,
+    setAssignHolderValue: state.setAssignHolderValue,
+    setAssigningPayoutAccounts: state.setAssigningPayoutAccounts,
+    setAssignRutValue: state.setAssignRutValue,
+    setError: state.setError,
+    setIsAssignRutModalOpen: state.setIsAssignRutModalOpen,
+    setIsFormModalOpen: state.setIsFormModalOpen,
+    setSelectedId: state.setSelectedId,
+    setSelectedPayoutAccounts: state.setSelectedPayoutAccounts,
+    setSummaryRange: state.setSummaryRange,
+    syncMutate: () => mutations.syncMutation.mutate(),
+    toastError,
+    toastInfo,
+    toastSuccess,
+    updateMutation: mutations.updateMutation,
+  });
+  const displayError = state.error || (listError instanceof Error ? listError.message : null);
+  const unassignedPageCount = unassignedPayoutData
+    ? Math.max(Math.ceil(unassignedPayoutData.total / unassignedPayoutData.pageSize), 1)
+    : 0;
 
   return (
     <section className="space-y-6">
       <CounterpartsToolbar
         canCreate={canCreate}
         canSync={canUpdate}
-        categoryFilter={categoryFilter}
-        clientCount={clientCount}
-        lenderCount={lenderCount}
-        onCategoryFilterChange={setCategoryFilter}
+        categoryFilter={state.categoryFilter}
+        clientCount={derived.clientCount}
+        lenderCount={derived.lenderCount}
+        onCategoryFilterChange={state.setCategoryFilter}
         onCreate={() => {
-          openFormModal(null);
+          state.openFormModal(null);
         }}
         onSync={() => {
-          syncMutation.mutate();
+          actions.triggerSync();
         }}
         onResetFilters={() => {
-          setCategoryFilter("ALL");
-          setSearchQuery("");
+          state.setCategoryFilter("ALL");
+          state.setSearchQuery("");
         }}
-        syncLoading={syncMutation.isPending}
-        onSearchQueryChange={setSearchQuery}
-        searchQuery={searchQuery}
-        selectedCounterpart={selectedCounterpart}
-        supplierCount={supplierCount}
+        syncLoading={mutations.syncMutation.isPending}
+        onSearchQueryChange={state.setSearchQuery}
+        searchQuery={state.searchQuery}
+        selectedCounterpart={derived.selectedCounterpart}
+        supplierCount={derived.supplierCount}
         totalCount={counterparts.length}
-        visibleCount={visibleCounterparts.length}
+        visibleCount={derived.visibleCounterparts.length}
       />
       <UnassignedPayoutAccountsTable
         canCreate={canCreate}
         loading={isUnassignedPayoutLoading}
-        onBulkAssign={handleBulkAssignFromSelection}
-        onCreateFromPayout={handleCreateFromPayout}
-        onPaginationChange={setPayoutPagination}
+        onBulkAssign={actions.handleBulkAssignFromSelection}
+        onCreateFromPayout={actions.handleCreateFromPayout}
+        onPaginationChange={state.setPayoutPagination}
         onSearchQueryChange={(value) => {
-          setPayoutSearchQuery(value);
-          setPayoutPagination((prev) => ({ ...prev, pageIndex: 0 }));
+          state.setPayoutSearchQuery(value);
+          state.setPayoutPagination((prev) => ({ ...prev, pageIndex: 0 }));
         }}
-        pageCount={
-          unassignedPayoutData
-            ? Math.max(Math.ceil(unassignedPayoutData.total / unassignedPayoutData.pageSize), 1)
-            : 0
-        }
-        pagination={payoutPagination}
+        pageCount={unassignedPageCount}
+        pagination={state.payoutPagination}
         rows={unassignedPayoutData?.rows ?? []}
-        searchQuery={payoutSearchQuery}
-        selectedAccounts={selectedPayoutAccounts}
-        setSelectedAccounts={setSelectedPayoutAccounts}
+        searchQuery={state.payoutSearchQuery}
+        selectedAccounts={state.selectedPayoutAccounts}
+        setSelectedAccounts={state.setSelectedPayoutAccounts}
         total={unassignedPayoutData?.total ?? 0}
       />
 
@@ -381,95 +550,82 @@ export function CounterpartsPage() {
           {isListLoading ? <Skeleton className="mb-4 h-8 w-44" /> : null}
           <CounterpartList
             className="max-h-[calc(100vh-220px)]"
-            counterparts={visibleCounterparts}
+            counterparts={derived.visibleCounterparts}
             emptyMessage={
-              normalizedQuery || categoryFilter !== "ALL"
+              derived.normalizedQuery || state.categoryFilter !== "ALL"
                 ? "No hay resultados con los filtros seleccionados."
                 : "No hay contrapartes registradas."
             }
-            onSelectCounterpart={handleSelectCounterpart}
-            selectedId={selectedId}
+            onSelectCounterpart={state.setSelectedId}
+            selectedId={state.selectedId}
           />
         </section>
 
         <CounterpartDetailPane
           canCreate={canCreate}
           canUpdate={canUpdate}
-          counterpartId={selectedId}
+          counterpartId={state.selectedId}
           onCreate={() => {
-            openFormModal(null);
+            state.openFormModal(null);
           }}
-          onEdit={openFormModal}
-          onSummaryRangeChange={handleSummaryRangeChange}
-          summaryRange={summaryRange}
+          onEdit={state.openFormModal}
+          onSummaryRangeChange={actions.handleSummaryRangeChange}
+          summaryRange={state.summaryRange}
         />
       </div>
       <Modal
-        isOpen={isFormModalOpen}
-        onClose={closeFormModal}
-        title={formCounterpart ? "Editar contraparte" : "Nueva contraparte"}
+        isOpen={state.isFormModalOpen}
+        onClose={state.closeFormModal}
+        title={state.formCounterpart ? "Editar contraparte" : "Nueva contraparte"}
       >
         <CounterpartForm
-          counterpart={formCounterpart}
-          error={error ?? displayError}
-          onSave={handleSaveCounterpart}
-          saving={createMutation.isPending || updateMutation.isPending}
+          counterpart={state.formCounterpart}
+          error={state.error ?? displayError}
+          onSave={actions.handleSaveCounterpart}
+          saving={mutations.createMutation.isPending || mutations.updateMutation.isPending}
         />
       </Modal>
       <Modal
-        isOpen={isAssignRutModalOpen}
-        onClose={() => {
-          setIsAssignRutModalOpen(false);
-          setAssigningPayoutAccounts([]);
-          setAssignRutValue("");
-          setAssignHolderValue("");
-        }}
+        isOpen={state.isAssignRutModalOpen}
+        onClose={state.resetAssignRutModalState}
         title="Asignar RUT a cuenta payout"
       >
         <div className="space-y-4">
           <Input
             readOnly
             label="Cuentas payout seleccionadas"
-            value={String(assigningPayoutAccounts.length)}
+            value={String(state.assigningPayoutAccounts.length)}
           />
           <Input
             label="RUT de contraparte"
             onChange={(event) => {
-              setAssignRutValue(event.target.value);
+              state.setAssignRutValue(event.target.value);
             }}
             placeholder="12.345.678-5"
-            value={assignRutValue}
+            value={state.assignRutValue}
           />
           <Input
             label="Titular (opcional)"
             onChange={(event) => {
-              setAssignHolderValue(event.target.value);
+              state.setAssignHolderValue(event.target.value);
             }}
             placeholder="Nombre contraparte"
-            value={assignHolderValue}
+            value={state.assignHolderValue}
           />
           <p
             className={`text-xs ${
-              assignRutIsValid || assignRutValue.trim().length === 0
+              derived.assignRutIsValid || state.assignRutValue.trim().length === 0
                 ? "text-default-500"
                 : "text-danger"
             }`}
           >
-            {assignPreviewMessage}
+            {derived.assignPreviewMessage}
           </p>
           <div className="flex justify-end gap-2">
-            <Button
-              onClick={() => {
-                setIsAssignRutModalOpen(false);
-                setAssigningPayoutAccounts([]);
-                setAssignRutValue("");
-                setAssignHolderValue("");
-              }}
-              variant="ghost"
-            >
+            <Button onClick={state.resetAssignRutModalState} variant="ghost">
               Cancelar
             </Button>
-            <Button disabled={!assignRutIsValid} onClick={handleAssignRutToPayout}>
+            <Button disabled={!derived.assignRutIsValid} onClick={actions.handleAssignRutToPayout}>
               Confirmar asignación
             </Button>
           </div>

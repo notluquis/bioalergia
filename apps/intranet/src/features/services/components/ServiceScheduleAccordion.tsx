@@ -46,6 +46,56 @@ function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function getRelativeDayLabel(dueDate: dayjs.Dayjs, todayDate: dayjs.Dayjs) {
+  const diff = dueDate.diff(todayDate, "day");
+  if (diff === -1) {
+    return "Ayer";
+  }
+  if (diff === 0) {
+    return "Hoy";
+  }
+  if (diff === 1) {
+    return "Mañana";
+  }
+  if (diff > 1 && diff <= 5) {
+    return `En ${diff} días`;
+  }
+  if (diff < -1 && diff >= -5) {
+    return `Hace ${Math.abs(diff)} días`;
+  }
+  return capitalize(dateFormatter.format(dueDate.toDate()));
+}
+
+function buildScheduleGroups(schedules: ServiceSchedule[]): ScheduleGroup[] {
+  if (schedules.length === 0) {
+    return [];
+  }
+
+  const sorted = [...schedules].toSorted(
+    (a, b) => dayjs(a.due_date).valueOf() - dayjs(b.due_date).valueOf(),
+  );
+  const todayDate = dayjs().startOf("day");
+  const map = new Map<string, ScheduleGroup>();
+
+  for (const schedule of sorted) {
+    const dueDate = dayjs(schedule.due_date).startOf("day");
+    const key = dueDate.format("YYYY-MM-DD");
+    if (!map.has(key)) {
+      map.set(key, {
+        dateKey: key,
+        items: [],
+        label: getRelativeDayLabel(dueDate, todayDate),
+      });
+    }
+    const group = map.get(key);
+    if (group) {
+      group.items.push(schedule);
+    }
+  }
+
+  return [...map.values()].toSorted((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
+}
+
 function ServiceScheduleAccordion({
   canManage,
   onRegisterPayment,
@@ -53,59 +103,7 @@ function ServiceScheduleAccordion({
   schedules,
   service,
 }: ServiceScheduleAccordionProps) {
-  const groups = (() => {
-    if (schedules.length === 0) {
-      return [];
-    }
-
-    const sorted = [...schedules].toSorted(
-      (a, b) => dayjs(a.due_date).valueOf() - dayjs(b.due_date).valueOf(),
-    );
-
-    const today = dayjs().startOf("day");
-    const map = new Map<string, ScheduleGroup>();
-
-    for (const schedule of sorted) {
-      const dueDate = dayjs(schedule.due_date).startOf("day");
-      const key = dueDate.format("YYYY-MM-DD");
-      if (!map.has(key)) {
-        const diff = dueDate.diff(today, "day");
-        let label: string;
-
-        switch (diff) {
-          case -1: {
-            label = "Ayer";
-            break;
-          }
-          case 0: {
-            label = "Hoy";
-            break;
-          }
-          case 1: {
-            label = "Mañana";
-            break;
-          }
-          default: {
-            if (diff > 1 && diff <= 5) {
-              label = `En ${diff} días`;
-            } else if (diff < -1 && diff >= -5) {
-              label = `Hace ${Math.abs(diff)} días`;
-            } else {
-              label = capitalize(dateFormatter.format(dueDate.toDate()));
-            }
-          }
-        }
-
-        map.set(key, { dateKey: key, items: [], label });
-      }
-      const group = map.get(key);
-      if (group) {
-        group.items.push(schedule);
-      }
-    }
-
-    return [...map.values()].toSorted((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
-  })();
+  const groups = buildScheduleGroups(schedules);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const todayKey = today();

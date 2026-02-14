@@ -12,6 +12,116 @@ import { generateWeekData, useDailyBalanceStore } from "./use-daily-balance-stor
 const AUTOSAVE_DELAY_MS = 2000;
 
 const DATE_FORMAT = "YYYY-MM-DD";
+type SaveOptions = {
+  errorMessage?: string;
+  loadingMessage?: string;
+  silent?: boolean;
+  successMessage?: string;
+};
+
+function buildDailyBalancePayload(data: DailyBalanceFormData, selectedDate: Date, userId?: number) {
+  return {
+    date: dayjs(selectedDate).format(DATE_FORMAT),
+    comentarios: data.nota,
+    consultasMonto: data.consultas,
+    controlesMonto: data.controles,
+    createdBy: userId,
+    gastosDiarios: data.gastos,
+    ingresoEfectivo: data.efectivo,
+    ingresoTarjetas: data.tarjeta,
+    ingresoTransferencias: data.transferencia,
+    licenciasMonto: data.licencias,
+    otrosAbonos: data.otros,
+    roxairMonto: data.roxair,
+    testsMonto: data.tests,
+    vacunasMonto: data.vacunas,
+  };
+}
+
+function getSelectedDayItem(
+  data: ProductionBalanceApiItem[] | undefined,
+  selectedDate: Date,
+): null | ProductionBalanceApiItem {
+  return (
+    data?.find(
+      (item) =>
+        dayjs(item.date, DATE_FORMAT).format(DATE_FORMAT) ===
+        dayjs(selectedDate).format(DATE_FORMAT),
+    ) ?? null
+  );
+}
+
+function useSyncSelectedDayForm(params: {
+  resetForm: () => void;
+  selectedDate: Date;
+  setOriginalData: (data: DailyBalanceFormData, entryId?: number) => void;
+  weekData: ProductionBalanceApiItem[] | undefined;
+  weekSuccess: boolean;
+}) {
+  const selectedDayItem = getSelectedDayItem(params.weekData, params.selectedDate);
+
+  useEffect(() => {
+    if (selectedDayItem) {
+      params.setOriginalData(mapApiToForm(selectedDayItem), selectedDayItem.id);
+      return;
+    }
+    if (params.weekSuccess) {
+      params.resetForm();
+    }
+  }, [params.resetForm, params.setOriginalData, params.weekSuccess, selectedDayItem]);
+}
+
+function useSyncWeekData(params: {
+  selectedDate: Date;
+  setWeekData: (week: ReturnType<typeof generateWeekData>) => void;
+  weekData: ProductionBalanceApiItem[] | undefined;
+}) {
+  useEffect(() => {
+    const entries: Record<string, number> = {};
+    if (params.weekData) {
+      for (const item of params.weekData) {
+        const calculatedTotal =
+          item.ingresoTarjetas +
+          item.ingresoTransferencias +
+          item.ingresoEfectivo +
+          item.otrosAbonos;
+        if (item.date) {
+          const dateKey = dayjs(item.date, DATE_FORMAT).format(DATE_FORMAT);
+          entries[dateKey] = calculatedTotal;
+        }
+      }
+    }
+    const week = generateWeekData(params.selectedDate, entries);
+    params.setWeekData(week);
+  }, [params.selectedDate, params.setWeekData, params.weekData]);
+}
+
+function useAutosaveEffect(params: {
+  autosaveTimeout: React.MutableRefObject<null | ReturnType<typeof setTimeout>>;
+  isDirty: boolean;
+  isSaving: boolean;
+  save: (options?: SaveOptions) => Promise<boolean>;
+}) {
+  useEffect(() => {
+    if (!params.isDirty || params.isSaving) {
+      return;
+    }
+
+    if (params.autosaveTimeout.current) {
+      clearTimeout(params.autosaveTimeout.current);
+    }
+
+    params.autosaveTimeout.current = setTimeout(() => {
+      void params.save({ silent: true });
+    }, AUTOSAVE_DELAY_MS);
+
+    return () => {
+      if (params.autosaveTimeout.current) {
+        clearTimeout(params.autosaveTimeout.current);
+      }
+    };
+  }, [params]);
+}
 
 /**
  * Hook for Daily Balance form logic with autosave
@@ -46,78 +156,21 @@ export function useDailyBalanceForm() {
 
   const weekQuery = useSuspenseQuery(productionBalanceKeys.week(startOfWeek, endOfWeek));
 
-  // Find item by date (YYYY-MM-DD)
-  const selectedDayItem =
-    weekQuery.data.find(
-      (item) =>
-        dayjs(item.date, DATE_FORMAT).format(DATE_FORMAT) ===
-        dayjs(selectedDate).format(DATE_FORMAT),
-    ) || null;
-
-  // Load data when query succeeds (if day changes or we just loaded data)
-  useEffect(() => {
-    // If we have data for this day, map it and set it
-    if (selectedDayItem) {
-      const formValues = mapApiToForm(selectedDayItem);
-      setOriginalData(formValues, selectedDayItem.id);
-    }
-    // If query succeeded but no data for this day, reset form
-    else if (weekQuery.isSuccess && !selectedDayItem) {
-      // Only reset if we are not currently saving (to avoid race conditions)
-      resetForm();
-    }
-  }, [selectedDayItem, weekQuery.isSuccess, setOriginalData, resetForm]);
-
-  // Generate week data with real status
-  useEffect(() => {
-    const entries: Record<string, number> = {};
-    if (weekQuery.data) {
-      for (const item of weekQuery.data) {
-        // total? We might need to calculate it if backend doesn't send 'total'
-        // But for now, let's assume 'total' might be calculated?
-        // Wait, schema does NOT have 'total'. I need to calculate it?
-        // Or assume the hook logic elsewhere handles totals.
-        // For 'weekData' (header dots), we typically just need existence or status?
-        // The 'total' property was in the old interface.
-        // Let's compute a simple total or 0 if missing.
-        // Actually, we can sum the fields.
-        const calculatedTotal =
-          item.ingresoTarjetas +
-          item.ingresoTransferencias +
-          item.ingresoEfectivo +
-          item.otrosAbonos;
-        if (item.date) {
-          const dateKey = dayjs(item.date, DATE_FORMAT).format(DATE_FORMAT);
-          entries[dateKey] = calculatedTotal;
-        }
-      }
-    }
-    const week = generateWeekData(selectedDate, entries);
-    setWeekData(week);
-  }, [selectedDate, weekQuery.data, setWeekData]);
+  useSyncSelectedDayForm({
+    resetForm,
+    selectedDate,
+    setOriginalData,
+    weekData: weekQuery.data,
+    weekSuccess: weekQuery.isSuccess,
+  });
+  useSyncWeekData({ selectedDate, setWeekData, weekData: weekQuery.data });
 
   const { user } = useAuth();
 
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async (data: DailyBalanceFormData) => {
-      // transform to schema format
-      const payload = {
-        date: dayjs(selectedDate).format(DATE_FORMAT),
-        comentarios: data.nota,
-        consultasMonto: data.consultas,
-        controlesMonto: data.controles,
-        createdBy: user?.id, // Ensure user is connected
-        gastosDiarios: data.gastos,
-        ingresoEfectivo: data.efectivo,
-        ingresoTarjetas: data.tarjeta,
-        ingresoTransferencias: data.transferencia,
-        licenciasMonto: data.licencias,
-        otrosAbonos: data.otros,
-        roxairMonto: data.roxair,
-        testsMonto: data.tests,
-        vacunasMonto: data.vacunas,
-      };
+      const payload = buildDailyBalancePayload(data, selectedDate, user?.id);
 
       if (currentEntryId) {
         // Update existing (we don't strictly need Date/User on update if they don't change, but safer to send)
@@ -146,13 +199,6 @@ export function useDailyBalanceForm() {
       void queryClient.invalidateQueries({ queryKey: productionBalanceKeys.all });
     },
   });
-
-  type SaveOptions = {
-    errorMessage?: string;
-    loadingMessage?: string;
-    silent?: boolean;
-    successMessage?: string;
-  };
 
   const { mutateAsync: saveMutateAsync } = saveMutation;
   const save = useCallback(
@@ -195,30 +241,7 @@ export function useDailyBalanceForm() {
     });
   }, [save]);
 
-  // Autosave: trigger save after delay when dirty
-  useEffect(() => {
-    if (!isDirty) {
-      return;
-    }
-
-    if (isSaving) {
-      return;
-    }
-
-    if (autosaveTimeout.current) {
-      clearTimeout(autosaveTimeout.current);
-    }
-
-    autosaveTimeout.current = setTimeout(() => {
-      void save({ silent: true });
-    }, AUTOSAVE_DELAY_MS);
-
-    return () => {
-      if (autosaveTimeout.current) {
-        clearTimeout(autosaveTimeout.current);
-      }
-    };
-  }, [isDirty, isSaving, save]);
+  useAutosaveEffect({ autosaveTimeout, isDirty, isSaving, save });
 
   // Finalize day
   const finalize = useCallback(async () => {
@@ -246,13 +269,11 @@ export function useDailyBalanceForm() {
 
   // Navigation
   const goToPrevWeek = useCallback(() => {
-    const prev = dayjs(selectedDate).subtract(7, "day").toDate();
-    setSelectedDate(prev);
+    setSelectedDate(dayjs(selectedDate).subtract(7, "day").toDate());
   }, [selectedDate, setSelectedDate]);
 
   const goToNextWeek = useCallback(() => {
-    const next = dayjs(selectedDate).add(7, "day").toDate();
-    setSelectedDate(next);
+    setSelectedDate(dayjs(selectedDate).add(7, "day").toDate());
   }, [selectedDate, setSelectedDate]);
 
   const goToToday = useCallback(() => {

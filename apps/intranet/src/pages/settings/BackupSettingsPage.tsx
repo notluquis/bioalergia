@@ -19,7 +19,14 @@ import {
   RotateCcw,
   Upload,
 } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { GoogleDriveConnect } from "@/components/backup/GoogleDriveConnect";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
@@ -34,6 +41,49 @@ import "dayjs/locale/es";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
+
+type BackupProgressMessage = {
+  job: BackupJob | RestoreJob;
+  jobs: { backup: BackupJob | null; restore: null | RestoreJob };
+  type: "backup" | "init" | "restore";
+};
+
+const isJobFinished = (status: BackupJob["status"] | RestoreJob["status"]) =>
+  status === "completed" || status === "failed";
+
+function applyBackupProgressMessage(params: {
+  data: BackupProgressMessage;
+  onRefreshBackups: () => void;
+  setLastCompletedBackupResult: Dispatch<SetStateAction<BackupJob["result"] | null>>;
+  setLiveJobs: Dispatch<SetStateAction<{ backup: BackupJob | null; restore: null | RestoreJob }>>;
+}) {
+  const { data, onRefreshBackups, setLastCompletedBackupResult, setLiveJobs } = params;
+
+  switch (data.type) {
+    case "init":
+      setLiveJobs(data.jobs);
+      break;
+    case "backup": {
+      const backupJob = data.job as BackupJob;
+      setLiveJobs((prev) => ({ ...prev, backup: backupJob }));
+      if (isJobFinished(backupJob.status)) {
+        onRefreshBackups();
+      }
+      if (backupJob.status === "completed" && backupJob.result) {
+        setLastCompletedBackupResult(backupJob.result);
+      }
+      break;
+    }
+    case "restore": {
+      const restoreJob = data.job as RestoreJob;
+      setLiveJobs((prev) => ({ ...prev, restore: restoreJob }));
+      if (isJobFinished(restoreJob.status)) {
+        onRefreshBackups();
+      }
+      break;
+    }
+  }
+}
 
 function useBackupProgress(onRefreshBackups: () => void) {
   const [liveJobs, setLiveJobs] = useState<{
@@ -52,34 +102,13 @@ function useBackupProgress(onRefreshBackups: () => void) {
 
     const handleMessage = (event: MessageEvent) => {
       try {
-        const data = JSON.parse(event.data) as {
-          job: BackupJob | RestoreJob;
-          jobs: { backup: BackupJob | null; restore: null | RestoreJob };
-          type: "backup" | "init" | "restore";
-        };
-
-        if (data.type === "init") {
-          setLiveJobs(data.jobs);
-          return;
-        }
-
-        if (data.type === "backup") {
-          const backupJob = data.job as BackupJob;
-          setLiveJobs((prev) => ({ ...prev, backup: backupJob }));
-          if (backupJob.status === "completed" || backupJob.status === "failed") {
-            onRefreshBackups();
-          }
-          if (backupJob.status === "completed" && backupJob.result) {
-            setLastCompletedBackupResult(backupJob.result);
-          }
-          return;
-        }
-
-        const restoreJob = data.job as RestoreJob;
-        setLiveJobs((prev) => ({ ...prev, restore: restoreJob }));
-        if (restoreJob.status === "completed" || restoreJob.status === "failed") {
-          onRefreshBackups();
-        }
+        const data = JSON.parse(event.data) as BackupProgressMessage;
+        applyBackupProgressMessage({
+          data,
+          onRefreshBackups,
+          setLastCompletedBackupResult,
+          setLiveJobs,
+        });
       } catch {
         // Ignore parse errors
       }
@@ -100,6 +129,152 @@ function useBackupProgress(onRefreshBackups: () => void) {
   }, [onRefreshBackups]);
 
   return { lastCompletedBackupResult, liveJobs };
+}
+
+function RunningJobProgressCard({
+  currentBackup,
+  currentRestore,
+}: {
+  currentBackup: BackupJob | null;
+  currentRestore: null | RestoreJob;
+}) {
+  if (currentBackup?.status !== "running" && currentRestore?.status !== "running") {
+    return null;
+  }
+
+  return (
+    <div className="rounded-xl bg-default-50 p-6 shadow-sm">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Loader2 className="size-5 animate-spin text-primary" />
+          <span className="font-medium">
+            {currentBackup?.status === "running"
+              ? "Backup en progreso"
+              : "Restauración en progreso"}
+          </span>
+        </div>
+        <span className="font-mono text-default-500 text-sm">
+          {currentBackup?.currentStep ?? currentRestore?.currentStep}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-default-100">
+        <div
+          className="h-full bg-primary transition-all duration-300"
+          style={{ width: `${currentBackup?.progress ?? currentRestore?.progress ?? 0}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function LastCompletedBackupCard({ result }: { result: BackupJob["result"] | null }) {
+  if (!result) {
+    return null;
+  }
+
+  const statsEntries = result.stats ? Object.entries(result.stats) : [];
+  const hasStats = statsEntries.length > 0;
+
+  return (
+    <div className="rounded-xl bg-default-50 p-6 shadow-sm">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <CheckCircle className="size-5 text-success" />
+          <span className="font-semibold text-base">Detalle del último backup</span>
+        </div>
+        <span className="text-default-500 text-xs">{result.filename || "-"}</span>
+      </div>
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-lg bg-background p-3">
+          <span className="block text-default-500 text-xs">Duración</span>
+          <span className="font-semibold">{Math.round((result.durationMs ?? 0) / 1000)}s</span>
+        </div>
+        <div className="rounded-lg bg-background p-3">
+          <span className="block text-default-500 text-xs">Tamaño</span>
+          <span className="font-semibold">{formatFileSize(result.sizeBytes ?? 0)}</span>
+        </div>
+        <div className="rounded-lg bg-background p-3">
+          <span className="block text-default-500 text-xs">Tablas</span>
+          <span className="font-semibold">{result.tables?.length ?? 0}</span>
+        </div>
+      </div>
+
+      {hasStats ? (
+        <div className="rounded-lg border border-default-200 bg-background p-3">
+          <span className="mb-2 block font-medium text-sm">Conteo por tabla</span>
+          <div className="max-h-56 overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-default-500 text-xs">
+                  <th className="pb-2 text-left font-medium">Tabla</th>
+                  <th className="pb-2 text-right font-medium">Registros</th>
+                </tr>
+              </thead>
+              <tbody>
+                {statsEntries
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([tableName, stat]) => (
+                    <tr className="border-default-100 border-t" key={tableName}>
+                      <td className="py-2">{tableName}</td>
+                      <td className="py-2 text-right">{stat.count}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-default-200 bg-background p-3 text-default-500 text-sm">
+          No hay estadísticas por tabla disponibles para este backup.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BackupSummaryCards({
+  auditExportsCount,
+  fullBackupsLength,
+  latestBackupCreatedTime,
+  totalSize,
+}: {
+  auditExportsCount: number;
+  fullBackupsLength: number;
+  latestBackupCreatedTime: Date | undefined;
+  totalSize: number;
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-4">
+      <StatCard
+        color="primary"
+        icon={<HardDrive className="size-5 text-primary" />}
+        label="Backups completos"
+        value={String(fullBackupsLength)}
+      />
+
+      <StatCard
+        color="info"
+        icon={<FileText className="size-5 text-info" />}
+        label="Exports incrementales"
+        value={String(auditExportsCount)}
+      />
+
+      <StatCard
+        color="success"
+        icon={<Database className="size-5 text-success" />}
+        label="Almacenamiento total"
+        value={formatFileSize(totalSize)}
+      />
+
+      <StatCard
+        color="warning"
+        icon={<Clock className="size-5 text-warning" />}
+        label="Último backup"
+        value={latestBackupCreatedTime ? dayjs(latestBackupCreatedTime).fromNow(true) : "-"}
+      />
+    </div>
+  );
 }
 
 // ==================== MAIN COMPONENT ====================
@@ -163,128 +338,19 @@ export function BackupSettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Progress Bar */}
-      {isRunning && (
-        <div className="rounded-xl bg-default-50 p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Loader2 className="size-5 animate-spin text-primary" />
-              <span className="font-medium">
-                {currentBackup?.status === "running"
-                  ? "Backup en progreso"
-                  : "Restauración en progreso"}
-              </span>
-            </div>
-            <span className="font-mono text-default-500 text-sm">
-              {currentBackup?.currentStep ?? currentRestore?.currentStep}
-            </span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-default-100">
-            <div
-              className="h-full bg-primary transition-all duration-300"
-              style={{ width: `${currentBackup?.progress ?? currentRestore?.progress ?? 0}%` }}
-            />
-          </div>
-        </div>
-      )}
+      <RunningJobProgressCard currentBackup={currentBackup} currentRestore={currentRestore} />
 
       {/* Google Drive Connection */}
       <GoogleDriveConnect />
 
-      {lastCompletedBackupResult && (
-        <div className="rounded-xl bg-default-50 p-6 shadow-sm">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="size-5 text-success" />
-              <span className="font-semibold text-base">Detalle del último backup</span>
-            </div>
-            <span className="text-default-500 text-xs">
-              {lastCompletedBackupResult.filename || "-"}
-            </span>
-          </div>
+      <LastCompletedBackupCard result={lastCompletedBackupResult} />
 
-          <div className="mb-4 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg bg-background p-3">
-              <span className="block text-default-500 text-xs">Duración</span>
-              <span className="font-semibold">
-                {Math.round((lastCompletedBackupResult.durationMs ?? 0) / 1000)}s
-              </span>
-            </div>
-            <div className="rounded-lg bg-background p-3">
-              <span className="block text-default-500 text-xs">Tamaño</span>
-              <span className="font-semibold">
-                {formatFileSize(lastCompletedBackupResult.sizeBytes ?? 0)}
-              </span>
-            </div>
-            <div className="rounded-lg bg-background p-3">
-              <span className="block text-default-500 text-xs">Tablas</span>
-              <span className="font-semibold">{lastCompletedBackupResult.tables?.length ?? 0}</span>
-            </div>
-          </div>
-
-          {lastCompletedBackupResult.stats &&
-          Object.keys(lastCompletedBackupResult.stats).length > 0 ? (
-            <div className="rounded-lg border border-default-200 bg-background p-3">
-              <span className="mb-2 block font-medium text-sm">Conteo por tabla</span>
-              <div className="max-h-56 overflow-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-default-500 text-xs">
-                      <th className="pb-2 text-left font-medium">Tabla</th>
-                      <th className="pb-2 text-right font-medium">Registros</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(lastCompletedBackupResult.stats)
-                      .sort(([a], [b]) => a.localeCompare(b))
-                      .map(([tableName, stat]) => (
-                        <tr className="border-default-100 border-t" key={tableName}>
-                          <td className="py-2">{tableName}</td>
-                          <td className="py-2 text-right">{stat.count}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-lg border border-default-200 bg-background p-3 text-default-500 text-sm">
-              No hay estadísticas por tabla disponibles para este backup.
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard
-          color="primary"
-          icon={<HardDrive className="size-5 text-primary" />}
-          label="Backups completos"
-          value={String(fullBackups.length)}
-        />
-
-        <StatCard
-          color="info"
-          icon={<FileText className="size-5 text-info" />}
-          label="Exports incrementales"
-          value={String(auditExports.length)}
-        />
-
-        <StatCard
-          color="success"
-          icon={<Database className="size-5 text-success" />}
-          label="Almacenamiento total"
-          value={formatFileSize(totalSize)}
-        />
-
-        <StatCard
-          color="warning"
-          icon={<Clock className="size-5 text-warning" />}
-          label="Último backup"
-          value={fullBackups[0] ? dayjs(fullBackups[0].createdTime).fromNow(true) : "-"}
-        />
-      </div>
+      <BackupSummaryCards
+        auditExportsCount={auditExports.length}
+        fullBackupsLength={fullBackups.length}
+        latestBackupCreatedTime={fullBackups[0]?.createdTime}
+        totalSize={totalSize}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         {/* Full Backups List */}

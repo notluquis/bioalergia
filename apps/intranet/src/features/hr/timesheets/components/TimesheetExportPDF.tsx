@@ -64,6 +64,48 @@ interface SummaryTableProps {
   pageWidth: number;
   summary: null | TimesheetSummaryRow;
 }
+
+function getSafePageWidth(doc: import("jspdf").default): number {
+  interface JsPdfPageSize {
+    getWidth?: () => number;
+    width?: number;
+  }
+
+  interface JsPdfInternal {
+    getPageSize?: () => JsPdfPageSize;
+    pageSize?: JsPdfPageSize;
+  }
+
+  const internal = (doc as unknown as { internal?: JsPdfInternal }).internal ?? {};
+  const pageSize = internal.pageSize ?? internal.getPageSize?.();
+  return typeof pageSize?.getWidth === "function" ? pageSize.getWidth() : (pageSize?.width ?? 210);
+}
+
+function openPdfPreviewOrAlert(dataUri: string) {
+  const previewWindow = window.open("", "_blank", "noopener,noreferrer");
+  if (previewWindow) {
+    previewWindow.opener = null;
+    previewWindow.location.href = dataUri;
+    return;
+  }
+  alert(
+    "No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes.",
+  );
+}
+
+function finalizePdfExport(params: {
+  doc: import("jspdf").default;
+  employee: Employee;
+  monthLabel: string;
+  preview: boolean;
+}) {
+  const safeName = (params.employee.full_name || "Prestador").replaceAll(/[^a-zA-Z0-9_\- ]/g, "");
+  if (params.preview) {
+    openPdfPreviewOrAlert(params.doc.output("dataurlstring"));
+    return;
+  }
+  params.doc.save(`ResumenHonorarios_${safeName}_${params.monthLabel}.pdf`);
+}
 export function TimesheetExportPDF({
   bulkRows,
   columns,
@@ -102,25 +144,12 @@ export function TimesheetExportPDF({
     return pdfLibsRef.current;
   }
 
-  interface JsPdfPageSize {
-    getWidth?: () => number;
-    width?: number;
-  }
-
-  interface JsPdfInternal {
-    getPageSize?: () => JsPdfPageSize;
-    pageSize?: JsPdfPageSize;
-  }
-
   async function handleExport(preview = true) {
     try {
       const libs = await loadPdfLibs();
       const { autoTable, jsPDF } = libs;
       const doc = new jsPDF();
-      const internal = (doc as unknown as { internal?: JsPdfInternal }).internal ?? {};
-      const pageSize = internal.pageSize ?? internal.getPageSize?.();
-      const pageWidth: number =
-        typeof pageSize?.getWidth === "function" ? pageSize.getWidth() : (pageSize?.width ?? 210);
+      const pageWidth = getSafePageWidth(doc);
       const margin = 10;
 
       // Agregar header (logo + título + datos org)
@@ -152,22 +181,7 @@ export function TimesheetExportPDF({
       // Nota de blindaje legal
       addLegalNote(doc, pageWidth, margin);
 
-      // Guardar / previsualizar
-      const safeName = (employee.full_name || "Prestador").replaceAll(/[^a-zA-Z0-9_\- ]/g, "");
-      if (preview) {
-        const pdfDataUri = doc.output("dataurlstring");
-        const previewWindow = window.open("", "_blank", "noopener,noreferrer");
-        if (previewWindow) {
-          previewWindow.opener = null;
-          previewWindow.location.href = pdfDataUri;
-        } else {
-          alert(
-            "No se pudo abrir la vista previa. Revisa si el navegador bloqueó las ventanas emergentes.",
-          );
-        }
-      } else {
-        doc.save(`ResumenHonorarios_${safeName}_${monthLabel}.pdf`);
-      }
+      finalizePdfExport({ doc, employee, monthLabel, preview });
     } catch (error: unknown) {
       console.error("Export PDF error:", error);
       alert("No se pudo generar el PDF. Revisa la consola para más detalles.");

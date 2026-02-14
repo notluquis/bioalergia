@@ -109,51 +109,7 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
   },
   {
     cell: ({ row }) => {
-      const {
-        bankAccountNumber,
-        bankAccountType,
-        bankBranch,
-        bankName,
-        identificationNumber,
-        identificationType,
-        withdrawId,
-      } = row.original;
-
-      // Format bank info
-      const bankParts: string[] = [];
-      if (bankName) {
-        bankParts.push(bankName);
-      }
-      if (bankAccountNumber) {
-        const accountLabel = bankAccountType
-          ? `${bankAccountType} · ${bankAccountNumber}`
-          : bankAccountNumber;
-        bankParts.push(accountLabel);
-      }
-      if (bankBranch) {
-        bankParts.push(bankBranch);
-      }
-      const bankSummary = bankParts.join(" · ");
-
-      // Format metadata
-      const metadataParts: string[] = [];
-      if (withdrawId) {
-        metadataParts.push(withdrawId);
-      }
-      if (identificationType && identificationNumber) {
-        metadataParts.push(`${identificationType} ${identificationNumber}`);
-      } else if (identificationNumber) {
-        metadataParts.push(String(identificationNumber));
-      }
-
-      const metadata = metadataParts.join(" · ");
-
-      return (
-        <div>
-          {bankSummary && <div className="text-xs">{bankSummary}</div>}
-          {metadata && <div className="text-xs opacity-70">{metadata}</div>}
-        </div>
-      );
+      return <CounterpartInfoCell row={row.original} />;
     },
     header: "Info",
     id: "info",
@@ -170,3 +126,46 @@ export const getCounterpartsColumns = (): ColumnDef<ParticipantCounterpartRow>[]
     id: "amount",
   },
 ];
+
+function buildBankSummary(row: ParticipantCounterpartRow) {
+  const parts: string[] = [];
+  if (row.bankName) {
+    parts.push(row.bankName);
+  }
+  if (row.bankAccountNumber) {
+    parts.push(
+      row.bankAccountType
+        ? `${row.bankAccountType} · ${row.bankAccountNumber}`
+        : row.bankAccountNumber,
+    );
+  }
+  if (row.bankBranch) {
+    parts.push(row.bankBranch);
+  }
+  return parts.join(" · ");
+}
+
+function buildCounterpartMetadata(row: ParticipantCounterpartRow) {
+  const parts: string[] = [];
+  if (row.withdrawId) {
+    parts.push(row.withdrawId);
+  }
+  if (row.identificationType && row.identificationNumber) {
+    parts.push(`${row.identificationType} ${row.identificationNumber}`);
+  } else if (row.identificationNumber) {
+    parts.push(String(row.identificationNumber));
+  }
+  return parts.join(" · ");
+}
+
+function CounterpartInfoCell({ row }: { row: ParticipantCounterpartRow }) {
+  const bankSummary = buildBankSummary(row);
+  const metadata = buildCounterpartMetadata(row);
+
+  return (
+    <div>
+      {bankSummary && <div className="text-xs">{bankSummary}</div>}
+      {metadata && <div className="text-xs opacity-70">{metadata}</div>}
+    </div>
+  );
+}

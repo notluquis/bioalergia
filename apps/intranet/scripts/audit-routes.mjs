@@ -37,6 +37,63 @@ function isLayoutRoute(absolutePath) {
   return existsSync(potentialDir) && statSync(potentialDir).isDirectory();
 }
 
+function shouldSkipRoute({ absolutePath, filename, relativePath }) {
+  if (filename.startsWith("_")) {
+    return true;
+  }
+  if (isLayoutRoute(absolutePath)) {
+    return true;
+  }
+  return isTechnicalRoute(relativePath);
+}
+
+function evaluateRouteMetadata(content) {
+  const hasNav = STATIC_NAV_REGEX.test(content);
+  const hasPermission = STATIC_PERMISSION_REGEX.test(content);
+  const hideFromNav = HIDE_FROM_NAV_REGEX.test(content);
+
+  if (hasPermission && !hasNav && !hideFromNav) {
+    return "missing-nav";
+  }
+  if (hasNav && !hasPermission) {
+    return "missing-permission";
+  }
+  return "valid";
+}
+
+function printAuditResult({ missingNav, missingPermission, technicalRoutes, validRoutes }) {
+  console.log(`✅ Valid routes: ${validRoutes}`);
+  console.log(`🔧 Technical routes (auto-excluded): ${technicalRoutes}`);
+
+  if (missingNav.length === 0 && missingPermission.length === 0) {
+    console.log("⚠️  Missing nav metadata: 0");
+    console.log("⚠️  Missing permission: 0\n");
+    console.log("✨ All routes are properly configured!\n");
+    return 0;
+  }
+
+  console.log(`⚠️  Missing nav metadata: ${missingNav.length}`);
+  console.log(`⚠️  Missing permission: ${missingPermission.length}\n`);
+
+  if (missingNav.length > 0) {
+    console.log("❌ Routes missing nav metadata (Visible Pages):");
+    for (const route of missingNav) {
+      console.log(`   - ${route}`);
+    }
+    console.log("\n💡 Add staticData.nav or staticData.hideFromNav: true to these routes\n");
+  }
+
+  if (missingPermission.length > 0) {
+    console.log("❌ Routes missing permission (Navigable Pages):");
+    for (const route of missingPermission) {
+      console.log(`   - ${route}`);
+    }
+    console.log("\n💡 Add staticData.permission to these routes\n");
+  }
+
+  return 1;
+}
+
 async function main() {
   console.log("🔍 Auditing route navigation metadata...\n");
 
@@ -60,46 +117,20 @@ async function main() {
     const parsed = parse(absolutePath);
     const filename = parsed.base;
 
-    // 1. Exclude Files starting with "_" (Layouts, __root, _authed wrapper files)
-    // Note: This does NOT exclude folders starting with "_", only the file itself.
-    // e.g. "_authed/index.tsx" (filename "index.tsx") is NOT excluded.
-    // e.g. "_authed.tsx" (filename "_authed.tsx") IS excluded.
-    if (filename.startsWith("_")) {
-      technicalRoutes++;
-      continue;
-    }
-
-    // 2. Exclude Layout Routes (Files that define a layout for a directory of the same name)
-    // e.g. "settings.tsx" paired with "settings/" directory.
-    if (isLayoutRoute(absolutePath)) {
-      technicalRoutes++;
-      continue;
-    }
-
-    // 3. Exclude specific technical patterns (Dynamic $, Actions)
-    if (isTechnicalRoute(relativePath)) {
+    if (shouldSkipRoute({ absolutePath, filename, relativePath })) {
       technicalRoutes++;
       continue;
     }
 
     const content = readFileSync(absolutePath, "utf-8");
-
-    // Use [\s\S]*? to lazily match content including newlines, ensuring we don't stop at first '}'
-    // This allows matching keys that appear after a nested object (e.g. nav: { ... }, permission: { ... })
-    const hasNav = STATIC_NAV_REGEX.test(content);
-    const hasPermission = STATIC_PERMISSION_REGEX.test(content);
-    const hideFromNav = HIDE_FROM_NAV_REGEX.test(content);
-
     const displayPath = `/${relativePath.replace(TSX_EXTENSION_REGEX, "")}`;
 
-    // Page routes with permission MUST have nav or explicit hide
-    if (hasPermission && !hasNav && !hideFromNav) {
+    const status = evaluateRouteMetadata(content);
+    if (status === "missing-nav") {
       missingNav.push(displayPath);
       continue;
     }
-
-    // Page routes with nav MUST have permission
-    if (hasNav && !hasPermission) {
+    if (status === "missing-permission") {
       missingPermission.push(displayPath);
       continue;
     }
@@ -107,36 +138,8 @@ async function main() {
     validRoutes++;
   }
 
-  console.log(`✅ Valid routes: ${validRoutes}`);
-  console.log(`🔧 Technical routes (auto-excluded): ${technicalRoutes}`);
-
-  if (missingNav.length === 0 && missingPermission.length === 0) {
-    console.log("⚠️  Missing nav metadata: 0");
-    console.log("⚠️  Missing permission: 0\n");
-    console.log("✨ All routes are properly configured!\n");
-    process.exit(0);
-  } else {
-    console.log(`⚠️  Missing nav metadata: ${missingNav.length}`);
-    console.log(`⚠️  Missing permission: ${missingPermission.length}\n`);
-
-    if (missingNav.length > 0) {
-      console.log("❌ Routes missing nav metadata (Visible Pages):");
-      for (const route of missingNav) {
-        console.log(`   - ${route}`);
-      }
-      console.log("\n💡 Add staticData.nav or staticData.hideFromNav: true to these routes\n");
-    }
-
-    if (missingPermission.length > 0) {
-      console.log("❌ Routes missing permission (Navigable Pages):");
-      for (const route of missingPermission) {
-        console.log(`   - ${route}`);
-      }
-      console.log("\n💡 Add staticData.permission to these routes\n");
-    }
-
-    process.exit(1);
-  }
+  const exitCode = printAuditResult({ missingNav, missingPermission, technicalRoutes, validRoutes });
+  process.exit(exitCode);
 }
 
 main().catch((err) => {

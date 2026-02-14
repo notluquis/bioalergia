@@ -13,6 +13,81 @@ interface RangeParams {
   to?: string;
 }
 
+type RutAggregateEntry = {
+  accounts: Set<string>;
+  displayName: string;
+  outgoingAmount: number;
+  outgoingCount: number;
+  rut: string;
+  selectKey: string;
+};
+
+function getRutAggregateKey(row: LeaderboardDisplayRow) {
+  return row.rut === "-" ? row.displayName : row.rut;
+}
+
+function createRutAggregateEntry(row: LeaderboardDisplayRow): RutAggregateEntry {
+  return {
+    accounts: new Set<string>(),
+    displayName: row.displayName,
+    outgoingAmount: 0,
+    outgoingCount: 0,
+    rut: row.rut === "-" ? "-" : row.rut,
+    selectKey: row.selectKey,
+  };
+}
+
+function updateRutAggregateEntry(entry: RutAggregateEntry, row: LeaderboardDisplayRow) {
+  entry.outgoingCount += row.outgoingCount;
+  entry.outgoingAmount += row.outgoingAmount;
+  if (row.account && row.account !== "-") {
+    entry.accounts.add(row.account);
+  }
+  if ((!entry.displayName || entry.displayName === "(sin información)") && row.displayName) {
+    entry.displayName = row.displayName;
+  }
+  if (!entry.selectKey && row.selectKey) {
+    entry.selectKey = row.selectKey;
+  }
+}
+
+function toRutDisplayRow(key: string, entry: RutAggregateEntry): LeaderboardDisplayRow {
+  return {
+    account: entry.accounts.size > 0 ? [...entry.accounts].slice(0, 4).join(", ") : "-",
+    displayName: entry.displayName,
+    key,
+    outgoingAmount: entry.outgoingAmount,
+    outgoingCount: entry.outgoingCount,
+    rut: entry.rut,
+    selectKey: entry.selectKey,
+  };
+}
+
+function buildRutRows(accountRows: LeaderboardDisplayRow[]): LeaderboardDisplayRow[] {
+  const map = new Map<string, RutAggregateEntry>();
+
+  for (const row of accountRows) {
+    const key = getRutAggregateKey(row);
+    if (!map.has(key)) {
+      map.set(key, createRutAggregateEntry(row));
+    }
+    const entry = map.get(key);
+    if (!entry) {
+      continue;
+    }
+    updateRutAggregateEntry(entry, row);
+  }
+
+  return [...map.entries()]
+    .map(([key, entry]) => toRutDisplayRow(key, entry))
+    .toSorted((a, b) => {
+      if (b.outgoingAmount !== a.outgoingAmount) {
+        return b.outgoingAmount - a.outgoingAmount;
+      }
+      return b.outgoingCount - a.outgoingCount;
+    });
+}
+
 export function useParticipantInsightsData() {
   // Filters
   const [participantId, setParticipantId] = useState("");
@@ -84,65 +159,7 @@ export function useParticipantInsightsData() {
   });
 
   // RUT Grouping
-  const rutRows = (() => {
-    const map = new Map<
-      string,
-      {
-        accounts: Set<string>;
-        displayName: string;
-        outgoingAmount: number;
-        outgoingCount: number;
-        rut: string;
-        selectKey: string;
-      }
-    >();
-
-    for (const row of accountRows) {
-      const key = row.rut === "-" ? row.displayName : row.rut;
-      if (!map.has(key)) {
-        map.set(key, {
-          accounts: new Set<string>(),
-          displayName: row.displayName,
-          outgoingAmount: 0,
-          outgoingCount: 0,
-          rut: row.rut === "-" ? "-" : row.rut,
-          selectKey: row.selectKey,
-        });
-      }
-      const entry = map.get(key);
-      if (!entry) {
-        continue;
-      }
-      entry.outgoingCount += row.outgoingCount;
-      entry.outgoingAmount += row.outgoingAmount;
-      if (row.account && row.account !== "-") {
-        entry.accounts.add(row.account);
-      }
-      if ((!entry.displayName || entry.displayName === "(sin información)") && row.displayName) {
-        entry.displayName = row.displayName;
-      }
-      if (!entry.selectKey && row.selectKey) {
-        entry.selectKey = row.selectKey;
-      }
-    }
-
-    return [...map.entries()]
-      .map(([key, entry]) => ({
-        account: entry.accounts.size > 0 ? [...entry.accounts].slice(0, 4).join(", ") : "-",
-        displayName: entry.displayName,
-        key,
-        outgoingAmount: entry.outgoingAmount,
-        outgoingCount: entry.outgoingCount,
-        rut: entry.rut,
-        selectKey: entry.selectKey,
-      }))
-      .toSorted((a, b) => {
-        if (b.outgoingAmount !== a.outgoingAmount) {
-          return b.outgoingAmount - a.outgoingAmount;
-        }
-        return b.outgoingCount - a.outgoingCount;
-      });
-  })();
+  const rutRows = buildRutRows(accountRows);
 
   const displayedLeaderboard: LeaderboardDisplayRow[] =
     leaderboardGrouping === "account" ? accountRows : rutRows;

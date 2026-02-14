@@ -355,12 +355,39 @@ export async function listTimesheetEntries(
 export async function upsertTimesheetEntry(
   payload: UpsertTimesheetPayload,
 ): Promise<TimesheetEntry> {
-  const workDateObj = dateOnlyStartUtc(payload.work_date);
+  const normalized = normalizeUpsertPayload(payload);
 
-  // Convert time strings directly to HH:MM:SS format for PostgreSQL TIME columns
-  // No timezone conversion - keep as-is from user input
+  try {
+    const result = await runTimesheetUpsertQuery(payload, normalized);
+    return mapUpsertResult(result);
+  } catch (error: unknown) {
+    const errorDetails = extractErrorDetails(error);
+    console.error("[timesheets] upsert error details:", {
+      ...errorDetails,
+      payload: {
+        ...payload,
+        startTimeStr: normalized.startTimeStr,
+        endTimeStr: normalized.endTimeStr,
+        workDateType: typeof normalized.workDateObj,
+      },
+    });
+    throw error;
+  }
+}
+
+type NormalizedUpsertPayload = {
+  endTimeStr: null | string;
+  startTimeStr: null | string;
+  workDateDb: string;
+  workDateObj: Date;
+  workedMinutes: number;
+};
+
+function normalizeUpsertPayload(payload: UpsertTimesheetPayload): NormalizedUpsertPayload {
+  const workDateObj = dateOnlyStartUtc(payload.work_date);
   const startTimeStr = payload.start_time ? normalizeTimeString(payload.start_time) : null;
   const endTimeStr = payload.end_time ? normalizeTimeString(payload.end_time) : null;
+  const workedMinutes = calculateWorkedMinutes(payload);
   const workDateDb = dayjs(workDateObj).format("YYYY-MM-DD");
 
   console.log("[timesheets] upsert input:", {
@@ -370,83 +397,87 @@ export async function upsertTimesheetEntry(
     normalized_end: endTimeStr,
   });
 
-  // Calculate worked_minutes from start_time and end_time if not provided
-  let workedMinutes = payload.worked_minutes ?? 0;
-  if (!workedMinutes && payload.start_time && payload.end_time) {
-    const start = timeToMinutes(payload.start_time);
-    const end = timeToMinutes(payload.end_time);
-    if (start !== null && end !== null) {
-      workedMinutes = end >= start ? end - start : 24 * 60 + (end - start);
-    }
+  return { endTimeStr, startTimeStr, workDateDb, workDateObj, workedMinutes };
+}
+
+function calculateWorkedMinutes(payload: UpsertTimesheetPayload): number {
+  const providedWorkedMinutes = payload.worked_minutes ?? 0;
+  if (providedWorkedMinutes > 0 || !payload.start_time || !payload.end_time) {
+    return providedWorkedMinutes;
   }
 
-  try {
-    // Use ZenStack Query Builder (Kysely) with Model Name
-    // This handles mapping to table "employee_timesheets" and requires CamelCase fields
-    const result = await db.$qb
-      .insertInto("EmployeeTimesheet")
-      .values({
-        employeeId: payload.employee_id,
-        workDate: workDateDb,
-        startTime: startTimeStr,
-        endTime: endTimeStr,
-        workedMinutes: workedMinutes,
+  const start = timeToMinutes(payload.start_time);
+  const end = timeToMinutes(payload.end_time);
+  return end >= start ? end - start : 24 * 60 + (end - start);
+}
+
+async function runTimesheetUpsertQuery(
+  payload: UpsertTimesheetPayload,
+  normalized: NormalizedUpsertPayload,
+) {
+  return db.$qb
+    .insertInto("EmployeeTimesheet")
+    .values({
+      employeeId: payload.employee_id,
+      workDate: normalized.workDateDb,
+      startTime: normalized.startTimeStr,
+      endTime: normalized.endTimeStr,
+      workedMinutes: normalized.workedMinutes,
+      overtimeMinutes: payload.overtime_minutes,
+      comment: payload.comment ?? null,
+    })
+    .onConflict((oc) =>
+      oc.columns(["employeeId", "workDate"]).doUpdateSet({
+        startTime: normalized.startTimeStr,
+        endTime: normalized.endTimeStr,
+        workedMinutes: normalized.workedMinutes,
         overtimeMinutes: payload.overtime_minutes,
         comment: payload.comment ?? null,
-      })
-      .onConflict((oc) =>
-        oc.columns(["employeeId", "workDate"]).doUpdateSet({
-          startTime: startTimeStr,
-          endTime: endTimeStr,
-          workedMinutes: workedMinutes,
-          overtimeMinutes: payload.overtime_minutes,
-          comment: payload.comment ?? null,
-        }),
-      )
-      .returningAll()
-      .executeTakeFirstOrThrow();
+      }),
+    )
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
 
-    console.log("[timesheets] upsert result from DB:", {
-      id: result.id,
-      start_time: result.startTime,
-      end_time: result.endTime,
-      start_type: typeof result.startTime,
-      end_type: typeof result.endTime,
-    });
+function mapUpsertResult(
+  result: Awaited<ReturnType<typeof runTimesheetUpsertQuery>>,
+): TimesheetEntry {
+  console.log("[timesheets] upsert result from DB:", {
+    id: result.id,
+    start_time: result.startTime,
+    end_time: result.endTime,
+    start_type: typeof result.startTime,
+    end_type: typeof result.endTime,
+  });
 
-    return {
-      id: Number(result.id),
-      employee_id: result.employeeId,
-      work_date: formatDbDateOnly(result.workDate),
-      start_time: result.startTime ? dateToTimeString(result.startTime) : "",
-      end_time: result.endTime ? dateToTimeString(result.endTime) : "",
-      worked_minutes: result.workedMinutes,
-      overtime_minutes: result.overtimeMinutes,
-      comment: result.comment || "",
-    };
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorCode =
-      error instanceof Object && "code" in error
-        ? (error as Record<string, unknown>).code
-        : undefined;
-    const errorMeta =
-      error instanceof Object && "meta" in error
-        ? (error as Record<string, unknown>).meta
-        : undefined;
-    console.error("[timesheets] upsert error details:", {
-      message: errorMessage,
-      code: errorCode,
-      meta: errorMeta,
-      payload: {
-        ...payload,
-        startTimeStr,
-        endTimeStr,
-        workDateType: typeof workDateObj,
-      },
-    });
-    throw error;
-  }
+  return {
+    id: Number(result.id),
+    employee_id: result.employeeId,
+    work_date: formatDbDateOnly(result.workDate),
+    start_time: result.startTime ? dateToTimeString(result.startTime) : "",
+    end_time: result.endTime ? dateToTimeString(result.endTime) : "",
+    worked_minutes: result.workedMinutes,
+    overtime_minutes: result.overtimeMinutes,
+    comment: result.comment || "",
+  };
+}
+
+function extractErrorDetails(error: unknown) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorCode =
+    error instanceof Object && "code" in error
+      ? (error as Record<string, unknown>).code
+      : undefined;
+  const errorMeta =
+    error instanceof Object && "meta" in error
+      ? (error as Record<string, unknown>).meta
+      : undefined;
+
+  return {
+    code: errorCode,
+    message: errorMessage,
+    meta: errorMeta,
+  };
 }
 
 export async function updateTimesheetEntry(
@@ -513,20 +544,10 @@ function logTimesheetUpdateError(
   updateData: EmployeeTimesheetUpdateInput,
   error: unknown,
 ) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  const errorCode =
-    error instanceof Object && "code" in error
-      ? (error as Record<string, unknown>).code
-      : undefined;
-  const errorMeta =
-    error instanceof Object && "meta" in error
-      ? (error as Record<string, unknown>).meta
-      : undefined;
+  const errorDetails = extractErrorDetails(error);
   console.error("[timesheets] update error details:", {
     id,
-    message: errorMessage,
-    code: errorCode,
-    meta: errorMeta,
+    ...errorDetails,
     updateData,
   });
 }

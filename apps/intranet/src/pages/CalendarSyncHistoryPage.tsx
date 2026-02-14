@@ -11,7 +11,7 @@ import { StatusBadge } from "@/features/calendar/components/StatusBadge";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
 import { useCalendarEvents } from "@/features/calendar/hooks/use-calendar-events";
 import { calendarQueries } from "@/features/calendar/queries";
-import type { CalendarData } from "@/features/calendar/types";
+import type { CalendarData, CalendarSyncLog } from "@/features/calendar/types";
 import { cn } from "@/lib/utils";
 export function CalendarSyncHistoryPage() {
   const [showConfig, setShowConfig] = useState(false);
@@ -97,201 +97,179 @@ export function CalendarSyncHistoryPage() {
 
       {/* Sync History Card */}
       <div className="min-h-100 overflow-hidden rounded-xl border border-default-100 bg-background shadow-sm">
-        {/* Content */}
-        {(() => {
-          if (isLoading) {
-            return (
-              <div className="flex h-64 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            );
-          }
-
-          if (isErrorSyncLogs || syncError) {
-            return (
-              <SectionError
-                title="No se pudo cargar el historial"
-                message="El servidor tardó demasiado o hubo un problema de conexión."
-                error={syncError}
-                onRetry={() => refetch()}
-                className="border-none bg-transparent"
-              />
-            );
-          }
-
-          if (syncLogs.length === 0) {
-            return (
-              <div className="flex h-64 items-center justify-center text-default-400 text-sm">
-                No hay registros de sincronización de calendario.
-              </div>
-            );
-          }
-
-          return (
-            <Accordion className="divide-y divide-default-100" variant="surface">
-              {syncLogs.map((log, index) => {
-                const duration = log.finishedAt
-                  ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s")
-                  : null;
-
-                return (
-                  <Accordion.Item
-                    id={log.id.toString()}
-                    key={log.id.toString()}
-                    defaultExpanded={index === 0}
-                  >
-                    <Accordion.Heading>
-                      <Accordion.Trigger className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-default-50/50 sm:flex-nowrap">
-                        <StatusBadge status={log.status} />
-
-                        <div className="min-w-24">
-                          <div className="font-medium text-sm">
-                            {dayjs(log.startedAt).format("DD/MM/YYYY")}
-                          </div>
-                          <div className="text-default-400 text-xs">
-                            {dayjs(log.startedAt).format("HH:mm:ss")}
-                          </div>
-                        </div>
-
-                        <div className="flex min-w-40 flex-1 flex-wrap items-center gap-2">
-                          <Chip size="sm" variant="secondary">
-                            <Chip.Label className="font-mono text-xs">
-                              {log.triggerSource}
-                            </Chip.Label>
-                          </Chip>
-                          {log.triggerLabel && (
-                            <span
-                              className="ml-2 text-default-500 text-xs"
-                              title={log.triggerLabel}
-                            >
-                              {log.triggerLabel.slice(0, 30)}
-                              {log.triggerLabel.length > 30 ? "..." : ""}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 text-xs">
-                          {log.inserted > 0 && (
-                            <span
-                              className="rounded bg-success/10 px-1.5 py-0.5 text-success"
-                              title="Insertados"
-                            >
-                              +{log.inserted}
-                            </span>
-                          )}
-                          {log.updated > 0 && (
-                            <span
-                              className="rounded bg-primary/10 px-1.5 py-0.5 text-primary"
-                              title="Actualizados"
-                            >
-                              ~{log.updated}
-                            </span>
-                          )}
-                          {log.excluded > 0 && (
-                            <span
-                              className="rounded bg-danger/10 px-1.5 py-0.5 text-danger"
-                              title="Eliminados/Excluidos"
-                            >
-                              -{log.excluded}
-                            </span>
-                          )}
-                          {log.skipped > 0 && (
-                            <span
-                              className="rounded bg-warning/10 px-1.5 py-0.5 text-warning"
-                              title="Omitidos"
-                            >
-                              !{log.skipped}
-                            </span>
-                          )}
-                          {log.inserted === 0 &&
-                            log.updated === 0 &&
-                            log.excluded === 0 &&
-                            log.skipped === 0 && <span className="text-default-200">-</span>}
-                        </div>
-
-                        <div className="min-w-12 text-right text-default-600 text-sm">
-                          {duration === null ? "-" : `${duration}s`}
-                        </div>
-
-                        <Accordion.Indicator className="ml-auto text-default-300 sm:ml-0">
-                          <ChevronDown className="h-4 w-4" />
-                        </Accordion.Indicator>
-                      </Accordion.Trigger>
-                    </Accordion.Heading>
-                    <Accordion.Panel>
-                      <Accordion.Body className="border-default-100 border-t bg-default-50/30 px-6 py-4">
-                        <div className="grid gap-6 md:grid-cols-2">
-                          <div>
-                            <h4 className="mb-3 font-semibold text-sm">
-                              Resumen de la Sincronización
-                            </h4>
-                            <div className="grid grid-cols-2 gap-3 rounded-lg bg-background p-3">
-                              <div>
-                                <span className="block text-default-500 text-xs">ID</span>
-                                <span className="font-mono text-sm">{log.id.toString()}</span>
-                              </div>
-                              <div>
-                                <span className="block text-default-500 text-xs">Duración</span>
-                                <span className="text-sm">
-                                  {duration !== null
-                                    ? `${duration} segundos`
-                                    : log.status === "RUNNING"
-                                      ? "En progreso..."
-                                      : "No disponible"}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="block text-default-500 text-xs">Insertados</span>
-                                <span className="font-bold text-lg text-success">
-                                  {log.inserted}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="block text-default-500 text-xs">Actualizados</span>
-                                <span className="font-bold text-lg text-primary">
-                                  {log.updated}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="block text-default-500 text-xs">Excluidos</span>
-                                <span className="font-bold text-danger text-lg">
-                                  {log.excluded}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="block text-default-500 text-xs">Omitidos</span>
-                                <span className="font-bold text-lg text-warning">
-                                  {log.skipped}
-                                </span>
-                              </div>
-                            </div>
-
-                            {log.errorMessage && (
-                              <div className="mt-4">
-                                <span className="mb-1 block font-bold text-danger text-xs">
-                                  Mensaje de Error
-                                </span>
-                                <div className="max-h-32 overflow-auto rounded-lg bg-danger/10 p-2 font-mono text-danger text-xs">
-                                  {log.errorMessage}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          <div>
-                            <ChangeDetailsViewer data={log.changeDetails} />
-                          </div>
-                        </div>
-                      </Accordion.Body>
-                    </Accordion.Panel>
-                  </Accordion.Item>
-                );
-              })}
-            </Accordion>
-          );
-        })()}
+        {renderSyncHistoryContent({
+          isErrorSyncLogs,
+          isLoading,
+          refetch,
+          syncError,
+          syncLogs,
+        })}
       </div>
     </section>
+  );
+}
+
+function renderSyncHistoryContent(params: {
+  isErrorSyncLogs: boolean;
+  isLoading: boolean;
+  refetch: () => void;
+  syncError: null | string;
+  syncLogs: CalendarSyncLog[];
+}) {
+  if (params.isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (params.isErrorSyncLogs || params.syncError) {
+    return (
+      <SectionError
+        className="border-none bg-transparent"
+        error={params.syncError}
+        message="El servidor tardó demasiado o hubo un problema de conexión."
+        onRetry={params.refetch}
+        title="No se pudo cargar el historial"
+      />
+    );
+  }
+
+  if (params.syncLogs.length === 0) {
+    return (
+      <div className="flex h-64 items-center justify-center text-default-400 text-sm">
+        No hay registros de sincronización de calendario.
+      </div>
+    );
+  }
+
+  return (
+    <Accordion className="divide-y divide-default-100" variant="surface">
+      {params.syncLogs.map((log, index) => (
+        <SyncHistoryItem defaultExpanded={index === 0} key={log.id.toString()} log={log} />
+      ))}
+    </Accordion>
+  );
+}
+
+function SyncHistoryItem({
+  defaultExpanded,
+  log,
+}: {
+  defaultExpanded: boolean;
+  log: CalendarSyncLog;
+}) {
+  const duration = log.finishedAt ? dayjs(log.finishedAt).diff(dayjs(log.startedAt), "s") : null;
+  const isEmptyChange =
+    log.inserted === 0 && log.updated === 0 && log.excluded === 0 && log.skipped === 0;
+
+  return (
+    <Accordion.Item defaultExpanded={defaultExpanded} id={log.id.toString()}>
+      <Accordion.Heading>
+        <Accordion.Trigger className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-default-50/50 sm:flex-nowrap">
+          <StatusBadge status={log.status} />
+          <div className="min-w-24">
+            <div className="font-medium text-sm">{dayjs(log.startedAt).format("DD/MM/YYYY")}</div>
+            <div className="text-default-400 text-xs">
+              {dayjs(log.startedAt).format("HH:mm:ss")}
+            </div>
+          </div>
+          <div className="flex min-w-40 flex-1 flex-wrap items-center gap-2">
+            <Chip size="sm" variant="secondary">
+              <Chip.Label className="font-mono text-xs">{log.triggerSource}</Chip.Label>
+            </Chip>
+            {log.triggerLabel && (
+              <span className="ml-2 text-default-500 text-xs" title={log.triggerLabel}>
+                {log.triggerLabel.slice(0, 30)}
+                {log.triggerLabel.length > 30 ? "..." : ""}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            {log.inserted > 0 && (
+              <span className="rounded bg-success/10 px-1.5 py-0.5 text-success">
+                +{log.inserted}
+              </span>
+            )}
+            {log.updated > 0 && (
+              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">
+                ~{log.updated}
+              </span>
+            )}
+            {log.excluded > 0 && (
+              <span className="rounded bg-danger/10 px-1.5 py-0.5 text-danger">
+                -{log.excluded}
+              </span>
+            )}
+            {log.skipped > 0 && (
+              <span className="rounded bg-warning/10 px-1.5 py-0.5 text-warning">
+                !{log.skipped}
+              </span>
+            )}
+            {isEmptyChange && <span className="text-default-200">-</span>}
+          </div>
+          <div className="min-w-12 text-right text-default-600 text-sm">
+            {duration === null ? "-" : `${duration}s`}
+          </div>
+          <Accordion.Indicator className="ml-auto text-default-300 sm:ml-0">
+            <ChevronDown className="h-4 w-4" />
+          </Accordion.Indicator>
+        </Accordion.Trigger>
+      </Accordion.Heading>
+      <Accordion.Panel>
+        <Accordion.Body className="border-default-100 border-t bg-default-50/30 px-6 py-4">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <h4 className="mb-3 font-semibold text-sm">Resumen de la Sincronización</h4>
+              <div className="grid grid-cols-2 gap-3 rounded-lg bg-background p-3">
+                <div>
+                  <span className="block text-default-500 text-xs">ID</span>
+                  <span className="font-mono text-sm">{log.id.toString()}</span>
+                </div>
+                <div>
+                  <span className="block text-default-500 text-xs">Duración</span>
+                  <span className="text-sm">
+                    {duration !== null
+                      ? `${duration} segundos`
+                      : log.status === "RUNNING"
+                        ? "En progreso..."
+                        : "No disponible"}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-default-500 text-xs">Insertados</span>
+                  <span className="font-bold text-lg text-success">{log.inserted}</span>
+                </div>
+                <div>
+                  <span className="block text-default-500 text-xs">Actualizados</span>
+                  <span className="font-bold text-lg text-primary">{log.updated}</span>
+                </div>
+                <div>
+                  <span className="block text-default-500 text-xs">Excluidos</span>
+                  <span className="font-bold text-danger text-lg">{log.excluded}</span>
+                </div>
+                <div>
+                  <span className="block text-default-500 text-xs">Omitidos</span>
+                  <span className="font-bold text-lg text-warning">{log.skipped}</span>
+                </div>
+              </div>
+              {log.errorMessage && (
+                <div className="mt-4">
+                  <span className="mb-1 block font-bold text-danger text-xs">Mensaje de Error</span>
+                  <div className="max-h-32 overflow-auto rounded-lg bg-danger/10 p-2 font-mono text-danger text-xs">
+                    {log.errorMessage}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div>
+              <ChangeDetailsViewer data={log.changeDetails} />
+            </div>
+          </div>
+        </Accordion.Body>
+      </Accordion.Panel>
+    </Accordion.Item>
   );
 }
 

@@ -10,6 +10,7 @@ import {
   fetchTimesheetDetail,
   prepareTimesheetEmailPayload,
 } from "@/features/hr/timesheets/api";
+import type { PrepareStatus } from "@/features/hr/timesheets/components/EmailPreviewModal";
 import { EmailPreviewModal } from "@/features/hr/timesheets/components/EmailPreviewModal";
 import { TimesheetDetailTable } from "@/features/hr/timesheets/components/TimesheetDetailTable";
 import { generateTimesheetPdfBase64 } from "@/features/hr/timesheets/pdf-utils";
@@ -97,7 +98,7 @@ function TimesheetEditorInner({
   const [errorLocal, setErrorLocal] = useState<null | string>(null);
 
   const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailPrepareStatus, setEmailPrepareStatus] = useState<null | string>(null);
+  const [emailPrepareStatus, setEmailPrepareStatus] = useState<PrepareStatus>(null);
 
   // --- Mutations ---
 
@@ -358,7 +359,7 @@ function TimesheetEditorEmailModal({
   summaryRow,
 }: {
   emailModalOpen: boolean;
-  emailPrepareStatus: null | string;
+  emailPrepareStatus: PrepareStatus;
   month: string;
   monthLabel: string;
   onClose: () => void;
@@ -417,7 +418,7 @@ function createHandlePrepareEmail({
   month: string;
   monthLabel: string;
   selectedEmployee: Employee;
-  setEmailPrepareStatus: (value: null | string) => void;
+  setEmailPrepareStatus: (value: PrepareStatus) => void;
   setErrorLocal: (value: null | string) => void;
   summaryRow: null | TimesheetSummaryRow;
   toastSuccess: (message: string) => void;
@@ -470,7 +471,7 @@ async function runPrepareEmail({
   month: string;
   monthLabel: string;
   selectedEmployee: Employee;
-  setEmailPrepareStatus: (value: null | string) => void;
+  setEmailPrepareStatus: (value: PrepareStatus) => void;
   summaryRow: TimesheetSummaryRow;
 }) {
   const pdfBase64 = await generatePdfBase64();

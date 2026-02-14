@@ -365,130 +365,158 @@ function normalizeAmountRaw(raw: string): number | null {
   return normalized;
 }
 
-function extractAmounts(summary: string, description: string) {
-  let amountExpected: number | null = null;
-  let amountPaid: number | null = null;
-  const text = `${summary} ${description}`;
+type AmountExtraction = {
+  amountExpected: number | null;
+  amountPaid: number | null;
+};
 
-  // 1. Pattern: (paid/expected) like (25/50)
+function applySlashAmounts(text: string, amounts: AmountExtraction) {
   const slashPattern = /\((\d+)\s*\/\s*(\d+)\)/gi;
   let slashMatch: RegExpExecArray | null;
   while ((slashMatch = slashPattern.exec(text)) !== null) {
     const paid = normalizeAmountRaw(slashMatch[1]);
     const expected = normalizeAmountRaw(slashMatch[2]);
-    if (paid != null && amountPaid == null) {
-      amountPaid = paid;
+    if (paid != null && amounts.amountPaid == null) {
+      amounts.amountPaid = paid;
     }
-    if (expected != null && amountExpected == null) {
-      amountExpected = expected;
+    if (expected != null && amounts.amountExpected == null) {
+      amounts.amountExpected = expected;
     }
   }
+}
 
-  // 2. Standard pattern: (amount) including unclosed parenthesis like (30mil
+function applyParenAmounts(text: string, amounts: AmountExtraction) {
   const parenPattern = /\(([^)]*?)(?:\)|$)/gi;
   let match: RegExpExecArray | null;
   while ((match = parenPattern.exec(text)) !== null) {
-    let content = match[1]; // Use 'let' so we can modify it
+    let content = match[1];
     if (SLASH_FORMAT_PATTERN.test(content)) {
-      continue; // Skip slash format
+      continue;
     }
 
-    // Fix: Remove date patterns to avoid merging them into the amount (e.g. "pagado el 21-11/ 30")
-    // Matches "21-11" or "21/11" (if surrounded by spaces or boundary)
     content = content.replace(DATE_PATTERN, "");
 
-    // Extract first numeric part (e.g. "30mil: francisco" → "30mil")
     const numericPart = content.match(AMOUNT_START_PATTERN);
     const normalizedContent = numericPart ? numericPart[0] : content;
-
     const amount = normalizeAmountRaw(normalizedContent);
     if (amount == null) {
       continue;
     }
+
     if (PAGADO_KEYWORD_PATTERN.test(content)) {
-      amountPaid = amount;
-      if (amountExpected == null) {
-        amountExpected = amount;
+      amounts.amountPaid = amount;
+      if (amounts.amountExpected == null) {
+        amounts.amountExpected = amount;
       }
-    } else if (amountExpected == null) {
-      amountExpected = amount;
+      continue;
+    }
+
+    if (amounts.amountExpected == null) {
+      amounts.amountExpected = amount;
+    }
+  }
+}
+
+function applyTypoAndMlFallback(text: string, amounts: AmountExtraction) {
+  if (amounts.amountExpected != null) {
+    return;
+  }
+
+  const typoPattern = /[a-z](\d+)\)/gi;
+  let typoMatch: RegExpExecArray | null;
+  while ((typoMatch = typoPattern.exec(text)) !== null) {
+    const digits = typoMatch[1];
+    const lastTwo = digits.length >= 2 ? digits.slice(-2) : digits;
+    const amount = normalizeAmountRaw(lastTwo);
+    if (amount != null && amounts.amountExpected == null) {
+      amounts.amountExpected = amount;
     }
   }
 
-  // 3. Fallback: typo like "acaros20)" or "acaros820)" (missing opening paren)
-  // Also handle "clustois0,2ml(30mil" where amount is after unit
-  // For 3+ digits like "820)", extract last 2 digits (assuming first is typo)
-  if (amountExpected == null) {
-    // Match letter followed by digits followed by ) - extract last 2 digits
-    const typoPattern = /[a-z](\d+)\)/gi;
-    let typoMatch: RegExpExecArray | null;
-    while ((typoMatch = typoPattern.exec(text)) !== null) {
-      const digits = typoMatch[1];
-      // Take last 2 digits only (common amounts are 20, 30, 50, 60)
-      const lastTwo = digits.length >= 2 ? digits.slice(-2) : digits;
-      const amount = normalizeAmountRaw(lastTwo);
-      if (amount != null && amountExpected == null) {
-        amountExpected = amount;
-      }
-    }
-
-    // Also match: ml(number pattern like "0,2ml(30mil"
-    const mlPattern = /ml\s*\((\d+\s*mil)/gi;
-    let mlMatch: RegExpExecArray | null;
-    while ((mlMatch = mlPattern.exec(text)) !== null) {
-      const amount = normalizeAmountRaw(mlMatch[1]);
-      if (amount != null && amountExpected == null) {
-        amountExpected = amount;
-      }
+  const mlPattern = /ml\s*\((\d+\s*mil)/gi;
+  let mlMatch: RegExpExecArray | null;
+  while ((mlMatch = mlPattern.exec(text)) !== null) {
+    const amount = normalizeAmountRaw(mlMatch[1]);
+    if (amount != null && amounts.amountExpected == null) {
+      amounts.amountExpected = amount;
     }
   }
+}
 
-  // 3.5. Keyword followed by amount (e.g. "clustoid 50", "cluxin 30")
-  if (amountExpected == null) {
-    // Note: this must match the robust SUBCUT_PATTERNS to catch typos like "clusitoid"
-    const keywordPattern =
-      /(?:cl[au]s[i]?t[oau]?id[eo]?|cluxin|alxoid|oral[-\s]?tec|vacuna|[aá]caros?)\s+(\d{2,3})\b/gi;
-    let kwMatch: RegExpExecArray | null;
-    while ((kwMatch = keywordPattern.exec(text)) !== null) {
-      const amount = normalizeAmountRaw(kwMatch[1]);
-      if (amount != null) {
-        amountExpected = amount;
-        break;
-      }
-    }
+function applyKeywordFallback(text: string, amounts: AmountExtraction) {
+  if (amounts.amountExpected != null) {
+    return;
   }
 
-  // 4. Fallback: amount at end without parens (e.g., "clusitoid 50")
-  if (amountExpected == null) {
-    const endMatch = AMOUNT_AT_END_PATTERN.exec(text);
-    if (endMatch) {
-      const amount = normalizeAmountRaw(endMatch[1]);
-      if (amount != null) {
-        amountExpected = amount;
-      }
+  const keywordPattern =
+    /(?:cl[au]s[i]?t[oau]?id[eo]?|cluxin|alxoid|oral[-\s]?tec|vacuna|[aá]caros?)\s+(\d{2,3})\b/gi;
+  let kwMatch: RegExpExecArray | null;
+  while ((kwMatch = keywordPattern.exec(text)) !== null) {
+    const amount = normalizeAmountRaw(kwMatch[1]);
+    if (amount != null) {
+      amounts.amountExpected = amount;
+      break;
     }
   }
+}
 
-  // 5. "pagado X" pattern
+function applyEndAmountFallback(text: string, amounts: AmountExtraction) {
+  if (amounts.amountExpected != null) {
+    return;
+  }
+
+  const endMatch = AMOUNT_AT_END_PATTERN.exec(text);
+  if (!endMatch) {
+    return;
+  }
+
+  const amount = normalizeAmountRaw(endMatch[1]);
+  if (amount != null) {
+    amounts.amountExpected = amount;
+  }
+}
+
+function applyPaidPattern(text: string, amounts: AmountExtraction) {
   const paidPattern = /pagado\s*(\d+)/gi;
   let matchPaid: RegExpExecArray | null;
   while ((matchPaid = paidPattern.exec(text)) !== null) {
     const amount = normalizeAmountRaw(matchPaid[1]);
-    if (amount != null) {
-      amountPaid = amount;
-      if (amountExpected == null) {
-        amountExpected = amount;
-      }
+    if (amount == null) {
+      continue;
+    }
+
+    amounts.amountPaid = amount;
+    if (amounts.amountExpected == null) {
+      amounts.amountExpected = amount;
     }
   }
+}
+
+function extractAmounts(summary: string, description: string) {
+  const amounts: AmountExtraction = {
+    amountExpected: null,
+    amountPaid: null,
+  };
+  const text = `${summary} ${description}`;
+
+  applySlashAmounts(text, amounts);
+  applyParenAmounts(text, amounts);
+  applyTypoAndMlFallback(text, amounts);
+  applyKeywordFallback(text, amounts);
+  applyEndAmountFallback(text, amounts);
+  applyPaidPattern(text, amounts);
 
   // 6. S/C (sin costo) = 0
-  if (SIN_COSTO_PATTERN.test(text) && amountExpected == null && amountPaid == null) {
-    amountExpected = 0;
-    amountPaid = 0;
+  if (
+    SIN_COSTO_PATTERN.test(text) &&
+    amounts.amountExpected == null &&
+    amounts.amountPaid == null
+  ) {
+    amounts.amountExpected = 0;
+    amounts.amountPaid = 0;
   }
 
-  return { amountExpected, amountPaid };
+  return amounts;
 }
 
 function refineAmounts(

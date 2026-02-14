@@ -185,6 +185,85 @@ type MissingFieldFilter = {
   filterMode?: "AND" | "OR";
 };
 
+const UNCLASSIFIED_CUTOFF_DATE = new Date("2024-09-01T00:00:00.000Z");
+const SUMMARY_IGNORE_CONDITIONS: Record<string, unknown>[] = [
+  { summary: { contains: "feriado", mode: "insensitive" } },
+  { summary: { contains: "vacaciones", mode: "insensitive" } },
+  { summary: { startsWith: "recordar", mode: "insensitive" } },
+  { summary: { startsWith: "reunión", mode: "insensitive" } },
+  { summary: { startsWith: "reunion", mode: "insensitive" } },
+  { summary: { contains: "publicidad", mode: "insensitive" } },
+  { summary: { equals: "reservado", mode: "insensitive" } },
+  { summary: { equals: "elecciones", mode: "insensitive" } },
+];
+
+function hasSelectedFieldFilters(filters: MissingFieldFilter) {
+  return [
+    filters.category,
+    filters.amountExpected,
+    filters.amountPaid,
+    filters.attended,
+    filters.dosageValue,
+    filters.treatmentStage,
+  ].some(Boolean);
+}
+
+function buildDefaultUnclassifiedConditions(now: Date) {
+  return [
+    { category: null },
+    { category: "" },
+    { amountExpected: null },
+    { attended: null, startDateTime: { lte: now } },
+  ];
+}
+
+function buildSelectedUnclassifiedConditions(filters: MissingFieldFilter, now: Date) {
+  const conditions: Record<string, unknown>[] = [];
+
+  if (filters.category) {
+    conditions.push({ OR: [{ category: null }, { category: "" }] });
+  }
+  if (filters.amountExpected) {
+    conditions.push({ amountExpected: null });
+  }
+  if (filters.amountPaid) {
+    conditions.push({ amountPaid: null });
+  }
+  if (filters.attended) {
+    conditions.push({ attended: null, startDateTime: { lte: now } });
+  }
+  if (filters.dosageValue) {
+    conditions.push({
+      category: "Tratamiento subcutáneo",
+      dosageValue: null,
+    });
+  }
+  if (filters.treatmentStage) {
+    conditions.push({
+      category: "Tratamiento subcutáneo",
+      OR: [{ treatmentStage: null }, { treatmentStage: "" }],
+    });
+  }
+
+  return conditions;
+}
+
+function buildUnclassifiedWhereClause(params: {
+  conditions: Record<string, unknown>[];
+  filterMode: "AND" | "OR";
+}) {
+  const baseWhere: Record<string, unknown> =
+    params.conditions.length === 0
+      ? { NOT: SUMMARY_IGNORE_CONDITIONS }
+      : params.filterMode === "AND"
+        ? { AND: [...params.conditions, { NOT: SUMMARY_IGNORE_CONDITIONS }] }
+        : { AND: [{ OR: params.conditions }, { NOT: SUMMARY_IGNORE_CONDITIONS }] };
+
+  return {
+    AND: [baseWhere, { startDateTime: { gte: UNCLASSIFIED_CUTOFF_DATE } }],
+  };
+}
+
 export async function listUnclassifiedCalendarEvents(
   limit: number,
   offset: number = 0,
@@ -192,102 +271,11 @@ export async function listUnclassifiedCalendarEvents(
 ) {
   const appliedFilters = filters ?? {};
   const filterMode = appliedFilters.filterMode || "OR";
-
-  // Build conditions based on filters
-  const conditions: Record<string, unknown>[] = [];
-
-  // Check if any field filters are actually selected (not just undefined)
-  const hasFieldFilters = [
-    appliedFilters.category,
-    appliedFilters.amountExpected,
-    appliedFilters.amountPaid,
-    appliedFilters.attended,
-    appliedFilters.dosageValue,
-    appliedFilters.treatmentStage,
-  ].some(Boolean);
-
-  // If no specific filters, default to show events missing ANY classifiable field
-  if (!hasFieldFilters) {
-    conditions.push(
-      { category: null },
-      { category: "" },
-      { amountExpected: null },
-      { attended: null, startDateTime: { lte: new Date() } },
-    );
-  } else {
-    if (appliedFilters.category) {
-      conditions.push({ OR: [{ category: null }, { category: "" }] });
-    }
-    if (appliedFilters.amountExpected) {
-      conditions.push({ amountExpected: null });
-    }
-    if (appliedFilters.amountPaid) {
-      conditions.push({ amountPaid: null });
-    }
-    if (appliedFilters.attended) {
-      conditions.push({ attended: null, startDateTime: { lte: new Date() } });
-    }
-    // For dosage: events that are "Tratamiento subcutáneo" but missing dosage
-    if (appliedFilters.dosageValue) {
-      conditions.push({
-        category: "Tratamiento subcutáneo",
-        dosageValue: null,
-      });
-    }
-    // For treatmentStage: events that are "Tratamiento subcutáneo" but missing stage
-    if (appliedFilters.treatmentStage) {
-      conditions.push({
-        category: "Tratamiento subcutáneo",
-        OR: [{ treatmentStage: null }, { treatmentStage: "" }],
-      });
-    }
-  }
-
-  // Build where clause based on filter mode
-  let whereClause: Record<string, unknown> = {};
-
-  // Optimize: Exclude ignored events at DB level to prevent empty pages
-  // This mirrors IGNORE_PATTERNS from parsers.ts roughly
-  const ignoreConditions = [
-    { summary: { contains: "feriado", mode: "insensitive" } },
-    { summary: { contains: "vacaciones", mode: "insensitive" } },
-    { summary: { startsWith: "recordar", mode: "insensitive" } }, // Starts with Recordar
-    { summary: { startsWith: "reunión", mode: "insensitive" } },
-    { summary: { startsWith: "reunion", mode: "insensitive" } },
-    { summary: { contains: "publicidad", mode: "insensitive" } },
-    { summary: { equals: "reservado", mode: "insensitive" } },
-    { summary: { equals: "elecciones", mode: "insensitive" } },
-  ];
-
-  if (conditions.length > 0) {
-    if (filterMode === "AND") {
-      whereClause = {
-        AND: [...conditions, { NOT: ignoreConditions }],
-      };
-    } else {
-      // OR mode: match ANY condition, BUT MUST NOT be ignored
-      whereClause = {
-        AND: [{ OR: conditions }, { NOT: ignoreConditions }],
-      };
-    }
-  } else {
-    // No specific filters, just standard view
-    whereClause = {
-      NOT: ignoreConditions,
-    };
-  }
-
-  // ALWAYS exclude events before September 2024 (2024-09-01)
-  // These old events should not appear as pending classification
-  const cutoffDate = new Date("2024-09-01T00:00:00.000Z");
-
-  if (Object.keys(whereClause).length === 0) {
-    whereClause = { startDateTime: { gte: cutoffDate } };
-  } else {
-    whereClause = {
-      AND: [whereClause, { startDateTime: { gte: cutoffDate } }],
-    };
-  }
+  const now = new Date();
+  const conditions = hasSelectedFieldFilters(appliedFilters)
+    ? buildSelectedUnclassifiedConditions(appliedFilters, now)
+    : buildDefaultUnclassifiedConditions(now);
+  const whereClause = buildUnclassifiedWhereClause({ conditions, filterMode });
 
   const [events, totalCount] = await Promise.all([
     db.event.findMany({

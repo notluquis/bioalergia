@@ -17,6 +17,84 @@ interface EmployeeFormProps {
   onCancel: () => void;
   onSave: () => void;
 }
+
+type EmployeeFormState = {
+  bankAccountNumber: string;
+  bankAccountType: string;
+  bankName: string;
+  email: string;
+  fixedSalary: string;
+  fullName: string;
+  hourlyRate: string;
+  overtimeRate: string;
+  retentionRate: string;
+  role: string;
+  rut: string;
+  salaryType: string;
+};
+
+const EMPTY_EMPLOYEE_FORM: EmployeeFormState = {
+  bankAccountNumber: "",
+  bankAccountType: "",
+  bankName: "",
+  email: "",
+  fixedSalary: "",
+  fullName: "",
+  hourlyRate: "0",
+  overtimeRate: "",
+  retentionRate: "",
+  role: "",
+  rut: "",
+  salaryType: "HOURLY",
+};
+
+const buildEmployeeFormState = (employee?: Employee | null): EmployeeFormState => {
+  if (!employee) {
+    return { ...EMPTY_EMPLOYEE_FORM };
+  }
+
+  const employeeRate = getEmployeeRetentionRate(employee);
+  const currentYearRate = getRetentionRateForYear(new Date().getFullYear());
+  const rateToShow =
+    Math.abs(employeeRate - currentYearRate) < 0.0001 ? "" : String(employeeRate * 100);
+
+  return {
+    bankAccountNumber: employee.bankAccountNumber ?? "",
+    bankAccountType: employee.bankAccountType ?? "",
+    bankName: employee.bankName ?? "",
+    email: employee.person?.email ?? "",
+    fixedSalary: employee.baseSalary == null ? "" : String(employee.baseSalary),
+    fullName: employee.full_name,
+    hourlyRate: String(employee.hourlyRate ?? "0"),
+    overtimeRate: "",
+    retentionRate: rateToShow,
+    role: employee.position,
+    rut: employee.person?.rut ?? "",
+    salaryType: employee.salaryType ?? "HOURLY",
+  };
+};
+
+const buildEmployeePayload = (form: EmployeeFormState): EmployeePayload => {
+  return {
+    bank_account_number: form.bankAccountNumber.trim() || null,
+    bank_account_type: form.bankAccountType.trim() || null,
+    bank_name: form.bankName.trim() || null,
+    email: form.email.trim() || null,
+    fixed_salary:
+      form.salaryType === "FIXED" && form.fixedSalary ? Number(form.fixedSalary) : undefined,
+    full_name: form.fullName.trim(),
+    hourly_rate:
+      form.salaryType === "HOURLY" && form.hourlyRate ? Number(form.hourlyRate) : undefined,
+    overtime_rate: form.overtimeRate ? Number(form.overtimeRate) : null,
+    retention_rate: form.retentionRate.trim()
+      ? Number(form.retentionRate.replace(",", ".")) / 100
+      : getRetentionRateForYear(new Date().getFullYear()),
+    role: form.role.trim(),
+    rut: form.rut.trim() || null,
+    salary_type: form.salaryType as EmployeeSalaryType,
+  };
+};
+
 export function EmployeeForm({ employee, onCancel, onSave }: EmployeeFormProps) {
   const { can } = useAuth();
   const { error: toastError, success: toastSuccess } = useToast();
@@ -25,76 +103,14 @@ export function EmployeeForm({ employee, onCancel, onSave }: EmployeeFormProps) 
   const isEditing = Boolean(employee?.id);
   const hasPermission = isEditing ? can("update", "Employee") : can("create", "Employee");
 
-  const [form, setForm] = useState<{
-    bankAccountNumber: string;
-    bankAccountType: string;
-    bankName: string;
-    email: string;
-    fixedSalary: string;
-    fullName: string;
-    hourlyRate: string;
-    overtimeRate: string;
-    retentionRate: string;
-    role: string;
-    rut: string;
-    salaryType: string;
-  }>({
-    bankAccountNumber: "",
-    bankAccountType: "",
-    bankName: "",
-    email: "",
-    fixedSalary: "",
-    fullName: "",
-    hourlyRate: "0",
-    overtimeRate: "",
+  const [form, setForm] = useState<EmployeeFormState>({
+    ...EMPTY_EMPLOYEE_FORM,
     retentionRate: "14.5",
-    role: "",
-    rut: "",
-    salaryType: "HOURLY",
   });
 
   const [rutError, setRutError] = useState<null | string>(null);
   useEffect(() => {
-    if (employee) {
-      const employeeRate = getEmployeeRetentionRate(employee);
-      const currentYearRate = getRetentionRateForYear(new Date().getFullYear());
-
-      // If employee rate equals current year rate, show empty (auto mode)
-      // Otherwise show the custom rate
-      const rateToShow =
-        Math.abs(employeeRate - currentYearRate) < 0.0001 ? "" : String(employeeRate * 100);
-
-      setForm({
-        bankAccountNumber: employee.bankAccountNumber ?? "",
-        bankAccountType: employee.bankAccountType ?? "",
-        bankName: employee.bankName ?? "",
-        email: employee.person?.email ?? "",
-        fixedSalary: employee.baseSalary == null ? "" : String(employee.baseSalary),
-        fullName: employee.full_name,
-        hourlyRate: String(employee.hourlyRate ?? "0"),
-        overtimeRate: "", // Not in schema?
-        retentionRate: rateToShow,
-        role: employee.position,
-        rut: employee.person?.rut ?? "",
-        salaryType: employee.salaryType ?? "HOURLY",
-      });
-    } else {
-      setForm({
-        bankAccountNumber: "",
-        bankAccountType: "",
-        bankName: "",
-        email: "",
-        fixedSalary: "",
-        fullName: "",
-        hourlyRate: "0",
-        overtimeRate: "",
-        retentionRate: "", // Start empty for new employees (auto mode)
-        role: "",
-        rut: "",
-        salaryType: "HOURLY",
-      });
-    }
-    // Clear RUT error on employee change
+    setForm(buildEmployeeFormState(employee));
     setRutError(null);
   }, [employee]);
 
@@ -172,27 +188,7 @@ export function EmployeeForm({ employee, onCancel, onSave }: EmployeeFormProps) 
       return;
     }
 
-    const payload: EmployeePayload = {
-      bank_account_number: form.bankAccountNumber.trim() || null,
-      bank_account_type: form.bankAccountType.trim() || null,
-      bank_name: form.bankName.trim() || null,
-      email: form.email.trim() || null,
-      fixed_salary:
-        form.salaryType === "FIXED" && form.fixedSalary ? Number(form.fixedSalary) : undefined,
-      full_name: form.fullName.trim(),
-      hourly_rate:
-        form.salaryType === "HOURLY" && form.hourlyRate ? Number(form.hourlyRate) : undefined,
-      overtime_rate: form.overtimeRate ? Number(form.overtimeRate) : null,
-      // Convert percentage (e.g., 14.5) to decimal (0.145)
-      // If empty/blank, use current year's default rate (auto mode)
-      // Handle comma as decimal separator for Chilean format
-      retention_rate: form.retentionRate.trim()
-        ? Number(form.retentionRate.replace(",", ".")) / 100
-        : getRetentionRateForYear(new Date().getFullYear()),
-      role: form.role.trim(),
-      rut: form.rut.trim() || null,
-      salary_type: form.salaryType as EmployeeSalaryType,
-    };
+    const payload = buildEmployeePayload(form);
 
     if (employee?.id) {
       updateMutation.mutate({ id: employee.id, payload });

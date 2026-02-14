@@ -23,6 +23,7 @@ export interface BackupProgress {
 }
 
 type ProgressCallback = (progress: BackupProgress) => void;
+type BackupTableStats = Record<string, { count: number; hash: string }>;
 
 const getDelegateName = (modelName: string) =>
   modelName.charAt(0).toLowerCase() + modelName.slice(1);
@@ -42,6 +43,169 @@ function getAllModelNames(): string[] {
   return Object.keys(schema.models).sort((a, b) => a.localeCompare(b));
 }
 
+const safeUnlink = (path: string) => {
+  try {
+    unlinkSync(path);
+  } catch {
+    // Intentionally ignore cleanup errors
+  }
+};
+
+const emitProgress = (
+  onProgress: ProgressCallback | undefined,
+  step: BackupProgress["step"],
+  progress: number,
+  message: string,
+) => {
+  onProgress?.({ step, progress, message });
+};
+
+const stringifyRow = (row: unknown) =>
+  JSON.stringify(row, (_, value) => (typeof value === "bigint" ? value.toString() : value));
+
+async function writeModelData(
+  modelName: string,
+  modelDelegate: ModelDelegate | undefined,
+  writeStream: ReturnType<typeof createWriteStream>,
+  tables: string[],
+  tableStats: BackupTableStats,
+) {
+  if (!modelDelegate || typeof modelDelegate.findMany !== "function") {
+    writeStream.write("[]");
+    console.warn(
+      `⚠️ Model delegate not found for ${modelName} (tried ${getDelegateName(modelName)})`,
+    );
+    return;
+  }
+
+  const modelHash = createHash("sha256");
+  let modelCount = 0;
+  let hasWrittenRow = false;
+
+  writeStream.write("[");
+  const batchSize = 1000;
+  let skip = 0;
+
+  for (;;) {
+    const batch: unknown[] = await modelDelegate.findMany({ take: batchSize, skip });
+    if (batch.length === 0) {
+      break;
+    }
+
+    for (const row of batch) {
+      const jsonRow = stringifyRow(row);
+      if (hasWrittenRow) {
+        writeStream.write(",");
+      }
+      writeStream.write(jsonRow);
+      modelHash.update(jsonRow);
+      modelCount++;
+      hasWrittenRow = true;
+    }
+
+    skip += batch.length;
+    if (batch.length < batchSize) {
+      break;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  writeStream.write("]");
+
+  if (modelCount > 0) {
+    tables.push(modelName);
+    tableStats[modelName] = {
+      count: modelCount,
+      hash: modelHash.digest("hex"),
+    };
+  }
+}
+
+async function writeBackupJsonData(params: {
+  allModels: string[];
+  jsonPath: string;
+  onProgress?: ProgressCallback;
+  tableStats: BackupTableStats;
+  tables: string[];
+}) {
+  const writeStream = createWriteStream(params.jsonPath, { encoding: "utf8" });
+  const header = JSON.stringify({
+    version: "1.0",
+    createdAt: new Date().toISOString(),
+    engine: "ZenStack/Kysely",
+    tables: params.allModels,
+  });
+  writeStream.write(`${header.slice(0, -1)},"data":{`);
+
+  for (let i = 0; i < params.allModels.length; i++) {
+    const modelName = params.allModels[i];
+    const progress = Math.round(10 + (i / params.allModels.length) * 50);
+    emitProgress(params.onProgress, "exporting", progress, `Exporting ${modelName}...`);
+
+    if (i > 0) {
+      writeStream.write(",");
+    }
+    writeStream.write(`"${modelName}":`);
+
+    try {
+      const modelDelegate = getModelDelegate(modelName);
+      await writeModelData(modelName, modelDelegate, writeStream, params.tables, params.tableStats);
+    } catch (error) {
+      writeStream.write("[]");
+      console.warn(`⚠️ Skipping ${modelName}: ${error}`);
+    }
+  }
+
+  writeStream.write("}}");
+  writeStream.end();
+
+  await new Promise<void>((resolve, reject) => {
+    writeStream.on("finish", resolve);
+    writeStream.on("error", reject);
+  });
+}
+
+async function compressBackupJson(jsonPath: string, filepath: string) {
+  const readStream = createReadStream(jsonPath);
+  const outputWriteStream = createWriteStream(filepath);
+  const gzip = createGzip({ level: 6 });
+
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      readStream.destroy();
+      gzip.destroy();
+      outputWriteStream.destroy();
+      reject(new Error("Compression timed out after 60 seconds"));
+    }, 60000);
+
+    let bytesProcessed = 0;
+    readStream.on("data", (chunk) => {
+      bytesProcessed += chunk.length;
+      if (Math.random() > 0.95) {
+        console.log(
+          `[Backup] Compressing... processed ${(bytesProcessed / 1024 / 1024).toFixed(1)} MB`,
+        );
+      }
+    });
+
+    pipeline(readStream, gzip, outputWriteStream)
+      .then(() => {
+        clearTimeout(timeout);
+        resolve();
+      })
+      .catch((err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+  });
+}
+
+const cleanupBackupFiles = (paths: { filepath: string; jsonPath: string }) => {
+  safeUnlink(paths.filepath);
+  safeUnlink(paths.jsonPath);
+};
+
 /**
  * Creates a database backup.
  */
@@ -52,185 +216,34 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
   const filepath = `/tmp/${filename}`;
   const jsonPath = `/tmp/backup_${timestamp}.json`;
 
-  onProgress?.({
-    step: "init",
-    progress: 5,
-    message: "Initializing backup...",
-  });
+  emitProgress(onProgress, "init", 5, "Initializing backup...");
 
   const tables: string[] = [];
-  const tableStats: Record<string, { count: number; hash: string }> = {};
-
-  // Scope variables for cleanup in catch block
-  let _success = false;
-  let writeStream: ReturnType<typeof createWriteStream> | undefined;
+  const tableStats: BackupTableStats = {};
 
   try {
     const allModels = getAllModelNames();
-    const totalModels = allModels.length;
-
-    // Open Write Stream
-    writeStream = createWriteStream(jsonPath, { encoding: "utf8" });
-
-    // Write Header
-    const header = JSON.stringify({
-      version: "1.0",
-      createdAt: new Date().toISOString(),
-      engine: "ZenStack/Kysely",
-      tables: allModels, // We'll list all inspected models
-    });
-
-    // We manually slice the JSON to insert "data" key
-    // Header: {"version":"1.0",...,"tables":[...]}
-    // Target: {"version":"1.0",...,"tables":[...], "data": { ... }}
-    writeStream.write(`${header.slice(0, -1)},"data":{`);
-
-    for (let i = 0; i < totalModels; i++) {
-      const modelName = allModels[i];
-      const progress = Math.round(10 + (i / totalModels) * 50);
-
-      onProgress?.({
-        step: "exporting",
-        progress,
-        message: `Exporting ${modelName}...`,
-      });
-
-      // Write Model Key
-      if (i > 0) {
-        writeStream.write(",");
-      }
-      writeStream.write(`"${modelName}":`);
-
-      try {
-        const modelDelegate = getModelDelegate(modelName);
-
-        if (modelDelegate && typeof modelDelegate.findMany === "function") {
-          const modelHash = createHash("sha256");
-          let modelCount = 0;
-          let hasWrittenRow = false;
-
-          writeStream.write("[");
-
-          // PAGINATION LOOP
-          const BATCH_SIZE = 1000;
-          let skip = 0;
-
-          for (;;) {
-            const batch: unknown[] = await modelDelegate.findMany({
-              take: BATCH_SIZE,
-              skip: skip,
-            });
-
-            if (batch.length === 0) {
-              break;
-            }
-
-            for (const row of batch) {
-              const jsonRow = JSON.stringify(row, (_, value) =>
-                typeof value === "bigint" ? value.toString() : value,
-              );
-
-              if (hasWrittenRow) {
-                writeStream.write(",");
-              }
-              writeStream.write(jsonRow);
-
-              modelHash.update(jsonRow);
-              modelCount++;
-              hasWrittenRow = true;
-            }
-
-            skip += batch.length;
-            if (batch.length < BATCH_SIZE) {
-              break;
-            }
-
-            // Optional: Give event loop a breather
-            await new Promise((resolve) => setTimeout(resolve, 0));
-          }
-
-          writeStream.write("]");
-
-          if (modelCount > 0) {
-            tables.push(modelName);
-            tableStats[modelName] = {
-              count: modelCount,
-              hash: modelHash.digest("hex"),
-            };
-          } else {
-            // Empty table, hash of empty string or null?
-            // Original logic only added stats if length > 0.
-            // But we wrote [] so it exists in JSON.
-          }
-        } else {
-          writeStream.write("[]"); // Empty array for missing delegate
-          console.warn(
-            `⚠️ Model delegate not found for ${modelName} (tried ${getDelegateName(modelName)})`,
-          );
-        }
-      } catch (error) {
-        writeStream.write("[]"); // Fail safe
-        console.warn(`⚠️ Skipping ${modelName}: ${error}`);
-      }
-    }
-
-    // Close JSON
-    writeStream.write("}}");
-    writeStream.end();
-
-    // Wait for stream to finish
-    await new Promise<void>((resolve, reject) => {
-      if (!writeStream) {
-        return resolve();
-      }
-      writeStream.on("finish", resolve);
-      writeStream.on("error", reject);
+    await writeBackupJsonData({
+      allModels,
+      jsonPath,
+      onProgress,
+      tableStats,
+      tables,
     });
 
     const jsonStats = statSync(jsonPath);
     console.log(`[Backup] JSON file generated at ${jsonPath}, size: ${jsonStats.size} bytes`);
 
-    onProgress?.({
-      step: "compressing",
-      progress: 75,
-      message: `Compressing (${(jsonStats.size / 1024 / 1024).toFixed(2)} MB)...`,
-    });
+    emitProgress(
+      onProgress,
+      "compressing",
+      75,
+      `Compressing (${(jsonStats.size / 1024 / 1024).toFixed(2)} MB)...`,
+    );
 
     try {
       console.log(`[Backup] Starting compression pipeline for ${jsonPath}`);
-      const readStream = createReadStream(jsonPath);
-      const outputWriteStream = createWriteStream(filepath);
-      const gzip = createGzip({ level: 6 });
-
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          readStream.destroy();
-          gzip.destroy();
-          outputWriteStream.destroy();
-          reject(new Error("Compression timed out after 60 seconds"));
-        }, 60000); // 60s timeout
-
-        let bytesProcessed = 0;
-        readStream.on("data", (chunk) => {
-          bytesProcessed += chunk.length;
-          // Log every ~5MB to avoid spam
-          if (Math.random() > 0.95) {
-            console.log(
-              `[Backup] Compressing... processed ${(bytesProcessed / 1024 / 1024).toFixed(1)} MB`,
-            );
-          }
-        });
-
-        pipeline(readStream, gzip, outputWriteStream)
-          .then(() => {
-            clearTimeout(timeout);
-            resolve();
-          })
-          .catch((err) => {
-            clearTimeout(timeout);
-            reject(err);
-          });
-      });
+      await compressBackupJson(jsonPath, filepath);
     } catch (pipelineError) {
       console.error("[Backup] Compression pipeline failed:", pipelineError);
       throw new Error(`Compression failed: ${pipelineError}`);
@@ -238,21 +251,16 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
 
     console.log(`[Backup] Compression completed: ${filepath}`);
 
-    unlinkSync(jsonPath);
+    safeUnlink(jsonPath);
 
-    onProgress?.({
-      step: "compressing",
-      progress: 85,
-      message: "Calculating checksum...",
-    });
+    emitProgress(onProgress, "compressing", 85, "Calculating checksum...");
 
     const checksum = await calculateChecksum(filepath);
     const durationMs = Date.now() - startTime;
     const stats = statSync(filepath);
     const sizeBytes = stats.size;
 
-    onProgress?.({ step: "done", progress: 100, message: "Backup completed" });
-    _success = true;
+    emitProgress(onProgress, "done", 100, "Backup completed");
 
     return {
       filename,
@@ -264,24 +272,7 @@ export async function createBackup(onProgress?: ProgressCallback): Promise<Backu
       stats: tableStats,
     };
   } catch (error) {
-    // Cleanup
-    try {
-      if (writeStream && !writeStream.closed) {
-        writeStream.destroy();
-      }
-      if (statSync(filepath)) {
-        unlinkSync(filepath);
-      }
-    } catch {
-      // Intentionally ignore cleanup errors
-    }
-    try {
-      if (statSync(jsonPath)) {
-        unlinkSync(jsonPath);
-      }
-    } catch {
-      // Intentionally ignore cleanup errors
-    }
+    cleanupBackupFiles({ filepath, jsonPath });
     throw new Error(`Backup failed: ${error}`);
   }
 }

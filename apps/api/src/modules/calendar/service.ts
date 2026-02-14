@@ -18,6 +18,152 @@ function isEventExcluded(
   return patterns.some((regex) => regex.test(text));
 }
 
+type CalendarSyncDetails = {
+  inserted: string[];
+  updated: (string | { summary: string; changes: string[] })[];
+  deleted: string[];
+};
+
+type CalendarSyncAccumulator = {
+  details: CalendarSyncDetails;
+  eventsFetched: number;
+  fullSync: boolean;
+  inserted: number;
+  deleted: number;
+  updated: number;
+};
+
+type ClassifiedCalendarItems = {
+  toDelete: Array<{ calendarId: string; eventId: string; summary?: string }>;
+  toUpsert: CalendarEventRecord[];
+};
+
+const createSyncAccumulator = (fullSync: boolean): CalendarSyncAccumulator => ({
+  details: {
+    inserted: [],
+    updated: [],
+    deleted: [],
+  },
+  eventsFetched: 0,
+  fullSync,
+  inserted: 0,
+  deleted: 0,
+  updated: 0,
+});
+
+function buildEventsListParams(args: {
+  calendarId: string;
+  pageToken: string | undefined;
+  syncToken: string | null | undefined;
+}) {
+  const params: calendar_v3.Params$Resource$Events$List = {
+    calendarId: args.calendarId,
+    pageToken: args.pageToken,
+    singleEvents: true,
+    maxResults: 2500,
+  };
+
+  if (args.syncToken) {
+    params.syncToken = args.syncToken;
+    return params;
+  }
+
+  params.timeMin = new Date(googleCalendarConfig?.syncStartDate ?? "2024-01-01").toISOString();
+  const lookAheadDays = googleCalendarConfig?.syncLookAheadDays ?? 365;
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + lookAheadDays);
+  params.timeMax = endDate.toISOString();
+  params.timeZone = googleCalendarConfig?.timeZone ?? "America/Santiago";
+  return params;
+}
+
+function mapEventToUpsertRecord(
+  calendarId: string,
+  item: calendar_v3.Schema$Event,
+): CalendarEventRecord {
+  const metadata = parseCalendarMetadata({
+    summary: item.summary ?? "",
+    description: item.description ?? "",
+  });
+
+  let { amountExpected, amountPaid } = metadata;
+  if (amountPaid != null && amountExpected == null) {
+    amountExpected = amountPaid;
+  }
+
+  return {
+    calendarId,
+    eventId: item.id as string,
+    status: item.status,
+    eventType: item.eventType,
+    summary: item.summary,
+    description: item.description,
+    start: item.start,
+    end: item.end,
+    created: item.created,
+    updated: item.updated,
+    colorId: item.colorId,
+    location: item.location,
+    transparency: item.transparency,
+    visibility: item.visibility,
+    hangoutLink: item.hangoutLink,
+    category: metadata.category,
+    amountExpected,
+    amountPaid,
+    attended: metadata.attended,
+    dosageValue: metadata.dosageValue,
+    dosageUnit: metadata.dosageUnit,
+    treatmentStage: metadata.treatmentStage,
+    controlIncluded: metadata.controlIncluded,
+    isDomicilio: metadata.isDomicilio,
+  };
+}
+
+function classifyCalendarItems(args: {
+  calendarId: string;
+  excludePatterns: RegExp[];
+  items: calendar_v3.Schema$Event[];
+}): ClassifiedCalendarItems {
+  const toUpsert: CalendarEventRecord[] = [];
+  const toDelete: Array<{ calendarId: string; eventId: string; summary?: string }> = [];
+
+  for (const item of args.items) {
+    if (!item.id) {
+      continue;
+    }
+
+    if (isEventExcluded(item.summary, item.description, args.excludePatterns)) {
+      toDelete.push({
+        calendarId: args.calendarId,
+        eventId: item.id,
+        summary: item.summary ?? undefined,
+      });
+      continue;
+    }
+
+    if (item.status === "cancelled") {
+      toDelete.push({
+        calendarId: args.calendarId,
+        eventId: item.id,
+        summary: item.summary ?? undefined,
+      });
+      continue;
+    }
+
+    toUpsert.push(mapEventToUpsertRecord(args.calendarId, item));
+  }
+
+  return { toDelete, toUpsert };
+}
+
+function addDetailEntries<T>(target: T[], entries: T[]) {
+  if (target.length >= 50 || entries.length === 0) {
+    return;
+  }
+  const remaining = Math.max(50 - target.length, 0);
+  target.push(...entries.slice(0, remaining));
+}
+
 /**
  * Service to handle Google Calendar synchronization
  * Uses syncToken for incremental updates and falls back to full sync on 410 errors.
@@ -168,146 +314,36 @@ export class CalendarSyncService {
     const client = await this.getClient();
     let pageToken: string | undefined;
     let nextSyncToken: string | undefined;
-
-    // Config for full sync (fallback)
-    // Note: We ignore timeMin/timeMax if syncToken is present per Google API specs
-    const timeZone = googleCalendarConfig?.timeZone ?? "America/Santiago";
-
-    let totalInserted = 0;
-    let totalUpdated = 0;
-    let totalDeleted = 0;
-    let totalFetched = 0;
-    const isFullSync = !syncToken;
-
-    const details = {
-      inserted: [] as string[],
-      updated: [] as (string | { summary: string; changes: string[] })[],
-      deleted: [] as string[],
-    };
+    const accumulator = createSyncAccumulator(!syncToken);
+    const excludePatterns = compileExcludePatterns(
+      googleCalendarConfig?.excludeSummarySources ?? [],
+    );
 
     do {
-      const params: calendar_v3.Params$Resource$Events$List = {
-        calendarId,
-        pageToken,
-        singleEvents: true, // Expand recurring events
-        maxResults: 2500, // Maximize page size
-      };
-
-      if (syncToken) {
-        params.syncToken = syncToken;
-      } else {
-        // Full Sync Params if no token
-        // Fallback to "syncStartDate" from config if doing full sync
-        // NOTE: Incremental sync (with token) ignores these date ranges!
-        params.timeMin = new Date(
-          googleCalendarConfig?.syncStartDate ?? "2024-01-01",
-        ).toISOString();
-        // Lookahead
-        const lookAheadDays = googleCalendarConfig?.syncLookAheadDays ?? 365;
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + lookAheadDays);
-        params.timeMax = endDate.toISOString();
-        params.timeZone = timeZone;
-      }
+      const params = buildEventsListParams({ calendarId, pageToken, syncToken });
 
       const response = await client.events.list(params);
       const items = response.data.items ?? [];
-      totalFetched += items.length;
+      accumulator.eventsFetched += items.length;
 
-      // Classify items into Upsert (Active) vs Delete (Cancelled)
-      const toUpsert: CalendarEventRecord[] = [];
-      const toDelete: { calendarId: string; eventId: string; summary?: string }[] = [];
+      const { toDelete, toUpsert } = classifyCalendarItems({
+        calendarId,
+        excludePatterns,
+        items,
+      });
 
-      const excludePatterns = compileExcludePatterns(
-        googleCalendarConfig?.excludeSummarySources ?? [],
-      );
-
-      for (const item of items) {
-        if (!item.id) {
-          continue;
-        }
-
-        // Check exclusion patterns
-        if (isEventExcluded(item.summary, item.description, excludePatterns)) {
-          // Treat excluded events as "to delete" if they exist in DB?
-          // Legacy behavior: "excludedEvents" are passed to "removeGoogleCalendarEvents".
-          toDelete.push({
-            calendarId,
-            eventId: item.id,
-            summary: item.summary ?? undefined,
-          });
-          continue;
-        }
-
-        if (item.status === "cancelled") {
-          toDelete.push({
-            calendarId,
-            eventId: item.id,
-            summary: item.summary ?? undefined,
-          });
-        } else {
-          // Parse metadata for parsed fields
-          const metadata = parseCalendarMetadata({
-            summary: item.summary ?? "",
-            description: item.description ?? "",
-          });
-
-          // Fallback logic for amountExpected
-          let { amountExpected, amountPaid } = metadata;
-          if (amountPaid != null && amountExpected == null) {
-            amountExpected = amountPaid;
-          }
-
-          toUpsert.push({
-            calendarId,
-            eventId: item.id,
-            status: item.status,
-            eventType: item.eventType,
-            summary: item.summary,
-            description: item.description,
-            start: item.start,
-            end: item.end,
-            created: item.created,
-            updated: item.updated,
-            colorId: item.colorId,
-            location: item.location,
-            transparency: item.transparency,
-            visibility: item.visibility,
-            hangoutLink: item.hangoutLink,
-            category: metadata.category,
-            amountExpected,
-            amountPaid,
-            attended: metadata.attended,
-            dosageValue: metadata.dosageValue,
-            dosageUnit: metadata.dosageUnit,
-            treatmentStage: metadata.treatmentStage,
-            controlIncluded: metadata.controlIncluded,
-            isDomicilio: metadata.isDomicilio,
-          });
-        }
-      }
-
-      // Execute DB Operations re-using Store Logic
       if (toUpsert.length > 0) {
         const result = await upsertGoogleCalendarEvents(toUpsert);
-        totalInserted += result.inserted;
-        totalUpdated += result.updated;
-
-        // Aggregate details
-        if (details.inserted.length < 50) {
-          details.inserted.push(...result.details.inserted);
-        }
-        if (details.updated.length < 50) {
-          details.updated.push(...result.details.updated);
-        }
+        accumulator.inserted += result.inserted;
+        accumulator.updated += result.updated;
+        addDetailEntries(accumulator.details.inserted, result.details.inserted);
+        addDetailEntries(accumulator.details.updated, result.details.updated);
       }
 
       if (toDelete.length > 0) {
         const deletedSummaries = await removeGoogleCalendarEvents(toDelete);
-        totalDeleted += toDelete.length;
-        if (details.deleted.length < 50) {
-          details.deleted.push(...deletedSummaries);
-        }
+        accumulator.deleted += toDelete.length;
+        addDetailEntries(accumulator.details.deleted, deletedSummaries);
       }
 
       // Pagination
@@ -329,12 +365,12 @@ export class CalendarSyncService {
     }
 
     return {
-      inserted: totalInserted,
-      updated: totalUpdated,
-      deleted: totalDeleted,
-      eventsFetched: totalFetched,
-      fullSync: isFullSync,
-      details,
+      inserted: accumulator.inserted,
+      updated: accumulator.updated,
+      deleted: accumulator.deleted,
+      eventsFetched: accumulator.eventsFetched,
+      fullSync: accumulator.fullSync,
+      details: accumulator.details,
     };
   }
 }

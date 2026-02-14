@@ -44,6 +44,25 @@ const fields: { helper?: string; key: keyof AppSettings; label: string; type?: s
   { key: "orgAddress", label: "Dirección" },
   { helper: "Ejemplo: CLP, USD", key: "primaryCurrency", label: "Moneda principal" },
 ];
+
+async function resolveAssetUrlIfNeeded(params: {
+  endpoint: string;
+  file: File | null;
+  mode: "upload" | "url";
+  mutation: (args: { endpoint: string; file: File }) => Promise<string>;
+  requiredFileMessage: string;
+}) {
+  if (params.mode !== "upload") {
+    return null;
+  }
+  if (!params.file) {
+    throw new Error(params.requiredFileMessage);
+  }
+  return params.mutation({
+    endpoint: params.endpoint,
+    file: params.file,
+  });
+}
 export function SettingsForm() {
   const { settings, updateSettings } = useSettings();
   const { hasRole } = useAuth();
@@ -178,27 +197,29 @@ export function SettingsForm() {
 
     try {
       const payload = { ...form };
+      const uploadAsset = (args: { endpoint: string; file: File }) =>
+        uploadMutation.mutateAsync(args);
 
-      if (logoMode === "upload") {
-        if (!logoFile) {
-          throw new Error("Selecciona un archivo de logo antes de guardar");
-        }
-        const url = await uploadMutation.mutateAsync({
-          endpoint: "/api/settings/logo/upload",
-          file: logoFile,
-        });
-        payload.logoUrl = url;
+      const logoUrl = await resolveAssetUrlIfNeeded({
+        endpoint: "/api/settings/logo/upload",
+        file: logoFile,
+        mode: logoMode,
+        mutation: uploadAsset,
+        requiredFileMessage: "Selecciona un archivo de logo antes de guardar",
+      });
+      if (logoUrl) {
+        payload.logoUrl = logoUrl;
       }
 
-      if (faviconMode === "upload") {
-        if (!faviconFile) {
-          throw new Error("Selecciona un archivo de favicon antes de guardar");
-        }
-        const url = await uploadMutation.mutateAsync({
-          endpoint: "/api/settings/favicon/upload",
-          file: faviconFile,
-        });
-        payload.faviconUrl = url;
+      const faviconUrl = await resolveAssetUrlIfNeeded({
+        endpoint: "/api/settings/favicon/upload",
+        file: faviconFile,
+        mode: faviconMode,
+        mutation: uploadAsset,
+        requiredFileMessage: "Selecciona un archivo de favicon antes de guardar",
+      });
+      if (faviconUrl) {
+        payload.faviconUrl = faviconUrl;
       }
 
       await updateSettings(payload);

@@ -128,7 +128,7 @@ function PatientDetailsPage() {
   const navigate = useNavigate();
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
 
-  const { data: patient, isLoading } = useQuery({
+  const { data: patientData, isLoading } = useQuery({
     queryKey: ["patient", id],
     queryFn: async () => {
       return await apiClient.get<Patient>(`/api/patients/${id}`, {
@@ -137,89 +137,28 @@ function PatientDetailsPage() {
     },
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center p-12">
-        <Spinner size="lg" />
-      </div>
-    );
+  const queryStateView = renderPatientQueryState({
+    isLoading,
+    navigateBack: () => navigate({ to: "/patients" }),
+    patient: patientData,
+  });
+  if (queryStateView) {
+    return queryStateView;
   }
+  const patient = patientData as Patient;
 
-  if (!patient) {
-    return (
-      <div className="p-12 text-center">
-        <h2 className="font-bold text-xl">Paciente no encontrado</h2>
-        <Button variant="ghost" onClick={() => navigate({ to: "/patients" })} className="mt-4">
-          Volver a la lista
-        </Button>
-      </div>
-    );
-  }
-
-  const age = patient.birthDate
-    ? dayjs().diff(dayjs(patient.birthDate, "YYYY-MM-DD"), "year")
-    : null;
   const person = patient.person;
+  const age = getPatientAge(patient.birthDate);
 
   return (
     <section className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            onClick={() => navigate({ to: "/patients" })}
-            className="h-10 w-10 min-w-0 rounded-full p-0"
-          >
-            <ChevronLeft size={24} />
-          </Button>
-          <div>
-            <h1 className="font-bold text-2xl text-foreground">
-              {person.names} {person.fatherName}
-            </h1>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="font-mono text-default-500 text-sm">{person.rut}</span>
-              {age !== null ? (
-                <div className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs">
-                  {age} años
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button
-            className="gap-2"
-            onClick={() =>
-              navigate({
-                to: "/patients/$id/new-consultation",
-                params: { id: String(id) },
-              })
-            }
-          >
-            <PlusCircle size={18} />
-            Nueva Consulta
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={() =>
-              navigate({
-                to: "/certificates/medical",
-                search: {
-                  patientName: person.names,
-                  rut: person.rut,
-                  address: person.address || "",
-                  birthDate: patient.birthDate || undefined,
-                },
-              })
-            }
-          >
-            <FileText size={18} />
-            Emitir Certificado
-          </Button>
-        </div>
-      </div>
+      <PatientDetailsHeader
+        age={age}
+        birthDate={patient.birthDate}
+        id={id}
+        navigate={navigate}
+        person={person}
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Sidebar: Info rápida */}
@@ -441,6 +380,118 @@ function PatientDetailsPage() {
         patientId={String(patient.id)}
       />
     </section>
+  );
+}
+
+function renderPatientQueryState({
+  isLoading,
+  navigateBack,
+  patient,
+}: {
+  isLoading: boolean;
+  navigateBack: () => void;
+  patient: Patient | undefined;
+}) {
+  if (isLoading) {
+    return <PatientDetailsLoadingState />;
+  }
+  if (!patient) {
+    return <PatientNotFoundState onBack={navigateBack} />;
+  }
+  return null;
+}
+
+function PatientDetailsLoadingState() {
+  return (
+    <div className="flex h-full w-full items-center justify-center p-12">
+      <Spinner size="lg" />
+    </div>
+  );
+}
+
+function PatientNotFoundState({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="p-12 text-center">
+      <h2 className="font-bold text-xl">Paciente no encontrado</h2>
+      <Button className="mt-4" onClick={onBack} variant="ghost">
+        Volver a la lista
+      </Button>
+    </div>
+  );
+}
+
+function getPatientAge(birthDate: null | string | undefined) {
+  if (!birthDate) {
+    return null;
+  }
+  return dayjs().diff(dayjs(birthDate, "YYYY-MM-DD"), "year");
+}
+
+function PatientDetailsHeader({
+  age,
+  birthDate,
+  id,
+  navigate,
+  person,
+}: {
+  age: null | number;
+  birthDate: null | string | undefined;
+  id: string;
+  navigate: ReturnType<typeof useNavigate>;
+  person: Person;
+}) {
+  const goBackToPatients = () => navigate({ to: "/patients" });
+  const goToNewConsultation = () =>
+    navigate({
+      to: "/patients/$id/new-consultation",
+      params: { id: String(id) },
+    });
+  const goToMedicalCertificate = () =>
+    navigate({
+      to: "/certificates/medical",
+      search: {
+        patientName: person.names,
+        rut: person.rut,
+        address: person.address || "",
+        birthDate: birthDate || undefined,
+      },
+    });
+
+  return (
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="flex items-center gap-4">
+        <Button
+          className="h-10 w-10 min-w-0 rounded-full p-0"
+          onClick={goBackToPatients}
+          variant="ghost"
+        >
+          <ChevronLeft size={24} />
+        </Button>
+        <div>
+          <h1 className="font-bold text-2xl text-foreground">
+            {person.names} {person.fatherName}
+          </h1>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="font-mono text-default-500 text-sm">{person.rut}</span>
+            {age !== null ? (
+              <div className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs">
+                {age} años
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button className="gap-2" onClick={goToNewConsultation}>
+          <PlusCircle size={18} />
+          Nueva Consulta
+        </Button>
+        <Button className="gap-2" onClick={goToMedicalCertificate} variant="outline">
+          <FileText size={18} />
+          Emitir Certificado
+        </Button>
+      </div>
+    </div>
   );
 }
 

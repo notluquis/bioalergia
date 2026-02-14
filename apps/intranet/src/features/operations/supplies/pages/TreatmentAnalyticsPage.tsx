@@ -33,7 +33,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Input as AppInput } from "@/components/ui/Input";
 import { calendarQueries } from "@/features/calendar/queries";
-import type { TreatmentAnalyticsFilters } from "@/features/calendar/types";
+import type { TreatmentAnalytics, TreatmentAnalyticsFilters } from "@/features/calendar/types";
 import { formatCurrency } from "@/lib/utils";
 
 const routeApi = getRouteApi("/_authed/operations/supplies-analytics");
@@ -53,6 +53,15 @@ const COLORS = {
 
 const PIE_COLORS_STAGE = [COLORS.primary, COLORS.secondary, COLORS.default];
 const PIE_COLORS_LOCATION = [COLORS.secondary, COLORS.primary];
+const KPI_ICON_STYLES: Record<
+  "primary" | "secondary" | "success" | "warning",
+  { bgClass: string; textClass: string }
+> = {
+  primary: { bgClass: "bg-primary/10", textClass: "text-primary" },
+  secondary: { bgClass: "bg-secondary/10", textClass: "text-secondary" },
+  success: { bgClass: "bg-success/10", textClass: "text-success" },
+  warning: { bgClass: "bg-warning/10", textClass: "text-warning" },
+};
 
 // --- Quick Ranges Helpers ---
 const getDefaultRange = () => ({
@@ -94,6 +103,65 @@ interface PieChartData {
   color?: string;
 }
 
+type AnalyticsPeriod = "day" | "week" | "month";
+type AnalyticsSearchParams = ReturnType<typeof routeApi.useSearch>;
+
+function resolvePeriod(isMonthSelected: boolean, periodValue: string | undefined): AnalyticsPeriod {
+  if (!isMonthSelected) {
+    return "month";
+  }
+  if (periodValue === "day" || periodValue === "week") {
+    return periodValue;
+  }
+  return "week";
+}
+
+function resolveGranularity(period: AnalyticsPeriod): "day" | "week" | "month" {
+  if (period === "day") {
+    return "day";
+  }
+  if (period === "week") {
+    return "week";
+  }
+  return "month";
+}
+
+function resolveRange(searchParams: AnalyticsSearchParams, selectedMonth: string | undefined) {
+  if (selectedMonth) {
+    return getMonthRange(selectedMonth);
+  }
+  if (searchParams.from && searchParams.to) {
+    return { from: searchParams.from, to: searchParams.to };
+  }
+  return getDefaultRange();
+}
+
+function buildTrendData(
+  data: TreatmentAnalytics | undefined,
+  period: AnalyticsPeriod,
+): AnalyticsTrendPoint[] | undefined {
+  if (period === "day") {
+    return data?.byDate;
+  }
+  if (period === "week") {
+    return data?.byWeek?.map((d) => ({ ...d, label: `S${d.isoWeek}` }));
+  }
+  return data?.byMonth?.map((d) => ({
+    ...d,
+    label: dayjs(`${d.year}-${d.month}-01`).format("MMM YYYY"),
+  }));
+}
+
+function getTotals(data: TreatmentAnalytics | undefined) {
+  return {
+    domicilioCount: data?.totals.domicilioCount || 0,
+    totalExpected: data?.totals.amountExpected || 0,
+    totalMl: data?.totals.dosageMl || 0,
+    totalPaid: data?.totals.amountPaid || 0,
+    totalTreatmentCount: data?.totals.events || 0,
+  };
+}
+
 // --- Main Page Component ---
 
 export function TreatmentAnalyticsPage() {
@@ -104,18 +172,9 @@ export function TreatmentAnalyticsPage() {
 
   const selectedMonth = searchParams.month;
   const isMonthSelected = Boolean(selectedMonth);
-  const period: "day" | "week" | "month" = isMonthSelected
-    ? searchParams.period === "day" || searchParams.period === "week"
-      ? searchParams.period
-      : "week"
-    : "month";
-  const granularity = period === "day" ? "day" : period === "week" ? "week" : "month";
-
-  const resolvedRange = isMonthSelected
-    ? getMonthRange(selectedMonth || "")
-    : searchParams.from && searchParams.to
-      ? { from: searchParams.from, to: searchParams.to }
-      : getDefaultRange();
+  const period = resolvePeriod(isMonthSelected, searchParams.period);
+  const granularity = resolveGranularity(period);
+  const resolvedRange = resolveRange(searchParams, selectedMonth);
 
   const filters: TreatmentAnalyticsFilters = {
     from: resolvedRange.from,
@@ -125,7 +184,7 @@ export function TreatmentAnalyticsPage() {
 
   const hasValidDates = Boolean(filters.from) && Boolean(filters.to);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isRefetching, refetch } = useQuery({
     ...calendarQueries.treatmentAnalytics(filters, granularity),
     enabled: hasValidDates,
     staleTime: 1000 * 60 * 2, // 2 minutos
@@ -182,22 +241,8 @@ export function TreatmentAnalyticsPage() {
     await refetch();
   };
 
-  // Calculate Data
-  const totalExpected = data?.totals.amountExpected || 0;
-  const totalPaid = data?.totals.amountPaid || 0;
-  const totalTreatmentCount = data?.totals.events || 0;
-  const totalMl = data?.totals.dosageMl || 0;
-  const domicilioCount = data?.totals.domicilioCount || 0;
-
-  const trendData: AnalyticsTrendPoint[] | undefined =
-    period === "day"
-      ? data?.byDate
-      : period === "week"
-        ? data?.byWeek?.map((d) => ({ ...d, label: `S${d.isoWeek}` }))
-        : data?.byMonth?.map((d) => ({
-            ...d,
-            label: dayjs(`${d.year}-${d.month}-01`).format("MMM YYYY"),
-          }));
+  const totals = getTotals(data);
+  const trendData = buildTrendData(data, period);
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 px-3 py-3 pb-6 sm:px-4 lg:px-6">
@@ -206,7 +251,7 @@ export function TreatmentAnalyticsPage() {
         period={period}
         isFilterOpen={isFilterOpen}
         isLoading={isLoading}
-        isRefetching={isLoading && data !== null && data !== undefined}
+        isRefetching={isRefetching}
         onToggleFilter={() => setIsFilterOpen(!isFilterOpen)}
         onSetPeriod={handleSetPeriod}
         onSelectMonth={handleMonthSelect}
@@ -229,44 +274,71 @@ export function TreatmentAnalyticsPage() {
         />
       )}
 
-      {isLoading && !data ? (
-        <div className="flex h-80 items-center justify-center">
-          <Spinner size="lg" color="current" className="text-default-300" />
-        </div>
+      <TreatmentAnalyticsContent
+        data={data}
+        granularity={granularity}
+        isLoading={isLoading}
+        period={period}
+        totals={totals}
+        trendData={trendData}
+      />
+    </div>
+  );
+}
+
+function TreatmentAnalyticsContent({
+  data,
+  granularity,
+  isLoading,
+  period,
+  totals,
+  trendData,
+}: {
+  data: TreatmentAnalytics | undefined;
+  granularity: "day" | "week" | "month";
+  isLoading: boolean;
+  period: AnalyticsPeriod;
+  totals: ReturnType<typeof getTotals>;
+  trendData: AnalyticsTrendPoint[] | undefined;
+}) {
+  if (isLoading && !data) {
+    return (
+      <div className="flex h-80 items-center justify-center">
+        <Spinner size="lg" color="current" className="text-default-300" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <AnalyticsKpiGrid
+        totalTreatmentCount={totals.totalTreatmentCount}
+        totalExpected={totals.totalExpected}
+        totalPaid={totals.totalPaid}
+        totalMl={totals.totalMl}
+        domicilioCount={totals.domicilioCount}
+      />
+      {data && (trendData?.length ?? 0) === 0 ? (
+        <Card className="border-default-100">
+          <Card.Content className="p-8 text-center">
+            <Description className="text-default-500">
+              No hay datos disponibles para el período seleccionado. Intenta ajustar los filtros o
+              seleccionar otro rango de fechas.
+            </Description>
+          </Card.Content>
+        </Card>
       ) : (
         <>
-          <AnalyticsKpiGrid
-            totalTreatmentCount={totalTreatmentCount}
-            totalExpected={totalExpected}
-            totalPaid={totalPaid}
-            totalMl={totalMl}
-            domicilioCount={domicilioCount}
+          <AnalyticsCharts
+            trendData={trendData || []}
+            byMonth={data?.byMonth}
+            period={period}
+            granularity={granularity}
           />
-
-          {data && trendData?.length === 0 ? (
-            <Card className="border-default-100">
-              <Card.Content className="p-8 text-center">
-                <Description className="text-default-500">
-                  No hay datos disponibles para el período seleccionado. Intenta ajustar los filtros
-                  o seleccionar otro rango de fechas.
-                </Description>
-              </Card.Content>
-            </Card>
-          ) : (
-            <>
-              <AnalyticsCharts
-                trendData={trendData || []}
-                byMonth={data?.byMonth}
-                period={period}
-                granularity={granularity}
-              />
-
-              <AnalyticsDetailTable data={trendData || []} period={period} />
-            </>
-          )}
+          <AnalyticsDetailTable data={trendData || []} period={period} />
         </>
       )}
-    </div>
+    </>
   );
 }
 
@@ -936,10 +1008,11 @@ function KpiCard({
   trend: string;
   value: string | number;
 }) {
+  const iconStyle = KPI_ICON_STYLES[color];
   return (
     <Card className="border-default-200 shadow-sm">
       <Card.Content className="flex flex-row items-center gap-2.5 p-2.5 sm:p-3">
-        <div className={`rounded-lg p-2 bg-${color}/10 text-${color} shrink-0`}>
+        <div className={`shrink-0 rounded-lg p-2 ${iconStyle.bgClass} ${iconStyle.textClass}`}>
           <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
         <div className="flex flex-col justify-center gap-0.5">

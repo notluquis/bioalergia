@@ -54,6 +54,32 @@ const resolveLastReportLabel = (reports: MPReport[]) => {
   return date ? dayjs(date).format("D MMM, HH:mm") : "N/A";
 };
 
+const resolveReportTypeFromTab = (tab: MpTab): MpReportType => (tab === "sync" ? "release" : tab);
+const resolveSyncRefetchInterval = (isSyncTab: boolean) => (isSyncTab ? 30_000 : false);
+const resolveReportTypeLabel = (reportType: MpReportType) =>
+  reportType === "release" ? "Liberación" : "Conciliación";
+
+const parsePageSizeKey = (key: React.Key | null) => {
+  if (key === null) {
+    return null;
+  }
+  const value = Number(key);
+  return Number.isNaN(value) ? null : value;
+};
+
+const updatePageSize =
+  (setPagination: React.Dispatch<React.SetStateAction<PaginationState>>) =>
+  (key: React.Key | null) => {
+    const nextPageSize = parsePageSizeKey(key);
+    if (!nextPageSize) {
+      return;
+    }
+    setPagination(() => ({
+      pageIndex: 0,
+      pageSize: nextPageSize,
+    }));
+  };
+
 const useReportActions = ({
   queryClient,
   reportType,
@@ -154,9 +180,10 @@ export function MercadoPagoSettingsPage() {
     pageIndex: 0,
     pageSize: 10,
   });
+  const isSyncTab = activeTab === "sync";
 
   // Queries
-  const reportType = activeTab === "sync" ? "release" : activeTab;
+  const reportType = resolveReportTypeFromTab(activeTab);
   const { limit: reportLimit, offset: reportOffset } = getPagination(reportPagination);
   const { data: reportResponse } = useQuery({
     ...mercadoPagoKeys.lists(reportType, { limit: reportLimit, offset: reportOffset }),
@@ -172,7 +199,7 @@ export function MercadoPagoSettingsPage() {
   const { limit: syncLimit, offset: syncOffset } = getPagination(syncPagination);
   const { data: syncResponse } = useQuery({
     ...mercadoPagoKeys.syncLogs({ limit: syncLimit, offset: syncOffset }),
-    refetchInterval: activeTab === "sync" ? 30_000 : false,
+    refetchInterval: resolveSyncRefetchInterval(isSyncTab),
     refetchIntervalInBackground: false,
     placeholderData: keepPreviousData,
   });
@@ -202,28 +229,8 @@ export function MercadoPagoSettingsPage() {
   const onTabChange = (key: React.Key) => setActiveTab(key as MpTab);
   const closeImportStatsModal = () => setLastImportStats(null);
   const openGenerateModal = () => setIsGenerateModalOpen(true);
-
-  const handleReportPageSizeChange = (key: React.Key | null) => {
-    if (key === null) {
-      return;
-    }
-    const value = Number(key);
-    setReportPagination((prev) => ({
-      pageIndex: 0,
-      pageSize: Number.isNaN(value) ? prev.pageSize : value,
-    }));
-  };
-
-  const handleSyncPageSizeChange = (key: React.Key | null) => {
-    if (key === null) {
-      return;
-    }
-    const value = Number(key);
-    setSyncPagination((prev) => ({
-      pageIndex: 0,
-      pageSize: Number.isNaN(value) ? prev.pageSize : value,
-    }));
-  };
+  const handleReportPageSizeChange = updatePageSize(setReportPagination);
+  const handleSyncPageSizeChange = updatePageSize(setSyncPagination);
 
   return (
     <div className="space-y-5">
@@ -255,7 +262,7 @@ export function MercadoPagoSettingsPage() {
         </Tabs>
 
         {/* Action Button */}
-        {activeTab !== "sync" && (
+        {!isSyncTab && (
           <Button
             className="w-full sm:w-auto"
             onClick={openGenerateModal}
@@ -339,7 +346,7 @@ export function MercadoPagoSettingsPage() {
         )}
       </Modal>
 
-      {activeTab !== "sync" && (
+      {!isSyncTab && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Last Report Card */}
           <article className="rounded-2xl border border-default-200 bg-background p-6 shadow-sm">
@@ -367,7 +374,7 @@ export function MercadoPagoSettingsPage() {
           <StatCard
             className="h-full"
             icon={FileText}
-            subtitle={`Tipo: ${reportType === "release" ? "Liberación" : "Conciliación"}`}
+            subtitle={`Tipo: ${resolveReportTypeLabel(reportType)}`}
             title="Total Reportes"
             tone="default"
             value={reportTotal}
@@ -417,7 +424,7 @@ export function MercadoPagoSettingsPage() {
         </div>
       )}
 
-      {activeTab === "sync" && (
+      {isSyncTab && (
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3 px-1">
             <div className="flex items-center gap-2">

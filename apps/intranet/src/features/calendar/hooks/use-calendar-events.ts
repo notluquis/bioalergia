@@ -1,7 +1,7 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/context/ToastContext";
 import { today } from "@/lib/dates";
@@ -91,6 +91,93 @@ function deriveEffectiveFilters(
   };
 }
 
+async function processSyncPollTick(params: {
+  logId: number;
+  maxPolls: number;
+  pollCount: number;
+  queryClient: ReturnType<typeof useQueryClient>;
+  setLastSyncInfo: (
+    value: null | {
+      excluded: number;
+      fetchedAt: Date;
+      inserted: number;
+      logId?: number;
+      skipped: number;
+      updated: number;
+    },
+  ) => void;
+  setSyncDurationMs: (value: null | number) => void;
+  setSyncError: (value: null | string) => void;
+  setSyncProgress: Dispatch<SetStateAction<SyncProgressEntry[]>>;
+  setSyncing: (value: boolean) => void;
+  showError: (message: string) => void;
+}) {
+  try {
+    const logs = await fetchCalendarSyncLogs(10);
+    const currentLog = logs.find((log) => log.id === params.logId);
+
+    if (!currentLog) {
+      params.setSyncError("No se encontró el log de sincronización");
+      params.setSyncing(false);
+      return false;
+    }
+
+    if (currentLog.status === "SUCCESS") {
+      params.setSyncDurationMs(
+        currentLog.finishedAt && currentLog.startedAt
+          ? new Date(currentLog.finishedAt).getTime() - new Date(currentLog.startedAt).getTime()
+          : null,
+      );
+      params.setSyncProgress(
+        SYNC_STEPS_TEMPLATE.map((step) => ({
+          details: {},
+          durationMs: 0,
+          id: step.id,
+          label: step.label,
+          status: "completed" as SyncProgressStatus,
+        })),
+      );
+      params.setLastSyncInfo({
+        excluded: currentLog.excluded,
+        fetchedAt: currentLog.fetchedAt ?? new Date(),
+        inserted: currentLog.inserted,
+        logId: currentLog.id,
+        skipped: currentLog.skipped,
+        updated: currentLog.updated,
+      });
+      params.setSyncing(false);
+      void params.queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      return false;
+    }
+
+    if (currentLog.status === "ERROR") {
+      const msg = currentLog.errorMessage ?? "Error desconocido durante la sincronización";
+      params.setSyncError(msg);
+      params.showError(msg);
+      params.setSyncProgress(markAllAsError);
+      params.setSyncing(false);
+      return false;
+    }
+
+    if (params.pollCount >= params.maxPolls) {
+      const timeoutMessage = "Timeout: la sincronización tardó demasiado";
+      params.setSyncError(timeoutMessage);
+      params.showError(timeoutMessage);
+      params.setSyncing(false);
+      return false;
+    }
+
+    return true;
+  } catch (error_) {
+    const message =
+      error_ instanceof Error ? error_.message : "Error al verificar estado de sincronización";
+    params.setSyncError(message);
+    params.showError(message);
+    params.setSyncing(false);
+    return false;
+  }
+}
+
 /**
  * Internal hook for managing calendar synchronization state and polling.
  * Extracted to reduce useCalendarEvents complexity.
@@ -116,67 +203,20 @@ function useCalendarSync(queryClient: ReturnType<typeof useQueryClient>) {
 
     const pollInterval = setInterval(async () => {
       pollCount++;
-      try {
-        const logs = await fetchCalendarSyncLogs(10);
-        const currentLog = logs.find((log) => log.id === logId);
-
-        if (!currentLog) {
-          clearInterval(pollInterval);
-          setSyncError("No se encontró el log de sincronización");
-          setSyncing(false);
-          return;
-        }
-
-        if (currentLog.status === "SUCCESS") {
-          clearInterval(pollInterval);
-          setSyncDurationMs(
-            currentLog.finishedAt && currentLog.startedAt
-              ? new Date(currentLog.finishedAt).getTime() - new Date(currentLog.startedAt).getTime()
-              : null,
-          );
-          setSyncProgress(
-            SYNC_STEPS_TEMPLATE.map((step) => ({
-              details: {},
-              durationMs: 0,
-              id: step.id,
-              label: step.label,
-              status: "completed" as SyncProgressStatus,
-            })),
-          );
-          setLastSyncInfo({
-            excluded: currentLog.excluded,
-            fetchedAt: currentLog.fetchedAt ?? new Date(),
-            inserted: currentLog.inserted,
-            logId: currentLog.id,
-            skipped: currentLog.skipped,
-            updated: currentLog.updated,
-          });
-          setSyncing(false);
-          queryClient.invalidateQueries({ queryKey: ["calendar"] }).catch(() => {
-            /* handled */
-          });
-        } else if (currentLog.status === "ERROR") {
-          clearInterval(pollInterval);
-          const msg = currentLog.errorMessage ?? "Error desconocido durante la sincronización";
-          setSyncError(msg);
-          showError(msg);
-
-          setSyncProgress(markAllAsError);
-          setSyncing(false);
-        } else if (pollCount >= maxPolls) {
-          clearInterval(pollInterval);
-          setSyncError("Timeout: la sincronización tardó demasiado");
-          showError("Timeout: la sincronización tardó demasiado");
-          setSyncing(false);
-        }
-        // else: still RUNNING, keep polling
-      } catch (error_) {
+      const keepPolling = await processSyncPollTick({
+        logId,
+        maxPolls,
+        pollCount,
+        queryClient,
+        setLastSyncInfo,
+        setSyncDurationMs,
+        setSyncError,
+        setSyncProgress,
+        setSyncing,
+        showError,
+      });
+      if (!keepPolling) {
         clearInterval(pollInterval);
-        const message =
-          error_ instanceof Error ? error_.message : "Error al verificar estado de sincronización";
-        setSyncError(message);
-        showError(message);
-        setSyncing(false);
       }
     }, 5000); // Poll every 5 seconds
   };

@@ -366,6 +366,79 @@ const PENDING_WEBHOOKS_KEY = "mp:webhook:pending";
 const MAX_PENDING_WEBHOOKS = 50;
 const PROCESSED_TTL_DAYS = 45;
 
+const isCsvWebhookFile = (file: { name: string; type: string }) =>
+  file.type === ".csv" || file.name.endsWith(".csv");
+
+const inferWebhookReportKind = (reportType: string): "release" | "settlement" =>
+  reportType.includes("settlement") ? "settlement" : "release";
+
+function logWebhookNotification(payload: MPWebhookPayload) {
+  console.log("[MP Webhook] Received notification:", {
+    files_count: payload.files?.length || 0,
+    is_test: payload.is_test,
+    report_type: payload.report_type,
+    status: payload.status,
+    transaction_id: payload.transaction_id,
+  });
+}
+
+function validateWebhookSignature(payload: MPWebhookPayload) {
+  if (!MP_WEBHOOK_PASSWORD) {
+    return true;
+  }
+  const expectedInput = `${payload.transaction_id}-${MP_WEBHOOK_PASSWORD}-${payload.generation_date}`;
+  const isValid = bcrypt.compareSync(expectedInput, payload.signature);
+  return isValid || payload.is_test;
+}
+
+async function acquireWebhookLockOrQueue(payload: MPWebhookPayload) {
+  const lockAcquired = await retryAcquireSchedulerLock(4);
+  if (lockAcquired) {
+    return true;
+  }
+  await enqueuePendingWebhook(payload);
+  return false;
+}
+
+async function processWebhookFiles(payload: MPWebhookPayload) {
+  if (!payload.files?.length) {
+    return;
+  }
+
+  const processed = await loadProcessedFiles(PROCESSED_FILES_KEY);
+  const logId = await createMpSyncLogEntry({
+    triggerSource: "mp:webhook",
+    triggerLabel: payload.transaction_id,
+  });
+
+  let queuedCount = 0;
+  const reportType = inferWebhookReportKind(payload.report_type);
+
+  for (const file of payload.files) {
+    if (processed.has(file.name) || !isCsvWebhookFile(file)) {
+      continue;
+    }
+    console.log("[MP Webhook] Processing file:", file.name);
+    MercadoPagoService.processReport(reportType, { url: file.url }).catch((err) => {
+      console.error("[MP Webhook] Async processing failed:", err);
+    });
+    processed.add(file.name);
+    queuedCount += 1;
+  }
+
+  await persistProcessedFiles(PROCESSED_FILES_KEY, processed);
+  await finalizeMpSyncLogEntry(logId, {
+    status: "SUCCESS",
+    inserted: queuedCount,
+    changeDetails: {
+      queuedFiles: queuedCount,
+      transactionId: payload.transaction_id,
+      reportType: payload.report_type,
+      reportTypes: [reportType],
+    },
+  });
+}
+
 mercadopagoRoutes.post("/webhook", async (c) => {
   if (process.env.NODE_ENV === "production" && !MP_WEBHOOK_PASSWORD) {
     return reply(c, { status: "error", message: "Webhook not configured" }, 500);
@@ -373,76 +446,28 @@ mercadopagoRoutes.post("/webhook", async (c) => {
 
   try {
     const payload = await c.req.json<MPWebhookPayload>();
+    logWebhookNotification(payload);
 
-    console.log("[MP Webhook] Received notification:", {
-      transaction_id: payload.transaction_id,
-      report_type: payload.report_type,
-      status: payload.status,
-      files_count: payload.files?.length || 0,
-      is_test: payload.is_test,
-    });
-
-    // Validate signature if password is configured
-    if (MP_WEBHOOK_PASSWORD) {
-      const expectedInput = `${payload.transaction_id}-${MP_WEBHOOK_PASSWORD}-${payload.generation_date}`;
-      const isValid = bcrypt.compareSync(expectedInput, payload.signature);
-
-      if (!isValid && !payload.is_test) {
-        console.warn("[MP Webhook] Invalid signature for transaction:", payload.transaction_id);
-        return reply(c, { status: "error", message: "Invalid signature" }, 401);
-      }
+    if (!validateWebhookSignature(payload)) {
+      console.warn("[MP Webhook] Invalid signature for transaction:", payload.transaction_id);
+      return reply(c, { status: "error", message: "Invalid signature" }, 401);
     }
 
-    const lockAcquired = await retryAcquireSchedulerLock(4);
+    const lockAcquired = await acquireWebhookLockOrQueue(payload);
     if (!lockAcquired) {
-      await enqueuePendingWebhook(payload);
       return reply(c, { status: "accepted", message: "Queued for processing" }, 202);
     }
 
-    // Process files
-    if (payload.files?.length) {
-      const processed = await loadProcessedFiles(PROCESSED_FILES_KEY);
-      const logId = await createMpSyncLogEntry({
-        triggerSource: "mp:webhook",
-        triggerLabel: payload.transaction_id,
-      });
-      let queuedCount = 0;
-      for (const file of payload.files) {
-        if (processed.has(file.name)) {
-          continue;
-        }
-        console.log("[MP Webhook] Processing file:", file.name);
-        if (file.type === ".csv" || file.name.endsWith(".csv")) {
-          // Determine type from report_type
-          const type = payload.report_type.includes("settlement") ? "settlement" : "release";
-
-          // Process asynchronously
-          MercadoPagoService.processReport(type, { url: file.url }).catch((err) => {
-            console.error("[MP Webhook] Async processing failed:", err);
-          });
-          processed.add(file.name);
-          queuedCount += 1;
-        }
-      }
-      await persistProcessedFiles(PROCESSED_FILES_KEY, processed);
-      await finalizeMpSyncLogEntry(logId, {
-        status: "SUCCESS",
-        inserted: queuedCount,
-        changeDetails: {
-          queuedFiles: queuedCount,
-          transactionId: payload.transaction_id,
-          reportType: payload.report_type,
-          reportTypes: [payload.report_type.includes("settlement") ? "settlement" : "release"],
-        },
-      });
+    try {
+      await processWebhookFiles(payload);
+    } finally {
+      await releaseSchedulerLock();
     }
 
     return reply(c, { status: "ok", message: "Notification received" });
   } catch (e) {
     console.error("[MP Webhook] Error processing notification:", e);
     return reply(c, { status: "error", message: String(e) }, 500);
-  } finally {
-    await releaseSchedulerLock();
   }
 });
 

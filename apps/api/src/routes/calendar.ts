@@ -63,6 +63,381 @@ const calendarQuerySchema = z.object({
 });
 
 type CalendarQuery = z.infer<typeof calendarQuerySchema>;
+type JobQueueModule = Awaited<typeof import("../lib/jobQueue")>;
+type JobQueueFns = Pick<JobQueueModule, "completeJob" | "failJob" | "updateJobProgress">;
+
+type PartialReclassifyEvent = {
+  id: number;
+  summary: null | string;
+  description: null | string;
+  category: null | string;
+  dosageValue: null | number;
+  dosageUnit: null | string;
+  treatmentStage: null | string;
+  attended: boolean | null;
+  amountExpected: null | number;
+  amountPaid: null | number;
+  controlIncluded: boolean;
+  isDomicilio: boolean;
+};
+
+type FullReclassifyEvent = {
+  id: number;
+  summary: null | string;
+  description: null | string;
+  controlIncluded: boolean;
+};
+
+type PartialReclassifyUpdateData = {
+  category?: string;
+  dosageValue?: number;
+  dosageUnit?: string;
+  treatmentStage?: string;
+  attended?: boolean;
+  amountExpected?: number;
+  amountPaid?: number;
+  controlIncluded?: boolean;
+  isDomicilio?: boolean;
+};
+
+type FullReclassifyUpdateData = {
+  category: null | string;
+  dosageValue: null | number;
+  dosageUnit: null | string;
+  treatmentStage: null | string;
+  attended: boolean | null;
+  amountExpected: null | number;
+  amountPaid: null | number;
+  controlIncluded: boolean;
+  isDomicilio: boolean;
+};
+
+type PartialFieldCounts = {
+  amountExpected: number;
+  amountPaid: number;
+  attended: number;
+  category: number;
+  controlIncluded: number;
+  dosage: number;
+  isDomicilio: number;
+  treatmentStage: number;
+};
+
+type FullFieldCounts = {
+  amountExpected: number;
+  amountPaid: number;
+  attended: number;
+  category: number;
+  controlIncluded: number;
+  dosageUnit: number;
+  dosageValue: number;
+  isDomicilio: number;
+  treatmentStage: number;
+};
+
+const createPartialFieldCounts = (): PartialFieldCounts => ({
+  amountExpected: 0,
+  amountPaid: 0,
+  attended: 0,
+  category: 0,
+  controlIncluded: 0,
+  dosage: 0,
+  isDomicilio: 0,
+  treatmentStage: 0,
+});
+
+const createFullFieldCounts = (): FullFieldCounts => ({
+  amountExpected: 0,
+  amountPaid: 0,
+  attended: 0,
+  category: 0,
+  controlIncluded: 0,
+  dosageUnit: 0,
+  dosageValue: 0,
+  isDomicilio: 0,
+  treatmentStage: 0,
+});
+
+const parseMetadata = (event: { description: null | string; summary: null | string }) => {
+  return parseCalendarMetadata({
+    summary: event.summary,
+    description: event.description,
+  });
+};
+
+type ParsedCalendarMetadata = ReturnType<typeof parseCalendarMetadata>;
+
+const applyPartialCategoryUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts,
+) => {
+  if ((event.category === null || event.category === "") && metadata.category) {
+    updateData.category = metadata.category;
+    fieldCounts.category++;
+  }
+};
+
+const applyPartialDosageUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts,
+) => {
+  if ((event.dosageValue === null || event.dosageUnit === null) && metadata.dosageValue !== null) {
+    updateData.dosageValue = metadata.dosageValue;
+    updateData.dosageUnit = metadata.dosageUnit ?? "ml";
+    fieldCounts.dosage++;
+  }
+};
+
+const applyPartialTreatmentStageUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts,
+) => {
+  if (event.treatmentStage === null && metadata.treatmentStage) {
+    updateData.treatmentStage = metadata.treatmentStage;
+    fieldCounts.treatmentStage++;
+  }
+};
+
+const applyPartialAttendedUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts,
+) => {
+  if (event.attended === null && metadata.attended !== null) {
+    updateData.attended = metadata.attended;
+    fieldCounts.attended++;
+  }
+};
+
+const applyPartialAmountExpectedUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts,
+) => {
+  if (event.amountExpected === null && metadata.amountExpected !== null) {
+    updateData.amountExpected = metadata.amountExpected;
+    fieldCounts.amountExpected++;
+  }
+};
+
+const applyPartialAmountPaidUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts,
+) => {
+  if (event.amountPaid === null && metadata.amountPaid !== null) {
+    updateData.amountPaid = metadata.amountPaid;
+    fieldCounts.amountPaid++;
+  }
+};
+
+const applyPartialControlIncludedUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts,
+) => {
+  if (metadata.controlIncluded && event.controlIncluded === false) {
+    updateData.controlIncluded = true;
+    fieldCounts.controlIncluded++;
+  }
+};
+
+const applyPartialDomicilioUpdate = (
+  event: PartialReclassifyEvent,
+  metadata: ParsedCalendarMetadata,
+  updateData: PartialReclassifyUpdateData,
+  fieldCounts: PartialFieldCounts,
+) => {
+  if (metadata.isDomicilio && event.isDomicilio === false) {
+    updateData.isDomicilio = true;
+    fieldCounts.isDomicilio++;
+  }
+};
+
+const buildPartialUpdateData = (
+  event: PartialReclassifyEvent,
+  fieldCounts: PartialFieldCounts,
+): PartialReclassifyUpdateData => {
+  const updateData: PartialReclassifyUpdateData = {};
+  const metadata = parseMetadata(event);
+
+  applyPartialCategoryUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialDosageUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialTreatmentStageUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialAttendedUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialAmountExpectedUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialAmountPaidUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialControlIncludedUpdate(event, metadata, updateData, fieldCounts);
+  applyPartialDomicilioUpdate(event, metadata, updateData, fieldCounts);
+
+  return updateData;
+};
+
+const buildFullUpdateData = (
+  event: FullReclassifyEvent,
+  fieldCounts: FullFieldCounts,
+): FullReclassifyUpdateData => {
+  const metadata = parseMetadata(event);
+
+  if (metadata.category) {
+    fieldCounts.category++;
+  }
+  if (metadata.dosageValue !== null) {
+    fieldCounts.dosageValue++;
+  }
+  if (metadata.dosageUnit) {
+    fieldCounts.dosageUnit++;
+  }
+  if (metadata.treatmentStage) {
+    fieldCounts.treatmentStage++;
+  }
+  if (metadata.attended !== null) {
+    fieldCounts.attended++;
+  }
+  if (metadata.amountExpected !== null) {
+    fieldCounts.amountExpected++;
+  }
+  if (metadata.amountPaid !== null) {
+    fieldCounts.amountPaid++;
+  }
+  if (metadata.controlIncluded) {
+    fieldCounts.controlIncluded++;
+  }
+  if (metadata.isDomicilio) {
+    fieldCounts.isDomicilio++;
+  }
+
+  return {
+    category: metadata.category,
+    dosageValue: metadata.dosageValue,
+    dosageUnit: metadata.dosageUnit,
+    treatmentStage: metadata.treatmentStage,
+    attended: metadata.attended,
+    amountExpected: metadata.amountExpected,
+    amountPaid: metadata.amountPaid,
+    controlIncluded: metadata.controlIncluded,
+    isDomicilio: metadata.isDomicilio,
+  };
+};
+
+async function persistEventUpdates<TData extends Record<string, unknown>>(params: {
+  eventsLength: number;
+  jobId: string;
+  progressEveryBatches?: number;
+  updates: Array<{ data: TData; id: number }>;
+  updateJobProgress: JobQueueFns["updateJobProgress"];
+}) {
+  const batchSize = 20;
+  let processed = 0;
+
+  for (let i = 0; i < params.updates.length; i += batchSize) {
+    const batch = params.updates.slice(i, i + batchSize);
+    await db.$transaction(batch.map((u) => db.event.update({ where: { id: u.id }, data: u.data })));
+    processed += batch.length;
+
+    const shouldNotify =
+      params.progressEveryBatches == null ||
+      params.progressEveryBatches <= 1 ||
+      (i / batchSize) % params.progressEveryBatches === 0 ||
+      i + batchSize >= params.updates.length;
+
+    if (shouldNotify) {
+      params.updateJobProgress(
+        params.jobId,
+        params.eventsLength,
+        `Guardando ${processed}/${params.updates.length} actualizaciones...`,
+      );
+    }
+  }
+}
+
+async function runReclassifyMissingFieldsJob(
+  events: PartialReclassifyEvent[],
+  jobId: string,
+  jobQueue: JobQueueFns,
+) {
+  try {
+    const updates: Array<{ data: PartialReclassifyUpdateData; id: number }> = [];
+    const fieldCounts = createPartialFieldCounts();
+
+    for (let i = 0; i < events.length; i++) {
+      const event = events[i];
+      const updateData = buildPartialUpdateData(event, fieldCounts);
+
+      if (Object.keys(updateData).length > 0) {
+        updates.push({ id: event.id, data: updateData });
+      }
+
+      if (i % 50 === 0 || i === events.length - 1) {
+        jobQueue.updateJobProgress(jobId, i + 1, `Analizando ${i + 1}/${events.length} eventos...`);
+      }
+    }
+
+    await persistEventUpdates({
+      eventsLength: events.length,
+      jobId,
+      updates,
+      updateJobProgress: jobQueue.updateJobProgress,
+    });
+
+    jobQueue.completeJob(jobId, {
+      message: `Reclassified ${updates.length} events`,
+      totalChecked: events.length,
+      reclassified: updates.length,
+      fieldCounts,
+    });
+  } catch (err) {
+    jobQueue.failJob(jobId, err instanceof Error ? err.message : "Unknown error");
+  }
+}
+
+async function runReclassifyAllJob(
+  events: FullReclassifyEvent[],
+  jobId: string,
+  jobQueue: JobQueueFns,
+) {
+  try {
+    const updates: Array<{ data: FullReclassifyUpdateData; id: number }> = [];
+    const fieldCounts = createFullFieldCounts();
+
+    for (let i = 0; i < events.length; i++) {
+      const event = events[i];
+      const updateData = buildFullUpdateData(event, fieldCounts);
+      updates.push({ id: event.id, data: updateData });
+
+      if (i % 100 === 0 || i === events.length - 1) {
+        jobQueue.updateJobProgress(jobId, i + 1, `Analizando ${i + 1}/${events.length} eventos...`);
+      }
+    }
+
+    await persistEventUpdates({
+      eventsLength: events.length,
+      jobId,
+      progressEveryBatches: 5,
+      updates,
+      updateJobProgress: jobQueue.updateJobProgress,
+    });
+
+    jobQueue.completeJob(jobId, {
+      message: `Reclassified all ${updates.length} events`,
+      totalChecked: events.length,
+      reclassified: updates.length,
+      fieldCounts,
+    });
+  } catch (err) {
+    jobQueue.failJob(jobId, err instanceof Error ? err.message : "Unknown error");
+  }
+}
 
 function sanitizeOptionalSelectionValue(value: null | string | undefined): null | string {
   if (!value) {
@@ -77,25 +452,36 @@ function sanitizeOptionalSelectionValue(value: null | string | undefined): null 
   return trimmed;
 }
 
+function parsePositiveCappedInt(value: number, fallback: number, cap: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return fallback;
+  }
+
+  return Math.min(Math.floor(value), cap);
+}
+
+function toOptionalFilter<T>(values: T[]) {
+  return values.length > 0 ? values : undefined;
+}
+
+function normalizeDateRange(from: string, to: string) {
+  if (!dayjs(from).isAfter(dayjs(to))) {
+    return { from, to };
+  }
+
+  return { from, to: from };
+}
+
 async function buildFiltersFromValidQuery(query: CalendarQuery) {
   const settings = await loadSettings();
   const configStart =
     settings["calendar.syncStart"]?.trim() || googleCalendarConfig?.syncStartDate || "2000-01-01";
 
-  const baseStart = configStart;
   const lookaheadRaw = Number(settings["calendar.syncLookaheadDays"] ?? "365");
-  const lookaheadDays =
-    Number.isFinite(lookaheadRaw) && lookaheadRaw > 0
-      ? Math.min(Math.floor(lookaheadRaw), 1095)
-      : 365;
+  const lookaheadDays = parsePositiveCappedInt(lookaheadRaw, 365, 1095);
   const defaultEnd = dayjs().add(lookaheadDays, "day").format("YYYY-MM-DD");
 
-  const from = query.from ?? baseStart;
-  let to = query.to ?? defaultEnd;
-
-  if (dayjs(from).isAfter(dayjs(to))) {
-    to = from;
-  }
+  const normalizedRange = normalizeDateRange(query.from ?? configStart, query.to ?? defaultEnd);
 
   const calendarIds = query.calendarId ?? [];
   const eventTypes = query.eventType ?? [];
@@ -103,26 +489,22 @@ async function buildFiltersFromValidQuery(query: CalendarQuery) {
   const search = query.search?.trim() || undefined;
 
   const defaultMaxDays = Number(settings["calendar.dailyMaxDays"] ?? "31");
-  const maxDays =
-    query.maxDays ??
-    (Number.isFinite(defaultMaxDays) && defaultMaxDays > 0
-      ? Math.min(Math.floor(defaultMaxDays), 120)
-      : 31);
+  const maxDays = query.maxDays ?? parsePositiveCappedInt(defaultMaxDays, 31, 120);
 
   const filters: CalendarEventFilters = {
-    from,
-    to,
-    calendarIds: calendarIds.length ? calendarIds : undefined,
-    eventTypes: eventTypes.length ? eventTypes : undefined,
-    categories: categories.length ? categories : undefined,
+    from: normalizedRange.from,
+    to: normalizedRange.to,
+    calendarIds: toOptionalFilter(calendarIds),
+    eventTypes: toOptionalFilter(eventTypes),
+    categories: toOptionalFilter(categories),
     search,
   };
 
   return {
     filters,
     applied: {
-      from,
-      to,
+      from: normalizedRange.from,
+      to: normalizedRange.to,
       calendarIds,
       eventTypes,
       categories,
@@ -889,118 +1271,11 @@ calendarRoutes.post("/events/reclassify", requireAuth, async (c) => {
   // c.executionCtx.waitUntil is for Cloudflare Workers.
   // In Node, we can just not await the async IIFE.
 
-  // Background Process
-  void (async () => {
-    try {
-      type EventUpdate = {
-        id: number;
-        data: {
-          category?: string;
-          dosageValue?: number;
-          dosageUnit?: string;
-          treatmentStage?: string;
-          attended?: boolean;
-          amountExpected?: number;
-          amountPaid?: number;
-          controlIncluded?: boolean;
-          isDomicilio?: boolean;
-        };
-      };
-      const updates: EventUpdate[] = [];
-      const fieldCounts = {
-        category: 0,
-        dosage: 0,
-        treatmentStage: 0,
-        attended: 0,
-        amountExpected: 0,
-        amountPaid: 0,
-        controlIncluded: 0,
-        isDomicilio: 0,
-      };
-
-      for (let i = 0; i < events.length; i++) {
-        const event = events[i];
-        const updateData: EventUpdate["data"] = {};
-        const metadata = parseCalendarMetadata({
-          summary: event.summary,
-          description: event.description,
-        });
-        if ((event.category === null || event.category === "") && metadata.category) {
-          updateData.category = metadata.category;
-          fieldCounts.category++;
-        }
-        if (
-          (event.dosageValue === null || event.dosageUnit === null) &&
-          metadata.dosageValue !== null
-        ) {
-          updateData.dosageValue = metadata.dosageValue;
-          updateData.dosageUnit = metadata.dosageUnit ?? "ml";
-          fieldCounts.dosage++;
-        }
-        if (event.treatmentStage === null && metadata.treatmentStage) {
-          updateData.treatmentStage = metadata.treatmentStage;
-          fieldCounts.treatmentStage++;
-        }
-        if (event.attended === null && metadata.attended !== null) {
-          updateData.attended = metadata.attended;
-          fieldCounts.attended++;
-        }
-        if (event.amountExpected === null && metadata.amountExpected !== null) {
-          updateData.amountExpected = metadata.amountExpected;
-          fieldCounts.amountExpected++;
-        }
-        if (event.amountPaid === null && metadata.amountPaid !== null) {
-          updateData.amountPaid = metadata.amountPaid;
-          fieldCounts.amountPaid++;
-        }
-        if (metadata.controlIncluded && event.controlIncluded === false) {
-          updateData.controlIncluded = true;
-          fieldCounts.controlIncluded++;
-        }
-        if (metadata.isDomicilio && event.isDomicilio === false) {
-          updateData.isDomicilio = true;
-          fieldCounts.isDomicilio++;
-        }
-
-        if (Object.keys(updateData).length > 0) {
-          updates.push({ id: event.id, data: updateData });
-        }
-
-        if (i % 50 === 0 || i === events.length - 1) {
-          updateJobProgress(jobId, i + 1, `Analizando ${i + 1}/${events.length} eventos...`);
-        }
-      }
-
-      const BATCH_SIZE = 20;
-      let processed = 0;
-      for (let i = 0; i < updates.length; i += BATCH_SIZE) {
-        const batch = updates.slice(i, i + BATCH_SIZE);
-        await db.$transaction(
-          batch.map((u) =>
-            db.event.update({
-              where: { id: u.id },
-              data: u.data,
-            }),
-          ),
-        );
-        processed += batch.length;
-        updateJobProgress(
-          jobId,
-          events.length,
-          `Guardando ${processed}/${updates.length} actualizaciones...`,
-        );
-      }
-
-      completeJob(jobId, {
-        message: `Reclassified ${updates.length} events`,
-        totalChecked: events.length,
-        reclassified: updates.length,
-        fieldCounts,
-      });
-    } catch (err) {
-      failJob(jobId, err instanceof Error ? err.message : "Unknown error");
-    }
-  })();
+  void runReclassifyMissingFieldsJob(events, jobId, {
+    completeJob,
+    failJob,
+    updateJobProgress,
+  });
 
   return reply(c, { status: "accepted", jobId, totalEvents: events.length });
 });
@@ -1029,118 +1304,11 @@ calendarRoutes.post("/events/reclassify-all", requireAuth, async (c) => {
 
   const jobId = startJob("reclassify-all", events.length);
 
-  void (async () => {
-    try {
-      type EventUpdate = {
-        id: number;
-        data: {
-          category: string | null;
-          dosageValue: number | null;
-          dosageUnit: string | null;
-          treatmentStage: string | null;
-          attended: boolean | null;
-          amountExpected: number | null;
-          amountPaid: number | null;
-          controlIncluded: boolean;
-          isDomicilio: boolean;
-        };
-      };
-
-      const updates: EventUpdate[] = [];
-      const fieldCounts = {
-        category: 0,
-        dosageValue: 0,
-        dosageUnit: 0,
-        treatmentStage: 0,
-        attended: 0,
-        amountExpected: 0,
-        amountPaid: 0,
-        controlIncluded: 0,
-        isDomicilio: 0,
-      };
-
-      for (let i = 0; i < events.length; i++) {
-        const event = events[i];
-        const metadata = parseCalendarMetadata({
-          summary: event.summary,
-          description: event.description,
-        });
-
-        const updateData: EventUpdate["data"] = {
-          category: metadata.category,
-          dosageValue: metadata.dosageValue,
-          dosageUnit: metadata.dosageUnit,
-          treatmentStage: metadata.treatmentStage,
-          attended: metadata.attended,
-          amountExpected: metadata.amountExpected,
-          amountPaid: metadata.amountPaid,
-          controlIncluded: metadata.controlIncluded,
-          isDomicilio: metadata.isDomicilio,
-        };
-
-        if (metadata.category) {
-          fieldCounts.category++;
-        }
-        if (metadata.dosageValue !== null) {
-          fieldCounts.dosageValue++;
-        }
-        if (metadata.dosageUnit) {
-          fieldCounts.dosageUnit++;
-        }
-        if (metadata.treatmentStage) {
-          fieldCounts.treatmentStage++;
-        }
-        if (metadata.attended !== null) {
-          fieldCounts.attended++;
-        }
-        if (metadata.amountExpected !== null) {
-          fieldCounts.amountExpected++;
-        }
-        if (metadata.amountPaid !== null) {
-          fieldCounts.amountPaid++;
-        }
-        if (metadata.controlIncluded) {
-          fieldCounts.controlIncluded++;
-        }
-        if (metadata.isDomicilio) {
-          fieldCounts.isDomicilio++;
-        }
-
-        updates.push({ id: event.id, data: updateData });
-
-        if (i % 100 === 0 || i === events.length - 1) {
-          updateJobProgress(jobId, i + 1, `Analizando ${i + 1}/${events.length} eventos...`);
-        }
-      }
-
-      const BATCH_SIZE = 20;
-      let processed = 0;
-      for (let i = 0; i < updates.length; i += BATCH_SIZE) {
-        const batch = updates.slice(i, i + BATCH_SIZE);
-        await db.$transaction(
-          batch.map((u) => db.event.update({ where: { id: u.id }, data: u.data })),
-        );
-        processed += batch.length;
-
-        if ((i / BATCH_SIZE) % 5 === 0 || i + BATCH_SIZE >= updates.length) {
-          updateJobProgress(
-            jobId,
-            events.length,
-            `Guardando ${processed}/${updates.length} actualizaciones...`,
-          );
-        }
-      }
-
-      completeJob(jobId, {
-        message: `Reclassified all ${updates.length} events`,
-        totalChecked: events.length,
-        reclassified: updates.length,
-        fieldCounts,
-      });
-    } catch (err) {
-      failJob(jobId, err instanceof Error ? err.message : "Unknown error");
-    }
-  })();
+  void runReclassifyAllJob(events, jobId, {
+    completeJob,
+    failJob,
+    updateJobProgress,
+  });
 
   return reply(c, { status: "accepted", jobId, totalEvents: events.length });
 });

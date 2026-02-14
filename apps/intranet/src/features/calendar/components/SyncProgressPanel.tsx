@@ -39,6 +39,64 @@ const formatDuration = (value: number) => {
   return `${Math.round(value)} ms`;
 };
 
+const detailLabels: Record<string, string> = {
+  calendars: "Calendarios",
+  events: "Eventos",
+  inserted: "Nuevas",
+  stored: "Snapshot",
+  updated: "Actualizadas",
+};
+
+function formatDetailValue(rawValue: unknown): null | string {
+  if (rawValue == null) {
+    return null;
+  }
+  if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+    return numberFormatter.format(rawValue);
+  }
+  if (typeof rawValue === "boolean") {
+    return rawValue ? "Sí" : "No";
+  }
+  if (typeof rawValue === "string" && rawValue.length > 0) {
+    return rawValue;
+  }
+  return null;
+}
+
+function formatStepDetails(details: Record<string, unknown>) {
+  return Object.entries(details ?? {})
+    .map(([key, rawValue]) => {
+      const value = formatDetailValue(rawValue);
+      if (!value) {
+        return null;
+      }
+      const label = detailLabels[key] ?? key; // eslint-disable-line security/detect-object-injection
+      return `${label}: ${value}`;
+    })
+    .filter((part): part is string => Boolean(part))
+    .join(" · ");
+}
+
+function getPanelTitle(syncError: null | string, syncing: boolean) {
+  if (syncError) {
+    return "Error al sincronizar";
+  }
+  if (syncing) {
+    return "Sincronizando calendario";
+  }
+  return "Sincronización completada";
+}
+
+function getPanelSubtitle(syncError: null | string, syncing: boolean) {
+  if (syncing) {
+    return "Consultando eventos y actualizando la base.";
+  }
+  if (syncError) {
+    return "Vuelve a intentar más tarde.";
+  }
+  return "Última ejecución completada correctamente.";
+}
+
 export function SyncProgressPanel({
   lastSyncInfo,
   onSyncNow,
@@ -77,60 +135,15 @@ export function SyncProgressPanel({
     pending: "bg-default-300",
   };
 
-  const detailLabels: Record<string, string> = {
-    calendars: "Calendarios",
-    events: "Eventos",
-    inserted: "Nuevas",
-    stored: "Snapshot",
-    updated: "Actualizadas",
-  };
-
-  const formatDetails = (details: Record<string, unknown>) => {
-    const parts: string[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- details can be null/undefined
-    for (const [key, rawValue] of Object.entries(details ?? {})) {
-      if (rawValue == null) {
-        continue;
-      }
-      const label = detailLabels[key] ?? key; // eslint-disable-line security/detect-object-injection
-      if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
-        parts.push(`${label}: ${numberFormatter.format(rawValue)}`);
-      } else if (typeof rawValue === "boolean") {
-        parts.push(`${label}: ${rawValue ? "Sí" : "No"}`);
-      } else if (typeof rawValue === "string" && rawValue.length > 0) {
-        parts.push(`${label}: ${rawValue}`);
-      }
-    }
-    return parts.join(" · ");
-  };
-
   return (
     <Card className="rounded-2xl p-5 shadow-md">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="rounded-xl bg-default-100/60 px-3 py-2">
             <p className="font-semibold text-foreground text-sm">
-              {(() => {
-                if (syncError) {
-                  return "Error al sincronizar";
-                }
-                if (syncing) {
-                  return "Sincronizando calendario";
-                }
-                return "Sincronización completada";
-              })()}
+              {getPanelTitle(syncError, syncing)}
             </p>
-            <p className="text-foreground-500 text-xs">
-              {(() => {
-                if (syncing) {
-                  return "Consultando eventos y actualizando la base.";
-                }
-                if (syncError) {
-                  return "Vuelve a intentar más tarde.";
-                }
-                return "Última ejecución completada correctamente.";
-              })()}
-            </p>
+            <p className="text-foreground-500 text-xs">{getPanelSubtitle(syncError, syncing)}</p>
           </div>
           {syncing && <Spinner size="sm" aria-label="Sincronizando" />}
           {syncError && (
@@ -183,7 +196,7 @@ export function SyncProgressPanel({
         <ul className="mt-4 space-y-3">
           {syncProgress.map((step) => {
             const status = statusLabelMap[step.status];
-            const details = formatDetails(step.details);
+            const details = formatStepDetails(step.details);
             const duration = formatDuration(step.durationMs);
             return (
               <li

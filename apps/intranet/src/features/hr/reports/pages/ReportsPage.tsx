@@ -643,34 +643,41 @@ function processRawEntries(
     Array<{ month: string; net: number; retention: number; subtotal: number }>
   >,
 ): EmployeeWorkData[] {
+  const map = initializeEmployeeDataMap(employeeIds, employees);
+  accumulateEntryMetrics(map, entries);
+  mergeSalarySummary(map, salarySummary);
+  finalizeEmployeeStats(map);
+  return [...map.values()];
+}
+
+function initializeEmployeeDataMap(employeeIds: number[], employees: Employee[]) {
   const map = new Map<number, EmployeeWorkData>();
-
-  // Init map
   for (const id of employeeIds) {
-    const emp = employees.find((e) => e.id === id);
-    if (emp) {
-      map.set(id, {
-        avgDailyMinutes: 0,
-        dailyBreakdown: {},
-        employeeId: id,
-        fullName: emp.full_name,
-        monthlyBreakdown: {},
-        monthlyGrossSalary: {},
-        monthlyNetSalary: {},
-        overtimePercentage: 0,
-        role: emp.position,
-        totalDays: 0,
-        totalMinutes: 0,
-        totalOvertimeMinutes: 0,
-        weeklyBreakdown: {},
-      });
-    }
-  }
-
-  for (const entry of entries) {
-    if (!map.has(entry.employee_id)) {
+    const employee = employees.find((entry) => entry.id === id);
+    if (!employee) {
       continue;
     }
+    map.set(id, {
+      avgDailyMinutes: 0,
+      dailyBreakdown: {},
+      employeeId: id,
+      fullName: employee.full_name,
+      monthlyBreakdown: {},
+      monthlyGrossSalary: {},
+      monthlyNetSalary: {},
+      overtimePercentage: 0,
+      role: employee.position,
+      totalDays: 0,
+      totalMinutes: 0,
+      totalOvertimeMinutes: 0,
+      weeklyBreakdown: {},
+    });
+  }
+  return map;
+}
+
+function accumulateEntryMetrics(map: Map<number, EmployeeWorkData>, entries: RawTimesheetEntry[]) {
+  for (const entry of entries) {
     const data = map.get(entry.employee_id);
     if (!data) {
       continue;
@@ -679,37 +686,40 @@ function processRawEntries(
     data.totalMinutes += entry.worked_minutes;
     data.totalOvertimeMinutes += entry.overtime_minutes;
 
-    // Daily
     const dateKey = dayjs(entry.work_date, DATE_FORMAT).format(DATE_FORMAT);
-    const currentDaily = data.dailyBreakdown[dateKey] ?? 0;
-    Object.assign(data.dailyBreakdown, { [dateKey]: currentDaily + entry.worked_minutes });
-
-    // Weekly
     const weekKey = dayjs(entry.work_date, DATE_FORMAT).startOf("isoWeek").format(DATE_FORMAT);
-    const currentWeekly = data.weeklyBreakdown[weekKey] ?? 0;
-    Object.assign(data.weeklyBreakdown, { [weekKey]: currentWeekly + entry.worked_minutes });
-
-    // Monthly
     const monthKey = dayjs(entry.work_date, DATE_FORMAT).format("YYYY-MM");
-    const currentMonthly = data.monthlyBreakdown[monthKey] ?? 0;
-    Object.assign(data.monthlyBreakdown, { [monthKey]: currentMonthly + entry.worked_minutes });
+
+    data.dailyBreakdown[dateKey] = (data.dailyBreakdown[dateKey] ?? 0) + entry.worked_minutes;
+    data.weeklyBreakdown[weekKey] = (data.weeklyBreakdown[weekKey] ?? 0) + entry.worked_minutes;
+    data.monthlyBreakdown[monthKey] = (data.monthlyBreakdown[monthKey] ?? 0) + entry.worked_minutes;
+  }
+}
+
+function mergeSalarySummary(
+  map: Map<number, EmployeeWorkData>,
+  salarySummary:
+    | Record<string, Array<{ month: string; net: number; retention: number; subtotal: number }>>
+    | undefined,
+) {
+  if (!salarySummary) {
+    return;
   }
 
-  // Merge salary data
-  if (salarySummary) {
-    for (const [employeeIdStr, salaryData] of Object.entries(salarySummary)) {
-      const employeeId = Number.parseInt(employeeIdStr, 10);
-      const data = map.get(employeeId);
-      if (data) {
-        for (const record of salaryData) {
-          data.monthlyGrossSalary[record.month] = record.subtotal;
-          data.monthlyNetSalary[record.month] = record.net;
-        }
-      }
+  for (const [employeeIdStr, salaryData] of Object.entries(salarySummary)) {
+    const employeeId = Number.parseInt(employeeIdStr, 10);
+    const data = map.get(employeeId);
+    if (!data) {
+      continue;
+    }
+    for (const record of salaryData) {
+      data.monthlyGrossSalary[record.month] = record.subtotal;
+      data.monthlyNetSalary[record.month] = record.net;
     }
   }
+}
 
-  // Stats
+function finalizeEmployeeStats(map: Map<number, EmployeeWorkData>) {
   for (const data of map.values()) {
     const uniqueDays = Object.keys(data.dailyBreakdown).length;
     data.totalDays = uniqueDays;
@@ -719,6 +729,4 @@ function processRawEntries(
         ? Number.parseFloat(((data.totalOvertimeMinutes / data.totalMinutes) * 100).toFixed(1))
         : 0;
   }
-
-  return [...map.values()];
 }

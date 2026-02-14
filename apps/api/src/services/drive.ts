@@ -22,6 +22,43 @@ export interface BackupFile {
 
 const TABLES_REGEX = /"tables"\s*:\s*(\[[^\]]*\])/;
 
+function extractTablesFromBackupHeader(cleanText: string): string[] {
+  const match = cleanText.match(TABLES_REGEX);
+  if (!match?.[1]) {
+    console.warn("[Drive] Could not extract tables from backup header");
+    return [];
+  }
+
+  try {
+    const tables = JSON.parse(match[1]);
+    return Array.isArray(tables) ? tables : [];
+  } catch {
+    return [];
+  }
+}
+
+async function unzipAndExtractTables(buffer: Buffer): Promise<string[]> {
+  const { createGunzip } = await import("node:zlib");
+
+  return new Promise((resolve) => {
+    const gunzip = createGunzip();
+    const decompressed: Buffer[] = [];
+
+    gunzip.on("data", (chunk: Buffer) => {
+      decompressed.push(chunk);
+    });
+    gunzip.on("end", () => {
+      const cleanText = Buffer.concat(decompressed).toString();
+      resolve(extractTablesFromBackupHeader(cleanText));
+    });
+    gunzip.on("error", () => {
+      resolve([]);
+    });
+
+    gunzip.end(buffer);
+  });
+}
+
 /**
  * Uploads a backup file to Google Drive.
  */
@@ -266,7 +303,6 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
     }
 
     // 2. Fallback: Parse file header (Slower)
-    const { createGunzip } = await import("node:zlib");
     const streamModule = await import("node:stream");
 
     // Get file as stream and read just enough to get the tables list
@@ -295,14 +331,14 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
         if (bytesRead >= maxBytes && !stopped) {
           stopped = true;
           cleanup();
-          processChunks();
+          void processChunks();
         }
       };
 
       const onEnd = () => {
         if (!stopped) {
           cleanup();
-          processChunks();
+          void processChunks();
         }
       };
 
@@ -325,44 +361,11 @@ export async function getBackupTables(fileId: string): Promise<string[]> {
       dataStream.on("end", onEnd);
       dataStream.on("error", onError);
 
-      function processChunks() {
+      async function processChunks() {
         try {
           const buffer = Buffer.concat(chunks);
-          const gunzip = createGunzip();
-          const decompressed: Buffer[] = [];
-
-          gunzip.on("data", (chunk: Buffer) => decompressed.push(chunk));
-          gunzip.on("end", () => {
-            try {
-              // We only have the beginning of the file, so it's invalid JSON.
-              // But we can extract the "tables":[...] part using regex.
-              const cleanText = Buffer.concat(decompressed).toString();
-
-              // Match "tables": ["Table1", "Table2", ...]
-              // Handles optional whitespace
-              const match = cleanText.match(TABLES_REGEX);
-
-              if (match?.[1]) {
-                try {
-                  const tables = JSON.parse(match[1]);
-                  if (Array.isArray(tables)) {
-                    resolve(tables);
-                    return;
-                  }
-                } catch (_e) {
-                  // Ignore inner parse error
-                }
-              }
-
-              // Fallback: If we can't find tables, return empty
-              console.warn("[Drive] Could not extract tables from backup header");
-              resolve([]);
-            } catch {
-              resolve([]);
-            }
-          });
-          gunzip.on("error", () => resolve([]));
-          gunzip.end(buffer);
+          const tables = await unzipAndExtractTables(buffer);
+          resolve(tables);
         } catch {
           resolve([]);
         }

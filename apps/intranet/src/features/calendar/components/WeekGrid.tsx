@@ -104,6 +104,85 @@ function groupEventsByDay(events: CalendarEventDetail[], weekStart: dayjs.Dayjs)
   return days;
 }
 
+function resolveWeekMonday(weekStart: string) {
+  const parsed = dayjs(weekStart);
+  if (!parsed.isValid()) {
+    return dayjs().isoWeekday(1);
+  }
+  return parsed.isoWeekday(1);
+}
+
+function isTodayInVisibleWeek(monday: dayjs.Dayjs, weekEnd: dayjs.Dayjs) {
+  const now = dayjs();
+  return now.isAfter(monday.startOf("day")) && now.isBefore(weekEnd);
+}
+
+function getWeekEventsInRange(
+  events: CalendarEventDetail[],
+  monday: dayjs.Dayjs,
+  weekEnd: dayjs.Dayjs,
+) {
+  return events.filter((event) => {
+    if (!event.startDateTime) {
+      return false;
+    }
+    const eventDate = dayjs(event.startDateTime);
+    return eventDate.isSameOrAfter(monday.startOf("day")) && eventDate.isBefore(weekEnd);
+  });
+}
+
+function computeEventMaxHour(event: CalendarEventDetail) {
+  if (event.endDateTime) {
+    const endTime = dayjs(event.endDateTime);
+    const startTime = event.startDateTime ? dayjs(event.startDateTime) : null;
+    const crossesMidnight = startTime && endTime.isBefore(startTime);
+    const isMidnight = endTime.hour() === 0 && endTime.minute() === 0;
+
+    if (crossesMidnight || isMidnight) {
+      return 24;
+    }
+    const roundedEndHour = endTime.minute() > 0 ? endTime.hour() + 1 : endTime.hour();
+    return Math.min(24, roundedEndHour);
+  }
+
+  if (event.startDateTime) {
+    return Math.min(24, dayjs(event.startDateTime).hour() + 1);
+  }
+
+  return 0;
+}
+
+function computeGridHourBounds(events: CalendarEventDetail[], monday: dayjs.Dayjs) {
+  const businessStart = 9;
+  const businessEnd = 20;
+  const weekEnd = monday.add(5, "day").endOf("day");
+  const now = dayjs();
+  const isNowWithinBusiness = now.hour() >= businessStart && now.hour() <= businessEnd;
+  const includeCurrentTime = isTodayInVisibleWeek(monday, weekEnd) && isNowWithinBusiness;
+  const weekEvents = getWeekEventsInRange(events, monday, weekEnd);
+
+  if (weekEvents.length === 0) {
+    return { endHour: businessEnd, startHour: businessStart };
+  }
+
+  let min = includeCurrentTime ? now.hour() : 23;
+  let max = includeCurrentTime ? now.hour() + 1 : 0;
+
+  for (const event of weekEvents) {
+    if (event.startDateTime) {
+      min = Math.min(min, dayjs(event.startDateTime).hour());
+    }
+    max = Math.max(max, computeEventMaxHour(event));
+  }
+
+  const paddedStart = Math.max(0, min - 1);
+  const paddedEnd = Math.min(24, max + 1);
+  return {
+    endHour: Math.max(paddedEnd, businessEnd),
+    startHour: Math.min(paddedStart, businessStart),
+  };
+}
+
 // Calculate layout for overlapping events
 // Each cluster of overlapping events gets its own column count
 // Non-overlapping events get full width (1 column)
@@ -120,93 +199,8 @@ export function WeekGrid({ events, loading, onEventClick, weekStart }: Readonly<
     setTooltipTrigger(canHover ? "hover" : "focus");
   }, []);
 
-  // Parse weekStart and get Monday of that week using ISO week (Monday = 1)
-  const monday = (() => {
-    const parsed = dayjs(weekStart);
-    if (!parsed.isValid()) {
-      // Fallback to current week's Monday
-      return dayjs().isoWeekday(1);
-    }
-    // Get the Monday of the week containing this date
-    return parsed.isoWeekday(1);
-  })();
-
-  // Calculate time bounds based based on events AND current time
-  // eslint-disable-next-line sonarjs/cognitive-complexity
-  const { endHour, startHour } = (() => {
-    const businessStart = 9;
-    const businessEnd = 20;
-    // Filter events to only those in the displayed week (Mon-Sat)
-    const weekEnd = monday.add(5, "day").endOf("day");
-
-    // Check if we need to include current time (if today is in range)
-    const now = dayjs();
-    const isTodayInView = now.isAfter(monday.startOf("day")) && now.isBefore(weekEnd);
-    const isNowWithinBusiness = now.hour() >= businessStart && now.hour() <= businessEnd;
-
-    const weekEvents = events.filter((event) => {
-      if (!event.startDateTime) {
-        return false;
-      }
-      const eventDate = dayjs(event.startDateTime);
-      // Use isSameOrAfter for start of week to include events on Monday
-      return eventDate.isSameOrAfter(monday.startOf("day")) && eventDate.isBefore(weekEnd);
-    });
-
-    // If no events in week, show reasonable default range
-    if (weekEvents.length === 0) {
-      return { endHour: businessEnd, startHour: businessStart };
-    }
-
-    let min = 23;
-    let max = 0;
-
-    // Expand to show current time if today is in view AND within business hours
-    if (isTodayInView && isNowWithinBusiness) {
-      min = Math.min(min, now.hour());
-      max = Math.max(max, now.hour() + 1);
-    }
-
-    for (const event of weekEvents) {
-      if (event.startDateTime) {
-        const hour = dayjs(event.startDateTime).hour();
-        min = Math.min(min, hour);
-        // Also track start hour for max (event needs to be visible)
-        max = Math.max(max, hour);
-      }
-      if (event.endDateTime) {
-        const endTime = dayjs(event.endDateTime);
-        const startTime = event.startDateTime ? dayjs(event.startDateTime) : null;
-
-        // Check if event crosses midnight (end is on different day or is midnight)
-        const crossesMidnight = startTime && endTime.isBefore(startTime);
-        const isMidnight = endTime.hour() === 0 && endTime.minute() === 0;
-
-        if (crossesMidnight || isMidnight) {
-          // Event ends at or after midnight - show grid until 24:00
-          max = 24;
-        } else {
-          // Normal case: round up to next hour if has minutes
-          const hour = endTime.minute() > 0 ? endTime.hour() + 1 : endTime.hour();
-          max = Math.max(max, Math.min(24, hour));
-        }
-      } else if (event.startDateTime) {
-        // No end time, assume 1 hour duration
-        const startHour = dayjs(event.startDateTime).hour();
-        max = Math.max(max, Math.min(24, startHour + 1));
-      }
-    }
-
-    // Add padding: 1 hour before first event, 1 hour after last event
-    const paddedStart = Math.max(0, min - 1);
-    const paddedEnd = Math.min(24, max + 1); // Allow extending to 24 (midnight)
-
-    // Keep default business hours unless events require more space.
-    const constrainedStart = Math.min(paddedStart, businessStart);
-    const constrainedEnd = Math.max(paddedEnd, businessEnd);
-
-    return { endHour: constrainedEnd, startHour: constrainedStart };
-  })();
+  const monday = resolveWeekMonday(weekStart);
+  const { endHour, startHour } = computeGridHourBounds(events, monday);
 
   const hours = generateHours(startHour, endHour);
   const eventsByDay = groupEventsByDay(events, monday);

@@ -11,17 +11,68 @@ interface DailyEventCardProps {
   readonly event: CalendarEventDetail;
 }
 
-export function DailyEventCard({ event }: DailyEventCardProps) {
-  const isSubcutaneous = event.category === "Tratamiento subcutáneo";
-  const hasControl = event.controlIncluded === true;
+function getAttendanceLabel(event: CalendarEventDetail): null | { label: string; tone: string } {
+  if (event.attended == null) {
+    return null;
+  }
 
-  // Calculate times and duration
+  const shouldShow =
+    event.attended || (event.startDateTime && dayjs(event.startDateTime).isBefore(dayjs()));
+  if (!shouldShow) {
+    return null;
+  }
+
+  return event.attended
+    ? { label: "✓ Asistió", tone: "text-success" }
+    : { label: "✗ No asistió", tone: "text-danger" };
+}
+
+function buildRightSideBadges(event: CalendarEventDetail) {
+  const isSubcutaneous = event.category === "Tratamiento subcutáneo";
+  const badges: Array<{
+    className?: string;
+    color?: "accent" | "warning";
+    label: string;
+  }> = [];
+
+  if (event.category) {
+    badges.push({
+      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      label: event.category,
+    });
+  }
+  if (event.controlIncluded === true) {
+    badges.push({
+      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      color: "warning",
+      label: "Control",
+    });
+  }
+  if (isSubcutaneous && event.treatmentStage) {
+    badges.push({
+      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      color: "accent",
+      label: event.treatmentStage,
+    });
+  }
+  if (isSubcutaneous && event.dosageValue != null && event.dosageUnit) {
+    badges.push({
+      className: "h-6 font-medium text-[10px] uppercase tracking-wide",
+      color: "accent",
+      label: `${event.dosageValue} ${event.dosageUnit}`,
+    });
+  }
+
+  return badges;
+}
+
+export function DailyEventCard({ event }: DailyEventCardProps) {
   const start = event.startDateTime ? dayjs(event.startDateTime) : null;
   const end = event.endDateTime ? dayjs(event.endDateTime) : null;
   const durationMinutes = start && end ? end.diff(start, "minute") : null;
-
-  // Category-based indicator color
   const indicatorColor = getCategoryIndicatorColor(event.category);
+  const attendance = getAttendanceLabel(event);
+  const rightBadges = buildRightSideBadges(event);
 
   return (
     <Card className="group h-full border border-default-200 shadow-sm transition-all hover:shadow-md">
@@ -74,15 +125,9 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
                 </span>
               </div>
             )}
-            {event.attended != null &&
-              (event.attended ||
-                (event.startDateTime && dayjs(event.startDateTime).isBefore(dayjs()))) && (
-                <span
-                  className={cn("font-medium", event.attended ? "text-success" : "text-danger")}
-                >
-                  {event.attended ? "✓ Asistió" : "✗ No asistió"}
-                </span>
-              )}
+            {attendance && (
+              <span className={cn("font-medium", attendance.tone)}>{attendance.label}</span>
+            )}
           </div>
 
           {/* Description */}
@@ -93,45 +138,17 @@ export function DailyEventCard({ event }: DailyEventCardProps) {
 
         {/* Right Column - Category Badges */}
         <div className="flex flex-col items-end gap-1 text-right">
-          {event.category && (
+          {rightBadges.map((badge) => (
             <Chip
+              className={badge.className}
+              color={badge.color}
+              key={`${badge.label}-${badge.color ?? "default"}`}
               size="sm"
               variant="soft"
-              className="h-6 font-medium text-[10px] uppercase tracking-wide"
             >
-              {event.category}
+              {badge.label}
             </Chip>
-          )}
-          {hasControl && (
-            <Chip
-              size="sm"
-              variant="soft"
-              color="warning"
-              className="h-6 font-medium text-[10px] uppercase tracking-wide"
-            >
-              Control
-            </Chip>
-          )}
-          {isSubcutaneous && event.treatmentStage && (
-            <Chip
-              size="sm"
-              variant="soft"
-              color="accent"
-              className="h-6 font-medium text-[10px] uppercase tracking-wide"
-            >
-              {event.treatmentStage}
-            </Chip>
-          )}
-          {isSubcutaneous && event.dosageValue != null && event.dosageUnit && (
-            <Chip
-              size="sm"
-              variant="soft"
-              color="accent"
-              className="h-6 font-medium text-[10px] uppercase tracking-wide"
-            >
-              {event.dosageValue} {event.dosageUnit}
-            </Chip>
-          )}
+          ))}
         </div>
       </div>
     </Card>

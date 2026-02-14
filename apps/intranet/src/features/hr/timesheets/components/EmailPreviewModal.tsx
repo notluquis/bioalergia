@@ -10,7 +10,7 @@ import {
   Spinner,
 } from "@heroui/react";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { Employee } from "@/features/hr/employees/types";
@@ -30,7 +30,7 @@ interface EmailPreviewModalProps {
   monthLabel: string;
   onClose: () => void;
   onPrepare: () => void;
-  prepareStatus: null | string; // null | 'generating-pdf' | 'preparing-payload' | 'sending' | 'done'
+  prepareStatus: PrepareStatus;
   summary: null | TimesheetSummaryRow;
 }
 
@@ -45,6 +45,23 @@ type AgentStatus = {
   message: string;
 };
 
+export type PrepareStatus = "done" | "generating-pdf" | "preparing-payload" | "sending" | null;
+
+type LocalAgentState = {
+  agentStatus: AgentStatus | null;
+  agentToken: string;
+  agentUrl: string;
+  checkingAgent: boolean;
+  checkingSmtp: boolean;
+  isHttpAgent: boolean;
+  setAgentTokenValue: (value: string) => void;
+  setAgentUrlValue: (value: string) => void;
+  stopAgent: () => Promise<void>;
+  stoppingAgent: boolean;
+  verifyAgent: () => Promise<void>;
+  verifySmtp: () => Promise<void>;
+};
+
 export function EmailPreviewModal({
   employee,
   isOpen,
@@ -56,39 +73,12 @@ export function EmailPreviewModal({
   summary,
 }: EmailPreviewModalProps) {
   const isPreparing = prepareStatus !== null && prepareStatus !== "done";
-  const [agentToken, setAgentToken] = useState("");
-  const [agentUrl, setAgentUrl] = useState(DEFAULT_LOCAL_AGENT_URL);
-  const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
-  const [checkingAgent, setCheckingAgent] = useState(false);
-  const [checkingSmtp, setCheckingSmtp] = useState(false);
-  const [stoppingAgent, setStoppingAgent] = useState(false);
+  const localAgent = useLocalAgentPanelState(isOpen);
   const isHttpsPage = typeof window !== "undefined" && window.location.protocol === "https:";
-  const isHttpAgent = agentUrl.startsWith("http://");
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    const storedToken = localStorage.getItem(LOCAL_AGENT_TOKEN_KEY) ?? "";
-    const storedUrl = localStorage.getItem(LOCAL_AGENT_URL_KEY) ?? DEFAULT_LOCAL_AGENT_URL;
-    setAgentToken(storedToken);
-    setAgentUrl(storedUrl);
-    setAgentStatus(null);
-  }, [isOpen]);
 
   // Retain logic for month label and computations
   const employeeEmail = employee?.person?.email;
-
-  // Convertir mes a español
-  dayjs.locale("es");
-  let monthLabelEs = monthLabel;
-  const monthMatch = MONTH_LABEL_REGEX.exec(monthLabel);
-  if (monthMatch) {
-    monthLabelEs = dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY");
-  } else if (dayjs(monthLabel, "MMMM YYYY", "en").isValid()) {
-    monthLabelEs = dayjs(monthLabel, "MMMM YYYY", "en").locale("es").format("MMMM YYYY");
-  }
-  monthLabelEs = monthLabelEs.charAt(0).toUpperCase() + monthLabelEs.slice(1);
+  const monthLabelEs = getMonthLabelInSpanish(monthLabel);
 
   if (!employee || !summary) {
     return null;
@@ -103,9 +93,7 @@ export function EmailPreviewModal({
   const boletaDescription = `SERVICIOS PROFESIONALES DE ${summary.role.toUpperCase()} - PERIODO ${monthLabelEs.toUpperCase()} - TIEMPO FACTURABLE ${totalHoursFormatted}`;
 
   // Get year from month in YYYY-MM format
-  const summaryYear = month
-    ? Number.parseInt(month.split("-")[0] ?? "", 10)
-    : new Date().getFullYear();
+  const summaryYear = getSummaryYear(month);
   const employeeRate = summary.retentionRate ?? summary.retention_rate ?? null;
   const effectiveRate = getEffectiveRetentionRate(employeeRate, summaryYear);
   const retentionPercent = formatRetentionPercent(effectiveRate);
@@ -125,153 +113,7 @@ export function EmailPreviewModal({
 
             <ModalBody className="block max-h-[60vh] overflow-y-auto p-6">
               <div className="mb-4 rounded-xl border border-default-200 bg-default-50/40 p-4">
-                <span className="mb-3 block font-semibold text-sm">Agente local</span>
-                <div className="mb-3">
-                  <Input
-                    id="local-agent-url"
-                    label="URL del agente"
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setAgentUrl(value);
-                      localStorage.setItem(LOCAL_AGENT_URL_KEY, value);
-                    }}
-                    placeholder="https://127.0.0.1:3333"
-                    type="text"
-                    value={agentUrl}
-                  />
-                </div>
-                <div className="mb-3">
-                  <Input
-                    id="local-agent-token"
-                    label="Token"
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setAgentToken(value);
-                      localStorage.setItem(LOCAL_AGENT_TOKEN_KEY, value);
-                    }}
-                    placeholder="Token del agente local"
-                    type="password"
-                    value={agentToken}
-                  />
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    disabled={checkingAgent}
-                    onClick={async () => {
-                      setCheckingAgent(true);
-                      setAgentStatus(null);
-                      try {
-                        const response = await fetch(`${normalizeAgentUrl(agentUrl)}/health`);
-                        if (!response.ok) {
-                          const message = await readLocalAgentErrorMessage(
-                            response,
-                            "Agente respondió con error",
-                          );
-                          setAgentStatus({ kind: "danger", message });
-                        } else {
-                          setAgentStatus({ kind: "success", message: "Agente activo" });
-                        }
-                      } catch {
-                        setAgentStatus({
-                          kind: "danger",
-                          message:
-                            "Agente no responde. Revisa URL, HTTPS/certificado y que esté corriendo.",
-                        });
-                      } finally {
-                        setCheckingAgent(false);
-                      }
-                    }}
-                    variant="secondary"
-                  >
-                    {checkingAgent ? "Verificando..." : "Verificar agente"}
-                  </Button>
-                  <Button
-                    disabled={checkingSmtp || !agentToken}
-                    onClick={async () => {
-                      setCheckingSmtp(true);
-                      setAgentStatus(null);
-                      try {
-                        const response = await fetch(`${normalizeAgentUrl(agentUrl)}/health/smtp`, {
-                          headers: {
-                            "X-Local-Agent-Token": agentToken,
-                          },
-                        });
-                        if (!response.ok) {
-                          if (response.status === 401) {
-                            setAgentStatus({
-                              kind: "warning",
-                              message: "Token inválido o faltante",
-                            });
-                            return;
-                          }
-                          const message = await readLocalAgentErrorMessage(
-                            response,
-                            "SMTP no disponible",
-                          );
-                          setAgentStatus({
-                            kind: "danger",
-                            message: `SMTP no disponible: ${message}`,
-                          });
-                        } else {
-                          setAgentStatus({ kind: "success", message: "SMTP listo" });
-                        }
-                      } catch {
-                        setAgentStatus({ kind: "danger", message: "No se pudo verificar SMTP" });
-                      } finally {
-                        setCheckingSmtp(false);
-                      }
-                    }}
-                    variant="secondary"
-                  >
-                    {checkingSmtp ? "Validando SMTP..." : "Verificar SMTP"}
-                  </Button>
-                  <Button
-                    disabled={stoppingAgent || !agentToken}
-                    onClick={async () => {
-                      setStoppingAgent(true);
-                      setAgentStatus(null);
-                      try {
-                        const response = await fetch(`${normalizeAgentUrl(agentUrl)}/shutdown`, {
-                          method: "POST",
-                          headers: {
-                            "X-Local-Agent-Token": agentToken,
-                          },
-                        });
-                        if (!response.ok) {
-                          const message = await readLocalAgentErrorMessage(
-                            response,
-                            "No se pudo apagar el agente",
-                          );
-                          setAgentStatus({ kind: "danger", message });
-                        } else {
-                          setAgentStatus({ kind: "warning", message: "Agente apagándose..." });
-                        }
-                      } catch {
-                        setAgentStatus({
-                          kind: "danger",
-                          message: "No se pudo contactar al agente para apagarlo.",
-                        });
-                      } finally {
-                        setStoppingAgent(false);
-                      }
-                    }}
-                    variant="secondary"
-                  >
-                    {stoppingAgent ? "Apagando..." : "Apagar agente"}
-                  </Button>
-                </div>
-                {agentStatus && (
-                  <div className="mt-2">
-                    <Chip color={agentStatus.kind} size="sm" variant="soft">
-                      {agentStatus.message}
-                    </Chip>
-                  </div>
-                )}
-                {isHttpsPage && isHttpAgent && (
-                  <Description className="mt-2 text-amber-600 text-xs">
-                    El navegador bloquea HTTP desde una página HTTPS. Usa HTTPS en el agente local.
-                  </Description>
-                )}
+                <LocalAgentPanel isHttpsPage={isHttpsPage} state={localAgent} />
               </div>
 
               {/* Content wraps in ModalBody for spacing/scroll */}
@@ -396,11 +238,7 @@ export function EmailPreviewModal({
 
             <ModalFooter className="flex items-center justify-between border-default-200 border-t bg-background px-6 py-4">
               <Description className="mr-4 flex-1 text-default-400 text-xs">
-                {prepareStatus === "generating-pdf" && "Generando documento PDF..."}
-                {prepareStatus === "preparing-payload" && "Preparando contenido del email..."}
-                {prepareStatus === "sending" && "Enviando correo desde el agente local..."}
-                {prepareStatus === "done" && "✅ Email enviado correctamente"}
-                {!prepareStatus && "Se enviará el correo desde tu Mac usando el agente local."}
+                {getPrepareStatusMessage(prepareStatus)}
               </Description>
               <div className="flex shrink-0 gap-3">
                 <Button disabled={isPreparing} onClick={onClose} variant="secondary">
@@ -421,6 +259,189 @@ export function EmailPreviewModal({
       </ModalBackdrop>
     </ModalRoot>
   );
+}
+
+function LocalAgentPanel({ isHttpsPage, state }: { isHttpsPage: boolean; state: LocalAgentState }) {
+  return (
+    <>
+      <span className="mb-3 block font-semibold text-sm">Agente local</span>
+      <div className="mb-3">
+        <Input
+          id="local-agent-url"
+          label="URL del agente"
+          onChange={(event) => state.setAgentUrlValue(event.target.value)}
+          placeholder="https://127.0.0.1:3333"
+          type="text"
+          value={state.agentUrl}
+        />
+      </div>
+      <div className="mb-3">
+        <Input
+          id="local-agent-token"
+          label="Token"
+          onChange={(event) => state.setAgentTokenValue(event.target.value)}
+          placeholder="Token del agente local"
+          type="password"
+          value={state.agentToken}
+        />
+      </div>
+      <div className="flex items-center gap-3">
+        <Button disabled={state.checkingAgent} onClick={state.verifyAgent} variant="secondary">
+          {state.checkingAgent ? "Verificando..." : "Verificar agente"}
+        </Button>
+        <Button
+          disabled={state.checkingSmtp || !state.agentToken}
+          onClick={state.verifySmtp}
+          variant="secondary"
+        >
+          {state.checkingSmtp ? "Validando SMTP..." : "Verificar SMTP"}
+        </Button>
+        <Button
+          disabled={state.stoppingAgent || !state.agentToken}
+          onClick={state.stopAgent}
+          variant="secondary"
+        >
+          {state.stoppingAgent ? "Apagando..." : "Apagar agente"}
+        </Button>
+      </div>
+      {state.agentStatus && (
+        <div className="mt-2">
+          <Chip color={state.agentStatus.kind} size="sm" variant="soft">
+            {state.agentStatus.message}
+          </Chip>
+        </div>
+      )}
+      {isHttpsPage && state.isHttpAgent && (
+        <Description className="mt-2 text-amber-600 text-xs">
+          El navegador bloquea HTTP desde una página HTTPS. Usa HTTPS en el agente local.
+        </Description>
+      )}
+    </>
+  );
+}
+
+function useLocalAgentPanelState(isOpen: boolean): LocalAgentState {
+  const [agentToken, setAgentToken] = useState("");
+  const [agentUrl, setAgentUrl] = useState(DEFAULT_LOCAL_AGENT_URL);
+  const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
+  const [checkingAgent, setCheckingAgent] = useState(false);
+  const [checkingSmtp, setCheckingSmtp] = useState(false);
+  const [stoppingAgent, setStoppingAgent] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    const storedToken = localStorage.getItem(LOCAL_AGENT_TOKEN_KEY) ?? "";
+    const storedUrl = localStorage.getItem(LOCAL_AGENT_URL_KEY) ?? DEFAULT_LOCAL_AGENT_URL;
+    setAgentToken(storedToken);
+    setAgentUrl(storedUrl);
+    setAgentStatus(null);
+  }, [isOpen]);
+
+  const setAgentTokenValue = useCallback((value: string) => {
+    setAgentToken(value);
+    localStorage.setItem(LOCAL_AGENT_TOKEN_KEY, value);
+  }, []);
+
+  const setAgentUrlValue = useCallback((value: string) => {
+    setAgentUrl(value);
+    localStorage.setItem(LOCAL_AGENT_URL_KEY, value);
+  }, []);
+
+  const verifyAgent = useCallback(async () => {
+    setCheckingAgent(true);
+    setAgentStatus(null);
+    try {
+      const response = await fetch(`${normalizeAgentUrl(agentUrl)}/health`);
+      if (!response.ok) {
+        const message = await readLocalAgentErrorMessage(response, "Agente respondió con error");
+        setAgentStatus({ kind: "danger", message });
+      } else {
+        setAgentStatus({ kind: "success", message: "Agente activo" });
+      }
+    } catch {
+      setAgentStatus({
+        kind: "danger",
+        message: "Agente no responde. Revisa URL, HTTPS/certificado y que esté corriendo.",
+      });
+    } finally {
+      setCheckingAgent(false);
+    }
+  }, [agentUrl]);
+
+  const verifySmtp = useCallback(async () => {
+    setCheckingSmtp(true);
+    setAgentStatus(null);
+    try {
+      const response = await fetch(`${normalizeAgentUrl(agentUrl)}/health/smtp`, {
+        headers: {
+          "X-Local-Agent-Token": agentToken,
+        },
+      });
+      if (!response.ok) {
+        if (response.status === 401) {
+          setAgentStatus({
+            kind: "warning",
+            message: "Token inválido o faltante",
+          });
+          return;
+        }
+        const message = await readLocalAgentErrorMessage(response, "SMTP no disponible");
+        setAgentStatus({
+          kind: "danger",
+          message: `SMTP no disponible: ${message}`,
+        });
+      } else {
+        setAgentStatus({ kind: "success", message: "SMTP listo" });
+      }
+    } catch {
+      setAgentStatus({ kind: "danger", message: "No se pudo verificar SMTP" });
+    } finally {
+      setCheckingSmtp(false);
+    }
+  }, [agentToken, agentUrl]);
+
+  const stopAgent = useCallback(async () => {
+    setStoppingAgent(true);
+    setAgentStatus(null);
+    try {
+      const response = await fetch(`${normalizeAgentUrl(agentUrl)}/shutdown`, {
+        method: "POST",
+        headers: {
+          "X-Local-Agent-Token": agentToken,
+        },
+      });
+      if (!response.ok) {
+        const message = await readLocalAgentErrorMessage(response, "No se pudo apagar el agente");
+        setAgentStatus({ kind: "danger", message });
+      } else {
+        setAgentStatus({ kind: "warning", message: "Agente apagándose..." });
+      }
+    } catch {
+      setAgentStatus({
+        kind: "danger",
+        message: "No se pudo contactar al agente para apagarlo.",
+      });
+    } finally {
+      setStoppingAgent(false);
+    }
+  }, [agentToken, agentUrl]);
+
+  return {
+    agentStatus,
+    agentToken,
+    agentUrl,
+    checkingAgent,
+    checkingSmtp,
+    isHttpAgent: agentUrl.startsWith("http://"),
+    setAgentTokenValue,
+    setAgentUrlValue,
+    stopAgent,
+    stoppingAgent,
+    verifyAgent,
+    verifySmtp,
+  };
 }
 
 async function readLocalAgentErrorMessage(response: Response, fallbackMessage: string) {
@@ -444,7 +465,38 @@ function normalizeAgentUrl(value: string) {
   return value.trim().replace(TRAILING_SLASHES_REGEX, "");
 }
 
-function renderPrepareButtonContent(status: string | null) {
+function getMonthLabelInSpanish(monthLabel: string) {
+  dayjs.locale("es");
+  const monthMatch = MONTH_LABEL_REGEX.exec(monthLabel);
+  const normalizedMonthLabel = monthMatch
+    ? dayjs(`${monthMatch[1]}-${monthMatch[2]}-01`).locale("es").format("MMMM YYYY")
+    : dayjs(monthLabel, "MMMM YYYY", "en").isValid()
+      ? dayjs(monthLabel, "MMMM YYYY", "en").locale("es").format("MMMM YYYY")
+      : monthLabel;
+  return normalizedMonthLabel.charAt(0).toUpperCase() + normalizedMonthLabel.slice(1);
+}
+
+function getSummaryYear(month: string) {
+  return month ? Number.parseInt(month.split("-")[0] ?? "", 10) : new Date().getFullYear();
+}
+
+function getPrepareStatusMessage(status: PrepareStatus) {
+  if (status === "generating-pdf") {
+    return "Generando documento PDF...";
+  }
+  if (status === "preparing-payload") {
+    return "Preparando contenido del email...";
+  }
+  if (status === "sending") {
+    return "Enviando correo desde el agente local...";
+  }
+  if (status === "done") {
+    return "✅ Email enviado correctamente";
+  }
+  return "Se enviará el correo desde tu Mac usando el agente local.";
+}
+
+function renderPrepareButtonContent(status: PrepareStatus) {
   if (status === "generating-pdf") {
     return (
       <span className="flex items-center gap-2">

@@ -26,6 +26,214 @@ dayjs.locale("es");
 
 type RoleOption = { id: number; name: string };
 
+function mapRawUsers(usersData: unknown[] | undefined): User[] {
+  if (!usersData) {
+    return [];
+  }
+
+  type RawUser = {
+    createdAt?: Date | null;
+    id: number;
+    mfaEnabled?: boolean | null;
+    passkeys?: unknown[];
+    person?: { email?: null | string; fatherName?: null | string; names?: string; rut?: string };
+    roles?: { role?: { name?: string } }[];
+    status?: string;
+  };
+
+  return usersData
+    .filter((u) => {
+      const personEmail = (u as RawUser).person?.email ?? "";
+      return !personEmail.includes("test") && !personEmail.includes("debug");
+    })
+    .map(
+      (u): User => ({
+        createdAt: (u as RawUser).createdAt ?? new Date(),
+        email: (u as RawUser).person?.email ?? "",
+        hasPasskey: ((u as RawUser).passkeys ?? []).length > 0,
+        id: (u as RawUser).id,
+        mfaEnabled: (u as RawUser).mfaEnabled ?? false,
+        passkeysCount: ((u as RawUser).passkeys ?? []).length,
+        person: {
+          fatherName: (u as RawUser).person?.fatherName ?? null,
+          names: (u as RawUser).person?.names ?? "",
+          rut: (u as RawUser).person?.rut ?? "",
+        },
+        role: (u as RawUser).roles?.[0]?.role?.name ?? "",
+        status: ((u as RawUser).status ?? "ACTIVE") as User["status"],
+      }),
+    );
+}
+
+function filterUsersByRole(users: User[], roleFilter: string) {
+  if (roleFilter === "ALL") {
+    return users;
+  }
+  return users.filter(
+    (u) => u.role === roleFilter || (u.role || "").toUpperCase() === roleFilter.toUpperCase(),
+  );
+}
+
+function useUserManagementActions(params: {
+  assignUserRole: (roleId: number, userId: number) => Promise<unknown>;
+  clearUserRoles: (userId: number) => Promise<unknown>;
+  deleteUser: (id: number) => Promise<unknown>;
+  editingUser: null | User;
+  errorToast: (message: string) => void;
+  queryClient: ReturnType<typeof useQueryClient>;
+  roles: RoleOption[];
+  selectedRole: string;
+  setEditingUser: (value: null | User) => void;
+  setIsResetPasswordOpen: (value: boolean) => void;
+  setResetPasswordUser: (value: string) => void;
+  setResetPasswordValue: (value: string) => void;
+  setSelectedRole: (value: string) => void;
+  successToast: (message: string) => void;
+  updateUserStatus: (id: number, status: "ACTIVE" | "SUSPENDED") => Promise<unknown>;
+  users: User[];
+}) {
+  const invalidateUsers = useCallback(() => {
+    void params.queryClient.invalidateQueries({ queryKey: ["user"] });
+  }, [params.queryClient]);
+
+  const handleDeletePasskey = useCallback(
+    async (id: number) => {
+      if (!confirm("¿Eliminar Passkey?")) {
+        return;
+      }
+      try {
+        await deleteUserPasskey(id);
+        params.successToast("Passkey eliminado");
+        invalidateUsers();
+      } catch {
+        params.errorToast("Error al eliminar Passkey");
+      }
+    },
+    [invalidateUsers, params],
+  );
+
+  const handleDeleteUser = useCallback(
+    async (id: number) => {
+      if (!confirm("¿Eliminar usuario permanentemente?")) {
+        return;
+      }
+      try {
+        await params.deleteUser(id);
+        params.successToast("Usuario eliminado");
+      } catch (error_) {
+        params.errorToast(error_ instanceof Error ? error_.message : "Error al eliminar");
+      }
+    },
+    [params],
+  );
+
+  const handleEditRole = useCallback(
+    (user: User) => {
+      params.setEditingUser(user);
+      params.setSelectedRole(user.role);
+    },
+    [params],
+  );
+
+  const handleResetPassword = useCallback(
+    async (id: number) => {
+      if (!confirm("¿Restablecer contraseña? Esto generará una clave temporal.")) {
+        return;
+      }
+      try {
+        const tempPassword = await resetUserPassword(id);
+        const target = params.users.find((u) => u.id === id);
+        params.successToast("Contraseña restablecida");
+        invalidateUsers();
+        params.setResetPasswordValue(tempPassword);
+        params.setResetPasswordUser(target ? getPersonFullName(target.person) : `Usuario #${id}`);
+        params.setIsResetPasswordOpen(true);
+      } catch (error_) {
+        params.errorToast(error_ instanceof Error ? error_.message : "Error al restablecer");
+      }
+    },
+    [invalidateUsers, params],
+  );
+
+  const handleToggleMfa = useCallback(
+    async (id: number, current: boolean) => {
+      const action = current ? "desactivar" : "activar";
+      if (!confirm(`¿Estás seguro de ${action} MFA para este usuario?`)) {
+        return;
+      }
+      try {
+        await toggleUserMfa(id, !current);
+        invalidateUsers();
+        params.successToast("Estado MFA actualizado correctamente");
+      } catch (error_) {
+        params.errorToast(error_ instanceof Error ? error_.message : "Error desconocido");
+      }
+    },
+    [invalidateUsers, params],
+  );
+
+  const handleToggleStatus = useCallback(
+    async (id: number, currentStatus: string) => {
+      const newStatus = currentStatus === "SUSPENDED" ? "ACTIVE" : "SUSPENDED";
+      const action = newStatus === "ACTIVE" ? "reactivar" : "suspender";
+      if (!confirm(`¿${action} usuario?`)) {
+        return;
+      }
+      try {
+        await params.updateUserStatus(id, newStatus as "ACTIVE" | "SUSPENDED");
+        params.successToast(`Usuario ${newStatus === "ACTIVE" ? "reactivado" : "suspendido"}`);
+      } catch (error_) {
+        params.errorToast(error_ instanceof Error ? error_.message : "Error al actualizar estado");
+      }
+    },
+    [params],
+  );
+
+  const handleSaveRole = useCallback(async () => {
+    if (!params.editingUser || !params.selectedRole) {
+      return;
+    }
+
+    const selectedRoleObj = params.roles.find((r) => r.name === params.selectedRole);
+    if (!selectedRoleObj) {
+      params.errorToast("Rol no encontrado");
+      return;
+    }
+
+    try {
+      await params.clearUserRoles(params.editingUser.id);
+      await params.assignUserRole(selectedRoleObj.id, params.editingUser.id);
+
+      void params.queryClient.invalidateQueries({ queryKey: ["user"] });
+      params.successToast("Rol actualizado correctamente");
+      params.setEditingUser(null);
+    } catch (error_) {
+      params.errorToast(error_ instanceof Error ? error_.message : "Error al actualizar rol");
+    }
+  }, [params]);
+
+  const actions = useMemo(
+    () => ({
+      onDeletePasskey: handleDeletePasskey,
+      onDeleteUser: handleDeleteUser,
+      onEditRole: handleEditRole,
+      onResetPassword: handleResetPassword,
+      onToggleMfa: handleToggleMfa,
+      onToggleStatus: handleToggleStatus,
+    }),
+    [
+      handleDeletePasskey,
+      handleDeleteUser,
+      handleEditRole,
+      handleResetPassword,
+      handleToggleMfa,
+      handleToggleStatus,
+    ],
+  );
+
+  return { actions, handleSaveRole };
+}
+
 export function UserManagementPage() {
   const client = useClientQueries(schemaLite);
 
@@ -47,38 +255,8 @@ export function UserManagementPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  // Use TypeScript inference for raw ZenStack data type
-  type RawUser = NonNullable<typeof usersData>[number];
-
   // Transform to frontend User view model (with computed properties)
-  const users: User[] = useMemo(() => {
-    if (!usersData) {
-      return [];
-    }
-    return usersData
-      .filter((u) => {
-        const personEmail = (u as { person?: { email?: null | string } }).person?.email ?? "";
-        return !personEmail.includes("test") && !personEmail.includes("debug");
-      })
-      .map(
-        (u: RawUser): User => ({
-          createdAt: u.createdAt ?? new Date(),
-          email: (u as { person?: { email?: null | string } }).person?.email ?? "",
-          hasPasskey: ((u as { passkeys?: unknown[] }).passkeys ?? []).length > 0,
-          id: u.id,
-          mfaEnabled: u.mfaEnabled ?? false,
-          passkeysCount: ((u as { passkeys?: unknown[] }).passkeys ?? []).length,
-          person: {
-            fatherName:
-              (u as { person?: { fatherName?: null | string } }).person?.fatherName ?? null,
-            names: (u as { person?: { names?: string } }).person?.names ?? "",
-            rut: (u as { person?: { rut?: string } }).person?.rut ?? "",
-          },
-          role: (u as { roles?: { role?: { name?: string } }[] }).roles?.[0]?.role?.name ?? "",
-          status: u.status as User["status"],
-        }),
-      );
-  }, [usersData]);
+  const users: User[] = useMemo(() => mapRawUsers(usersData), [usersData]);
 
   // ZenStack hooks for roles (for filter dropdown)
   const { data: rolesData } = client.role.useFindMany({
@@ -92,166 +270,51 @@ export function UserManagementPage() {
   const createRoleAssignment = client.userRoleAssignment.useCreate();
   const deleteRoleAssignments = client.userRoleAssignment.useDeleteMany();
 
-  const invalidateUsers = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ["user"] });
-  }, [queryClient]);
-
-  const handleDeletePasskey = useCallback(
-    async (id: number) => {
-      if (!confirm("¿Eliminar Passkey?")) {
-        return;
-      }
-      try {
-        await deleteUserPasskey(id);
-        success("Passkey eliminado");
-        invalidateUsers();
-      } catch {
-        error("Error al eliminar Passkey");
-      }
-    },
-    [error, invalidateUsers, success],
+  const deleteUser = useCallback(
+    (id: number) => deleteUserMutation.mutateAsync({ where: { id } }),
+    [deleteUserMutation],
+  );
+  const clearUserRoles = useCallback(
+    (userId: number) => deleteRoleAssignments.mutateAsync({ where: { userId } }),
+    [deleteRoleAssignments],
+  );
+  const assignUserRole = useCallback(
+    (roleId: number, userId: number) =>
+      createRoleAssignment.mutateAsync({ data: { roleId, userId } }),
+    [createRoleAssignment],
+  );
+  const updateUserStatus = useCallback(
+    (id: number, status: "ACTIVE" | "SUSPENDED") =>
+      updateUserMutation.mutateAsync({
+        data: { status },
+        where: { id },
+      }),
+    [updateUserMutation],
   );
 
-  const handleDeleteUser = useCallback(
-    async (id: number) => {
-      if (!confirm("¿Eliminar usuario permanentemente?")) {
-        return;
-      }
-      try {
-        await deleteUserMutation.mutateAsync({ where: { id } });
-        success("Usuario eliminado");
-      } catch (error_) {
-        error(error_ instanceof Error ? error_.message : "Error al eliminar");
-      }
-    },
-    [deleteUserMutation, error, success],
-  );
-
-  const handleEditRole = useCallback((user: User) => {
-    setEditingUser(user);
-    setSelectedRole(user.role);
-  }, []);
-
-  const handleResetPassword = useCallback(
-    async (id: number) => {
-      if (!confirm("¿Restablecer contraseña? Esto generará una clave temporal.")) {
-        return;
-      }
-      try {
-        const tempPassword = await resetUserPassword(id);
-        const target = users.find((u) => u.id === id);
-        success("Contraseña restablecida");
-        invalidateUsers();
-        setResetPasswordValue(tempPassword);
-        setResetPasswordUser(target ? getPersonFullName(target.person) : `Usuario #${id}`);
-        setIsResetPasswordOpen(true);
-      } catch (error_) {
-        error(error_ instanceof Error ? error_.message : "Error al restablecer");
-      }
-    },
-    [error, invalidateUsers, success, users],
-  );
-
-  const handleToggleMfa = useCallback(
-    async (id: number, current: boolean) => {
-      const action = current ? "desactivar" : "activar";
-      if (!confirm(`¿Estás seguro de ${action} MFA para este usuario?`)) {
-        return;
-      }
-      try {
-        await toggleUserMfa(id, !current);
-        invalidateUsers();
-        success("Estado MFA actualizado correctamente");
-      } catch (error_) {
-        error(error_ instanceof Error ? error_.message : "Error desconocido");
-      }
-    },
-    [error, invalidateUsers, success],
-  );
-
-  const handleToggleStatus = useCallback(
-    async (id: number, currentStatus: string) => {
-      const newStatus = currentStatus === "SUSPENDED" ? "ACTIVE" : "SUSPENDED";
-      const action = newStatus === "ACTIVE" ? "reactivar" : "suspender";
-      if (!confirm(`¿${action} usuario?`)) {
-        return;
-      }
-      try {
-        await updateUserMutation.mutateAsync({
-          data: { status: newStatus },
-          where: { id },
-        });
-        success(`Usuario ${newStatus === "ACTIVE" ? "reactivado" : "suspendido"}`);
-      } catch (error_) {
-        error(error_ instanceof Error ? error_.message : "Error al actualizar estado");
-      }
-    },
-    [error, success, updateUserMutation],
-  );
-
-  const actions = useMemo(
-    () => ({
-      onDeletePasskey: handleDeletePasskey,
-      onDeleteUser: handleDeleteUser,
-      onEditRole: handleEditRole,
-      onResetPassword: handleResetPassword,
-      onToggleMfa: handleToggleMfa,
-      onToggleStatus: handleToggleStatus,
-    }),
-    [
-      handleDeletePasskey,
-      handleDeleteUser,
-      handleEditRole,
-      handleResetPassword,
-      handleToggleMfa,
-      handleToggleStatus,
-    ],
-  );
+  const { actions, handleSaveRole } = useUserManagementActions({
+    assignUserRole,
+    clearUserRoles,
+    deleteUser,
+    editingUser,
+    errorToast: error,
+    queryClient,
+    roles,
+    selectedRole,
+    setEditingUser,
+    setIsResetPasswordOpen,
+    setResetPasswordUser,
+    setResetPasswordValue,
+    setSelectedRole,
+    successToast: success,
+    updateUserStatus,
+    users,
+  });
 
   const columns = useMemo(() => getColumns(actions), [actions]);
 
-  const handleSaveRole = async () => {
-    if (!editingUser || !selectedRole) {
-      return;
-    }
-
-    const selectedRoleObj = roles.find((r) => r.name === selectedRole);
-    if (!selectedRoleObj) {
-      error("Rol no encontrado");
-      return;
-    }
-
-    try {
-      // First, remove all existing role assignments for the user
-      await deleteRoleAssignments.mutateAsync({
-        where: { userId: editingUser.id },
-      });
-
-      // Then, create the new role assignment
-      await createRoleAssignment.mutateAsync({
-        data: {
-          roleId: selectedRoleObj.id,
-          userId: editingUser.id,
-        },
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["user"] });
-      success("Rol actualizado correctamente");
-      setEditingUser(null);
-    } catch (error_) {
-      error(error_ instanceof Error ? error_.message : "Error al actualizar rol");
-    }
-  };
-
   // Filter users based on role filter (client side)
-  const filteredUsers = useMemo(() => {
-    if (roleFilter === "ALL") {
-      return users;
-    }
-    return users.filter(
-      (u) => u.role === roleFilter || (u.role || "").toUpperCase() === roleFilter.toUpperCase(),
-    );
-  }, [users, roleFilter]);
+  const filteredUsers = useMemo(() => filterUsersByRole(users, roleFilter), [users, roleFilter]);
 
   return (
     <div className={PAGE_CONTAINER}>
