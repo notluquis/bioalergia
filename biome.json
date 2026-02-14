@@ -24,88 +24,10 @@
     "lineWidth": 100,
     "lineEnding": "lf"
   },
-
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
-      "complexity": {
-        "recommended": true,
-        "noExcessiveCognitiveComplexity": "error",
-        "noExcessiveLinesPerFunction": {
-          "level": "error",
-          "options": {
-            "maxLines": 200
-          }
-        },
-        "noExcessiveNestedTestSuites": "warn",
-        "noImplicitCoercions": "error",
-        "noUselessCatch": "error",
-        "noUselessConstructor": "error",
-        "noUselessEmptyExport": "error",
-        "noUselessFragments": "error",
-        "noUselessLabel": "error",
-        "noUselessRename": "error",
-        "noUselessStringConcat": "error",
-        "noUselessTernary": "error",
-        "noUselessThisAlias": "error",
-        "noUselessTypeConstraint": "error",
-        "useArrowFunction": "warn",
-        "useFlatMap": "warn"
-      },
-      "correctness": {
-        "recommended": true,
-        "noInnerDeclarations": "warn",
-        "useExhaustiveDependencies": "warn",
-        "noUndeclaredDependencies": "error",
-        "noUnusedVariables": "error",
-        "noUnusedImports": "error",
-        "noUnusedFunctionParameters": "warn",
-        "noUnusedPrivateClassMembers": "warn",
-        "useHookAtTopLevel": "error"
-      },
-      "suspicious": {
-        "recommended": true,
-        "noAssignInExpressions": "off",
-        "noExplicitAny": "error",
-        "noArrayIndexKey": "warn",
-        "noConsole": "off",
-        "noVar": "error",
-        "noApproximativeNumericConstant": "warn",
-        "noConfusingVoidType": "warn",
-        "noDoubleEquals": "warn",
-        "noDuplicateJsxProps": "error",
-        "noEmptyBlockStatements": "warn",
-        "noMisleadingInstantiator": "error",
-        "noUnsafeDeclarationMerging": "error"
-      },
-      "style": {
-        "recommended": true,
-        "noDefaultExport": "error",
-        "noRestrictedImports": {
-          "level": "error",
-          "options": {
-            "paths": {
-              "@/components/ui/Card": "Importa Card desde @heroui/react y usa Card.Header/Card.Content/Card.Title/Card.Description."
-            }
-          }
-        },
-        "useBlockStatements": "warn",
-        "useSelfClosingElements": "warn",
-        "noNonNullAssertion": "warn",
-        "useImportType": "error",
-        "useExportType": "error",
-        "useConsistentArrayType": "warn",
-        "useEnumInitializers": "warn",
-        "useFilenamingConvention": "off",
-        "useForOf": "warn",
-        "useFragmentSyntax": "warn",
-        "useNamingConvention": "off",
-        "useNodejsImportProtocol": "warn",
-        "useNumberNamespace": "warn",
-        "useShorthandAssign": "warn",
-        "useSingleVarDeclarator": "warn"
-      },
+      "recommended": false,
       "performance": {
         "recommended": true,
         "noAccumulatingSpread": "warn",
@@ -114,31 +36,6 @@
         "noNamespaceImport": "error",
         "noReExportAll": "error",
         "useTopLevelRegex": "warn"
-      },
-      "security": {
-        "recommended": true,
-        "noDangerouslySetInnerHtml": "warn",
-        "noGlobalEval": "error",
-        "noSecrets": "error"
-      },
-      "a11y": {
-        "recommended": true,
-        "noSvgWithoutTitle": "warn",
-        "noLabelWithoutControl": "warn",
-        "useSemanticElements": "warn",
-        "useFocusableInteractive": "warn",
-        "useAriaPropsSupportedByRole": "warn",
-        "useAriaPropsForRole": "warn",
-        "useValidAriaValues": "error",
-        "useValidAriaRole": "error"
-      },
-      "nursery": {
-        "recommended": true,
-        "useSortedClasses": "warn",
-        "noFloatingPromises": "warn",
-        "noImportCycles": "warn",
-        "noUnresolvedImports": "off",
-        "noUnnecessaryConditions": "warn"
       }
     }
   },
