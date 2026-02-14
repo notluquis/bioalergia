@@ -1,4 +1,4 @@
-import { Spinner } from "@heroui/react";
+import { Spinner, Surface } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useEffect } from "react";
 import { z } from "zod";
@@ -76,7 +76,7 @@ export function CounterpartForm({
   const busy = loading || saving || form.state.isSubmitting;
 
   return (
-    <section aria-busy={busy} className="surface-recessed relative space-y-5 p-6">
+    <Surface aria-busy={busy} className="relative space-y-5 p-6" variant="secondary">
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/60 backdrop-blur-sm">
           <Spinner size="lg" />
@@ -205,6 +205,6 @@ export function CounterpartForm({
           </div>
         </fieldset>
       </form>
-    </section>
+    </Surface>
   );
 }

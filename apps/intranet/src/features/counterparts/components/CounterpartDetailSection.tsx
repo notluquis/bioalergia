@@ -1,3 +1,4 @@
+import { Surface } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Lock } from "lucide-react";
 
@@ -30,7 +31,7 @@ export function CounterpartDetailSection({
 
   return (
     <div className="space-y-6">
-      <section className="surface-recessed rounded-[28px] p-6 shadow-inner">
+      <Surface className="rounded-[28px] p-6" variant="secondary">
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -68,7 +69,7 @@ export function CounterpartDetailSection({
             </div>
           </div>
         </div>
-      </section>
+      </Surface>
 
       <AssociatedAccounts
         detail={detail}

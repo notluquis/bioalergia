@@ -1,8 +1,7 @@
-import { Chip } from "@heroui/react";
+import { Card, Chip, SearchField, Surface, Tabs } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Search } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
@@ -498,81 +497,97 @@ export function CounterpartsPage() {
   const unassignedPageCount = unassignedPayoutData
     ? Math.max(Math.ceil(unassignedPayoutData.total / unassignedPayoutData.pageSize), 1)
     : 0;
+  const unassignedTotal = unassignedPayoutData?.total ?? 0;
 
   return (
     <section className="space-y-6">
-      <CounterpartsToolbar
-        canCreate={canCreate}
-        canSync={canUpdate}
-        categoryFilter={state.categoryFilter}
-        clientCount={derived.clientCount}
-        lenderCount={derived.lenderCount}
-        onCategoryFilterChange={state.setCategoryFilter}
-        onCreate={() => {
-          state.openFormModal(null);
-        }}
-        onSync={() => {
-          actions.triggerSync();
-        }}
-        onResetFilters={() => {
-          state.setCategoryFilter("ALL");
-          state.setSearchQuery("");
-        }}
-        syncLoading={mutations.syncMutation.isPending}
-        onSearchQueryChange={state.setSearchQuery}
-        searchQuery={state.searchQuery}
-        selectedCounterpart={derived.selectedCounterpart}
-        supplierCount={derived.supplierCount}
-        totalCount={counterparts.length}
-        visibleCount={derived.visibleCounterparts.length}
-      />
-      <UnassignedPayoutAccountsTable
-        canCreate={canCreate}
-        loading={isUnassignedPayoutLoading}
-        onBulkAssign={actions.handleBulkAssignFromSelection}
-        onCreateFromPayout={actions.handleCreateFromPayout}
-        onPaginationChange={state.setPayoutPagination}
-        onSearchQueryChange={(value) => {
-          state.setPayoutSearchQuery(value);
-          state.setPayoutPagination((prev) => ({ ...prev, pageIndex: 0 }));
-        }}
-        pageCount={unassignedPageCount}
-        pagination={state.payoutPagination}
-        rows={unassignedPayoutData?.rows ?? []}
-        searchQuery={state.payoutSearchQuery}
-        selectedAccounts={state.selectedPayoutAccounts}
-        setSelectedAccounts={state.setSelectedPayoutAccounts}
-        total={unassignedPayoutData?.total ?? 0}
-      />
+      <Tabs aria-label="Gestión de contrapartes" defaultSelectedKey="counterparts">
+        <Tabs.List aria-label="Secciones" className="w-fit rounded-xl bg-default-100 p-1">
+          <Tabs.Tab id="counterparts">Contrapartes</Tabs.Tab>
+          <Tabs.Tab id="unassigned-payouts">
+            Cuentas sin RUT
+            {unassignedTotal > 0 ? <Chip size="sm">{unassignedTotal}</Chip> : null}
+          </Tabs.Tab>
+        </Tabs.List>
 
-      <div className="grid min-h-0 items-start gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <section className="surface-recessed h-full rounded-[28px] p-6 shadow-inner">
-          {isListLoading ? <Skeleton className="mb-4 h-8 w-44" /> : null}
-          <CounterpartList
-            className="max-h-[calc(100vh-220px)]"
-            counterparts={derived.visibleCounterparts}
-            emptyMessage={
-              derived.normalizedQuery || state.categoryFilter !== "ALL"
-                ? "No hay resultados con los filtros seleccionados."
-                : "No hay contrapartes registradas."
-            }
-            onSelectCounterpart={state.setSelectedId}
-            selectedId={state.selectedId}
+        <Tabs.Panel className="space-y-6 pt-4" id="counterparts">
+          <CounterpartsToolbar
+            canCreate={canCreate}
+            canSync={canUpdate}
+            categoryFilter={state.categoryFilter}
+            clientCount={derived.clientCount}
+            lenderCount={derived.lenderCount}
+            onCategoryFilterChange={state.setCategoryFilter}
+            onCreate={() => {
+              state.openFormModal(null);
+            }}
+            onSync={() => {
+              actions.triggerSync();
+            }}
+            onResetFilters={() => {
+              state.setCategoryFilter("ALL");
+              state.setSearchQuery("");
+            }}
+            syncLoading={mutations.syncMutation.isPending}
+            onSearchQueryChange={state.setSearchQuery}
+            searchQuery={state.searchQuery}
+            selectedCounterpart={derived.selectedCounterpart}
+            supplierCount={derived.supplierCount}
+            totalCount={counterparts.length}
+            visibleCount={derived.visibleCounterparts.length}
           />
-        </section>
 
-        <CounterpartDetailPane
-          canCreate={canCreate}
-          canUpdate={canUpdate}
-          counterpartId={state.selectedId}
-          onCreate={() => {
-            state.openFormModal(null);
-          }}
-          onEdit={state.openFormModal}
-          onSummaryRangeChange={actions.handleSummaryRangeChange}
-          summaryRange={state.summaryRange}
-        />
-      </div>
+          <div className="grid min-h-0 items-start gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+            <Surface className="h-full rounded-[28px] p-6" variant="secondary">
+              {isListLoading ? <Skeleton className="mb-4 h-8 w-44" /> : null}
+              <CounterpartList
+                className="max-h-[calc(100vh-220px)]"
+                counterparts={derived.visibleCounterparts}
+                emptyMessage={
+                  derived.normalizedQuery || state.categoryFilter !== "ALL"
+                    ? "No hay resultados con los filtros seleccionados."
+                    : "No hay contrapartes registradas."
+                }
+                onSelectCounterpart={state.setSelectedId}
+                selectedId={state.selectedId}
+              />
+            </Surface>
+
+            <CounterpartDetailPane
+              canCreate={canCreate}
+              canUpdate={canUpdate}
+              counterpartId={state.selectedId}
+              onCreate={() => {
+                state.openFormModal(null);
+              }}
+              onEdit={state.openFormModal}
+              onSummaryRangeChange={actions.handleSummaryRangeChange}
+              summaryRange={state.summaryRange}
+            />
+          </div>
+        </Tabs.Panel>
+
+        <Tabs.Panel className="space-y-4 pt-4" id="unassigned-payouts">
+          <UnassignedPayoutAccountsTable
+            canCreate={canCreate}
+            loading={isUnassignedPayoutLoading}
+            onBulkAssign={actions.handleBulkAssignFromSelection}
+            onCreateFromPayout={actions.handleCreateFromPayout}
+            onPaginationChange={state.setPayoutPagination}
+            onSearchQueryChange={(value) => {
+              state.setPayoutSearchQuery(value);
+              state.setPayoutPagination((prev) => ({ ...prev, pageIndex: 0 }));
+            }}
+            pageCount={unassignedPageCount}
+            pagination={state.payoutPagination}
+            rows={unassignedPayoutData?.rows ?? []}
+            searchQuery={state.payoutSearchQuery}
+            selectedAccounts={state.selectedPayoutAccounts}
+            setSelectedAccounts={state.setSelectedPayoutAccounts}
+            total={unassignedTotal}
+          />
+        </Tabs.Panel>
+      </Tabs>
       <Modal
         isOpen={state.isFormModalOpen}
         onClose={state.closeFormModal}
@@ -750,7 +765,7 @@ function UnassignedPayoutAccountsTable({
   ];
 
   return (
-    <section className="surface-recessed rounded-[28px] p-5 shadow-inner sm:p-6">
+    <Surface className="rounded-[28px] p-5 sm:p-6" variant="secondary">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="font-semibold text-base">Vista Payouts Sin RUT</h3>
@@ -773,14 +788,13 @@ function UnassignedPayoutAccountsTable({
         </Button>
       </div>
       <div className="mb-3">
-        <Input
-          placeholder="Buscar cuenta payout"
-          startContent={<Search className="h-4 w-4 text-default-400" />}
-          value={searchQuery}
-          onChange={(event) => {
-            onSearchQueryChange(event.target.value);
-          }}
-        />
+        <SearchField onChange={onSearchQueryChange} value={searchQuery} variant="secondary">
+          <SearchField.Group>
+            <SearchField.SearchIcon />
+            <SearchField.Input placeholder="Buscar cuenta payout" />
+            <SearchField.ClearButton />
+          </SearchField.Group>
+        </SearchField>
       </div>
       <DataTable
         columns={columns}
@@ -795,7 +809,7 @@ function UnassignedPayoutAccountsTable({
         pageSizeOptions={[10, 20, 50, 100]}
         noDataMessage="No hay cuentas payout pendientes."
       />
-    </section>
+    </Surface>
   );
 }
 
@@ -837,7 +851,7 @@ function CounterpartsToolbar({
   visibleCount,
 }: CounterpartsToolbarProps) {
   return (
-    <section className="surface-recessed rounded-[28px] p-5 shadow-inner sm:p-6">
+    <Surface className="rounded-[28px] p-5 sm:p-6" variant="secondary">
       <div className="space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -868,14 +882,18 @@ function CounterpartsToolbar({
         </div>
 
         <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-          <Input
-            placeholder="Buscar por titular o RUT"
-            startContent={<Search className="h-4 w-4 text-default-400" />}
+          <SearchField
+            onChange={onSearchQueryChange}
             value={searchQuery}
-            onChange={(event) => {
-              onSearchQueryChange(event.target.value);
-            }}
-          />
+            fullWidth
+            variant="secondary"
+          >
+            <SearchField.Group>
+              <SearchField.SearchIcon />
+              <SearchField.Input placeholder="Buscar por titular o RUT" />
+              <SearchField.ClearButton />
+            </SearchField.Group>
+          </SearchField>
           <Button onClick={onResetFilters} size="sm" variant="ghost">
             Limpiar filtros
           </Button>
@@ -897,21 +915,27 @@ function CounterpartsToolbar({
         </div>
 
         <div className="grid gap-2 sm:grid-cols-3">
-          <div className="rounded-2xl border border-default-200 bg-background px-3 py-2">
-            <p className="text-default-500 text-xs">Proveedores</p>
-            <p className="font-semibold text-lg">{supplierCount}</p>
-          </div>
-          <div className="rounded-2xl border border-default-200 bg-background px-3 py-2">
-            <p className="text-default-500 text-xs">Clientes</p>
-            <p className="font-semibold text-lg">{clientCount}</p>
-          </div>
-          <div className="rounded-2xl border border-default-200 bg-background px-3 py-2">
-            <p className="text-default-500 text-xs">Prestamistas</p>
-            <p className="font-semibold text-lg">{lenderCount}</p>
-          </div>
+          <Card className="rounded-2xl border border-default-200 bg-background px-3 py-2 shadow-none">
+            <Card.Content className="space-y-0.5 p-0">
+              <p className="text-default-500 text-xs">Proveedores</p>
+              <p className="font-semibold text-lg">{supplierCount}</p>
+            </Card.Content>
+          </Card>
+          <Card className="rounded-2xl border border-default-200 bg-background px-3 py-2 shadow-none">
+            <Card.Content className="space-y-0.5 p-0">
+              <p className="text-default-500 text-xs">Clientes</p>
+              <p className="font-semibold text-lg">{clientCount}</p>
+            </Card.Content>
+          </Card>
+          <Card className="rounded-2xl border border-default-200 bg-background px-3 py-2 shadow-none">
+            <Card.Content className="space-y-0.5 p-0">
+              <p className="text-default-500 text-xs">Prestamistas</p>
+              <p className="font-semibold text-lg">{lenderCount}</p>
+            </Card.Content>
+          </Card>
         </div>
       </div>
-    </section>
+    </Surface>
   );
 }
 
@@ -936,7 +960,7 @@ function CounterpartDetailPane({
 }: CounterpartDetailPaneProps) {
   if (!counterpartId) {
     return (
-      <section className="surface-recessed h-full rounded-[28px] p-6 shadow-inner">
+      <Surface className="h-full rounded-[28px] p-6" variant="secondary">
         <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
           <p className="text-default-600 text-sm">
             Selecciona una contraparte para revisar su resumen, movimientos y cuentas asociadas.
@@ -947,20 +971,20 @@ function CounterpartDetailPane({
             </Button>
           ) : null}
         </div>
-      </section>
+      </Surface>
     );
   }
 
   return (
     <Suspense
       fallback={
-        <section className="surface-recessed space-y-4 rounded-[28px] p-6 shadow-inner">
+        <Surface className="space-y-4 rounded-[28px] p-6" variant="secondary">
           <Skeleton className="h-8 w-1/2" />
           <div className="grid grid-cols-2 gap-4">
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-12 w-full" />
           </div>
-        </section>
+        </Surface>
       }
     >
       <CounterpartDetailSection

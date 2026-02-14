@@ -1,3 +1,4 @@
+import { Card, Surface } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -380,7 +381,7 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
   } = useAssociatedAccountsModel(props);
 
   return (
-    <section className="surface-recessed relative space-y-5 p-6">
+    <Surface className="relative space-y-5 rounded-[28px] p-6" variant="secondary">
       <AssociatedAccountsHeader onAddAccount={() => setIsAddAccountModalOpen(true)} />
       {error && <Alert status="danger">{error}</Alert>}
 
@@ -416,7 +417,7 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
         }
         updateAccountForm={updateAccountForm}
       />
-    </section>
+    </Surface>
   );
 }
 
@@ -479,9 +480,11 @@ function QuickViewSection({
 }) {
   if (!quickViewGroup) {
     return (
-      <div className="rounded-[28px] border border-default-200/70 border-dashed bg-background/40 p-8 text-center text-default-500 text-sm">
-        Selecciona una cuenta en la tabla superior para ver su resumen y movimientos históricos.
-      </div>
+      <Card className="rounded-[28px] border border-default-200/70 border-dashed bg-background/40 p-8 text-center text-default-500 text-sm shadow-none">
+        <Card.Content className="p-0">
+          Selecciona una cuenta en la tabla superior para ver su resumen y movimientos históricos.
+        </Card.Content>
+      </Card>
     );
   }
 
@@ -539,7 +542,7 @@ function QuickViewSection({
           Año en curso
         </Button>
       </div>
-      <div className="surface-recessed border border-default-200/70 p-4">
+      <Surface className="border border-default-200/70 p-4" variant="secondary">
         <div className="overflow-hidden rounded-lg border border-default-100">
           <DataTable
             columns={columns as ColumnDef<Transaction, unknown>[]}
@@ -551,7 +554,7 @@ function QuickViewSection({
             noDataMessage="Sin movimientos dentro del rango seleccionado."
           />
         </div>
-      </div>
+      </Surface>
     </div>
   );
 }
