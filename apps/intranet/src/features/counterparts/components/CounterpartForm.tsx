@@ -29,6 +29,25 @@ interface CounterpartFormProps {
 }
 
 type CounterpartFormValues = z.infer<typeof counterpartFormSchema>;
+
+function normalizeFieldErrors(errors: unknown[]): string {
+  return errors
+    .map((error) => {
+      if (typeof error === "string") {
+        return error;
+      }
+      if (error && typeof error === "object" && "message" in error) {
+        const message = (error as { message?: unknown }).message;
+        if (typeof message === "string") {
+          return message;
+        }
+      }
+      return "";
+    })
+    .filter((message) => message.length > 0)
+    .join(", ");
+}
+
 export function CounterpartForm({
   counterpart,
   error,
@@ -99,99 +118,95 @@ export function CounterpartForm({
       >
         <fieldset className="contents" disabled={busy}>
           <form.Field name="identificationNumber">
-            {(field) => (
-              <div>
-                <Input
-                  label="RUT"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder="12345678-9"
-                  type="text"
-                  value={field.state.value}
-                />
-
-                {field.state.meta.errors.length > 0 && (
-                  <p className="mt-1 text-danger text-xs">
-                    {field.state.meta.errors.map((err) => String(err)).join(", ")}
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-
-          <form.Field name="bankAccountHolder">
-            {(field) => (
-              <div>
-                <Input
-                  label="Nombre del titular"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder="Juan Pérez"
-                  required
-                  type="text"
-                  value={field.state.value}
-                />
-
-                {field.state.meta.errors.length > 0 && (
-                  <p className="mt-1 text-danger text-xs">
-                    {field.state.meta.errors.map((err) => String(err)).join(", ")}
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-
-          <form.Field name="category">
-            {(field) => (
-              <div>
-                <Select
-                  label="Clasificación"
-                  onBlur={field.handleBlur}
-                  onChange={(key) => {
-                    field.handleChange(key as CounterpartCategory);
-                  }}
-                  value={field.state.value}
-                >
-                  {CATEGORY_OPTIONS.map((option) => (
-                    <SelectItem key={option.value}>{option.label}</SelectItem>
-                  ))}
-                </Select>
-                {field.state.meta.errors.length > 0 && (
-                  <p className="mt-1 text-danger text-xs">
-                    {field.state.meta.errors.map((err) => String(err)).join(", ")}
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-
-          {!counterpart && (
-            <form.Field name="notes">
-              {(field) => (
-                <div className="md:col-span-2">
+            {(field) => {
+              const fieldError = normalizeFieldErrors(field.state.meta.errors);
+              return (
+                <div>
                   <Input
-                    as="textarea"
-                    label="Notas"
+                    error={fieldError || undefined}
+                    label="RUT"
                     onBlur={field.handleBlur}
                     onChange={(e) => {
                       field.handleChange(e.target.value);
                     }}
-                    placeholder="Información adicional..."
-                    rows={4}
+                    placeholder="12345678-9"
+                    type="text"
                     value={field.state.value}
                   />
-
-                  {field.state.meta.errors.length > 0 && (
-                    <p className="mt-1 text-danger text-xs">
-                      {field.state.meta.errors.map((err) => String(err)).join(", ")}
-                    </p>
-                  )}
                 </div>
-              )}
+              );
+            }}
+          </form.Field>
+
+          <form.Field name="bankAccountHolder">
+            {(field) => {
+              const fieldError = normalizeFieldErrors(field.state.meta.errors);
+              return (
+                <div>
+                  <Input
+                    error={fieldError || undefined}
+                    label="Nombre del titular"
+                    onBlur={field.handleBlur}
+                    onChange={(e) => {
+                      field.handleChange(e.target.value);
+                    }}
+                    placeholder="Juan Pérez"
+                    required
+                    type="text"
+                    value={field.state.value}
+                  />
+                </div>
+              );
+            }}
+          </form.Field>
+
+          <form.Field name="category">
+            {(field) => {
+              const fieldError = normalizeFieldErrors(field.state.meta.errors);
+              return (
+                <div>
+                  <Select
+                    errorMessage={fieldError}
+                    isInvalid={Boolean(fieldError)}
+                    label="Clasificación"
+                    onBlur={field.handleBlur}
+                    onChange={(key) => {
+                      field.handleChange(key as CounterpartCategory);
+                    }}
+                    value={field.state.value}
+                  >
+                    {CATEGORY_OPTIONS.map((option) => (
+                      <SelectItem id={option.value} key={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+              );
+            }}
+          </form.Field>
+
+          {!counterpart && (
+            <form.Field name="notes">
+              {(field) => {
+                const fieldError = normalizeFieldErrors(field.state.meta.errors);
+                return (
+                  <div className="md:col-span-2">
+                    <Input
+                      as="textarea"
+                      error={fieldError || undefined}
+                      label="Notas"
+                      onBlur={field.handleBlur}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value);
+                      }}
+                      placeholder="Información adicional..."
+                      rows={4}
+                      value={field.state.value}
+                    />
+                  </div>
+                );
+              }}
             </form.Field>
           )}
 
