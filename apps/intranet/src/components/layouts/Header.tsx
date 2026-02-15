@@ -1,4 +1,4 @@
-import { Breadcrumbs } from "@heroui/react";
+import { Breadcrumbs, Chip } from "@heroui/react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2, LogOut } from "lucide-react";
 import React from "react";
@@ -96,7 +96,7 @@ const getPageTitle = (
 export function Header() {
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const matches = useRouterState({ select: (s) => s.matches });
 
   const isNavigating = routerStatus === "pending";
@@ -113,6 +113,20 @@ export function Header() {
     const titleText = getPageTitle(castMatches, crumbsList);
     return { crumbs: crumbsList, pageTitle: titleText };
   }, [matches]);
+
+  const sessionIdentity = React.useMemo(() => {
+    if (!user) {
+      return "Sin sesión";
+    }
+    return user.name?.trim() || user.email;
+  }, [user]);
+
+  const rolesLabel = React.useMemo(() => {
+    if (!user || user.roles.length === 0) {
+      return "";
+    }
+    return user.roles.join(", ");
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -150,6 +164,18 @@ export function Header() {
               <Loader2 className="h-3 w-3 animate-spin" />
             </span>
           )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 pt-0.5">
+          <Chip color={user ? "success" : "danger"} size="sm" variant="soft">
+            <span
+              className={`mr-1 inline-flex h-2 w-2 rounded-full ${user ? "bg-success" : "bg-danger"}`}
+            />
+            {user ? "Sesión activa" : "Sin sesión"}
+          </Chip>
+          <span className="max-w-[40vw] truncate text-default-600 text-xs md:max-w-[52vw]">
+            {sessionIdentity}
+            {rolesLabel ? ` · ${rolesLabel}` : ""}
+          </span>
         </div>
       </div>
       <div className="flex items-center gap-2 md:gap-3">

@@ -1,3 +1,4 @@
+import { Chip } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { createFileRoute, getRouteApi, Outlet, useRouterState } from "@tanstack/react-router";
 import React from "react";
@@ -58,7 +59,7 @@ export const Route = createFileRoute("/_authed")({
 });
 
 function AuthedLayout() {
-  const { impersonatedRole, stopImpersonating } = useAuth();
+  const { impersonatedRole, stopImpersonating, user } = useAuth();
   const { settings } = useSettings();
 
   // Navigation state from TanStack Router
@@ -111,6 +112,13 @@ function AuthedLayout() {
     }
     return parsed.toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
   }, []);
+
+  const footerSessionIdentity = React.useMemo(() => {
+    if (!user) {
+      return "Sin sesión";
+    }
+    return user.name?.trim() || user.email;
+  }, [user]);
 
   React.useEffect(() => {
     if (settings.pageTitle) {
@@ -215,6 +223,12 @@ function AuthedLayout() {
 
           <footer className="surface-elevated hidden items-center justify-between px-6 py-3 text-foreground text-sm md:flex">
             <div className="flex items-center gap-3 text-xs">
+              <Chip color={user ? "success" : "danger"} size="sm" variant="soft">
+                {user ? "Sesión activa" : "Sin sesión"}
+              </Chip>
+              <span className="max-w-[30ch] truncate text-default-600">
+                {footerSessionIdentity}
+              </span>
               <span className="text-default-500">Build: {buildLabel}</span>
               <span className="text-default-400">
                 Hecho con ♥ por Lucas Pulgar Escobar para Bioalergia
