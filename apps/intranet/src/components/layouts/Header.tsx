@@ -11,13 +11,11 @@ import { Button } from "../ui/Button";
 import { ThemeToggle } from "../ui/ThemeToggle";
 import { Tooltip } from "../ui/Tooltip";
 
-// Helper: Extract label from match data
 const getMatchLabel = (match: {
   context: Record<string, unknown>;
-  staticData?: Record<string, unknown>;
   loaderData?: unknown;
+  staticData?: Record<string, unknown>;
 }): string => {
-  // 1. Try static data (preferred for declarative titles)
   if (match.staticData) {
     if (typeof match.staticData.breadcrumb === "string") {
       return match.staticData.breadcrumb;
@@ -25,13 +23,11 @@ const getMatchLabel = (match: {
     if (typeof match.staticData.title === "string") {
       return match.staticData.title;
     }
-    // Handle optional function in staticData if defined that way (less common in TanStack Router but possible)
     if (typeof match.staticData.breadcrumb === "function") {
       return (match.staticData.breadcrumb as (data: unknown) => string)(match.loaderData);
     }
   }
 
-  // 2. Fallback to context functions (legacy or dynamic)
   const { getBreadcrumb, getTitle } = match.context;
   if (typeof getBreadcrumb === "function") {
     return (getBreadcrumb as () => string)();
@@ -43,57 +39,6 @@ const getMatchLabel = (match: {
   return "";
 };
 
-// Helper: Build breadcrumb items from matches
-const buildCrumbs = (
-  matches: Array<{
-    context: Record<string, unknown>;
-    staticData?: Record<string, unknown>;
-    loaderData?: unknown;
-    pathname: string;
-  }>,
-) => {
-  const activeMatches = matches.filter(
-    (match) =>
-      match.staticData?.title ||
-      match.staticData?.breadcrumb ||
-      typeof match.context?.getTitle === "function" ||
-      typeof match.context?.getBreadcrumb === "function",
-  );
-
-  return activeMatches
-    .map((match) => ({
-      label: getMatchLabel(match),
-      to: match.pathname,
-    }))
-    .filter((item) => item.label);
-};
-
-// Helper: Extract page title from last match or crumbs
-const getPageTitle = (
-  matches: Array<{
-    context: Record<string, unknown>;
-    staticData?: Record<string, unknown>;
-    loaderData?: unknown;
-  }>,
-  crumbsList: Array<{ label: string }>,
-) => {
-  const activeMatches = matches.filter(
-    (match) =>
-      match.staticData?.title ||
-      match.staticData?.breadcrumb ||
-      typeof match.context?.getTitle === "function" ||
-      typeof match.context?.getBreadcrumb === "function",
-  );
-  const lastMatch = activeMatches[activeMatches.length - 1];
-
-  if (lastMatch) {
-    return getMatchLabel(lastMatch);
-  }
-  if (crumbsList.length > 0) {
-    return crumbsList[crumbsList.length - 1]?.label ?? "";
-  }
-  return "Inicio";
-};
 export function Header() {
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
@@ -105,14 +50,18 @@ export function Header() {
   const { crumbs, pageTitle } = React.useMemo(() => {
     const castMatches = matches as unknown as Array<{
       context: Record<string, unknown>;
-      staticData?: Record<string, unknown>;
       loaderData?: unknown;
+      staticData?: Record<string, unknown>;
       pathname: string;
     }>;
-
-    const crumbsList = buildCrumbs(castMatches);
-    const titleText = getPageTitle(castMatches, crumbsList);
-    return { crumbs: crumbsList, pageTitle: titleText };
+    const breadcrumbItems = castMatches
+      .map((match) => ({
+        label: getMatchLabel(match),
+        to: match.pathname,
+      }))
+      .filter((item) => Boolean(item.label?.trim()));
+    const last = breadcrumbItems[breadcrumbItems.length - 1]?.label ?? "Inicio";
+    return { crumbs: breadcrumbItems, pageTitle: last };
   }, [matches]);
 
   const sessionIdentity = React.useMemo(() => {
@@ -152,18 +101,17 @@ export function Header() {
   };
 
   return (
-    <header className="scroll-header-animation sticky top-0 z-30 flex items-center justify-between rounded-3xl px-6 py-3 transition-all duration-300">
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-3">
-          <Breadcrumbs className="font-medium">
+    <header className="sticky top-0 z-30 rounded-2xl border border-default-200/70 bg-background/85 px-4 py-3 backdrop-blur-md md:px-5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0 flex-1">
+          <Breadcrumbs className="font-medium text-default-500 text-xs">
             {crumbs.length === 0 && <Breadcrumbs.Item>Inicio</Breadcrumbs.Item>}
             {crumbs.map((crumb, i) => {
               const isLast = i === crumbs.length - 1;
-
               return (
-                <Breadcrumbs.Item key={crumb.to || i}>
-                  {!isLast && crumb.to ? (
-                    <Link to={crumb.to} className="transition-colors hover:text-foreground">
+                <Breadcrumbs.Item key={`${crumb.to}-${crumb.label}`}>
+                  {!isLast ? (
+                    <Link className="transition-colors hover:text-foreground" to={crumb.to}>
                       {crumb.label}
                     </Link>
                   ) : (
@@ -172,52 +120,54 @@ export function Header() {
                 </Breadcrumbs.Item>
               );
             })}
-            {crumbs.length > 0 && crumbs[crumbs.length - 1]?.label !== pageTitle && (
-              <Breadcrumbs.Item>{pageTitle}</Breadcrumbs.Item>
-            )}
           </Breadcrumbs>
+          <div className="flex items-center gap-2">
+            <h1 className="truncate font-semibold text-foreground text-lg">{pageTitle}</h1>
+            {isNavigating && (
+              <span className="flex items-center gap-1 font-semibold text-primary text-xs">
+                <Loader2 className="h-3 w-3 animate-spin" />
+              </span>
+            )}
+          </div>
+        </div>
 
-          {isNavigating && (
-            <span className="flex items-center gap-1 font-semibold text-primary text-xs">
-              <Loader2 className="h-3 w-3 animate-spin" />
-            </span>
-          )}
+        <div className="ml-0 flex shrink-0 flex-col items-start gap-2 md:ml-4 md:items-end">
+          <div className="flex min-w-0 items-center gap-2">
+            <Chip className="shrink-0" color={user ? "success" : "danger"} size="sm" variant="soft">
+              <span
+                className={`mr-1 inline-flex h-2 w-2 rounded-full ${user ? "bg-success" : "bg-danger"}`}
+              />
+              {user ? "Sesión activa" : "Sin sesión"}
+            </Chip>
+            <Tooltip content={sessionTooltip} placement="bottom" showArrow>
+              <span className="block min-w-0 truncate text-default-500 text-xs">
+                {sessionIdentity}
+                {compactRoleLabel ? ` · ${compactRoleLabel}` : ""}
+              </span>
+            </Tooltip>
+          </div>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="hidden md:block">
+              <Clock />
+            </div>
+            <NotificationHistory />
+            <ThemeToggle />
+            <Button
+              isIconOnly
+              aria-label="Cerrar sesión"
+              className="rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm transition-all duration-300 hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
+              onClick={() => {
+                void handleLogout();
+              }}
+              title="Cerrar sesión"
+              variant="ghost"
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-default-50/50 shadow-inner transition-all duration-300">
+                <LogOut className="h-4 w-4" />
+              </span>
+            </Button>
+          </div>
         </div>
-        <div className="mt-1 flex min-w-0 items-center gap-2">
-          <Chip className="shrink-0" color={user ? "success" : "danger"} size="sm" variant="soft">
-            <span
-              className={`mr-1 inline-flex h-2 w-2 rounded-full ${user ? "bg-success" : "bg-danger"}`}
-            />
-            {user ? "Sesión activa" : "Sin sesión"}
-          </Chip>
-          <Tooltip content={sessionTooltip} placement="bottom" showArrow>
-            <span className="block min-w-0 truncate text-default-500 text-xs">
-              {sessionIdentity}
-              {compactRoleLabel ? ` · ${compactRoleLabel}` : ""}
-            </span>
-          </Tooltip>
-        </div>
-      </div>
-      <div className="ml-4 flex shrink-0 items-center gap-2 md:gap-3">
-        <div className="hidden md:block">
-          <Clock />
-        </div>
-        <NotificationHistory />
-        <ThemeToggle />
-        <Button
-          isIconOnly
-          aria-label="Cerrar sesión"
-          className="rounded-full border border-default-200/70 bg-background/80 text-foreground shadow-sm transition-all duration-300 hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
-          onClick={() => {
-            void handleLogout();
-          }}
-          title="Cerrar sesión"
-          variant="ghost"
-        >
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-default-50/50 shadow-inner transition-all duration-300">
-            <LogOut className="h-4 w-4" />
-          </span>
-        </Button>
       </div>
     </header>
   );
