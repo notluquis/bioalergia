@@ -68,11 +68,6 @@ const buildAccountGrouping = (accounts: CounterpartAccount[] = []) => {
   return { accountGroups, identifierToKey };
 };
 
-const buildSummaryByGroup = (): Map<string, { count: number; total: number }> => {
-  // Summary by group structure no longer exists in new model
-  return new Map();
-};
-
 const buildQuickStats = (rows: Transaction[]) => ({
   count: rows.length,
   total: rows.reduce((sum: number, row: Transaction) => sum + (row.transactionAmount ?? 0), 0),
@@ -170,7 +165,7 @@ const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRan
     },
     queryKey: [
       "associated-accounts-transactions",
-      quickViewGroup,
+      quickViewGroup?.key ?? "none",
       activeRange.from,
       activeRange.to,
     ],
@@ -182,6 +177,49 @@ const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRan
   const quickStats = buildQuickStats(rows);
 
   return { rows, quickStats };
+};
+
+const useSummaryByGroup = (accountGroups: AccountGroup[], activeRange: DateRange) => {
+  const accountGroupKeys = accountGroups.map((group) => group.key).join("|");
+  const { data } = useQuery({
+    enabled: accountGroups.length > 0,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        accountGroups.map(async (group) => {
+          const filters = group.accounts.map((account) => buildAccountTransactionFilter(account));
+          const uniqueFilters = [...new Map(filters.map((f) => [accountFilterKey(f), f])).values()];
+          const results = await Promise.all(
+            uniqueFilters.map((filter) => fetchTransactionsForFilter(filter, activeRange)),
+          );
+          const merged = results.flat();
+          const dedup = new Map<number, Transaction>();
+          for (const movement of merged) {
+            if (!dedup.has(movement.id)) {
+              dedup.set(movement.id, movement);
+            }
+          }
+          const values = [...dedup.values()];
+          return [
+            group.key,
+            {
+              count: values.length,
+              total: values.reduce((sum, row) => sum + (row.transactionAmount ?? 0), 0),
+            },
+          ] as const;
+        }),
+      );
+      return new Map(entries);
+    },
+    queryKey: [
+      "associated-accounts-summary-by-group",
+      accountGroupKeys,
+      activeRange.from,
+      activeRange.to,
+    ],
+    staleTime: 1000 * 60 * 5,
+  });
+
+  return data ?? new Map<string, { count: number; total: number }>();
 };
 
 const useAssociatedAccountsModel = ({
@@ -306,7 +344,6 @@ const useAssociatedAccountsModel = ({
 
   const accountGrouping = buildAccountGrouping(detail?.accounts ?? []);
   const accountGroups = accountGrouping.accountGroups;
-  const summaryByGroup = buildSummaryByGroup();
 
   const updateAccountForm =
     <K extends keyof AccountForm>(key: K) =>
@@ -322,6 +359,7 @@ const useAssociatedAccountsModel = ({
   };
 
   const activeRange = summaryRange;
+  const summaryByGroup = useSummaryByGroup(accountGroups, activeRange);
   const { rows, quickStats } = useQuickViewTransactions(quickViewGroup, activeRange);
 
   const accountGroupColumns = getAccountGroupColumns(

@@ -38,6 +38,18 @@ const statsQuerySchema = z.object({
   to: z.string(),
 });
 
+const parseDateStart = (value: string) => {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const parseDateEnd = (value: string) => {
+  const date = new Date(value);
+  date.setHours(23, 59, 59, 999);
+  return date;
+};
+
 // ============================================================
 // ROUTES
 // ============================================================
@@ -81,8 +93,8 @@ app.get("/", zValidator("query", listTransactionsSchema), async (c) => {
   const offset = (page - 1) * pageSize;
 
   const filters: TransactionFilters = {
-    from: from ? new Date(from) : undefined,
-    to: to ? new Date(to) : undefined,
+    from: from ? parseDateStart(from) : undefined,
+    to: to ? parseDateEnd(to) : undefined,
     bankAccountNumber: bankAccountNumber?.trim() || undefined,
     description,
     sourceId,
