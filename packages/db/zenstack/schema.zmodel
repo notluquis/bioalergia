@@ -1316,6 +1316,7 @@ enum CounterpartCategory {
   EMPLOYEE
   PARTNER
   LENDER
+  PERSONAL_EXPENSE
   OTHER
 }
 

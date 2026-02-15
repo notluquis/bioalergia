@@ -5021,6 +5021,7 @@ export class SchemaType implements SchemaDef {
         EMPLOYEE: "EMPLOYEE",
         PARTNER: "PARTNER",
         LENDER: "LENDER",
+        PERSONAL_EXPENSE: "PERSONAL_EXPENSE",
         OTHER: "OTHER",
       },
     },

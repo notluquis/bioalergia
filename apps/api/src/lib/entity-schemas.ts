@@ -111,7 +111,7 @@ export const counterpartPayloadSchema = z.object({
   identificationNumber: z.string().trim().min(1).max(50),
   bankAccountHolder: z.string().min(1).max(255),
   category: z
-    .enum(["SUPPLIER", "CLIENT", "EMPLOYEE", "PARTNER", "LENDER", "OTHER"])
+    .enum(["SUPPLIER", "CLIENT", "EMPLOYEE", "PARTNER", "LENDER", "PERSONAL_EXPENSE", "OTHER"])
     .optional()
     .default("SUPPLIER"),
   notes: z.string().max(500).optional().nullable(),

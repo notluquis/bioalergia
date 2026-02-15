@@ -17,6 +17,7 @@ const CATEGORY_OPTIONS: { label: string; value: CounterpartCategory }[] = [
   { label: "Empleado", value: "EMPLOYEE" },
   { label: "Socio", value: "PARTNER" },
   { label: "Prestamista", value: "LENDER" },
+  { label: "Gasto personal (socios)", value: "PERSONAL_EXPENSE" },
   { label: "Otro", value: "OTHER" },
 ];
 

@@ -16,7 +16,15 @@ import type { Counterpart } from "../types";
 const counterpartFormSchema = z.object({
   identificationNumber: z.string().min(1, "El RUT es requerido"),
   bankAccountHolder: z.string().min(1, "El nombre del titular es requerido"),
-  category: z.enum(["SUPPLIER", "CLIENT", "EMPLOYEE", "PARTNER", "LENDER", "OTHER"] as const),
+  category: z.enum([
+    "SUPPLIER",
+    "CLIENT",
+    "EMPLOYEE",
+    "PARTNER",
+    "LENDER",
+    "PERSONAL_EXPENSE",
+    "OTHER",
+  ] as const),
   notes: z.string(),
 });
 

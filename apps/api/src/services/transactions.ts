@@ -44,13 +44,27 @@ type ReleaseRow = {
   netCreditAmount: NumericInput;
   netDebitAmount: NumericInput;
   paymentMethod: null | string;
+  payoutBankAccountNumber: null | string;
   recordType: null | string;
   sourceId: string;
 };
 
+type WithdrawRow = {
+  amount: NumericInput;
+  bankAccountHolder: null | string;
+  bankAccountNumber: null | string;
+  bankAccountType: null | string;
+  bankName: null | string;
+  dateCreated: Date;
+  id: number;
+  identificationNumber: null | string;
+  status: null | string;
+  withdrawId: string;
+};
+
 type UnifiedTransaction = {
   id: number;
-  source: "release" | "settlement";
+  source: "release" | "settlement" | "withdraw";
   transactionDate: Date;
   description: null | string;
   transactionType: string;
@@ -100,6 +114,9 @@ const getMetaString = (meta: RawMeta, keys: string[]) => {
 const monthKey = (date: Date) =>
   `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-01`;
 
+const RELEASE_ID_OFFSET = -1_000_000_000;
+const WITHDRAW_ID_OFFSET = -2_000_000_000;
+
 function mapSettlementRow(row: SettlementRow): UnifiedTransaction {
   const meta = asObject(row.metadata);
   return {
@@ -133,7 +150,7 @@ function mapReleaseRow(row: ReleaseRow): UnifiedTransaction {
   const amount = credit !== 0 || debit !== 0 ? credit - debit : asNumber(row.grossAmount);
 
   return {
-    id: -row.id,
+    id: RELEASE_ID_OFFSET - row.id,
     source: "release",
     transactionDate: row.date,
     description: row.description ?? null,
@@ -149,10 +166,39 @@ function mapReleaseRow(row: ReleaseRow): UnifiedTransaction {
       getMetaString(meta, ["recipient_rut", "rut", "identification_number"]),
     bankAccountHolder:
       getMetaString(meta, ["bank_account_holder_name", "name", "account_holder"]) ?? null,
-    bankAccountNumber: getMetaString(meta, ["bank_account_number", "account_number"]) ?? null,
+    bankAccountNumber:
+      row.payoutBankAccountNumber ??
+      getMetaString(meta, [
+        "payout_bank_account_number",
+        "bank_account_number",
+        "account_number",
+      ]) ??
+      null,
     bankAccountType: getMetaString(meta, ["bank_account_type", "account_type"]) ?? null,
     bankName: getMetaString(meta, ["bank_name", "bank"]) ?? null,
     withdrawId: getMetaString(meta, ["withdraw_id", "id"]) ?? null,
+  };
+}
+
+function mapWithdrawRow(row: WithdrawRow): UnifiedTransaction {
+  return {
+    id: WITHDRAW_ID_OFFSET - row.id,
+    source: "withdraw",
+    transactionDate: row.dateCreated,
+    description: row.withdrawId ? `withdraw ${row.withdrawId}` : "withdraw",
+    transactionType: "withdraw",
+    transactionAmount: -Math.abs(asNumber(row.amount)),
+    status: row.status ?? null,
+    externalReference: row.withdrawId ?? null,
+    sourceId: row.withdrawId ?? null,
+    paymentMethod: null,
+    settlementNetAmount: null,
+    identificationNumber: row.identificationNumber ?? null,
+    bankAccountHolder: row.bankAccountHolder ?? null,
+    bankAccountNumber: row.bankAccountNumber ?? null,
+    bankAccountType: row.bankAccountType ?? null,
+    bankName: row.bankName ?? null,
+    withdrawId: row.withdrawId ?? null,
   };
 }
 
@@ -225,7 +271,7 @@ async function fetchMergedTransactions(filters: TransactionFilters): Promise<Uni
         }
       : undefined;
 
-  const [settlements, releases] = await Promise.all([
+  const [settlements, releases, withdraws] = await Promise.all([
     db.settlementTransaction.findMany({
       where: settlementDateWhere,
       select: {
@@ -255,13 +301,41 @@ async function fetchMergedTransactions(filters: TransactionFilters): Promise<Uni
         netCreditAmount: true,
         netDebitAmount: true,
         paymentMethod: true,
+        payoutBankAccountNumber: true,
         recordType: true,
         sourceId: true,
       },
     }),
+    db.withdrawTransaction.findMany({
+      where:
+        filters.from || filters.to
+          ? {
+              dateCreated: {
+                ...(filters.from ? { gte: filters.from } : {}),
+                ...(filters.to ? { lte: filters.to } : {}),
+              },
+            }
+          : undefined,
+      select: {
+        amount: true,
+        bankAccountHolder: true,
+        bankAccountNumber: true,
+        bankAccountType: true,
+        bankName: true,
+        dateCreated: true,
+        id: true,
+        identificationNumber: true,
+        status: true,
+        withdrawId: true,
+      },
+    }),
   ]);
 
-  return [...settlements.map(mapSettlementRow), ...releases.map(mapReleaseRow)]
+  return [
+    ...settlements.map(mapSettlementRow),
+    ...releases.map(mapReleaseRow),
+    ...withdraws.map(mapWithdrawRow),
+  ]
     .filter((tx) => matchesFilter(tx, filters))
     .sort((a, b) => b.transactionDate.getTime() - a.transactionDate.getTime());
 }

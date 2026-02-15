@@ -20,6 +20,7 @@ export type CounterpartCategory =
   | "EMPLOYEE"
   | "LENDER"
   | "OTHER"
+  | "PERSONAL_EXPENSE"
   | "PARTNER"
   | "SUPPLIER";
 export interface Employee {

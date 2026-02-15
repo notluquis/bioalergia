@@ -39,6 +39,7 @@ const CATEGORY_FILTERS: { label: string; value: "ALL" | CounterpartCategory }[] 
   { label: "Clientes", value: "CLIENT" },
   { label: "Empleados", value: "EMPLOYEE" },
   { label: "Socios", value: "PARTNER" },
+  { label: "Gasto personal (socios)", value: "PERSONAL_EXPENSE" },
   { label: "Otros", value: "OTHER" },
 ];
 
