@@ -3,6 +3,7 @@ import { db } from "@finanzas/db";
 export type TransactionFilters = {
   from?: Date;
   to?: Date;
+  bankAccountNumber?: string;
   minAmount?: number;
   maxAmount?: number;
   search?: string;
@@ -68,6 +69,8 @@ type UnifiedTransaction = {
 };
 
 const toLower = (value: null | string | undefined) => value?.toLowerCase() ?? "";
+const normalizeAccountIdentifier = (value: null | string | undefined) =>
+  (value ?? "").replaceAll(/\s+/g, "").toUpperCase();
 const asNumber = (value: NumericInput) => {
   if (value == null) {
     return 0;
@@ -163,9 +166,13 @@ function isTestLike(tx: UnifiedTransaction) {
 }
 
 function matchesFilter(tx: UnifiedTransaction, filters: TransactionFilters) {
+  const normalizedFilterAccount = normalizeAccountIdentifier(filters.bankAccountNumber);
   const checks = [
     () => !filters.from || tx.transactionDate >= filters.from,
     () => !filters.to || tx.transactionDate <= filters.to,
+    () =>
+      normalizedFilterAccount.length === 0 ||
+      normalizeAccountIdentifier(tx.bankAccountNumber) === normalizedFilterAccount,
     () => filters.minAmount === undefined || tx.transactionAmount >= filters.minAmount,
     () => filters.maxAmount === undefined || tx.transactionAmount <= filters.maxAmount,
     () => !filters.status || toLower(tx.status) === toLower(filters.status),

@@ -82,6 +82,9 @@ export async function fetchTransactions({
   if (filters.to) {
     params.set("to", filters.to);
   }
+  if (filters.bankAccountNumber) {
+    params.set("bankAccountNumber", filters.bankAccountNumber);
+  }
   if (filters.description) {
     params.set("description", filters.description); // Search likely covers this
   }

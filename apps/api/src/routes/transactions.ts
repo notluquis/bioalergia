@@ -63,6 +63,7 @@ app.get("/", zValidator("query", listTransactionsSchema), async (c) => {
     pageSize: rawPageSize,
     from,
     to,
+    bankAccountNumber,
     description,
     sourceId,
     externalReference,
@@ -82,6 +83,7 @@ app.get("/", zValidator("query", listTransactionsSchema), async (c) => {
   const filters: TransactionFilters = {
     from: from ? new Date(from) : undefined,
     to: to ? new Date(to) : undefined,
+    bankAccountNumber: bankAccountNumber?.trim() || undefined,
     description,
     sourceId,
     externalReference,

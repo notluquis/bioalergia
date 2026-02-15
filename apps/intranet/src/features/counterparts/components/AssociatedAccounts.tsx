@@ -102,30 +102,37 @@ const useAccountSuggestions = () => {
 };
 
 const fetchTransactionsForFilter = async (filter: AccountTransactionFilter, range: DateRange) => {
-  if (!filter.accountNumber) {
+  const normalizedAccountNumber = filter.accountNumber?.trim();
+  if (!normalizedAccountNumber) {
     return [];
   }
 
-  const payload = await fetchTransactions({
-    filters: {
-      bankAccountNumber: filter.accountNumber ?? "",
-      description: "",
-      destination: "",
-      direction: "OUT",
-      externalReference: "",
-      from: range.from || "",
-      includeAmounts: true,
-      origin: "",
-      sourceId: "",
-      status: "",
-      to: range.to || "",
-      transactionType: "",
-    },
-    includeTotal: false,
-    page: 1,
-    pageSize: 200,
-  });
-  return payload.data;
+  const pageSize = 200;
+  const maxPages = 25;
+  const rows: Transaction[] = [];
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    const payload = await fetchTransactions({
+      filters: {
+        bankAccountNumber: normalizedAccountNumber,
+        from: range.from || "",
+        includeAmounts: true,
+        to: range.to || "",
+      },
+      includeTotal: false,
+      page,
+      pageSize,
+    });
+
+    const batch = payload.data ?? [];
+    rows.push(...batch);
+
+    if (batch.length < pageSize) {
+      break;
+    }
+  }
+
+  return rows;
 };
 
 const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRange: DateRange) => {

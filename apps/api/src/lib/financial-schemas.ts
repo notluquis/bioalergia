@@ -15,6 +15,7 @@ export const transactionsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(2000).optional(),
   from: z.string().optional(),
   to: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
   description: z.string().optional(),
   sourceId: z.string().optional(),
   externalReference: z.string().optional(),
