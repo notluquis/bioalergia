@@ -1,4 +1,4 @@
-import { createColumnHelper } from "@tanstack/react-table";
+import { type ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
 import { Button } from "@/components/ui/Button";
@@ -75,28 +75,29 @@ export const getAccountGroupColumns = (
 
 const quickViewHelper = createColumnHelper<Transaction>();
 
-export const getQuickViewColumns = () => [
-  quickViewHelper.accessor("transactionDate", {
-    cell: ({ getValue }) => dayjs(getValue()).format("DD MMM YYYY HH:mm"),
-    header: "Fecha",
-  }),
-  quickViewHelper.accessor("description", {
-    cell: ({ getValue }) => getValue() ?? "-",
-    header: "Descripción",
-  }),
-  quickViewHelper.accessor("externalReference", {
-    cell: ({ getValue }) => getValue() ?? "-",
-    header: "Origen",
-  }),
-  quickViewHelper.accessor("transactionType", {
-    cell: ({ getValue }) => getValue() || "-",
-    header: "Destino",
-  }),
-  quickViewHelper.accessor("transactionAmount", {
-    cell: ({ getValue }) => (
-      <div className="text-right">{getValue() == null ? "-" : fmtCLP(getValue())}</div>
-    ),
+export const getQuickViewColumns = () =>
+  [
+    quickViewHelper.accessor("transactionDate", {
+      cell: ({ getValue }) => dayjs(getValue()).format("DD MMM YYYY HH:mm"),
+      header: "Fecha",
+    }),
+    quickViewHelper.accessor("description", {
+      cell: ({ getValue }) => getValue() ?? "-",
+      header: "Descripción",
+    }),
+    quickViewHelper.accessor("externalReference", {
+      cell: ({ getValue }) => getValue() ?? "-",
+      header: "Origen",
+    }),
+    quickViewHelper.accessor("transactionType", {
+      cell: ({ getValue }) => getValue() || "-",
+      header: "Destino",
+    }),
+    quickViewHelper.accessor("transactionAmount", {
+      cell: ({ getValue }) => (
+        <div className="text-right">{getValue() == null ? "-" : fmtCLP(getValue())}</div>
+      ),
 
-    header: () => <div className="text-right">Monto</div>,
-  }),
-];
+      header: () => <div className="text-right">Monto</div>,
+    }),
+  ] as ColumnDef<Transaction, unknown>[];

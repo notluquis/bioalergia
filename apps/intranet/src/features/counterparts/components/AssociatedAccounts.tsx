@@ -345,6 +345,29 @@ const useAssociatedAccountsModel = ({
   const accountGrouping = buildAccountGrouping(detail?.accounts ?? []);
   const accountGroups = accountGrouping.accountGroups;
 
+  const activeCounterpartId = detail?.counterpart.id ?? null;
+
+  useEffect(() => {
+    // Reset quick-view whenever the active counterpart changes.
+    if (activeCounterpartId === null) {
+      setQuickViewGroup(null);
+      setError(null);
+      return;
+    }
+    setQuickViewGroup(null);
+    setError(null);
+  }, [activeCounterpartId]);
+
+  useEffect(() => {
+    if (!quickViewGroup) {
+      return;
+    }
+    const stillExists = accountGroups.some((group) => group.key === quickViewGroup.key);
+    if (!stillExists) {
+      setQuickViewGroup(null);
+    }
+  }, [accountGroups, quickViewGroup]);
+
   const updateAccountForm =
     <K extends keyof AccountForm>(key: K) =>
     (event: ChangeEvent<HTMLInputElement>) => {
