@@ -2,6 +2,7 @@ import { Card, Chip, SearchField, Surface, Tabs } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
+import { Filter, Plus, RefreshCcw, Users } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
@@ -501,9 +502,42 @@ export function CounterpartsPage() {
   const unassignedTotal = unassignedPayoutData?.total ?? 0;
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-5">
+      <Surface
+        className="relative overflow-hidden rounded-[30px] border border-default-200/70 px-5 py-5 sm:px-6"
+        variant="secondary"
+      >
+        <div className="-right-18 -top-16 absolute h-48 w-48 rounded-full bg-accent/10 blur-3xl" />
+        <div className="-bottom-12 -left-10 absolute h-36 w-36 rounded-full bg-primary/10 blur-2xl" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-1">
+            <p className="font-medium text-default-500 text-xs uppercase tracking-[0.28em]">
+              Finanzas
+            </p>
+            <h2 className="font-semibold text-2xl text-foreground tracking-tight">Contrapartes</h2>
+            <p className="max-w-2xl text-default-600 text-sm">
+              Organiza titulares, cuentas y trazabilidad de transferencias en una vista unificada.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Chip size="sm" variant="soft">
+              <Users className="mr-1 h-3.5 w-3.5" />
+              {counterparts.length} registradas
+            </Chip>
+            {state.selectedId ? (
+              <Chip size="sm" variant="secondary">
+                En foco: #{state.selectedId}
+              </Chip>
+            ) : null}
+          </div>
+        </div>
+      </Surface>
+
       <Tabs aria-label="Gestión de contrapartes" defaultSelectedKey="counterparts">
-        <Tabs.List aria-label="Secciones" className="w-fit rounded-xl bg-default-100 p-1">
+        <Tabs.List
+          aria-label="Secciones"
+          className="rounded-2xl border border-default-200/60 bg-background/70 p-1"
+        >
           <Tabs.Tab id="counterparts">Contrapartes</Tabs.Tab>
           <Tabs.Tab id="unassigned-payouts">
             Cuentas sin RUT
@@ -511,7 +545,7 @@ export function CounterpartsPage() {
           </Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel className="space-y-6 pt-4" id="counterparts">
+        <Tabs.Panel className="space-y-5 pt-4" id="counterparts">
           <CounterpartsToolbar
             canCreate={canCreate}
             canSync={canUpdate}
@@ -538,8 +572,11 @@ export function CounterpartsPage() {
             visibleCount={derived.visibleCounterparts.length}
           />
 
-          <div className="grid min-h-0 items-start gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-            <Surface className="h-full rounded-[28px] p-6" variant="secondary">
+          <div className="grid min-h-0 items-start gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <Surface
+              className="h-full rounded-[28px] border border-default-200/70 p-5 sm:p-6"
+              variant="secondary"
+            >
               {isListLoading ? <Skeleton className="mb-4 h-8 w-44" /> : null}
               <CounterpartList
                 className="max-h-[calc(100vh-220px)]"
@@ -766,10 +803,10 @@ function UnassignedPayoutAccountsTable({
   ];
 
   return (
-    <Surface className="rounded-[28px] p-5 sm:p-6" variant="secondary">
+    <Surface className="rounded-[28px] border border-default-200/70 p-5 sm:p-6" variant="secondary">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-base">Vista Payouts Sin RUT</h3>
+          <h3 className="font-semibold text-base tracking-tight">Cuentas payout sin RUT</h3>
           <p className="text-default-500 text-xs">
             `payout_bank_account_number` detectados en release y aún sin vínculo por RUT.
           </p>
@@ -797,19 +834,21 @@ function UnassignedPayoutAccountsTable({
           </SearchField.Group>
         </SearchField>
       </div>
-      <DataTable
-        columns={columns}
-        data={rows}
-        containerVariant="plain"
-        enableExport={false}
-        enableGlobalFilter={false}
-        isLoading={loading}
-        onPaginationChange={onPaginationChange}
-        pageCount={pageCount}
-        pagination={pagination}
-        pageSizeOptions={[10, 20, 50, 100]}
-        noDataMessage="No hay cuentas payout pendientes."
-      />
+      <div className="overflow-hidden rounded-2xl border border-default-200/70 bg-background/70">
+        <DataTable
+          columns={columns}
+          data={rows}
+          containerVariant="plain"
+          enableExport={false}
+          enableGlobalFilter={false}
+          isLoading={loading}
+          onPaginationChange={onPaginationChange}
+          pageCount={pageCount}
+          pagination={pagination}
+          pageSizeOptions={[10, 20, 50, 100]}
+          noDataMessage="No hay cuentas payout pendientes."
+        />
+      </div>
     </Surface>
   );
 }
@@ -852,37 +891,44 @@ function CounterpartsToolbar({
   visibleCount,
 }: CounterpartsToolbarProps) {
   return (
-    <Surface className="rounded-[28px] p-5 sm:p-6" variant="secondary">
-      <div className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Chip size="sm" variant="soft">
-              {visibleCount} visibles
-            </Chip>
-            <Chip size="sm" variant="soft">
-              {totalCount} totales
-            </Chip>
-            {selectedCounterpart ? (
-              <Chip size="sm" variant="secondary">
-                Seleccionada: {selectedCounterpart.bankAccountHolder}
+    <Surface className="rounded-[28px] border border-default-200/70 p-5 sm:p-6" variant="secondary">
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="font-medium text-default-500 text-xs uppercase tracking-[0.22em]">
+              Vista general
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Chip size="sm" variant="soft">
+                {visibleCount} visibles
               </Chip>
-            ) : null}
+              <Chip size="sm" variant="soft">
+                {totalCount} totales
+              </Chip>
+              {selectedCounterpart ? (
+                <Chip size="sm" variant="secondary">
+                  {selectedCounterpart.bankAccountHolder}
+                </Chip>
+              ) : null}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {canSync ? (
-              <Button disabled={syncLoading} onClick={onSync} size="sm" variant="ghost">
-                {syncLoading ? "Sincronizando..." : "Sincronizar contrapartes"}
+              <Button disabled={syncLoading} onClick={onSync} size="sm" variant="secondary">
+                <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
+                {syncLoading ? "Sincronizando..." : "Sincronizar"}
               </Button>
             ) : null}
             {canCreate ? (
               <Button onClick={onCreate} size="sm">
-                + Nueva contraparte
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Nueva contraparte
               </Button>
             ) : null}
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+        <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
           <SearchField
             onChange={onSearchQueryChange}
             value={searchQuery}
@@ -896,6 +942,7 @@ function CounterpartsToolbar({
             </SearchField.Group>
           </SearchField>
           <Button onClick={onResetFilters} size="sm" variant="ghost">
+            <Filter className="mr-1.5 h-3.5 w-3.5" />
             Limpiar filtros
           </Button>
         </div>
@@ -908,30 +955,35 @@ function CounterpartsToolbar({
                 onCategoryFilterChange(filter.value);
               }}
               size="sm"
-              variant={categoryFilter === filter.value ? "primary" : "ghost"}
+              variant={categoryFilter === filter.value ? "secondary" : "ghost"}
+              className={
+                categoryFilter === filter.value
+                  ? "border border-primary/35 bg-primary/10 text-primary"
+                  : ""
+              }
             >
               {filter.label}
             </Button>
           ))}
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-3">
-          <Card className="rounded-2xl border border-default-200 bg-background px-3 py-2 shadow-none">
-            <Card.Content className="space-y-0.5 p-0">
-              <p className="text-default-500 text-xs">Proveedores</p>
-              <p className="font-semibold text-lg">{supplierCount}</p>
+        <div className="grid gap-3 md:grid-cols-3">
+          <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
+            <Card.Content className="space-y-1 p-0">
+              <p className="text-default-500 text-xs uppercase tracking-wide">Proveedores</p>
+              <p className="font-semibold text-2xl leading-none">{supplierCount}</p>
             </Card.Content>
           </Card>
-          <Card className="rounded-2xl border border-default-200 bg-background px-3 py-2 shadow-none">
-            <Card.Content className="space-y-0.5 p-0">
-              <p className="text-default-500 text-xs">Clientes</p>
-              <p className="font-semibold text-lg">{clientCount}</p>
+          <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
+            <Card.Content className="space-y-1 p-0">
+              <p className="text-default-500 text-xs uppercase tracking-wide">Clientes</p>
+              <p className="font-semibold text-2xl leading-none">{clientCount}</p>
             </Card.Content>
           </Card>
-          <Card className="rounded-2xl border border-default-200 bg-background px-3 py-2 shadow-none">
-            <Card.Content className="space-y-0.5 p-0">
-              <p className="text-default-500 text-xs">Prestamistas</p>
-              <p className="font-semibold text-lg">{lenderCount}</p>
+          <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
+            <Card.Content className="space-y-1 p-0">
+              <p className="text-default-500 text-xs uppercase tracking-wide">Prestamistas</p>
+              <p className="font-semibold text-2xl leading-none">{lenderCount}</p>
             </Card.Content>
           </Card>
         </div>
@@ -961,7 +1013,10 @@ function CounterpartDetailPane({
 }: CounterpartDetailPaneProps) {
   if (!counterpartId) {
     return (
-      <Surface className="h-full rounded-[28px] p-6" variant="secondary">
+      <Surface
+        className="h-full rounded-[28px] border border-default-200/70 p-6"
+        variant="secondary"
+      >
         <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
           <p className="text-default-600 text-sm">
             Selecciona una contraparte para revisar su resumen, movimientos y cuentas asociadas.
@@ -979,7 +1034,10 @@ function CounterpartDetailPane({
   return (
     <Suspense
       fallback={
-        <Surface className="space-y-4 rounded-[28px] p-6" variant="secondary">
+        <Surface
+          className="space-y-4 rounded-[28px] border border-default-200/70 p-6"
+          variant="secondary"
+        >
           <Skeleton className="h-8 w-1/2" />
           <div className="grid grid-cols-2 gap-4">
             <Skeleton className="h-12 w-full" />
