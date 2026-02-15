@@ -9,6 +9,7 @@ import { NotificationHistory } from "@/features/notifications/components/Notific
 import { Clock } from "../features/Clock";
 import { Button } from "../ui/Button";
 import { ThemeToggle } from "../ui/ThemeToggle";
+import { Tooltip } from "../ui/Tooltip";
 
 // Helper: Extract label from match data
 const getMatchLabel = (match: {
@@ -128,6 +129,23 @@ export function Header() {
     return user.roles.join(", ");
   }, [user]);
 
+  const compactRoleLabel = React.useMemo(() => {
+    if (!user || user.roles.length === 0) {
+      return "";
+    }
+    if (user.roles.length === 1) {
+      return user.roles[0] ?? "";
+    }
+    return `${user.roles[0]} +${user.roles.length - 1}`;
+  }, [user]);
+
+  const sessionTooltip = React.useMemo(() => {
+    if (!user) {
+      return "Sin sesión";
+    }
+    return `${sessionIdentity}${rolesLabel ? ` · ${rolesLabel}` : ""}`;
+  }, [rolesLabel, sessionIdentity, user]);
+
   const handleLogout = async () => {
     await logout();
     void navigate({ replace: true, to: "/login" });
@@ -135,8 +153,8 @@ export function Header() {
 
   return (
     <header className="scroll-header-animation sticky top-0 z-30 flex items-center justify-between rounded-3xl px-6 py-3 transition-all duration-300">
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-center gap-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-3">
           <Breadcrumbs className="font-medium">
             {crumbs.length === 0 && <Breadcrumbs.Item>Inicio</Breadcrumbs.Item>}
             {crumbs.map((crumb, i) => {
@@ -165,20 +183,22 @@ export function Header() {
             </span>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2 pt-0.5">
-          <Chip color={user ? "success" : "danger"} size="sm" variant="soft">
+        <div className="mt-1 flex min-w-0 items-center gap-2">
+          <Chip className="shrink-0" color={user ? "success" : "danger"} size="sm" variant="soft">
             <span
               className={`mr-1 inline-flex h-2 w-2 rounded-full ${user ? "bg-success" : "bg-danger"}`}
             />
             {user ? "Sesión activa" : "Sin sesión"}
           </Chip>
-          <span className="max-w-[40vw] truncate text-default-600 text-xs md:max-w-[52vw]">
-            {sessionIdentity}
-            {rolesLabel ? ` · ${rolesLabel}` : ""}
-          </span>
+          <Tooltip content={sessionTooltip} placement="bottom" showArrow>
+            <span className="block min-w-0 truncate text-default-500 text-xs">
+              {sessionIdentity}
+              {compactRoleLabel ? ` · ${compactRoleLabel}` : ""}
+            </span>
+          </Tooltip>
         </div>
       </div>
-      <div className="flex items-center gap-2 md:gap-3">
+      <div className="ml-4 flex shrink-0 items-center gap-2 md:gap-3">
         <div className="hidden md:block">
           <Clock />
         </div>
