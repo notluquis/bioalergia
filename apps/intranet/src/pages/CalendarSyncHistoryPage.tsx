@@ -48,7 +48,6 @@ export function CalendarSyncHistoryPage() {
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-bold text-2xl">Historial de Sincronización</h1>
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => setShowConfig(!showConfig)}
