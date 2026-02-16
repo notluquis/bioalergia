@@ -145,10 +145,15 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
 }
 export function PersonalCreditDetailsPageWrapper() {
   const params = useParams({ from: "/_authed/finanzas/personal-credits/$creditId" });
+  const creditId = Number(params.creditId);
+
+  if (Number.isNaN(creditId)) {
+    throw new Error("Invalid credit id");
+  }
 
   return (
     <Suspense fallback={<div>Cargando detalle...</div>}>
-      <PersonalCreditDetailsPage creditId={Number(params.creditId)} />
+      <PersonalCreditDetailsPage creditId={creditId} />
     </Suspense>
   );
 }

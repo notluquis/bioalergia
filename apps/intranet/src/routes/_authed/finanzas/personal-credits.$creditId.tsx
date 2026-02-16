@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
 import { PageLoader } from "@/components/ui/PageLoader";
@@ -11,9 +11,10 @@ const PersonalCreditDetailsPage = lazy(() =>
 );
 
 export const Route = createFileRoute("/_authed/finanzas/personal-credits/$creditId")({
-  beforeLoad: () => {
-    // Permission check
-    return;
+  beforeLoad: ({ context }) => {
+    if (!context.can("read", "PersonalCredit")) {
+      throw new Error("Unauthorized");
+    }
   },
   component: () => (
     <Suspense fallback={<PageLoader />}>
@@ -23,8 +24,10 @@ export const Route = createFileRoute("/_authed/finanzas/personal-credits/$credit
 
   loader: async ({ context: { queryClient }, params }) => {
     const creditId = Number(params.creditId);
-    if (!Number.isNaN(creditId)) {
-      await queryClient.ensureQueryData(personalFinanceQueries.detail(creditId));
+    if (Number.isNaN(creditId)) {
+      const routeApi = getRouteApi("/_authed/finanzas/personal-credits/$creditId");
+      throw routeApi.redirect({ to: "/finanzas/personal-credits" });
     }
+    await queryClient.ensureQueryData(personalFinanceQueries.detail(creditId));
   },
 });

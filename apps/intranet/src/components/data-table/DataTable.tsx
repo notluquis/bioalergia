@@ -246,9 +246,13 @@ function DataTableContent<TData, TValue>({
             return (
               <React.Fragment key={row.id}>
                 <tr
-                  className="group border-default-100/50 border-b transition-colors last:border-0 hover:bg-background/50"
+                  className={cn(
+                    "group border-default-100/50 border-b transition-colors last:border-0 hover:bg-background/50 data-[state=selected]:bg-primary/10",
+                    onRowClick && "cursor-pointer",
+                  )}
                   data-index={virtualRow.index}
                   data-state={row.getIsSelected() && "selected"}
+                  onClick={() => onRowClick?.(row.original)}
                   ref={virtualizer.measureElement}
                   style={{
                     height: `${virtualRow.size}px`,
