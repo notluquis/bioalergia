@@ -69,7 +69,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 rounded-2xl border border-default-200/70 bg-background/85 px-4 py-3 backdrop-blur-md md:px-5">
+    <header className="surface-elevated sticky top-0 z-30 px-4 py-3 md:px-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
           {showBreadcrumbs ? (
