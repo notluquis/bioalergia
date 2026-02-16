@@ -289,11 +289,6 @@ function PatientsListPage() {
             </Tabs.Panel>
 
             <Tabs.Panel className="space-y-4 pt-4" id="dte">
-              <div className="rounded-xl border border-default-200 bg-default-50 p-3 text-default-600 text-sm">
-                Los registros DTE son una fuente de clientes y no se transforman automáticamente en
-                ficha clínica (`Patient`). Por eso pueden existir en DTE y no aparecer en la vista
-                clínica.
-              </div>
               <Input
                 className="max-w-md"
                 onChange={(e) => {
