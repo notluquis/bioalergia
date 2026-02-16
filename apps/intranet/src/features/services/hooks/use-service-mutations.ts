@@ -3,13 +3,21 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import {
   createService,
+  editServiceSchedule,
   extractErrorMessage,
   regenerateServiceSchedules,
+  skipServiceSchedule,
   unlinkServicePayment,
 } from "../api";
 import { serviceKeys } from "../queries";
 import { servicesActions } from "../store";
-import type { CreateServicePayload, RegenerateServicePayload, ServiceListResponse } from "../types";
+import type {
+  CreateServicePayload,
+  RegenerateServicePayload,
+  ServiceListResponse,
+  ServiceScheduleEditPayload,
+  ServiceScheduleSkipPayload,
+} from "../types";
 
 export function useServiceMutations() {
   const { can } = useAuth();
@@ -54,6 +62,30 @@ export function useServiceMutations() {
     },
   });
 
+  // Edit Schedule
+  const editScheduleMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: number; payload: ServiceScheduleEditPayload }) => {
+      return editServiceSchedule(id, payload);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
+      servicesActions.closeEditScheduleModal();
+    },
+  });
+
+  // Skip Schedule
+  const skipScheduleMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: number; payload: ServiceScheduleSkipPayload }) => {
+      return skipServiceSchedule(id, payload);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
+      servicesActions.closeSkipScheduleModal();
+    },
+  });
+
   return {
     // State
     canManage,
@@ -74,5 +106,19 @@ export function useServiceMutations() {
       await unlinkMutation.mutateAsync(scheduleId);
     },
     unlinkPending: unlinkMutation.isPending,
+
+    // Edit Schedule
+    editSchedule: async (scheduleId: number, payload: ServiceScheduleEditPayload) => {
+      await editScheduleMutation.mutateAsync({ id: scheduleId, payload });
+    },
+    editScheduleError: extractErrorMessage(editScheduleMutation.error),
+    editSchedulePending: editScheduleMutation.isPending,
+
+    // Skip Schedule
+    skipSchedule: async (scheduleId: number, payload: ServiceScheduleSkipPayload) => {
+      await skipScheduleMutation.mutateAsync({ id: scheduleId, payload });
+    },
+    skipScheduleError: extractErrorMessage(skipScheduleMutation.error),
+    skipSchedulePending: skipScheduleMutation.isPending,
   };
 }

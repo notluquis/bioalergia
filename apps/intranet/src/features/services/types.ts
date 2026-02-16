@@ -68,6 +68,16 @@ export interface ServicePaymentPayload {
   transactionId: number;
 }
 
+export interface ServiceScheduleEditPayload {
+  dueDate?: Date;
+  expectedAmount?: number;
+  note?: null | string;
+}
+
+export interface ServiceScheduleSkipPayload {
+  reason: string;
+}
+
 export type ServiceRecurrenceType = "ONE_OFF" | "RECURRING";
 
 export interface ServiceSchedule {

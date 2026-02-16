@@ -274,6 +274,8 @@ async function request<T>(method: string, url: string, options?: RequestOptions)
 export const apiClient = {
   delete: <T>(url: string, options: JsonRequestOptions) => request<T>("DELETE", url, options),
   get: <T>(url: string, options: JsonRequestOptions) => request<T>("GET", url, options),
+  patch: <T>(url: string, body: FormData | object, options: JsonRequestOptions) =>
+    request<T>("PATCH", url, { ...options, body }),
   post: <T>(url: string, body: FormData | object, options: JsonRequestOptions) =>
     request<T>("POST", url, { ...options, body }),
   put: <T>(url: string, body: FormData | object, options: JsonRequestOptions) =>

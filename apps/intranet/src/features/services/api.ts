@@ -9,6 +9,8 @@ import type {
   ServiceListResponse,
   ServicePaymentPayload,
   ServiceSchedule,
+  ServiceScheduleEditPayload,
+  ServiceScheduleSkipPayload,
 } from "./types";
 
 const ServiceDetailResponseSchema = z.looseObject({});
@@ -28,6 +30,10 @@ type RegenerateServicePayloadRequest = Omit<RegenerateServicePayload, "startDate
 };
 
 type ServicePaymentPayloadRequest = Omit<ServicePaymentPayload, "paidDate"> & { paidDate: string };
+
+type ServiceScheduleEditPayloadRequest = Omit<ServiceScheduleEditPayload, "dueDate"> & {
+  dueDate?: string;
+};
 
 function serializeServicePayload(payload: CreateServicePayload): CreateServicePayloadRequest {
   return {
@@ -50,6 +56,15 @@ function serializePaymentPayload(payload: ServicePaymentPayload): ServicePayment
   return {
     ...payload,
     paidDate: formatISO(payload.paidDate),
+  };
+}
+
+function serializeScheduleEditPayload(
+  payload: ServiceScheduleEditPayload,
+): ServiceScheduleEditPayloadRequest {
+  return {
+    ...payload,
+    dueDate: payload.dueDate ? formatISO(payload.dueDate) : undefined,
   };
 }
 
@@ -108,6 +123,28 @@ export async function unlinkServicePayment(
   return apiClient.post<{ schedule: ServiceSchedule; status: "ok" }>(
     `/api/services/schedules/${scheduleId}/unlink`,
     {},
+    { responseSchema: ServiceScheduleResponseSchema },
+  );
+}
+
+export async function editServiceSchedule(
+  scheduleId: number,
+  payload: ServiceScheduleEditPayload,
+): Promise<{ schedule: ServiceSchedule; status: "ok" }> {
+  return apiClient.patch<{ schedule: ServiceSchedule; status: "ok" }>(
+    `/api/services/schedules/${scheduleId}`,
+    serializeScheduleEditPayload(payload),
+    { responseSchema: ServiceScheduleResponseSchema },
+  );
+}
+
+export async function skipServiceSchedule(
+  scheduleId: number,
+  payload: ServiceScheduleSkipPayload,
+): Promise<{ schedule: ServiceSchedule; status: "ok" }> {
+  return apiClient.post<{ schedule: ServiceSchedule; status: "ok" }>(
+    `/api/services/schedules/${scheduleId}/skip`,
+    payload,
     { responseSchema: ServiceScheduleResponseSchema },
   );
 }

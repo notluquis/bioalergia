@@ -7,6 +7,10 @@ interface ServicesState {
   // Create Modal
   createOpen: boolean;
 
+  // Edit Schedule Modal
+  editScheduleOpen: boolean;
+  editScheduleTarget: null | ServiceSchedule;
+
   // Filters
   filters: ServicesFilterState;
 
@@ -22,10 +26,16 @@ interface ServicesState {
   // Selection
   selectedId: null | string;
   selectedTemplate: null | ServiceTemplate;
+
+  // Skip Schedule Modal
+  skipScheduleOpen: boolean;
+  skipScheduleTarget: null | ServiceSchedule;
 }
 
 export const initialServicesState: ServicesState = {
   createOpen: false,
+  editScheduleOpen: false,
+  editScheduleTarget: null,
   filters: {
     search: "",
     statuses: new Set(),
@@ -40,6 +50,8 @@ export const initialServicesState: ServicesState = {
   paymentSchedule: null,
   selectedId: null,
   selectedTemplate: null,
+  skipScheduleOpen: false,
+  skipScheduleTarget: null,
 };
 
 export const servicesStore = new Store<ServicesState>(initialServicesState);
@@ -54,6 +66,14 @@ export const servicesActions = {
     }));
   },
 
+  closeEditScheduleModal: () => {
+    servicesStore.setState((state) => ({
+      ...state,
+      editScheduleOpen: false,
+      editScheduleTarget: null,
+    }));
+  },
+
   closePaymentModal: () => {
     servicesStore.setState((state) => ({
       ...state,
@@ -62,11 +82,27 @@ export const servicesActions = {
     }));
   },
 
+  closeSkipScheduleModal: () => {
+    servicesStore.setState((state) => ({
+      ...state,
+      skipScheduleOpen: false,
+      skipScheduleTarget: null,
+    }));
+  },
+
   openCreateModal: (template: null | ServiceTemplate = null) => {
     servicesStore.setState((state) => ({
       ...state,
       createOpen: true,
       selectedTemplate: template,
+    }));
+  },
+
+  openEditScheduleModal: (schedule: ServiceSchedule) => {
+    servicesStore.setState((state) => ({
+      ...state,
+      editScheduleOpen: true,
+      editScheduleTarget: schedule,
     }));
   },
 
@@ -83,6 +119,14 @@ export const servicesActions = {
         transactionId: schedule.transaction?.id ? String(schedule.transaction.id) : "",
       },
       paymentSchedule: schedule,
+    }));
+  },
+
+  openSkipScheduleModal: (schedule: ServiceSchedule) => {
+    servicesStore.setState((state) => ({
+      ...state,
+      skipScheduleOpen: true,
+      skipScheduleTarget: schedule,
     }));
   },
 

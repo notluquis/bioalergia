@@ -18,6 +18,16 @@ const paySchema = z.object({
   transactionSource: z.enum(["release", "settlement", "withdraw"]).optional(),
 });
 
+const editSchema = z.object({
+  dueDate: z.string().min(1).optional(),
+  expectedAmount: z.coerce.number().min(0).optional(),
+  note: z.string().max(1000).optional().nullable(),
+});
+
+const skipSchema = z.object({
+  reason: z.string().min(1).max(500),
+});
+
 type TransactionSource = "release" | "settlement" | "withdraw";
 
 function decodeUnifiedId(
@@ -56,6 +66,69 @@ function normalizeTransactionReference(
   }
   return decodeUnifiedId(transactionId);
 }
+
+// PATCH /:id - Edit a service schedule (dueDate, expectedAmount, note)
+app.patch("/:id", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canUpdate = await hasPermission(user.id, "update", "Service");
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) {
+    return reply(c, { status: "error", message: "ID inválido" }, 400);
+  }
+
+  const body = await c.req.json();
+  const parsed = editSchema.safeParse(body);
+  if (!parsed.success) {
+    return reply(
+      c,
+      {
+        status: "error",
+        message: "Datos inválidos",
+        issues: parsed.error.issues,
+      },
+      400,
+    );
+  }
+
+  const schedule = await db.serviceSchedule.findUnique({ where: { id } });
+  if (!schedule) {
+    return reply(c, { status: "error", message: "Schedule no encontrado" }, 404);
+  }
+
+  // Build update data object
+  const updateData: {
+    dueDate?: Date;
+    expectedAmount?: Decimal;
+    note?: null | string;
+  } = {};
+
+  if (parsed.data.dueDate !== undefined) {
+    updateData.dueDate = new Date(parsed.data.dueDate);
+  }
+
+  if (parsed.data.expectedAmount !== undefined) {
+    updateData.expectedAmount = new Decimal(parsed.data.expectedAmount);
+  }
+
+  if (parsed.data.note !== undefined) {
+    updateData.note = parsed.data.note;
+  }
+
+  const updated = await db.serviceSchedule.update({
+    where: { id },
+    data: updateData,
+  });
+
+  return reply(c, { status: "ok", schedule: updated });
+});
 
 app.post("/:id/pay", async (c) => {
   const user = await getSessionUser(c);
@@ -168,6 +241,53 @@ app.post("/:id/unlink", async (c) => {
       settlementTransactionId: null,
       releaseTransactionId: null,
       withdrawTransactionId: null,
+    },
+  });
+
+  return reply(c, { status: "ok", schedule: updated });
+});
+
+// POST /:id/skip - Skip a service schedule with a reason
+app.post("/:id/skip", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) {
+    return reply(c, { status: "error", message: "Unauthorized" }, 401);
+  }
+
+  const canUpdate = await hasPermission(user.id, "update", "Service");
+  if (!canUpdate) {
+    return reply(c, { status: "error", message: "Forbidden" }, 403);
+  }
+
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) {
+    return reply(c, { status: "error", message: "ID inválido" }, 400);
+  }
+
+  const body = await c.req.json();
+  const parsed = skipSchema.safeParse(body);
+  if (!parsed.success) {
+    return reply(
+      c,
+      {
+        status: "error",
+        message: "Datos inválidos",
+        issues: parsed.error.issues,
+      },
+      400,
+    );
+  }
+
+  const schedule = await db.serviceSchedule.findUnique({ where: { id } });
+  if (!schedule) {
+    return reply(c, { status: "error", message: "Schedule no encontrado" }, 404);
+  }
+
+  const updated = await db.serviceSchedule.update({
+    where: { id },
+    data: {
+      status: "SKIPPED",
+      note: parsed.data.reason,
     },
   });
 
