@@ -12,16 +12,20 @@ export type CounterpartPayload = {
 
 export type CounterpartUpdatePayload = Partial<CounterpartPayload>;
 
+const NON_RUT_CHARS_REGEX = /[^0-9k]/gi;
+const ACCOUNT_SPACES_REGEX = /\s+/g;
+const LEADING_ZEROS_REGEX = /^0+/;
+
 const normalizeRut = (rut: string): string => {
-  return rut.replace(/[^0-9k]/gi, "").toUpperCase();
+  return rut.replace(NON_RUT_CHARS_REGEX, "").toUpperCase();
 };
 
 const normalizeAccountNumber = (accountNumber: string): string => {
-  const compact = accountNumber.replace(/\s+/g, "").toUpperCase();
+  const compact = accountNumber.replace(ACCOUNT_SPACES_REGEX, "").toUpperCase();
   if (!compact) {
     return "";
   }
-  const normalized = compact.replace(/^0+/, "");
+  const normalized = compact.replace(LEADING_ZEROS_REGEX, "");
   return normalized.length > 0 ? normalized : "0";
 };
 
