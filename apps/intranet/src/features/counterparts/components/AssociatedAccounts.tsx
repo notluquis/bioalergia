@@ -661,6 +661,8 @@ function QuickViewSection({
             estimatedRowHeight={44}
             isLoading={isLoading}
             noDataMessage="Sin movimientos registrados para esta cuenta."
+            virtualizationMaxHeight="28rem"
+            virtualizationThreshold={1}
           />
         </div>
       </Surface>

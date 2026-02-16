@@ -82,6 +82,12 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
    */
   readonly estimatedRowHeight?: number;
   /**
+   * Max height for the virtualized scroll container.
+   * Only applies when virtualization is active.
+   * @default "70dvh"
+   */
+  readonly virtualizationMaxHeight?: number | string;
+  /**
    * Faceted filters for specific columns
    */
   readonly filters?: DataTableFilterOption[];
@@ -166,6 +172,7 @@ interface DataTableContentProps<TData, TValue> {
     row: import("@tanstack/react-table").Row<TData>;
   }) => React.ReactNode;
   readonly table: Table<TData>;
+  readonly virtualizationMaxHeight: number | string;
 }
 
 function DataTableContent<TData, TValue>({
@@ -179,6 +186,7 @@ function DataTableContent<TData, TValue>({
   onRowClick,
   renderSubComponent,
   table,
+  virtualizationMaxHeight,
 }: DataTableContentProps<TData, TValue>) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const rows = table.getRowModel().rows;
@@ -309,7 +317,9 @@ function DataTableContent<TData, TValue>({
         ref={tableContainerRef}
         style={{
           maxWidth: "100%",
-          ...(enableVirtualization ? { maxHeight: "70dvh", overflowY: "auto" } : {}),
+          ...(enableVirtualization
+            ? { maxHeight: virtualizationMaxHeight, overflowY: "auto" }
+            : {}),
         }}
       >
         <table
@@ -415,6 +425,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   enableToolbar = true,
   enableVirtualization = true,
   estimatedRowHeight = 48,
+  virtualizationMaxHeight = "70dvh",
   filters = [],
   initialPinning = {},
   isLoading,
@@ -522,6 +533,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         onRowClick={onRowClick}
         renderSubComponent={renderSubComponent}
         table={table}
+        virtualizationMaxHeight={virtualizationMaxHeight}
       />
       {enablePagination && (
         <DataTablePagination
