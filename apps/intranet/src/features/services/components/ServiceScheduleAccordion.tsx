@@ -29,7 +29,7 @@ const dateFormatter = new Intl.DateTimeFormat("es-CL", {
 });
 
 function canUnlink(schedule: ServiceSchedule) {
-  if (!schedule.transaction_id) {
+  if (!schedule.transactionId) {
     return false;
   }
   if (schedule.status !== "PAID") {
@@ -72,13 +72,13 @@ function buildScheduleGroups(schedules: ServiceSchedule[]): ScheduleGroup[] {
   }
 
   const sorted = [...schedules].toSorted(
-    (a, b) => dayjs(a.due_date).valueOf() - dayjs(b.due_date).valueOf(),
+    (a, b) => dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf(),
   );
   const todayDate = dayjs().startOf("day");
   const map = new Map<string, ScheduleGroup>();
 
   for (const schedule of sorted) {
-    const dueDate = dayjs(schedule.due_date).startOf("day");
+    const dueDate = dayjs(schedule.dueDate).startOf("day");
     const key = dueDate.format("YYYY-MM-DD");
     if (!map.has(key)) {
       map.set(key, {
@@ -150,7 +150,7 @@ function ServiceScheduleAccordion({
           Agenda de vencimientos
         </span>
         <span className="text-default-400 text-xs">
-          {service.pending_count + service.overdue_count} pendientes totales
+          {service.pendingCount + service.overdueCount} pendientes totales
         </span>
       </header>
       <div className="muted-scrollbar max-h-none space-y-2 pr-1 sm:max-h-80 sm:overflow-y-auto sm:overscroll-y-contain">
@@ -191,7 +191,7 @@ function ServiceScheduleAccordion({
                 }
               >
                 {group.items.map((item) => {
-                  const dueDate = dayjs(item.due_date);
+                  const dueDate = dayjs(item.dueDate);
                   const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
                   const isOverdue = item.status === "PENDING" && diffDays < 0;
                   const statusClasses = {
@@ -209,7 +209,7 @@ function ServiceScheduleAccordion({
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <span className="block font-semibold text-foreground text-sm">
-                            {currencyFormatter.format(item.expected_amount)}
+                            {currencyFormatter.format(item.expectedAmount)}
                           </span>
                           <Description className="text-default-400 text-xs">
                             Vence el {dateFormatter.format(dueDate.toDate())}
@@ -227,8 +227,8 @@ function ServiceScheduleAccordion({
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-4 text-default-500 text-xs">
                         <span>
-                          Periodo {dayjs(item.period_start).format("DD MMM")} –{" "}
-                          {dayjs(item.period_end).format("DD MMM YYYY")}
+                          Periodo {dayjs(item.periodStart).format("DD MMM")} –{" "}
+                          {dayjs(item.periodEnd).format("DD MMM YYYY")}
                         </span>
                         {item.transaction && (
                           <span className="text-success">
@@ -249,7 +249,7 @@ function ServiceScheduleAccordion({
                               Registrar pago
                             </Button>
                           )}
-                          {item.transaction_id && item.status === "PAID" && canUnlink(item) && (
+                          {item.transactionId && item.status === "PAID" && canUnlink(item) && (
                             <Button
                               onClick={() => {
                                 onUnlinkPayment(item);

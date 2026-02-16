@@ -30,7 +30,7 @@ export function useServiceMutations() {
       void queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
       void queryClient.invalidateQueries({ queryKey: serviceKeys.details() });
 
-      servicesActions.setSelectedId(response.service.public_id);
+      servicesActions.setSelectedId(response.service.publicId);
       servicesActions.closeCreateModal();
     },
   });

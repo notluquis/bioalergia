@@ -28,47 +28,46 @@ export const getColumns = (
   canManage: boolean,
 ): ColumnDef<ServiceSchedule>[] => [
   {
-    accessorKey: "period_start",
+    accessorKey: "periodStart",
     cell: ({ row }) => (
       <span className="font-semibold text-foreground">
-        {dayjs(row.original.period_start).format("MMM YYYY")}
+        {dayjs(row.original.periodStart).format("MMM YYYY")}
       </span>
     ),
 
     header: "Periodo",
   },
   {
-    accessorKey: "due_date",
+    accessorKey: "dueDate",
     cell: ({ row }) => (
-      <span className="text-foreground">{dayjs(row.original.due_date).format("DD MMM YYYY")}</span>
+      <span className="text-foreground">{dayjs(row.original.dueDate).format("DD MMM YYYY")}</span>
     ),
 
     header: "Vencimiento",
   },
   {
-    accessorKey: "effective_amount",
+    accessorKey: "effectiveAmount",
     cell: ({ row }) => {
       const schedule = row.original;
       return (
         <div className="space-y-0.5">
           <div className="font-semibold text-foreground">
-            ${schedule.effective_amount.toLocaleString("es-CL")}
+            ${schedule.effectiveAmount.toLocaleString("es-CL")}
           </div>
-          {schedule.late_fee_amount > 0 && (
+          {schedule.lateFeeAmount > 0 && (
             <div className="text-danger text-xs">
-              Incluye recargo ${schedule.late_fee_amount.toLocaleString("es-CL")}
+              Incluye recargo ${schedule.lateFeeAmount.toLocaleString("es-CL")}
             </div>
           )}
-          {schedule.late_fee_amount === 0 &&
-            schedule.expected_amount !== schedule.effective_amount && (
-              <div className="text-default-400 text-xs">Monto ajustado</div>
-            )}
-          {schedule.overdue_days > 0 && schedule.status === "PENDING" && (
-            <div className="text-danger text-xs">{schedule.overdue_days} días de atraso</div>
+          {schedule.lateFeeAmount === 0 && schedule.expectedAmount !== schedule.effectiveAmount && (
+            <div className="text-default-400 text-xs">Monto ajustado</div>
           )}
-          {schedule.late_fee_amount > 0 && (
+          {schedule.overdueDays > 0 && schedule.status === "PENDING" && (
+            <div className="text-danger text-xs">{schedule.overdueDays} días de atraso</div>
+          )}
+          {schedule.lateFeeAmount > 0 && (
             <div className="text-default-400 text-xs">
-              Base ${schedule.expected_amount.toLocaleString("es-CL")}
+              Base ${schedule.expectedAmount.toLocaleString("es-CL")}
             </div>
           )}
         </div>
@@ -83,7 +82,7 @@ export const getColumns = (
       let color: "success" | "warning" | "default" | "danger" = "default";
 
       const today = dayjs().startOf("day");
-      const due = dayjs(schedule.due_date);
+      const due = dayjs(schedule.dueDate);
 
       if (schedule.status === "PAID") {
         color = "success";
@@ -114,12 +113,10 @@ export const getColumns = (
       return (
         <div className="space-y-1">
           <div>
-            {schedule.paid_amount == null
-              ? "—"
-              : `$${schedule.paid_amount.toLocaleString("es-CL")}`}
+            {schedule.paidAmount == null ? "—" : `$${schedule.paidAmount.toLocaleString("es-CL")}`}
           </div>
           <div className="text-default-400 text-xs">
-            {schedule.paid_date ? dayjs(schedule.paid_date).format("DD MMM YYYY") : "—"}
+            {schedule.paidDate ? dayjs(schedule.paidDate).format("DD MMM YYYY") : "—"}
           </div>
         </div>
       );

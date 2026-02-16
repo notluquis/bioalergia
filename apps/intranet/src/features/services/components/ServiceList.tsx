@@ -57,13 +57,13 @@ export function ServiceList({
             </div>
           ))}
         {services.map((service) => {
-          const isActive = service.public_id === selectedId;
-          const overdue = service.overdue_count > 0;
+          const isActive = service.publicId === selectedId;
+          const overdue = service.overdueCount > 0;
           const indicatorColor = (() => {
             if (overdue) {
               return "bg-rose-400";
             }
-            if (service.pending_count === 0) {
+            if (service.pendingCount === 0) {
               return "bg-emerald-400";
             }
             return "bg-amber-400";
@@ -98,9 +98,9 @@ export function ServiceList({
                   ? "border-default-200 bg-primary/20 text-primary"
                   : "border-transparent bg-background/45 text-foreground hover:border-default-200 hover:bg-background/65"
               }`}
-              key={service.public_id}
+              key={service.publicId}
               onPress={() => {
-                onSelect(service.public_id);
+                onSelect(service.publicId);
               }}
               type="button"
               variant="ghost"
@@ -121,17 +121,17 @@ export function ServiceList({
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs">
                 <span className="font-semibold text-foreground">
-                  ${service.default_amount.toLocaleString("es-CL")}
+                  ${service.defaultAmount.toLocaleString("es-CL")}
                 </span>
                 <span className="text-default-500">{frequencyLabels[service.frequency]}</span>
-                <span className="text-default-500">{typeLabels[service.service_type]}</span>
+                <span className="text-default-500">{typeLabels[service.serviceType]}</span>
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-3 text-default-400 text-xs">
-                <span>Inicio {dayjs(service.start_date).format("DD MMM YYYY")}</span>
-                {service.counterpart_name && <span>{service.counterpart_name}</span>}
+                <span>Inicio {dayjs(service.startDate).format("DD MMM YYYY")}</span>
+                {service.counterpartName && <span>{service.counterpartName}</span>}
               </div>
               <div className="mt-2 text-default-400 text-xs">
-                Pendientes {service.pending_count} · Vencidos {service.overdue_count}
+                Pendientes {service.pendingCount} · Vencidos {service.overdueCount}
               </div>
             </Button>
           );

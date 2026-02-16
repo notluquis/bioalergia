@@ -224,7 +224,7 @@ export function ServicesOverviewContent() {
         onClose={closePaymentModal}
         title={
           paymentSchedule
-            ? `Registrar pago ${dayjs(paymentSchedule.period_start).format("MMM YYYY")}`
+            ? `Registrar pago ${dayjs(paymentSchedule.periodStart).format("MMM YYYY")}`
             : "Registrar pago"
         }
       >

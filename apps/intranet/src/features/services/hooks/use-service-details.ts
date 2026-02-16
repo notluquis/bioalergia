@@ -18,7 +18,7 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
   const selectedTemplate = useStore(servicesStore, (state) => state.selectedTemplate);
   const createOpen = useStore(servicesStore, (state) => state.createOpen);
 
-  const serviceIds = services.map((s) => s.public_id).join(",");
+  const serviceIds = services.map((s) => s.publicId).join(",");
 
   // Fetch All Details (Aggregated)
   const { data: allDetails } = useSuspenseQuery({
@@ -27,7 +27,7 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
         return {};
       }
       const results = await Promise.allSettled(
-        services.map((service) => fetchServiceDetail(service.public_id)),
+        services.map((service) => fetchServiceDetail(service.publicId)),
       );
 
       const detailsMap: Record<string, ServiceDetailResponse> = {};
@@ -35,9 +35,9 @@ export function useServiceDetails(services: ServiceListResponse["services"]) {
 
       for (const [index, result] of results.entries()) {
         if (result.status === "fulfilled") {
-          detailsMap[result.value.service.public_id] = result.value;
+          detailsMap[result.value.service.publicId] = result.value;
         } else {
-          const serviceId = services[index]?.public_id ?? "unknown";
+          const serviceId = services[index]?.publicId ?? "unknown";
           failures.push({ id: serviceId, reason: result.reason });
           logger.error("[services] aggregated:error", { error: result.reason, serviceId });
         }

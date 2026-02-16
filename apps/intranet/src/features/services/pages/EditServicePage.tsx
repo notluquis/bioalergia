@@ -85,22 +85,22 @@ export function ServiceEditPage() {
       {
         helper: "Monto base configurado",
         label: "Monto mensual",
-        value: fmtCLP(service.default_amount),
+        value: fmtCLP(service.defaultAmount),
       },
       {
         helper: "Cuotas sin pago registrado",
         label: "Pendientes",
-        value: `${service.pending_count}`,
+        value: `${service.pendingCount}`,
       },
       {
         helper: "Total conciliado a la fecha",
         label: "Pagado",
-        value: fmtCLP(service.total_paid),
+        value: fmtCLP(service.totalPaid),
       },
       {
         helper: "Registro en base de datos",
         label: "Última actualización",
-        value: dayjs(service.updated_at).format("DD MMM YYYY HH:mm"),
+        value: dayjs(service.updatedAt).format("DD MMM YYYY HH:mm"),
       },
     ];
   }, [detail]);
@@ -109,21 +109,21 @@ export function ServiceEditPage() {
     const { service } = detail;
     const items: { date: string; description?: string; title: string }[] = [
       {
-        date: dayjs(service.created_at).format("DD MMM YYYY HH:mm"),
+        date: dayjs(service.createdAt).format("DD MMM YYYY HH:mm"),
         description: "Servicio registrado en la plataforma",
         title: "Creación",
       },
       {
-        date: dayjs(service.updated_at).format("DD MMM YYYY HH:mm"),
+        date: dayjs(service.updatedAt).format("DD MMM YYYY HH:mm"),
         description: "Datos del servicio actualizados",
         title: "Última modificación",
       },
     ];
 
-    if (service.overdue_count > 0) {
+    if (service.overdueCount > 0) {
       items.push({
         date: dayjs().format("DD MMM YYYY"),
-        description: `${service.overdue_count} cuotas requieren revisión`,
+        description: `${service.overdueCount} cuotas requieren revisión`,
         title: "Cuotas vencidas",
       });
     }
@@ -253,30 +253,30 @@ function mapServiceToForm(
   service: ServiceDetailResponse["service"],
 ): Partial<CreateServicePayload> {
   return {
-    accountReference: service.account_reference ?? undefined,
-    amountIndexation: service.amount_indexation,
+    accountReference: service.accountReference ?? undefined,
+    amountIndexation: service.amountIndexation,
     category: service.category ?? undefined,
-    counterpartAccountId: service.counterpart_account_id,
-    counterpartId: service.counterpart_id,
-    defaultAmount: service.default_amount,
+    counterpartAccountId: service.counterpartAccountId,
+    counterpartId: service.counterpartId,
+    defaultAmount: service.defaultAmount,
     detail: service.detail ?? undefined,
-    dueDay: service.due_day,
-    emissionDay: service.emission_day,
-    emissionEndDay: service.emission_end_day,
-    emissionExactDate: service.emission_exact_date ?? undefined,
-    emissionMode: service.emission_mode,
-    emissionStartDay: service.emission_start_day,
+    dueDay: service.dueDay,
+    emissionDay: service.emissionDay,
+    emissionEndDay: service.emissionEndDay,
+    emissionExactDate: service.emissionExactDate ?? undefined,
+    emissionMode: service.emissionMode,
+    emissionStartDay: service.emissionStartDay,
     frequency: service.frequency,
-    lateFeeGraceDays: service.late_fee_grace_days ?? undefined,
-    lateFeeMode: service.late_fee_mode,
-    lateFeeValue: service.late_fee_value ?? undefined,
-    monthsToGenerate: service.next_generation_months,
+    lateFeeGraceDays: service.lateFeeGraceDays ?? undefined,
+    lateFeeMode: service.lateFeeMode,
+    lateFeeValue: service.lateFeeValue ?? undefined,
+    monthsToGenerate: service.nextGenerationMonths,
     name: service.name,
     notes: service.notes ?? undefined,
-    obligationType: service.obligation_type,
+    obligationType: service.obligationType,
     ownership: service.ownership,
-    recurrenceType: service.recurrence_type,
-    serviceType: service.service_type,
-    startDate: service.start_date,
+    recurrenceType: service.recurrenceType,
+    serviceType: service.serviceType,
+    startDate: service.startDate,
   };
 }

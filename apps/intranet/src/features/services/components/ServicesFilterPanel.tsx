@@ -29,7 +29,7 @@ export function ServicesFilterPanel({ filters, onChange, services }: ServicesFil
   const typeOptions = (() => {
     const counts = new Map<ServiceType, number>();
     for (const service of services) {
-      counts.set(service.service_type, (counts.get(service.service_type) ?? 0) + 1);
+      counts.set(service.serviceType, (counts.get(service.serviceType) ?? 0) + 1);
     }
     return [...counts.entries()].toSorted((a, b) => b[1] - a[1]);
   })();

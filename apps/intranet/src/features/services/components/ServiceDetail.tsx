@@ -40,7 +40,7 @@ const getStatusBadge = (service: ServiceSummary) => {
     case "INACTIVE":
       return { className: "bg-emerald-100 text-emerald-700", label: "Sin pendientes" };
     default:
-      return service.overdue_count > 0
+      return service.overdueCount > 0
         ? { className: "bg-rose-100 text-rose-700", label: "Vencidos" }
         : { className: "bg-amber-100 text-amber-700", label: "Activo" };
   }
@@ -92,41 +92,35 @@ const getRecurrenceLabel = (recurrence: ServiceRecurrenceType) =>
     RECURRING: "Recurrente",
   })[recurrence];
 
-const getAmountModeLabel = (amountIndexation: ServiceSummary["amount_indexation"]) =>
+const getAmountModeLabel = (amountIndexation: ServiceSummary["amountIndexation"]) =>
   amountIndexation === "UF" ? "UF" : "Monto fijo";
 
 const getLateFeeLabel = (service: ServiceSummary) =>
   ({
-    FIXED: service.late_fee_value
-      ? `$${service.late_fee_value.toLocaleString("es-CL")}`
-      : "Monto fijo",
+    FIXED: service.lateFeeValue ? `$${service.lateFeeValue.toLocaleString("es-CL")}` : "Monto fijo",
     NONE: "Sin recargo",
-    PERCENTAGE: service.late_fee_value == null ? "% del monto" : `${service.late_fee_value}%`,
-  })[service.late_fee_mode];
+    PERCENTAGE: service.lateFeeValue == null ? "% del monto" : `${service.lateFeeValue}%`,
+  })[service.lateFeeMode];
 
 const getCounterpartSummary = (service: ServiceSummary) => {
-  if (service.counterpart_name) {
-    return service.counterpart_name;
+  if (service.counterpartName) {
+    return service.counterpartName;
   }
-  if (service.counterpart_id) {
-    return `Contraparte #${service.counterpart_id}`;
+  if (service.counterpartId) {
+    return `Contraparte #${service.counterpartId}`;
   }
   return "Sin contraparte";
 };
 
 const getEmissionSummary = (service: ServiceSummary) => {
-  if (service.emission_mode === "FIXED_DAY" && service.emission_day) {
-    return `Día ${service.emission_day}`;
+  if (service.emissionMode === "FIXED_DAY" && service.emissionDay) {
+    return `Día ${service.emissionDay}`;
   }
-  if (
-    service.emission_mode === "DATE_RANGE" &&
-    service.emission_start_day &&
-    service.emission_end_day
-  ) {
-    return `Entre día ${service.emission_start_day} y ${service.emission_end_day}`;
+  if (service.emissionMode === "DATE_RANGE" && service.emissionStartDay && service.emissionEndDay) {
+    return `Entre día ${service.emissionStartDay} y ${service.emissionEndDay}`;
   }
-  if (service.emission_mode === "SPECIFIC_DATE" && service.emission_exact_date) {
-    return `Fecha ${dayjs(service.emission_exact_date).format("DD MMM YYYY")}`;
+  if (service.emissionMode === "SPECIFIC_DATE" && service.emissionExactDate) {
+    return `Fecha ${dayjs(service.emissionExactDate).format("DD MMM YYYY")}`;
   }
   return "Sin especificar";
 };
@@ -177,7 +171,7 @@ export function ServiceDetail({
     <section className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl bg-background p-6">
       <ServiceHeader
         canManage={canManage}
-        onEdit={() => navigate({ to: "/services/$id/edit", params: { id: service.public_id } })}
+        onEdit={() => navigate({ to: "/services/$id/edit", params: { id: service.publicId } })}
         onRegenerate={() => setRegenerateOpen(true)}
         service={service}
       />
@@ -238,14 +232,14 @@ function ServiceHeader({
           {service.name}
         </span>
         <Description className="text-foreground text-sm">
-          {service.detail || "Gasto"} · {getServiceTypeLabel(service.service_type)} ·{" "}
+          {service.detail || "Gasto"} · {getServiceTypeLabel(service.serviceType)} ·{" "}
           {getOwnershipLabel(service.ownership)}
         </Description>
         <div className="flex flex-wrap items-center gap-3 text-default-500 text-xs">
-          <span>Inicio {dayjs(service.start_date).format("DD MMM YYYY")}</span>
+          <span>Inicio {dayjs(service.startDate).format("DD MMM YYYY")}</span>
           <span>Frecuencia {getFrequencyLabel(service.frequency).toLowerCase()}</span>
-          {service.due_day && <span>Vence día {service.due_day}</span>}
-          <span>{getRecurrenceLabel(service.recurrence_type)}</span>
+          {service.dueDay && <span>Vence día {service.dueDay}</span>}
+          <span>{getRecurrenceLabel(service.recurrenceType)}</span>
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
@@ -277,27 +271,27 @@ function ServiceSummarySection({ service }: { service: ServiceSummary }) {
           Monto base
         </Description>
         <span className="block font-semibold text-foreground text-lg">
-          ${service.default_amount.toLocaleString("es-CL")}
+          ${service.defaultAmount.toLocaleString("es-CL")}
         </span>
       </div>
       <div>
         <Description className="text-default-400 text-xs uppercase tracking-wide">
           Pendientes
         </Description>
-        <span className="block font-semibold text-foreground text-lg">{service.pending_count}</span>
+        <span className="block font-semibold text-foreground text-lg">{service.pendingCount}</span>
       </div>
       <div>
         <Description className="text-default-400 text-xs uppercase tracking-wide">
           Vencidos
         </Description>
-        <span className="block font-semibold text-lg text-rose-600">{service.overdue_count}</span>
+        <span className="block font-semibold text-lg text-rose-600">{service.overdueCount}</span>
       </div>
       <div>
         <Description className="text-default-400 text-xs uppercase tracking-wide">
           Total pagado
         </Description>
         <span className="block font-semibold text-emerald-600 text-lg">
-          ${Number(service.total_paid ?? 0).toLocaleString("es-CL")}
+          ${Number(service.totalPaid ?? 0).toLocaleString("es-CL")}
         </span>
       </div>
       <div>
@@ -305,7 +299,7 @@ function ServiceSummarySection({ service }: { service: ServiceSummary }) {
           Modo de cálculo
         </Description>
         <span className="block font-semibold text-foreground text-sm">
-          {getAmountModeLabel(service.amount_indexation)}
+          {getAmountModeLabel(service.amountIndexation)}
         </span>
       </div>
       <div>
@@ -315,9 +309,9 @@ function ServiceSummarySection({ service }: { service: ServiceSummary }) {
         <span className="block font-semibold text-foreground text-sm">
           {getLateFeeLabel(service)}
         </span>
-        {service.late_fee_grace_days != null && service.late_fee_mode !== "NONE" && (
+        {service.lateFeeGraceDays != null && service.lateFeeMode !== "NONE" && (
           <Description className="text-default-400 text-xs">
-            Tras {service.late_fee_grace_days} días
+            Tras {service.lateFeeGraceDays} días
           </Description>
         )}
       </div>
@@ -335,17 +329,15 @@ function ServiceMetaSection({ service }: { service: ServiceSummary }) {
         <span className="block font-semibold text-foreground">
           {getCounterpartSummary(service)}
         </span>
-        {service.counterpart_account_identifier && (
+        {service.counterpartAccountIdentifier && (
           <Description className="text-default-500 text-xs">
-            Cuenta {service.counterpart_account_identifier}
-            {service.counterpart_account_bank_name
-              ? ` · ${service.counterpart_account_bank_name}`
-              : ""}
+            Cuenta {service.counterpartAccountIdentifier}
+            {service.counterpartAccountBankName ? ` · ${service.counterpartAccountBankName}` : ""}
           </Description>
         )}
-        {service.account_reference && (
+        {service.accountReference && (
           <Description className="text-default-500 text-xs">
-            Referencia: {service.account_reference}
+            Referencia: {service.accountReference}
           </Description>
         )}
       </div>
@@ -360,10 +352,10 @@ function ServiceMetaSection({ service }: { service: ServiceSummary }) {
           Clasificación
         </Description>
         <span className="block font-semibold text-foreground">
-          {getObligationLabel(service.obligation_type)}
+          {getObligationLabel(service.obligationType)}
         </span>
         <Description className="text-default-500 text-xs">
-          {getRecurrenceLabel(service.recurrence_type)}
+          {getRecurrenceLabel(service.recurrenceType)}
         </Description>
       </div>
     </section>
@@ -409,7 +401,7 @@ function RegenerateServiceModal({
             setRegenerateForm((prev) => ({ ...prev, months: Number(event.target.value) }));
           }}
           type="number"
-          value={values.months ?? service.next_generation_months}
+          value={values.months ?? service.nextGenerationMonths}
         />
 
         <Input
@@ -421,7 +413,7 @@ function RegenerateServiceModal({
             }));
           }}
           type="date"
-          value={dayjs(values.startDate ?? service.start_date).format("YYYY-MM-DD")}
+          value={dayjs(values.startDate ?? service.startDate).format("YYYY-MM-DD")}
         />
 
         <Input
@@ -432,7 +424,7 @@ function RegenerateServiceModal({
           }}
           step="0.01"
           type="number"
-          value={values.defaultAmount ?? service.default_amount}
+          value={values.defaultAmount ?? service.defaultAmount}
         />
 
         <Input
@@ -446,7 +438,7 @@ function RegenerateServiceModal({
             }));
           }}
           type="number"
-          value={values.dueDay ?? service.due_day ?? ""}
+          value={values.dueDay ?? service.dueDay ?? ""}
         />
 
         <Select
@@ -469,7 +461,7 @@ function RegenerateServiceModal({
           <SelectItem key="ANNUAL">Anual</SelectItem>
           <SelectItem key="ONCE">Única vez</SelectItem>
         </Select>
-        {service.emission_mode === "FIXED_DAY" && (
+        {service.emissionMode === "FIXED_DAY" && (
           <Input
             helper="Aplica a servicios con día fijo de emisión"
             label="Día de emisión"
@@ -482,7 +474,7 @@ function RegenerateServiceModal({
               }));
             }}
             type="number"
-            value={values.emissionDay ?? service.emission_day ?? ""}
+            value={values.emissionDay ?? service.emissionDay ?? ""}
           />
         )}
         {error && (

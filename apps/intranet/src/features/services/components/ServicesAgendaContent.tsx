@@ -16,15 +16,15 @@ export function ServicesAgendaContent() {
 
   const totals = unifiedAgendaItems.reduce(
     (acc, item) => {
-      const dueDate = dayjs(item.schedule.due_date);
+      const dueDate = dayjs(item.schedule.dueDate);
       if (dueDate.isSame(dayjs(), "day")) {
-        acc.day += item.schedule.expected_amount;
+        acc.day += item.schedule.expectedAmount;
       }
       if (dueDate.isSame(dayjs(), "week")) {
-        acc.week += item.schedule.expected_amount;
+        acc.week += item.schedule.expectedAmount;
       }
       if (dueDate.isSame(dayjs(), "month")) {
-        acc.month += item.schedule.expected_amount;
+        acc.month += item.schedule.expectedAmount;
       }
       return acc;
     },

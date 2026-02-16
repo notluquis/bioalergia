@@ -71,19 +71,19 @@ export interface ServicePaymentPayload {
 export type ServiceRecurrenceType = "ONE_OFF" | "RECURRING";
 
 export interface ServiceSchedule {
-  created_at: Date;
-  due_date: Date;
-  effective_amount: number;
-  expected_amount: number;
+  createdAt: Date;
+  dueDate: Date;
+  effectiveAmount: number;
+  expectedAmount: number;
   id: number;
-  late_fee_amount: number;
+  lateFeeAmount: number;
   note: null | string;
-  overdue_days: number;
-  paid_amount: null | number;
-  paid_date: null | Date;
-  period_end: Date;
-  period_start: Date;
-  service_id: number;
+  overdueDays: number;
+  paidAmount: null | number;
+  paidDate: null | Date;
+  periodEnd: Date;
+  periodStart: Date;
+  serviceId: number;
   status: "PAID" | "PARTIAL" | "PENDING" | "SKIPPED";
   transaction?: null | {
     amount: null | number;
@@ -91,8 +91,8 @@ export interface ServiceSchedule {
     id: number;
     timestamp: Date;
   };
-  transaction_id: null | number;
-  updated_at: Date;
+  transactionId: null | number;
+  updatedAt: Date;
 }
 
 export interface ServicesFilterState {
@@ -102,44 +102,44 @@ export interface ServicesFilterState {
 }
 
 export interface ServiceSummary {
-  account_reference: null | string;
-  amount_indexation: ServiceAmountIndexation;
+  accountReference: null | string;
+  amountIndexation: ServiceAmountIndexation;
   category: null | string;
-  counterpart_account_bank_name: null | string;
-  counterpart_account_id: null | number;
-  counterpart_account_identifier: null | string;
-  counterpart_account_type: null | string;
-  counterpart_id: null | number;
-  counterpart_name: null | string;
-  created_at: Date;
-  default_amount: number;
+  counterpartAccountBankName: null | string;
+  counterpartAccountId: null | number;
+  counterpartAccountIdentifier: null | string;
+  counterpartAccountType: null | string;
+  counterpartId: null | number;
+  counterpartName: null | string;
+  createdAt: Date;
+  defaultAmount: number;
   detail: null | string;
-  due_day: null | number;
-  emission_day: null | number;
-  emission_end_day: null | number;
-  emission_exact_date: null | Date;
-  emission_mode: ServiceEmissionMode;
-  emission_start_day: null | number;
+  dueDay: null | number;
+  emissionDay: null | number;
+  emissionEndDay: null | number;
+  emissionExactDate: null | Date;
+  emissionMode: ServiceEmissionMode;
+  emissionStartDay: null | number;
   frequency: ServiceFrequency;
   id: number;
-  late_fee_grace_days: null | number;
-  late_fee_mode: ServiceLateFeeMode;
-  late_fee_value: null | number;
+  lateFeeGraceDays: null | number;
+  lateFeeMode: ServiceLateFeeMode;
+  lateFeeValue: null | number;
   name: string;
-  next_generation_months: number;
+  nextGenerationMonths: number;
   notes: null | string;
-  obligation_type: ServiceObligationType;
-  overdue_count: number;
+  obligationType: ServiceObligationType;
+  overdueCount: number;
   ownership: ServiceOwnership;
-  pending_count: number;
-  public_id: string;
-  recurrence_type: ServiceRecurrenceType;
-  service_type: ServiceType;
-  start_date: Date;
+  pendingCount: number;
+  publicId: string;
+  recurrenceType: ServiceRecurrenceType;
+  serviceType: ServiceType;
+  startDate: Date;
   status: "ACTIVE" | "ARCHIVED" | "INACTIVE";
-  total_expected: number;
-  total_paid: number;
-  updated_at: Date;
+  totalExpected: number;
+  totalPaid: number;
+  updatedAt: Date;
 }
 
 export interface ServiceTemplate {

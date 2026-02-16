@@ -39,7 +39,7 @@ export function useServicesOverview() {
     if (!details.selectedService) {
       return;
     }
-    await mutations.regenerateService(details.selectedService.public_id, overrides);
+    await mutations.regenerateService(details.selectedService.publicId, overrides);
   };
 
   const handleUnlink = async (schedule: ServiceSchedule) => {

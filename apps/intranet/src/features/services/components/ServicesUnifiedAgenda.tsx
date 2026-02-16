@@ -71,7 +71,7 @@ export function ServicesUnifiedAgenda({
     }
     const map = new Map<string, AgendaGroup>();
     for (const { schedule, service } of items) {
-      const dueDate = dayjs(schedule.due_date).startOf("day");
+      const dueDate = dayjs(schedule.dueDate).startOf("day");
       const key = dueDate.format("YYYY-MM-DD");
       if (!map.has(key)) {
         map.set(key, {
@@ -85,7 +85,7 @@ export function ServicesUnifiedAgenda({
       if (!group) {
         continue;
       }
-      group.total += schedule.expected_amount;
+      group.total += schedule.expectedAmount;
       group.entries.push({ schedule, service });
     }
     return [...map.values()].toSorted((a, b) => (a.dateKey > b.dateKey ? 1 : -1));
@@ -97,15 +97,15 @@ export function ServicesUnifiedAgenda({
     let weekSum = 0;
     let monthSum = 0;
     for (const { schedule } of items) {
-      const dueDate = dayjs(schedule.due_date).startOf("day");
+      const dueDate = dayjs(schedule.dueDate).startOf("day");
       if (dueDate.isSame(today, "day")) {
-        daySum += schedule.expected_amount;
+        daySum += schedule.expectedAmount;
       }
       if (dueDate.isSame(today, "week")) {
-        weekSum += schedule.expected_amount;
+        weekSum += schedule.expectedAmount;
       }
       if (dueDate.isSame(today, "month")) {
-        monthSum += schedule.expected_amount;
+        monthSum += schedule.expectedAmount;
       }
     }
     return {
@@ -238,13 +238,13 @@ export function ServicesUnifiedAgenda({
                 {isExpanded && (
                   <div className="space-y-2 border-default-200/70 border-t px-4 py-3">
                     {group.entries.map(({ schedule, service }) => {
-                      const dueDate = dayjs(schedule.due_date);
+                      const dueDate = dayjs(schedule.dueDate);
                       const diffDays = dueDate.startOf("day").diff(dayjs().startOf("day"), "day");
                       const isOverdue = schedule.status === "PENDING" && diffDays < 0;
                       return (
                         <div
                           className="surface-recessed p-3 transition hover:border-primary/40"
-                          key={`${service.public_id}-${schedule.id}`}
+                          key={`${service.publicId}-${schedule.id}`}
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
@@ -257,7 +257,7 @@ export function ServicesUnifiedAgenda({
                                 </Description>
                               )}
                               <Description className="mt-1 text-default-300 text-xs">
-                                {currencyFormatter.format(schedule.expected_amount)} · Vence el{" "}
+                                {currencyFormatter.format(schedule.expectedAmount)} · Vence el{" "}
                                 {dateFormatter.format(dueDate.toDate())}
                               </Description>
                             </div>
@@ -276,17 +276,17 @@ export function ServicesUnifiedAgenda({
                               {(schedule.status === "PENDING" || schedule.status === "PARTIAL") && (
                                 <Button
                                   onClick={() => {
-                                    onRegisterPayment(service.public_id, schedule);
+                                    onRegisterPayment(service.publicId, schedule);
                                   }}
                                   size="sm"
                                 >
                                   Registrar pago
                                 </Button>
                               )}
-                              {schedule.transaction_id && schedule.status === "PAID" && (
+                              {schedule.transactionId && schedule.status === "PAID" && (
                                 <Button
                                   onClick={() => {
-                                    onUnlinkPayment(service.public_id, schedule);
+                                    onUnlinkPayment(service.publicId, schedule);
                                   }}
                                   size="sm"
                                   variant="secondary"

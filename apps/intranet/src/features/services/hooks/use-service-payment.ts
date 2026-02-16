@@ -17,8 +17,8 @@ export function useServicePayment() {
 
   // Suggested Transactions
   const scheduleId = paymentSchedule?.id;
-  const expectedAmount = paymentSchedule?.expected_amount;
-  const dueDate = paymentSchedule?.due_date;
+  const expectedAmount = paymentSchedule?.expectedAmount;
+  const dueDate = paymentSchedule?.dueDate;
 
   const { data: suggestedTransactions } = useSuspenseQuery({
     queryFn: async () => {

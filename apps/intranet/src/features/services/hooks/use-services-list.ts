@@ -23,10 +23,10 @@ export function useServicesList() {
     const searchTerm = filters.search.trim().toLowerCase();
     return services.filter((service) => {
       const matchesStatus = filters.statuses.size === 0 || filters.statuses.has(service.status);
-      const matchesType = filters.types.size === 0 || filters.types.has(service.service_type);
+      const matchesType = filters.types.size === 0 || filters.types.has(service.serviceType);
       const matchesSearch =
         !searchTerm ||
-        `${service.name ?? ""} ${service.detail ?? ""} ${service.counterpart_name ?? ""}`
+        `${service.name ?? ""} ${service.detail ?? ""} ${service.counterpartName ?? ""}`
           .toLowerCase()
           .includes(searchTerm);
       return matchesStatus && matchesType && matchesSearch;
@@ -40,10 +40,10 @@ export function useServicesList() {
     }
     return filteredServices.reduce(
       (acc, service) => {
-        acc.totalExpected += service.total_expected;
-        acc.totalPaid += service.total_paid;
-        acc.pendingCount += service.pending_count;
-        acc.overdueCount += service.overdue_count;
+        acc.totalExpected += service.totalExpected;
+        acc.totalPaid += service.totalPaid;
+        acc.pendingCount += service.pendingCount;
+        acc.overdueCount += service.overdueCount;
         if (service.status === "ACTIVE") {
           acc.activeCount += 1;
         }
