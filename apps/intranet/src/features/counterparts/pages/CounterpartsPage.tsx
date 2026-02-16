@@ -876,18 +876,53 @@ function CounterpartsToolbar({
         variant="secondary"
       >
         <div className="space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 overflow-x-auto">
+              <div className="flex w-max min-w-full items-center gap-2 pr-2">
+                {CATEGORY_FILTERS.map((filter) => (
+                  <Button
+                    key={filter.value}
+                    onClick={() => {
+                      onCategoryFilterChange(filter.value);
+                    }}
+                    size="sm"
+                    variant={categoryFilter === filter.value ? "secondary" : "ghost"}
+                    className={
+                      categoryFilter === filter.value
+                        ? "border border-primary/35 bg-primary/10 text-primary"
+                        : ""
+                    }
+                  >
+                    {filter.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
               {canSync ? (
-                <Button disabled={syncLoading} onClick={onSync} size="sm" variant="secondary">
-                  <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
-                  {syncLoading ? "Sincronizando..." : "Sincronizar"}
+                <Button
+                  aria-label={
+                    syncLoading ? "Sincronizando contrapartes" : "Sincronizar contrapartes"
+                  }
+                  disabled={syncLoading}
+                  isIconOnly
+                  onClick={onSync}
+                  size="sm"
+                  title={syncLoading ? "Sincronizando..." : "Sincronizar"}
+                  variant="secondary"
+                >
+                  <RefreshCcw className={`h-4 w-4 ${syncLoading ? "animate-spin" : ""}`} />
                 </Button>
               ) : null}
               {canCreate ? (
-                <Button onClick={onCreate} size="sm">
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  Nueva contraparte
+                <Button
+                  aria-label="Nueva contraparte"
+                  isIconOnly
+                  onClick={onCreate}
+                  size="sm"
+                  title="Nueva contraparte"
+                >
+                  <Plus className="h-4 w-4" />
                 </Button>
               ) : null}
             </div>
@@ -896,26 +931,6 @@ function CounterpartsToolbar({
           <Separator />
 
           <div className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              {CATEGORY_FILTERS.map((filter) => (
-                <Button
-                  key={filter.value}
-                  onClick={() => {
-                    onCategoryFilterChange(filter.value);
-                  }}
-                  size="sm"
-                  variant={categoryFilter === filter.value ? "secondary" : "ghost"}
-                  className={
-                    categoryFilter === filter.value
-                      ? "border border-primary/35 bg-primary/10 text-primary"
-                      : ""
-                  }
-                >
-                  {filter.label}
-                </Button>
-              ))}
-            </div>
-
             <ComboBox
               allowsEmptyCollection
               className="w-full"
