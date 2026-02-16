@@ -877,16 +877,6 @@ function CounterpartsToolbar({
       >
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <Chip size="sm" variant="soft">
-                  {visibleCount} visibles
-                </Chip>
-                <Chip size="sm" variant="soft">
-                  {totalCount} totales
-                </Chip>
-              </div>
-            </div>
             <div className="flex flex-wrap items-center gap-2">
               {canSync ? (
                 <Button disabled={syncLoading} onClick={onSync} size="sm" variant="secondary">
