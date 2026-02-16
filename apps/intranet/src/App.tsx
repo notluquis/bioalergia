@@ -191,7 +191,11 @@ export function App() {
                       ♥
                     </Button>
                   </Tooltip.Trigger>
-                  <Tooltip.Content placement="top" showArrow>
+                  <Tooltip.Content
+                    className="select-none whitespace-nowrap break-normal [overflow-wrap:normal]"
+                    placement="top"
+                    showArrow
+                  >
                     Hecho con ♥ por Lucas Pulgar Escobar para Bioalergia
                   </Tooltip.Content>
                 </Tooltip>
