@@ -1,8 +1,9 @@
 import {
-  Autocomplete,
   Checkbox,
   Chip,
+  ComboBox,
   EmptyState,
+  Input as HeroInput,
   Label,
   ListBox,
   SearchField,
@@ -927,77 +928,60 @@ function CounterpartsToolbar({
               ))}
             </div>
 
-            <Autocomplete
+            <ComboBox
               allowsEmptyCollection
-              fullWidth
-              onChange={(value) => {
-                if (typeof value === "number") {
-                  onSelectCounterpart(value);
+              className="w-full"
+              defaultFilter={() => true}
+              inputValue={searchQuery}
+              menuTrigger="input"
+              onInputChange={onSearchQueryChange}
+              onSelectionChange={(key) => {
+                if (key === null) {
+                  onSelectCounterpart(null);
                   return;
                 }
-                if (typeof value === "string") {
-                  const parsed = Number(value);
-                  onSelectCounterpart(Number.isFinite(parsed) ? parsed : null);
-                  return;
-                }
-                onSelectCounterpart(null);
+                const parsed = Number(String(key));
+                onSelectCounterpart(Number.isFinite(parsed) ? parsed : null);
               }}
-              placeholder="Buscar por titular o RUT"
-              selectionMode="single"
-              value={selectedId === null ? null : String(selectedId)}
-              variant="secondary"
+              selectedKey={selectedId === null ? null : String(selectedId)}
             >
               <Label className="sr-only">Buscar contraparte por titular o RUT</Label>
-              <Autocomplete.Trigger>
-                <Autocomplete.Value />
-                <Autocomplete.ClearButton />
-                <Autocomplete.Indicator />
-              </Autocomplete.Trigger>
-              <Autocomplete.Popover className="rounded-2xl border border-default-200/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md">
-                <Autocomplete.Filter
-                  filter={() => true}
-                  inputValue={searchQuery}
-                  onInputChange={onSearchQueryChange}
+              <ComboBox.InputGroup>
+                <HeroInput placeholder="Buscar por titular o RUT" variant="secondary" />
+                <ComboBox.Trigger />
+              </ComboBox.InputGroup>
+              <ComboBox.Popover className="rounded-2xl border border-default-200/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md">
+                <ListBox
+                  className="max-h-72"
+                  renderEmptyState={() => (
+                    <EmptyState>No hay resultados con los filtros seleccionados.</EmptyState>
+                  )}
                 >
-                  <SearchField autoFocus name="counterpart-search" variant="secondary">
-                    <SearchField.Group>
-                      <SearchField.SearchIcon />
-                      <SearchField.Input placeholder="Buscar por titular o RUT" />
-                      <SearchField.ClearButton />
-                    </SearchField.Group>
-                  </SearchField>
-                  <ListBox
-                    className="max-h-72"
-                    renderEmptyState={() => (
-                      <EmptyState>No hay resultados con los filtros seleccionados.</EmptyState>
-                    )}
-                  >
-                    {visibleCounterparts.map((item) => (
-                      <ListBox.Item
-                        id={String(item.id)}
-                        key={item.id}
-                        textValue={`${item.bankAccountHolder} ${item.identificationNumber}`}
-                      >
-                        <div className="flex w-full items-start justify-between gap-2">
-                          <span className="font-medium text-foreground tracking-tight">
-                            {item.bankAccountHolder}
-                          </span>
-                          <Chip size="sm" variant={selectedId === item.id ? "secondary" : "soft"}>
-                            {CATEGORY_LABELS[item.category] ?? item.category}
-                          </Chip>
-                        </div>
-                        {item.identificationNumber ? (
-                          <span className="mt-0.5 block text-default-500 text-xs">
-                            RUT {item.identificationNumber}
-                          </span>
-                        ) : null}
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Autocomplete.Filter>
-              </Autocomplete.Popover>
-            </Autocomplete>
+                  {visibleCounterparts.map((item) => (
+                    <ListBox.Item
+                      id={String(item.id)}
+                      key={item.id}
+                      textValue={`${item.bankAccountHolder} ${item.identificationNumber}`}
+                    >
+                      <div className="flex w-full items-start justify-between gap-2">
+                        <span className="font-medium text-foreground tracking-tight">
+                          {item.bankAccountHolder}
+                        </span>
+                        <Chip size="sm" variant={selectedId === item.id ? "secondary" : "soft"}>
+                          {CATEGORY_LABELS[item.category] ?? item.category}
+                        </Chip>
+                      </div>
+                      {item.identificationNumber ? (
+                        <span className="mt-0.5 block text-default-500 text-xs">
+                          RUT {item.identificationNumber}
+                        </span>
+                      ) : null}
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  ))}
+                </ListBox>
+              </ComboBox.Popover>
+            </ComboBox>
 
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2 text-default-500 text-xs">
