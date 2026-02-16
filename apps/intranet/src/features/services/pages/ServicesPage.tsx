@@ -31,7 +31,7 @@ export function ServicesPage() {
       </Tabs.ListContainer>
 
       <Tabs.Panel className="space-y-4 pt-4" id="overview">
-        <ServicesOverviewContent onViewFullAgenda={() => setSelectedTab("agenda")} />
+        <ServicesOverviewContent />
       </Tabs.Panel>
 
       <Tabs.Panel className="space-y-8 pt-4" id="agenda">

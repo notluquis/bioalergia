@@ -7,7 +7,6 @@ import {
   Input,
   Label,
   Modal,
-  Spinner,
   TextField,
 } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
@@ -19,20 +18,17 @@ import { ServiceDetail } from "@/features/services/components/ServiceDetail";
 import { ServiceForm } from "@/features/services/components/ServiceForm";
 import { ServiceList } from "@/features/services/components/ServiceList";
 import { ServicesFilterPanel } from "@/features/services/components/ServicesFilterPanel";
-import { ServicesUnifiedAgenda } from "@/features/services/components/ServicesUnifiedAgenda";
 import { SkipScheduleModal } from "@/features/services/components/SkipScheduleModal";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
 import { servicesActions, servicesStore } from "@/features/services/store";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
-export function ServicesOverviewContent({ onViewFullAgenda }: { onViewFullAgenda?: () => void }) {
+export function ServicesOverviewContent() {
   const overview = useServicesOverview();
   const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } =
     useStore(servicesStore);
 
   const {
-    aggregatedError,
-    aggregatedLoading,
     canManage,
     closeCreateModal,
     closePaymentModal,
@@ -42,8 +38,6 @@ export function ServicesOverviewContent({ onViewFullAgenda }: { onViewFullAgenda
     filteredServices,
     filters,
     globalError,
-    handleAgendaRegisterPayment,
-    handleAgendaUnlinkPayment,
     handleCreateService,
     handleEditSchedule,
     handleFilterChange,
@@ -67,7 +61,6 @@ export function ServicesOverviewContent({ onViewFullAgenda }: { onViewFullAgenda
     services,
     setSelectedId,
     summaryTotals,
-    unifiedAgendaItems,
   } = overview;
 
   const stats = [
@@ -98,18 +91,6 @@ export function ServicesOverviewContent({ onViewFullAgenda }: { onViewFullAgenda
 
   const activeFiltersCount =
     (filters.search.trim() ? 1 : 0) + filters.statuses.size + filters.types.size;
-  const showInitialLoading = aggregatedLoading && services.length === 0;
-
-  if (showInitialLoading) {
-    return (
-      <div className="flex min-h-60 items-center justify-center">
-        <div className="flex items-center gap-3 text-default-600 text-sm">
-          <Spinner size="md" />
-          <span>Cargando servicios...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <section className="space-y-4">
@@ -193,32 +174,6 @@ export function ServicesOverviewContent({ onViewFullAgenda }: { onViewFullAgenda
           service={selectedService}
         />
       )}
-
-      <div className={CARD_COMPACT}>
-        <div className="card-body space-y-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <span className="block font-semibold text-foreground text-sm">
-                Agenda de próximos pagos
-              </span>
-              <Description className="text-default-500 text-xs">Vista previa</Description>
-            </div>
-            <Button size="sm" variant="ghost" onPress={onViewFullAgenda}>
-              Ver todo
-            </Button>
-          </div>
-          <ServicesUnifiedAgenda
-            canManage={canManage}
-            error={aggregatedError}
-            items={unifiedAgendaItems}
-            loading={aggregatedLoading}
-            onEditSchedule={handleEditSchedule}
-            onRegisterPayment={handleAgendaRegisterPayment}
-            onSkipSchedule={handleSkipSchedule}
-            onUnlinkPayment={handleAgendaUnlinkPayment}
-          />
-        </div>
-      </div>
 
       <Modal.Backdrop isOpen={createOpen} onOpenChange={(open) => !open && closeCreateModal()}>
         <Modal.Container placement="center">
