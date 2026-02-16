@@ -335,9 +335,9 @@ function DataTableContent<TData, TValue>({
         <table
           className="w-full border-collapse text-left text-sm"
           style={{
-            minWidth: autoFitColumns ? "100%" : table.getTotalSize(),
+            minWidth: autoFitColumns ? undefined : table.getTotalSize(),
             tableLayout: autoFitColumns ? "auto" : "fixed",
-            width: autoFitColumns ? "max-content" : "100%",
+            width: "100%",
           }}
         >
           <thead className="sticky top-0 z-10 bg-default-100">
