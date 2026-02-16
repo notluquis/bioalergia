@@ -116,7 +116,7 @@ function DayCellButton({
   return (
     <Button
       className={cn(
-        "relative !h-[76px] min-w-0 flex-col items-center justify-center rounded-xl p-2 transition-all",
+        "relative h-19! min-w-0 flex-col items-center justify-center rounded-xl p-2 transition-all",
         "hover:bg-default-50",
         isSelected && "bg-primary/10 ring-1 ring-primary/60",
         isToday && !isSelected && "ring-1 ring-primary/30",

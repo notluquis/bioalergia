@@ -1,6 +1,6 @@
 import { Button } from "@heroui/react";
 import { Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -16,12 +16,10 @@ interface TopBarProps {
 }
 
 /**
- * Sticky top bar with date, status, and action buttons
+ * Compact sticky bar with current date, status, and save action
  */
 export function TopBar({ date, isSaving, onSave, status }: TopBarProps) {
-  const [showShortcut, setShowShortcut] = useState(false);
-
-  // Keyboard shortcut: ⌘S to save
+  // Keyboard shortcut: ⌘S / Ctrl+S
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
@@ -43,52 +41,40 @@ export function TopBar({ date, isSaving, onSave, status }: TopBarProps) {
   };
 
   const statusColors: Record<DayStatus, string> = {
-    balanced: "bg-success/20 text-success",
-    draft: "bg-warning/20 text-warning",
-    empty: "bg-default-100 text-default-500",
-    unbalanced: "bg-amber-500/20 text-amber-400",
+    balanced: "bg-success/15 text-success",
+    draft: "bg-warning/15 text-warning",
+    empty: "bg-default-100/80 text-default-500",
+    unbalanced: "bg-amber-500/15 text-amber-400",
   };
 
   return (
-    <div className="sticky top-0 z-10 mb-4 flex items-center justify-between rounded-2xl border border-default-100 bg-background/80 px-6 py-4 backdrop-blur-md">
-      {/* Left: Title and date */}
-      <div>
-        <h1 className="font-bold text-xl">Balance diario</h1>
-        <div className="mt-1 flex items-center gap-2">
-          <span className="font-medium text-default-700 text-lg capitalize">
+    <div className="sticky top-0 z-10 mb-3 rounded-2xl border border-default-100 bg-background/90 px-4 py-3 backdrop-blur-md sm:px-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-default-900 text-lg capitalize sm:text-xl">
             {formatDateFull(date)}
-          </span>
-          <span
-            className={cn("rounded-full px-2 py-0.5 font-medium text-xs", statusColors[status])}
-          >
-            {statusLabels[status]}
-          </span>
+          </p>
+          <div className="mt-1 flex items-center gap-2">
+            <span
+              className={cn("rounded-full px-2 py-0.5 font-medium text-xs", statusColors[status])}
+            >
+              {statusLabels[status]}
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-3">
-        {/* Save button with shortcut hint */}
         <Button
-          className="gap-2 rounded-xl"
+          className="shrink-0 gap-2 rounded-xl px-4"
           isPending={isSaving}
           onPress={onSave}
-          onMouseEnter={() => {
-            setShowShortcut(true);
-          }}
-          onMouseLeave={() => {
-            setShowShortcut(false);
-          }}
           size="sm"
-          variant="ghost"
+          variant="primary"
         >
           <Save className="size-4" />
-          <span className="hidden sm:inline">Guardar</span>
-          {showShortcut && (
-            <kbd className="ml-1 hidden rounded bg-default-100 px-1.5 py-0.5 text-xs sm:inline">
-              ⌘S
-            </kbd>
-          )}
+          {isSaving ? "Guardando..." : "Guardar"}
+          <kbd className="ml-1 hidden rounded bg-black/10 px-1.5 py-0.5 text-[10px] sm:inline">
+            ⌘S
+          </kbd>
         </Button>
       </div>
     </div>
