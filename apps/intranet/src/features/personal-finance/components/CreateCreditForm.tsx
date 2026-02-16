@@ -1,12 +1,8 @@
+import { Button, FieldError, Input, Label, ListBox, Modal, Select, TextField } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { PlusIcon } from "lucide-react";
-import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
-import { Select, SelectItem } from "@/components/ui/Select";
 import { toast } from "@/lib/toast-interceptor";
 
 import { personalFinanceApi } from "../api";
@@ -14,7 +10,6 @@ import { personalFinanceKeys } from "../queries";
 import { type CreateCreditInput, createCreditSchema } from "../types";
 
 export function CreateCreditForm() {
-  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -26,7 +21,6 @@ export function CreateCreditForm() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: personalFinanceKeys.all });
       toast.success("Crédito creado exitosamente");
-      setOpen(false);
       form.reset();
     },
   });
@@ -54,173 +48,192 @@ export function CreateCreditForm() {
 
   return (
     <>
-      <Button
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        <PlusIcon className="mr-2 size-4" />
-        Nuevo Crédito
-      </Button>
-
-      <Modal
-        className="max-w-xl"
-        isOpen={open}
-        onClose={() => {
-          setOpen(false);
-        }}
-        title="Crear Nuevo Crédito"
-      >
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            void form.handleSubmit();
-          }}
-        >
-          <form.Field name="bankName">
-            {(field) => (
-              <div>
-                <Input
-                  error={field.state.meta.errors.join(", ")}
-                  label="Banco / Institución"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
+      <Modal>
+        <Button>
+          <PlusIcon className="size-4" />
+          Nuevo Crédito
+        </Button>
+        <Modal.Backdrop>
+          <Modal.Container>
+            <Modal.Dialog className="sm:max-w-md">
+              <Modal.CloseTrigger />
+              <Modal.Header>
+                <Modal.Heading>Crear Nuevo Crédito</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body className="gap-4">
+                <form
+                  className="flex flex-col gap-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void form.handleSubmit();
                   }}
-                  placeholder="Ej: BCI"
-                  value={field.state.value}
-                />
-              </div>
-            )}
-          </form.Field>
+                >
+                  <form.Field name="bankName">
+                    {(field) => (
+                      <TextField isRequired name="bankName">
+                        <Label>Banco / Institución</Label>
+                        <Input
+                          placeholder="Ej: BCI"
+                          value={field.state.value}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          onBlur={field.handleBlur}
+                        />
+                        {field.state.meta.errors.length > 0 && (
+                          <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                        )}
+                      </TextField>
+                    )}
+                  </form.Field>
 
-          <form.Field name="creditNumber">
-            {(field) => (
-              <div>
-                <Input
-                  error={field.state.meta.errors.join(", ")}
-                  label="Número / Identificador"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder="Ej: 123456"
-                  value={field.state.value}
-                />
-              </div>
-            )}
-          </form.Field>
+                  <form.Field name="creditNumber">
+                    {(field) => (
+                      <TextField isRequired name="creditNumber">
+                        <Label>Número / Identificador</Label>
+                        <Input
+                          placeholder="Ej: 123456"
+                          value={field.state.value}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          onBlur={field.handleBlur}
+                        />
+                        {field.state.meta.errors.length > 0 && (
+                          <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                        )}
+                      </TextField>
+                    )}
+                  </form.Field>
 
-          <form.Field name="description">
-            {(field) => (
-              <div>
-                <Input
-                  error={field.state.meta.errors.join(", ")}
-                  label="Descripción"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value);
-                  }}
-                  placeholder="Ej: Crédito Hipotecario"
-                  value={field.state.value}
-                />
-              </div>
-            )}
-          </form.Field>
+                  <form.Field name="description">
+                    {(field) => (
+                      <TextField isRequired name="description">
+                        <Label>Descripción</Label>
+                        <Input
+                          placeholder="Ej: Crédito Hipotecario"
+                          value={field.state.value}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          onBlur={field.handleBlur}
+                        />
+                        {field.state.meta.errors.length > 0 && (
+                          <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                        )}
+                      </TextField>
+                    )}
+                  </form.Field>
 
-          <div className="grid grid-cols-2 gap-4">
-            <form.Field name="totalAmount">
-              {(field) => (
-                <div>
-                  <Input
-                    error={field.state.meta.errors.join(", ")}
-                    label="Monto Total"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(Number.parseFloat(e.target.value) || 0);
-                    }}
-                    type="number"
-                    value={field.state.value}
-                  />
-                </div>
-              )}
-            </form.Field>
+                  <div className="grid grid-cols-2 gap-4">
+                    <form.Field name="totalAmount">
+                      {(field) => (
+                        <TextField isRequired name="totalAmount">
+                          <Label>Monto Total</Label>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            value={field.state.value.toString()}
+                            onChange={(e) =>
+                              field.handleChange(Number.parseFloat(e.target.value) || 0)
+                            }
+                            onBlur={field.handleBlur}
+                          />
+                          {field.state.meta.errors.length > 0 && (
+                            <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                          )}
+                        </TextField>
+                      )}
+                    </form.Field>
 
-            <form.Field name="currency">
-              {(field) => (
-                <div>
-                  <Select
-                    errorMessage={field.state.meta.errors.join(", ")}
-                    isInvalid={field.state.meta.errors.length > 0}
-                    label="Moneda"
-                    onBlur={field.handleBlur}
-                    onChange={(keys) => {
-                      field.handleChange(keys as "CLP" | "UF" | "USD");
-                    }}
-                    value={field.state.value}
-                  >
-                    <SelectItem key="CLP">CLP</SelectItem>
-                    <SelectItem key="UF">UF</SelectItem>
-                    <SelectItem key="USD">USD</SelectItem>
-                  </Select>
-                </div>
-              )}
-            </form.Field>
-          </div>
+                    <form.Field name="currency">
+                      {(field) => (
+                        <Select
+                          className="w-full"
+                          placeholder="Selecciona moneda"
+                          selectedKey={field.state.value}
+                          onChange={(key) => {
+                            field.handleChange(key as "CLP" | "UF" | "USD");
+                          }}
+                          onBlur={field.handleBlur}
+                        >
+                          <Label>Moneda</Label>
+                          <Select.Trigger>
+                            <Select.Value />
+                            <Select.Indicator />
+                          </Select.Trigger>
+                          <Select.Popover>
+                            <ListBox>
+                              <ListBox.Item id="CLP" textValue="CLP">
+                                CLP
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                              <ListBox.Item id="UF" textValue="UF">
+                                UF
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                              <ListBox.Item id="USD" textValue="USD">
+                                USD
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            </ListBox>
+                          </Select.Popover>
+                          {field.state.meta.errors.length > 0 && (
+                            <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                          )}
+                        </Select>
+                      )}
+                    </form.Field>
+                  </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <form.Field name="totalInstallments">
-              {(field) => (
-                <div>
-                  <Input
-                    error={field.state.meta.errors.join(", ")}
-                    label="Cuotas"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(Number.parseInt(e.target.value, 10) || 1);
-                    }}
-                    type="number"
-                    value={field.state.value}
-                  />
-                </div>
-              )}
-            </form.Field>
+                  <div className="grid grid-cols-2 gap-4">
+                    <form.Field name="totalInstallments">
+                      {(field) => (
+                        <TextField isRequired name="totalInstallments">
+                          <Label>Cuotas</Label>
+                          <Input
+                            type="number"
+                            placeholder="1"
+                            min="1"
+                            value={field.state.value.toString()}
+                            onChange={(e) =>
+                              field.handleChange(Number.parseInt(e.target.value, 10) || 1)
+                            }
+                            onBlur={field.handleBlur}
+                          />
+                          {field.state.meta.errors.length > 0 && (
+                            <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                          )}
+                        </TextField>
+                      )}
+                    </form.Field>
 
-            <form.Field name="startDate">
-              {(field) => (
-                <div>
-                  <Input
-                    error={field.state.meta.errors.join(", ")}
-                    label="Fecha Inicio"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value);
-                    }}
-                    type="date"
-                    value={field.state.value || ""}
-                  />
-                </div>
-              )}
-            </form.Field>
-          </div>
+                    <form.Field name="startDate">
+                      {(field) => (
+                        <TextField isRequired name="startDate">
+                          <Label>Fecha Inicio</Label>
+                          <Input
+                            type="date"
+                            value={field.state.value || ""}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            onBlur={field.handleBlur}
+                          />
+                          {field.state.meta.errors.length > 0 && (
+                            <FieldError>{field.state.meta.errors.join(", ")}</FieldError>
+                          )}
+                        </TextField>
+                      )}
+                    </form.Field>
+                  </div>
 
-          <div className="mt-6 flex justify-end gap-3">
-            <Button
-              disabled={mutation.isPending}
-              onClick={() => {
-                setOpen(false);
-              }}
-              variant="ghost"
-            >
-              Cancelar
-            </Button>
-            <Button isLoading={mutation.isPending} type="submit">
-              Guardar
-            </Button>
-          </div>
-        </form>
+                  <div className="mt-4 flex justify-end gap-3">
+                    <Button slot="close" variant="secondary">
+                      Cancelar
+                    </Button>
+                    <Button type="submit" isDisabled={mutation.isPending}>
+                      {mutation.isPending ? "Guardando..." : "Guardar"}
+                    </Button>
+                  </div>
+                </form>
+              </Modal.Body>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
       </Modal>
     </>
   );

@@ -14,6 +14,7 @@ export const Route = createFileRoute("/_authed/finanzas/personal-credits")({
   staticData: {
     nav: { iconKey: "Banknote", label: "Créditos", order: 21, section: "Finanzas" },
     permission: { action: "read", subject: "PersonalCredit" },
+    breadcrumb: "Créditos",
   },
   beforeLoad: ({ context }) => {
     // Permission check - Assuming 'PersonalCredit' subject.

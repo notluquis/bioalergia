@@ -1,13 +1,6 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
-import { serviceQueries } from "@/features/services/queries";
-
-const AgendaPage = lazy(() =>
-  import("@/features/services/pages/AgendaPage").then((m) => ({ default: m.ServicesAgendaPage })),
-);
-
+// Redirect to the agenda tab in the services page
 export const Route = createFileRoute("/_authed/services/agenda")({
   staticData: {
     nav: { iconKey: "Calendar", label: "Agenda", order: 1, section: "Servicios" },
@@ -21,14 +14,9 @@ export const Route = createFileRoute("/_authed/services/agenda")({
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw routeApi.redirect({ to: "/" });
     }
-  },
-  component: () => (
-    <Suspense fallback={<PageLoader />}>
-      <AgendaPage />
-    </Suspense>
-  ),
-
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(serviceQueries.list());
+    // Redirect to services page (tab selection is done locally)
+    const routeApi = getRouteApi("/_authed/services/agenda");
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
+    throw routeApi.redirect({ to: "/services" });
   },
 });

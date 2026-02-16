@@ -11,6 +11,17 @@ const PersonalCreditDetailsPage = lazy(() =>
 );
 
 export const Route = createFileRoute("/_authed/finanzas/personal-credits/$creditId")({
+  staticData: {
+    breadcrumb: (data: unknown) => {
+      const credit = data as
+        | { bankName?: string; description?: string; creditNumber?: string }
+        | undefined;
+      return (
+        `${credit?.bankName} ${credit?.description || credit?.creditNumber || "Detalle"}`.trim() ||
+        "Detalle"
+      );
+    },
+  },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "PersonalCredit")) {
       throw new Error("Unauthorized");

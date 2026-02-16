@@ -25,7 +25,7 @@ import { useServicesOverview } from "@/features/services/hooks/use-services-over
 import { servicesActions, servicesStore } from "@/features/services/store";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
-export function ServicesOverviewContent() {
+export function ServicesOverviewContent({ onViewFullAgenda }: { onViewFullAgenda?: () => void }) {
   const overview = useServicesOverview();
   const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } =
     useStore(servicesStore);
@@ -195,19 +195,17 @@ export function ServicesOverviewContent() {
       )}
 
       <div className={CARD_COMPACT}>
-        <div className="card-body">
+        <div className="card-body space-y-4">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <span className="block font-semibold text-foreground text-sm">Agenda unificada</span>
-              <Description className="text-default-500 text-xs">
-                Próximos pagos programados
-              </Description>
+              <span className="block font-semibold text-foreground text-sm">
+                Agenda de próximos pagos
+              </span>
+              <Description className="text-default-500 text-xs">Vista previa</Description>
             </div>
-            <Link to="/services/agenda">
-              <Button size="sm" variant="ghost">
-                Ver todo
-              </Button>
-            </Link>
+            <Button size="sm" variant="ghost" onPress={onViewFullAgenda}>
+              Ver todo
+            </Button>
           </div>
           <ServicesUnifiedAgenda
             canManage={canManage}

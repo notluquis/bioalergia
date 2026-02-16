@@ -1,78 +1,74 @@
-import { Chip } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
 import { Suspense } from "react";
-import { DataTable } from "@/components/data-table/DataTable";
 import { formatCurrency } from "@/lib/utils";
 import { CreateCreditForm } from "../components/CreateCreditForm";
 import { personalFinanceQueries } from "../queries";
 import type { PersonalCredit } from "../types";
 
-const columns: ColumnDef<PersonalCredit>[] = [
-  {
-    accessorKey: "bankName",
-    cell: ({ row }) => <span className="font-medium">{row.original.bankName}</span>,
-    header: "Banco",
-  },
-  {
-    accessorKey: "description",
-    header: "Descripción",
-  },
-  {
-    accessorKey: "totalAmount",
-    cell: ({ row }) =>
-      formatCurrency(Number(row.original.totalAmount), row.original.currency || "CLP"),
-    header: "Monto Total",
-  },
-  {
-    accessorKey: "progress",
-    cell: ({ row }) => {
-      // Simple static bar for verification phase
-      const paid = row.original.installments?.filter((i) => i.status === "PAID").length || 0;
-      const total = row.original.totalInstallments || 1;
-      const percent = Math.min(100, Math.round((paid / total) * 100));
+const TableData = ({ credits }: { credits: PersonalCredit[] }) => {
+  const paid = (credit: PersonalCredit) =>
+    credit.installments?.filter((i) => i.status === "PAID").length || 0;
+  const total = (credit: PersonalCredit) => credit.totalInstallments || 1;
 
-      return (
-        <div className="h-2.5 w-full rounded-full bg-default-50 dark:bg-base-700">
-          <div
-            className="h-2.5 rounded-full bg-primary transition-all"
-            style={{ width: `${percent}%` }}
-          />
-        </div>
-      );
-    },
-    header: "Progreso",
-  },
-  {
-    accessorKey: "status",
-    cell: ({ row }) => {
-      const status = row.original.status;
-      return (
-        <Chip
-          color={status === "ACTIVE" ? "accent" : "default"}
-          variant={status === "ACTIVE" ? "primary" : "secondary"}
-        >
-          {status}
-        </Chip>
-      );
-    },
-    header: "Estado",
-  },
-  {
-    cell: ({ row }) => (
-      <Link
-        className="inline-flex h-8 items-center justify-center rounded-xl px-3 text-sm transition-all duration-200 ease-apple hover:-translate-y-px hover:bg-default-100 active:translate-y-0 active:scale-[0.98]"
-        params={{ creditId: row.original.id.toString() }}
-        to="/finanzas/personal-credits/$creditId"
-      >
-        Ver Detalle
-      </Link>
-    ),
+  return (
+    <div className="w-full overflow-x-auto">
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="border-b border-default-200 bg-default-50">
+            <th className="px-4 py-3 text-left font-semibold">Banco</th>
+            <th className="px-4 py-3 text-left font-semibold">Descripción</th>
+            <th className="px-4 py-3 text-left font-semibold">Monto Total</th>
+            <th className="px-4 py-3 text-left font-semibold">Progreso</th>
+            <th className="px-4 py-3 text-left font-semibold">Estado</th>
+            <th className="px-4 py-3 text-right font-semibold">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {credits.map((credit) => {
+            const paidCount = paid(credit);
+            const totalCount = total(credit);
+            const percent = Math.min(100, Math.round((paidCount / totalCount) * 100));
 
-    id: "actions",
-  },
-];
+            return (
+              <tr key={credit.id} className="border-b border-default-100 hover:bg-default-50">
+                <td className="px-4 py-3 font-medium">{credit.bankName}</td>
+                <td className="px-4 py-3">{credit.description || "-"}</td>
+                <td className="px-4 py-3">
+                  {formatCurrency(Number(credit.totalAmount), credit.currency || "CLP")}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="h-2.5 w-24 rounded-full bg-default-200">
+                    <div
+                      className="h-2.5 rounded-full bg-primary transition-all"
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <Chip color={credit.status === "ACTIVE" ? "success" : "default"} size="sm">
+                    {credit.status}
+                  </Chip>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <Link
+                    params={{ creditId: credit.id.toString() }}
+                    to="/finanzas/personal-credits/$creditId"
+                  >
+                    <Button size="sm" variant="secondary">
+                      Ver Detalle
+                    </Button>
+                  </Link>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
 export function PersonalCreditsPage() {
   const { data: credits } = useSuspenseQuery(personalFinanceQueries.list());
@@ -83,7 +79,7 @@ export function PersonalCreditsPage() {
         <h1 className="font-bold text-3xl tracking-tight">Créditos Personales</h1>
         <CreateCreditForm />
       </div>
-      <DataTable columns={columns} data={credits} />
+      <TableData credits={credits} />
     </div>
   );
 }
