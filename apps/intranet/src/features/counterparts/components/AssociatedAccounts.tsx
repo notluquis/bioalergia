@@ -27,6 +27,7 @@ import {
   accountFilterKey,
   buildAccountTransactionFilter,
   type DateRange,
+  normalizeAccountNumber,
 } from "./associated-accounts.helpers";
 
 interface AssociatedAccountsProps {
@@ -46,7 +47,7 @@ const buildAccountGrouping = (accounts: CounterpartAccount[] = []) => {
   const identifierToKey = new Map<string, string>();
 
   for (const account of accounts) {
-    const label = account.accountNumber;
+    const label = normalizeAccountNumber(account.accountNumber) || account.accountNumber;
     identifierToKey.set(account.accountNumber, label);
     const existing = groups.get(label);
     if (existing) {
@@ -295,7 +296,9 @@ const useAssociatedAccountsModel = ({
 
     addAccountMutation.mutate({
       data: {
-        accountNumber: accountForm.accountNumber.trim(),
+        accountNumber:
+          normalizeAccountNumber(accountForm.accountNumber.trim()) ||
+          accountForm.accountNumber.trim(),
         accountType: accountForm.accountType.trim() || null,
         bankName: accountForm.bankName.trim() || null,
       },
