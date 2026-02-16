@@ -31,6 +31,12 @@ import { DataTablePagination } from "./DataTablePagination";
 import { type DataTableFilterOption, DataTableToolbar } from "./DataTableToolbar";
 
 interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMeta<TData>> {
+  /**
+   * Size columns based on content like spreadsheet auto-fit.
+   * When enabled, fixed widths are only applied to pinned or manually resized columns.
+   * @default true
+   */
+  readonly autoFitColumns?: boolean;
   readonly columns: ColumnDef<TData, TValue>[];
   readonly columnVisibility?: VisibilityState;
   readonly data: TData[];
@@ -110,8 +116,15 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
   readonly rowSelection?: RowSelectionState;
 }
 
-const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties => {
+const getCommonPinningStyles = <TData,>(
+  column: Column<TData>,
+  columnSizing: Record<string, number>,
+  autoFitColumns: boolean,
+): CSSProperties => {
   const isPinned = column.getIsPinned();
+  const hasManualSizing =
+    columnSizing[column.id] !== undefined || column.columnDef.size !== undefined;
+  const applyWidth = !autoFitColumns || Boolean(isPinned) || hasManualSizing;
 
   let boxShadow: string | undefined;
   if (isPinned === "left") {
@@ -128,12 +141,13 @@ const getCommonPinningStyles = <TData,>(column: Column<TData>): CSSProperties =>
     opacity: isPinned ? 0.95 : 1,
     position: isPinned ? "sticky" : "relative",
     right: isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
-    width: column.getSize(),
+    width: applyWidth ? column.getSize() : undefined,
     zIndex: isPinned ? 1 : 0,
   };
 };
 
 interface DataTableContentProps<TData, TValue> {
+  readonly autoFitColumns: boolean;
   readonly columns: ColumnDef<TData, TValue>[];
   readonly containerVariant: "default" | "plain";
   readonly enableVirtualization: boolean;
@@ -148,6 +162,7 @@ interface DataTableContentProps<TData, TValue> {
 }
 
 function DataTableContent<TData, TValue>({
+  autoFitColumns,
   columns,
   containerVariant,
   enableVirtualization,
@@ -160,6 +175,7 @@ function DataTableContent<TData, TValue>({
 }: DataTableContentProps<TData, TValue>) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const rows = table.getRowModel().rows;
+  const columnSizing = table.getState().columnSizing;
 
   const virtualizer = useVirtualizer({
     count: enableVirtualization ? rows.length : 0,
@@ -219,12 +235,9 @@ function DataTableContent<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td
-                      className="truncate px-4 py-3 align-middle text-foreground/90"
+                      className="whitespace-nowrap px-4 py-3 align-middle text-foreground/90"
                       key={cell.id}
-                      style={{
-                        ...getCommonPinningStyles(cell.column),
-                        width: cell.column.getSize(),
-                      }}
+                      style={getCommonPinningStyles(cell.column, columnSizing, autoFitColumns)}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
@@ -256,12 +269,9 @@ function DataTableContent<TData, TValue>({
             >
               {row.getVisibleCells().map((cell) => (
                 <td
-                  className="truncate px-4 py-3 align-middle text-foreground/90"
+                  className="whitespace-nowrap px-4 py-3 align-middle text-foreground/90"
                   key={cell.id}
-                  style={{
-                    ...getCommonPinningStyles(cell.column),
-                    width: cell.column.getSize(),
-                  }}
+                  style={getCommonPinningStyles(cell.column, columnSizing, autoFitColumns)}
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
@@ -298,8 +308,9 @@ function DataTableContent<TData, TValue>({
         <table
           className="w-full border-collapse text-left text-sm"
           style={{
-            minWidth: table.getTotalSize(),
-            width: "100%",
+            minWidth: autoFitColumns ? "100%" : table.getTotalSize(),
+            tableLayout: autoFitColumns ? "auto" : "fixed",
+            width: autoFitColumns ? "max-content" : "100%",
           }}
         >
           <thead className="sticky top-0 z-10 bg-default-100">
@@ -312,8 +323,7 @@ function DataTableContent<TData, TValue>({
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
                     style={{
-                      ...getCommonPinningStyles(header.column),
-                      width: header.getSize(),
+                      ...getCommonPinningStyles(header.column, columnSizing, autoFitColumns),
                     }}
                   >
                     <div className="flex items-center gap-2">
@@ -367,8 +377,7 @@ function DataTableContent<TData, TValue>({
                       className="px-4 py-3 align-middle text-foreground"
                       key={header.id}
                       style={{
-                        ...getCommonPinningStyles(header.column),
-                        width: header.getSize(),
+                        ...getCommonPinningStyles(header.column, columnSizing, autoFitColumns),
                       }}
                     >
                       {header.isPlaceholder
@@ -387,6 +396,7 @@ function DataTableContent<TData, TValue>({
 }
 
 export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableMeta<TData>>({
+  autoFitColumns = true,
   columns,
   columnVisibility: controlledColumnVisibility,
   containerVariant = "default",
@@ -494,6 +504,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         />
       )}
       <DataTableContent
+        autoFitColumns={autoFitColumns}
         columns={columns}
         containerVariant={containerVariant}
         enableVirtualization={enableVirtualization}
