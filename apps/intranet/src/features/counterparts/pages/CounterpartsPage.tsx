@@ -1,4 +1,13 @@
-import { Checkbox, Chip, Label, SearchField, Separator, Surface, Tabs } from "@heroui/react";
+import {
+  Checkbox,
+  Chip,
+  Label,
+  ScrollShadow,
+  SearchField,
+  Separator,
+  Surface,
+  Tabs,
+} from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
@@ -541,6 +550,9 @@ export function CounterpartsPage() {
             onClearSelection={() => {
               state.setSelectedId(null);
             }}
+            onCloseResults={() => {
+              state.setIsSearchResultsOpen(false);
+            }}
             onOpenResults={() => {
               state.setIsSearchResultsOpen(true);
             }}
@@ -841,6 +853,7 @@ interface CounterpartsToolbarProps {
   onCategoryFilterChange: (value: "ALL" | CounterpartCategory) => void;
   onClearSelection: () => void;
   onCreate: () => void;
+  onCloseResults: () => void;
   onOpenResults: () => void;
   onResetFilters: () => void;
   onSelectCounterpart: (value: null | number) => void;
@@ -864,6 +877,7 @@ function CounterpartsToolbar({
   onCategoryFilterChange,
   onClearSelection,
   onCreate,
+  onCloseResults,
   onOpenResults,
   onResetFilters,
   onSelectCounterpart,
@@ -889,14 +903,14 @@ function CounterpartsToolbar({
         return;
       }
       if (!resultsRef.current.contains(event.target as Node)) {
-        onToggleResults();
+        onCloseResults();
       }
     };
     document.addEventListener("mousedown", onPointerDown);
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
     };
-  }, [isResultsOpen, onToggleResults]);
+  }, [isResultsOpen, onCloseResults]);
 
   return (
     <div className="space-y-3">
@@ -975,47 +989,50 @@ function CounterpartsToolbar({
               </SearchField>
 
               {isResultsOpen ? (
-                <div className="absolute top-full right-0 left-0 z-30 max-h-80 overflow-y-auto rounded-b-2xl border border-default-200/70 border-t-0 bg-background/95 p-2 shadow-xl backdrop-blur-sm">
+                <div className="absolute top-full right-0 left-0 z-30 mt-1 rounded-2xl border border-default-200/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md">
                   {visibleCounterparts.length === 0 ? (
                     <div className="rounded-xl border border-default-300 border-dashed bg-default-50/50 px-3 py-4 text-center text-default-500 text-sm">
                       No hay resultados con los filtros seleccionados.
                     </div>
                   ) : (
-                    <ul className="space-y-2">
-                      {visibleCounterparts.map((item) => {
-                        const isActive = selectedId === item.id;
-                        return (
-                          <li key={item.id}>
-                            <Button
-                              className={`group w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition-all ${
-                                isActive
-                                  ? "border-primary/45 bg-primary/10 shadow-sm"
-                                  : "border-default-200/70 bg-default-50/60 hover:border-default-300 hover:bg-default-100/60"
-                              }`}
-                              onPress={() => {
-                                onSelectCounterpart(item.id);
-                              }}
-                              type="button"
-                              variant="ghost"
-                            >
-                              <span className="flex items-start justify-between gap-2">
-                                <span className="block font-medium text-foreground tracking-tight">
-                                  {item.bankAccountHolder}
+                    <ScrollShadow className="max-h-72" hideScrollBar>
+                      <ul className="space-y-1">
+                        {visibleCounterparts.map((item) => {
+                          const isActive = selectedId === item.id;
+                          return (
+                            <li key={item.id}>
+                              <Button
+                                className={`group w-full cursor-pointer rounded-xl px-3 py-2 text-left transition-all ${
+                                  isActive
+                                    ? "bg-primary/12 text-primary"
+                                    : "hover:bg-default-100/70"
+                                }`}
+                                onPress={() => {
+                                  onSelectCounterpart(item.id);
+                                  onCloseResults();
+                                }}
+                                type="button"
+                                variant="ghost"
+                              >
+                                <span className="flex items-start justify-between gap-2">
+                                  <span className="block font-medium text-foreground tracking-tight">
+                                    {item.bankAccountHolder}
+                                  </span>
+                                  <Chip size="sm" variant={isActive ? "secondary" : "soft"}>
+                                    {CATEGORY_LABELS[item.category] ?? item.category}
+                                  </Chip>
                                 </span>
-                                <Chip size="sm" variant={isActive ? "secondary" : "soft"}>
-                                  {CATEGORY_LABELS[item.category] ?? item.category}
-                                </Chip>
-                              </span>
-                              {item.identificationNumber ? (
-                                <span className="mt-1 block text-default-600 text-xs">
-                                  RUT {item.identificationNumber}
-                                </span>
-                              ) : null}
-                            </Button>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                                {item.identificationNumber ? (
+                                  <span className="mt-1 block text-default-500 text-xs">
+                                    RUT {item.identificationNumber}
+                                  </span>
+                                ) : null}
+                              </Button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </ScrollShadow>
                   )}
                 </div>
               ) : null}
