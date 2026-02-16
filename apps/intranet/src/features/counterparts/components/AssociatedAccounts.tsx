@@ -657,12 +657,11 @@ function QuickViewSection({
             containerVariant="plain"
             enablePagination={false}
             enableToolbar={false}
-            enableVirtualization
+            enableVirtualization={false}
             estimatedRowHeight={44}
             isLoading={isLoading}
             noDataMessage="Sin movimientos registrados para esta cuenta."
-            virtualizationMaxHeight="28rem"
-            virtualizationThreshold={1}
+            scrollMaxHeight="28rem"
           />
         </div>
       </Surface>

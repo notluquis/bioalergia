@@ -13,7 +13,6 @@
       "!**/.turbo",
       "!**/node_modules",
       "!**/public/mockServiceWorker.js",
-      "!**/*.css",
       "!**/routeTree.gen.ts"
     ]
   },
@@ -129,6 +128,11 @@
       }
     }
   ],
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "javascript": {
     "formatter": {
       "quoteStyle": "double",

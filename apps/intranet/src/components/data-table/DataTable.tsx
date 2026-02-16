@@ -83,10 +83,15 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
   readonly estimatedRowHeight?: number;
   /**
    * Max height for the virtualized scroll container.
-   * Only applies when virtualization is active.
+   * Used when virtualization is active and `scrollMaxHeight` is not provided.
    * @default "70dvh"
    */
   readonly virtualizationMaxHeight?: number | string;
+  /**
+   * Max height for the scroll container.
+   * Applies regardless of virtualization and enables vertical scroll.
+   */
+  readonly scrollMaxHeight?: number | string;
   /**
    * Faceted filters for specific columns
    */
@@ -172,6 +177,7 @@ interface DataTableContentProps<TData, TValue> {
     row: import("@tanstack/react-table").Row<TData>;
   }) => React.ReactNode;
   readonly table: Table<TData>;
+  readonly scrollMaxHeight?: number | string;
   readonly virtualizationMaxHeight: number | string;
 }
 
@@ -185,6 +191,7 @@ function DataTableContent<TData, TValue>({
   noDataMessage,
   onRowClick,
   renderSubComponent,
+  scrollMaxHeight,
   table,
   virtualizationMaxHeight,
 }: DataTableContentProps<TData, TValue>) {
@@ -317,8 +324,11 @@ function DataTableContent<TData, TValue>({
         ref={tableContainerRef}
         style={{
           maxWidth: "100%",
-          ...(enableVirtualization
-            ? { maxHeight: virtualizationMaxHeight, overflowY: "auto" }
+          ...((scrollMaxHeight ?? enableVirtualization)
+            ? {
+                maxHeight: scrollMaxHeight ?? virtualizationMaxHeight,
+                overflowY: "auto",
+              }
             : {}),
         }}
       >
@@ -425,6 +435,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   enableToolbar = true,
   enableVirtualization = true,
   estimatedRowHeight = 48,
+  scrollMaxHeight,
   virtualizationMaxHeight = "70dvh",
   filters = [],
   initialPinning = {},
@@ -532,6 +543,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         noDataMessage={noDataMessage}
         onRowClick={onRowClick}
         renderSubComponent={renderSubComponent}
+        scrollMaxHeight={scrollMaxHeight}
         table={table}
         virtualizationMaxHeight={virtualizationMaxHeight}
       />

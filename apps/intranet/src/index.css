@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@heroui/styles";
+@import "./features/finance/finance.css";
 
 /* Reset to native browser sizing */
 html {
@@ -8,9 +9,6 @@ html {
 }
 
 @plugin "@tailwindcss/forms";
-
-/* Feature module styles - keep if needed, but verify content later */
-@import "./features/finance/finance.css";
 
 /* === HeroUI v3 Theme Tokens (OKLCH Native) === */
 /* Light Theme */
