@@ -37,8 +37,8 @@ export function CounterpartList({
   if (isCollapsed) {
     return (
       <aside className={`flex h-full min-h-0 flex-col overflow-hidden ${className ?? ""}`}>
-        <div className="flex flex-1 items-center justify-center rounded-2xl border border-default-200 border-dashed bg-default-50/40 px-4 py-6 text-center text-default-500 text-sm">
-          Listado contraído. Usa \"Mostrar resultados\" para volver a desplegarlo.
+        <div className="flex flex-1 items-center justify-center rounded-2xl border border-default-200/70 border-dashed bg-default-50/30 px-4 py-6 text-center text-default-500 text-sm">
+          Listado oculto
         </div>
       </aside>
     );

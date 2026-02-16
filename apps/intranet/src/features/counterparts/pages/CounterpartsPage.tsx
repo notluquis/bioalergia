@@ -911,11 +911,6 @@ function CounterpartsToolbar({
                 <Chip size="sm" variant="soft">
                   {totalCount} totales
                 </Chip>
-                {selectedCounterpart ? (
-                  <Chip size="sm" variant="secondary">
-                    {selectedCounterpart.bankAccountHolder}
-                  </Chip>
-                ) : null}
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -936,7 +931,7 @@ function CounterpartsToolbar({
 
           <Separator />
 
-          <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+          <div className="space-y-3">
             <SearchField
               onChange={onSearchQueryChange}
               value={searchQuery}
@@ -950,25 +945,36 @@ function CounterpartsToolbar({
                 <SearchField.ClearButton />
               </SearchField.Group>
             </SearchField>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Chip size="sm" variant="soft">
-                Resultados ({visibleCount})
-              </Chip>
-              <Button onClick={onToggleResults} size="sm" variant="ghost">
-                {isResultsCollapsed ? "Mostrar resultados" : "Ocultar resultados"}
-              </Button>
-              <Button
-                disabled={!selectedCounterpart}
-                onClick={onClearSelection}
-                size="sm"
-                variant="ghost"
-              >
-                Limpiar selección
-              </Button>
-              <Button onClick={onResetFilters} size="sm" variant="ghost">
-                <Filter className="mr-1.5 h-3.5 w-3.5" />
-                Limpiar filtros
-              </Button>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Chip size="sm" variant="soft">
+                  Resultados ({visibleCount})
+                </Chip>
+                {selectedCounterpart ? (
+                  <Chip size="sm" variant="secondary">
+                    Seleccionada: {selectedCounterpart.bankAccountHolder}
+                  </Chip>
+                ) : null}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button onClick={onToggleResults} size="sm" variant="secondary">
+                  {isResultsCollapsed ? "Mostrar resultados" : "Ocultar resultados"}
+                </Button>
+                <Button
+                  disabled={!selectedCounterpart}
+                  onClick={onClearSelection}
+                  size="sm"
+                  variant="ghost"
+                >
+                  Limpiar selección
+                </Button>
+                <Button onClick={onResetFilters} size="sm" variant="ghost">
+                  <Filter className="mr-1.5 h-3.5 w-3.5" />
+                  Limpiar filtros
+                </Button>
+              </div>
             </div>
           </div>
 
