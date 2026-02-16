@@ -38,7 +38,6 @@ export function TimesheetSummaryTable({
         containerVariant="plain"
         enablePagination={false}
         enableToolbar={false}
-        enableVirtualization={false}
         isLoading={loading}
         meta={{
           totals: summary?.totals,

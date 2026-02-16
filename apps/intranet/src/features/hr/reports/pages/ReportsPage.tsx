@@ -622,7 +622,6 @@ function ReportsResultsPanel({
                 containerVariant="plain"
                 enablePagination={false}
                 enableToolbar={false}
-                enableVirtualization={false}
                 meta={meta as unknown as Record<string, unknown>}
                 noDataMessage="No hay datos para mostrar."
               />

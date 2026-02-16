@@ -602,7 +602,6 @@ function AccountGroupsTable({
         containerVariant="plain"
         enablePagination={false}
         enableToolbar={false}
-        enableVirtualization={false}
         isLoading={isLoading}
         noDataMessage="Sin cuentas asociadas."
       />

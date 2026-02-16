@@ -136,7 +136,6 @@ export function PersonalCreditDetailsPage({ creditId }: { creditId: number }) {
             data={credit.installments || []}
             containerVariant="plain"
             enableToolbar={false}
-            enableVirtualization={false}
             pageCount={-1}
           />
         </Card.Content>

@@ -163,7 +163,6 @@ export function EmployeesPage() {
           containerVariant="plain"
           enableExport={false}
           enableGlobalFilter={false}
-          enableVirtualization={false}
           isLoading={isMutating}
           meta={{
             canEdit,

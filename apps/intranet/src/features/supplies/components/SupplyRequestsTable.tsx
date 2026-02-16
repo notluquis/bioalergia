@@ -29,7 +29,6 @@ export function SupplyRequestsTable({ onStatusChange, requests }: SupplyRequests
       containerVariant="plain"
       enablePagination={false}
       enableToolbar={false}
-      enableVirtualization={false}
       initialPinning={{ right: ["actions"] }}
       meta={{ isAdmin, onStatusChange }}
       noDataMessage="No se encontraron solicitudes de insumos."
