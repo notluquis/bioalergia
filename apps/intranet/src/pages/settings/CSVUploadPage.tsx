@@ -1,4 +1,4 @@
-import { Card, Chip } from "@heroui/react";
+import { Card, Chip, Tooltip } from "@heroui/react";
 import { useMutation } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { AlertCircle, CheckCircle, FileUp, Loader2, Lock } from "lucide-react";
@@ -10,7 +10,6 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { FileInput } from "@/components/ui/FileInput";
 import { Select, SelectItem } from "@/components/ui/Select";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import type { AuthContextType } from "@/features/auth/hooks/use-auth";
@@ -854,8 +853,11 @@ function buildMappingColumns({
         <div className="flex items-center gap-1.5 font-medium">
           {row.original.name}
           {row.original.required && (
-            <Tooltip content="Requerido">
-              <span className="text-danger text-xs">*</span>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <span className="text-danger text-xs">*</span>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Requerido</Tooltip.Content>
             </Tooltip>
           )}
         </div>

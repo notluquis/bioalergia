@@ -1,8 +1,7 @@
-import { Card } from "@heroui/react";
+import { Card, Checkbox } from "@heroui/react";
 import { useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import type { CalendarUnclassifiedEvent } from "@/features/calendar/types";
@@ -216,11 +215,9 @@ export function ClassificationRow({
           <form.Field name={`entries[${index}].attended`}>
             {(field: { handleChange: (v: boolean) => void; state: { value: boolean } }) => (
               <div className="flex items-center pt-2">
-                <Checkbox
-                  checked={Boolean(field.state.value)}
-                  label="Asistió / llegó"
-                  onCheckedChange={field.handleChange}
-                />
+                <Checkbox isSelected={Boolean(field.state.value)} onChange={field.handleChange}>
+                  Asistió / llegó
+                </Checkbox>
               </div>
             )}
           </form.Field>

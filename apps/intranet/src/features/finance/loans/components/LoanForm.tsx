@@ -1,10 +1,10 @@
+import { Checkbox } from "@heroui/react";
 import { useForm, useStore } from "@tanstack/react-form";
 import dayjs from "dayjs";
 import { z } from "zod";
 
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { zDateString } from "@/lib/api-validate";
@@ -266,11 +266,9 @@ export function LoanForm({ onCancel, onSubmit }: LoanFormProps) {
         <form.Field name="generateSchedule">
           {(field) => (
             <div>
-              <Checkbox
-                checked={field.state.value}
-                label="Generar cronograma automáticamente"
-                onCheckedChange={field.handleChange}
-              />
+              <Checkbox isSelected={field.state.value} onChange={field.handleChange}>
+                Generar cronograma automáticamente
+              </Checkbox>
 
               {field.state.meta.errors.length > 0 && (
                 <p className="mt-1 text-danger text-xs">{field.state.meta.errors.join(", ")}</p>

@@ -1,5 +1,5 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Alert, Button, Card, Input, Label, TextField } from "@heroui/react";
+import { Alert, Button, Card, Form, Input, Label, TextField } from "@heroui/react";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -13,7 +13,6 @@ export function ReleaseTransactionsPage() {
 
   const [draftFilters, setDraftFilters] = useState({
     from: dayjs().startOf("month").format("YYYY-MM-DD"),
-    reportDate: "",
     to: today(),
   });
   const [appliedFilters, setAppliedFilters] = useState(draftFilters);
@@ -43,13 +42,13 @@ export function ReleaseTransactionsPage() {
   return (
     <section className="mx-auto w-full max-w-none space-y-4 p-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
-          <h1 className="typ-title text-foreground">Liberaciones de Dinero</h1>
-          <p className="typ-body max-w-2xl text-default-600">
-            Reporte de liberaciones de fondos desde Mercado Pago según fecha.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-end gap-3">
+        <Form
+          className="flex flex-wrap items-end gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setAppliedFilters(draftFilters);
+          }}
+        >
           <div className="flex flex-col gap-1">
             <TextField>
               <Label className="font-semibold text-xs uppercase">Desde</Label>
@@ -76,16 +75,10 @@ export function ReleaseTransactionsPage() {
               />
             </TextField>
           </div>
-          <Button
-            onPress={() => {
-              setAppliedFilters(draftFilters);
-            }}
-            size="sm"
-            variant="primary"
-          >
+          <Button size="sm" type="submit" variant="primary">
             Filtrar
           </Button>
-        </div>
+        </Form>
       </div>
 
       {canView ? (
@@ -103,7 +96,13 @@ export function ReleaseTransactionsPage() {
           </Card.Content>
         </Card>
       ) : (
-        <Alert color="danger">No tienes permisos para ver liberaciones.</Alert>
+        <Alert status="danger">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Title>Sin permisos</Alert.Title>
+            <Alert.Description>No tienes permisos para ver liberaciones.</Alert.Description>
+          </Alert.Content>
+        </Alert>
       )}
     </section>
   );

@@ -1,9 +1,8 @@
-import { Card } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AlertCircle, CheckCircle, Search, Settings, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 // Import dynamically to avoid bundling in prod if not tree-shaken correctly by router
 // But for this dev page we can import directly for simplicity as the route itself should be dev-only
@@ -157,38 +156,38 @@ function RoutesAuditPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Badge
+            <Chip
               color={filter === "all" ? "accent" : "default"}
               variant={filter === "all" ? "primary" : "tertiary"}
               className="cursor-pointer"
               onClick={() => setFilter("all")}
             >
               All
-            </Badge>
-            <Badge
+            </Chip>
+            <Chip
               color={filter === "valid" ? "accent" : "default"}
               variant={filter === "valid" ? "primary" : "tertiary"}
               className="cursor-pointer"
               onClick={() => setFilter("valid")}
             >
               Valid
-            </Badge>
-            <Badge
+            </Chip>
+            <Chip
               color={filter === "technical" ? "accent" : "default"}
               variant={filter === "technical" ? "primary" : "tertiary"}
               className="cursor-pointer"
               onClick={() => setFilter("technical")}
             >
               Technical
-            </Badge>
-            <Badge
+            </Chip>
+            <Chip
               color={filter === "error" ? "danger" : "default"}
               variant={filter === "error" ? "primary" : "tertiary"}
               className="cursor-pointer hover:bg-danger"
               onClick={() => setFilter("error")}
             >
               Errors
-            </Badge>
+            </Chip>
           </div>
         </div>
 
@@ -207,23 +206,23 @@ function RoutesAuditPage() {
                 <div className="col-span-8 font-mono">{route.path}</div>
                 <div className="col-span-2">
                   {route.status === "valid" && (
-                    <Badge
+                    <Chip
                       color="success"
                       variant="tertiary"
                       className="border-success-soft-hover bg-success/10 text-success"
                     >
                       <CheckCircle className="mr-1 size-3" /> Valid
-                    </Badge>
+                    </Chip>
                   )}
                   {route.status === "technical" && (
-                    <Badge color="default" variant="secondary">
+                    <Chip color="default" variant="secondary">
                       <Settings className="mr-1 size-3" /> Technical
-                    </Badge>
+                    </Chip>
                   )}
                   {route.status === "error" && (
-                    <Badge color="danger" variant="primary">
+                    <Chip color="danger" variant="primary">
                       <ShieldAlert className="mr-1 size-3" /> Error
-                    </Badge>
+                    </Chip>
                   )}
                 </div>
                 <div className="col-span-2 text-muted-foreground text-xs">{route.message}</div>

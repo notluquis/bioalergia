@@ -1,4 +1,4 @@
-import { Avatar, Chip } from "@heroui/react";
+import { Avatar, Chip, Tooltip } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
@@ -20,7 +20,6 @@ import {
   DropdownPopover,
   HeroDropdownMenu,
 } from "@/components/ui/DropdownMenu";
-import { Tooltip } from "@/components/ui/Tooltip";
 import type { User } from "@/features/users/types";
 import { getPersonFullName, getPersonInitials } from "@/lib/person";
 
@@ -111,16 +110,22 @@ export const getColumns = (actions: {
     cell: ({ row }) => (
       <div className="flex justify-center">
         {row.original.mfaEnabled ? (
-          <Tooltip content="MFA activado">
-            <div>
-              <ShieldCheck className="size-5 text-success" />
-            </div>
+          <Tooltip>
+            <Tooltip.Trigger>
+              <div>
+                <ShieldCheck className="size-5 text-success" />
+              </div>
+            </Tooltip.Trigger>
+            <Tooltip.Content>MFA activado</Tooltip.Content>
           </Tooltip>
         ) : (
-          <Tooltip content="MFA inactivo">
-            <div>
-              <ShieldCheck className="size-5 text-default-100" />
-            </div>
+          <Tooltip>
+            <Tooltip.Trigger>
+              <div>
+                <ShieldCheck className="size-5 text-default-100" />
+              </div>
+            </Tooltip.Trigger>
+            <Tooltip.Content>MFA inactivo</Tooltip.Content>
           </Tooltip>
         )}
       </div>
@@ -134,16 +139,22 @@ export const getColumns = (actions: {
     cell: ({ row }) => (
       <div className="flex justify-center">
         {row.original.hasPasskey ? (
-          <Tooltip content="Passkey configurado">
-            <div>
-              <Fingerprint className="size-5 text-success" />
-            </div>
+          <Tooltip>
+            <Tooltip.Trigger>
+              <div>
+                <Fingerprint className="size-5 text-success" />
+              </div>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Passkey configurado</Tooltip.Content>
           </Tooltip>
         ) : (
-          <Tooltip content="Sin passkey">
-            <div>
-              <Fingerprint className="size-5 text-default-100" />
-            </div>
+          <Tooltip>
+            <Tooltip.Trigger>
+              <div>
+                <Fingerprint className="size-5 text-default-100" />
+              </div>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Sin passkey</Tooltip.Content>
           </Tooltip>
         )}
       </div>

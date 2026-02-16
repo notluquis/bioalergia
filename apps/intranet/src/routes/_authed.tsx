@@ -1,3 +1,4 @@
+import { Tooltip } from "@heroui/react";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { createFileRoute, getRouteApi, Outlet, useRouterState } from "@tanstack/react-router";
 import React from "react";
@@ -7,7 +8,6 @@ import { Header } from "@/components/layouts/Header";
 import { BottomNav } from "@/components/layouts/MobileNav";
 import { Sidebar } from "@/components/layouts/Sidebar";
 import { Button } from "@/components/ui/Button";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
 import type { AuthSessionData } from "@/features/auth/types";
@@ -215,19 +215,20 @@ function AuthedLayout() {
             <div className="grid w-full grid-cols-3 items-center gap-2 text-xs">
               <span className="text-default-500">Build: {buildLabel}</span>
               <div className="flex justify-center">
-                <Tooltip
-                  content="Hecho con ♥ por Lucas Pulgar Escobar para Bioalergia"
-                  placement="top"
-                  showArrow
-                >
-                  <Button
-                    aria-label="Créditos"
-                    className="min-w-0 px-2 text-danger"
-                    size="sm"
-                    variant="ghost"
-                  >
-                    ♥
-                  </Button>
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <Button
+                      aria-label="Créditos"
+                      className="min-w-0 px-2 text-danger"
+                      size="sm"
+                      variant="ghost"
+                    >
+                      ♥
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content placement="top" showArrow>
+                    Hecho con ♥ por Lucas Pulgar Escobar para Bioalergia
+                  </Tooltip.Content>
                 </Tooltip>
               </div>
               <div className="flex justify-end">

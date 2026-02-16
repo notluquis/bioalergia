@@ -1,9 +1,8 @@
-import { Checkbox, Popover } from "@heroui/react";
+import { Checkbox, Popover, Tooltip } from "@heroui/react";
 import dayjs from "dayjs";
 import type { CellHookData } from "jspdf-autotable";
 import React from "react";
 import { Button } from "@/components/ui/Button";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { useSettings } from "@/context/SettingsContext";
 import type { Employee } from "@/features/hr/employees/types";
 import { apiClient } from "@/lib/api-client";
@@ -201,15 +200,18 @@ export function TimesheetExportPDF({
         </Button>
         <Popover isOpen={showOptions} onOpenChange={setShowOptions}>
           <Popover.Trigger>
-            <Tooltip content="Opciones">
-              <Button
-                className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-default-200 bg-background text-primary shadow hover:bg-background/90"
-                size="sm"
-                type="button"
-                variant="secondary"
-              >
-                ⋯
-              </Button>
+            <Tooltip>
+              <Tooltip.Trigger>
+                <Button
+                  className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-default-200 bg-background text-primary shadow hover:bg-background/90"
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                >
+                  ⋯
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Opciones</Tooltip.Content>
             </Tooltip>
           </Popover.Trigger>
           <Popover.Content

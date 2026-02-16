@@ -1,11 +1,10 @@
 import { schema as schemaLite } from "@finanzas/db/schema-lite";
-import { Description } from "@heroui/react";
+import { Checkbox, Description } from "@heroui/react";
 import { type ReactFormExtendedApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useClientQueries } from "@zenstackhq/tanstack-query/react";
 import { Shield, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { Select, SelectItem } from "@/components/ui/Select";
@@ -478,11 +477,9 @@ function SecuritySection({ form }: Pick<AddUserFormCardProps, "form">) {
       <div className="mt-4 space-y-3 pl-8">
         <form.Field name="mfaEnforced">
           {(field) => (
-            <Checkbox
-              checked={field.state.value}
-              label="Forzar passkey o MFA"
-              onCheckedChange={field.handleChange}
-            />
+            <Checkbox isSelected={field.state.value} onChange={field.handleChange}>
+              Forzar passkey o MFA
+            </Checkbox>
           )}
         </form.Field>
       </div>

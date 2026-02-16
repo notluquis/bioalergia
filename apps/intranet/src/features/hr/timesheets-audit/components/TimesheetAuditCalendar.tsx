@@ -9,11 +9,10 @@ import esLocale from "@fullcalendar/core/locales/es";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { Spinner } from "@heroui/react";
+import { Spinner, Tooltip } from "@heroui/react";
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 
-import { Tooltip } from "@/components/ui/Tooltip";
 import type { CalendarEventData, TimesheetEntryWithEmployee } from "../types";
 
 const TIME_HH_MM_REGEX = /^\d{2}:\d{2}$/;
@@ -310,19 +309,18 @@ export function TimesheetAuditCalendar({
               has_overlap: boolean;
             };
             return (
-              <Tooltip
-                content={buildTooltipContent(props)}
-                delay={0}
-                placement="top"
-                showArrow
-                trigger={tooltipTrigger}
-              >
-                <div className="timesheet-audit-event-inner">
-                  {info.timeText && (
-                    <span className="timesheet-audit-event-time">{info.timeText}</span>
-                  )}
-                  <span className="timesheet-audit-event-title">{info.event.title}</span>
-                </div>
+              <Tooltip delay={0} trigger={tooltipTrigger}>
+                <Tooltip.Trigger>
+                  <div className="timesheet-audit-event-inner">
+                    {info.timeText && (
+                      <span className="timesheet-audit-event-time">{info.timeText}</span>
+                    )}
+                    <span className="timesheet-audit-event-title">{info.event.title}</span>
+                  </div>
+                </Tooltip.Trigger>
+                <Tooltip.Content placement="top" showArrow>
+                  {buildTooltipContent(props)}
+                </Tooltip.Content>
               </Tooltip>
             );
           }}

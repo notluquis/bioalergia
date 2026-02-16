@@ -6,7 +6,6 @@ import dayjs from "dayjs";
 import { ArrowLeftIcon } from "lucide-react";
 import { Suspense } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils";
 
@@ -40,12 +39,12 @@ const installmentColumns = (
     accessorKey: "status",
     cell: ({ row }) => (
       <div className="flex justify-center">
-        <Badge
+        <Chip
           color={row.original.status === "PAID" ? "success" : "default"}
           variant={row.original.status === "PAID" ? "primary" : "tertiary"}
         >
           {row.original.status}
-        </Badge>
+        </Chip>
       </div>
     ),
 

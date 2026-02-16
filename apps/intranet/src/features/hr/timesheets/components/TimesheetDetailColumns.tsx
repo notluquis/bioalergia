@@ -1,3 +1,4 @@
+import { Tooltip } from "@heroui/react";
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
 
@@ -9,7 +10,6 @@ import {
   HeroDropdownMenu,
 } from "@/components/ui/DropdownMenu";
 import { TimeInput } from "@/components/ui/TimeInput";
-import { Tooltip } from "@/components/ui/Tooltip";
 
 import type { BulkRow } from "../types";
 
@@ -130,21 +130,24 @@ const OvertimeCell = ({
   if (!row.overtime?.trim() && !isOvertimeOpen) {
     if (canEditRow) {
       return (
-        <Tooltip content="Agregar horas extra">
-          <Button
-            aria-label="Agregar horas extra"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-default-200 bg-default-50 text-primary shadow hover:bg-default-50"
-            onClick={() => {
-              if (row.date) {
-                meta.onOpenOvertime(row.date);
-              }
-            }}
-            size="sm"
-            type="button"
-            variant="secondary"
-          >
-            +
-          </Button>
+        <Tooltip>
+          <Tooltip.Trigger>
+            <Button
+              aria-label="Agregar horas extra"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-default-200 bg-default-50 text-primary shadow hover:bg-default-50"
+              onClick={() => {
+                if (row.date) {
+                  meta.onOpenOvertime(row.date);
+                }
+              }}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              +
+            </Button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>Agregar horas extra</Tooltip.Content>
         </Tooltip>
       );
     }
@@ -238,17 +241,22 @@ const StatusCell = ({
     >
       {status}
       {showBang && (
-        <Tooltip content={tooltipContent} placement="top" showArrow>
-          <Button
-            aria-label="Ver detalles"
-            className={`cursor-help font-bold ${bangColor}`}
-            type="button"
-            variant="ghost"
-            size="sm"
-            isIconOnly
-          >
-            !
-          </Button>
+        <Tooltip>
+          <Tooltip.Trigger>
+            <Button
+              aria-label="Ver detalles"
+              className={`cursor-help font-bold ${bangColor}`}
+              type="button"
+              variant="ghost"
+              size="sm"
+              isIconOnly
+            >
+              !
+            </Button>
+          </Tooltip.Trigger>
+          <Tooltip.Content placement="top" showArrow>
+            {tooltipContent}
+          </Tooltip.Content>
         </Tooltip>
       )}
     </div>

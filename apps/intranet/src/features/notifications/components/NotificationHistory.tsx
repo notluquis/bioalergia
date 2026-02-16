@@ -1,9 +1,8 @@
-import { Description, Popover, ScrollShadow } from "@heroui/react";
+import { Chip, Description, Popover, ScrollShadow } from "@heroui/react";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { Bell, CheckCheck, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import {
@@ -37,14 +36,14 @@ export function NotificationHistory() {
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
-              <Badge
+              <Chip
                 className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center border-2 border-background px-1 text-[10px]"
                 color="danger"
                 size="sm"
                 variant="primary"
               >
                 {unreadCount > 99 ? "99+" : unreadCount}
-              </Badge>
+              </Chip>
             )}
           </Button>
         </div>

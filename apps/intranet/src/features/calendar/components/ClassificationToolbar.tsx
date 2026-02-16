@@ -1,6 +1,6 @@
+import { Tooltip } from "@heroui/react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Tooltip } from "@/components/ui/Tooltip";
 import type { ReclassifyJob } from "../types";
 
 interface ClassificationToolbarProps {
@@ -120,24 +120,26 @@ export function ClassificationToolbar({
         </div>
       )}
 
-      <Tooltip
-        classNames={{
-          content: "bg-default-100 rounded-lg px-3 py-2 text-xs shadow-xl",
-        }}
-        content="Reclasificar TODO (sobrescribe existentes)"
-        placement="bottom"
-        showArrow
-      >
-        <Button
-          aria-label="Reclasificar todo"
-          isDisabled={reclassifyAllPending || isJobRunning}
-          isIconOnly
-          onPress={onReclassifyAll}
-          size="sm"
-          variant="ghost"
+      <Tooltip>
+        <Tooltip.Trigger>
+          <Button
+            aria-label="Reclasificar todo"
+            isDisabled={reclassifyAllPending || isJobRunning}
+            isIconOnly
+            onPress={onReclassifyAll}
+            size="sm"
+            variant="ghost"
+          >
+            <RefreshCw className={isJobRunning ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+          </Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content
+          className="bg-default-100 rounded-lg px-3 py-2 text-xs shadow-xl"
+          placement="bottom"
+          showArrow
         >
-          <RefreshCw className={isJobRunning ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-        </Button>
+          Reclasificar TODO (sobrescribe existentes)
+        </Tooltip.Content>
       </Tooltip>
     </div>
   );

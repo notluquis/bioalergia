@@ -1,8 +1,8 @@
+import { Tooltip } from "@heroui/react";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { currencyFormatter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -521,22 +521,21 @@ function EventItem({ endHour, event, onEventClick, startHour, tooltipTrigger }: 
   );
 
   return (
-    <Tooltip
-      classNames={{ content: "bg-content1 text-foreground border-default-200" }}
-      content={buildEventTooltipContent({
-        amountStr,
-        controlFlag,
-        endTimeStr,
-        timeStr,
-        title,
-      })}
-      delay={0}
-      isDisabled={tooltipTrigger === "focus"}
-      placement="top"
-      showArrow
-      trigger={tooltipTrigger}
-    >
-      {eventButton}
+    <Tooltip delay={0} isDisabled={tooltipTrigger === "focus"} trigger={tooltipTrigger}>
+      <Tooltip.Trigger>{eventButton}</Tooltip.Trigger>
+      <Tooltip.Content
+        className="bg-content1 text-foreground border-default-200"
+        placement="top"
+        showArrow
+      >
+        {buildEventTooltipContent({
+          amountStr,
+          controlFlag,
+          endTimeStr,
+          timeStr,
+          title,
+        })}
+      </Tooltip.Content>
     </Tooltip>
   );
 }
