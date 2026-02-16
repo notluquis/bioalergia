@@ -1,4 +1,4 @@
-import { Card, Checkbox, Chip, Label, SearchField, Separator, Surface, Tabs } from "@heroui/react";
+import { Checkbox, Chip, Label, SearchField, Separator, Surface, Tabs } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
@@ -279,9 +279,6 @@ function useCounterpartsDerived(params: {
     return matchesCategory && matchesQuery;
   });
 
-  const supplierCount = params.counterparts.filter((item) => item.category === "SUPPLIER").length;
-  const clientCount = params.counterparts.filter((item) => item.category === "CLIENT").length;
-  const lenderCount = params.counterparts.filter((item) => item.category === "LENDER").length;
   const normalizedAssignRut = normalizeRut(params.assignRutValue);
   const assignRutIsValid = validateRut(params.assignRutValue);
   const assignRutCompact = normalizedAssignRut?.replaceAll("-", "") ?? "";
@@ -301,12 +298,9 @@ function useCounterpartsDerived(params: {
     assignExistingCounterpart,
     assignPreviewMessage,
     assignRutIsValid,
-    clientCount,
-    lenderCount,
     normalizedAssignRut,
     normalizedQuery,
     selectedCounterpart,
-    supplierCount,
     visibleCounterparts,
   };
 }
@@ -526,8 +520,6 @@ export function CounterpartsPage() {
             canCreate={canCreate}
             canSync={canUpdate}
             categoryFilter={state.categoryFilter}
-            clientCount={derived.clientCount}
-            lenderCount={derived.lenderCount}
             onCategoryFilterChange={state.setCategoryFilter}
             onCreate={() => {
               state.openFormModal(null);
@@ -543,7 +535,6 @@ export function CounterpartsPage() {
             onSearchQueryChange={state.setSearchQuery}
             searchQuery={state.searchQuery}
             selectedCounterpart={derived.selectedCounterpart}
-            supplierCount={derived.supplierCount}
             totalCount={counterparts.length}
             visibleCount={derived.visibleCounterparts.length}
           />
@@ -847,8 +838,6 @@ interface CounterpartsToolbarProps {
   canCreate: boolean;
   canSync: boolean;
   categoryFilter: "ALL" | CounterpartCategory;
-  clientCount: number;
-  lenderCount: number;
   onCategoryFilterChange: (value: "ALL" | CounterpartCategory) => void;
   onCreate: () => void;
   onResetFilters: () => void;
@@ -856,7 +845,6 @@ interface CounterpartsToolbarProps {
   onSearchQueryChange: (value: string) => void;
   searchQuery: string;
   selectedCounterpart: Counterpart | null;
-  supplierCount: number;
   syncLoading: boolean;
   totalCount: number;
   visibleCount: number;
@@ -866,8 +854,6 @@ function CounterpartsToolbar({
   canCreate,
   canSync,
   categoryFilter,
-  clientCount,
-  lenderCount,
   onCategoryFilterChange,
   onCreate,
   onResetFilters,
@@ -875,7 +861,6 @@ function CounterpartsToolbar({
   onSearchQueryChange,
   searchQuery,
   selectedCounterpart,
-  supplierCount,
   syncLoading,
   totalCount,
   visibleCount,
@@ -965,27 +950,6 @@ function CounterpartsToolbar({
           </div>
         </div>
       </Surface>
-
-      <div className="grid gap-3 md:grid-cols-3">
-        <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
-          <Card.Content className="space-y-1 p-0">
-            <p className="text-default-500 text-xs uppercase tracking-wide">Proveedores</p>
-            <p className="font-semibold text-2xl leading-none">{supplierCount}</p>
-          </Card.Content>
-        </Card>
-        <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
-          <Card.Content className="space-y-1 p-0">
-            <p className="text-default-500 text-xs uppercase tracking-wide">Clientes</p>
-            <p className="font-semibold text-2xl leading-none">{clientCount}</p>
-          </Card.Content>
-        </Card>
-        <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
-          <Card.Content className="space-y-1 p-0">
-            <p className="text-default-500 text-xs uppercase tracking-wide">Prestamistas</p>
-            <p className="font-semibold text-2xl leading-none">{lenderCount}</p>
-          </Card.Content>
-        </Card>
-      </div>
     </div>
   );
 }
