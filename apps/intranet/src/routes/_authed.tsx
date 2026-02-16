@@ -56,7 +56,7 @@ export const Route = createFileRoute("/_authed")({
 });
 
 function AuthedLayout() {
-  const { impersonatedRole, stopImpersonating } = useAuth();
+  const { impersonatedRole, stopImpersonating, user } = useAuth();
   const { settings } = useSettings();
 
   // Navigation state from TanStack Router
@@ -210,12 +210,28 @@ function AuthedLayout() {
             </div>
           </main>
 
-          <footer className="surface-elevated hidden items-center px-6 py-3 text-foreground text-sm md:flex">
-            <div className="flex items-center gap-3 text-xs">
+          <footer className="surface-elevated hidden px-6 py-3 text-foreground text-sm md:flex">
+            <div className="grid w-full grid-cols-3 items-center gap-2 text-xs">
               <span className="text-default-500">Build: {buildLabel}</span>
-              <span className="text-default-400">
+              <span className="text-center text-default-400">
                 Hecho con ♥ por Lucas Pulgar Escobar para Bioalergia
               </span>
+              <div className="flex justify-end">
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-medium ${
+                    user
+                      ? "border-success/40 bg-success/10 text-success"
+                      : "border-danger/40 bg-danger/10 text-danger"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-2 w-2 rounded-full ${
+                      user ? "bg-success" : "bg-danger"
+                    }`}
+                  />
+                  {user ? "Sesión activa" : "Sin sesión"}
+                </span>
+              </div>
             </div>
           </footer>
         </div>

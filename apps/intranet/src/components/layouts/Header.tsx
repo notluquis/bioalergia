@@ -1,4 +1,4 @@
-import { Breadcrumbs, Chip } from "@heroui/react";
+import { Breadcrumbs } from "@heroui/react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2, LogOut } from "lucide-react";
 
@@ -8,7 +8,6 @@ import { NotificationHistory } from "@/features/notifications/components/Notific
 import { Clock } from "../features/Clock";
 import { Button } from "../ui/Button";
 import { ThemeToggle } from "../ui/ThemeToggle";
-import { Tooltip } from "../ui/Tooltip";
 
 const getMatchLabel = (match: {
   context: Record<string, unknown>;
@@ -41,7 +40,7 @@ const getMatchLabel = (match: {
 export function Header() {
   const routerStatus = useRouterState({ select: (s) => s.status });
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const matches = useRouterState({ select: (s) => s.matches });
 
   const isNavigating = routerStatus === "pending";
@@ -63,18 +62,6 @@ export function Header() {
     crumbs.length === 0 ||
     (crumbs.length === 1 && crumbs[0]?.label === pageTitle)
   );
-
-  const sessionIdentity = user ? user.name?.trim() || user.email : "Sin sesión";
-  const rolesLabel = user && user.roles.length > 0 ? user.roles.join(", ") : "";
-  const compactRoleLabel =
-    !user || user.roles.length === 0
-      ? ""
-      : user.roles.length === 1
-        ? (user.roles[0] ?? "")
-        : `${user.roles[0]} +${user.roles.length - 1}`;
-  const sessionTooltip = user
-    ? `${sessionIdentity}${rolesLabel ? ` · ${rolesLabel}` : ""}`
-    : "Sin sesión";
 
   const handleLogout = async () => {
     await logout();
@@ -115,20 +102,6 @@ export function Header() {
         </div>
 
         <div className="ml-0 flex shrink-0 flex-col items-start gap-2 md:ml-4 md:items-end">
-          <div className="flex min-w-0 items-center gap-2">
-            <Chip className="shrink-0" color={user ? "success" : "danger"} size="sm" variant="soft">
-              <span
-                className={`mr-1 inline-flex h-2 w-2 rounded-full ${user ? "bg-success" : "bg-danger"}`}
-              />
-              {user ? "Sesión activa" : "Sin sesión"}
-            </Chip>
-            <Tooltip content={sessionTooltip} placement="bottom" showArrow>
-              <span className="block min-w-0 truncate text-default-500 text-xs">
-                {sessionIdentity}
-                {compactRoleLabel ? ` · ${compactRoleLabel}` : ""}
-              </span>
-            </Tooltip>
-          </div>
           <div className="flex items-center gap-2 md:gap-3">
             <div className="hidden md:block">
               <Clock />
