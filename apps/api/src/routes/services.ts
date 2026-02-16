@@ -1,3 +1,4 @@
+import { db } from "@finanzas/db";
 import { Hono } from "hono";
 import { getSessionUser, hasPermission } from "../auth";
 import { cacheControl } from "../lib/cache-control";
@@ -5,6 +6,7 @@ import { serviceCreateSchema, serviceUpdateSchema } from "../lib/entity-schemas"
 import {
   createService,
   deleteService,
+  generateSchedules,
   getServiceById,
   listServices,
   updateService,
@@ -57,10 +59,15 @@ app.get("/:id", async (c) => {
     return reply(c, { status: "error", message: "Not found" }, 404);
   }
 
+  const schedules = await db.serviceSchedule.findMany({
+    where: { serviceId: id },
+    orderBy: { periodStart: "asc" },
+  });
+
   return reply(c, {
     status: "ok",
     service: item,
-    schedules: [], // ServiceSchedule model not yet implemented
+    schedules,
   });
 });
 
@@ -141,9 +148,7 @@ app.delete("/:id", async (c) => {
   return reply(c, { status: "ok" });
 });
 
-// POST /:id/schedules - Regenerate service schedules
-// NOTE: ServiceSchedule model does not exist in the database schema.
-// This is a placeholder to prevent 400 errors until the feature is implemented.
+// POST /:id/schedules - Generate service schedules
 app.post("/:id/schedules", async (c) => {
   const user = await getSessionUser(c);
   if (!user) {
@@ -160,8 +165,25 @@ app.post("/:id/schedules", async (c) => {
     return reply(c, { status: "error", message: "Invalid ID" }, 400);
   }
 
-  // TODO: Implement when ServiceSchedule model is added to schema
-  return reply(c, { status: "error", message: "ServiceSchedule feature not yet implemented" }, 501);
+  const query = c.req.query();
+  const months = query.months ? Number(query.months) : undefined;
+  const fromDate = query.fromDate ? new Date(query.fromDate) : undefined;
+
+  if (months !== undefined && (Number.isNaN(months) || months < 1 || months > 120)) {
+    return reply(c, { status: "error", message: "Invalid months parameter (1-120)" }, 400);
+  }
+
+  if (fromDate !== undefined && Number.isNaN(fromDate.getTime())) {
+    return reply(c, { status: "error", message: "Invalid fromDate parameter" }, 400);
+  }
+
+  try {
+    const result = await generateSchedules({ serviceId: id, months, fromDate });
+    return reply(c, { status: "ok", ...result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to generate schedules";
+    return reply(c, { status: "error", message }, 500);
+  }
 });
 
 export const serviceRoutes = app;

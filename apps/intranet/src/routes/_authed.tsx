@@ -227,7 +227,7 @@ function AuthedLayout() {
                     </Button>
                   </Tooltip.Trigger>
                   <Tooltip.Content
-                    className="select-none whitespace-nowrap break-normal [overflow-wrap:normal]"
+                    className="select-none whitespace-nowrap break-normal wrap-normal"
                     placement="top"
                     showArrow
                   >

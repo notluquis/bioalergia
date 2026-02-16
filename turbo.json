@@ -17,7 +17,6 @@
     "lint": {},
     "format": {},
     "check": {},
-    "lint:legacy": {},
     "type-check": {}
   }
 }

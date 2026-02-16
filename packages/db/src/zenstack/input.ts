@@ -30,7 +30,7 @@ import type {
   UpsertArgs as $UpsertArgs,
   WhereInput as $WhereInput,
 } from "@zenstackhq/orm";
-import type { SchemaType as $Schema } from "./schema-lite";
+import type { SchemaType as $Schema } from "./schema-lite.js";
 export type PersonFindManyArgs = $FindManyArgs<$Schema, "Person">;
 export type PersonFindUniqueArgs = $FindUniqueArgs<$Schema, "Person">;
 export type PersonFindFirstArgs = $FindFirstArgs<$Schema, "Person">;

@@ -1144,10 +1144,15 @@ function buildProductionBalanceData(row: CSVRow) {
 }
 
 async function importServicesRow(row: CSVRow): Promise<ImportOutcome> {
+  const publicId = `srv_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  const startDate = new Date();
+
   const serviceData = {
+    publicId,
     name: String(row.name),
     serviceType: String(row.type || "BUSINESS") as "BUSINESS" | "PERSONAL",
     frequency: String(row.frequency || "MONTHLY") as "MONTHLY" | "ONCE" | "ANNUAL",
+    startDate,
     defaultAmount: row.defaultAmount ? new Decimal(Number(row.defaultAmount)) : new Decimal(0),
     status: String(row.status || "ACTIVE") as "ACTIVE" | "INACTIVE" | "ARCHIVED",
   };
