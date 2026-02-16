@@ -131,7 +131,11 @@ const fetchTransactionsForFilter = async (filter: AccountTransactionFilter, rang
 };
 
 const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRange: DateRange) => {
-  const { data: quickViewRows = [] } = useQuery({
+  const {
+    data: quickViewRows = [],
+    isFetching,
+    isPending,
+  } = useQuery({
     enabled: Boolean(quickViewGroup),
     queryFn: async () => {
       if (!quickViewGroup) {
@@ -176,12 +180,12 @@ const useQuickViewTransactions = (quickViewGroup: AccountGroup | null, activeRan
   const rows = quickViewRows ?? [];
   const quickStats = buildQuickStats(rows);
 
-  return { rows, quickStats };
+  return { isLoading: isPending || isFetching, quickStats, rows };
 };
 
 const useSummaryByGroup = (accountGroups: AccountGroup[], activeRange: DateRange) => {
   const accountGroupKeys = accountGroups.map((group) => group.key).join("|");
-  const { data } = useQuery({
+  const { data, isFetching, isPending } = useQuery({
     enabled: accountGroups.length > 0,
     queryFn: async () => {
       const entries = await Promise.all(
@@ -219,7 +223,10 @@ const useSummaryByGroup = (accountGroups: AccountGroup[], activeRange: DateRange
     staleTime: 1000 * 60 * 5,
   });
 
-  return data ?? new Map<string, { count: number; total: number }>();
+  return {
+    isLoading: isPending || isFetching,
+    summary: data ?? new Map<string, { count: number; total: number }>(),
+  };
 };
 
 const useAssociatedAccountsModel = ({
@@ -375,8 +382,15 @@ const useAssociatedAccountsModel = ({
   };
 
   const activeRange = ALL_HISTORY_RANGE;
-  const summaryByGroup = useSummaryByGroup(accountGroups, activeRange);
-  const { rows, quickStats } = useQuickViewTransactions(quickViewGroup, activeRange);
+  const { isLoading: isSummaryLoading, summary: summaryByGroup } = useSummaryByGroup(
+    accountGroups,
+    activeRange,
+  );
+  const {
+    isLoading: isQuickViewLoading,
+    rows,
+    quickStats,
+  } = useQuickViewTransactions(quickViewGroup, activeRange);
 
   useEffect(() => {
     if (quickViewGroup || accountGroups.length === 0) {
@@ -409,6 +423,8 @@ const useAssociatedAccountsModel = ({
     handleSuggestionClick,
     handleSuggestionCreate,
     isAddAccountModalOpen,
+    isQuickViewLoading,
+    isSummaryLoading,
     quickStats,
     quickViewColumns,
     quickViewGroup,
@@ -433,6 +449,8 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
     handleSuggestionClick,
     handleSuggestionCreate,
     isAddAccountModalOpen,
+    isQuickViewLoading,
+    isSummaryLoading,
     quickStats,
     quickViewColumns,
     quickViewGroup,
@@ -453,7 +471,11 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
         <Surface className="space-y-5 rounded-[28px] p-6" variant="secondary">
           <AssociatedAccountsHeader onAddAccount={() => setIsAddAccountModalOpen(true)} />
           {error && <Alert status="danger">{error}</Alert>}
-          <AccountGroupsTable accountGroups={accountGroups} columns={accountGroupColumns} />
+          <AccountGroupsTable
+            accountGroups={accountGroups}
+            columns={accountGroupColumns}
+            isLoading={isSummaryLoading}
+          />
         </Surface>
       </div>
 
@@ -463,6 +485,7 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
           quickViewGroup={quickViewGroup}
           rows={rows}
           columns={quickViewColumns}
+          isLoading={isQuickViewLoading}
         />
       </Surface>
 
@@ -562,9 +585,11 @@ function AssociatedAccountsHeader({ onAddAccount }: { onAddAccount: () => void }
 function AccountGroupsTable({
   accountGroups,
   columns,
+  isLoading,
 }: {
   accountGroups: AccountGroup[];
   columns: ReturnType<typeof getAccountGroupColumns>;
+  isLoading: boolean;
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-default-100 bg-background">
@@ -575,6 +600,7 @@ function AccountGroupsTable({
         enablePagination={false}
         enableToolbar={false}
         enableVirtualization={false}
+        isLoading={isLoading}
         noDataMessage="Sin cuentas asociadas."
       />
     </div>
@@ -586,11 +612,13 @@ function QuickViewSection({
   quickViewGroup,
   rows,
   columns,
+  isLoading,
 }: {
   quickStats: { count: number; total: number };
   quickViewGroup: AccountGroup | null;
   rows: Transaction[];
   columns: ColumnDef<Transaction, unknown>[];
+  isLoading: boolean;
 }) {
   if (!quickViewGroup) {
     return (
@@ -628,6 +656,7 @@ function QuickViewSection({
             enablePagination={false}
             enableToolbar={false}
             enableVirtualization={false}
+            isLoading={isLoading}
             noDataMessage="Sin movimientos registrados para esta cuenta."
           />
         </div>
