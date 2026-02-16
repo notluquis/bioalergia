@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import { Filter, Plus, RefreshCcw } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -492,6 +492,12 @@ export function CounterpartsPage() {
     });
   };
 
+  useEffect(() => {
+    if (state.searchQuery.trim().length > 0 && state.isResultsCollapsed) {
+      state.setIsResultsCollapsed(false);
+    }
+  }, [state.isResultsCollapsed, state.searchQuery, state.setIsResultsCollapsed]);
+
   return (
     <section className="space-y-5">
       <Tabs
@@ -932,6 +938,26 @@ function CounterpartsToolbar({
           <Separator />
 
           <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {CATEGORY_FILTERS.map((filter) => (
+                <Button
+                  key={filter.value}
+                  onClick={() => {
+                    onCategoryFilterChange(filter.value);
+                  }}
+                  size="sm"
+                  variant={categoryFilter === filter.value ? "secondary" : "ghost"}
+                  className={
+                    categoryFilter === filter.value
+                      ? "border border-primary/35 bg-primary/10 text-primary"
+                      : ""
+                  }
+                >
+                  {filter.label}
+                </Button>
+              ))}
+            </div>
+
             <SearchField
               onChange={onSearchQueryChange}
               value={searchQuery}
@@ -976,26 +1002,6 @@ function CounterpartsToolbar({
                 </Button>
               </div>
             </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {CATEGORY_FILTERS.map((filter) => (
-              <Button
-                key={filter.value}
-                onClick={() => {
-                  onCategoryFilterChange(filter.value);
-                }}
-                size="sm"
-                variant={categoryFilter === filter.value ? "secondary" : "ghost"}
-                className={
-                  categoryFilter === filter.value
-                    ? "border border-primary/35 bg-primary/10 text-primary"
-                    : ""
-                }
-              >
-                {filter.label}
-              </Button>
-            ))}
           </div>
         </div>
       </Surface>

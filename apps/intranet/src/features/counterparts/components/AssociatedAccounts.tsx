@@ -2,6 +2,7 @@ import { Card, Surface } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
+import { Lock } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
+import { CATEGORY_LABELS } from "@/features/counterparts/constants";
 import { fetchTransactions } from "@/features/finance/api";
 import type { Transaction } from "@/features/finance/types";
 import { fmtCLP } from "@/lib/format";
@@ -28,7 +30,9 @@ import {
 } from "./associated-accounts.helpers";
 
 interface AssociatedAccountsProps {
+  canUpdate: boolean;
   detail: null | { accounts: CounterpartAccount[]; counterpart: Counterpart };
+  onEdit: (counterpart: Counterpart) => void;
   selectedId: null | number;
 }
 
@@ -218,7 +222,10 @@ const useSummaryByGroup = (accountGroups: AccountGroup[], activeRange: DateRange
   return data ?? new Map<string, { count: number; total: number }>();
 };
 
-const useAssociatedAccountsModel = ({ detail, selectedId }: Readonly<AssociatedAccountsProps>) => {
+const useAssociatedAccountsModel = ({
+  detail,
+  selectedId,
+}: Readonly<Pick<AssociatedAccountsProps, "detail" | "selectedId">>) => {
   const [accountForm, setAccountForm] = useState<AccountForm>(ACCOUNT_FORM_DEFAULT);
   const [quickViewGroup, setQuickViewGroup] = useState<AccountGroup | null>(null);
   const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
@@ -436,18 +443,28 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
   } = useAssociatedAccountsModel(props);
 
   return (
-    <Surface className="relative space-y-5 rounded-[28px] p-6" variant="secondary">
-      <AssociatedAccountsHeader onAddAccount={() => setIsAddAccountModalOpen(true)} />
-      {error && <Alert status="danger">{error}</Alert>}
+    <div className="relative grid items-start gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+      <div className="space-y-5">
+        <ActiveCounterpartCard
+          canUpdate={props.canUpdate}
+          counterpart={props.detail?.counterpart ?? null}
+          onEdit={props.onEdit}
+        />
+        <Surface className="space-y-5 rounded-[28px] p-6" variant="secondary">
+          <AssociatedAccountsHeader onAddAccount={() => setIsAddAccountModalOpen(true)} />
+          {error && <Alert status="danger">{error}</Alert>}
+          <AccountGroupsTable accountGroups={accountGroups} columns={accountGroupColumns} />
+        </Surface>
+      </div>
 
-      <AccountGroupsTable accountGroups={accountGroups} columns={accountGroupColumns} />
-
-      <QuickViewSection
-        quickStats={quickStats}
-        quickViewGroup={quickViewGroup}
-        rows={rows}
-        columns={quickViewColumns}
-      />
+      <Surface className="space-y-5 rounded-[28px] p-6" variant="secondary">
+        <QuickViewSection
+          quickStats={quickStats}
+          quickViewGroup={quickViewGroup}
+          rows={rows}
+          columns={quickViewColumns}
+        />
+      </Surface>
 
       <AddAccountModal
         accountForm={accountForm}
@@ -468,6 +485,60 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
         }
         updateAccountForm={updateAccountForm}
       />
+    </div>
+  );
+}
+
+function ActiveCounterpartCard({
+  canUpdate,
+  counterpart,
+  onEdit,
+}: {
+  canUpdate: boolean;
+  counterpart: Counterpart | null;
+  onEdit: (counterpart: Counterpart) => void;
+}) {
+  if (!counterpart) {
+    return null;
+  }
+
+  return (
+    <Surface className="rounded-[28px] p-6" variant="secondary">
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-default-500 text-xs uppercase tracking-[0.3em]">
+              Contraparte activa
+            </p>
+            <h3 className="font-semibold text-foreground text-lg">
+              {counterpart.bankAccountHolder}
+            </h3>
+            {counterpart.identificationNumber && (
+              <p className="text-default-600 text-xs">RUT {counterpart.identificationNumber}</p>
+            )}
+          </div>
+          <Button
+            disabled={!canUpdate}
+            onClick={() => {
+              onEdit(counterpart);
+            }}
+            size="sm"
+            title={canUpdate ? undefined : "No tienes permisos para editar"}
+            variant="ghost"
+          >
+            {!canUpdate && <Lock className="mr-2 h-3 w-3" />}
+            Editar contraparte
+          </Button>
+        </div>
+        <div className="grid gap-3 text-default-600 text-xs sm:grid-cols-2">
+          <div>
+            <p className="font-semibold text-default-500">Clasificación</p>
+            <p className="text-foreground text-sm">
+              {CATEGORY_LABELS[counterpart.category] ?? counterpart.category ?? "—"}
+            </p>
+          </div>
+        </div>
+      </div>
     </Surface>
   );
 }
@@ -525,7 +596,7 @@ function QuickViewSection({
     return (
       <Card className="rounded-[28px] border border-default-200/70 border-dashed bg-background/40 p-8 text-center text-default-500 text-sm shadow-none">
         <Card.Content className="p-0">
-          Selecciona una cuenta en la tabla superior para ver su resumen y movimientos históricos.
+          Selecciona una cuenta en el panel izquierdo para ver sus transacciones.
         </Card.Content>
       </Card>
     );
