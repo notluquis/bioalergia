@@ -108,7 +108,7 @@ export function CalendarFilterPanel({
             <TextField className="w-full">
               <Label>Búsqueda</Label>
               <Input
-                className="h-[44px] rounded-xl"
+                className="h-11 rounded-xl"
                 placeholder="Paciente, tratamiento..."
                 value={filters.search ?? ""}
                 variant="secondary"
