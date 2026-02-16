@@ -1,8 +1,10 @@
 import {
+  Autocomplete,
   Checkbox,
   Chip,
+  EmptyState,
   Label,
-  ScrollShadow,
+  ListBox,
   SearchField,
   Separator,
   Surface,
@@ -12,7 +14,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import { Filter, Plus, RefreshCcw } from "lucide-react";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -117,7 +119,6 @@ function buildAssignPreviewMessage(params: {
 
 function useCounterpartsState() {
   const [selectedId, setSelectedId] = useState<null | number>(null);
-  const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
   const [error, setError] = useState<null | string>(null);
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | CounterpartCategory>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -161,7 +162,6 @@ function useCounterpartsState() {
     formCounterpart,
     isAssignRutModalOpen,
     isFormModalOpen,
-    isSearchResultsOpen,
     openFormModal,
     payoutPagination,
     payoutSearchQuery,
@@ -176,7 +176,6 @@ function useCounterpartsState() {
     setError,
     setIsAssignRutModalOpen,
     setIsFormModalOpen,
-    setIsSearchResultsOpen,
     setPayoutPagination,
     setPayoutSearchQuery,
     setSearchQuery,
@@ -496,12 +495,6 @@ export function CounterpartsPage() {
     });
   };
 
-  useEffect(() => {
-    if (state.searchQuery.trim().length > 0 && !state.isSearchResultsOpen) {
-      state.setIsSearchResultsOpen(true);
-    }
-  }, [state.isSearchResultsOpen, state.searchQuery, state.setIsSearchResultsOpen]);
-
   return (
     <section className="space-y-5">
       <Tabs
@@ -544,17 +537,8 @@ export function CounterpartsPage() {
               state.setCategoryFilter("ALL");
               state.setSearchQuery("");
             }}
-            onToggleResults={() => {
-              state.setIsSearchResultsOpen((prev) => !prev);
-            }}
             onClearSelection={() => {
               state.setSelectedId(null);
-            }}
-            onCloseResults={() => {
-              state.setIsSearchResultsOpen(false);
-            }}
-            onOpenResults={() => {
-              state.setIsSearchResultsOpen(true);
             }}
             syncLoading={mutations.syncMutation.isPending}
             onSearchQueryChange={state.setSearchQuery}
@@ -565,7 +549,6 @@ export function CounterpartsPage() {
             selectedId={state.selectedId}
             totalCount={counterparts.length}
             visibleCount={derived.visibleCounterparts.length}
-            isResultsOpen={state.isSearchResultsOpen}
           />
 
           <div className="min-h-[calc(100vh-220px)]">
@@ -849,16 +832,12 @@ interface CounterpartsToolbarProps {
   canCreate: boolean;
   canSync: boolean;
   categoryFilter: "ALL" | CounterpartCategory;
-  isResultsOpen: boolean;
   onCategoryFilterChange: (value: "ALL" | CounterpartCategory) => void;
   onClearSelection: () => void;
   onCreate: () => void;
-  onCloseResults: () => void;
-  onOpenResults: () => void;
   onResetFilters: () => void;
   onSelectCounterpart: (value: null | number) => void;
   onSync: () => void;
-  onToggleResults: () => void;
   onSearchQueryChange: (value: string) => void;
   searchQuery: string;
   selectedId: null | number;
@@ -873,16 +852,12 @@ function CounterpartsToolbar({
   canCreate,
   canSync,
   categoryFilter,
-  isResultsOpen,
   onCategoryFilterChange,
   onClearSelection,
   onCreate,
-  onCloseResults,
-  onOpenResults,
   onResetFilters,
   onSelectCounterpart,
   onSync,
-  onToggleResults,
   onSearchQueryChange,
   searchQuery,
   selectedId,
@@ -892,26 +867,6 @@ function CounterpartsToolbar({
   visibleCounterparts,
   visibleCount,
 }: CounterpartsToolbarProps) {
-  const resultsRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!isResultsOpen) {
-      return;
-    }
-    const onPointerDown = (event: MouseEvent) => {
-      if (!resultsRef.current) {
-        return;
-      }
-      if (!resultsRef.current.contains(event.target as Node)) {
-        onCloseResults();
-      }
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-    };
-  }, [isResultsOpen, onCloseResults]);
-
   return (
     <div className="space-y-3">
       <Surface
@@ -951,7 +906,7 @@ function CounterpartsToolbar({
 
           <Separator />
 
-          <div className="space-y-3" ref={resultsRef}>
+          <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
               {CATEGORY_FILTERS.map((filter) => (
                 <Button
@@ -972,88 +927,88 @@ function CounterpartsToolbar({
               ))}
             </div>
 
-            <div className="relative">
-              <SearchField
-                onChange={onSearchQueryChange}
-                onFocus={onOpenResults}
-                value={searchQuery}
-                fullWidth
-                variant="secondary"
-              >
-                <Label className="sr-only">Buscar contraparte por titular o RUT</Label>
-                <SearchField.Group className={isResultsOpen ? "rounded-b-none" : ""}>
-                  <SearchField.SearchIcon />
-                  <SearchField.Input placeholder="Buscar por titular o RUT" />
-                  <SearchField.ClearButton />
-                </SearchField.Group>
-              </SearchField>
-
-              {isResultsOpen ? (
-                <div className="absolute top-full right-0 left-0 z-30 mt-1 rounded-2xl border border-default-200/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md">
-                  {visibleCounterparts.length === 0 ? (
-                    <div className="rounded-xl border border-default-300 border-dashed bg-default-50/50 px-3 py-4 text-center text-default-500 text-sm">
-                      No hay resultados con los filtros seleccionados.
-                    </div>
-                  ) : (
-                    <ScrollShadow className="max-h-72" hideScrollBar>
-                      <ul className="space-y-1">
-                        {visibleCounterparts.map((item) => {
-                          const isActive = selectedId === item.id;
-                          return (
-                            <li key={item.id}>
-                              <Button
-                                className={`group w-full cursor-pointer rounded-xl px-3 py-2 text-left transition-all ${
-                                  isActive
-                                    ? "bg-primary/12 text-primary"
-                                    : "hover:bg-default-100/70"
-                                }`}
-                                onPress={() => {
-                                  onSelectCounterpart(item.id);
-                                  onCloseResults();
-                                }}
-                                type="button"
-                                variant="ghost"
-                              >
-                                <span className="flex items-start justify-between gap-2">
-                                  <span className="block font-medium text-foreground tracking-tight">
-                                    {item.bankAccountHolder}
-                                  </span>
-                                  <Chip size="sm" variant={isActive ? "secondary" : "soft"}>
-                                    {CATEGORY_LABELS[item.category] ?? item.category}
-                                  </Chip>
-                                </span>
-                                {item.identificationNumber ? (
-                                  <span className="mt-1 block text-default-500 text-xs">
-                                    RUT {item.identificationNumber}
-                                  </span>
-                                ) : null}
-                              </Button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </ScrollShadow>
-                  )}
-                </div>
-              ) : null}
-            </div>
+            <Autocomplete
+              allowsEmptyCollection
+              fullWidth
+              onChange={(value) => {
+                if (typeof value === "number") {
+                  onSelectCounterpart(value);
+                  return;
+                }
+                if (typeof value === "string") {
+                  const parsed = Number(value);
+                  onSelectCounterpart(Number.isFinite(parsed) ? parsed : null);
+                  return;
+                }
+                onSelectCounterpart(null);
+              }}
+              placeholder="Buscar por titular o RUT"
+              selectionMode="single"
+              value={selectedId === null ? null : String(selectedId)}
+              variant="secondary"
+            >
+              <Label className="sr-only">Buscar contraparte por titular o RUT</Label>
+              <Autocomplete.Trigger>
+                <Autocomplete.Value />
+                <Autocomplete.ClearButton />
+                <Autocomplete.Indicator />
+              </Autocomplete.Trigger>
+              <Autocomplete.Popover className="rounded-2xl border border-default-200/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md">
+                <Autocomplete.Filter
+                  filter={() => true}
+                  inputValue={searchQuery}
+                  onInputChange={onSearchQueryChange}
+                >
+                  <SearchField autoFocus name="counterpart-search" variant="secondary">
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Buscar por titular o RUT" />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+                  <ListBox
+                    className="max-h-72"
+                    renderEmptyState={() => (
+                      <EmptyState>No hay resultados con los filtros seleccionados.</EmptyState>
+                    )}
+                  >
+                    {visibleCounterparts.map((item) => (
+                      <ListBox.Item
+                        id={String(item.id)}
+                        key={item.id}
+                        textValue={`${item.bankAccountHolder} ${item.identificationNumber}`}
+                      >
+                        <div className="flex w-full items-start justify-between gap-2">
+                          <span className="font-medium text-foreground tracking-tight">
+                            {item.bankAccountHolder}
+                          </span>
+                          <Chip size="sm" variant={selectedId === item.id ? "secondary" : "soft"}>
+                            {CATEGORY_LABELS[item.category] ?? item.category}
+                          </Chip>
+                        </div>
+                        {item.identificationNumber ? (
+                          <span className="mt-0.5 block text-default-500 text-xs">
+                            RUT {item.identificationNumber}
+                          </span>
+                        ) : null}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Autocomplete.Filter>
+              </Autocomplete.Popover>
+            </Autocomplete>
 
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Chip size="sm" variant="soft">
-                  Resultados ({visibleCount})
-                </Chip>
+              <div className="flex flex-wrap items-center gap-2 text-default-500 text-xs">
+                <span>Resultados: {visibleCount}</span>
+                <span>Total: {totalCount}</span>
                 {selectedCounterpart ? (
-                  <Chip size="sm" variant="secondary">
-                    Seleccionada: {selectedCounterpart.bankAccountHolder}
-                  </Chip>
+                  <span>Seleccionada: {selectedCounterpart.bankAccountHolder}</span>
                 ) : null}
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button onClick={onToggleResults} size="sm" variant="secondary">
-                  {isResultsOpen ? "Ocultar resultados" : "Mostrar resultados"}
-                </Button>
                 <Button
                   disabled={!selectedCounterpart}
                   onClick={onClearSelection}
