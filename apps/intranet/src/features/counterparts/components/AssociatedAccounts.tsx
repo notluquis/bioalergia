@@ -30,8 +30,12 @@ import {
 interface AssociatedAccountsProps {
   detail: null | { accounts: CounterpartAccount[]; counterpart: Counterpart };
   selectedId: null | number;
-  summaryRange: { from: string; to: string };
 }
+
+const ALL_HISTORY_RANGE: DateRange = {
+  from: "",
+  to: "",
+};
 
 const buildAccountGrouping = (accounts: CounterpartAccount[] = []) => {
   const groups = new Map<string, AccountGroup>();
@@ -214,11 +218,7 @@ const useSummaryByGroup = (accountGroups: AccountGroup[], activeRange: DateRange
   return data ?? new Map<string, { count: number; total: number }>();
 };
 
-const useAssociatedAccountsModel = ({
-  detail,
-  selectedId,
-  summaryRange,
-}: Readonly<AssociatedAccountsProps>) => {
+const useAssociatedAccountsModel = ({ detail, selectedId }: Readonly<AssociatedAccountsProps>) => {
   const [accountForm, setAccountForm] = useState<AccountForm>(ACCOUNT_FORM_DEFAULT);
   const [quickViewGroup, setQuickViewGroup] = useState<AccountGroup | null>(null);
   const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
@@ -367,9 +367,18 @@ const useAssociatedAccountsModel = ({
     setSuggestionQuery(value);
   };
 
-  const activeRange = summaryRange;
+  const activeRange = ALL_HISTORY_RANGE;
   const summaryByGroup = useSummaryByGroup(accountGroups, activeRange);
   const { rows, quickStats } = useQuickViewTransactions(quickViewGroup, activeRange);
+
+  useEffect(() => {
+    if (quickViewGroup || accountGroups.length === 0) {
+      return;
+    }
+    const firstWithMovements =
+      accountGroups.find((group) => (summaryByGroup.get(group.key)?.count ?? 0) > 0) ?? null;
+    setQuickViewGroup(firstWithMovements ?? accountGroups[0] ?? null);
+  }, [accountGroups, quickViewGroup, summaryByGroup]);
 
   const accountGroupColumns = getAccountGroupColumns(
     summaryByGroup,
@@ -526,7 +535,9 @@ function QuickViewSection({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-default-500 text-xs uppercase tracking-[0.3em]">Resumen mensual</p>
+          <p className="text-default-500 text-xs uppercase tracking-[0.3em]">
+            Resumen de transferencias
+          </p>
           <h3 className="font-semibold text-foreground text-lg">Transferencias</h3>
           <p className="text-default-500 text-xs">{quickViewGroup.label}</p>
           <p className="text-default-400 text-xs">Todo el historial</p>

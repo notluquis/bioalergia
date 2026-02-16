@@ -12,13 +12,11 @@ interface CounterpartDetailSectionProps {
   canUpdate: boolean;
   counterpartId: number;
   onEdit: (counterpart: Counterpart) => void;
-  summaryRange: { from: string; to: string };
 }
 export function CounterpartDetailSection({
   canUpdate,
   counterpartId,
   onEdit,
-  summaryRange,
 }: Readonly<CounterpartDetailSectionProps>) {
   const { data: detail } = useSuspenseQuery(counterpartKeys.detail(counterpartId));
 
@@ -68,7 +66,7 @@ export function CounterpartDetailSection({
         </div>
       </Surface>
 
-      <AssociatedAccounts detail={detail} selectedId={counterpartId} summaryRange={summaryRange} />
+      <AssociatedAccounts detail={detail} selectedId={counterpartId} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
-import { Card, Chip, SearchField, Surface, Tabs } from "@heroui/react";
+import { Card, Checkbox, Chip, Label, SearchField, Separator, Surface, Tabs } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import { Filter, Plus, RefreshCcw } from "lucide-react";
 import { Suspense, useState } from "react";
@@ -56,6 +57,9 @@ type SaveCounterpartArgs = {
   };
 };
 
+type CounterpartsTab = "counterparts" | "unassigned-payouts";
+const counterpartsRouteApi = getRouteApi("/_authed/finanzas/counterparts");
+
 async function saveCounterpartWithFeedback({
   createMutation,
   payload,
@@ -85,15 +89,6 @@ async function saveCounterpartWithFeedback({
   return savedId;
 }
 
-type SummaryRange = { from: string; to: string };
-
-function createInitialSummaryRange(): SummaryRange {
-  return {
-    from: "",
-    to: "",
-  };
-}
-
 function buildAssignPreviewMessage(params: {
   assignExistingCounterpart: Counterpart | null;
   assignRutIsValid: boolean;
@@ -114,7 +109,6 @@ function buildAssignPreviewMessage(params: {
 function useCounterpartsState() {
   const [selectedId, setSelectedId] = useState<null | number>(null);
   const [error, setError] = useState<null | string>(null);
-  const [summaryRange] = useState<SummaryRange>(createInitialSummaryRange);
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | CounterpartCategory>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [payoutSearchQuery, setPayoutSearchQuery] = useState("");
@@ -176,7 +170,6 @@ function useCounterpartsState() {
     setSearchQuery,
     setSelectedId,
     setSelectedPayoutAccounts,
-    summaryRange,
   };
 }
 
@@ -436,6 +429,8 @@ function useCounterpartsActions(params: {
 export function CounterpartsPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate({ from: "/finanzas/counterparts" });
+  const { tab } = counterpartsRouteApi.useSearch();
   const state = useCounterpartsState();
   const { error: toastError, info: toastInfo, success: toastSuccess } = useToast();
   const canCreate = can("create", "Counterpart");
@@ -490,20 +485,41 @@ export function CounterpartsPage() {
     ? Math.max(Math.ceil(unassignedPayoutData.total / unassignedPayoutData.pageSize), 1)
     : 0;
   const unassignedTotal = unassignedPayoutData?.total ?? 0;
+  const selectedTab: CounterpartsTab = tab === "unassigned-payouts" ? tab : "counterparts";
+
+  const handleTabSelectionChange = (nextValue: string) => {
+    const nextTab: CounterpartsTab =
+      nextValue === "unassigned-payouts" ? "unassigned-payouts" : "counterparts";
+    void navigate({
+      search: (prev) => ({ ...prev, tab: nextTab }),
+    });
+  };
 
   return (
     <section className="space-y-5">
-      <Tabs aria-label="Gestión de contrapartes" defaultSelectedKey="counterparts">
-        <Tabs.List
-          aria-label="Secciones"
-          className="rounded-2xl border border-default-200/60 bg-background/70 p-1"
-        >
-          <Tabs.Tab id="counterparts">Contrapartes</Tabs.Tab>
-          <Tabs.Tab id="unassigned-payouts">
-            Cuentas sin RUT
-            {unassignedTotal > 0 ? <Chip size="sm">{unassignedTotal}</Chip> : null}
-          </Tabs.Tab>
-        </Tabs.List>
+      <Tabs
+        aria-label="Gestión de contrapartes"
+        onSelectionChange={(key) => {
+          handleTabSelectionChange(String(key));
+        }}
+        selectedKey={selectedTab}
+      >
+        <Tabs.ListContainer>
+          <Tabs.List
+            aria-label="Secciones"
+            className="rounded-2xl border border-default-200/60 bg-background/70 p-1"
+          >
+            <Tabs.Tab id="counterparts">
+              Contrapartes
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="unassigned-payouts">
+              Cuentas sin RUT
+              {unassignedTotal > 0 ? <Chip size="sm">{unassignedTotal}</Chip> : null}
+              <Tabs.Indicator />
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs.ListContainer>
 
         <Tabs.Panel className="space-y-5 pt-4" id="counterparts">
           <CounterpartsToolbar
@@ -559,7 +575,6 @@ export function CounterpartsPage() {
                 state.openFormModal(null);
               }}
               onEdit={state.openFormModal}
-              summaryRange={state.summaryRange}
             />
           </div>
         </Tabs.Panel>
@@ -677,14 +692,19 @@ function UnassignedPayoutAccountsTable({
   total: number;
 }) {
   const selectedSet = new Set(selectedAccounts);
-  const allCurrentPageSelected =
-    rows.length > 0 && rows.every((row) => selectedSet.has(row.payoutBankAccountNumber));
+  const selectedOnCurrentPage = rows.filter((row) =>
+    selectedSet.has(row.payoutBankAccountNumber),
+  ).length;
+  const allCurrentPageSelected = rows.length > 0 && selectedOnCurrentPage === rows.length;
+  const partiallySelectedCurrentPage =
+    selectedOnCurrentPage > 0 && selectedOnCurrentPage < rows.length;
 
   const columns: ColumnDef<UnassignedPayoutAccount>[] = [
     {
       cell: ({ row }) => (
-        <input
-          checked={selectedSet.has(row.original.payoutBankAccountNumber)}
+        <Checkbox
+          aria-label={`Seleccionar cuenta ${row.original.payoutBankAccountNumber}`}
+          isSelected={selectedSet.has(row.original.payoutBankAccountNumber)}
           onChange={() => {
             const account = row.original.payoutBankAccountNumber;
             if (selectedSet.has(account)) {
@@ -693,12 +713,18 @@ function UnassignedPayoutAccountsTable({
               setSelectedAccounts([...selectedAccounts, account]);
             }
           }}
-          type="checkbox"
-        />
+          variant="secondary"
+        >
+          <Checkbox.Control>
+            <Checkbox.Indicator />
+          </Checkbox.Control>
+        </Checkbox>
       ),
       header: () => (
-        <input
-          checked={allCurrentPageSelected}
+        <Checkbox
+          aria-label="Seleccionar todas las cuentas de la página actual"
+          isIndeterminate={partiallySelectedCurrentPage}
+          isSelected={allCurrentPageSelected}
           onChange={() => {
             if (allCurrentPageSelected) {
               const currentAccounts = new Set(rows.map((row) => row.payoutBankAccountNumber));
@@ -713,8 +739,12 @@ function UnassignedPayoutAccountsTable({
               setSelectedAccounts([...merged]);
             }
           }}
-          type="checkbox"
-        />
+          variant="secondary"
+        >
+          <Checkbox.Control>
+            <Checkbox.Indicator />
+          </Checkbox.Control>
+        </Checkbox>
       ),
       id: "select",
     },
@@ -786,6 +816,7 @@ function UnassignedPayoutAccountsTable({
       </div>
       <div className="mb-3">
         <SearchField onChange={onSearchQueryChange} value={searchQuery} variant="secondary">
+          <Label className="sr-only">Buscar cuenta payout</Label>
           <SearchField.Group>
             <SearchField.SearchIcon />
             <SearchField.Input placeholder="Buscar cuenta payout" />
@@ -850,104 +881,112 @@ function CounterpartsToolbar({
   visibleCount,
 }: CounterpartsToolbarProps) {
   return (
-    <Surface className="rounded-[28px] border border-default-200/70 p-5 sm:p-6" variant="secondary">
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <p className="font-medium text-default-500 text-xs uppercase tracking-[0.22em]">
-              Vista general
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Chip size="sm" variant="soft">
-                {visibleCount} visibles
-              </Chip>
-              <Chip size="sm" variant="soft">
-                {totalCount} totales
-              </Chip>
-              {selectedCounterpart ? (
-                <Chip size="sm" variant="secondary">
-                  {selectedCounterpart.bankAccountHolder}
+    <div className="space-y-3">
+      <Surface
+        className="rounded-[28px] border border-default-200/70 p-5 sm:p-6"
+        variant="secondary"
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="font-medium text-default-500 text-xs uppercase tracking-[0.22em]">
+                Vista general
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Chip size="sm" variant="soft">
+                  {visibleCount} visibles
                 </Chip>
+                <Chip size="sm" variant="soft">
+                  {totalCount} totales
+                </Chip>
+                {selectedCounterpart ? (
+                  <Chip size="sm" variant="secondary">
+                    {selectedCounterpart.bankAccountHolder}
+                  </Chip>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {canSync ? (
+                <Button disabled={syncLoading} onClick={onSync} size="sm" variant="secondary">
+                  <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
+                  {syncLoading ? "Sincronizando..." : "Sincronizar"}
+                </Button>
+              ) : null}
+              {canCreate ? (
+                <Button onClick={onCreate} size="sm">
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Nueva contraparte
+                </Button>
               ) : null}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {canSync ? (
-              <Button disabled={syncLoading} onClick={onSync} size="sm" variant="secondary">
-                <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
-                {syncLoading ? "Sincronizando..." : "Sincronizar"}
+
+          <Separator />
+
+          <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+            <SearchField
+              onChange={onSearchQueryChange}
+              value={searchQuery}
+              fullWidth
+              variant="secondary"
+            >
+              <Label className="sr-only">Buscar contraparte por titular o RUT</Label>
+              <SearchField.Group>
+                <SearchField.SearchIcon />
+                <SearchField.Input placeholder="Buscar por titular o RUT" />
+                <SearchField.ClearButton />
+              </SearchField.Group>
+            </SearchField>
+            <Button onClick={onResetFilters} size="sm" variant="ghost">
+              <Filter className="mr-1.5 h-3.5 w-3.5" />
+              Limpiar filtros
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {CATEGORY_FILTERS.map((filter) => (
+              <Button
+                key={filter.value}
+                onClick={() => {
+                  onCategoryFilterChange(filter.value);
+                }}
+                size="sm"
+                variant={categoryFilter === filter.value ? "secondary" : "ghost"}
+                className={
+                  categoryFilter === filter.value
+                    ? "border border-primary/35 bg-primary/10 text-primary"
+                    : ""
+                }
+              >
+                {filter.label}
               </Button>
-            ) : null}
-            {canCreate ? (
-              <Button onClick={onCreate} size="sm">
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Nueva contraparte
-              </Button>
-            ) : null}
+            ))}
           </div>
         </div>
+      </Surface>
 
-        <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
-          <SearchField
-            onChange={onSearchQueryChange}
-            value={searchQuery}
-            fullWidth
-            variant="secondary"
-          >
-            <SearchField.Group>
-              <SearchField.SearchIcon />
-              <SearchField.Input placeholder="Buscar por titular o RUT" />
-              <SearchField.ClearButton />
-            </SearchField.Group>
-          </SearchField>
-          <Button onClick={onResetFilters} size="sm" variant="ghost">
-            <Filter className="mr-1.5 h-3.5 w-3.5" />
-            Limpiar filtros
-          </Button>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {CATEGORY_FILTERS.map((filter) => (
-            <Button
-              key={filter.value}
-              onClick={() => {
-                onCategoryFilterChange(filter.value);
-              }}
-              size="sm"
-              variant={categoryFilter === filter.value ? "secondary" : "ghost"}
-              className={
-                categoryFilter === filter.value
-                  ? "border border-primary/35 bg-primary/10 text-primary"
-                  : ""
-              }
-            >
-              {filter.label}
-            </Button>
-          ))}
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-3">
-          <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
-            <Card.Content className="space-y-1 p-0">
-              <p className="text-default-500 text-xs uppercase tracking-wide">Proveedores</p>
-              <p className="font-semibold text-2xl leading-none">{supplierCount}</p>
-            </Card.Content>
-          </Card>
-          <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
-            <Card.Content className="space-y-1 p-0">
-              <p className="text-default-500 text-xs uppercase tracking-wide">Clientes</p>
-              <p className="font-semibold text-2xl leading-none">{clientCount}</p>
-            </Card.Content>
-          </Card>
-          <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
-            <Card.Content className="space-y-1 p-0">
-              <p className="text-default-500 text-xs uppercase tracking-wide">Prestamistas</p>
-              <p className="font-semibold text-2xl leading-none">{lenderCount}</p>
-            </Card.Content>
-          </Card>
-        </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
+          <Card.Content className="space-y-1 p-0">
+            <p className="text-default-500 text-xs uppercase tracking-wide">Proveedores</p>
+            <p className="font-semibold text-2xl leading-none">{supplierCount}</p>
+          </Card.Content>
+        </Card>
+        <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
+          <Card.Content className="space-y-1 p-0">
+            <p className="text-default-500 text-xs uppercase tracking-wide">Clientes</p>
+            <p className="font-semibold text-2xl leading-none">{clientCount}</p>
+          </Card.Content>
+        </Card>
+        <Card className="rounded-2xl border border-default-200/80 bg-background/70 px-3.5 py-3 shadow-none">
+          <Card.Content className="space-y-1 p-0">
+            <p className="text-default-500 text-xs uppercase tracking-wide">Prestamistas</p>
+            <p className="font-semibold text-2xl leading-none">{lenderCount}</p>
+          </Card.Content>
+        </Card>
       </div>
-    </Surface>
+    </div>
   );
 }
 
@@ -957,7 +996,6 @@ interface CounterpartDetailPaneProps {
   counterpartId: null | number;
   onCreate: () => void;
   onEdit: (counterpart: Counterpart) => void;
-  summaryRange: { from: string; to: string };
 }
 
 function CounterpartDetailPane({
@@ -966,7 +1004,6 @@ function CounterpartDetailPane({
   counterpartId,
   onCreate,
   onEdit,
-  summaryRange,
 }: CounterpartDetailPaneProps) {
   if (!counterpartId) {
     return (
@@ -1007,7 +1044,6 @@ function CounterpartDetailPane({
         canUpdate={canUpdate}
         counterpartId={counterpartId}
         onEdit={onEdit}
-        summaryRange={summaryRange}
       />
     </Suspense>
   );

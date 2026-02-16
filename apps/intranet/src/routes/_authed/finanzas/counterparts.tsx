@@ -8,6 +8,8 @@ const Counterparts = lazy(() =>
 );
 
 export const Route = createFileRoute("/_authed/finanzas/counterparts")({
+  validateSearch: (search: Record<string, unknown>) =>
+    search.tab === "counterparts" || search.tab === "unassigned-payouts" ? { tab: search.tab } : {},
   staticData: {
     nav: { iconKey: "Users2", label: "Contrapartes", order: 5, section: "Finanzas" },
     permission: { action: "read", subject: "Counterpart" },

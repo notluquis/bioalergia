@@ -61,7 +61,7 @@ export const getAccountGroupColumns = (
           <div className="text-default-500 text-xs">
             {summaryInfo
               ? `${summaryInfo.count} mov. · ${fmtCLP(summaryInfo.total)}`
-              : "Sin movimientos en el rango"}
+              : "Sin movimientos registrados"}
           </div>
         </div>
       );
