@@ -11,7 +11,6 @@ import {
   listServices,
   updateService,
 } from "../services/services";
-import { toSnakeCase } from "../utils/case-transform";
 import { reply } from "../utils/reply";
 
 const app = new Hono();
@@ -32,7 +31,7 @@ app.get("/", cacheControl(300), async (c) => {
   }
 
   const items = await listServices();
-  return reply(c, { status: "ok", services: toSnakeCase(items) });
+  return reply(c, { status: "ok", services: items });
 });
 
 app.get("/:id", async (c) => {
@@ -64,8 +63,8 @@ app.get("/:id", async (c) => {
 
   return reply(c, {
     status: "ok",
-    service: toSnakeCase(item),
-    schedules: toSnakeCase(schedules),
+    service: item,
+    schedules,
   });
 });
 
@@ -90,7 +89,7 @@ app.post("/", async (c) => {
   const result = await createService(parsed.data);
   return reply(c, {
     status: "ok",
-    service: toSnakeCase(result),
+    service: result,
     schedules: [],
   });
 });
@@ -129,8 +128,8 @@ app.put("/:id", async (c) => {
 
   return reply(c, {
     status: "ok",
-    service: toSnakeCase(result),
-    schedules: toSnakeCase(schedules),
+    service: result,
+    schedules,
   });
 });
 
