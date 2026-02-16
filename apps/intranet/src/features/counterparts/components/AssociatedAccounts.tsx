@@ -658,7 +658,8 @@ function QuickViewSection({
             containerVariant="plain"
             enablePagination={false}
             enableToolbar={false}
-            enableVirtualization={false}
+            enableVirtualization
+            estimatedRowHeight={44}
             isLoading={isLoading}
             noDataMessage="Sin movimientos registrados para esta cuenta."
           />
