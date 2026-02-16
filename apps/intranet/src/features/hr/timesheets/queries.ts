@@ -4,7 +4,7 @@ import { fetchTimesheetMonths } from "./api";
 
 export const timesheetKeys = {
   all: ["timesheets"] as const,
-  months: () => ["timesheet-months"] as const, // Legacy key maintained for now
+  months: () => ["timesheets", "months"] as const,
 };
 
 export const timesheetQueries = {

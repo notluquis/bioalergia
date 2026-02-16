@@ -539,7 +539,8 @@ calendarRoutes.get(
 
     const canReadSchedule = await hasPermission(user.id, "read", "CalendarSchedule");
     const canReadHeatmap = await hasPermission(user.id, "read", "CalendarHeatmap");
-    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
+    // Broad fallback: if neither specific permission is available, allow if user can read events
+    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
 
     if (!canReadSchedule && !canReadHeatmap && !canReadEvents) {
       return reply(c, { status: "error", message: "Forbidden" }, 403);
@@ -636,7 +637,8 @@ calendarRoutes.get(
     }
 
     const canReadDaily = await hasPermission(user.id, "read", "CalendarDaily");
-    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent"); // Legacy/Broad
+    // Broad fallback: if daily permission not available, allow if user can read events
+    const canReadEvents = await hasPermission(user.id, "read", "CalendarEvent");
 
     if (!canReadDaily && !canReadEvents) {
       return reply(c, { status: "error", message: "Forbidden" }, 403);

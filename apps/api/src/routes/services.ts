@@ -7,10 +7,11 @@ import {
   createService,
   deleteService,
   generateSchedules,
-  getServiceById,
+  getServiceByIdOrPublicId,
   listServices,
   updateService,
 } from "../services/services";
+import { toSnakeCase } from "../utils/case-transform";
 import { reply } from "../utils/reply";
 
 const app = new Hono();
@@ -31,7 +32,7 @@ app.get("/", cacheControl(300), async (c) => {
   }
 
   const items = await listServices();
-  return reply(c, { status: "ok", services: items });
+  return reply(c, { status: "ok", services: toSnakeCase(items) });
 });
 
 app.get("/:id", async (c) => {
@@ -49,25 +50,22 @@ app.get("/:id", async (c) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const id = Number(c.req.param("id"));
-  if (Number.isNaN(id)) {
-    return reply(c, { status: "error", message: "Invalid ID" }, 400);
-  }
+  const identifier = c.req.param("id");
+  const item = await getServiceByIdOrPublicId(identifier);
 
-  const item = await getServiceById(id);
   if (!item) {
     return reply(c, { status: "error", message: "Not found" }, 404);
   }
 
   const schedules = await db.serviceSchedule.findMany({
-    where: { serviceId: id },
+    where: { serviceId: item.id },
     orderBy: { periodStart: "asc" },
   });
 
   return reply(c, {
     status: "ok",
-    service: item,
-    schedules,
+    service: toSnakeCase(item),
+    schedules: toSnakeCase(schedules),
   });
 });
 
@@ -92,8 +90,8 @@ app.post("/", async (c) => {
   const result = await createService(parsed.data);
   return reply(c, {
     status: "ok",
-    service: result,
-    schedules: [], // ServiceSchedule model not yet implemented
+    service: toSnakeCase(result),
+    schedules: [],
   });
 });
 
@@ -108,9 +106,11 @@ app.put("/:id", async (c) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const id = Number(c.req.param("id"));
-  if (Number.isNaN(id)) {
-    return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  const identifier = c.req.param("id");
+  const existing = await getServiceByIdOrPublicId(identifier);
+
+  if (!existing) {
+    return reply(c, { status: "error", message: "Not found" }, 404);
   }
 
   const body = await c.req.json();
@@ -120,11 +120,17 @@ app.put("/:id", async (c) => {
     return reply(c, { status: "error", message: "Invalid data", issues: parsed.error.issues }, 400);
   }
 
-  const result = await updateService(id, parsed.data);
+  const result = await updateService(existing.id, parsed.data);
+
+  const schedules = await db.serviceSchedule.findMany({
+    where: { serviceId: result.id },
+    orderBy: { periodStart: "asc" },
+  });
+
   return reply(c, {
     status: "ok",
-    service: result,
-    schedules: [], // ServiceSchedule model not yet implemented
+    service: toSnakeCase(result),
+    schedules: toSnakeCase(schedules),
   });
 });
 
@@ -139,12 +145,14 @@ app.delete("/:id", async (c) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const id = Number(c.req.param("id"));
-  if (Number.isNaN(id)) {
-    return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  const identifier = c.req.param("id");
+  const existing = await getServiceByIdOrPublicId(identifier);
+
+  if (!existing) {
+    return reply(c, { status: "error", message: "Not found" }, 404);
   }
 
-  await deleteService(id);
+  await deleteService(existing.id);
   return reply(c, { status: "ok" });
 });
 
@@ -160,9 +168,11 @@ app.post("/:id/schedules", async (c) => {
     return reply(c, { status: "error", message: "Forbidden" }, 403);
   }
 
-  const id = Number(c.req.param("id"));
-  if (Number.isNaN(id)) {
-    return reply(c, { status: "error", message: "Invalid ID" }, 400);
+  const identifier = c.req.param("id");
+  const existing = await getServiceByIdOrPublicId(identifier);
+
+  if (!existing) {
+    return reply(c, { status: "error", message: "Not found" }, 404);
   }
 
   const query = c.req.query();
@@ -178,7 +188,7 @@ app.post("/:id/schedules", async (c) => {
   }
 
   try {
-    const result = await generateSchedules({ serviceId: id, months, fromDate });
+    const result = await generateSchedules({ serviceId: existing.id, months, fromDate });
     return reply(c, { status: "ok", ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to generate schedules";

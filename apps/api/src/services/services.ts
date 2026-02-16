@@ -33,6 +33,22 @@ export async function getServiceById(id: number) {
   });
 }
 
+export async function getServiceByIdOrPublicId(identifier: string | number) {
+  const numericId = typeof identifier === "number" ? identifier : Number(identifier);
+
+  if (!Number.isNaN(numericId)) {
+    return await db.service.findUnique({
+      where: { id: numericId },
+      include: serviceInclude,
+    });
+  }
+
+  return await db.service.findUnique({
+    where: { publicId: identifier as string },
+    include: serviceInclude,
+  });
+}
+
 export async function createService(data: ServicePayload) {
   const publicId = `srv_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   const startDate = new Date();
