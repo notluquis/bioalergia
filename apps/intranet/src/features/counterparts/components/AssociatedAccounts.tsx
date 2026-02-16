@@ -384,7 +384,6 @@ const useAssociatedAccountsModel = ({
     accountGroupColumns,
     accountGroups,
     accountSuggestions,
-    activeRange,
     addAccountMutation,
     attachRutMutation,
     error,
@@ -409,7 +408,6 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
     accountGroupColumns,
     accountGroups,
     accountSuggestions,
-    activeRange,
     addAccountMutation,
     attachRutMutation,
     error,
@@ -436,7 +434,6 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
       <AccountGroupsTable accountGroups={accountGroups} columns={accountGroupColumns} />
 
       <QuickViewSection
-        activeRange={activeRange}
         quickStats={quickStats}
         quickViewGroup={quickViewGroup}
         rows={rows}
@@ -505,13 +502,11 @@ function AccountGroupsTable({
 }
 
 function QuickViewSection({
-  activeRange,
   quickStats,
   quickViewGroup,
   rows,
   columns,
 }: {
-  activeRange: DateRange;
   quickStats: { count: number; total: number };
   quickViewGroup: AccountGroup | null;
   rows: Transaction[];
@@ -534,9 +529,7 @@ function QuickViewSection({
           <p className="text-default-500 text-xs uppercase tracking-[0.3em]">Resumen mensual</p>
           <h3 className="font-semibold text-foreground text-lg">Transferencias</h3>
           <p className="text-default-500 text-xs">{quickViewGroup.label}</p>
-          <p className="text-default-400 text-xs">
-            {activeRange.from} – {activeRange.to}
-          </p>
+          <p className="text-default-400 text-xs">Todo el historial</p>
         </div>
         <div className="flex gap-4">
           <div className="rounded-2xl border border-default-200/60 bg-background/60 px-4 py-2 font-semibold text-default-600 text-xs uppercase tracking-[0.2em]">
@@ -556,7 +549,7 @@ function QuickViewSection({
             enablePagination={false}
             enableToolbar={false}
             enableVirtualization={false}
-            noDataMessage="Sin movimientos dentro del rango seleccionado."
+            noDataMessage="Sin movimientos registrados para esta cuenta."
           />
         </div>
       </Surface>

@@ -1,7 +1,6 @@
 import { Card, Chip, SearchField, Surface, Tabs } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
-import dayjs from "dayjs";
 import { Filter, Plus, RefreshCcw } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
@@ -22,7 +21,6 @@ import {
 } from "@/features/counterparts/api";
 import { CounterpartForm } from "@/features/counterparts/components/CounterpartForm";
 import { CounterpartList } from "@/features/counterparts/components/CounterpartList";
-import { SUMMARY_RANGE_MONTHS } from "@/features/counterparts/constants";
 import { counterpartKeys } from "@/features/counterparts/queries";
 import type {
   Counterpart,
@@ -91,8 +89,8 @@ type SummaryRange = { from: string; to: string };
 
 function createInitialSummaryRange(): SummaryRange {
   return {
-    from: dayjs().subtract(SUMMARY_RANGE_MONTHS, "month").startOf("month").format("YYYY-MM-DD"),
-    to: dayjs().endOf("month").format("YYYY-MM-DD"),
+    from: "",
+    to: "",
   };
 }
 
