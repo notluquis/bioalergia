@@ -3,13 +3,11 @@
  * Redesigned to match "Filtrar Vistas" spec using HeroUI v3
  */
 
-import { DateField, DateInputGroup } from "@heroui/react";
+import { Button, DateField, DateInputGroup, Input, Label, TextField } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
-import { RotateCcw, Search } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import React, { type SubmitEvent } from "react";
 
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import { NULL_CATEGORY_VALUE } from "../constants";
 import type { CalendarFilters } from "../types";
@@ -107,15 +105,16 @@ export function CalendarFilterPanel({
         {/* Search Input */}
         {showSearch && (
           <div className="space-y-1.5">
-            <Input
-              label="Búsqueda"
-              placeholder="Paciente, tratamiento..."
-              value={filters.search ?? ""}
-              onChange={(e) => onFilterChange("search", e.target.value)}
-              startContent={<Search className="text-default-400" size={18} />}
-              containerClassName="h-[44px] rounded-xl"
-              className="border-default-200 bg-default-100/50 hover:bg-default-100"
-            />
+            <TextField className="w-full">
+              <Label>Búsqueda</Label>
+              <Input
+                className="h-[44px] rounded-xl"
+                placeholder="Paciente, tratamiento..."
+                value={filters.search ?? ""}
+                variant="secondary"
+                onChange={(e) => onFilterChange("search", e.target.value)}
+              />
+            </TextField>
           </div>
         )}
 
@@ -160,10 +159,10 @@ export function CalendarFilterPanel({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={onReset}
+            onPress={onReset}
             className="h-10 rounded-xl px-3 font-medium text-default-400 hover:text-foreground"
-            startContent={<RotateCcw size={14} />}
           >
+            <RotateCcw size={14} />
             Limpiar
           </Button>
 
@@ -197,7 +196,7 @@ export function CalendarFilterPanel({
         onChange={(values) => onFilterChange("categories", values)}
       />
 
-      <Button type="submit" size="sm" color="primary">
+      <Button size="sm" type="submit" variant="primary">
         Actualizar
       </Button>
     </form>

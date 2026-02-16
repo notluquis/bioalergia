@@ -7,6 +7,7 @@ import { Header } from "./components/layouts/Header";
 import { BottomNav } from "./components/layouts/MobileNav";
 import { Sidebar } from "./components/layouts/Sidebar";
 import { Button } from "./components/ui/Button";
+import { Tooltip } from "./components/ui/Tooltip";
 import { useAuth } from "./context/AuthContext";
 import { useSettings } from "./context/SettingsContext";
 import { BUILD_TIMESTAMP } from "./version";
@@ -178,9 +179,22 @@ export function App() {
           <footer className="surface-elevated hidden px-6 py-3 text-foreground text-sm md:flex">
             <div className="grid w-full grid-cols-3 items-center gap-2 text-xs">
               <span className="text-default-500">Build: {buildLabel}</span>
-              <span className="text-center text-default-400">
-                Hecho con ♥ por Lucas Pulgar Escobar para Bioalergia
-              </span>
+              <div className="flex justify-center">
+                <Tooltip
+                  content="Hecho con ♥ por Lucas Pulgar Escobar para Bioalergia"
+                  placement="top"
+                  showArrow
+                >
+                  <Button
+                    aria-label="Créditos"
+                    className="min-w-0 px-2 text-danger"
+                    size="sm"
+                    variant="ghost"
+                  >
+                    ♥
+                  </Button>
+                </Tooltip>
+              </div>
               <div className="flex justify-end">
                 <span
                   className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-medium ${

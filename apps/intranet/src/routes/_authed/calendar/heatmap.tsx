@@ -1,8 +1,8 @@
+import { Spinner } from "@heroui/react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
 import { type CalendarSearchParams, calendarSearchSchema } from "@/features/calendar/types";
 
 const CalendarHeatmapPage = lazy(() =>
@@ -37,7 +37,13 @@ export const Route = createFileRoute("/_authed/calendar/heatmap")({
     }
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-12">
+          <Spinner size="lg" />
+        </div>
+      }
+    >
       <CalendarHeatmapPage />
     </Suspense>
   ),

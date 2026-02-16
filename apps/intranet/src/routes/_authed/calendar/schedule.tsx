@@ -1,7 +1,7 @@
+import { Spinner } from "@heroui/react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
 import { calendarQueries } from "@/features/calendar/queries";
 import { computeDefaultFilters, getScheduleDefaultRange } from "@/features/calendar/utils/filters";
 
@@ -42,7 +42,13 @@ export const Route = createFileRoute("/_authed/calendar/schedule")({
     return parsed;
   },
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-12">
+          <Spinner size="lg" />
+        </div>
+      }
+    >
       <CalendarSchedulePage />
     </Suspense>
   ),

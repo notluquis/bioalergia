@@ -4,7 +4,6 @@ import dayjs from "dayjs";
 import { Calendar as CalendarIcon, ChevronDown, RefreshCw, Settings2 } from "lucide-react";
 import { useState } from "react";
 
-import { SectionError } from "@/components/ui/SectionError";
 import { ChangeDetailsViewer } from "@/features/calendar/components/ChangeDetailsViewer";
 import { StatusBadge } from "@/features/calendar/components/StatusBadge";
 import { SyncProgressPanel } from "@/features/calendar/components/SyncProgressPanel";
@@ -133,13 +132,21 @@ function renderSyncHistoryContent(params: {
 
   if (params.isErrorSyncLogs || params.syncError) {
     return (
-      <SectionError
-        className="border-none bg-transparent"
-        error={params.syncError}
-        message="El servidor tardó demasiado o hubo un problema de conexión."
-        onRetry={params.refetch}
-        title="No se pudo cargar el historial"
-      />
+      <div className="p-4">
+        <Card variant="secondary">
+          <Card.Content className="flex flex-col gap-3 p-4">
+            <p className="font-semibold text-danger text-sm">No se pudo cargar el historial</p>
+            <p className="text-default-500 text-sm">
+              {params.syncError ?? "El servidor tardó demasiado o hubo un problema de conexión."}
+            </p>
+            <div>
+              <Button onPress={params.refetch} size="sm" variant="outline">
+                Reintentar
+              </Button>
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
     );
   }
 

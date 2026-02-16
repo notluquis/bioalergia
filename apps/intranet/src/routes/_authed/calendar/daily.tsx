@@ -1,7 +1,7 @@
+import { Spinner } from "@heroui/react";
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-import { PageLoader } from "@/components/ui/PageLoader";
 import { calendarQueries } from "@/features/calendar/queries";
 import { computeDefaultFilters } from "@/features/calendar/utils/filters";
 
@@ -33,7 +33,13 @@ export const Route = createFileRoute("/_authed/calendar/daily")({
     calendarSearchSchema.parse(search),
   loaderDeps: ({ search }) => search,
   component: () => (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-12">
+          <Spinner size="lg" />
+        </div>
+      }
+    >
       <CalendarDailyPage />
     </Suspense>
   ),
