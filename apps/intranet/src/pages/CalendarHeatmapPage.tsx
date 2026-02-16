@@ -1,3 +1,4 @@
+import { Card, Surface } from "@heroui/react";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import React, { useMemo, useState } from "react";
@@ -115,8 +116,11 @@ function CalendarHeatmapPage() {
   const rangeEndLabel = heatmapMonths.at(-1)?.format("MMM YYYY") ?? "—";
 
   return (
-    <section className="space-y-3">
-      <header className="flex flex-wrap items-center justify-between gap-2">
+    <section className="space-y-4">
+      <Surface
+        className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-default-100 px-3 py-2 sm:px-4"
+        variant="secondary"
+      >
         <div className="flex items-center gap-2 font-medium text-sm">
           <span className="text-default-400 text-xs">
             {rangeStartLabel} - {rangeEndLabel}
@@ -160,34 +164,36 @@ function CalendarHeatmapPage() {
           }}
           showDateRange
         />
-      </header>
+      </Surface>
 
-      <section className="space-y-2">
-        <div className="flex items-center justify-between">
+      <Card variant="secondary">
+        <Card.Header className="pb-2">
           <span className="text-default-500 text-xs">
             {tc("heatmapRange", { end: rangeEndLabel, start: rangeStartLabel })}
           </span>
-        </div>
-        <div className="grid items-start gap-4 lg:grid-cols-3">
-          {heatmapMonths.map((month) => (
-            <HeatmapMonth
-              key={month.format("YYYY-MM")}
-              maxValue={heatmapMaxValue}
-              month={month}
-              statsByDate={statsByDate}
-            />
-          ))}
-        </div>
-        {summary && (
-          <p className="text-default-500 text-xs">
-            {tc("heatmapTotals", {
-              events: numberFormatter.format(summary.totals.events),
-              expected: currencyFormatter.format(summary.totals.amountExpected),
-              paid: currencyFormatter.format(summary.totals.amountPaid),
-            })}
-          </p>
-        )}
-      </section>
+        </Card.Header>
+        <Card.Content className="space-y-3">
+          <div className="grid items-start gap-4 lg:grid-cols-3">
+            {heatmapMonths.map((month) => (
+              <HeatmapMonth
+                key={month.format("YYYY-MM")}
+                maxValue={heatmapMaxValue}
+                month={month}
+                statsByDate={statsByDate}
+              />
+            ))}
+          </div>
+          {summary && (
+            <p className="text-default-500 text-xs">
+              {tc("heatmapTotals", {
+                events: numberFormatter.format(summary.totals.events),
+                expected: currencyFormatter.format(summary.totals.amountExpected),
+                paid: currencyFormatter.format(summary.totals.amountPaid),
+              })}
+            </p>
+          )}
+        </Card.Content>
+      </Card>
     </section>
   );
 }

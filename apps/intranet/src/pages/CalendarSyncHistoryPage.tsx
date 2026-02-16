@@ -1,10 +1,9 @@
-import { Accordion, Chip } from "@heroui/react";
+import { Accordion, Button, Card, Chip, Spinner, Surface } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Calendar as CalendarIcon, ChevronDown, Loader2, RefreshCw, Settings2 } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronDown, RefreshCw, Settings2 } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/Button";
 import { SectionError } from "@/components/ui/SectionError";
 import { ChangeDetailsViewer } from "@/features/calendar/components/ChangeDetailsViewer";
 import { StatusBadge } from "@/features/calendar/components/StatusBadge";
@@ -47,41 +46,48 @@ export function CalendarSyncHistoryPage() {
 
   return (
     <section className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={() => setShowConfig(!showConfig)}
-            size="sm"
-            variant="outline"
-            className="gap-2"
-          >
-            <Settings2 size={16} />
-            {showConfig ? "Ocultar Configuración" : "Ver Calendarios"}
-          </Button>
-          <Button
-            disabled={isLoading || isSyncing}
-            onClick={() => refetch()}
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-            <span className="hidden sm:inline">Actualizar</span>
-          </Button>
-          <Button disabled={isSyncing || isLoading} onClick={syncNow} size="sm" type="button">
-            {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
-          </Button>
-        </div>
-      </div>
+      <Card variant="secondary">
+        <Card.Content className="p-3 sm:p-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                className="gap-2"
+                onPress={() => setShowConfig(!showConfig)}
+                size="sm"
+                variant="outline"
+              >
+                <Settings2 size={16} />
+                {showConfig ? "Ocultar Configuración" : "Ver Calendarios"}
+              </Button>
+              <Button
+                isDisabled={isLoading || isSyncing}
+                isIconOnly
+                onPress={() => refetch()}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+              </Button>
+              <Button isDisabled={isSyncing || isLoading} onPress={syncNow} size="sm" type="button">
+                {isSyncing ? "Sincronizando..." : "Sincronizar ahora"}
+              </Button>
+            </div>
+          </div>
+        </Card.Content>
+      </Card>
 
       {showConfig && (
-        <div className="slide-in-from-top-2 fade-in animate-in rounded-xl border border-default-100 bg-background p-4 shadow-sm duration-200">
+        <Surface
+          className="slide-in-from-top-2 fade-in animate-in rounded-2xl border border-default-100 p-4 duration-200"
+          variant="secondary"
+        >
           <div className="mb-4 flex items-center gap-2 font-medium text-default-600 text-sm">
             <CalendarIcon size={16} />
             Calendarios Conectados
           </div>
           {renderCalendarsList(calendars)}
-        </div>
+        </Surface>
       )}
 
       {/* Sync Status Panel */}
@@ -95,15 +101,17 @@ export function CalendarSyncHistoryPage() {
       />
 
       {/* Sync History Card */}
-      <div className="min-h-100 overflow-hidden rounded-xl border border-default-100 bg-background shadow-sm">
-        {renderSyncHistoryContent({
-          isErrorSyncLogs,
-          isLoading,
-          refetch,
-          syncError,
-          syncLogs,
-        })}
-      </div>
+      <Card className="min-h-100 overflow-hidden" variant="secondary">
+        <Card.Content className="p-0">
+          {renderSyncHistoryContent({
+            isErrorSyncLogs,
+            isLoading,
+            refetch,
+            syncError,
+            syncLogs,
+          })}
+        </Card.Content>
+      </Card>
     </section>
   );
 }
@@ -118,7 +126,7 @@ function renderSyncHistoryContent(params: {
   if (params.isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -282,8 +290,8 @@ function renderCalendarsList(calendars: CalendarData[]) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {calendars.map((cal: CalendarData) => (
-        <div
-          className="flex items-center gap-3 rounded-lg border border-default-100 bg-default-50/50 p-3"
+        <Surface
+          className="flex items-center gap-3 rounded-lg border border-default-100 p-3"
           key={cal.id}
         >
           <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
@@ -298,7 +306,7 @@ function renderCalendarsList(calendars: CalendarData[]) {
               </span>
             </div>
           </div>
-        </div>
+        </Surface>
       ))}
     </div>
   );
