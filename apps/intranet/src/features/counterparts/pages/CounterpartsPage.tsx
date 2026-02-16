@@ -2,7 +2,7 @@ import { Card, Chip, SearchField, Surface, Tabs } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { Filter, Plus, RefreshCcw, Users } from "lucide-react";
+import { Filter, Plus, RefreshCcw } from "lucide-react";
 import { Suspense, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
@@ -503,36 +503,6 @@ export function CounterpartsPage() {
 
   return (
     <section className="space-y-5">
-      <Surface
-        className="relative overflow-hidden rounded-[30px] border border-default-200/70 px-5 py-5 sm:px-6"
-        variant="secondary"
-      >
-        <div className="-right-18 -top-16 absolute h-48 w-48 rounded-full bg-accent/10 blur-3xl" />
-        <div className="-bottom-12 -left-10 absolute h-36 w-36 rounded-full bg-primary/10 blur-2xl" />
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-1">
-            <p className="font-medium text-default-500 text-xs uppercase tracking-[0.28em]">
-              Finanzas
-            </p>
-            <h2 className="font-semibold text-2xl text-foreground tracking-tight">Contrapartes</h2>
-            <p className="max-w-2xl text-default-600 text-sm">
-              Organiza titulares, cuentas y trazabilidad de transferencias en una vista unificada.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Chip size="sm" variant="soft">
-              <Users className="mr-1 h-3.5 w-3.5" />
-              {counterparts.length} registradas
-            </Chip>
-            {state.selectedId ? (
-              <Chip size="sm" variant="secondary">
-                En foco: #{state.selectedId}
-              </Chip>
-            ) : null}
-          </div>
-        </div>
-      </Surface>
-
       <Tabs aria-label="Gestión de contrapartes" defaultSelectedKey="counterparts">
         <Tabs.List
           aria-label="Secciones"

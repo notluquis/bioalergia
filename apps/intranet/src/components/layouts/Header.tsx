@@ -63,6 +63,15 @@ export function Header() {
     const last = breadcrumbItems[breadcrumbItems.length - 1]?.label ?? "Inicio";
     return { crumbs: breadcrumbItems, pageTitle: last };
   }, [matches]);
+  const showBreadcrumbs = React.useMemo(() => {
+    if (crumbs.length === 0) {
+      return false;
+    }
+    if (crumbs.length === 1 && crumbs[0]?.label === pageTitle) {
+      return false;
+    }
+    return true;
+  }, [crumbs, pageTitle]);
 
   const sessionIdentity = React.useMemo(() => {
     if (!user) {
@@ -104,23 +113,25 @@ export function Header() {
     <header className="sticky top-0 z-30 rounded-2xl border border-default-200/70 bg-background/85 px-4 py-3 backdrop-blur-md md:px-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
-          <Breadcrumbs className="font-medium text-default-500 text-xs">
-            {crumbs.length === 0 && <Breadcrumbs.Item>Inicio</Breadcrumbs.Item>}
-            {crumbs.map((crumb, i) => {
-              const isLast = i === crumbs.length - 1;
-              return (
-                <Breadcrumbs.Item key={`${crumb.to}-${crumb.label}`}>
-                  {!isLast ? (
-                    <Link className="transition-colors hover:text-foreground" to={crumb.to}>
-                      {crumb.label}
-                    </Link>
-                  ) : (
-                    crumb.label
-                  )}
-                </Breadcrumbs.Item>
-              );
-            })}
-          </Breadcrumbs>
+          {showBreadcrumbs ? (
+            <Breadcrumbs className="font-medium text-default-500 text-xs">
+              {crumbs.length === 0 && <Breadcrumbs.Item>Inicio</Breadcrumbs.Item>}
+              {crumbs.map((crumb, i) => {
+                const isLast = i === crumbs.length - 1;
+                return (
+                  <Breadcrumbs.Item key={`${crumb.to}-${crumb.label}`}>
+                    {!isLast ? (
+                      <Link className="transition-colors hover:text-foreground" to={crumb.to}>
+                        {crumb.label}
+                      </Link>
+                    ) : (
+                      crumb.label
+                    )}
+                  </Breadcrumbs.Item>
+                );
+              })}
+            </Breadcrumbs>
+          ) : null}
           <div className="flex items-center gap-2">
             <h1 className="truncate font-semibold text-foreground text-lg">{pageTitle}</h1>
             {isNavigating && (
