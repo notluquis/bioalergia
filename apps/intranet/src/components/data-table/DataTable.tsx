@@ -72,7 +72,8 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
   readonly enableGlobalFilter?: boolean;
   /**
    * Enable row virtualization for large datasets.
-   * Recommended for lists > 100 rows.
+   * Recommended for large lists. Use with `virtualizationThreshold`.
+   * @default true
    */
   readonly enableVirtualization?: boolean;
   /**
@@ -114,6 +115,12 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
     row: import("@tanstack/react-table").Row<TData>;
   }) => React.ReactNode;
   readonly rowSelection?: RowSelectionState;
+  /**
+   * Minimum row count to activate virtualization.
+   * Keeps small tables simple while enabling virtualization for large datasets.
+   * @default 80
+   */
+  readonly virtualizationThreshold?: number;
 }
 
 const getCommonPinningStyles = <TData,>(
@@ -406,7 +413,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   enablePageSizeSelector = true,
   enablePagination = true,
   enableToolbar = true,
-  enableVirtualization = false,
+  enableVirtualization = true,
   estimatedRowHeight = 48,
   filters = [],
   initialPinning = {},
@@ -422,6 +429,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   pagination,
   renderSubComponent,
   rowSelection: controlledRowSelection,
+  virtualizationThreshold = 80,
 }: DataTableProps<TData, TValue, TMeta>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [internalColumnVisibility, setInternalColumnVisibility] = useState<VisibilityState>({});
@@ -445,6 +453,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
 
   const manualPagination = pageCount !== undefined;
   const shouldPaginate = enablePagination && !manualPagination;
+  const shouldVirtualize = enableVirtualization && data.length >= virtualizationThreshold;
 
   const table = useReactTable({
     autoResetPageIndex: !manualPagination,
@@ -460,15 +469,14 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: shouldPaginate ? getPaginationRowModel() : undefined,
     getSortedRowModel: getSortedRowModel(),
-    getRowId: (originalRow: TData) => {
+    getRowId: (originalRow: TData, index: number) => {
       const row = originalRow as Record<string, unknown>;
       type RowIdValue = number | string | undefined;
-      return (
+      const id =
         (row.id as RowIdValue)?.toString() ??
         (row.employeeId as RowIdValue)?.toString() ??
-        (row._id as RowIdValue)?.toString() ??
-        ""
-      );
+        (row._id as RowIdValue)?.toString();
+      return id && id.length > 0 ? id : `row_${index}`;
     },
     manualPagination,
     meta,
@@ -507,7 +515,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
         autoFitColumns={autoFitColumns}
         columns={columns}
         containerVariant={containerVariant}
-        enableVirtualization={enableVirtualization}
+        enableVirtualization={shouldVirtualize}
         estimatedRowHeight={estimatedRowHeight}
         isLoading={isLoading}
         noDataMessage={noDataMessage}
