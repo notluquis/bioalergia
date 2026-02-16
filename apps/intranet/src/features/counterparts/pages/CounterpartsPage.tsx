@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import { Filter, Plus, RefreshCcw } from "lucide-react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -21,7 +21,7 @@ import {
   updateCounterpart,
 } from "@/features/counterparts/api";
 import { CounterpartForm } from "@/features/counterparts/components/CounterpartForm";
-import { CounterpartList } from "@/features/counterparts/components/CounterpartList";
+import { CATEGORY_LABELS } from "@/features/counterparts/constants";
 import { counterpartKeys } from "@/features/counterparts/queries";
 import type {
   Counterpart,
@@ -108,7 +108,7 @@ function buildAssignPreviewMessage(params: {
 
 function useCounterpartsState() {
   const [selectedId, setSelectedId] = useState<null | number>(null);
-  const [isResultsCollapsed, setIsResultsCollapsed] = useState(false);
+  const [isSearchResultsOpen, setIsSearchResultsOpen] = useState(false);
   const [error, setError] = useState<null | string>(null);
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | CounterpartCategory>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -152,7 +152,7 @@ function useCounterpartsState() {
     formCounterpart,
     isAssignRutModalOpen,
     isFormModalOpen,
-    isResultsCollapsed,
+    isSearchResultsOpen,
     openFormModal,
     payoutPagination,
     payoutSearchQuery,
@@ -167,7 +167,7 @@ function useCounterpartsState() {
     setError,
     setIsAssignRutModalOpen,
     setIsFormModalOpen,
-    setIsResultsCollapsed,
+    setIsSearchResultsOpen,
     setPayoutPagination,
     setPayoutSearchQuery,
     setSearchQuery,
@@ -432,13 +432,8 @@ export function CounterpartsPage() {
   const { error: toastError, info: toastInfo, success: toastSuccess } = useToast();
   const canCreate = can("create", "Counterpart");
   const canUpdate = can("update", "Counterpart");
-  const {
-    counterparts,
-    isListLoading,
-    isUnassignedPayoutLoading,
-    listError,
-    unassignedPayoutData,
-  } = useCounterpartsData(state.payoutPagination, state.payoutSearchQuery);
+  const { counterparts, isUnassignedPayoutLoading, listError, unassignedPayoutData } =
+    useCounterpartsData(state.payoutPagination, state.payoutSearchQuery);
   const mutations = useCounterpartsMutations({
     queryClient,
     selectedId: state.selectedId,
@@ -493,10 +488,10 @@ export function CounterpartsPage() {
   };
 
   useEffect(() => {
-    if (state.searchQuery.trim().length > 0 && state.isResultsCollapsed) {
-      state.setIsResultsCollapsed(false);
+    if (state.searchQuery.trim().length > 0 && !state.isSearchResultsOpen) {
+      state.setIsSearchResultsOpen(true);
     }
-  }, [state.isResultsCollapsed, state.searchQuery, state.setIsResultsCollapsed]);
+  }, [state.isSearchResultsOpen, state.searchQuery, state.setIsSearchResultsOpen]);
 
   return (
     <section className="space-y-5">
@@ -541,59 +536,36 @@ export function CounterpartsPage() {
               state.setSearchQuery("");
             }}
             onToggleResults={() => {
-              state.setIsResultsCollapsed((prev) => !prev);
+              state.setIsSearchResultsOpen((prev) => !prev);
             }}
             onClearSelection={() => {
               state.setSelectedId(null);
+            }}
+            onOpenResults={() => {
+              state.setIsSearchResultsOpen(true);
             }}
             syncLoading={mutations.syncMutation.isPending}
             onSearchQueryChange={state.setSearchQuery}
             searchQuery={state.searchQuery}
             selectedCounterpart={derived.selectedCounterpart}
+            visibleCounterparts={derived.visibleCounterparts}
+            onSelectCounterpart={state.setSelectedId}
+            selectedId={state.selectedId}
             totalCount={counterparts.length}
             visibleCount={derived.visibleCounterparts.length}
-            isResultsCollapsed={state.isResultsCollapsed}
+            isResultsOpen={state.isSearchResultsOpen}
           />
 
-          <div
-            className={`grid min-h-0 items-start gap-5 ${
-              state.isResultsCollapsed
-                ? "xl:grid-cols-[minmax(260px,0.38fr)_minmax(0,1.62fr)]"
-                : "xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
-            }`}
-          >
-            <Surface
-              className={`h-full rounded-[28px] border border-default-200/70 ${
-                state.isResultsCollapsed ? "p-4 sm:p-5" : "p-5 sm:p-6"
-              }`}
-              variant="secondary"
-            >
-              {isListLoading ? <Skeleton className="mb-4 h-8 w-44" /> : null}
-              <CounterpartList
-                className="max-h-[calc(100vh-220px)]"
-                counterparts={derived.visibleCounterparts}
-                emptyMessage={
-                  derived.normalizedQuery || state.categoryFilter !== "ALL"
-                    ? "No hay resultados con los filtros seleccionados."
-                    : "No hay contrapartes registradas."
-                }
-                isCollapsed={state.isResultsCollapsed}
-                onSelectCounterpart={state.setSelectedId}
-                selectedId={state.selectedId}
-              />
-            </Surface>
-
-            <div className="min-h-[calc(100vh-220px)]">
-              <CounterpartDetailPane
-                canCreate={canCreate}
-                canUpdate={canUpdate}
-                counterpartId={state.selectedId}
-                onCreate={() => {
-                  state.openFormModal(null);
-                }}
-                onEdit={state.openFormModal}
-              />
-            </div>
+          <div className="min-h-[calc(100vh-220px)]">
+            <CounterpartDetailPane
+              canCreate={canCreate}
+              canUpdate={canUpdate}
+              counterpartId={state.selectedId}
+              onCreate={() => {
+                state.openFormModal(null);
+              }}
+              onEdit={state.openFormModal}
+            />
           </div>
         </Tabs.Panel>
 
@@ -865,18 +837,22 @@ interface CounterpartsToolbarProps {
   canCreate: boolean;
   canSync: boolean;
   categoryFilter: "ALL" | CounterpartCategory;
-  isResultsCollapsed: boolean;
+  isResultsOpen: boolean;
   onCategoryFilterChange: (value: "ALL" | CounterpartCategory) => void;
   onClearSelection: () => void;
   onCreate: () => void;
+  onOpenResults: () => void;
   onResetFilters: () => void;
+  onSelectCounterpart: (value: null | number) => void;
   onSync: () => void;
   onToggleResults: () => void;
   onSearchQueryChange: (value: string) => void;
   searchQuery: string;
+  selectedId: null | number;
   selectedCounterpart: Counterpart | null;
   syncLoading: boolean;
   totalCount: number;
+  visibleCounterparts: Counterpart[];
   visibleCount: number;
 }
 
@@ -884,20 +860,44 @@ function CounterpartsToolbar({
   canCreate,
   canSync,
   categoryFilter,
-  isResultsCollapsed,
+  isResultsOpen,
   onCategoryFilterChange,
   onClearSelection,
   onCreate,
+  onOpenResults,
   onResetFilters,
+  onSelectCounterpart,
   onSync,
   onToggleResults,
   onSearchQueryChange,
   searchQuery,
+  selectedId,
   selectedCounterpart,
   syncLoading,
   totalCount,
+  visibleCounterparts,
   visibleCount,
 }: CounterpartsToolbarProps) {
+  const resultsRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isResultsOpen) {
+      return;
+    }
+    const onPointerDown = (event: MouseEvent) => {
+      if (!resultsRef.current) {
+        return;
+      }
+      if (!resultsRef.current.contains(event.target as Node)) {
+        onToggleResults();
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+    };
+  }, [isResultsOpen, onToggleResults]);
+
   return (
     <div className="space-y-3">
       <Surface
@@ -937,7 +937,7 @@ function CounterpartsToolbar({
 
           <Separator />
 
-          <div className="space-y-3">
+          <div className="space-y-3" ref={resultsRef}>
             <div className="flex flex-wrap gap-2">
               {CATEGORY_FILTERS.map((filter) => (
                 <Button
@@ -960,6 +960,7 @@ function CounterpartsToolbar({
 
             <SearchField
               onChange={onSearchQueryChange}
+              onFocus={onOpenResults}
               value={searchQuery}
               fullWidth
               variant="secondary"
@@ -971,6 +972,52 @@ function CounterpartsToolbar({
                 <SearchField.ClearButton />
               </SearchField.Group>
             </SearchField>
+
+            {isResultsOpen ? (
+              <div className="max-h-80 overflow-y-auto rounded-2xl border border-default-200/70 bg-background/60 p-2">
+                {visibleCounterparts.length === 0 ? (
+                  <div className="rounded-xl border border-default-300 border-dashed bg-default-50/50 px-3 py-4 text-center text-default-500 text-sm">
+                    No hay resultados con los filtros seleccionados.
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {visibleCounterparts.map((item) => {
+                      const isActive = selectedId === item.id;
+                      return (
+                        <li key={item.id}>
+                          <Button
+                            className={`group w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition-all ${
+                              isActive
+                                ? "border-primary/45 bg-primary/10 shadow-sm"
+                                : "border-default-200/70 bg-default-50/60 hover:border-default-300 hover:bg-default-100/60"
+                            }`}
+                            onPress={() => {
+                              onSelectCounterpart(item.id);
+                            }}
+                            type="button"
+                            variant="ghost"
+                          >
+                            <span className="flex items-start justify-between gap-2">
+                              <span className="block font-medium text-foreground tracking-tight">
+                                {item.bankAccountHolder}
+                              </span>
+                              <Chip size="sm" variant={isActive ? "secondary" : "soft"}>
+                                {CATEGORY_LABELS[item.category] ?? item.category}
+                              </Chip>
+                            </span>
+                            {item.identificationNumber ? (
+                              <span className="mt-1 block text-default-600 text-xs">
+                                RUT {item.identificationNumber}
+                              </span>
+                            ) : null}
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -986,7 +1033,7 @@ function CounterpartsToolbar({
 
               <div className="flex flex-wrap items-center gap-2">
                 <Button onClick={onToggleResults} size="sm" variant="secondary">
-                  {isResultsCollapsed ? "Mostrar resultados" : "Ocultar resultados"}
+                  {isResultsOpen ? "Ocultar resultados" : "Mostrar resultados"}
                 </Button>
                 <Button
                   disabled={!selectedCounterpart}
