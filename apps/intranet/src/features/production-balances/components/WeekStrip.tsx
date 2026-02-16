@@ -116,11 +116,12 @@ function DayCellButton({
   return (
     <Button
       className={cn(
-        "relative flex flex-col items-center justify-center rounded-xl p-2 transition-all",
-        "hover:bg-default-50 focus:outline-none focus:ring-2 focus:ring-primary/20",
-        isSelected && "bg-default-100 ring-2 ring-primary",
+        "relative !h-[76px] min-w-0 flex-col items-center justify-center rounded-xl p-2 transition-all",
+        "hover:bg-default-50",
+        isSelected && "bg-primary/10 ring-1 ring-primary/60",
         isToday && !isSelected && "ring-1 ring-primary/30",
       )}
+      fullWidth
       onPress={onClick}
       type="button"
       variant="ghost"
@@ -129,13 +130,21 @@ function DayCellButton({
       <div className={cn("absolute top-2 right-2 size-2 rounded-full", statusColors[day.status])} />
 
       {/* Day name */}
-      <span className="font-medium text-default-500 text-xs">{day.dayName}</span>
+      <span className={cn("font-medium text-xs", isSelected ? "text-primary" : "text-default-500")}>
+        {day.dayName}
+      </span>
 
       {/* Amount */}
       <span
         className={cn(
-          "mt-1 font-semibold text-sm tabular-nums",
-          day.total === 0 ? "text-default-300" : "text-foreground",
+          "mt-1 font-semibold text-sm leading-none tabular-nums",
+          day.total === 0
+            ? isSelected
+              ? "text-primary/70"
+              : "text-default-300"
+            : isSelected
+              ? "text-primary"
+              : "text-foreground",
         )}
       >
         {day.total === 0 ? "$0" : fmtCLP(day.total)}
