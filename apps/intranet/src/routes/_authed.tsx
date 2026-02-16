@@ -2,13 +2,11 @@ import { useDebouncedValue } from "@tanstack/react-pacer";
 import { createFileRoute, getRouteApi, Outlet, useRouterState } from "@tanstack/react-router";
 import React from "react";
 
-import { PerformanceIndicator } from "@/components/features/PerformanceIndicator";
 import { UpdateNotification } from "@/components/features/UpdateNotification";
 import { Header } from "@/components/layouts/Header";
 import { BottomNav } from "@/components/layouts/MobileNav";
 import { Sidebar } from "@/components/layouts/Sidebar";
 import { Button } from "@/components/ui/Button";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
 import type { AuthSessionData } from "@/features/auth/types";
@@ -100,7 +98,6 @@ function AuthedLayout() {
   const closeSidebar = () => {
     setSidebarOpen(false);
   };
-
   const buildLabel = React.useMemo(() => {
     if (!BUILD_TIMESTAMP) {
       return "Desconocido";
@@ -213,25 +210,12 @@ function AuthedLayout() {
             </div>
           </main>
 
-          <footer className="surface-elevated hidden items-center justify-between px-6 py-3 text-foreground text-sm md:flex">
+          <footer className="surface-elevated hidden items-center px-6 py-3 text-foreground text-sm md:flex">
             <div className="flex items-center gap-3 text-xs">
               <span className="text-default-500">Build: {buildLabel}</span>
               <span className="text-default-400">
                 Hecho con ♥ por Lucas Pulgar Escobar para Bioalergia
               </span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <PerformanceIndicator />
-              <Tooltip content="Sistema operativo">
-                <div className="flex cursor-help items-center gap-2 text-default-600 text-xs">
-                  <span
-                    role="img"
-                    aria-label="Sistema operativo"
-                    className="inline-flex h-2 w-2 rounded-full bg-success/70"
-                  />
-                </div>
-              </Tooltip>
             </div>
           </footer>
         </div>
