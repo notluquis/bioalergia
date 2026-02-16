@@ -108,6 +108,7 @@ function buildAssignPreviewMessage(params: {
 
 function useCounterpartsState() {
   const [selectedId, setSelectedId] = useState<null | number>(null);
+  const [isResultsCollapsed, setIsResultsCollapsed] = useState(false);
   const [error, setError] = useState<null | string>(null);
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | CounterpartCategory>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -151,6 +152,7 @@ function useCounterpartsState() {
     formCounterpart,
     isAssignRutModalOpen,
     isFormModalOpen,
+    isResultsCollapsed,
     openFormModal,
     payoutPagination,
     payoutSearchQuery,
@@ -165,6 +167,7 @@ function useCounterpartsState() {
     setError,
     setIsAssignRutModalOpen,
     setIsFormModalOpen,
+    setIsResultsCollapsed,
     setPayoutPagination,
     setPayoutSearchQuery,
     setSearchQuery,
@@ -531,17 +534,32 @@ export function CounterpartsPage() {
               state.setCategoryFilter("ALL");
               state.setSearchQuery("");
             }}
+            onToggleResults={() => {
+              state.setIsResultsCollapsed((prev) => !prev);
+            }}
+            onClearSelection={() => {
+              state.setSelectedId(null);
+            }}
             syncLoading={mutations.syncMutation.isPending}
             onSearchQueryChange={state.setSearchQuery}
             searchQuery={state.searchQuery}
             selectedCounterpart={derived.selectedCounterpart}
             totalCount={counterparts.length}
             visibleCount={derived.visibleCounterparts.length}
+            isResultsCollapsed={state.isResultsCollapsed}
           />
 
-          <div className="grid min-h-0 items-start gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div
+            className={`grid min-h-0 items-start gap-5 ${
+              state.isResultsCollapsed
+                ? "xl:grid-cols-[minmax(260px,0.38fr)_minmax(0,1.62fr)]"
+                : "xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
+            }`}
+          >
             <Surface
-              className="h-full rounded-[28px] border border-default-200/70 p-5 sm:p-6"
+              className={`h-full rounded-[28px] border border-default-200/70 ${
+                state.isResultsCollapsed ? "p-4 sm:p-5" : "p-5 sm:p-6"
+              }`}
               variant="secondary"
             >
               {isListLoading ? <Skeleton className="mb-4 h-8 w-44" /> : null}
@@ -553,20 +571,23 @@ export function CounterpartsPage() {
                     ? "No hay resultados con los filtros seleccionados."
                     : "No hay contrapartes registradas."
                 }
+                isCollapsed={state.isResultsCollapsed}
                 onSelectCounterpart={state.setSelectedId}
                 selectedId={state.selectedId}
               />
             </Surface>
 
-            <CounterpartDetailPane
-              canCreate={canCreate}
-              canUpdate={canUpdate}
-              counterpartId={state.selectedId}
-              onCreate={() => {
-                state.openFormModal(null);
-              }}
-              onEdit={state.openFormModal}
-            />
+            <div className="min-h-[calc(100vh-220px)]">
+              <CounterpartDetailPane
+                canCreate={canCreate}
+                canUpdate={canUpdate}
+                counterpartId={state.selectedId}
+                onCreate={() => {
+                  state.openFormModal(null);
+                }}
+                onEdit={state.openFormModal}
+              />
+            </div>
           </div>
         </Tabs.Panel>
 
@@ -838,10 +859,13 @@ interface CounterpartsToolbarProps {
   canCreate: boolean;
   canSync: boolean;
   categoryFilter: "ALL" | CounterpartCategory;
+  isResultsCollapsed: boolean;
   onCategoryFilterChange: (value: "ALL" | CounterpartCategory) => void;
+  onClearSelection: () => void;
   onCreate: () => void;
   onResetFilters: () => void;
   onSync: () => void;
+  onToggleResults: () => void;
   onSearchQueryChange: (value: string) => void;
   searchQuery: string;
   selectedCounterpart: Counterpart | null;
@@ -854,10 +878,13 @@ function CounterpartsToolbar({
   canCreate,
   canSync,
   categoryFilter,
+  isResultsCollapsed,
   onCategoryFilterChange,
+  onClearSelection,
   onCreate,
   onResetFilters,
   onSync,
+  onToggleResults,
   onSearchQueryChange,
   searchQuery,
   selectedCounterpart,
@@ -923,10 +950,26 @@ function CounterpartsToolbar({
                 <SearchField.ClearButton />
               </SearchField.Group>
             </SearchField>
-            <Button onClick={onResetFilters} size="sm" variant="ghost">
-              <Filter className="mr-1.5 h-3.5 w-3.5" />
-              Limpiar filtros
-            </Button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Chip size="sm" variant="soft">
+                Resultados ({visibleCount})
+              </Chip>
+              <Button onClick={onToggleResults} size="sm" variant="ghost">
+                {isResultsCollapsed ? "Mostrar resultados" : "Ocultar resultados"}
+              </Button>
+              <Button
+                disabled={!selectedCounterpart}
+                onClick={onClearSelection}
+                size="sm"
+                variant="ghost"
+              >
+                Limpiar selección
+              </Button>
+              <Button onClick={onResetFilters} size="sm" variant="ghost">
+                <Filter className="mr-1.5 h-3.5 w-3.5" />
+                Limpiar filtros
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">

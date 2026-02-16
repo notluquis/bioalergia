@@ -7,6 +7,7 @@ interface CounterpartListProps {
   className?: string;
   counterparts: Counterpart[];
   emptyMessage?: string;
+  isCollapsed?: boolean;
   onSelectCounterpart: (id: null | number) => void;
   selectedId: null | number;
 }
@@ -29,25 +30,22 @@ export function CounterpartList({
   className,
   counterparts,
   emptyMessage = "No hay registros aún.",
+  isCollapsed = false,
   onSelectCounterpart,
   selectedId,
 }: CounterpartListProps) {
+  if (isCollapsed) {
+    return (
+      <aside className={`flex h-full min-h-0 flex-col overflow-hidden ${className ?? ""}`}>
+        <div className="flex flex-1 items-center justify-center rounded-2xl border border-default-200 border-dashed bg-default-50/40 px-4 py-6 text-center text-default-500 text-sm">
+          Listado contraído. Usa \"Mostrar resultados\" para volver a desplegarlo.
+        </div>
+      </aside>
+    );
+  }
+
   return (
-    <aside className={`flex h-full min-h-0 flex-col gap-4 overflow-hidden ${className ?? ""}`}>
-      <header className="flex items-center justify-between gap-3">
-        <p className="font-semibold text-default-500 text-xs uppercase tracking-[0.24em]">
-          Resultados ({counterparts.length})
-        </p>
-        <Button
-          onClick={() => {
-            onSelectCounterpart(null);
-          }}
-          size="sm"
-          variant="ghost"
-        >
-          Limpiar selección
-        </Button>
-      </header>
+    <aside className={`flex h-full min-h-0 flex-col overflow-hidden ${className ?? ""}`}>
       <ScrollShadow className="min-h-0 flex-1 pr-1">
         <ul className="space-y-2">
           {counterparts.map((item) => {
