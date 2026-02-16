@@ -1,3 +1,4 @@
+import { servicesActions } from "../store";
 import type { CreateServicePayload, RegenerateServicePayload, ServiceSchedule } from "../types";
 
 import { useServiceDetails } from "./use-service-details";
@@ -46,6 +47,16 @@ export function useServicesOverview() {
     await mutations.unlinkPayment(schedule.id);
   };
 
+  const handleEditSchedule = (serviceId: string, schedule: ServiceSchedule) => {
+    details.setSelectedId(serviceId);
+    servicesActions.openEditScheduleModal(schedule);
+  };
+
+  const handleSkipSchedule = (serviceId: string, schedule: ServiceSchedule) => {
+    details.setSelectedId(serviceId);
+    servicesActions.openSkipScheduleModal(schedule);
+  };
+
   return {
     ...list,
     ...details,
@@ -62,7 +73,9 @@ export function useServicesOverview() {
     handleAgendaUnlinkPayment,
 
     handleCreateService,
+    handleEditSchedule,
     handleRegenerate,
+    handleSkipSchedule,
     handleUnlink,
     // Computed / Combined
     loadingDetail,

@@ -26,8 +26,10 @@ import { ServiceScheduleTable } from "./ServiceScheduleTable";
 interface ServiceDetailProps {
   canManage: boolean;
   loading: boolean;
+  onEditSchedule?: (schedule: ServiceSchedule) => void;
   onRegenerate: (overrides: RegenerateServicePayload) => Promise<void>;
   onRegisterPayment: (schedule: ServiceSchedule) => void;
+  onSkipSchedule?: (schedule: ServiceSchedule) => void;
   onUnlinkPayment: (schedule: ServiceSchedule) => void;
   schedules: ServiceSchedule[];
   service: null | ServiceSummary;
@@ -128,8 +130,10 @@ const getEmissionSummary = (service: ServiceSummary) => {
 export function ServiceDetail({
   canManage,
   loading,
+  onEditSchedule,
   onRegenerate,
   onRegisterPayment,
+  onSkipSchedule,
   onUnlinkPayment,
   schedules,
   service,
@@ -190,7 +194,9 @@ export function ServiceDetail({
 
       <ServiceScheduleTable
         canManage={canManage}
+        onEditSchedule={onEditSchedule}
         onRegisterPayment={onRegisterPayment}
+        onSkipSchedule={onSkipSchedule}
         onUnlinkPayment={onUnlinkPayment}
         schedules={schedules}
       />

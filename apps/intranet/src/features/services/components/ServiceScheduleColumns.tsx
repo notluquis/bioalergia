@@ -22,7 +22,9 @@ function getStatusLabel(status: ServiceSchedule["status"]) {
 
 export const getColumns = (
   actions: {
+    onEditSchedule?: (schedule: ServiceSchedule) => void;
     onRegisterPayment: (schedule: ServiceSchedule) => void;
+    onSkipSchedule?: (schedule: ServiceSchedule) => void;
     onUnlinkPayment: (schedule: ServiceSchedule) => void;
   },
   canManage: boolean,
@@ -154,15 +156,41 @@ export const getColumns = (
             return (
               <div className="flex flex-wrap gap-2">
                 {(schedule.status === "PENDING" || schedule.status === "PARTIAL") && (
-                  <Button
-                    onClick={() => {
-                      actions.onRegisterPayment(schedule);
-                    }}
-                    size="sm"
-                    type="button"
-                  >
-                    Registrar pago
-                  </Button>
+                  <>
+                    <Button
+                      onClick={() => {
+                        actions.onRegisterPayment(schedule);
+                      }}
+                      size="sm"
+                      type="button"
+                    >
+                      Registrar pago
+                    </Button>
+                    {actions.onEditSchedule && (
+                      <Button
+                        onClick={() => {
+                          actions.onEditSchedule?.(schedule);
+                        }}
+                        size="sm"
+                        type="button"
+                        variant="secondary"
+                      >
+                        Editar
+                      </Button>
+                    )}
+                    {actions.onSkipSchedule && (
+                      <Button
+                        onClick={() => {
+                          actions.onSkipSchedule?.(schedule);
+                        }}
+                        size="sm"
+                        type="button"
+                        variant="tertiary"
+                      >
+                        Omitir
+                      </Button>
+                    )}
+                  </>
                 )}
                 {schedule.transaction && (
                   <Button

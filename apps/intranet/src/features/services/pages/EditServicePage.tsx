@@ -1,6 +1,7 @@
 import { Description, Surface } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
+import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
@@ -10,9 +11,12 @@ import {
   regenerateServiceSchedules,
   updateService,
 } from "@/features/services/api";
+import { EditScheduleModal } from "@/features/services/components/EditScheduleModal";
 import { ServiceForm } from "@/features/services/components/ServiceForm";
 import { ServiceScheduleAccordion } from "@/features/services/components/ServiceScheduleAccordion";
 import { ServiceScheduleTable } from "@/features/services/components/ServiceScheduleTable";
+import { SkipScheduleModal } from "@/features/services/components/SkipScheduleModal";
+import { servicesActions, servicesStore } from "@/features/services/store";
 import type { CreateServicePayload, ServiceDetailResponse } from "@/features/services/types";
 import { fmtCLP } from "@/lib/format";
 export function ServiceEditPage() {
@@ -20,6 +24,8 @@ export function ServiceEditPage() {
   const navigate = useNavigate({ from: "/services/$id/edit" });
   const queryClient = useQueryClient();
   const [saveMessage, setSaveMessage] = useState<null | string>(null);
+  const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } =
+    useStore(servicesStore);
 
   // Keep fetchServiceDetail as it provides aggregated data with schedules
   const { data: detail } = useSuspenseQuery({
@@ -227,7 +233,9 @@ export function ServiceEditPage() {
 
               <ServiceScheduleTable
                 canManage={false}
+                onEditSchedule={(schedule) => servicesActions.openEditScheduleModal(schedule)}
                 onRegisterPayment={() => undefined}
+                onSkipSchedule={(schedule) => servicesActions.openSkipScheduleModal(schedule)}
                 onUnlinkPayment={() => undefined}
                 schedules={schedules}
               />
@@ -245,6 +253,18 @@ export function ServiceEditPage() {
           </div>
         </div>
       </Surface>
+
+      <EditScheduleModal
+        isOpen={editScheduleOpen}
+        onClose={servicesActions.closeEditScheduleModal}
+        schedule={editScheduleTarget}
+      />
+
+      <SkipScheduleModal
+        isOpen={skipScheduleOpen}
+        onClose={servicesActions.closeSkipScheduleModal}
+        schedule={skipScheduleTarget}
+      />
     </section>
   );
 }

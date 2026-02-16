@@ -19,7 +19,9 @@ interface ServicesUnifiedAgendaProps {
   error?: null | string;
   items: { schedule: ServiceSchedule; service: ServiceSummary }[];
   loading?: boolean;
+  onEditSchedule: (serviceId: string, schedule: ServiceSchedule) => void;
   onRegisterPayment: (serviceId: string, schedule: ServiceSchedule) => void;
+  onSkipSchedule: (serviceId: string, schedule: ServiceSchedule) => void;
   onUnlinkPayment: (serviceId: string, schedule: ServiceSchedule) => void;
 }
 
@@ -61,7 +63,9 @@ export function ServicesUnifiedAgenda({
   error,
   items,
   loading,
+  onEditSchedule,
   onRegisterPayment,
+  onSkipSchedule,
   onUnlinkPayment,
 }: ServicesUnifiedAgendaProps) {
   const skeletons = Array.from({ length: 4 }, (_, index) => index);
@@ -274,14 +278,34 @@ export function ServicesUnifiedAgenda({
                           {canManage && (
                             <div className="mt-3 flex flex-wrap items-center gap-3">
                               {(schedule.status === "PENDING" || schedule.status === "PARTIAL") && (
-                                <Button
-                                  onClick={() => {
-                                    onRegisterPayment(service.publicId, schedule);
-                                  }}
-                                  size="sm"
-                                >
-                                  Registrar pago
-                                </Button>
+                                <>
+                                  <Button
+                                    onClick={() => {
+                                      onRegisterPayment(service.publicId, schedule);
+                                    }}
+                                    size="sm"
+                                  >
+                                    Registrar pago
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      onEditSchedule(service.publicId, schedule);
+                                    }}
+                                    size="sm"
+                                    variant="secondary"
+                                  >
+                                    Editar
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      onSkipSchedule(service.publicId, schedule);
+                                    }}
+                                    size="sm"
+                                    variant="tertiary"
+                                  >
+                                    Omitir
+                                  </Button>
+                                </>
                               )}
                               {schedule.transactionId && schedule.status === "PAID" && (
                                 <Button

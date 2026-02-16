@@ -1,9 +1,15 @@
 import { Spinner, Surface } from "@heroui/react";
+import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { StatCard } from "@/components/ui/StatCard";
+import { EditScheduleModal } from "@/features/services/components/EditScheduleModal";
 import { ServicesUnifiedAgenda } from "@/features/services/components/ServicesUnifiedAgenda";
+import { SkipScheduleModal } from "@/features/services/components/SkipScheduleModal";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
+import { servicesActions, servicesStore } from "@/features/services/store";
+import type { ServiceSchedule } from "@/features/services/types";
 import { currencyFormatter } from "@/lib/format";
+
 export function ServicesAgendaContent() {
   const {
     aggregatedError,
@@ -13,6 +19,17 @@ export function ServicesAgendaContent() {
     handleAgendaUnlinkPayment,
     unifiedAgendaItems,
   } = useServicesOverview();
+
+  const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } =
+    useStore(servicesStore);
+
+  const handleEditSchedule = (_serviceId: string, schedule: ServiceSchedule) => {
+    servicesActions.openEditScheduleModal(schedule);
+  };
+
+  const handleSkipSchedule = (_serviceId: string, schedule: ServiceSchedule) => {
+    servicesActions.openSkipScheduleModal(schedule);
+  };
 
   const totals = unifiedAgendaItems.reduce(
     (acc, item) => {
@@ -58,10 +75,24 @@ export function ServicesAgendaContent() {
           error={aggregatedError}
           items={unifiedAgendaItems}
           loading={aggregatedLoading}
+          onEditSchedule={handleEditSchedule}
           onRegisterPayment={handleAgendaRegisterPayment}
+          onSkipSchedule={handleSkipSchedule}
           onUnlinkPayment={handleAgendaUnlinkPayment}
         />
       </Surface>
+
+      <EditScheduleModal
+        isOpen={editScheduleOpen}
+        onClose={servicesActions.closeEditScheduleModal}
+        schedule={editScheduleTarget}
+      />
+
+      <SkipScheduleModal
+        isOpen={skipScheduleOpen}
+        onClose={servicesActions.closeSkipScheduleModal}
+        schedule={skipScheduleTarget}
+      />
     </section>
   );
 }

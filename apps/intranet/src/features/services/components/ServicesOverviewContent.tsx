@@ -1,21 +1,28 @@
 import { Chip, Description, Spinner } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
+import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { EditScheduleModal } from "@/features/services/components/EditScheduleModal";
 import { ServiceDetail } from "@/features/services/components/ServiceDetail";
 import { ServiceForm } from "@/features/services/components/ServiceForm";
 import { ServiceList } from "@/features/services/components/ServiceList";
 import { ServicesFilterPanel } from "@/features/services/components/ServicesFilterPanel";
 import { ServicesUnifiedAgenda } from "@/features/services/components/ServicesUnifiedAgenda";
+import { SkipScheduleModal } from "@/features/services/components/SkipScheduleModal";
 import { useServicesOverview } from "@/features/services/hooks/use-services-overview";
+import { servicesActions, servicesStore } from "@/features/services/store";
 import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
 export function ServicesOverviewContent() {
   const overview = useServicesOverview();
+  const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } =
+    useStore(servicesStore);
+
   const {
     aggregatedError,
     aggregatedLoading,
@@ -31,10 +38,12 @@ export function ServicesOverviewContent() {
     handleAgendaRegisterPayment,
     handleAgendaUnlinkPayment,
     handleCreateService,
+    handleEditSchedule,
     handleFilterChange,
     handlePaymentFieldChange,
     handlePaymentSubmit,
     handleRegenerate,
+    handleSkipSchedule,
     handleUnlink,
     loadingDetail,
     loadingList,
@@ -168,8 +177,10 @@ export function ServicesOverviewContent() {
         <ServiceDetail
           canManage={canManage}
           loading={loadingDetail}
+          onEditSchedule={(schedule) => handleEditSchedule(selectedService.publicId, schedule)}
           onRegenerate={handleRegenerate}
           onRegisterPayment={openPaymentModal}
+          onSkipSchedule={(schedule) => handleSkipSchedule(selectedService.publicId, schedule)}
           onUnlinkPayment={handleUnlink}
           schedules={schedules}
           service={selectedService}
@@ -196,7 +207,9 @@ export function ServicesOverviewContent() {
             error={aggregatedError}
             items={unifiedAgendaItems}
             loading={aggregatedLoading}
+            onEditSchedule={handleEditSchedule}
             onRegisterPayment={handleAgendaRegisterPayment}
+            onSkipSchedule={handleSkipSchedule}
             onUnlinkPayment={handleAgendaUnlinkPayment}
           />
         </div>
@@ -293,6 +306,18 @@ export function ServicesOverviewContent() {
           </form>
         )}
       </Modal>
+
+      <EditScheduleModal
+        isOpen={editScheduleOpen}
+        onClose={servicesActions.closeEditScheduleModal}
+        schedule={editScheduleTarget}
+      />
+
+      <SkipScheduleModal
+        isOpen={skipScheduleOpen}
+        onClose={servicesActions.closeSkipScheduleModal}
+        schedule={skipScheduleTarget}
+      />
     </section>
   );
 }

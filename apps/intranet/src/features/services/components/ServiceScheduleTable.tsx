@@ -8,23 +8,29 @@ import { getColumns } from "./ServiceScheduleColumns";
 
 interface ServiceScheduleTableProps {
   canManage: boolean;
+  onEditSchedule?: (schedule: ServiceSchedule) => void;
   onRegisterPayment: (schedule: ServiceSchedule) => void;
+  onSkipSchedule?: (schedule: ServiceSchedule) => void;
   onUnlinkPayment: (schedule: ServiceSchedule) => void;
   schedules: ServiceSchedule[];
 }
 
 export function ServiceScheduleTable({
   canManage,
+  onEditSchedule,
   onRegisterPayment,
+  onSkipSchedule,
   onUnlinkPayment,
   schedules,
 }: ServiceScheduleTableProps) {
   const actions = useMemo(
     () => ({
+      onEditSchedule,
       onRegisterPayment,
+      onSkipSchedule,
       onUnlinkPayment,
     }),
-    [onRegisterPayment, onUnlinkPayment],
+    [onEditSchedule, onRegisterPayment, onSkipSchedule, onUnlinkPayment],
   );
 
   const columns = useMemo(() => getColumns(actions, canManage), [actions, canManage]);
