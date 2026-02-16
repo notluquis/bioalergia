@@ -196,7 +196,7 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     warmup: {
-      clientFiles: ["./src/routeTree.gen.ts", "./src/main.tsx", "./src/App.tsx"],
+      clientFiles: ["./src/routeTree.gen.ts", "./src/main.tsx"],
     },
     open: true,
     proxy: {
