@@ -375,6 +375,7 @@ model SettlementTransaction {
 
   // Relations
   counterpart          Counterpart? @relation(fields: [identificationNumber], references: [identificationNumber])
+  serviceSchedules     ServiceSchedule[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -471,6 +472,7 @@ model ReleaseTransaction {
 
   // Relations
   counterpart             Counterpart? @relation(fields: [identificationNumber], references: [identificationNumber])
+  serviceSchedules        ServiceSchedule[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -507,6 +509,7 @@ model WithdrawTransaction {
 
   // Relations
   counterpart          Counterpart? @relation(fields: [identificationNumber], references: [identificationNumber])
+  serviceSchedules     ServiceSchedule[]
 
   // Access policies
   @@deny('all', auth() == null)
@@ -591,16 +594,37 @@ model DailyBalance {
 }
 
 model Service {
-  id            Int              @id @default(autoincrement())
-  name          String
-  counterpartId Int?             @map("counterpart_id")
-  type          ServiceType      @default(BUSINESS)
-  frequency     ServiceFrequency @default(MONTHLY)
-  defaultAmount Decimal          @default(0) @map("default_amount") @db.Decimal(15, 2)
-  status        ServiceStatus    @default(ACTIVE)
-  createdAt     DateTime         @default(now()) @map("created_at")
-  updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at")
-  counterpart   Counterpart?     @relation(fields: [counterpartId], references: [id])
+  id                  Int                    @id @default(autoincrement())
+  publicId            String                 @unique @map("public_id")
+  name                String
+  detail              String?
+  category            String?
+  counterpartId       Int?                   @map("counterpart_id")
+  type                ServiceType            @default(BUSINESS)
+  recurrenceType      ServiceRecurrenceType  @default(RECURRING) @map("recurrence_type")
+  frequency           ServiceFrequency       @default(MONTHLY)
+  startDate           DateTime               @map("start_date") @db.Date
+  endDate             DateTime?              @map("end_date") @db.Date
+  dueDay              Int?                   @map("due_day")
+  emissionMode        ServiceEmissionMode    @default(FIXED_DAY) @map("emission_mode")
+  emissionDay         Int?                   @map("emission_day")
+  emissionStartDay    Int?                   @map("emission_start_day")
+  emissionEndDay      Int?                   @map("emission_end_day")
+  emissionExactDate   DateTime?              @map("emission_exact_date") @db.Date
+  ownership           ServiceOwnership       @default(COMPANY)
+  obligationType      ServiceObligationType  @default(SERVICE) @map("obligation_type")
+  defaultAmount       Decimal                @default(0) @map("default_amount") @db.Decimal(15, 2)
+  amountIndexation    ServiceAmountIndexation @default(NONE) @map("amount_indexation")
+  lateFeeMode         ServiceLateFeeMode     @default(NONE) @map("late_fee_mode")
+  lateFeeValue        Decimal?               @map("late_fee_value") @db.Decimal(15, 2)
+  lateFeeGraceDays    Int?                   @map("late_fee_grace_days")
+  nextGenerationMonths Int                   @default(12) @map("next_generation_months")
+  notes               String?
+  status              ServiceStatus          @default(ACTIVE)
+  createdAt           DateTime               @default(now()) @map("created_at")
+  updatedAt           DateTime               @default(now()) @updatedAt @map("updated_at")
+  counterpart         Counterpart?           @relation(fields: [counterpartId], references: [id])
+  schedules           ServiceSchedule[]
 
   //Access policies
   @@deny('all', auth() == null)
@@ -609,6 +633,43 @@ model Service {
 
   @@index([counterpartId])
   @@map("services")
+}
+
+model ServiceSchedule {
+  id             Int                   @id @default(autoincrement())
+  serviceId      Int                   @map("service_id")
+  periodStart    DateTime              @map("period_start") @db.Date
+  periodEnd      DateTime              @map("period_end") @db.Date
+  dueDate        DateTime              @map("due_date") @db.Date
+  expectedAmount Decimal               @map("expected_amount") @db.Decimal(15, 2)
+  lateFeeAmount  Decimal               @default(0) @map("late_fee_amount") @db.Decimal(15, 2)
+  effectiveAmount Decimal              @map("effective_amount") @db.Decimal(15, 2)
+  status         ServiceScheduleStatus @default(PENDING)
+  paidAmount     Decimal?              @map("paid_amount") @db.Decimal(15, 2)
+  paidDate       DateTime?             @map("paid_date")
+  settlementTransactionId Int?         @map("settlement_transaction_id")
+  releaseTransactionId    Int?         @map("release_transaction_id")
+  withdrawTransactionId   Int?         @map("withdraw_transaction_id")
+  note           String?
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @default(now()) @updatedAt @map("updated_at")
+  service        Service               @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  settlementTransaction SettlementTransaction? @relation(fields: [settlementTransactionId], references: [id])
+  releaseTransaction    ReleaseTransaction?    @relation(fields: [releaseTransactionId], references: [id])
+  withdrawTransaction   WithdrawTransaction?   @relation(fields: [withdrawTransactionId], references: [id])
+
+  // Access policies
+  @@deny('all', auth() == null)
+  @@allow('read', true)
+  @@allow('create,update,delete', auth().status == 'ACTIVE')
+
+  @@unique([serviceId, periodStart])
+  @@index([serviceId, dueDate])
+  @@index([status, dueDate])
+  @@index([settlementTransactionId])
+  @@index([releaseTransactionId])
+  @@index([withdrawTransactionId])
+  @@map("service_schedules")
 }
 
 model Loan {
@@ -1363,6 +1424,49 @@ enum ServiceStatus {
   ACTIVE
   INACTIVE
   ARCHIVED
+}
+
+enum ServiceRecurrenceType {
+  RECURRING
+  ONE_OFF
+}
+
+enum ServiceOwnership {
+  COMPANY
+  OWNER
+  MIXED
+  THIRD_PARTY
+}
+
+enum ServiceObligationType {
+  SERVICE
+  DEBT
+  LOAN
+  OTHER
+}
+
+enum ServiceAmountIndexation {
+  NONE
+  UF
+}
+
+enum ServiceLateFeeMode {
+  NONE
+  FIXED
+  PERCENTAGE
+}
+
+enum ServiceEmissionMode {
+  FIXED_DAY
+  DATE_RANGE
+  SPECIFIC_DATE
+}
+
+enum ServiceScheduleStatus {
+  PENDING
+  PARTIAL
+  PAID
+  SKIPPED
 }
 
 enum LoanStatus {

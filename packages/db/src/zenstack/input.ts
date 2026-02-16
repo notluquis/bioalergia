@@ -30,7 +30,7 @@ import type {
   UpsertArgs as $UpsertArgs,
   WhereInput as $WhereInput,
 } from "@zenstackhq/orm";
-import type { SchemaType as $Schema } from "./schema-lite.js";
+import type { SchemaType as $Schema } from "./schema-lite";
 export type PersonFindManyArgs = $FindManyArgs<$Schema, "Person">;
 export type PersonFindUniqueArgs = $FindUniqueArgs<$Schema, "Person">;
 export type PersonFindFirstArgs = $FindFirstArgs<$Schema, "Person">;
@@ -487,6 +487,36 @@ export type ServiceGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "Service", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "Service", Args, Options>;
+export type ServiceScheduleFindManyArgs = $FindManyArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleFindUniqueArgs = $FindUniqueArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleFindFirstArgs = $FindFirstArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleExistsArgs = $ExistsArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleCreateArgs = $CreateArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleCreateManyArgs = $CreateManyArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "ServiceSchedule"
+>;
+export type ServiceScheduleUpdateArgs = $UpdateArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleUpdateManyArgs = $UpdateManyArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "ServiceSchedule"
+>;
+export type ServiceScheduleUpsertArgs = $UpsertArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleDeleteArgs = $DeleteArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleDeleteManyArgs = $DeleteManyArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleCountArgs = $CountArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleAggregateArgs = $AggregateArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleGroupByArgs = $GroupByArgs<$Schema, "ServiceSchedule">;
+export type ServiceScheduleWhereInput = $WhereInput<$Schema, "ServiceSchedule">;
+export type ServiceScheduleSelect = $SelectInput<$Schema, "ServiceSchedule">;
+export type ServiceScheduleInclude = $IncludeInput<$Schema, "ServiceSchedule">;
+export type ServiceScheduleOmit = $OmitInput<$Schema, "ServiceSchedule">;
+export type ServiceScheduleGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "ServiceSchedule", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "ServiceSchedule", Args, Options>;
 export type LoanFindManyArgs = $FindManyArgs<$Schema, "Loan">;
 export type LoanFindUniqueArgs = $FindUniqueArgs<$Schema, "Loan">;
 export type LoanFindFirstArgs = $FindFirstArgs<$Schema, "Loan">;

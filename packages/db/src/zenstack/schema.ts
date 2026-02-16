@@ -2809,6 +2809,12 @@ export class SchemaType implements SchemaDef {
             references: ["identificationNumber"],
           },
         },
+        serviceSchedules: {
+          name: "serviceSchedules",
+          type: "ServiceSchedule",
+          array: true,
+          relation: { opposite: "settlementTransaction" },
+        },
       },
       attributes: [
         {
@@ -3585,6 +3591,12 @@ export class SchemaType implements SchemaDef {
             references: ["identificationNumber"],
           },
         },
+        serviceSchedules: {
+          name: "serviceSchedules",
+          type: "ServiceSchedule",
+          array: true,
+          relation: { opposite: "releaseTransaction" },
+        },
       },
       attributes: [
         {
@@ -3912,6 +3924,12 @@ export class SchemaType implements SchemaDef {
             references: ["identificationNumber"],
           },
         },
+        serviceSchedules: {
+          name: "serviceSchedules",
+          type: "ServiceSchedule",
+          array: true,
+          relation: { opposite: "withdrawTransaction" },
+        },
       },
       attributes: [
         {
@@ -4100,9 +4118,28 @@ export class SchemaType implements SchemaDef {
           ],
           default: ExpressionUtils.call("autoincrement"),
         },
+        publicId: {
+          name: "publicId",
+          type: "String",
+          unique: true,
+          attributes: [
+            { name: "@unique" },
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("public_id") }] },
+          ],
+        },
         name: {
           name: "name",
           type: "String",
+        },
+        detail: {
+          name: "detail",
+          type: "String",
+          optional: true,
+        },
+        category: {
+          name: "category",
+          type: "String",
+          optional: true,
         },
         counterpartId: {
           name: "counterpartId",
@@ -4127,6 +4164,21 @@ export class SchemaType implements SchemaDef {
           ],
           default: "BUSINESS",
         },
+        recurrenceType: {
+          name: "recurrenceType",
+          type: "ServiceRecurrenceType",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("RECURRING") }],
+            },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("recurrence_type") }],
+            },
+          ],
+          default: "RECURRING",
+        },
         frequency: {
           name: "frequency",
           type: "ServiceFrequency",
@@ -4137,6 +4189,120 @@ export class SchemaType implements SchemaDef {
             },
           ],
           default: "MONTHLY",
+        },
+        startDate: {
+          name: "startDate",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("start_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        endDate: {
+          name: "endDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("end_date") }] },
+            { name: "@db.Date" },
+          ],
+        },
+        dueDay: {
+          name: "dueDay",
+          type: "Int",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("due_day") }] },
+          ],
+        },
+        emissionMode: {
+          name: "emissionMode",
+          type: "ServiceEmissionMode",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("FIXED_DAY") }],
+            },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("emission_mode") }],
+            },
+          ],
+          default: "FIXED_DAY",
+        },
+        emissionDay: {
+          name: "emissionDay",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("emission_day") }],
+            },
+          ],
+        },
+        emissionStartDay: {
+          name: "emissionStartDay",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("emission_start_day") }],
+            },
+          ],
+        },
+        emissionEndDay: {
+          name: "emissionEndDay",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("emission_end_day") }],
+            },
+          ],
+        },
+        emissionExactDate: {
+          name: "emissionExactDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("emission_exact_date") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        ownership: {
+          name: "ownership",
+          type: "ServiceOwnership",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("COMPANY") }],
+            },
+          ],
+          default: "COMPANY",
+        },
+        obligationType: {
+          name: "obligationType",
+          type: "ServiceObligationType",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("SERVICE") }],
+            },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("obligation_type") }],
+            },
+          ],
+          default: "SERVICE",
         },
         defaultAmount: {
           name: "defaultAmount",
@@ -4156,6 +4322,76 @@ export class SchemaType implements SchemaDef {
             },
           ],
           default: 0,
+        },
+        amountIndexation: {
+          name: "amountIndexation",
+          type: "ServiceAmountIndexation",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("NONE") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("amount_indexation") }],
+            },
+          ],
+          default: "NONE",
+        },
+        lateFeeMode: {
+          name: "lateFeeMode",
+          type: "ServiceLateFeeMode",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal("NONE") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("late_fee_mode") }],
+            },
+          ],
+          default: "NONE",
+        },
+        lateFeeValue: {
+          name: "lateFeeValue",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("late_fee_value") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        lateFeeGraceDays: {
+          name: "lateFeeGraceDays",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("late_fee_grace_days") }],
+            },
+          ],
+        },
+        nextGenerationMonths: {
+          name: "nextGenerationMonths",
+          type: "Int",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(12) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("next_generation_months") }],
+            },
+          ],
+          default: 12,
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
         },
         status: {
           name: "status",
@@ -4215,6 +4451,12 @@ export class SchemaType implements SchemaDef {
           ],
           relation: { opposite: "services", fields: ["counterpartId"], references: ["id"] },
         },
+        schedules: {
+          name: "schedules",
+          type: "ServiceSchedule",
+          array: true,
+          relation: { opposite: "service" },
+        },
       },
       attributes: [
         {
@@ -4266,6 +4508,441 @@ export class SchemaType implements SchemaDef {
       idFields: ["id"],
       uniqueFields: {
         id: { type: "Int" },
+        publicId: { type: "String" },
+      },
+    },
+    ServiceSchedule: {
+      name: "ServiceSchedule",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          attributes: [
+            { name: "@id" },
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.call("autoincrement") }],
+            },
+          ],
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        serviceId: {
+          name: "serviceId",
+          type: "Int",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("service_id") }],
+            },
+          ],
+          foreignKeyFor: ["service"],
+        },
+        periodStart: {
+          name: "periodStart",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("period_start") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        periodEnd: {
+          name: "periodEnd",
+          type: "DateTime",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("period_end") }],
+            },
+            { name: "@db.Date" },
+          ],
+        },
+        dueDate: {
+          name: "dueDate",
+          type: "DateTime",
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("due_date") }] },
+            { name: "@db.Date" },
+          ],
+        },
+        expectedAmount: {
+          name: "expectedAmount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("expected_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        lateFeeAmount: {
+          name: "lateFeeAmount",
+          type: "Decimal",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.literal(0) }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("late_fee_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+          default: 0,
+        },
+        effectiveAmount: {
+          name: "effectiveAmount",
+          type: "Decimal",
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("effective_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        status: {
+          name: "status",
+          type: "ServiceScheduleStatus",
+          attributes: [
+            {
+              name: "@default",
+              args: [{ name: "value", value: ExpressionUtils.literal("PENDING") }],
+            },
+          ],
+          default: "PENDING",
+        },
+        paidAmount: {
+          name: "paidAmount",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("paid_amount") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
+        paidDate: {
+          name: "paidDate",
+          type: "DateTime",
+          optional: true,
+          attributes: [
+            { name: "@map", args: [{ name: "name", value: ExpressionUtils.literal("paid_date") }] },
+          ],
+        },
+        settlementTransactionId: {
+          name: "settlementTransactionId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("settlement_transaction_id") }],
+            },
+          ],
+          foreignKeyFor: ["settlementTransaction"],
+        },
+        releaseTransactionId: {
+          name: "releaseTransactionId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("release_transaction_id") }],
+            },
+          ],
+          foreignKeyFor: ["releaseTransaction"],
+        },
+        withdrawTransactionId: {
+          name: "withdrawTransactionId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("withdraw_transaction_id") }],
+            },
+          ],
+          foreignKeyFor: ["withdrawTransaction"],
+        },
+        note: {
+          name: "note",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("created_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          attributes: [
+            { name: "@default", args: [{ name: "value", value: ExpressionUtils.call("now") }] },
+            { name: "@updatedAt" },
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("updated_at") }],
+            },
+          ],
+          default: ExpressionUtils.call("now"),
+        },
+        service: {
+          name: "service",
+          type: "Service",
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("serviceId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+                { name: "onDelete", value: ExpressionUtils.literal("Cascade") },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "schedules",
+            fields: ["serviceId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        settlementTransaction: {
+          name: "settlementTransaction",
+          type: "SettlementTransaction",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [
+                    ExpressionUtils.field("settlementTransactionId"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "serviceSchedules",
+            fields: ["settlementTransactionId"],
+            references: ["id"],
+          },
+        },
+        releaseTransaction: {
+          name: "releaseTransaction",
+          type: "ReleaseTransaction",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [
+                    ExpressionUtils.field("releaseTransactionId"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "serviceSchedules",
+            fields: ["releaseTransactionId"],
+            references: ["id"],
+          },
+        },
+        withdrawTransaction: {
+          name: "withdrawTransaction",
+          type: "WithdrawTransaction",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [
+                    ExpressionUtils.field("withdrawTransactionId"),
+                  ]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "serviceSchedules",
+            fields: ["withdrawTransactionId"],
+            references: ["id"],
+          },
+        },
+      },
+      attributes: [
+        {
+          name: "@@deny",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("all") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.call("auth"),
+                "==",
+                ExpressionUtils._null(),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("read") },
+            { name: "condition", value: ExpressionUtils.literal(true) },
+          ],
+        },
+        {
+          name: "@@allow",
+          args: [
+            { name: "operation", value: ExpressionUtils.literal("create,update,delete") },
+            {
+              name: "condition",
+              value: ExpressionUtils.binary(
+                ExpressionUtils.member(ExpressionUtils.call("auth"), ["status"]),
+                "==",
+                ExpressionUtils.literal("ACTIVE"),
+              ),
+            },
+          ],
+        },
+        {
+          name: "@@unique",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("serviceId"),
+                ExpressionUtils.field("periodStart"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("serviceId"),
+                ExpressionUtils.field("dueDate"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("ServiceScheduleStatus", [
+                ExpressionUtils.field("status"),
+                ExpressionUtils.field("dueDate"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [
+                ExpressionUtils.field("settlementTransactionId"),
+              ]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("releaseTransactionId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("withdrawTransactionId")]),
+            },
+          ],
+        },
+        {
+          name: "@@map",
+          args: [{ name: "name", value: ExpressionUtils.literal("service_schedules") }],
+        },
+      ],
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        serviceId_periodStart: { serviceId: { type: "Int" }, periodStart: { type: "DateTime" } },
       },
     },
     Loan: {
@@ -13540,6 +14217,63 @@ export class SchemaType implements SchemaDef {
         ACTIVE: "ACTIVE",
         INACTIVE: "INACTIVE",
         ARCHIVED: "ARCHIVED",
+      },
+    },
+    ServiceRecurrenceType: {
+      name: "ServiceRecurrenceType",
+      values: {
+        RECURRING: "RECURRING",
+        ONE_OFF: "ONE_OFF",
+      },
+    },
+    ServiceOwnership: {
+      name: "ServiceOwnership",
+      values: {
+        COMPANY: "COMPANY",
+        OWNER: "OWNER",
+        MIXED: "MIXED",
+        THIRD_PARTY: "THIRD_PARTY",
+      },
+    },
+    ServiceObligationType: {
+      name: "ServiceObligationType",
+      values: {
+        SERVICE: "SERVICE",
+        DEBT: "DEBT",
+        LOAN: "LOAN",
+        OTHER: "OTHER",
+      },
+    },
+    ServiceAmountIndexation: {
+      name: "ServiceAmountIndexation",
+      values: {
+        NONE: "NONE",
+        UF: "UF",
+      },
+    },
+    ServiceLateFeeMode: {
+      name: "ServiceLateFeeMode",
+      values: {
+        NONE: "NONE",
+        FIXED: "FIXED",
+        PERCENTAGE: "PERCENTAGE",
+      },
+    },
+    ServiceEmissionMode: {
+      name: "ServiceEmissionMode",
+      values: {
+        FIXED_DAY: "FIXED_DAY",
+        DATE_RANGE: "DATE_RANGE",
+        SPECIFIC_DATE: "SPECIFIC_DATE",
+      },
+    },
+    ServiceScheduleStatus: {
+      name: "ServiceScheduleStatus",
+      values: {
+        PENDING: "PENDING",
+        PARTIAL: "PARTIAL",
+        PAID: "PAID",
+        SKIPPED: "SKIPPED",
       },
     },
     LoanStatus: {

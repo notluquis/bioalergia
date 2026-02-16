@@ -6,7 +6,7 @@
 /* eslint-disable */
 
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
-import { type SchemaType as $Schema, schema as $schema } from "./schema-lite.js";
+import { type SchemaType as $Schema, schema as $schema } from "./schema-lite";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
 export type Passkey = $ModelResult<$Schema, "Passkey">;
@@ -24,6 +24,7 @@ export type ReleaseTransaction = $ModelResult<$Schema, "ReleaseTransaction">;
 export type WithdrawTransaction = $ModelResult<$Schema, "WithdrawTransaction">;
 export type DailyBalance = $ModelResult<$Schema, "DailyBalance">;
 export type Service = $ModelResult<$Schema, "Service">;
+export type ServiceSchedule = $ModelResult<$Schema, "ServiceSchedule">;
 export type Loan = $ModelResult<$Schema, "Loan">;
 export type LoanSchedule = $ModelResult<$Schema, "LoanSchedule">;
 export type Setting = $ModelResult<$Schema, "Setting">;
@@ -82,6 +83,24 @@ export const ServiceFrequency = $schema.enums.ServiceFrequency.values;
 export type ServiceFrequency = (typeof ServiceFrequency)[keyof typeof ServiceFrequency];
 export const ServiceStatus = $schema.enums.ServiceStatus.values;
 export type ServiceStatus = (typeof ServiceStatus)[keyof typeof ServiceStatus];
+export const ServiceRecurrenceType = $schema.enums.ServiceRecurrenceType.values;
+export type ServiceRecurrenceType =
+  (typeof ServiceRecurrenceType)[keyof typeof ServiceRecurrenceType];
+export const ServiceOwnership = $schema.enums.ServiceOwnership.values;
+export type ServiceOwnership = (typeof ServiceOwnership)[keyof typeof ServiceOwnership];
+export const ServiceObligationType = $schema.enums.ServiceObligationType.values;
+export type ServiceObligationType =
+  (typeof ServiceObligationType)[keyof typeof ServiceObligationType];
+export const ServiceAmountIndexation = $schema.enums.ServiceAmountIndexation.values;
+export type ServiceAmountIndexation =
+  (typeof ServiceAmountIndexation)[keyof typeof ServiceAmountIndexation];
+export const ServiceLateFeeMode = $schema.enums.ServiceLateFeeMode.values;
+export type ServiceLateFeeMode = (typeof ServiceLateFeeMode)[keyof typeof ServiceLateFeeMode];
+export const ServiceEmissionMode = $schema.enums.ServiceEmissionMode.values;
+export type ServiceEmissionMode = (typeof ServiceEmissionMode)[keyof typeof ServiceEmissionMode];
+export const ServiceScheduleStatus = $schema.enums.ServiceScheduleStatus.values;
+export type ServiceScheduleStatus =
+  (typeof ServiceScheduleStatus)[keyof typeof ServiceScheduleStatus];
 export const LoanStatus = $schema.enums.LoanStatus.values;
 export type LoanStatus = (typeof LoanStatus)[keyof typeof LoanStatus];
 export const LoanScheduleStatus = $schema.enums.LoanScheduleStatus.values;

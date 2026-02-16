@@ -1147,6 +1147,12 @@ export class SchemaType implements SchemaDef {
             references: ["identificationNumber"],
           },
         },
+        serviceSchedules: {
+          name: "serviceSchedules",
+          type: "ServiceSchedule",
+          array: true,
+          relation: { opposite: "settlementTransaction" },
+        },
       },
       idFields: ["id"],
       uniqueFields: {
@@ -1453,6 +1459,12 @@ export class SchemaType implements SchemaDef {
             references: ["identificationNumber"],
           },
         },
+        serviceSchedules: {
+          name: "serviceSchedules",
+          type: "ServiceSchedule",
+          array: true,
+          relation: { opposite: "releaseTransaction" },
+        },
       },
       idFields: ["id"],
       uniqueFields: {
@@ -1570,6 +1582,12 @@ export class SchemaType implements SchemaDef {
             references: ["identificationNumber"],
           },
         },
+        serviceSchedules: {
+          name: "serviceSchedules",
+          type: "ServiceSchedule",
+          array: true,
+          relation: { opposite: "withdrawTransaction" },
+        },
       },
       idFields: ["id"],
       uniqueFields: {
@@ -1622,9 +1640,24 @@ export class SchemaType implements SchemaDef {
           id: true,
           default: ExpressionUtils.call("autoincrement"),
         },
+        publicId: {
+          name: "publicId",
+          type: "String",
+          unique: true,
+        },
         name: {
           name: "name",
           type: "String",
+        },
+        detail: {
+          name: "detail",
+          type: "String",
+          optional: true,
+        },
+        category: {
+          name: "category",
+          type: "String",
+          optional: true,
         },
         counterpartId: {
           name: "counterpartId",
@@ -1637,15 +1670,99 @@ export class SchemaType implements SchemaDef {
           type: "ServiceType",
           default: "BUSINESS",
         },
+        recurrenceType: {
+          name: "recurrenceType",
+          type: "ServiceRecurrenceType",
+          default: "RECURRING",
+        },
         frequency: {
           name: "frequency",
           type: "ServiceFrequency",
           default: "MONTHLY",
         },
+        startDate: {
+          name: "startDate",
+          type: "DateTime",
+        },
+        endDate: {
+          name: "endDate",
+          type: "DateTime",
+          optional: true,
+        },
+        dueDay: {
+          name: "dueDay",
+          type: "Int",
+          optional: true,
+        },
+        emissionMode: {
+          name: "emissionMode",
+          type: "ServiceEmissionMode",
+          default: "FIXED_DAY",
+        },
+        emissionDay: {
+          name: "emissionDay",
+          type: "Int",
+          optional: true,
+        },
+        emissionStartDay: {
+          name: "emissionStartDay",
+          type: "Int",
+          optional: true,
+        },
+        emissionEndDay: {
+          name: "emissionEndDay",
+          type: "Int",
+          optional: true,
+        },
+        emissionExactDate: {
+          name: "emissionExactDate",
+          type: "DateTime",
+          optional: true,
+        },
+        ownership: {
+          name: "ownership",
+          type: "ServiceOwnership",
+          default: "COMPANY",
+        },
+        obligationType: {
+          name: "obligationType",
+          type: "ServiceObligationType",
+          default: "SERVICE",
+        },
         defaultAmount: {
           name: "defaultAmount",
           type: "Decimal",
           default: 0,
+        },
+        amountIndexation: {
+          name: "amountIndexation",
+          type: "ServiceAmountIndexation",
+          default: "NONE",
+        },
+        lateFeeMode: {
+          name: "lateFeeMode",
+          type: "ServiceLateFeeMode",
+          default: "NONE",
+        },
+        lateFeeValue: {
+          name: "lateFeeValue",
+          type: "Decimal",
+          optional: true,
+        },
+        lateFeeGraceDays: {
+          name: "lateFeeGraceDays",
+          type: "Int",
+          optional: true,
+        },
+        nextGenerationMonths: {
+          name: "nextGenerationMonths",
+          type: "Int",
+          default: 12,
+        },
+        notes: {
+          name: "notes",
+          type: "String",
+          optional: true,
         },
         status: {
           name: "status",
@@ -1669,10 +1786,152 @@ export class SchemaType implements SchemaDef {
           optional: true,
           relation: { opposite: "services", fields: ["counterpartId"], references: ["id"] },
         },
+        schedules: {
+          name: "schedules",
+          type: "ServiceSchedule",
+          array: true,
+          relation: { opposite: "service" },
+        },
       },
       idFields: ["id"],
       uniqueFields: {
         id: { type: "Int" },
+        publicId: { type: "String" },
+      },
+    },
+    ServiceSchedule: {
+      name: "ServiceSchedule",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        serviceId: {
+          name: "serviceId",
+          type: "Int",
+          foreignKeyFor: ["service"],
+        },
+        periodStart: {
+          name: "periodStart",
+          type: "DateTime",
+        },
+        periodEnd: {
+          name: "periodEnd",
+          type: "DateTime",
+        },
+        dueDate: {
+          name: "dueDate",
+          type: "DateTime",
+        },
+        expectedAmount: {
+          name: "expectedAmount",
+          type: "Decimal",
+        },
+        lateFeeAmount: {
+          name: "lateFeeAmount",
+          type: "Decimal",
+          default: 0,
+        },
+        effectiveAmount: {
+          name: "effectiveAmount",
+          type: "Decimal",
+        },
+        status: {
+          name: "status",
+          type: "ServiceScheduleStatus",
+          default: "PENDING",
+        },
+        paidAmount: {
+          name: "paidAmount",
+          type: "Decimal",
+          optional: true,
+        },
+        paidDate: {
+          name: "paidDate",
+          type: "DateTime",
+          optional: true,
+        },
+        settlementTransactionId: {
+          name: "settlementTransactionId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["settlementTransaction"],
+        },
+        releaseTransactionId: {
+          name: "releaseTransactionId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["releaseTransaction"],
+        },
+        withdrawTransactionId: {
+          name: "withdrawTransactionId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["withdrawTransaction"],
+        },
+        note: {
+          name: "note",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          default: ExpressionUtils.call("now"),
+        },
+        service: {
+          name: "service",
+          type: "Service",
+          relation: {
+            opposite: "schedules",
+            fields: ["serviceId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
+        },
+        settlementTransaction: {
+          name: "settlementTransaction",
+          type: "SettlementTransaction",
+          optional: true,
+          relation: {
+            opposite: "serviceSchedules",
+            fields: ["settlementTransactionId"],
+            references: ["id"],
+          },
+        },
+        releaseTransaction: {
+          name: "releaseTransaction",
+          type: "ReleaseTransaction",
+          optional: true,
+          relation: {
+            opposite: "serviceSchedules",
+            fields: ["releaseTransactionId"],
+            references: ["id"],
+          },
+        },
+        withdrawTransaction: {
+          name: "withdrawTransaction",
+          type: "WithdrawTransaction",
+          optional: true,
+          relation: {
+            opposite: "serviceSchedules",
+            fields: ["withdrawTransactionId"],
+            references: ["id"],
+          },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+        serviceId_periodStart: { serviceId: { type: "Int" }, periodStart: { type: "DateTime" } },
       },
     },
     Loan: {
@@ -5080,6 +5339,63 @@ export class SchemaType implements SchemaDef {
         ACTIVE: "ACTIVE",
         INACTIVE: "INACTIVE",
         ARCHIVED: "ARCHIVED",
+      },
+    },
+    ServiceRecurrenceType: {
+      name: "ServiceRecurrenceType",
+      values: {
+        RECURRING: "RECURRING",
+        ONE_OFF: "ONE_OFF",
+      },
+    },
+    ServiceOwnership: {
+      name: "ServiceOwnership",
+      values: {
+        COMPANY: "COMPANY",
+        OWNER: "OWNER",
+        MIXED: "MIXED",
+        THIRD_PARTY: "THIRD_PARTY",
+      },
+    },
+    ServiceObligationType: {
+      name: "ServiceObligationType",
+      values: {
+        SERVICE: "SERVICE",
+        DEBT: "DEBT",
+        LOAN: "LOAN",
+        OTHER: "OTHER",
+      },
+    },
+    ServiceAmountIndexation: {
+      name: "ServiceAmountIndexation",
+      values: {
+        NONE: "NONE",
+        UF: "UF",
+      },
+    },
+    ServiceLateFeeMode: {
+      name: "ServiceLateFeeMode",
+      values: {
+        NONE: "NONE",
+        FIXED: "FIXED",
+        PERCENTAGE: "PERCENTAGE",
+      },
+    },
+    ServiceEmissionMode: {
+      name: "ServiceEmissionMode",
+      values: {
+        FIXED_DAY: "FIXED_DAY",
+        DATE_RANGE: "DATE_RANGE",
+        SPECIFIC_DATE: "SPECIFIC_DATE",
+      },
+    },
+    ServiceScheduleStatus: {
+      name: "ServiceScheduleStatus",
+      values: {
+        PENDING: "PENDING",
+        PARTIAL: "PARTIAL",
+        PAID: "PAID",
+        SKIPPED: "SKIPPED",
       },
     },
     LoanStatus: {
