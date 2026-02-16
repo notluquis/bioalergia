@@ -6,6 +6,7 @@ import {
   Input as HeroInput,
   Label,
   ListBox,
+  ScrollShadow,
   SearchField,
   Separator,
   Surface,
@@ -951,35 +952,37 @@ function CounterpartsToolbar({
                 <ComboBox.Trigger />
               </ComboBox.InputGroup>
               <ComboBox.Popover className="rounded-2xl border border-default-200/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md">
-                <ListBox
-                  className="max-h-72"
-                  renderEmptyState={() => (
-                    <EmptyState>No hay resultados con los filtros seleccionados.</EmptyState>
-                  )}
-                >
-                  {visibleCounterparts.map((item) => (
-                    <ListBox.Item
-                      id={String(item.id)}
-                      key={item.id}
-                      textValue={`${item.bankAccountHolder} ${item.identificationNumber}`}
-                    >
-                      <div className="flex w-full items-start justify-between gap-2">
-                        <span className="font-medium text-foreground tracking-tight">
-                          {item.bankAccountHolder}
-                        </span>
-                        <Chip size="sm" variant={selectedId === item.id ? "secondary" : "soft"}>
-                          {CATEGORY_LABELS[item.category] ?? item.category}
-                        </Chip>
-                      </div>
-                      {item.identificationNumber ? (
-                        <span className="mt-0.5 block text-default-500 text-xs">
-                          RUT {item.identificationNumber}
-                        </span>
-                      ) : null}
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
+                <ScrollShadow className="max-h-72" hideScrollBar>
+                  <ListBox
+                    className="overflow-y-auto"
+                    renderEmptyState={() => (
+                      <EmptyState>No hay resultados con los filtros seleccionados.</EmptyState>
+                    )}
+                  >
+                    {visibleCounterparts.map((item) => (
+                      <ListBox.Item
+                        id={String(item.id)}
+                        key={item.id}
+                        textValue={`${item.bankAccountHolder} ${item.identificationNumber}`}
+                      >
+                        <div className="flex w-full items-start justify-between gap-2">
+                          <span className="font-medium text-foreground tracking-tight">
+                            {item.bankAccountHolder}
+                          </span>
+                          <Chip size="sm" variant={selectedId === item.id ? "secondary" : "soft"}>
+                            {CATEGORY_LABELS[item.category] ?? item.category}
+                          </Chip>
+                        </div>
+                        {item.identificationNumber ? (
+                          <span className="mt-0.5 block text-default-500 text-xs">
+                            RUT {item.identificationNumber}
+                          </span>
+                        ) : null}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </ScrollShadow>
               </ComboBox.Popover>
             </ComboBox>
 
