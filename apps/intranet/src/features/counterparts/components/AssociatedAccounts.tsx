@@ -606,9 +606,6 @@ function QuickViewSection({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-default-500 text-xs uppercase tracking-[0.3em]">
-            Resumen de transferencias
-          </p>
           <h3 className="font-semibold text-foreground text-lg">Transferencias</h3>
           <p className="text-default-500 text-xs">{quickViewGroup.label}</p>
           <p className="text-default-400 text-xs">Todo el historial</p>
