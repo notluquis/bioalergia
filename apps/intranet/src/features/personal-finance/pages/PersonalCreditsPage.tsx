@@ -4,7 +4,6 @@ import { Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Suspense } from "react";
 import { DataTable } from "@/components/data-table/DataTable";
-import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils";
 import { CreateCreditForm } from "../components/CreateCreditForm";
 import { personalFinanceQueries } from "../queries";
@@ -63,17 +62,11 @@ const columns: ColumnDef<PersonalCredit>[] = [
   {
     cell: ({ row }) => (
       <Link
+        className="inline-flex h-8 items-center justify-center rounded-xl px-3 text-sm transition-all duration-200 ease-apple hover:-translate-y-px hover:bg-default-100 active:translate-y-0 active:scale-[0.98]"
         params={{ creditId: row.original.id.toString() }}
         to="/finanzas/personal-credits/$creditId"
       >
-        <Button
-          as="div"
-          size="sm"
-          variant="ghost"
-          className="no-animation pointer-events-none transition-all duration-200 ease-apple hover:-translate-y-px active:translate-y-0 active:scale-[0.98]"
-        >
-          Ver Detalle
-        </Button>
+        Ver Detalle
       </Link>
     ),
 
