@@ -116,6 +116,7 @@ const monthKey = (date: Date) =>
 
 const RELEASE_ID_OFFSET = -1_000_000_000;
 const WITHDRAW_ID_OFFSET = -2_000_000_000;
+const MONEY_EPSILON = 0.01;
 
 function mapSettlementRow(row: SettlementRow): UnifiedTransaction {
   const meta = asObject(row.metadata);
@@ -200,6 +201,125 @@ function mapWithdrawRow(row: WithdrawRow): UnifiedTransaction {
     bankName: row.bankName ?? null,
     withdrawId: row.withdrawId ?? null,
   };
+}
+
+function getReleaseReconcileKey(tx: UnifiedTransaction) {
+  if (tx.source !== "release") {
+    return "";
+  }
+  return tx.sourceId?.trim() ?? "";
+}
+
+function getWithdrawReconcileKey(tx: UnifiedTransaction) {
+  if (tx.source !== "withdraw") {
+    return "";
+  }
+  return tx.withdrawId?.trim() ?? tx.sourceId?.trim() ?? "";
+}
+
+function sameAccount(a: UnifiedTransaction, b: UnifiedTransaction) {
+  const aa = normalizeAccountIdentifier(a.bankAccountNumber);
+  const bb = normalizeAccountIdentifier(b.bankAccountNumber);
+  if (aa.length === 0 || bb.length === 0) {
+    return true;
+  }
+  return aa === bb;
+}
+
+function sameAmount(a: UnifiedTransaction, b: UnifiedTransaction) {
+  return Math.abs(Math.abs(a.transactionAmount) - Math.abs(b.transactionAmount)) <= MONEY_EPSILON;
+}
+
+function mergeReleaseWithdraw(
+  release: UnifiedTransaction,
+  withdraw: UnifiedTransaction,
+): UnifiedTransaction {
+  const transactionDate =
+    release.transactionDate > withdraw.transactionDate
+      ? release.transactionDate
+      : withdraw.transactionDate;
+
+  return {
+    id: release.id,
+    source: "release",
+    transactionDate,
+    description: release.description ?? withdraw.description,
+    transactionType: release.transactionType,
+    transactionAmount: release.transactionAmount,
+    status: withdraw.status ?? release.status,
+    externalReference: release.externalReference ?? withdraw.externalReference,
+    sourceId: release.sourceId ?? withdraw.sourceId,
+    paymentMethod: release.paymentMethod ?? withdraw.paymentMethod,
+    settlementNetAmount: release.settlementNetAmount ?? withdraw.settlementNetAmount,
+    identificationNumber: withdraw.identificationNumber ?? release.identificationNumber,
+    bankAccountHolder: withdraw.bankAccountHolder ?? release.bankAccountHolder,
+    bankAccountNumber: withdraw.bankAccountNumber ?? release.bankAccountNumber,
+    bankAccountType: withdraw.bankAccountType ?? release.bankAccountType,
+    bankName: withdraw.bankName ?? release.bankName,
+    withdrawId: withdraw.withdrawId ?? release.withdrawId ?? release.sourceId,
+  };
+}
+
+function reconcileTransactions(rows: UnifiedTransaction[]): UnifiedTransaction[] {
+  const withdrawByKey = new Map<string, UnifiedTransaction[]>();
+  const usedWithdraw = new Set<number>();
+  const result: UnifiedTransaction[] = [];
+
+  for (const row of rows) {
+    if (row.source !== "withdraw") {
+      continue;
+    }
+    const key = getWithdrawReconcileKey(row);
+    if (!key) {
+      continue;
+    }
+    const bucket = withdrawByKey.get(key) ?? [];
+    bucket.push(row);
+    withdrawByKey.set(key, bucket);
+  }
+
+  for (const row of rows) {
+    if (row.source !== "release") {
+      continue;
+    }
+    const key = getReleaseReconcileKey(row);
+    if (!key) {
+      continue;
+    }
+
+    const candidates = withdrawByKey.get(key);
+    if (!candidates || candidates.length === 0) {
+      continue;
+    }
+
+    const matched = candidates.find(
+      (candidate) =>
+        !usedWithdraw.has(candidate.id) &&
+        sameAmount(row, candidate) &&
+        sameAccount(row, candidate),
+    );
+    if (!matched) {
+      continue;
+    }
+
+    usedWithdraw.add(matched.id);
+    result.push(mergeReleaseWithdraw(row, matched));
+  }
+
+  for (const row of rows) {
+    if (row.source === "withdraw" && usedWithdraw.has(row.id)) {
+      continue;
+    }
+    if (row.source === "release" && getReleaseReconcileKey(row)) {
+      const alreadyMerged = result.some((merged) => merged.id === row.id);
+      if (alreadyMerged) {
+        continue;
+      }
+    }
+    result.push(row);
+  }
+
+  return result;
 }
 
 function isTestLike(tx: UnifiedTransaction) {
@@ -331,11 +451,13 @@ async function fetchMergedTransactions(filters: TransactionFilters): Promise<Uni
     }),
   ]);
 
-  return [
+  const merged = [
     ...settlements.map(mapSettlementRow),
     ...releases.map(mapReleaseRow),
     ...withdraws.map(mapWithdrawRow),
-  ]
+  ];
+
+  return reconcileTransactions(merged)
     .filter((tx) => matchesFilter(tx, filters))
     .sort((a, b) => b.transactionDate.getTime() - a.transactionDate.getTime());
 }
