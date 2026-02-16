@@ -1,7 +1,6 @@
 import { Breadcrumbs, Chip } from "@heroui/react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2, LogOut } from "lucide-react";
-import React from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { NotificationHistory } from "@/features/notifications/components/NotificationHistory";
@@ -47,62 +46,35 @@ export function Header() {
 
   const isNavigating = routerStatus === "pending";
 
-  const { crumbs, pageTitle } = React.useMemo(() => {
-    const castMatches = matches as unknown as Array<{
-      context: Record<string, unknown>;
-      loaderData?: unknown;
-      staticData?: Record<string, unknown>;
-      pathname: string;
-    }>;
-    const breadcrumbItems = castMatches
-      .map((match) => ({
-        label: getMatchLabel(match),
-        to: match.pathname,
-      }))
-      .filter((item) => Boolean(item.label?.trim()));
-    const last = breadcrumbItems[breadcrumbItems.length - 1]?.label ?? "Inicio";
-    return { crumbs: breadcrumbItems, pageTitle: last };
-  }, [matches]);
-  const showBreadcrumbs = React.useMemo(() => {
-    if (crumbs.length === 0) {
-      return false;
-    }
-    if (crumbs.length === 1 && crumbs[0]?.label === pageTitle) {
-      return false;
-    }
-    return true;
-  }, [crumbs, pageTitle]);
+  const castMatches = matches as unknown as Array<{
+    context: Record<string, unknown>;
+    loaderData?: unknown;
+    staticData?: Record<string, unknown>;
+    pathname: string;
+  }>;
+  const crumbs = castMatches
+    .map((match) => ({
+      label: getMatchLabel(match),
+      to: match.pathname,
+    }))
+    .filter((item) => Boolean(item.label?.trim()));
+  const pageTitle = crumbs[crumbs.length - 1]?.label ?? "Inicio";
+  const showBreadcrumbs = !(
+    crumbs.length === 0 ||
+    (crumbs.length === 1 && crumbs[0]?.label === pageTitle)
+  );
 
-  const sessionIdentity = React.useMemo(() => {
-    if (!user) {
-      return "Sin sesión";
-    }
-    return user.name?.trim() || user.email;
-  }, [user]);
-
-  const rolesLabel = React.useMemo(() => {
-    if (!user || user.roles.length === 0) {
-      return "";
-    }
-    return user.roles.join(", ");
-  }, [user]);
-
-  const compactRoleLabel = React.useMemo(() => {
-    if (!user || user.roles.length === 0) {
-      return "";
-    }
-    if (user.roles.length === 1) {
-      return user.roles[0] ?? "";
-    }
-    return `${user.roles[0]} +${user.roles.length - 1}`;
-  }, [user]);
-
-  const sessionTooltip = React.useMemo(() => {
-    if (!user) {
-      return "Sin sesión";
-    }
-    return `${sessionIdentity}${rolesLabel ? ` · ${rolesLabel}` : ""}`;
-  }, [rolesLabel, sessionIdentity, user]);
+  const sessionIdentity = user ? user.name?.trim() || user.email : "Sin sesión";
+  const rolesLabel = user && user.roles.length > 0 ? user.roles.join(", ") : "";
+  const compactRoleLabel =
+    !user || user.roles.length === 0
+      ? ""
+      : user.roles.length === 1
+        ? (user.roles[0] ?? "")
+        : `${user.roles[0]} +${user.roles.length - 1}`;
+  const sessionTooltip = user
+    ? `${sessionIdentity}${rolesLabel ? ` · ${rolesLabel}` : ""}`
+    : "Sin sesión";
 
   const handleLogout = async () => {
     await logout();
