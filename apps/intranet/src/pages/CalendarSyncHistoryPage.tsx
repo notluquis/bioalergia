@@ -144,7 +144,7 @@ function renderSyncHistoryContent(params: {
   }
 
   return (
-    <Accordion className="divide-y divide-default-100" variant="surface">
+    <Accordion className="w-full">
       {params.syncLogs.map((log, index) => (
         <SyncHistoryItem defaultExpanded={index === 0} key={log.id.toString()} log={log} />
       ))}

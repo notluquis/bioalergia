@@ -118,7 +118,6 @@ function CalendarHeatmapPage() {
     <section className="space-y-3">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 font-medium text-sm">
-          <span className="text-default-500">Heatmap</span>
           <span className="text-default-400 text-xs">
             {rangeStartLabel} - {rangeEndLabel}
           </span>
@@ -165,9 +164,6 @@ function CalendarHeatmapPage() {
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-default-500 text-sm uppercase tracking-wide">
-            {tc("heatmapSection")}
-          </h2>
           <span className="text-default-500 text-xs">
             {tc("heatmapRange", { end: rangeEndLabel, start: rangeStartLabel })}
           </span>
