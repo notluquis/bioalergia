@@ -1,13 +1,19 @@
 import { Button, Chip } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { CreateCreditForm } from "../components/CreateCreditForm";
+import { CreditDetailsModal } from "../components/CreditDetailsModal";
 import { personalFinanceQueries } from "../queries";
 import type { PersonalCredit } from "../types";
 
-const TableData = ({ credits }: { credits: PersonalCredit[] }) => {
+const TableData = ({
+  credits,
+  onSelectCredit,
+}: {
+  credits: PersonalCredit[];
+  onSelectCredit: (id: number) => void;
+}) => {
   const paid = (credit: PersonalCredit) =>
     credit.installments?.filter((i) => i.status === "PAID").length || 0;
   const total = (credit: PersonalCredit) => credit.totalInstallments || 1;
@@ -52,14 +58,9 @@ const TableData = ({ credits }: { credits: PersonalCredit[] }) => {
                   </Chip>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Link
-                    params={{ creditId: credit.id.toString() }}
-                    to="/finanzas/personal-credits/$creditId"
-                  >
-                    <Button size="sm" variant="secondary">
-                      Ver Detalle
-                    </Button>
-                  </Link>
+                  <Button size="sm" variant="secondary" onPress={() => onSelectCredit(credit.id)}>
+                    Ver Detalle
+                  </Button>
                 </td>
               </tr>
             );
@@ -72,6 +73,7 @@ const TableData = ({ credits }: { credits: PersonalCredit[] }) => {
 
 export function PersonalCreditsPage() {
   const { data: credits } = useSuspenseQuery(personalFinanceQueries.list());
+  const [selectedCreditId, setSelectedCreditId] = useState<number | null>(null);
 
   return (
     <div className="space-y-6">
@@ -79,7 +81,8 @@ export function PersonalCreditsPage() {
         <h1 className="font-bold text-3xl tracking-tight">Créditos Personales</h1>
         <CreateCreditForm />
       </div>
-      <TableData credits={credits} />
+      <TableData credits={credits} onSelectCredit={setSelectedCreditId} />
+      <CreditDetailsModal creditId={selectedCreditId} onClose={() => setSelectedCreditId(null)} />
     </div>
   );
 }
