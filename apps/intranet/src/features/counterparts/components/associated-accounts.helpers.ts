@@ -28,6 +28,15 @@ export interface DateRange {
   to: string;
 }
 
+export function normalizeAccountNumber(value: string): string {
+  const compact = value.replace(/\s+/g, "").toUpperCase();
+  if (!compact) {
+    return "";
+  }
+  const normalized = compact.replace(/^0+/, "");
+  return normalized.length > 0 ? normalized : "0";
+}
+
 export function accountFilterKey(filter: AccountTransactionFilter) {
   return `${filter.accountNumber ?? ""}`;
 }
@@ -35,7 +44,8 @@ export function accountFilterKey(filter: AccountTransactionFilter) {
 export function buildAccountTransactionFilter(
   account: CounterpartAccount,
 ): AccountTransactionFilter {
+  const normalizedAccountNumber = normalizeAccountNumber(account.accountNumber.trim());
   return {
-    accountNumber: account.accountNumber.trim(),
+    accountNumber: normalizedAccountNumber || account.accountNumber.trim(),
   };
 }

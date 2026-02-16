@@ -17,7 +17,12 @@ const normalizeRut = (rut: string): string => {
 };
 
 const normalizeAccountNumber = (accountNumber: string): string => {
-  return accountNumber.trim();
+  const compact = accountNumber.replace(/\s+/g, "").toUpperCase();
+  if (!compact) {
+    return "";
+  }
+  const normalized = compact.replace(/^0+/, "");
+  return normalized.length > 0 ? normalized : "0";
 };
 
 export interface CounterpartAccountSuggestion {

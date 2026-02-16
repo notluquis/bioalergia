@@ -109,14 +109,6 @@ export function CounterpartForm({
           <Spinner size="lg" />
         </div>
       )}
-      <div className="flex flex-col gap-1">
-        <h1 className="typ-title text-foreground">
-          {counterpart ? "Editar contraparte" : "Nueva contraparte"}
-        </h1>
-        <p className="text-default-600 text-sm">
-          Ingresa el RUT y nombre del titular para registrar una contraparte.
-        </p>
-      </div>
       <form
         className={GRID_2_COL_MD}
         onSubmit={(e) => {

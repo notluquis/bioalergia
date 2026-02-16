@@ -84,7 +84,14 @@ type UnifiedTransaction = {
 
 const toLower = (value: null | string | undefined) => value?.toLowerCase() ?? "";
 const normalizeAccountIdentifier = (value: null | string | undefined) =>
-  (value ?? "").replaceAll(/\s+/g, "").toUpperCase();
+  (() => {
+    const compact = (value ?? "").replaceAll(/\s+/g, "").toUpperCase();
+    if (!compact) {
+      return "";
+    }
+    const normalized = compact.replace(/^0+/, "");
+    return normalized.length > 0 ? normalized : "0";
+  })();
 const asNumber = (value: NumericInput) => {
   if (value == null) {
     return 0;
