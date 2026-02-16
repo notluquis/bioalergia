@@ -1,7 +1,6 @@
-import { Description, Spinner } from "@heroui/react";
+import { Button, Description, Spinner } from "@heroui/react";
 import dayjs from "dayjs";
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { today } from "@/lib/dates";
 import { currencyFormatter } from "@/lib/format";
 

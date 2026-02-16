@@ -1,13 +1,8 @@
-import { Description } from "@heroui/react";
+import { Button, Description, FieldError, Input, Label, Modal, TextField } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import type { ChangeEvent } from "react";
 import { useState } from "react";
-
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
-import { Select, SelectItem } from "@/components/ui/Select";
+import { Select, SelectItem } from "../../../components/ui/Select";
 
 import type {
   RegenerateServicePayload,
@@ -139,7 +134,6 @@ export function ServiceDetail({
   service,
 }: ServiceDetailProps) {
   const [regenerateOpen, setRegenerateOpen] = useState(false);
-  const [regenerateForm, setRegenerateForm] = useState<RegenerateServicePayload>({});
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<null | string>(null);
   const navigate = useNavigate({ from: "/services" });
@@ -152,9 +146,22 @@ export function ServiceDetail({
     setRegenerating(true);
     setRegenerateError(null);
     try {
-      await onRegenerate(regenerateForm);
+      const formData = new FormData(event.currentTarget);
+      const payload: RegenerateServicePayload = {};
+      const months = formData.get("months");
+      const startDate = formData.get("startDate");
+      const defaultAmount = formData.get("defaultAmount");
+      const dueDay = formData.get("dueDay");
+      const frequency = formData.get("frequency");
+      const emissionDay = formData.get("emissionDay");
+      if (months) payload.months = Number(months);
+      if (startDate) payload.startDate = new Date(startDate as string);
+      if (defaultAmount) payload.defaultAmount = Number(defaultAmount);
+      if (dueDay) payload.dueDay = Number(dueDay);
+      if (frequency) payload.frequency = frequency as ServiceFrequency;
+      if (emissionDay) payload.emissionDay = Number(emissionDay);
+      await onRegenerate(payload);
       setRegenerateOpen(false);
-      setRegenerateForm({});
     } catch (error) {
       const message = error instanceof Error ? error.message : "No se pudo regenerar el cronograma";
       setRegenerateError(message);
@@ -210,8 +217,6 @@ export function ServiceDetail({
         onSubmit={handleRegenerate}
         regenerating={regenerating}
         service={service}
-        setRegenerateForm={setRegenerateForm}
-        values={regenerateForm}
       />
 
       {loading && <ServiceLoadingOverlay />}
@@ -255,12 +260,12 @@ function ServiceHeader({
           {statusBadge.label}
         </span>
         {canManage && (
-          <Button onClick={onRegenerate} type="button" variant="secondary">
+          <Button onPress={onRegenerate} variant="secondary">
             Regenerar cronograma
           </Button>
         )}
         {canManage && (
-          <Button onClick={onEdit} type="button" variant="secondary">
+          <Button onPress={onEdit} variant="secondary">
             Editar servicio
           </Button>
         )}
@@ -384,8 +389,6 @@ function RegenerateServiceModal({
   onSubmit,
   regenerating,
   service,
-  setRegenerateForm,
-  values,
 }: {
   error: string | null;
   isOpen: boolean;
@@ -393,111 +396,105 @@ function RegenerateServiceModal({
   onSubmit: (event: React.SubmitEvent<HTMLFormElement>) => void;
   regenerating: boolean;
   service: ServiceSummary;
-  setRegenerateForm: React.Dispatch<React.SetStateAction<RegenerateServicePayload>>;
-  values: RegenerateServicePayload;
 }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Regenerar cronograma">
-      <form className="space-y-4" onSubmit={onSubmit}>
-        <Input
-          label="Meses a generar"
-          max={60}
-          min={1}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            setRegenerateForm((prev) => ({ ...prev, months: Number(event.target.value) }));
-          }}
-          type="number"
-          value={values.months ?? service.nextGenerationMonths}
-        />
+    <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Modal.Container placement="center">
+        <Modal.Dialog className="sm:max-w-125">
+          <Modal.CloseTrigger />
+          <Modal.Header>
+            <Modal.Heading>Regenerar cronograma</Modal.Heading>
+          </Modal.Header>
+          <Modal.Body>
+            <form className="space-y-4" onSubmit={onSubmit}>
+              <TextField
+                defaultValue={String(service.nextGenerationMonths)}
+                isRequired
+                name="months"
+                type="number"
+                validate={(value) => {
+                  const num = Number(value);
+                  if (Number.isNaN(num) || num < 1 || num > 60) {
+                    return "Debe estar entre 1 y 60";
+                  }
+                  return null;
+                }}
+              >
+                <Label>Meses a generar</Label>
+                <Input min={1} max={60} />
+                <FieldError />
+              </TextField>
 
-        <Input
-          label="Nueva fecha de inicio"
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            setRegenerateForm((prev) => ({
-              ...prev,
-              startDate: event.target.value ? dayjs(event.target.value).toDate() : undefined,
-            }));
-          }}
-          type="date"
-          value={dayjs(values.startDate ?? service.startDate).format("YYYY-MM-DD")}
-        />
+              <TextField
+                defaultValue={dayjs(service.startDate).format("YYYY-MM-DD")}
+                isRequired
+                name="startDate"
+                type="date"
+              >
+                <Label>Nueva fecha de inicio</Label>
+                <Input />
+                <FieldError />
+              </TextField>
 
-        <Input
-          label="Monto base"
-          min={0}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            setRegenerateForm((prev) => ({ ...prev, defaultAmount: Number(event.target.value) }));
-          }}
-          step="0.01"
-          type="number"
-          value={values.defaultAmount ?? service.defaultAmount}
-        />
+              <TextField
+                defaultValue={String(service.defaultAmount)}
+                isRequired
+                name="defaultAmount"
+                type="number"
+                validate={(value) => {
+                  const num = Number(value);
+                  if (Number.isNaN(num) || num < 0) {
+                    return "Monto debe ser mayor o igual a 0";
+                  }
+                  return null;
+                }}
+              >
+                <Label>Monto base</Label>
+                <Input min={0} step="0.01" />
+                <FieldError />
+              </TextField>
 
-        <Input
-          label="Día de vencimiento"
-          max={31}
-          min={1}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            setRegenerateForm((prev) => ({
-              ...prev,
-              dueDay: event.target.value ? Number(event.target.value) : null,
-            }));
-          }}
-          type="number"
-          value={values.dueDay ?? service.dueDay ?? ""}
-        />
+              <TextField defaultValue={String(service.dueDay ?? "")} name="dueDay" type="number">
+                <Label>Día de vencimiento</Label>
+                <Input min={1} max={31} />
+              </TextField>
 
-        <Select
-          label="Frecuencia"
-          onChange={(val) => {
-            const newVal = val as string;
-            setRegenerateForm((prev) => ({
-              ...prev,
-              frequency: newVal as RegenerateServicePayload["frequency"],
-            }));
-          }}
-          value={values.frequency ?? service.frequency}
-        >
-          <SelectItem key="WEEKLY">Semanal</SelectItem>
-          <SelectItem key="BIWEEKLY">Quincenal</SelectItem>
-          <SelectItem key="MONTHLY">Mensual</SelectItem>
-          <SelectItem key="BIMONTHLY">Bimensual</SelectItem>
-          <SelectItem key="QUARTERLY">Trimestral</SelectItem>
-          <SelectItem key="SEMIANNUAL">Semestral</SelectItem>
-          <SelectItem key="ANNUAL">Anual</SelectItem>
-          <SelectItem key="ONCE">Única vez</SelectItem>
-        </Select>
-        {service.emissionMode === "FIXED_DAY" && (
-          <Input
-            helper="Aplica a servicios con día fijo de emisión"
-            label="Día de emisión"
-            max={31}
-            min={1}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setRegenerateForm((prev) => ({
-                ...prev,
-                emissionDay: event.target.value ? Number(event.target.value) : null,
-              }));
-            }}
-            type="number"
-            value={values.emissionDay ?? service.emissionDay ?? ""}
-          />
-        )}
-        {error && (
-          <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-            {error}
-          </Description>
-        )}
-        <div className="flex justify-end gap-3">
-          <Button disabled={regenerating} onClick={onClose} type="button" variant="secondary">
-            Cancelar
-          </Button>
-          <Button disabled={regenerating} type="submit">
-            {regenerating ? "Actualizando..." : "Regenerar"}
-          </Button>
-        </div>
-      </form>
-    </Modal>
+              <Select isRequired label="Frecuencia" name="frequency" value={service.frequency}>
+                <SelectItem key="WEEKLY">Semanal</SelectItem>
+                <SelectItem key="BIWEEKLY">Quincenal</SelectItem>
+                <SelectItem key="MONTHLY">Mensual</SelectItem>
+                <SelectItem key="BIMONTHLY">Bimensual</SelectItem>
+                <SelectItem key="QUARTERLY">Trimestral</SelectItem>
+                <SelectItem key="SEMIANNUAL">Semestral</SelectItem>
+                <SelectItem key="ANNUAL">Anual</SelectItem>
+                <SelectItem key="ONCE">Única vez</SelectItem>
+              </Select>
+
+              {service.emissionMode === "FIXED_DAY" && (
+                <TextField defaultValue={String(service.emissionDay ?? "")} name="emissionDay">
+                  <Label>Día de emisión</Label>
+                  <Input min={1} max={31} type="number" />
+                  <Description>Aplica a servicios con día fijo de emisión</Description>
+                </TextField>
+              )}
+              {error && (
+                <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+                  {error}
+                </Description>
+              )}
+              <div className="flex justify-end gap-3">
+                <Button slot="close" type="button" variant="secondary">
+                  Cancelar
+                </Button>
+                <Button isDisabled={regenerating} type="submit">
+                  {regenerating ? "Actualizando..." : "Regenerar"}
+                </Button>
+              </div>
+            </form>
+          </Modal.Body>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 }
 

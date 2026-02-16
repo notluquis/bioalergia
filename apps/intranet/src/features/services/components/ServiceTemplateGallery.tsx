@@ -1,6 +1,5 @@
-import { Description } from "@heroui/react";
+import { Button, Description } from "@heroui/react";
 import dayjs from "dayjs";
-import { Button } from "@/components/ui/Button";
 
 import type { CreateServicePayload } from "../types";
 

@@ -1,12 +1,19 @@
-import { Chip, Description, Spinner } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Chip,
+  Description,
+  FieldError,
+  Input,
+  Label,
+  Modal,
+  Spinner,
+  TextField,
+} from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
 import { EditScheduleModal } from "@/features/services/components/EditScheduleModal";
 import { ServiceDetail } from "@/features/services/components/ServiceDetail";
 import { ServiceForm } from "@/features/services/components/ServiceForm";
@@ -215,97 +222,125 @@ export function ServicesOverviewContent() {
         </div>
       </div>
 
-      <Modal isOpen={createOpen} onClose={closeCreateModal} title="Nuevo servicio">
-        <ServiceForm
-          initialValues={selectedTemplate?.payload}
-          onCancel={closeCreateModal}
-          onSubmit={async (payload) => {
-            await handleCreateService(payload);
-          }}
-          submitLabel="Crear servicio"
-        />
+      <Modal.Backdrop isOpen={createOpen} onOpenChange={(open) => !open && closeCreateModal()}>
+        <Modal.Container placement="center">
+          <Modal.Dialog className="sm:max-w-2xl">
+            <Modal.CloseTrigger />
+            <Modal.Header>
+              <Modal.Heading>Nuevo servicio</Modal.Heading>
+            </Modal.Header>
+            <Modal.Body>
+              <ServiceForm
+                initialValues={selectedTemplate?.payload}
+                onCancel={closeCreateModal}
+                onSubmit={async (payload) => {
+                  await handleCreateService(payload);
+                }}
+                submitLabel="Crear servicio"
+              />
 
-        {createError && (
-          <Description className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-            {createError}
-          </Description>
-        )}
-      </Modal>
+              {createError && (
+                <Description className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+                  {createError}
+                </Description>
+              )}
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
 
-      <Modal
+      <Modal.Backdrop
         isOpen={Boolean(paymentSchedule)}
-        onClose={closePaymentModal}
-        title={
-          paymentSchedule
-            ? `Registrar pago ${dayjs(paymentSchedule.periodStart).format("MMM YYYY")}`
-            : "Registrar pago"
-        }
+        onOpenChange={(open) => !open && closePaymentModal()}
       >
-        {paymentSchedule && (
-          <form className="space-y-4" onSubmit={handlePaymentSubmit}>
-            <Input
-              label="ID transacción"
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                handlePaymentFieldChange("transactionId", event.target.value);
-              }}
-              required
-              type="number"
-              value={paymentForm.transactionId}
-            />
+        <Modal.Container placement="center">
+          <Modal.Dialog className="sm:max-w-125">
+            <Modal.CloseTrigger />
+            <Modal.Header>
+              <Modal.Heading>
+                {paymentSchedule
+                  ? `Registrar pago ${dayjs(paymentSchedule.periodStart).format("MMM YYYY")}`
+                  : "Registrar pago"}
+              </Modal.Heading>
+            </Modal.Header>
+            <Modal.Body>
+              {paymentSchedule && (
+                <form className="space-y-4" onSubmit={handlePaymentSubmit}>
+                  <TextField isRequired name="transactionId">
+                    <Label>ID transacción</Label>
+                    <Input
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                        handlePaymentFieldChange("transactionId", event.target.value);
+                      }}
+                      type="number"
+                      value={paymentForm.transactionId}
+                    />
+                    <FieldError />
+                  </TextField>
 
-            <Input
-              label="Monto pagado"
-              min={0}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                handlePaymentFieldChange("paidAmount", event.target.value);
-              }}
-              required
-              step="0.01"
-              type="number"
-              value={paymentForm.paidAmount}
-            />
+                  <TextField isRequired name="paidAmount">
+                    <Label>Monto pagado</Label>
+                    <Input
+                      min={0}
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                        handlePaymentFieldChange("paidAmount", event.target.value);
+                      }}
+                      step="0.01"
+                      type="number"
+                      value={paymentForm.paidAmount}
+                    />
+                    <FieldError />
+                  </TextField>
 
-            <Input
-              label="Fecha de pago"
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                handlePaymentFieldChange("paidDate", event.target.value);
-              }}
-              required
-              type="date"
-              value={dayjs(paymentForm.paidDate).format("YYYY-MM-DD")}
-            />
+                  <TextField isRequired name="paidDate">
+                    <Label>Fecha de pago</Label>
+                    <Input
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                        handlePaymentFieldChange("paidDate", event.target.value);
+                      }}
+                      type="date"
+                      value={dayjs(paymentForm.paidDate).format("YYYY-MM-DD")}
+                    />
+                    <FieldError />
+                  </TextField>
 
-            <Input
-              as="textarea"
-              label="Nota"
-              onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
-                handlePaymentFieldChange("note", event.target.value);
-              }}
-              rows={2}
-              value={paymentForm.note}
-            />
+                  <TextField name="note">
+                    <Label>Nota</Label>
+                    <textarea
+                      className="w-full rounded-lg border border-default-200 bg-default-50 px-3 py-2 text-sm text-foreground placeholder-default-400 focus:border-primary focus:outline-none"
+                      name="note"
+                      onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
+                        handlePaymentFieldChange("note", event.target.value);
+                      }}
+                      rows={2}
+                      value={paymentForm.note}
+                    />
+                  </TextField>
 
-            {paymentError && (
-              <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
-                {paymentError}
-              </Description>
-            )}
-            <div className="flex justify-end gap-3">
-              <Button
-                disabled={processingPayment}
-                onClick={closePaymentModal}
-                type="button"
-                variant="secondary"
-              >
-                Cancelar
-              </Button>
-              <Button disabled={processingPayment} type="submit">
-                {processingPayment ? "Registrando..." : "Registrar pago"}
-              </Button>
-            </div>
-          </form>
-        )}
-      </Modal>
+                  {paymentError && (
+                    <Description className="rounded-lg bg-rose-100 px-4 py-2 text-rose-700 text-sm">
+                      {paymentError}
+                    </Description>
+                  )}
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      isDisabled={processingPayment}
+                      slot="close"
+                      type="button"
+                      variant="secondary"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button isDisabled={processingPayment} type="submit">
+                      {processingPayment ? "Registrando..." : "Registrar pago"}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </Modal.Body>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
 
       <EditScheduleModal
         isOpen={editScheduleOpen}

@@ -1,9 +1,7 @@
-import { Description } from "@heroui/react";
+import { Button, Description } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-
-import { Button } from "@/components/ui/Button";
 import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import type { CounterpartAccount } from "../../counterparts/types";
 import type { CreateServicePayload } from "../types";
@@ -336,10 +334,10 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
         </Description>
       )}
       <div className="flex justify-end gap-3">
-        <Button disabled={submitting} onClick={onCancel} type="button" variant="secondary">
+        <Button isDisabled={submitting} onPress={onCancel} type="button" variant="secondary">
           Cancelar
         </Button>
-        <Button disabled={submitting} type="submit">
+        <Button isDisabled={submitting} type="submit">
           {submitting ? submittingLabel : effectiveSubmitLabel}
         </Button>
       </div>

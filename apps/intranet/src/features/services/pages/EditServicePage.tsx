@@ -1,11 +1,9 @@
-import { Description, Surface } from "@heroui/react";
+import { Alert, Button, Description, Surface } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
 import {
   fetchServiceDetail,
   regenerateServiceSchedules,
@@ -242,8 +240,8 @@ export function ServiceEditPage() {
 
               <div className="flex justify-end">
                 <Button
-                  disabled={updateMutation.isPending}
-                  onClick={() => handleRegenerate(String(service.id))}
+                  isDisabled={updateMutation.isPending}
+                  onPress={() => handleRegenerate(String(service.id))}
                   variant="secondary"
                 >
                   Regenerar cronograma
