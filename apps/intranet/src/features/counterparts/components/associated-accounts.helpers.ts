@@ -28,12 +28,15 @@ export interface DateRange {
   to: string;
 }
 
+const ACCOUNT_SPACES_REGEX = /\s+/g;
+const LEADING_ZEROS_REGEX = /^0+/;
+
 export function normalizeAccountNumber(value: string): string {
-  const compact = value.replace(/\s+/g, "").toUpperCase();
+  const compact = value.replace(ACCOUNT_SPACES_REGEX, "").toUpperCase();
   if (!compact) {
     return "";
   }
-  const normalized = compact.replace(/^0+/, "");
+  const normalized = compact.replace(LEADING_ZEROS_REGEX, "");
   return normalized.length > 0 ? normalized : "0";
 }
 
