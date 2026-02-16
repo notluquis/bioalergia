@@ -39,7 +39,6 @@ import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/s
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
 import { Route as AuthedSettingsCsvUploadRouteImport } from "./routes/_authed/settings/csv-upload"
 import { Route as AuthedSettingsBackupsRouteImport } from "./routes/_authed/settings/backups"
-import { Route as AuthedServicesTemplatesRouteImport } from "./routes/_authed/services/templates"
 import { Route as AuthedServicesCreateRouteImport } from "./routes/_authed/services/create"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
 import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
@@ -197,11 +196,6 @@ const AuthedSettingsBackupsRoute = AuthedSettingsBackupsRouteImport.update({
   id: "/backups",
   path: "/backups",
   getParentRoute: () => AuthedSettingsRoute,
-} as any)
-const AuthedServicesTemplatesRoute = AuthedServicesTemplatesRouteImport.update({
-  id: "/templates",
-  path: "/templates",
-  getParentRoute: () => AuthedServicesRoute,
 } as any)
 const AuthedServicesCreateRoute = AuthedServicesCreateRouteImport.update({
   id: "/create",
@@ -442,7 +436,6 @@ export interface FileRoutesByFullPath {
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/services/create": typeof AuthedServicesCreateRoute
-  "/services/templates": typeof AuthedServicesTemplatesRoute
   "/settings/backups": typeof AuthedSettingsBackupsRoute
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
@@ -500,7 +493,6 @@ export interface FileRoutesByTo {
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
   "/services/create": typeof AuthedServicesCreateRoute
-  "/services/templates": typeof AuthedServicesTemplatesRoute
   "/settings/backups": typeof AuthedSettingsBackupsRoute
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
@@ -564,7 +556,6 @@ export interface FileRoutesById {
   "/_authed/patients/new": typeof AuthedPatientsNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
   "/_authed/services/create": typeof AuthedServicesCreateRoute
-  "/_authed/services/templates": typeof AuthedServicesTemplatesRoute
   "/_authed/settings/backups": typeof AuthedSettingsBackupsRoute
   "/_authed/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
@@ -628,7 +619,6 @@ export interface FileRouteTypes {
     | "/patients/new"
     | "/services/agenda"
     | "/services/create"
-    | "/services/templates"
     | "/settings/backups"
     | "/settings/csv-upload"
     | "/settings/haulmer"
@@ -686,7 +676,6 @@ export interface FileRouteTypes {
     | "/patients/new"
     | "/services/agenda"
     | "/services/create"
-    | "/services/templates"
     | "/settings/backups"
     | "/settings/csv-upload"
     | "/settings/haulmer"
@@ -749,7 +738,6 @@ export interface FileRouteTypes {
     | "/_authed/patients/new"
     | "/_authed/services/agenda"
     | "/_authed/services/create"
-    | "/_authed/services/templates"
     | "/_authed/settings/backups"
     | "/_authed/settings/csv-upload"
     | "/_authed/settings/haulmer"
@@ -947,13 +935,6 @@ declare module "@tanstack/react-router" {
       fullPath: "/settings/backups"
       preLoaderRoute: typeof AuthedSettingsBackupsRouteImport
       parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/services/templates": {
-      id: "/_authed/services/templates"
-      path: "/templates"
-      fullPath: "/services/templates"
-      preLoaderRoute: typeof AuthedServicesTemplatesRouteImport
-      parentRoute: typeof AuthedServicesRoute
     }
     "/_authed/services/create": {
       id: "/_authed/services/create"
@@ -1330,7 +1311,6 @@ const AuthedOperationsRouteWithChildren =
 interface AuthedServicesRouteChildren {
   AuthedServicesAgendaRoute: typeof AuthedServicesAgendaRoute
   AuthedServicesCreateRoute: typeof AuthedServicesCreateRoute
-  AuthedServicesTemplatesRoute: typeof AuthedServicesTemplatesRoute
   AuthedServicesIndexRoute: typeof AuthedServicesIndexRoute
   AuthedServicesIdEditRoute: typeof AuthedServicesIdEditRoute
 }
@@ -1338,7 +1318,6 @@ interface AuthedServicesRouteChildren {
 const AuthedServicesRouteChildren: AuthedServicesRouteChildren = {
   AuthedServicesAgendaRoute: AuthedServicesAgendaRoute,
   AuthedServicesCreateRoute: AuthedServicesCreateRoute,
-  AuthedServicesTemplatesRoute: AuthedServicesTemplatesRoute,
   AuthedServicesIndexRoute: AuthedServicesIndexRoute,
   AuthedServicesIdEditRoute: AuthedServicesIdEditRoute,
 }
