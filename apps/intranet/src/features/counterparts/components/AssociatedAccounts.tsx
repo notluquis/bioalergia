@@ -12,16 +12,10 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/context/ToastContext";
 import { fetchTransactions } from "@/features/finance/api";
 import type { Transaction } from "@/features/finance/types";
-import { today } from "@/lib/dates";
 import { fmtCLP } from "@/lib/format";
 import { formatRut } from "@/lib/rut";
 import { addCounterpartAccount, attachCounterpartRut, fetchAccountSuggestions } from "../api";
-import type {
-  Counterpart,
-  CounterpartAccount,
-  CounterpartAccountSuggestion,
-  CounterpartSummary,
-} from "../types";
+import type { Counterpart, CounterpartAccount, CounterpartAccountSuggestion } from "../types";
 import { getAccountGroupColumns, getQuickViewColumns } from "./AssociatedAccountsColumns";
 import {
   ACCOUNT_FORM_DEFAULT,
@@ -35,9 +29,7 @@ import {
 
 interface AssociatedAccountsProps {
   detail: null | { accounts: CounterpartAccount[]; counterpart: Counterpart };
-  onSummaryRangeChange: (update: Partial<DateRange>) => void;
   selectedId: null | number;
-  summary: CounterpartSummary | null;
   summaryRange: { from: string; to: string };
 }
 
@@ -224,7 +216,6 @@ const useSummaryByGroup = (accountGroups: AccountGroup[], activeRange: DateRange
 
 const useAssociatedAccountsModel = ({
   detail,
-  onSummaryRangeChange,
   selectedId,
   summaryRange,
 }: Readonly<AssociatedAccountsProps>) => {
@@ -235,11 +226,6 @@ const useAssociatedAccountsModel = ({
   const { error: toastError, success: toastSuccess } = useToast();
   const queryClient = useQueryClient();
   const { accountSuggestions, setSuggestionQuery } = useAccountSuggestions();
-
-  const fallbackRange: DateRange = {
-    from: dayjs().startOf("year").format("YYYY-MM-DD"),
-    to: today(),
-  };
 
   const addAccountMutation = useMutation({
     mutationFn: (payload: { data: Parameters<typeof addCounterpartAccount>[1]; id: number }) =>
@@ -402,21 +388,18 @@ const useAssociatedAccountsModel = ({
     addAccountMutation,
     attachRutMutation,
     error,
-    fallbackRange,
     handleAccountIdentifierChange,
     handleAddAccount,
     handleAttachRut,
     handleSuggestionClick,
     handleSuggestionCreate,
     isAddAccountModalOpen,
-    onSummaryRangeChange,
     quickStats,
     quickViewColumns,
     quickViewGroup,
     rows,
     selectedId,
     setIsAddAccountModalOpen,
-    summaryRange,
     updateAccountForm,
   };
 };
@@ -430,21 +413,18 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
     addAccountMutation,
     attachRutMutation,
     error,
-    fallbackRange,
     handleAccountIdentifierChange,
     handleAddAccount,
     handleAttachRut,
     handleSuggestionClick,
     handleSuggestionCreate,
     isAddAccountModalOpen,
-    onSummaryRangeChange,
     quickStats,
     quickViewColumns,
     quickViewGroup,
     rows,
     selectedId,
     setIsAddAccountModalOpen,
-    summaryRange,
     updateAccountForm,
   } = useAssociatedAccountsModel(props);
 
@@ -457,12 +437,9 @@ export function AssociatedAccounts(props: Readonly<AssociatedAccountsProps>) {
 
       <QuickViewSection
         activeRange={activeRange}
-        fallbackRange={fallbackRange}
-        onSummaryRangeChange={onSummaryRangeChange}
         quickStats={quickStats}
         quickViewGroup={quickViewGroup}
         rows={rows}
-        summaryRange={summaryRange}
         columns={quickViewColumns}
       />
 
@@ -529,21 +506,15 @@ function AccountGroupsTable({
 
 function QuickViewSection({
   activeRange,
-  fallbackRange,
-  onSummaryRangeChange,
   quickStats,
   quickViewGroup,
   rows,
-  summaryRange,
   columns,
 }: {
   activeRange: DateRange;
-  fallbackRange: DateRange;
-  onSummaryRangeChange: (update: Partial<DateRange>) => void;
   quickStats: { count: number; total: number };
   quickViewGroup: AccountGroup | null;
   rows: Transaction[];
-  summaryRange: { from: string; to: string };
   columns: ColumnDef<Transaction, unknown>[];
 }) {
   if (!quickViewGroup) {
@@ -575,40 +546,6 @@ function QuickViewSection({
             Total {fmtCLP(quickStats.total)}
           </div>
         </div>
-      </div>
-      <div className="flex flex-wrap items-end gap-3 text-default-600 text-xs">
-        <Input
-          className="w-36"
-          label="Desde"
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            onSummaryRangeChange({ from: event.target.value });
-          }}
-          type="date"
-          value={summaryRange.from}
-        />
-
-        <Input
-          className="w-36"
-          label="Hasta"
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            onSummaryRangeChange({ to: event.target.value });
-          }}
-          type="date"
-          value={summaryRange.to}
-        />
-
-        <Button
-          onClick={() => {
-            onSummaryRangeChange({
-              from: fallbackRange.from,
-              to: fallbackRange.to,
-            });
-          }}
-          size="sm"
-          variant="ghost"
-        >
-          Año en curso
-        </Button>
       </div>
       <Surface className="border border-default-200/70 p-4" variant="secondary">
         <div className="overflow-hidden rounded-lg border border-default-100">

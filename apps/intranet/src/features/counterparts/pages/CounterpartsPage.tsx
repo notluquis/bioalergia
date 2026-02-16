@@ -116,7 +116,7 @@ function buildAssignPreviewMessage(params: {
 function useCounterpartsState() {
   const [selectedId, setSelectedId] = useState<null | number>(null);
   const [error, setError] = useState<null | string>(null);
-  const [summaryRange, setSummaryRange] = useState<SummaryRange>(createInitialSummaryRange);
+  const [summaryRange] = useState<SummaryRange>(createInitialSummaryRange);
   const [categoryFilter, setCategoryFilter] = useState<"ALL" | CounterpartCategory>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [payoutSearchQuery, setPayoutSearchQuery] = useState("");
@@ -178,7 +178,6 @@ function useCounterpartsState() {
     setSearchQuery,
     setSelectedId,
     setSelectedPayoutAccounts,
-    setSummaryRange,
     summaryRange,
   };
 }
@@ -339,7 +338,6 @@ function useCounterpartsActions(params: {
   setIsFormModalOpen: (value: boolean) => void;
   setSelectedId: (value: null | number) => void;
   setSelectedPayoutAccounts: (value: string[]) => void;
-  setSummaryRange: (updater: (prev: SummaryRange) => SummaryRange) => void;
   syncMutate: () => void;
   toastError: (message: string) => void;
   toastInfo: (message: string) => void;
@@ -368,10 +366,6 @@ function useCounterpartsActions(params: {
       params.setError(message);
       params.toastError(message);
     }
-  };
-
-  const handleSummaryRangeChange = (update: Partial<SummaryRange>) => {
-    params.setSummaryRange((prev) => ({ ...prev, ...update }));
   };
 
   const handleCreateFromPayout = (payoutBankAccountNumber: string) => {
@@ -437,7 +431,6 @@ function useCounterpartsActions(params: {
     handleBulkAssignFromSelection,
     handleCreateFromPayout,
     handleSaveCounterpart,
-    handleSummaryRangeChange,
     triggerSync: params.syncMutate,
   };
 }
@@ -488,7 +481,6 @@ export function CounterpartsPage() {
     setIsFormModalOpen: state.setIsFormModalOpen,
     setSelectedId: state.setSelectedId,
     setSelectedPayoutAccounts: state.setSelectedPayoutAccounts,
-    setSummaryRange: state.setSummaryRange,
     syncMutate: () => mutations.syncMutation.mutate(),
     toastError,
     toastInfo,
@@ -569,7 +561,6 @@ export function CounterpartsPage() {
                 state.openFormModal(null);
               }}
               onEdit={state.openFormModal}
-              onSummaryRangeChange={actions.handleSummaryRangeChange}
               summaryRange={state.summaryRange}
             />
           </div>
@@ -968,7 +959,6 @@ interface CounterpartDetailPaneProps {
   counterpartId: null | number;
   onCreate: () => void;
   onEdit: (counterpart: Counterpart) => void;
-  onSummaryRangeChange: (update: Partial<{ from: string; to: string }>) => void;
   summaryRange: { from: string; to: string };
 }
 
@@ -978,7 +968,6 @@ function CounterpartDetailPane({
   counterpartId,
   onCreate,
   onEdit,
-  onSummaryRangeChange,
   summaryRange,
 }: CounterpartDetailPaneProps) {
   if (!counterpartId) {
@@ -1020,7 +1009,6 @@ function CounterpartDetailPane({
         canUpdate={canUpdate}
         counterpartId={counterpartId}
         onEdit={onEdit}
-        onSummaryRangeChange={onSummaryRangeChange}
         summaryRange={summaryRange}
       />
     </Suspense>

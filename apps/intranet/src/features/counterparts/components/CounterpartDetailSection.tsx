@@ -12,18 +12,15 @@ interface CounterpartDetailSectionProps {
   canUpdate: boolean;
   counterpartId: number;
   onEdit: (counterpart: Counterpart) => void;
-  onSummaryRangeChange: (update: Partial<{ from: string; to: string }>) => void;
   summaryRange: { from: string; to: string };
 }
 export function CounterpartDetailSection({
   canUpdate,
   counterpartId,
   onEdit,
-  onSummaryRangeChange,
   summaryRange,
 }: Readonly<CounterpartDetailSectionProps>) {
   const { data: detail } = useSuspenseQuery(counterpartKeys.detail(counterpartId));
-  const { data: summary } = useSuspenseQuery(counterpartKeys.summary(counterpartId, summaryRange));
 
   if (!detail) {
     return null; // Should not happen with suspense if data exists
@@ -71,13 +68,7 @@ export function CounterpartDetailSection({
         </div>
       </Surface>
 
-      <AssociatedAccounts
-        detail={detail}
-        onSummaryRangeChange={onSummaryRangeChange}
-        selectedId={counterpartId}
-        summary={summary}
-        summaryRange={summaryRange}
-      />
+      <AssociatedAccounts detail={detail} selectedId={counterpartId} summaryRange={summaryRange} />
     </div>
   );
 }
