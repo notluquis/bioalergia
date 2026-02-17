@@ -77,10 +77,6 @@ export function PersonalCreditsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-bold text-3xl tracking-tight">Créditos Personales</h1>
-        <CreateCreditForm />
-      </div>
       <TableData credits={credits} onSelectCredit={setSelectedCreditId} />
       <CreditDetailsModal creditId={selectedCreditId} onClose={() => setSelectedCreditId(null)} />
     </div>

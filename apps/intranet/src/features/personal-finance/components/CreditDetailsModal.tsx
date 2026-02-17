@@ -1,18 +1,9 @@
 "use client";
 
-import { Button, Card, Chip, Disclosure, DisclosureGroup, Modal, Switch } from "@heroui/react";
+import { Button, Chip, Disclosure, DisclosureGroup, Modal } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import {
-  Activity,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  DollarSign,
-  ListChecks,
-  type LucideIcon,
-  Percent,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { personalFinanceQueries } from "../queries";
 import type { PersonalCreditInstallment } from "../types";
@@ -36,37 +27,6 @@ export function CreditDetailsModal({ creditId, onClose }: CreditDetailsModalProp
   return <CreditDetailsModalContent creditId={creditId} isOpen={isOpen} onClose={onClose} />;
 }
 
-// Helper component for stat cards
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  iconColor,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: React.ReactNode;
-  iconColor?: string;
-}) {
-  return (
-    <Card variant="secondary" className="transition-all duration-200 hover:shadow-md">
-      <Card.Content className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 space-y-1">
-            <p className="text-xs font-medium text-muted uppercase tracking-wide">{label}</p>
-            <div className="font-bold text-2xl">{value}</div>
-          </div>
-          <div
-            className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${iconColor || "bg-accent/10 text-accent"}`}
-          >
-            <Icon className="size-5" />
-          </div>
-        </div>
-      </Card.Content>
-    </Card>
-  );
-}
-
 function CreditDetailsModalContent({
   creditId,
   isOpen,
@@ -82,10 +42,6 @@ function CreditDetailsModalContent({
     return null;
   }
 
-  const paidCount = credit.installments?.filter((i) => i.status === "PAID").length || 0;
-  const totalCount = credit.totalInstallments || 1;
-  const percent = Math.min(100, Math.round((paidCount / totalCount) * 100));
-
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Modal.Backdrop>
@@ -93,10 +49,9 @@ function CreditDetailsModalContent({
           <Modal.Dialog className="flex flex-col h-full">
             <Modal.CloseTrigger onClick={onClose} />
 
-            {/* Header */}
-            <Modal.Header className="flex-col items-start gap-3 border-b border-border py-5">
+            <Modal.Header className="flex-col items-start gap-2 border-b border-border py-5">
               <div className="flex w-full items-center justify-between">
-                <Modal.Heading className="font-bold text-2xl">{credit.bankName}</Modal.Heading>
+                <Modal.Heading className="font-bold text-xl">{credit.bankName}</Modal.Heading>
                 <Chip
                   color={credit.status === "ACTIVE" ? "success" : "default"}
                   variant="soft"
@@ -110,76 +65,16 @@ function CreditDetailsModalContent({
               </p>
             </Modal.Header>
 
-            <Modal.Body className="flex-1 overflow-y-auto gap-6 py-6">
-              {/* Info Cards Grid */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <StatCard
-                  icon={DollarSign}
-                  label="Monto Total"
-                  value={formatCurrency(Number(credit.totalAmount), credit.currency)}
-                  iconColor="bg-accent/10 text-accent"
-                />
-
-                <StatCard
-                  icon={ListChecks}
-                  label="Cuotas Pagadas"
-                  value={
-                    <span>
-                      {paidCount} <span className="text-muted">/ {totalCount}</span>
-                    </span>
-                  }
-                  iconColor="bg-success/10 text-success"
-                />
-
-                {credit.interestRate && (
-                  <StatCard
-                    icon={Percent}
-                    label="Tasa de Interés"
-                    value={`${credit.interestRate}%`}
-                    iconColor="bg-warning/10 text-warning"
+            <Modal.Body className="flex-1 overflow-y-auto py-6">
+              <DisclosureGroup className="space-y-2">
+                {credit.installments?.map((installment) => (
+                  <InstallmentRow
+                    key={installment.id}
+                    installment={installment}
+                    currency={credit.currency}
                   />
-                )}
-
-                <div className="sm:col-span-2">
-                  <Card variant="secondary" className="transition-all duration-200 hover:shadow-md">
-                    <Card.Content className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs font-medium text-muted uppercase tracking-wide">
-                              Progreso
-                            </p>
-                            <span className="font-bold text-lg text-accent">{percent}%</span>
-                          </div>
-                          <div className="h-3 rounded-full bg-accent/10 overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-linear-to-r from-accent to-accent/70 transition-all duration-500"
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                          <Activity className="size-5" />
-                        </div>
-                      </div>
-                    </Card.Content>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Tabla de Amortización */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-base">Tabla de Amortización</h3>
-                <DisclosureGroup className="space-y-2">
-                  {credit.installments?.map((installment) => (
-                    <InstallmentRow
-                      key={installment.id}
-                      installment={installment}
-                      currency={credit.currency}
-                    />
-                  ))}
-                </DisclosureGroup>
-              </div>
+                ))}
+              </DisclosureGroup>
             </Modal.Body>
 
             <Modal.Footer className="border-t border-border py-4">
@@ -299,24 +194,23 @@ function InstallmentRow({
             )}
           </div>
 
-          {/* Payment Toggle */}
-          <div className="flex items-center justify-between pt-2 border-t border-border">
-            <div className="space-y-0.5">
-              <span className="text-sm font-medium">Marcar como pagada</span>
-              <p className="text-xs text-muted">Registrar pago de esta cuota</p>
-            </div>
-            <Switch
-              isSelected={isPaid}
-              onChange={async () => {
+          {/* Payment Button */}
+          {!isPaid && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              onPress={async () => {
                 // TODO: Implementar mutation para pagar cuota
                 // await payInstallmentMutation.mutateAsync({
                 //   creditId: creditId,
                 //   installmentNumber: installment.installmentNumber,
                 // });
               }}
-              isDisabled={isPaid}
-            />
-          </div>
+            >
+              Marcar como pagada
+            </Button>
+          )}
         </Disclosure.Body>
       </Disclosure.Content>
     </Disclosure>
