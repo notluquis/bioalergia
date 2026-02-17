@@ -535,7 +535,7 @@ export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableM
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-1">
       {enableToolbar && (
         <DataTableToolbar
           enableExport={enableExport}
