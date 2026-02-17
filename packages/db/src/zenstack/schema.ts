@@ -10953,6 +10953,24 @@ export class SchemaType implements SchemaDef {
             },
           ],
         },
+        paidAmountCLP: {
+          name: "paidAmountCLP",
+          type: "Decimal",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("paid_amount_clp") }],
+            },
+            {
+              name: "@db.Decimal",
+              args: [
+                { name: "p", value: ExpressionUtils.literal(15) },
+                { name: "s", value: ExpressionUtils.literal(2) },
+              ],
+            },
+          ],
+        },
         credit: {
           name: "credit",
           type: "PersonalCredit",

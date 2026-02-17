@@ -29,20 +29,20 @@ plugin ts {
 // ============================================================
 
 model Person {
-  id           Int           @id @default(autoincrement())
-  rut          String        @unique @db.VarChar(20)
-  names        String
-  fatherName   String?       @map("father_name")
-  motherName   String?       @map("mother_name")
-  email        String?        @unique
-  phone        String?
-  address      String?
-  personType   PersonType    @default(NATURAL) @map("person_type")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
-  employee     Employee?
-  user         User?
-  patient      Patient?
+  id         Int        @id @default(autoincrement())
+  rut        String     @unique @db.VarChar(20)
+  names      String
+  fatherName String?    @map("father_name")
+  motherName String?    @map("mother_name")
+  email      String?    @unique
+  phone      String?
+  address    String?
+  personType PersonType @default(NATURAL) @map("person_type")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @default(now()) @updatedAt @map("updated_at")
+  employee   Employee?
+  user       User?
+  patient    Patient?
 
   // Access policies
   @@deny('all', auth() == null)
@@ -294,87 +294,87 @@ model EmployeeTimesheet {
 
 // MercadoPago Settlement Report data (Conciliación)
 model SettlementTransaction {
-  id                   Int          @id @default(autoincrement())
+  id                   Int               @id @default(autoincrement())
   
   // Key identifier - must be unique
-  sourceId             String       @unique @map("source_id") @db.VarChar(100)
+  sourceId             String            @unique @map("source_id") @db.VarChar(100)
 
   // Counterpart reference
-  identificationNumber String?      @map("identification_number") @db.VarChar(50)
+  identificationNumber String?           @map("identification_number") @db.VarChar(50)
   
   // Dates
-  transactionDate      DateTime     @map("transaction_date")
-  settlementDate       DateTime?    @map("settlement_date")
-  moneyReleaseDate     DateTime?    @map("money_release_date")
+  transactionDate      DateTime          @map("transaction_date")
+  settlementDate       DateTime?         @map("settlement_date")
+  moneyReleaseDate     DateTime?         @map("money_release_date")
   
   // Operation data
-  externalReference    String?      @map("external_reference") @db.VarChar(255)
-  userId               String?      @map("user_id") @db.VarChar(19)
-  paymentMethodType    String?      @map("payment_method_type") @db.VarChar(200)
-  paymentMethod        String?      @map("payment_method") @db.VarChar(50)
-  site                 String?      @db.VarChar(200)
-  transactionType      String       @map("transaction_type") @db.VarChar(200)
-  transactionAmount    Decimal      @map("transaction_amount") @db.Decimal(17, 2)
-  transactionCurrency  String       @map("transaction_currency") @db.VarChar(10)
-  sellerAmount         Decimal?     @map("seller_amount") @db.Decimal(17, 2)
-  feeAmount            Decimal?     @map("fee_amount") @db.Decimal(17, 2)
-  settlementNetAmount  Decimal?     @map("settlement_net_amount") @db.Decimal(17, 2)
-  settlementCurrency   String?      @map("settlement_currency") @db.VarChar(10)
-  realAmount           Decimal?     @map("real_amount") @db.Decimal(17, 2)
-  couponAmount         Decimal?     @map("coupon_amount") @db.Decimal(17, 2)
+  externalReference    String?           @map("external_reference") @db.VarChar(255)
+  userId               String?           @map("user_id") @db.VarChar(19)
+  paymentMethodType    String?           @map("payment_method_type") @db.VarChar(200)
+  paymentMethod        String?           @map("payment_method") @db.VarChar(50)
+  site                 String?           @db.VarChar(200)
+  transactionType      String            @map("transaction_type") @db.VarChar(200)
+  transactionAmount    Decimal           @map("transaction_amount") @db.Decimal(17, 2)
+  transactionCurrency  String            @map("transaction_currency") @db.VarChar(10)
+  sellerAmount         Decimal?          @map("seller_amount") @db.Decimal(17, 2)
+  feeAmount            Decimal?          @map("fee_amount") @db.Decimal(17, 2)
+  settlementNetAmount  Decimal?          @map("settlement_net_amount") @db.Decimal(17, 2)
+  settlementCurrency   String?           @map("settlement_currency") @db.VarChar(10)
+  realAmount           Decimal?          @map("real_amount") @db.Decimal(17, 2)
+  couponAmount         Decimal?          @map("coupon_amount") @db.Decimal(17, 2)
   metadata             Json?
-  mkpFeeAmount         Decimal?     @map("mkp_fee_amount") @db.Decimal(17, 2)
-  financingFeeAmount   Decimal?     @map("financing_fee_amount") @db.Decimal(17, 2)
-  shippingFeeAmount    Decimal?     @map("shipping_fee_amount") @db.Decimal(17, 2)
-  taxesAmount          Decimal?     @map("taxes_amount") @db.Decimal(17, 2)
+  mkpFeeAmount         Decimal?          @map("mkp_fee_amount") @db.Decimal(17, 2)
+  financingFeeAmount   Decimal?          @map("financing_fee_amount") @db.Decimal(17, 2)
+  shippingFeeAmount    Decimal?          @map("shipping_fee_amount") @db.Decimal(17, 2)
+  taxesAmount          Decimal?          @map("taxes_amount") @db.Decimal(17, 2)
   installments         Int?
-  taxDetail            String?      @map("tax_detail") @db.VarChar(50)
-  taxesDisaggregated   Json?        @map("taxes_disaggregated")
-  description          String?      @db.VarChar(50)
-  cardInitialNumber    String?      @map("card_initial_number") @db.VarChar(8)
-  operationTags        Json?        @map("operation_tags")
-  businessUnit         String?      @map("business_unit") @db.VarChar(255)
-  subUnit              String?      @map("sub_unit") @db.VarChar(255)
-  productSku           String?      @map("product_sku") @db.VarChar(200)
-  saleDetail           String?      @map("sale_detail") @db.VarChar(500)
-  transactionIntentId  String?      @map("transaction_intent_id")
+  taxDetail            String?           @map("tax_detail") @db.VarChar(50)
+  taxesDisaggregated   Json?             @map("taxes_disaggregated")
+  description          String?           @db.VarChar(50)
+  cardInitialNumber    String?           @map("card_initial_number") @db.VarChar(8)
+  operationTags        Json?             @map("operation_tags")
+  businessUnit         String?           @map("business_unit") @db.VarChar(255)
+  subUnit              String?           @map("sub_unit") @db.VarChar(255)
+  productSku           String?           @map("product_sku") @db.VarChar(200)
+  saleDetail           String?           @map("sale_detail") @db.VarChar(500)
+  transactionIntentId  String?           @map("transaction_intent_id")
   franchise            String?
-  issuerName           String?      @map("issuer_name")
-  lastFourDigits       String?      @map("last_four_digits") @db.VarChar(4)
-  orderMp              String?      @map("order_mp")
-  invoicingPeriod      String?      @map("invoicing_period")
-  payBankTransferId    String?      @map("pay_bank_transfer_id")
-  isReleased           Boolean?     @map("is_released")
-  tipAmount            Decimal?     @map("tip_amount") @db.Decimal(17, 2)
-  purchaseId           String?      @map("purchase_id")
-  totalCouponAmount    Decimal?     @map("total_coupon_amount") @db.Decimal(17, 2)
+  issuerName           String?           @map("issuer_name")
+  lastFourDigits       String?           @map("last_four_digits") @db.VarChar(4)
+  orderMp              String?           @map("order_mp")
+  invoicingPeriod      String?           @map("invoicing_period")
+  payBankTransferId    String?           @map("pay_bank_transfer_id")
+  isReleased           Boolean?          @map("is_released")
+  tipAmount            Decimal?          @map("tip_amount") @db.Decimal(17, 2)
+  purchaseId           String?           @map("purchase_id")
+  totalCouponAmount    Decimal?          @map("total_coupon_amount") @db.Decimal(17, 2)
   
   // POS/Store data
-  posId                String?      @map("pos_id") @db.VarChar(50)
-  posName              String?      @map("pos_name") @db.VarChar(200)
-  externalPosId        String?      @map("external_pos_id") @db.VarChar(100)
-  storeId              String?      @map("store_id") @db.VarChar(50)
-  storeName            String?      @map("store_name") @db.VarChar(200)
-  externalStoreId      String?      @map("external_store_id") @db.VarChar(100)
-  poiId                String?      @map("poi_id") @db.VarChar(50)
+  posId                String?           @map("pos_id") @db.VarChar(50)
+  posName              String?           @map("pos_name") @db.VarChar(200)
+  externalPosId        String?           @map("external_pos_id") @db.VarChar(100)
+  storeId              String?           @map("store_id") @db.VarChar(50)
+  storeName            String?           @map("store_name") @db.VarChar(200)
+  externalStoreId      String?           @map("external_store_id") @db.VarChar(100)
+  poiId                String?           @map("poi_id") @db.VarChar(50)
   
   // Shipping data
-  orderId              BigInt?      @map("order_id")
-  shippingId           BigInt?      @map("shipping_id")
-  shipmentMode         String?      @map("shipment_mode") @db.VarChar(10)
-  packId               BigInt?      @map("pack_id")
-  shippingOrderId      String?      @map("shipping_order_id")
+  orderId              BigInt?           @map("order_id")
+  shippingId           BigInt?           @map("shipping_id")
+  shipmentMode         String?           @map("shipment_mode") @db.VarChar(10)
+  packId               BigInt?           @map("pack_id")
+  shippingOrderId      String?           @map("shipping_order_id")
   
   // Other wallets/banks
-  poiWalletName        String?      @map("poi_wallet_name") @db.VarChar(200)
-  poiBankName          String?      @map("poi_bank_name") @db.VarChar(200)
+  poiWalletName        String?           @map("poi_wallet_name") @db.VarChar(200)
+  poiBankName          String?           @map("poi_bank_name") @db.VarChar(200)
   
   // Metadata
-  createdAt            DateTime     @default(now()) @map("created_at")
-  updatedAt            DateTime     @default(now()) @updatedAt @map("updated_at")
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  counterpart          Counterpart? @relation(fields: [identificationNumber], references: [identificationNumber])
+  counterpart          Counterpart?      @relation(fields: [identificationNumber], references: [identificationNumber])
   serviceSchedules     ServiceSchedule[]
 
   // Access policies
@@ -390,88 +390,88 @@ model SettlementTransaction {
 
 // MercadoPago Release Report data (Liberaciones)
 model ReleaseTransaction {
-  id                      Int          @id @default(autoincrement())
+  id                      Int               @id @default(autoincrement())
   
   // Key identifier
-  sourceId                String       @unique @map("source_id") @db.VarChar(100)
+  sourceId                String            @unique @map("source_id") @db.VarChar(100)
 
   // Counterpart reference
-  identificationNumber    String?      @map("identification_number") @db.VarChar(50)
+  identificationNumber    String?           @map("identification_number") @db.VarChar(50)
 
-  date                    DateTime     @map("date")
-  externalReference       String?      @map("external_reference") @db.VarChar(255)
-  recordType              String?      @map("record_type")
-  description             String?      @db.VarChar(500)
+  date                    DateTime          @map("date")
+  externalReference       String?           @map("external_reference") @db.VarChar(255)
+  recordType              String?           @map("record_type")
+  description             String?           @db.VarChar(500)
   
   // Amounts
-  netCreditAmount         Decimal?     @map("net_credit_amount") @db.Decimal(17, 2)
-  netDebitAmount          Decimal?     @map("net_debit_amount") @db.Decimal(17, 2)
-  grossAmount             Decimal      @map("gross_amount") @db.Decimal(17, 2)
-  sellerAmount            Decimal?     @map("seller_amount") @db.Decimal(17, 2)
-  mpFeeAmount             Decimal?     @map("mp_fee_amount") @db.Decimal(17, 2)
-  financingFeeAmount      Decimal?     @map("financing_fee_amount") @db.Decimal(17, 2)
-  shippingFeeAmount       Decimal?     @map("shipping_fee_amount") @db.Decimal(17, 2)
-  taxesAmount             Decimal?     @map("taxes_amount") @db.Decimal(17, 2)
-  couponAmount            Decimal?     @map("coupon_amount") @db.Decimal(17, 2)
-  effectiveCouponAmount   Decimal?     @map("effective_coupon_amount") @db.Decimal(17, 2)
-  balanceAmount           Decimal?     @map("balance_amount") @db.Decimal(17, 2)
-  taxAmountTelco          Decimal?     @map("tax_amount_telco") @db.Decimal(17, 2)
+  netCreditAmount         Decimal?          @map("net_credit_amount") @db.Decimal(17, 2)
+  netDebitAmount          Decimal?          @map("net_debit_amount") @db.Decimal(17, 2)
+  grossAmount             Decimal           @map("gross_amount") @db.Decimal(17, 2)
+  sellerAmount            Decimal?          @map("seller_amount") @db.Decimal(17, 2)
+  mpFeeAmount             Decimal?          @map("mp_fee_amount") @db.Decimal(17, 2)
+  financingFeeAmount      Decimal?          @map("financing_fee_amount") @db.Decimal(17, 2)
+  shippingFeeAmount       Decimal?          @map("shipping_fee_amount") @db.Decimal(17, 2)
+  taxesAmount             Decimal?          @map("taxes_amount") @db.Decimal(17, 2)
+  couponAmount            Decimal?          @map("coupon_amount") @db.Decimal(17, 2)
+  effectiveCouponAmount   Decimal?          @map("effective_coupon_amount") @db.Decimal(17, 2)
+  balanceAmount           Decimal?          @map("balance_amount") @db.Decimal(17, 2)
+  taxAmountTelco          Decimal?          @map("tax_amount_telco") @db.Decimal(17, 2)
   
   // Details
   installments            Int?
-  paymentMethod           String?      @map("payment_method") @db.VarChar(50)
-  paymentMethodType       String?      @map("payment_method_type") @db.VarChar(200)
-  taxDetail               String?      @map("tax_detail")
-  taxesDisaggregated      Json?        @map("taxes_disaggregated")
-  transactionApprovalDate DateTime?    @map("transaction_approval_date")
-  transactionIntentId     String?      @map("transaction_intent_id")
+  paymentMethod           String?           @map("payment_method") @db.VarChar(50)
+  paymentMethodType       String?           @map("payment_method_type") @db.VarChar(200)
+  taxDetail               String?           @map("tax_detail")
+  taxesDisaggregated      Json?             @map("taxes_disaggregated")
+  transactionApprovalDate DateTime?         @map("transaction_approval_date")
+  transactionIntentId     String?           @map("transaction_intent_id")
   
   // POS/Store
-  posId                   String?      @map("pos_id")
-  posName                 String?      @map("pos_name")
-  externalPosId           String?      @map("external_pos_id")
-  storeId                 String?      @map("store_id")
-  storeName               String?      @map("store_name")
-  externalStoreId         String?      @map("external_store_id")
+  posId                   String?           @map("pos_id")
+  posName                 String?           @map("pos_name")
+  externalPosId           String?           @map("external_pos_id")
+  storeId                 String?           @map("store_id")
+  storeName               String?           @map("store_name")
+  externalStoreId         String?           @map("external_store_id")
 
-  currency                String?      @db.VarChar(10)
+  currency                String?           @db.VarChar(10)
   
   // Shipping
-  shippingId              BigInt?      @map("shipping_id")
-  shipmentMode            String?      @map("shipment_mode")
-  shippingOrderId         String?      @map("shipping_order_id")
+  shippingId              BigInt?           @map("shipping_id")
+  shipmentMode            String?           @map("shipment_mode")
+  shippingOrderId         String?           @map("shipping_order_id")
   
   // Identifiers
-  orderId                 BigInt?      @map("order_id")
-  packId                  BigInt?      @map("pack_id")
-  poiId                   String?      @map("poi_id")
-  itemId                  String?      @map("item_id")
+  orderId                 BigInt?           @map("order_id")
+  packId                  BigInt?           @map("pack_id")
+  poiId                   String?           @map("poi_id")
+  itemId                  String?           @map("item_id")
   
   // Card/Payment
   metadata                Json?
-  cardInitialNumber       String?      @map("card_initial_number") @db.VarChar(8)
-  operationTags           Json?        @map("operation_tags")
-  lastFourDigits          String?      @map("last_four_digits") @db.VarChar(4)
+  cardInitialNumber       String?           @map("card_initial_number") @db.VarChar(8)
+  operationTags           Json?             @map("operation_tags")
+  lastFourDigits          String?           @map("last_four_digits") @db.VarChar(4)
   franchise               String?
-  issuerName              String?      @map("issuer_name")
+  issuerName              String?           @map("issuer_name")
   
   // Context
-  poiBankName             String?      @map("poi_bank_name")
-  poiWalletName           String?      @map("poi_wallet_name")
-  businessUnit            String?      @map("business_unit")
-  subUnit                 String?      @map("sub_unit")
-  payoutBankAccountNumber String?      @map("payout_bank_account_number")
-  productSku              String?      @map("product_sku")
-  saleDetail              String?      @map("sale_detail")
+  poiBankName             String?           @map("poi_bank_name")
+  poiWalletName           String?           @map("poi_wallet_name")
+  businessUnit            String?           @map("business_unit")
+  subUnit                 String?           @map("sub_unit")
+  payoutBankAccountNumber String?           @map("payout_bank_account_number")
+  productSku              String?           @map("product_sku")
+  saleDetail              String?           @map("sale_detail")
 
-  orderMp                 String?      @map("order_mp")
-  purchaseId              String?      @map("purchase_id")
+  orderMp                 String?           @map("order_mp")
+  purchaseId              String?           @map("purchase_id")
 
-  createdAt               DateTime     @default(now()) @map("created_at")
-  updatedAt               DateTime     @default(now()) @updatedAt @map("updated_at")
+  createdAt               DateTime          @default(now()) @map("created_at")
+  updatedAt               DateTime          @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  counterpart             Counterpart? @relation(fields: [identificationNumber], references: [identificationNumber])
+  counterpart             Counterpart?      @relation(fields: [identificationNumber], references: [identificationNumber])
   serviceSchedules        ServiceSchedule[]
 
   // Access policies
@@ -486,29 +486,29 @@ model ReleaseTransaction {
 
 // MercadoPago Withdraw Report data (Retiros)
 model WithdrawTransaction {
-  id                   Int          @id @default(autoincrement())
-  withdrawId           String       @unique @map("withdraw_id") @db.VarChar(64)
-  dateCreated          DateTime     @map("date_created")
-  status               String?      @db.VarChar(50)
-  statusDetail         String?      @map("status_detail") @db.VarChar(100)
-  amount               Decimal?     @db.Decimal(17, 2)
-  fee                  Decimal?     @db.Decimal(17, 2)
-  activityUrl          String?      @map("activity_url") @db.VarChar(500)
-  payoutDescription    String?      @map("payout_desc") @db.VarChar(500)
-  bankAccountHolder    String?      @map("bank_account_holder") @db.VarChar(255)
-  identificationType   String?      @map("identification_type") @db.VarChar(50)
-  identificationNumber String?      @map("identification_number") @db.VarChar(50)
-  bankId               String?      @map("bank_id") @db.VarChar(50)
-  bankName             String?      @map("bank_name") @db.VarChar(200)
-  bankBranch           String?      @map("bank_branch") @db.VarChar(200)
-  bankAccountType      String?      @map("bank_account_type") @db.VarChar(50)
-  bankAccountNumber    String?      @map("bank_account_number") @db.VarChar(100)
+  id                   Int               @id @default(autoincrement())
+  withdrawId           String            @unique @map("withdraw_id") @db.VarChar(64)
+  dateCreated          DateTime          @map("date_created")
+  status               String?           @db.VarChar(50)
+  statusDetail         String?           @map("status_detail") @db.VarChar(100)
+  amount               Decimal?          @db.Decimal(17, 2)
+  fee                  Decimal?          @db.Decimal(17, 2)
+  activityUrl          String?           @map("activity_url") @db.VarChar(500)
+  payoutDescription    String?           @map("payout_desc") @db.VarChar(500)
+  bankAccountHolder    String?           @map("bank_account_holder") @db.VarChar(255)
+  identificationType   String?           @map("identification_type") @db.VarChar(50)
+  identificationNumber String?           @map("identification_number") @db.VarChar(50)
+  bankId               String?           @map("bank_id") @db.VarChar(50)
+  bankName             String?           @map("bank_name") @db.VarChar(200)
+  bankBranch           String?           @map("bank_branch") @db.VarChar(200)
+  bankAccountType      String?           @map("bank_account_type") @db.VarChar(50)
+  bankAccountNumber    String?           @map("bank_account_number") @db.VarChar(100)
 
-  createdAt            DateTime     @default(now()) @map("created_at")
-  updatedAt            DateTime     @default(now()) @updatedAt @map("updated_at")
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  counterpart          Counterpart? @relation(fields: [identificationNumber], references: [identificationNumber])
+  counterpart          Counterpart?      @relation(fields: [identificationNumber], references: [identificationNumber])
   serviceSchedules     ServiceSchedule[]
 
   // Access policies
@@ -594,37 +594,37 @@ model DailyBalance {
 }
 
 model Service {
-  id                  Int                    @id @default(autoincrement())
-  publicId            String                 @unique @map("public_id")
-  name                String
-  detail              String?
-  category            String?
-  counterpartId       Int?                   @map("counterpart_id")
-  type                ServiceType            @default(BUSINESS)
-  recurrenceType      ServiceRecurrenceType  @default(RECURRING) @map("recurrence_type")
-  frequency           ServiceFrequency       @default(MONTHLY)
-  startDate           DateTime               @map("start_date") @db.Date
-  endDate             DateTime?              @map("end_date") @db.Date
-  dueDay              Int?                   @map("due_day")
-  emissionMode        ServiceEmissionMode    @default(FIXED_DAY) @map("emission_mode")
-  emissionDay         Int?                   @map("emission_day")
-  emissionStartDay    Int?                   @map("emission_start_day")
-  emissionEndDay      Int?                   @map("emission_end_day")
-  emissionExactDate   DateTime?              @map("emission_exact_date") @db.Date
-  ownership           ServiceOwnership       @default(COMPANY)
-  obligationType      ServiceObligationType  @default(SERVICE) @map("obligation_type")
-  defaultAmount       Decimal                @default(0) @map("default_amount") @db.Decimal(15, 2)
-  amountIndexation    ServiceAmountIndexation @default(NONE) @map("amount_indexation")
-  lateFeeMode         ServiceLateFeeMode     @default(NONE) @map("late_fee_mode")
-  lateFeeValue        Decimal?               @map("late_fee_value") @db.Decimal(15, 2)
-  lateFeeGraceDays    Int?                   @map("late_fee_grace_days")
-  nextGenerationMonths Int                   @default(12) @map("next_generation_months")
-  notes               String?
-  status              ServiceStatus          @default(ACTIVE)
-  createdAt           DateTime               @default(now()) @map("created_at")
-  updatedAt           DateTime               @default(now()) @updatedAt @map("updated_at")
-  counterpart         Counterpart?           @relation(fields: [counterpartId], references: [id])
-  schedules           ServiceSchedule[]
+  id                   Int                     @id @default(autoincrement())
+  publicId             String                  @unique @map("public_id")
+  name                 String
+  detail               String?
+  category             String?
+  counterpartId        Int?                    @map("counterpart_id")
+  type                 ServiceType             @default(BUSINESS)
+  recurrenceType       ServiceRecurrenceType   @default(RECURRING) @map("recurrence_type")
+  frequency            ServiceFrequency        @default(MONTHLY)
+  startDate            DateTime                @map("start_date") @db.Date
+  endDate              DateTime?               @map("end_date") @db.Date
+  dueDay               Int?                    @map("due_day")
+  emissionMode         ServiceEmissionMode     @default(FIXED_DAY) @map("emission_mode")
+  emissionDay          Int?                    @map("emission_day")
+  emissionStartDay     Int?                    @map("emission_start_day")
+  emissionEndDay       Int?                    @map("emission_end_day")
+  emissionExactDate    DateTime?               @map("emission_exact_date") @db.Date
+  ownership            ServiceOwnership        @default(COMPANY)
+  obligationType       ServiceObligationType   @default(SERVICE) @map("obligation_type")
+  defaultAmount        Decimal                 @default(0) @map("default_amount") @db.Decimal(15, 2)
+  amountIndexation     ServiceAmountIndexation @default(NONE) @map("amount_indexation")
+  lateFeeMode          ServiceLateFeeMode      @default(NONE) @map("late_fee_mode")
+  lateFeeValue         Decimal?                @map("late_fee_value") @db.Decimal(15, 2)
+  lateFeeGraceDays     Int?                    @map("late_fee_grace_days")
+  nextGenerationMonths Int                     @default(12) @map("next_generation_months")
+  notes                String?
+  status               ServiceStatus           @default(ACTIVE)
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @default(now()) @updatedAt @map("updated_at")
+  counterpart          Counterpart?            @relation(fields: [counterpartId], references: [id])
+  schedules            ServiceSchedule[]
 
   //Access policies
   @@deny('all', auth() == null)
@@ -636,27 +636,27 @@ model Service {
 }
 
 model ServiceSchedule {
-  id             Int                   @id @default(autoincrement())
-  serviceId      Int                   @map("service_id")
-  periodStart    DateTime              @map("period_start") @db.Date
-  periodEnd      DateTime              @map("period_end") @db.Date
-  dueDate        DateTime              @map("due_date") @db.Date
-  expectedAmount Decimal               @map("expected_amount") @db.Decimal(15, 2)
-  lateFeeAmount  Decimal               @default(0) @map("late_fee_amount") @db.Decimal(15, 2)
-  effectiveAmount Decimal              @map("effective_amount") @db.Decimal(15, 2)
-  status         ServiceScheduleStatus @default(PENDING)
-  paidAmount     Decimal?              @map("paid_amount") @db.Decimal(15, 2)
-  paidDate       DateTime?             @map("paid_date")
-  settlementTransactionId Int?         @map("settlement_transaction_id")
-  releaseTransactionId    Int?         @map("release_transaction_id")
-  withdrawTransactionId   Int?         @map("withdraw_transaction_id")
-  note           String?
-  createdAt      DateTime              @default(now()) @map("created_at")
-  updatedAt      DateTime              @default(now()) @updatedAt @map("updated_at")
-  service        Service               @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  settlementTransaction SettlementTransaction? @relation(fields: [settlementTransactionId], references: [id])
-  releaseTransaction    ReleaseTransaction?    @relation(fields: [releaseTransactionId], references: [id])
-  withdrawTransaction   WithdrawTransaction?   @relation(fields: [withdrawTransactionId], references: [id])
+  id                      Int                    @id @default(autoincrement())
+  serviceId               Int                    @map("service_id")
+  periodStart             DateTime               @map("period_start") @db.Date
+  periodEnd               DateTime               @map("period_end") @db.Date
+  dueDate                 DateTime               @map("due_date") @db.Date
+  expectedAmount          Decimal                @map("expected_amount") @db.Decimal(15, 2)
+  lateFeeAmount           Decimal                @default(0) @map("late_fee_amount") @db.Decimal(15, 2)
+  effectiveAmount         Decimal                @map("effective_amount") @db.Decimal(15, 2)
+  status                  ServiceScheduleStatus  @default(PENDING)
+  paidAmount              Decimal?               @map("paid_amount") @db.Decimal(15, 2)
+  paidDate                DateTime?              @map("paid_date")
+  settlementTransactionId Int?                   @map("settlement_transaction_id")
+  releaseTransactionId    Int?                   @map("release_transaction_id")
+  withdrawTransactionId   Int?                   @map("withdraw_transaction_id")
+  note                    String?
+  createdAt               DateTime               @default(now()) @map("created_at")
+  updatedAt               DateTime               @default(now()) @updatedAt @map("updated_at")
+  service                 Service                @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  settlementTransaction   SettlementTransaction? @relation(fields: [settlementTransactionId], references: [id])
+  releaseTransaction      ReleaseTransaction?    @relation(fields: [releaseTransactionId], references: [id])
+  withdrawTransaction     WithdrawTransaction?   @relation(fields: [withdrawTransactionId], references: [id])
 
   // Access policies
   @@deny('all', auth() == null)
@@ -1539,6 +1539,7 @@ model PersonalCreditInstallment {
   status            String         @default("PENDING") // PENDING, PAID
   paidAt            DateTime?      @map("paid_at")
   paidAmount        Decimal?       @map("paid_amount") @db.Decimal(15, 2)
+  paidAmountCLP     Decimal?       @map("paid_amount_clp") @db.Decimal(15, 2) // CLP equivalent for UF credits
 
   credit            PersonalCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
 
@@ -1592,16 +1593,16 @@ model MedicalCertificate {
   @@map("medical_certificates")
 }
 model Patient {
-  id                  Int                  @id @default(autoincrement())
-  personId            Int                  @unique @map("person_id")
-  birthDate           DateTime?            @map("birth_date") @db.Date
-  bloodType           String?              @map("blood_type")
+  id                  Int                    @id @default(autoincrement())
+  personId            Int                    @unique @map("person_id")
+  birthDate           DateTime?              @map("birth_date") @db.Date
+  bloodType           String?                @map("blood_type")
   notes               String?  // Notas generales del paciente
 
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @default(now()) @updatedAt @map("updated_at")
+  createdAt           DateTime               @default(now()) @map("created_at")
+  updatedAt           DateTime               @default(now()) @updatedAt @map("updated_at")
 
-  person              Person               @relation(fields: [personId], references: [id], onDelete: Cascade)
+  person              Person                 @relation(fields: [personId], references: [id], onDelete: Cascade)
   consultations       Consultation[]
   medicalCertificates MedicalCertificate[]
   budgets             Budget[]
@@ -1617,19 +1618,19 @@ model Patient {
 }
 
 model PatientDteSaleSource {
-  id               Int       @id @default(autoincrement())
-  patientId        Int?      @map("patient_id")
-  clientRUT        String    @unique @map("client_rut") @db.VarChar(20)
-  clientName       String    @map("client_name")
-  documentType     Int       @map("document_type")
-  documentDate     DateTime? @map("document_date") @db.Date
-  folio            String?   @map("folio") @db.VarChar(20)
-  period           String?   @map("period") @db.VarChar(6)
-  sourceUpdatedAt  DateTime? @map("source_updated_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+  id              Int       @id @default(autoincrement())
+  patientId       Int?      @map("patient_id")
+  clientRUT       String    @unique @map("client_rut") @db.VarChar(20)
+  clientName      String    @map("client_name")
+  documentType    Int       @map("document_type")
+  documentDate    DateTime? @map("document_date") @db.Date
+  folio           String?   @map("folio") @db.VarChar(20)
+  period          String?   @map("period") @db.VarChar(6)
+  sourceUpdatedAt DateTime? @map("source_updated_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  patient          Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  patient         Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
 
   @@deny('all', auth() == null)
   @@allow('read', auth().status == 'ACTIVE')

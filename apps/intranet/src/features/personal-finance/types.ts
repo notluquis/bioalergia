@@ -66,6 +66,7 @@ export interface PersonalCreditInstallment {
   interestAmount?: null | number;
   otherCharges?: null | number;
   paidAmount?: null | number;
+  paidAmountCLP?: null | number; // CLP equivalent for UF credits
   paidAt?: null | string;
   status: "PAID" | "PENDING";
 }

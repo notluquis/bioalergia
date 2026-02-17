@@ -4203,6 +4203,11 @@ export class SchemaType implements SchemaDef {
           type: "Decimal",
           optional: true,
         },
+        paidAmountCLP: {
+          name: "paidAmountCLP",
+          type: "Decimal",
+          optional: true,
+        },
         credit: {
           name: "credit",
           type: "PersonalCredit",

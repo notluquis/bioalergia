@@ -6,6 +6,17 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number, currency = "CLP") {
+  // Caso especial para UF (no es código ISO 4217 válido)
+  if (currency === "UF") {
+    const formatted = new Intl.NumberFormat("es-CL", {
+      style: "decimal",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+    return `UF ${formatted}`;
+  }
+
+  // Resto de monedas estándar (CLP, USD, etc.)
   try {
     return new Intl.NumberFormat("es-CL", {
       currency: currency,
