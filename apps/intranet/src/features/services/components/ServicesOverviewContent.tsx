@@ -9,7 +9,6 @@ import {
   Modal,
   TextField,
 } from "@heroui/react";
-import { Link } from "@tanstack/react-router";
 import { useStore } from "@tanstack/react-store";
 import dayjs from "dayjs";
 import type { ChangeEvent } from "react";
@@ -99,11 +98,9 @@ export function ServicesOverviewContent() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span className={TITLE_MD}>Resumen de servicios</span>
         {canManage && (
-          <Link to="/services/create">
-            <Button size="sm" variant="primary">
-              Nuevo servicio
-            </Button>
-          </Link>
+          <Button onPress={() => openCreateModal()} size="sm" variant="primary">
+            Nuevo servicio
+          </Button>
         )}
       </div>
 

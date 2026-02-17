@@ -39,7 +39,6 @@ import { Route as AuthedSettingsInventarioRouteImport } from "./routes/_authed/s
 import { Route as AuthedSettingsHaulmerRouteImport } from "./routes/_authed/settings/haulmer"
 import { Route as AuthedSettingsCsvUploadRouteImport } from "./routes/_authed/settings/csv-upload"
 import { Route as AuthedSettingsBackupsRouteImport } from "./routes/_authed/settings/backups"
-import { Route as AuthedServicesCreateRouteImport } from "./routes/_authed/services/create"
 import { Route as AuthedServicesAgendaRouteImport } from "./routes/_authed/services/agenda"
 import { Route as AuthedPatientsNewRouteImport } from "./routes/_authed/patients/new"
 import { Route as AuthedOperationsSuppliesAnalyticsRouteImport } from "./routes/_authed/operations/supplies-analytics"
@@ -196,11 +195,6 @@ const AuthedSettingsBackupsRoute = AuthedSettingsBackupsRouteImport.update({
   id: "/backups",
   path: "/backups",
   getParentRoute: () => AuthedSettingsRoute,
-} as any)
-const AuthedServicesCreateRoute = AuthedServicesCreateRouteImport.update({
-  id: "/create",
-  path: "/create",
-  getParentRoute: () => AuthedServicesRoute,
 } as any)
 const AuthedServicesAgendaRoute = AuthedServicesAgendaRouteImport.update({
   id: "/agenda",
@@ -435,7 +429,6 @@ export interface FileRoutesByFullPath {
   "/operations/supplies-analytics": typeof AuthedOperationsSuppliesAnalyticsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
-  "/services/create": typeof AuthedServicesCreateRoute
   "/settings/backups": typeof AuthedSettingsBackupsRoute
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
@@ -492,7 +485,6 @@ export interface FileRoutesByTo {
   "/operations/supplies-analytics": typeof AuthedOperationsSuppliesAnalyticsRoute
   "/patients/new": typeof AuthedPatientsNewRoute
   "/services/agenda": typeof AuthedServicesAgendaRoute
-  "/services/create": typeof AuthedServicesCreateRoute
   "/settings/backups": typeof AuthedSettingsBackupsRoute
   "/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/settings/haulmer": typeof AuthedSettingsHaulmerRoute
@@ -555,7 +547,6 @@ export interface FileRoutesById {
   "/_authed/operations/supplies-analytics": typeof AuthedOperationsSuppliesAnalyticsRoute
   "/_authed/patients/new": typeof AuthedPatientsNewRoute
   "/_authed/services/agenda": typeof AuthedServicesAgendaRoute
-  "/_authed/services/create": typeof AuthedServicesCreateRoute
   "/_authed/settings/backups": typeof AuthedSettingsBackupsRoute
   "/_authed/settings/csv-upload": typeof AuthedSettingsCsvUploadRoute
   "/_authed/settings/haulmer": typeof AuthedSettingsHaulmerRoute
@@ -618,7 +609,6 @@ export interface FileRouteTypes {
     | "/operations/supplies-analytics"
     | "/patients/new"
     | "/services/agenda"
-    | "/services/create"
     | "/settings/backups"
     | "/settings/csv-upload"
     | "/settings/haulmer"
@@ -675,7 +665,6 @@ export interface FileRouteTypes {
     | "/operations/supplies-analytics"
     | "/patients/new"
     | "/services/agenda"
-    | "/services/create"
     | "/settings/backups"
     | "/settings/csv-upload"
     | "/settings/haulmer"
@@ -737,7 +726,6 @@ export interface FileRouteTypes {
     | "/_authed/operations/supplies-analytics"
     | "/_authed/patients/new"
     | "/_authed/services/agenda"
-    | "/_authed/services/create"
     | "/_authed/settings/backups"
     | "/_authed/settings/csv-upload"
     | "/_authed/settings/haulmer"
@@ -935,13 +923,6 @@ declare module "@tanstack/react-router" {
       fullPath: "/settings/backups"
       preLoaderRoute: typeof AuthedSettingsBackupsRouteImport
       parentRoute: typeof AuthedSettingsRoute
-    }
-    "/_authed/services/create": {
-      id: "/_authed/services/create"
-      path: "/create"
-      fullPath: "/services/create"
-      preLoaderRoute: typeof AuthedServicesCreateRouteImport
-      parentRoute: typeof AuthedServicesRoute
     }
     "/_authed/services/agenda": {
       id: "/_authed/services/agenda"
@@ -1310,14 +1291,12 @@ const AuthedOperationsRouteWithChildren =
 
 interface AuthedServicesRouteChildren {
   AuthedServicesAgendaRoute: typeof AuthedServicesAgendaRoute
-  AuthedServicesCreateRoute: typeof AuthedServicesCreateRoute
   AuthedServicesIndexRoute: typeof AuthedServicesIndexRoute
   AuthedServicesIdEditRoute: typeof AuthedServicesIdEditRoute
 }
 
 const AuthedServicesRouteChildren: AuthedServicesRouteChildren = {
   AuthedServicesAgendaRoute: AuthedServicesAgendaRoute,
-  AuthedServicesCreateRoute: AuthedServicesCreateRoute,
   AuthedServicesIndexRoute: AuthedServicesIndexRoute,
   AuthedServicesIdEditRoute: AuthedServicesIdEditRoute,
 }
