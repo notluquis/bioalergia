@@ -13,14 +13,15 @@ import {
   getSortedRowModel,
   type OnChangeFn,
   type PaginationState,
+  type Row,
   type RowSelectionState,
   type SortingState,
-  type Table,
   type TableMeta,
+  type Table as TanStackTable,
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
 import { ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
 import React, { type CSSProperties, useRef, useState } from "react";
 
@@ -122,9 +123,7 @@ interface DataTableProps<TData, TValue, TMeta extends TableMeta<TData> = TableMe
   /**
    * Optional component to render when row is expanded
    */
-  readonly renderSubComponent?: (props: {
-    row: import("@tanstack/react-table").Row<TData>;
-  }) => React.ReactNode;
+  readonly renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode;
   readonly rowSelection?: RowSelectionState;
   /**
    * Minimum row count to activate virtualization.
@@ -173,10 +172,8 @@ interface DataTableContentProps<TData, TValue> {
   readonly isLoading?: boolean;
   readonly noDataMessage: string;
   readonly onRowClick?: (row: TData) => void;
-  readonly renderSubComponent?: (props: {
-    row: import("@tanstack/react-table").Row<TData>;
-  }) => React.ReactNode;
-  readonly table: Table<TData>;
+  readonly renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode;
+  readonly table: TanStackTable<TData>;
   readonly scrollMaxHeight?: number | string;
   readonly virtualizationMaxHeight: number | string;
 }
@@ -208,112 +205,6 @@ function DataTableContent<TData, TValue>({
 
   const virtualRows = virtualizer.getVirtualItems();
 
-  const renderRows = (): React.JSX.Element => {
-    if (isLoading) {
-      return (
-        <tr>
-          <td className="px-4 py-12 text-center" colSpan={columns.length}>
-            <div className="flex flex-col items-center justify-center gap-2">
-              <Spinner className="text-primary" color="current" size="md" />
-              <span className="text-default-500 text-sm">Cargando...</span>
-            </div>
-          </td>
-        </tr>
-      );
-    }
-
-    if (rows.length === 0) {
-      return (
-        <tr>
-          <td className="h-24 text-center text-default-500 italic" colSpan={columns.length}>
-            {noDataMessage}
-          </td>
-        </tr>
-      );
-    }
-
-    if (enableVirtualization && virtualRows.length > 0) {
-      const validVirtualRows = virtualRows.filter((virtualRow) => rows[virtualRow.index]);
-
-      return (
-        <>
-          {validVirtualRows.map((virtualRow) => {
-            const row = rows[virtualRow.index];
-            if (!row) {
-              return null;
-            }
-
-            return (
-              <React.Fragment key={row.id}>
-                <tr
-                  className={cn(
-                    "group border-default-100/50 border-b transition-colors last:border-0 hover:bg-background/50 data-[state=selected]:bg-primary/10",
-                    onRowClick && "cursor-pointer",
-                  )}
-                  data-index={virtualRow.index}
-                  data-state={row.getIsSelected() && "selected"}
-                  onClick={() => onRowClick?.(row.original)}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
-                  }}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      className="whitespace-nowrap px-4 py-3 align-middle text-foreground/90"
-                      key={cell.id}
-                      style={getCommonPinningStyles(cell.column, columnSizing, autoFitColumns)}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-                {row.getIsExpanded() && renderSubComponent && (
-                  <tr>
-                    <td colSpan={row.getVisibleCells().length}>{renderSubComponent({ row })}</td>
-                  </tr>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </>
-      );
-    }
-
-    return (
-      <>
-        {rows.map((row) => (
-          <React.Fragment key={row.id}>
-            <tr
-              className={cn(
-                "group border-default-100/50 border-b transition-colors last:border-0 hover:bg-background/50 data-[state=selected]:bg-primary/10",
-                onRowClick && "cursor-pointer",
-              )}
-              data-state={row.getIsSelected() && "selected"}
-              onClick={() => onRowClick?.(row.original)}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td
-                  className="whitespace-nowrap px-4 py-3 align-middle text-foreground/90"
-                  key={cell.id}
-                  style={getCommonPinningStyles(cell.column, columnSizing, autoFitColumns)}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-            {row.getIsExpanded() && renderSubComponent && (
-              <tr>
-                <td colSpan={row.getVisibleCells().length}>{renderSubComponent({ row })}</td>
-              </tr>
-            )}
-          </React.Fragment>
-        ))}
-      </>
-    );
-  };
-
   return (
     <div
       className={cn(
@@ -337,27 +228,23 @@ function DataTableContent<TData, TValue>({
         }}
       >
         <table
-          className="w-full border-collapse text-left text-sm"
+          className="min-w-full table-fixed caption-bottom text-sm"
           style={{
             minWidth: autoFitColumns ? undefined : table.getTotalSize(),
             tableLayout: autoFitColumns ? "auto" : "fixed",
             width: "100%",
           }}
         >
-          <thead className="sticky top-0 z-10 bg-default-100">
+          <thead className="[&_tr]:border-b-small [&_tr]:border-divider sticky top-0 z-10 bg-default-100 shadow-sm">
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr className="border-default-200/50 border-b" key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    className="group relative whitespace-nowrap px-4 py-3 text-left font-semibold text-default-600 text-xs uppercase tracking-wide"
-                    colSpan={header.colSpan}
-                    key={header.id}
-                    onClick={header.column.getToggleSortingHandler()}
-                    style={{
-                      ...getCommonPinningStyles(header.column, columnSizing, autoFitColumns),
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
+              <tr
+                key={headerGroup.id}
+                className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+              >
+                {headerGroup.headers.map((header) => {
+                  const isSortable = header.column.getCanSort();
+                  const content = (
+                    <>
                       {header.isPlaceholder
                         ? null
                         : flexRender(header.column.columnDef.header, header.getContext())}
@@ -365,65 +252,184 @@ function DataTableContent<TData, TValue>({
                         asc: <ChevronUp className="h-3.5 w-3.5" />,
                         desc: <ChevronDown className="h-3.5 w-3.5" />,
                       }[header.column.getIsSorted() as string] ??
-                        (header.column.getCanSort() ? (
+                        (isSortable ? (
                           <ArrowUpDown className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-50" />
                         ) : null)}
-                    </div>
-                    <Button
-                      aria-label="Resize column"
-                      isIconOnly
-                      size="sm"
-                      type="button"
-                      variant="ghost"
-                      className={`absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none select-none bg-default-100 opacity-0 group-hover:opacity-100 ${
-                        header.column.getIsResizing() ? "w-1.5 bg-primary opacity-100" : ""
-                      }`}
-                      onMouseDown={header.getResizeHandler()}
-                      onTouchStart={header.getResizeHandler()}
-                      onClick={(event) => event.stopPropagation()}
-                    />
-                  </th>
-                ))}
+                    </>
+                  );
+
+                  return (
+                    <th
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      className="group relative h-10 px-4 text-left align-middle font-semibold text-default-600 text-xs uppercase tracking-wide whitespace-nowrap [&:has([role=checkbox])]:pr-0"
+                      style={{ width: header.getSize() }}
+                    >
+                      <div
+                        className={cn(
+                          "flex items-center gap-2",
+                          isSortable ? "cursor-pointer select-none" : "",
+                        )}
+                        {...(isSortable
+                          ? {
+                              role: "button",
+                              tabIndex: 0,
+                              onClick: header.column.getToggleSortingHandler(),
+                              onKeyDown: (e: React.KeyboardEvent) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  header.column.getToggleSortingHandler()?.(e);
+                                }
+                              },
+                            }
+                          : {})}
+                      >
+                        {content}
+                      </div>
+                      <Button
+                        aria-label="Resize column"
+                        isIconOnly
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                        className={`absolute top-0 right-0 h-full w-1 cursor-col-resize touch-none select-none bg-default-100 opacity-0 group-hover:opacity-100 ${
+                          header.column.getIsResizing() ? "w-1.5 bg-primary opacity-100" : ""
+                        }`}
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        onClick={(event) => event.stopPropagation()}
+                      />
+                    </th>
+                  );
+                })}
               </tr>
             ))}
           </thead>
           <tbody
+            className="[&_tr:last-child]:border-0 relative"
             style={
               enableVirtualization
                 ? {
                     height: `${virtualizer.getTotalSize()}px`,
-                    position: "relative",
                   }
                 : undefined
             }
           >
-            {renderRows()}
-          </tbody>
-          {table.getFooterGroups().length > 0 && (
-            <tfoot className="bg-default-50/50 font-medium">
-              {table.getFooterGroups().map((footerGroup) => (
-                <tr key={footerGroup.id}>
-                  {footerGroup.headers.map((header) => (
-                    <td
-                      className="px-4 py-3 align-middle text-foreground"
-                      key={header.id}
+            {enableVirtualization && virtualRows.length > 0 ? (
+              validRows(rows, virtualRows).map((virtualRow) => {
+                const row = rows[virtualRow.index];
+                if (!row) return null;
+                return (
+                  <React.Fragment key={row.id}>
+                    <tr
+                      className={cn(
+                        "border-b-small border-divider transition-colors hover:bg-default-100/50 data-[state=selected]:bg-default-100",
+                        onRowClick && "cursor-pointer",
+                      )}
                       style={{
-                        ...getCommonPinningStyles(header.column, columnSizing, autoFitColumns),
+                        height: `${virtualRow.size}px`,
+                        transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
                       }}
+                      data-state={row.getIsSelected() ? "selected" : undefined}
+                      onClick={() => onRowClick?.(row.original)}
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.footer, header.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tfoot>
-          )}
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          className="whitespace-nowrap px-4 py-3 align-middle text-foreground/90 [&:has([role=checkbox])]:pr-0"
+                          key={cell.id}
+                          style={getCommonPinningStyles(cell.column, columnSizing, autoFitColumns)}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                    {row.getIsExpanded() && renderSubComponent && (
+                      <tr
+                        style={{
+                          transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin + virtualRow.size}px)`,
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                        }}
+                      >
+                        <td
+                          colSpan={row.getVisibleCells().length}
+                          className="p-4 align-middle [&:has([role=checkbox])]:pr-0"
+                        >
+                          {renderSubComponent({ row })}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })
+            ) : isLoading ? (
+              <tr>
+                <td colSpan={columns.length} className="h-24 text-center align-middle">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Spinner className="text-primary" color="current" size="md" />
+                    <span className="text-default-500 text-sm">Cargando...</span>
+                  </div>
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="h-24 text-center text-default-500 italic align-middle"
+                >
+                  {noDataMessage}
+                </td>
+              </tr>
+            ) : (
+              rows.map((row) => (
+                <React.Fragment key={row.id}>
+                  <tr
+                    className={cn(
+                      "border-b-small border-divider transition-colors hover:bg-default-100/50 data-[state=selected]:bg-default-100",
+                      onRowClick && "cursor-pointer",
+                    )}
+                    data-state={row.getIsSelected() ? "selected" : undefined}
+                    onClick={() => onRowClick?.(row.original)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        className="whitespace-nowrap px-4 py-3 align-middle text-foreground/90 [&:has([role=checkbox])]:pr-0"
+                        key={cell.id}
+                        style={getCommonPinningStyles(cell.column, columnSizing, autoFitColumns)}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                  {row.getIsExpanded() && renderSubComponent && (
+                    <tr>
+                      <td
+                        colSpan={row.getVisibleCells().length}
+                        className="p-4 align-middle [&:has([role=checkbox])]:pr-0"
+                      >
+                        {renderSubComponent({ row })}
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))
+            )}
+          </tbody>
         </table>
       </div>
     </div>
   );
+}
+
+// Helper to filter valid rows for virtualization matching the implementation plan logic
+function validRows<TData>(rows: Row<TData>[], virtualRows: VirtualItem[]) {
+  return virtualRows.filter((virtualRow) => rows[virtualRow.index]);
 }
 
 export function DataTable<TData, TValue, TMeta extends TableMeta<TData> = TableMeta<TData>>({
