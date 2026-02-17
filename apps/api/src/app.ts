@@ -2,9 +2,11 @@
 import { authDb, schema } from "@finanzas/db";
 import { RPCApiHandler } from "@zenstackhq/server/api";
 import { createHonoHandler } from "@zenstackhq/server/hono";
+import { Decimal } from "decimal.js";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { rateLimiter } from "hono-rate-limiter";
+import superjson from "superjson";
 import { createAuthContext, getSessionUser } from "./auth";
 import { htmlSanitizerMiddleware } from "./lib/html-sanitizer";
 import { certificatesRoutes } from "./modules/certificates/index.js";
@@ -41,6 +43,16 @@ import { suppliesRoutes } from "./routes/supplies";
 import { timesheetRoutes } from "./routes/timesheets";
 import { transactionRoutes } from "./routes/transactions";
 import { userRoutes } from "./routes/users";
+
+// Register Decimal.js serialization for superjson
+superjson.registerCustom<Decimal, string>(
+  {
+    isApplicable: (v): v is Decimal => Decimal.isDecimal(v),
+    serialize: (v) => v.toJSON(),
+    deserialize: (v) => new Decimal(v),
+  },
+  "decimal.js",
+);
 
 export const app = new Hono();
 
