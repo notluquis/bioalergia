@@ -1,11 +1,42 @@
-import { Button, Chip } from "@heroui/react";
+import { Button, Chip, Spinner } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { CreateCreditForm } from "../components/CreateCreditForm";
 import { CreditDetailsModal } from "../components/CreditDetailsModal";
+import { useCreditPaidAmounts } from "../hooks/useCreditPaidAmounts";
 import { personalFinanceQueries } from "../queries";
 import type { PersonalCredit } from "../types";
+
+/**
+ * Celda que muestra el total pagado de un crédito
+ * Para créditos en UF, muestra dual: monto en UF + equivalente en CLP
+ */
+function TotalPaidCell({ credit }: { credit: PersonalCredit }) {
+  const { totalPaid, totalPaidCLP, isLoading } = useCreditPaidAmounts(credit);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2">
+        <Spinner size="sm" />
+        <span className="text-xs text-muted">Calculando...</span>
+      </div>
+    );
+  }
+
+  // Para créditos en UF, mostrar dual
+  if (credit.currency === "UF" && totalPaidCLP !== null) {
+    return (
+      <div className="space-y-0.5">
+        <div className="font-medium">{formatCurrency(totalPaid, "UF")}</div>
+        <div className="text-xs text-muted">≈ {formatCurrency(totalPaidCLP, "CLP")}</div>
+      </div>
+    );
+  }
+
+  // Para créditos en CLP o sin datos CLP
+  return <div className="font-medium">{formatCurrency(totalPaid, credit.currency || "CLP")}</div>;
+}
 
 const TableData = ({
   credits,
@@ -26,6 +57,7 @@ const TableData = ({
             <th className="px-4 py-3 text-left font-semibold">Banco</th>
             <th className="px-4 py-3 text-left font-semibold">Descripción</th>
             <th className="px-4 py-3 text-left font-semibold">Monto Total</th>
+            <th className="px-4 py-3 text-left font-semibold">Total Pagado</th>
             <th className="px-4 py-3 text-left font-semibold">Tasa de Interés</th>
             <th className="px-4 py-3 text-left font-semibold">Cuotas Pagadas</th>
             <th className="px-4 py-3 text-left font-semibold">Progreso</th>
@@ -45,6 +77,9 @@ const TableData = ({
                 <td className="px-4 py-3">{credit.description || "-"}</td>
                 <td className="px-4 py-3">
                   {formatCurrency(Number(credit.totalAmount), credit.currency || "CLP")}
+                </td>
+                <td className="px-4 py-3">
+                  <TotalPaidCell credit={credit} />
                 </td>
                 <td className="px-4 py-3">
                   {credit.interestRate ? `${credit.interestRate}%` : "-"}
