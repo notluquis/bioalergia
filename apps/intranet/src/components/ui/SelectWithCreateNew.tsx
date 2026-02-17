@@ -1,5 +1,5 @@
-import { Button, FieldError, Label, ListBox, Modal, Select } from "@heroui/react";
-import type { ReactNode } from "react";
+import { Button, FieldError, Input, Label, ListBox, Modal, Select, TextField } from "@heroui/react";
+import type { ChangeEvent, KeyboardEvent, ReactNode } from "react";
 import { useState } from "react";
 import { z } from "zod";
 
@@ -117,15 +117,15 @@ export function SelectWithCreateNew({
               <Modal.Heading>Nueva {label.toLowerCase()}</Modal.Heading>
             </Modal.Header>
             <Modal.Body className="gap-4">
-              <div className="space-y-2">
+              <TextField>
                 <Label>{label}</Label>
-                <input
-                  className="w-full rounded-md border border-default-200 bg-default-50 px-3 py-2 text-foreground text-sm transition hover:border-default-300 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  onChange={(e) => {
+                <Input
+                  disabled={isCreating}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     setNewValue(e.target.value);
                     setCreateError(null);
                   }}
-                  onKeyDown={(e) => {
+                  onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === "Enter" && !isCreating) {
                       void handleCreateNew();
                     }
@@ -133,10 +133,9 @@ export function SelectWithCreateNew({
                   placeholder={`Ej: ${label}`}
                   type="text"
                   value={newValue}
-                  disabled={isCreating}
                 />
                 {createError && <FieldError>{createError}</FieldError>}
-              </div>
+              </TextField>
             </Modal.Body>
             <Modal.Footer className="gap-2">
               <Button
