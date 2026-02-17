@@ -4,7 +4,12 @@ import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { fetchCounterpart, fetchCounterparts } from "../../counterparts/api";
 import type { CounterpartAccount } from "../../counterparts/types";
-import type { CreateServicePayload } from "../types";
+import type {
+  CreateServicePayload,
+  ServiceObligationType,
+  ServiceOwnership,
+  ServiceType,
+} from "../types";
 import { BasicInfoSection } from "./ServiceForm/BasicInfoSection";
 import { CounterpartSection } from "./ServiceForm/CounterpartSection";
 import { EmissionSection } from "./ServiceForm/EmissionSection";
@@ -182,6 +187,40 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<null | string>(null);
 
+  // Dynamic options for SelectWithCreateNew
+  const [categoryOptions, setCategoryOptions] = useState<Array<{ id: string; label: string }>>([
+    { id: "Servicios básicos", label: "Servicios básicos" },
+    { id: "Marketing", label: "Marketing" },
+    { id: "Arriendo", label: "Arriendo" },
+    { id: "Nómina", label: "Nómina" },
+  ]);
+  const [serviceTypeOptions, setServiceTypeOptions] = useState<
+    Array<{ id: string; label: string }>
+  >([
+    { id: "BUSINESS", label: "Operación general" },
+    { id: "SUPPLIER", label: "Proveedor" },
+    { id: "UTILITY", label: "Servicios básicos" },
+    { id: "LEASE", label: "Arriendo / leasing" },
+    { id: "SOFTWARE", label: "Software / suscripciones" },
+    { id: "TAX", label: "Impuestos / contribuciones" },
+    { id: "PERSONAL", label: "Personal" },
+    { id: "OTHER", label: "Otro" },
+  ]);
+  const [ownershipOptions, setOwnershipOptions] = useState<Array<{ id: string; label: string }>>([
+    { id: "COMPANY", label: "Empresa" },
+    { id: "OWNER", label: "Personal del dueño" },
+    { id: "MIXED", label: "Compartido" },
+    { id: "THIRD_PARTY", label: "Terceros" },
+  ]);
+  const [obligationTypeOptions, setObligationTypeOptions] = useState<
+    Array<{ id: string; label: string }>
+  >([
+    { id: "SERVICE", label: "Servicio / gasto" },
+    { id: "DEBT", label: "Deuda" },
+    { id: "LOAN", label: "Préstamo" },
+    { id: "OTHER", label: "Otro" },
+  ]);
+
   const effectiveSubmitLabel = submitLabel ?? "Crear servicio";
   const submittingLabel = submitLabel ? "Guardando..." : "Creando...";
 
@@ -242,6 +281,38 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
     // Accounts will reload automatically via useQuery dependency on form.counterpartId
   };
 
+  const handleCreateCategory = (newCategory: string) => {
+    const newOption = { id: newCategory, label: newCategory };
+    setCategoryOptions((prev) =>
+      prev.some((opt) => opt.id === newCategory) ? prev : [...prev, newOption],
+    );
+    handleChange("category", newCategory);
+  };
+
+  const handleCreateServiceType = (newType: string) => {
+    const newOption = { id: newType, label: newType };
+    setServiceTypeOptions((prev) =>
+      prev.some((opt) => opt.id === newType) ? prev : [...prev, newOption],
+    );
+    handleChange("serviceType", newType as ServiceType);
+  };
+
+  const handleCreateOwnership = (newOwnership: string) => {
+    const newOption = { id: newOwnership, label: newOwnership };
+    setOwnershipOptions((prev) =>
+      prev.some((opt) => opt.id === newOwnership) ? prev : [...prev, newOption],
+    );
+    handleChange("ownership", newOwnership as ServiceOwnership);
+  };
+
+  const handleCreateObligationType = (newObligation: string) => {
+    const newOption = { id: newObligation, label: newObligation };
+    setObligationTypeOptions((prev) =>
+      prev.some((opt) => opt.id === newObligation) ? prev : [...prev, newOption],
+    );
+    handleChange("obligationType", newObligation as ServiceObligationType);
+  };
+
   const effectiveMonths =
     form.recurrenceType === "ONE_OFF" || form.frequency === "ONCE"
       ? 1
@@ -272,18 +343,26 @@ export function ServiceForm({ initialValues, onCancel, onSubmit, submitLabel }: 
     <form className="space-y-6" onSubmit={handleSubmit}>
       <BasicInfoSection
         category={form.category}
+        categoryOptions={categoryOptions}
         detail={form.detail}
         name={form.name}
         notes={form.notes}
         onChange={handleChange}
+        onCreateCategory={handleCreateCategory}
       />
 
       <ServiceClassificationSection
         obligationType={form.obligationType}
+        obligationTypeOptions={obligationTypeOptions}
         onChange={handleChange}
         ownership={form.ownership}
+        ownershipOptions={ownershipOptions}
         recurrenceType={form.recurrenceType}
         serviceType={form.serviceType}
+        serviceTypeOptions={serviceTypeOptions}
+        onCreateServiceType={handleCreateServiceType}
+        onCreateOwnership={handleCreateOwnership}
+        onCreateObligationType={handleCreateObligationType}
       />
 
       <CounterpartSection

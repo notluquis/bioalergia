@@ -1,24 +1,29 @@
 import type { ChangeEvent } from "react";
-
+import { z } from "zod";
 import { Input } from "@/components/ui/Input";
+import { SelectWithCreateNew } from "@/components/ui/SelectWithCreateNew";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type { ServiceFormState } from "../ServiceForm";
 
 interface BasicInfoSectionProps {
   category?: null | string;
+  categoryOptions: Array<{ id: string; label: string }>;
   detail?: null | string;
   name: string;
   notes?: null | string;
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
+  onCreateCategory: (value: string) => void;
 }
 
 export function BasicInfoSection({
   category,
+  categoryOptions,
   detail,
   name,
   notes,
   onChange,
+  onCreateCategory,
 }: BasicInfoSectionProps) {
   return (
     <section className={GRID_2_COL_MD}>
@@ -31,13 +36,20 @@ export function BasicInfoSection({
         value={name}
       />
 
-      <Input
-        helper="Ej: Servicios básicos, Marketing, Arriendo"
+      <SelectWithCreateNew
+        createButtonLabel="+ Nueva categoría"
+        createSchema={z.string().min(1, "La categoría es obligatoria").max(50)}
+        description="Ej: Utilidades, Marketing, Arriendo"
         label="Categoría"
-        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-          onChange("category", event.target.value);
+        options={categoryOptions}
+        placeholder="Selecciona o crea una categoría"
+        value={category || null}
+        onChange={(value) => {
+          onChange("category", value);
         }}
-        value={category ?? ""}
+        onCreateNew={(newCategory) => {
+          onCreateCategory(newCategory);
+        }}
       />
 
       <Input

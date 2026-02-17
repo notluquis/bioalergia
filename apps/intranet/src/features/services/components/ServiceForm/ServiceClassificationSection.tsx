@@ -1,4 +1,6 @@
+import { z } from "zod";
 import { Select, SelectItem } from "@/components/ui/Select";
+import { SelectWithCreateNew } from "@/components/ui/SelectWithCreateNew";
 import { GRID_2_COL_MD } from "@/lib/styles";
 
 import type {
@@ -11,36 +13,17 @@ import type { ServiceFormState } from "../ServiceForm";
 
 interface ServiceClassificationSectionProps {
   obligationType?: ServiceObligationType;
+  obligationTypeOptions: Array<{ id: string; label: string }>;
   onChange: <K extends keyof ServiceFormState>(key: K, value: ServiceFormState[K]) => void;
   ownership?: ServiceOwnership;
+  ownershipOptions: Array<{ id: string; label: string }>;
   recurrenceType?: ServiceRecurrenceType;
   serviceType?: ServiceType;
+  serviceTypeOptions: Array<{ id: string; label: string }>;
+  onCreateServiceType: (value: string) => void;
+  onCreateOwnership: (value: string) => void;
+  onCreateObligationType: (value: string) => void;
 }
-
-const SERVICE_TYPE_OPTIONS: { label: string; value: ServiceType }[] = [
-  { label: "Operación general", value: "BUSINESS" },
-  { label: "Proveedor", value: "SUPPLIER" },
-  { label: "Servicios básicos", value: "UTILITY" },
-  { label: "Arriendo / leasing", value: "LEASE" },
-  { label: "Software / suscripciones", value: "SOFTWARE" },
-  { label: "Impuestos / contribuciones", value: "TAX" },
-  { label: "Personal", value: "PERSONAL" },
-  { label: "Otro", value: "OTHER" },
-];
-
-const OWNERSHIP_OPTIONS: { label: string; value: ServiceOwnership }[] = [
-  { label: "Empresa", value: "COMPANY" },
-  { label: "Personal del dueño", value: "OWNER" },
-  { label: "Compartido", value: "MIXED" },
-  { label: "Terceros", value: "THIRD_PARTY" },
-];
-
-const OBLIGATION_OPTIONS: { label: string; value: ServiceObligationType }[] = [
-  { label: "Servicio / gasto", value: "SERVICE" },
-  { label: "Deuda", value: "DEBT" },
-  { label: "Préstamo", value: "LOAN" },
-  { label: "Otro", value: "OTHER" },
-];
 
 const RECURRENCE_OPTIONS: { label: string; value: ServiceRecurrenceType }[] = [
   { label: "Recurrente", value: "RECURRING" },
@@ -49,46 +32,58 @@ const RECURRENCE_OPTIONS: { label: string; value: ServiceRecurrenceType }[] = [
 
 export function ServiceClassificationSection({
   obligationType,
+  obligationTypeOptions,
   onChange,
   ownership,
+  ownershipOptions,
   recurrenceType,
   serviceType,
+  serviceTypeOptions,
+  onCreateServiceType,
+  onCreateOwnership,
+  onCreateObligationType,
 }: ServiceClassificationSectionProps) {
   return (
     <section className={GRID_2_COL_MD}>
-      <Select
+      <SelectWithCreateNew
+        createSchema={z.string().min(1, "El tipo es obligatorio").max(50)}
+        description="Ej: Negocio, Proveedor, Servicio Básico"
         label="Tipo"
-        onChange={(key) => {
-          onChange("serviceType", key as ServiceType);
+        options={serviceTypeOptions}
+        placeholder="Selecciona o crea un tipo"
+        value={serviceType || null}
+        onChange={(value) => {
+          onChange("serviceType", value as ServiceType);
         }}
-        value={serviceType ?? "BUSINESS"}
-      >
-        {SERVICE_TYPE_OPTIONS.map((option) => (
-          <SelectItem key={option.value}>{option.label}</SelectItem>
-        ))}
-      </Select>
-      <Select
+        onCreateNew={onCreateServiceType}
+      />
+
+      <SelectWithCreateNew
+        createSchema={z.string().min(1, "La propiedad es obligatoria").max(50)}
+        description="Ej: Empresa, Dueño, Mixto"
         label="Propiedad"
-        onChange={(key) => {
-          onChange("ownership", key as ServiceOwnership);
+        options={ownershipOptions}
+        placeholder="Selecciona o crea una propiedad"
+        value={ownership || null}
+        onChange={(value) => {
+          onChange("ownership", value as ServiceOwnership);
         }}
-        value={ownership ?? "COMPANY"}
-      >
-        {OWNERSHIP_OPTIONS.map((option) => (
-          <SelectItem key={option.value}>{option.label}</SelectItem>
-        ))}
-      </Select>
-      <Select
+        onCreateNew={onCreateOwnership}
+      />
+
+      <SelectWithCreateNew
+        createSchema={z.string().min(1, "La obligación es obligatoria").max(50)}
+        description="Ej: Servicio, Deuda, Préstamo"
         label="Naturaleza"
-        onChange={(key) => {
-          onChange("obligationType", key as ServiceObligationType);
+        options={obligationTypeOptions}
+        placeholder="Selecciona o crea una obligación"
+        value={obligationType || null}
+        onChange={(value) => {
+          onChange("obligationType", value as ServiceObligationType);
         }}
-        value={obligationType ?? "SERVICE"}
-      >
-        {OBLIGATION_OPTIONS.map((option) => (
-          <SelectItem key={option.value}>{option.label}</SelectItem>
-        ))}
-      </Select>
+        onCreateNew={onCreateObligationType}
+      />
+
       <Select
         label="Recurrencia"
         onChange={(key) => {
