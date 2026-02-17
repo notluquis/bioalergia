@@ -10,6 +10,7 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { QuerySettingsProvider } from "@zenstackhq/tanstack-query/react";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import superjson from "superjson";
 import { ZodError } from "zod";
 import { AuthListener } from "@/features/auth/components/AuthListener";
 import { ApiError } from "@/lib/api-client";
@@ -33,6 +34,18 @@ import "@/lib/dayjs";
 
 import "./index.css";
 import "./i18n";
+
+// ============================================================================
+// SUPERJSON CONFIGURATION - Convert Decimal to number for React rendering
+// ============================================================================
+superjson.registerCustom<number, string>(
+  {
+    isApplicable: (_v): _v is number => false, // Never serialize from frontend
+    serialize: (v) => String(v),
+    deserialize: (v) => Number.parseFloat(v), // Convert to primitive number
+  },
+  "decimal.js",
+);
 
 // Create namespaced logger for chunk errors
 const log = createLogger("ChunkRecovery");
