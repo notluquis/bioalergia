@@ -1,6 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
+import { Check } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -18,9 +19,14 @@ import {
 interface PayInstallmentModalProps {
   readonly creditId: number;
   readonly installment: PersonalCreditInstallment;
+  readonly iconOnly?: boolean;
 }
 
-export function PayInstallmentModal({ creditId, installment }: PayInstallmentModalProps) {
+export function PayInstallmentModal({
+  creditId,
+  installment,
+  iconOnly = false,
+}: PayInstallmentModalProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -59,8 +65,9 @@ export function PayInstallmentModal({ creditId, installment }: PayInstallmentMod
         }}
         size="sm"
         variant="outline"
+        className={iconOnly ? "size-8 p-0 flex items-center justify-center" : ""}
       >
-        Pagar
+        {iconOnly ? <Check className="size-4" /> : "Pagar"}
       </Button>
 
       <Modal
