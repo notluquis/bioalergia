@@ -4,6 +4,32 @@ import { z } from "zod";
 
 import { logger } from "./logger";
 
+// Helper to convert Decimal objects to numbers recursively
+function convertDecimalsToNumbers(obj: unknown): unknown {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  // Check if it's a Decimal object (has toNumber method)
+  if (typeof obj === "object" && "toNumber" in obj && typeof obj.toNumber === "function") {
+    return (obj as { toNumber: () => number }).toNumber();
+  }
+
+  // Recursively process arrays
+  if (Array.isArray(obj)) {
+    return obj.map(convertDecimalsToNumbers);
+  }
+
+  // Recursively process plain objects
+  if (typeof obj === "object" && obj.constructor === Object) {
+    return Object.fromEntries(
+      Object.entries(obj).map(([key, value]) => [key, convertDecimalsToNumbers(value)]),
+    );
+  }
+
+  return obj;
+}
+
 interface ErrorData {
   details?: unknown;
   error?: string;
@@ -128,7 +154,8 @@ const superJsonParser = (text: string) => {
   try {
     const jsonData = JSON.parse(text);
     if (jsonData && typeof jsonData === "object" && "json" in jsonData) {
-      return superjson.deserialize(jsonData);
+      const deserialized = superjson.deserialize(jsonData);
+      return convertDecimalsToNumbers(deserialized);
     }
     return jsonData;
   } catch {
