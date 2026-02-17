@@ -26,6 +26,8 @@ const TableData = ({
             <th className="px-4 py-3 text-left font-semibold">Banco</th>
             <th className="px-4 py-3 text-left font-semibold">Descripción</th>
             <th className="px-4 py-3 text-left font-semibold">Monto Total</th>
+            <th className="px-4 py-3 text-left font-semibold">Tasa de Interés</th>
+            <th className="px-4 py-3 text-left font-semibold">Cuotas Pagadas</th>
             <th className="px-4 py-3 text-left font-semibold">Progreso</th>
             <th className="px-4 py-3 text-left font-semibold">Estado</th>
             <th className="px-4 py-3 text-right font-semibold">Acciones</th>
@@ -45,11 +47,22 @@ const TableData = ({
                   {formatCurrency(Number(credit.totalAmount), credit.currency || "CLP")}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="h-2.5 w-24 rounded-full bg-default-200">
-                    <div
-                      className="h-2.5 rounded-full bg-primary transition-all"
-                      style={{ width: `${percent}%` }}
-                    />
+                  {credit.interestRate ? `${credit.interestRate}%` : "-"}
+                </td>
+                <td className="px-4 py-3">
+                  <span className="font-medium">
+                    {paidCount} <span className="text-muted">/ {totalCount}</span>
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2.5 w-20 rounded-full bg-default-200">
+                      <div
+                        className="h-2.5 rounded-full bg-primary transition-all"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-muted">{percent}%</span>
                   </div>
                 </td>
                 <td className="px-4 py-3">
@@ -77,6 +90,9 @@ export function PersonalCreditsPage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <CreateCreditForm />
+      </div>
       <TableData credits={credits} onSelectCredit={setSelectedCreditId} />
       <CreditDetailsModal creditId={selectedCreditId} onClose={() => setSelectedCreditId(null)} />
     </div>
