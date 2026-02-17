@@ -305,69 +305,70 @@ function DataTableContent<TData, TValue>({
               </tr>
             ))}
           </thead>
-          <tbody
-            className="[&_tr:last-child]:border-0 relative"
-            style={
-              enableVirtualization
-                ? {
-                    height: `${virtualizer.getTotalSize()}px`,
-                  }
-                : undefined
-            }
-          >
-            {enableVirtualization && virtualRows.length > 0 ? (
-              validRows(rows, virtualRows).map((virtualRow) => {
-                const row = rows[virtualRow.index];
-                if (!row) return null;
-                return (
-                  <React.Fragment key={row.id}>
-                    <tr
-                      className={cn(
-                        "border-b-small border-divider transition-colors hover:bg-default-100/50 data-[state=selected]:bg-default-100",
-                        onRowClick && "cursor-pointer",
-                      )}
-                      style={{
-                        height: `${virtualRow.size}px`,
-                        transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                      }}
-                      data-state={row.getIsSelected() ? "selected" : undefined}
-                      onClick={() => onRowClick?.(row.original)}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          className="whitespace-nowrap px-4 py-3 align-middle text-foreground/90 [&:has([role=checkbox])]:pr-0"
-                          key={cell.id}
-                          style={getCommonPinningStyles(cell.column, columnSizing, autoFitColumns)}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
-                    </tr>
-                    {row.getIsExpanded() && renderSubComponent && (
+          <tbody className="[&_tr:last-child]:border-0 relative">
+            {enableVirtualization && rows.length > 0 ? (
+              <>
+                {virtualRows.length > 0 && (virtualRows[0]?.start ?? 0) > 0 && (
+                  <tr>
+                    <td style={{ height: `${virtualRows[0]?.start ?? 0}px` }} />
+                  </tr>
+                )}
+                {validRows(rows, virtualRows).map((virtualRow) => {
+                  const row = rows[virtualRow.index];
+                  if (!row) return null;
+                  return (
+                    <React.Fragment key={row.id}>
                       <tr
-                        style={{
-                          transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin + virtualRow.size}px)`,
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          width: "100%",
-                        }}
+                        data-index={virtualRow.index}
+                        ref={virtualizer.measureElement}
+                        className={cn(
+                          "border-b-small border-divider transition-colors hover:bg-default-100/50 data-[state=selected]:bg-default-100",
+                          onRowClick && "cursor-pointer",
+                        )}
+                        data-state={row.getIsSelected() ? "selected" : undefined}
+                        onClick={() => onRowClick?.(row.original)}
                       >
-                        <td
-                          colSpan={row.getVisibleCells().length}
-                          className="p-4 align-middle [&:has([role=checkbox])]:pr-0"
-                        >
-                          {renderSubComponent({ row })}
-                        </td>
+                        {row.getVisibleCells().map((cell) => (
+                          <td
+                            className="whitespace-nowrap px-4 py-3 align-middle text-foreground/90 [&:has([role=checkbox])]:pr-0"
+                            key={cell.id}
+                            style={getCommonPinningStyles(
+                              cell.column,
+                              columnSizing,
+                              autoFitColumns,
+                            )}
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
                       </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })
+                      {row.getIsExpanded() && renderSubComponent && (
+                        <tr>
+                          <td
+                            colSpan={row.getVisibleCells().length}
+                            className="p-4 align-middle [&:has([role=checkbox])]:pr-0"
+                          >
+                            {renderSubComponent({ row })}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+                {virtualRows.length > 0 &&
+                  virtualizer.getTotalSize() > (virtualRows[virtualRows.length - 1]?.end ?? 0) && (
+                    <tr>
+                      <td
+                        style={{
+                          height: `${
+                            virtualizer.getTotalSize() -
+                            (virtualRows[virtualRows.length - 1]?.end ?? 0)
+                          }px`,
+                        }}
+                      />
+                    </tr>
+                  )}
+              </>
             ) : isLoading ? (
               <tr>
                 <td colSpan={columns.length} className="h-24 text-center align-middle">
