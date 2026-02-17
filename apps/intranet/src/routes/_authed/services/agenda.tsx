@@ -3,7 +3,6 @@ import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 // Redirect to the agenda tab in the services page
 export const Route = createFileRoute("/_authed/services/agenda")({
   staticData: {
-    nav: { iconKey: "Calendar", label: "Agenda", order: 1, section: "Servicios" },
     permission: { action: "read", subject: "ServiceAgenda" },
     title: "Agenda de servicios",
     breadcrumb: "Agenda",

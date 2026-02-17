@@ -13,6 +13,11 @@ import { serviceQueries } from "@/features/services/queries";
 
 // Services index - shows the services page with tabs (overview + agenda)
 export const Route = createFileRoute("/_authed/services/")({
+  staticData: {
+    nav: { iconKey: "Briefcase", label: "Servicios", order: 10, section: "Servicios" },
+    permission: { action: "read", subject: "ServiceList" },
+    breadcrumb: "Servicios",
+  },
   beforeLoad: ({ context }) => {
     if (!context.can("read", "ServiceList")) {
       const routeApi = getRouteApi("/_authed/services/");

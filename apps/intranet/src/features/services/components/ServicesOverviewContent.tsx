@@ -149,9 +149,7 @@ export function ServicesOverviewContent() {
         </div>
 
         <ServiceList
-          canManage={canManage}
           loading={loadingList}
-          onCreateRequest={openCreateModal}
           onSelect={setSelectedId}
           selectedId={selectedId}
           services={filteredServices}

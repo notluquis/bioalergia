@@ -1,27 +1,16 @@
-import { Description } from "@heroui/react";
+import { Button, Description } from "@heroui/react";
 import dayjs from "dayjs";
-
-import { Button } from "@/components/ui/Button";
 
 import type { ServiceFrequency, ServiceSummary, ServiceType } from "../types";
 
 interface ServiceListProps {
-  canManage: boolean;
   loading?: boolean;
-  onCreateRequest: () => void;
   onSelect: (publicId: string) => void;
   selectedId: null | string;
   services: ServiceSummary[];
 }
 
-export function ServiceList({
-  canManage,
-  loading = false,
-  onCreateRequest,
-  onSelect,
-  selectedId,
-  services,
-}: ServiceListProps) {
+export function ServiceList({ loading = false, onSelect, selectedId, services }: ServiceListProps) {
   const skeletons = Array.from({ length: 5 }, (_, index) => index);
 
   return (
@@ -35,11 +24,6 @@ export function ServiceList({
             Suscripciones y gastos recurrentes.
           </Description>
         </div>
-        {canManage && (
-          <Button onClick={onCreateRequest} size="sm" type="button" variant="primary">
-            Nuevo servicio
-          </Button>
-        )}
       </header>
       <div className="muted-scrollbar flex-1 space-y-3 pr-2 sm:max-h-[60dvh] sm:overflow-y-auto sm:overscroll-y-contain">
         {loading &&

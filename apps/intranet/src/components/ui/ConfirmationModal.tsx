@@ -49,7 +49,7 @@ export function ConfirmationModal({
   return (
     <Modal.Backdrop isOpen={isOpen} onOpenChange={(open) => !open && onCancel()}>
       <Modal.Container placement="center">
-        <Modal.Dialog className="sm:max-w-[440px]">
+        <Modal.Dialog className="sm:max-w-110">
           <Modal.CloseTrigger />
           <Modal.Header>
             <Modal.Heading>{title}</Modal.Heading>
