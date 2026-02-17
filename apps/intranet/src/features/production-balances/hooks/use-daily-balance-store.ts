@@ -165,7 +165,7 @@ export const resetForm = () => {
 
 // 4. Adapter Hook (Backward Compatibility)
 export function useDailyBalanceStore() {
-  const state = useStore(dailyBalanceStore);
+  const state = useStore(dailyBalanceStore, (state) => state);
 
   const summary = useMemo(() => calculateSummary(state.formData), [state.formData]);
 

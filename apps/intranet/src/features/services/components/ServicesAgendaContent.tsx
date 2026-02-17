@@ -20,8 +20,10 @@ export function ServicesAgendaContent() {
     unifiedAgendaItems,
   } = useServicesOverview();
 
-  const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } =
-    useStore(servicesStore);
+  const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } = useStore(
+    servicesStore,
+    (state) => state,
+  );
 
   const handleEditSchedule = (_serviceId: string, schedule: ServiceSchedule) => {
     servicesActions.openEditScheduleModal(schedule);

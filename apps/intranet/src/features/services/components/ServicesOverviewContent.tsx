@@ -24,8 +24,10 @@ import { currencyFormatter, numberFormatter } from "@/lib/format";
 import { CARD_COMPACT, TITLE_MD } from "@/lib/styles";
 export function ServicesOverviewContent() {
   const overview = useServicesOverview();
-  const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } =
-    useStore(servicesStore);
+  const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } = useStore(
+    servicesStore,
+    (state) => state,
+  );
 
   const {
     canManage,

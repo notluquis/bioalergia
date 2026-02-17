@@ -22,8 +22,10 @@ export function ServiceEditPage() {
   const navigate = useNavigate({ from: "/services/$id/edit" });
   const queryClient = useQueryClient();
   const [saveMessage, setSaveMessage] = useState<null | string>(null);
-  const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } =
-    useStore(servicesStore);
+  const { editScheduleOpen, editScheduleTarget, skipScheduleOpen, skipScheduleTarget } = useStore(
+    servicesStore,
+    (state) => state,
+  );
 
   // Keep fetchServiceDetail as it provides aggregated data with schedules
   const { data: detail } = useSuspenseQuery({
