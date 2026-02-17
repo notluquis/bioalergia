@@ -1,5 +1,6 @@
 import { Button, Chip, Spinner } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Suspense, useState } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { CreateCreditForm } from "../components/CreateCreditForm";
@@ -48,6 +49,12 @@ const TableData = ({
   const paid = (credit: PersonalCredit) =>
     credit.installments?.filter((i) => i.status === "PAID").length || 0;
   const total = (credit: PersonalCredit) => credit.totalInstallments || 1;
+  const nextDueDate = (credit: PersonalCredit) => {
+    const pending = credit.installments
+      ?.filter((i) => i.status === "PENDING")
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    return pending?.[0]?.dueDate;
+  };
 
   return (
     <div className="w-full overflow-x-auto">
@@ -61,6 +68,7 @@ const TableData = ({
             <th className="px-4 py-3 text-left font-semibold">Tasa de Interés</th>
             <th className="px-4 py-3 text-left font-semibold">Cuotas Pagadas</th>
             <th className="px-4 py-3 text-left font-semibold">Cuotas Pendientes</th>
+            <th className="px-4 py-3 text-left font-semibold">Próximo Vencimiento</th>
             <th className="px-4 py-3 text-left font-semibold">Progreso</th>
             <th className="px-4 py-3 text-left font-semibold">Estado</th>
             <th className="px-4 py-3 text-right font-semibold">Acciones</th>
@@ -92,6 +100,15 @@ const TableData = ({
                 </td>
                 <td className="px-4 py-3">
                   <span className="font-medium text-warning">{totalCount - paidCount}</span>
+                </td>
+                <td className="px-4 py-3">
+                  {nextDueDate(credit) ? (
+                    <span className="text-sm">
+                      {dayjs(nextDueDate(credit)).format("DD/MM/YYYY")}
+                    </span>
+                  ) : (
+                    <span className="text-muted">-</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">

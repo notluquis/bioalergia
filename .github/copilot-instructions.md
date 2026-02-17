@@ -6,7 +6,7 @@
 
 ### Monorepo Structure (pnpm workspaces)
 - **apps/api** - Node.js + Hono backend (port 3000)
-- **apps/intranet** - React 19 + Vite frontend (port 5173)
+- **apps/intranet** - React 19 + Vite 8 frontend (port 5173)
 - **apps/site** - Public marketing site
 - **packages/db** - Zenstack schema + database layer
 
