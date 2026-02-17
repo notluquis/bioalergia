@@ -60,6 +60,7 @@ const TableData = ({
             <th className="px-4 py-3 text-left font-semibold">Total Pagado</th>
             <th className="px-4 py-3 text-left font-semibold">Tasa de Interés</th>
             <th className="px-4 py-3 text-left font-semibold">Cuotas Pagadas</th>
+            <th className="px-4 py-3 text-left font-semibold">Cuotas Pendientes</th>
             <th className="px-4 py-3 text-left font-semibold">Progreso</th>
             <th className="px-4 py-3 text-left font-semibold">Estado</th>
             <th className="px-4 py-3 text-right font-semibold">Acciones</th>
@@ -88,6 +89,9 @@ const TableData = ({
                   <span className="font-medium">
                     {paidCount} <span className="text-muted">/ {totalCount}</span>
                   </span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="font-medium text-warning">{totalCount - paidCount}</span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
