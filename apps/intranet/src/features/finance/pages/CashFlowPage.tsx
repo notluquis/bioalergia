@@ -130,10 +130,6 @@ export function CashFlowPage() {
   return (
     <div className="flex flex-col gap-6 p-4">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Flujo de Caja</h1>
-          <p className="text-default-500">Gestión de ingresos y gastos unificados</p>
-        </div>
         <div className="flex gap-2">
           <Button variant="secondary" onPress={handleSync} isPending={syncMutation.isPending}>
             {({ isPending }) => (isPending ? "Sincronizando..." : "Sincronizar Datos (MP)")}
