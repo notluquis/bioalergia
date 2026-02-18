@@ -66,6 +66,17 @@ export interface ImportStats {
   errors: string[];
 }
 
+type MpJsonDocumentGroup = {
+  column?: unknown;
+  records?: unknown;
+};
+
+type MpJsonReportPayload = {
+  document?: {
+    views?: unknown;
+  };
+};
+
 /**
  * Downloads and processes a CSV report from a URL.
  * Returns detailed statistics about the import.
@@ -83,7 +94,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
 
   try {
     checkMpConfig();
-    console.log(`[MP Ingest] Downloading CSV from ${url}`);
+    console.log(`[MP Ingest] Downloading report from ${url}`);
 
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
@@ -98,13 +109,7 @@ export async function processReportUrl(url: string, reportType: string): Promise
     if (!res.ok) {
       throw new Error(`Download failed: ${res.status} - ${res.statusText}`);
     }
-    const body = res.body;
-    if (!body) {
-      throw new Error("Empty response body");
-    }
-
-    // Convert Web Stream to Node Stream
-    const nodeStream = Readable.fromWeb(body as import("stream/web").ReadableStream);
+    const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
 
     const isFirstRow = { value: true };
     const batchState: BatchState = {
@@ -124,60 +129,84 @@ export async function processReportUrl(url: string, reportType: string): Promise
       batchState.batchValid = 0;
     };
 
-    await new Promise<void>((resolve, reject) => {
-      // Use readline to process CSV line by line with proper quote handling
-      let headerMap: Record<number, string> | null = null;
-      const rl = createInterface({
-        input: nodeStream,
-        crlfDelay: Number.POSITIVE_INFINITY,
-      });
+    if (contentType.includes("application/json")) {
+      const payload = (await res.json()) as MpJsonReportPayload;
+      await processMpJsonPayload(payload, reportType, stats, batchState, flushBatch, isFirstRow);
+    } else {
+      const body = res.body;
+      if (!body) {
+        throw new Error("Empty response body");
+      }
 
-      rl.on("line", (line: string) => {
-        try {
-          // Parse line using our custom CSV parser that respects quotes
-          const row = parseCSVLine(line);
-          handleCsvData(
-            row,
-            headerMap,
-            (map) => {
-              headerMap = map;
-            },
-            reportType,
-            stats,
-            batchState,
-            flushBatch,
-            nodeStream,
-            reject,
-            isFirstRow,
-          );
-        } catch (err) {
-          reject(err);
-        }
-      });
+      // Convert Web Stream to Node Stream
+      const nodeStream = Readable.fromWeb(body as import("stream/web").ReadableStream);
 
-      rl.on("close", async () => {
-        try {
-          await batchState.flushPromise;
-          await flushBatch();
-          console.log(`[MP Ingest] Finished processing CSV for ${reportType}. Stats:`, stats);
-          resolve();
-        } catch (err) {
-          reject(err);
-        }
-      });
-
-      rl.on("error", (err: Error) => {
-        console.error("[MP Ingest] Readline error:", err);
-        reject(err);
-      });
-    });
+      await processCsvStream(nodeStream, reportType, stats, batchState, flushBatch, isFirstRow);
+    }
   } catch (e) {
-    console.error(`[MP Webhook] Failed to process CSV ${url}:`, e);
+    console.error(`[MP Webhook] Failed to process report ${url}:`, e);
     stats.errors.push(e instanceof Error ? e.message : String(e));
     throw e;
   }
 
   return stats;
+}
+
+async function processCsvStream(
+  nodeStream: Readable,
+  reportType: string,
+  stats: ImportStats,
+  batchState: BatchState,
+  flushBatch: () => Promise<void>,
+  isFirstRow: { value: boolean },
+) {
+  await new Promise<void>((resolve, reject) => {
+    // Use readline to process CSV line by line with proper quote handling
+    let headerMap: Record<number, string> | null = null;
+    const rl = createInterface({
+      input: nodeStream,
+      crlfDelay: Number.POSITIVE_INFINITY,
+    });
+
+    rl.on("line", (line: string) => {
+      try {
+        // Parse line using our custom CSV parser that respects quotes
+        const row = parseCSVLine(line);
+        handleCsvData(
+          row,
+          headerMap,
+          (map) => {
+            headerMap = map;
+          },
+          reportType,
+          stats,
+          batchState,
+          flushBatch,
+          nodeStream,
+          reject,
+          isFirstRow,
+        );
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    rl.on("close", async () => {
+      try {
+        await batchState.flushPromise;
+        await flushBatch();
+        console.log(`[MP Ingest] Finished processing CSV for ${reportType}. Stats:`, stats);
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    rl.on("error", (err: Error) => {
+      console.error("[MP Ingest] Readline error:", err);
+      reject(err);
+    });
+  });
 }
 
 type ReleaseInput = ReturnType<typeof mapRowToReleaseTransaction>;
@@ -367,6 +396,104 @@ const handleCsvRow = (
     stats.skippedRows += 1;
   }
 };
+
+function normalizeJsonCellValue(raw: unknown): string | undefined {
+  if (raw == null) {
+    return undefined;
+  }
+
+  const value = String(raw).trim();
+  if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
+    return value.slice(1, -1).replace(/""/g, '"');
+  }
+  return value;
+}
+
+function extractRowsFromJsonPayload(
+  payload: MpJsonReportPayload,
+): Record<string, string | undefined>[] {
+  const views = payload.document?.views;
+  if (!Array.isArray(views)) {
+    return [];
+  }
+
+  const rows: Record<string, string | undefined>[] = [];
+
+  for (const view of views) {
+    if (!view || typeof view !== "object") {
+      continue;
+    }
+
+    for (const group of Object.values(view as Record<string, MpJsonDocumentGroup>)) {
+      const columns = group?.column;
+      const records = group?.records;
+      if (!Array.isArray(columns) || !Array.isArray(records)) {
+        continue;
+      }
+
+      for (const record of records) {
+        if (!Array.isArray(record)) {
+          continue;
+        }
+
+        const row: Record<string, string | undefined> = {};
+        for (let i = 0; i < columns.length; i++) {
+          const keyRaw = columns[i];
+          const key = typeof keyRaw === "string" ? keyRaw.trim() : String(keyRaw ?? "").trim();
+          if (!key) {
+            continue;
+          }
+          row[key] = normalizeJsonCellValue(record[i]);
+        }
+        rows.push(row);
+      }
+    }
+  }
+
+  return rows;
+}
+
+async function processMpJsonPayload(
+  payload: MpJsonReportPayload,
+  reportType: string,
+  stats: ImportStats,
+  batchState: BatchState,
+  flushBatch: () => Promise<void>,
+  isFirstRow: { value: boolean },
+) {
+  const rows = extractRowsFromJsonPayload(payload);
+  console.log(`[MP Ingest] JSON payload detected for ${reportType}. Rows: ${rows.length}`);
+
+  for (const row of rows) {
+    stats.totalRows += 1;
+    const cleanRow = cleanCsvRow(row);
+    logFirstRow(cleanRow, isFirstRow);
+
+    try {
+      const record = mapReportRow(reportType, cleanRow);
+      if (!record) {
+        stats.skippedRows += 1;
+        continue;
+      }
+
+      batchState.batch.push(record);
+      batchState.batchValid += 1;
+      stats.validRows += 1;
+
+      if (batchState.batch.length >= BATCH_SIZE) {
+        await flushBatch();
+      }
+    } catch (err) {
+      stats.errors.push(
+        `Row ${stats.totalRows}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      stats.skippedRows += 1;
+    }
+  }
+
+  await flushBatch();
+  console.log(`[MP Ingest] Finished processing JSON for ${reportType}. Stats:`, stats);
+}
 
 async function insertBatch(reportType: string, rows: ReportRowInput[]) {
   if (rows.length === 0) {

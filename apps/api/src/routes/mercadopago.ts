@@ -111,7 +111,6 @@ mercadopagoRoutes.get("/reports/download/:fileName", async (c) => {
 
   try {
     const res = await MercadoPagoService.downloadReport("release", fileName);
-
     c.header("Content-Type", res.headers.get("Content-Type") || "application/octet-stream");
     c.header("Content-Disposition", `attachment; filename="${fileName}"`);
 
@@ -209,7 +208,6 @@ mercadopagoRoutes.get("/settlement/reports/download/:fileName", async (c) => {
 
   try {
     const res = await MercadoPagoService.downloadReport("settlement", fileName);
-
     c.header("Content-Type", res.headers.get("Content-Type") || "application/octet-stream");
     c.header("Content-Disposition", `attachment; filename="${fileName}"`);
 
