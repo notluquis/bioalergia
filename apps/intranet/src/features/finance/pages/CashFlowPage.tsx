@@ -236,6 +236,16 @@ type CashFlowTab = "cash-flow" | "categories";
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("es-CL", { currency: "CLP", style: "currency" }).format(amount);
 
+const formatMonthLabel = (monthValue: string) => {
+  const date = new Date(`${monthValue}-01T00:00:00`);
+  if (Number.isNaN(date.getTime())) return monthValue;
+  const label = new Intl.DateTimeFormat("es-CL", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
 export function CashFlowPage() {
   const [page, setPage] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
@@ -258,6 +268,17 @@ export function CashFlowPage() {
       to: base.endOf("month").format("YYYY-MM-DD"),
     };
   }, [selectedMonth]);
+
+  const monthOptions = useMemo(() => {
+    const current = dayjs().startOf("month");
+    return Array.from({ length: 24 }, (_item, index) => {
+      const value = current.subtract(index, "month").format("YYYY-MM");
+      return {
+        label: formatMonthLabel(value),
+        value,
+      };
+    });
+  }, []);
 
   const { data, isLoading } = useFinancialTransactions({
     from: monthRange.from,
@@ -465,17 +486,35 @@ export function CashFlowPage() {
                 {({ isPending }) => (isPending ? "Sincronizando..." : "Sincronizar Datos (MP)")}
               </Button>
             </div>
-            <TextField className="w-full max-w-52">
-              <Label>Mes</Label>
-              <Input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => {
-                  setSelectedMonth(e.target.value);
+            <div className="w-full max-w-60">
+              <Select
+                selectedKey={selectedMonth}
+                onSelectionChange={(key) => {
+                  setSelectedMonth(String(key));
                   setPage(1);
                 }}
-              />
-            </TextField>
+              >
+                <Label>Mes</Label>
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover>
+                  <ListBox>
+                    {monthOptions.map((monthOption) => (
+                      <ListBox.Item
+                        id={monthOption.value}
+                        key={monthOption.value}
+                        textValue={monthOption.label}
+                      >
+                        {monthOption.label}
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
+              </Select>
+            </div>
           </div>
 
           <Card>
