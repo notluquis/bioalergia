@@ -4,6 +4,7 @@ import timezone from "dayjs/plugin/timezone.js";
 import utc from "dayjs/plugin/utc.js";
 import { sql } from "kysely";
 import { googleCalendarConfig } from "../../config";
+import { parseCalendarMetadata } from "../../modules/calendar/parsers";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -646,12 +647,25 @@ export async function getCalendarEventsByDate(
     const toIsoString = (value: string | Date | null | undefined) =>
       value ? new Date(value).toISOString() : null;
 
+    // Backward-compat fallback: some historical rows have null classification fields.
+    // Recompute from summary/description so schedule view can recover category-based color.
+    const parsedMetadata =
+      ev.category == null ||
+      ev.treatmentStage == null ||
+      ev.controlIncluded == null ||
+      ev.isDomicilio == null
+        ? parseCalendarMetadata({
+            summary: ev.summary,
+            description: ev.description,
+          })
+        : null;
+
     const detail: CalendarEventDetail = {
       calendarId: ev.calendarId,
       eventId: ev.eventId,
       status: ev.status,
       eventType: ev.eventType,
-      category: ev.category,
+      category: ev.category ?? parsedMetadata?.category ?? null,
       summary: ev.summary,
       description: ev.description,
       startDate: toIsoString(ev.startDate),
@@ -677,9 +691,9 @@ export async function getCalendarEventsByDate(
       attended: ev.attended,
       dosageValue: ev.dosageValue,
       dosageUnit: ev.dosageUnit,
-      treatmentStage: ev.treatmentStage,
-      controlIncluded: ev.controlIncluded,
-      isDomicilio: ev.isDomicilio,
+      treatmentStage: ev.treatmentStage ?? parsedMetadata?.treatmentStage ?? null,
+      controlIncluded: ev.controlIncluded ?? parsedMetadata?.controlIncluded ?? false,
+      isDomicilio: ev.isDomicilio ?? parsedMetadata?.isDomicilio ?? false,
     };
 
     grouped[dateKey].events.push(detail);
