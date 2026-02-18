@@ -400,7 +400,7 @@ export function CashFlowPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-col gap-6 px-4 pb-4 pt-0">
       <Tabs
         selectedKey={activeTab}
         onSelectionChange={(key) => setActiveTab(key as CashFlowTab)}
@@ -420,38 +420,6 @@ export function CashFlowPage() {
         </Tabs.ListContainer>
 
         <Tabs.Panel id="cash-flow" className="space-y-4 pt-4">
-          <div className="flex justify-end items-end gap-4">
-            <div className="w-full max-w-60">
-              <Select
-                selectedKey={selectedMonth}
-                onSelectionChange={(key) => {
-                  setSelectedMonth(String(key));
-                  setPage(1);
-                }}
-              >
-                <Label>Mes</Label>
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {monthOptions.map((monthOption) => (
-                      <ListBox.Item
-                        id={monthOption.value}
-                        key={monthOption.value}
-                        textValue={monthOption.label}
-                      >
-                        {monthOption.label}
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-            </div>
-          </div>
-
           <Card>
             <div className="p-4 space-y-4">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
@@ -525,6 +493,37 @@ export function CashFlowPage() {
           </Card>
 
           <Card>
+            <div className="border-b border-default-200 p-4">
+              <div className="ml-auto w-full max-w-60">
+                <Select
+                  selectedKey={selectedMonth}
+                  onSelectionChange={(key) => {
+                    setSelectedMonth(String(key));
+                    setPage(1);
+                  }}
+                >
+                  <Label>Mes</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {monthOptions.map((monthOption) => (
+                        <ListBox.Item
+                          id={monthOption.value}
+                          key={monthOption.value}
+                          textValue={monthOption.label}
+                        >
+                          {monthOption.label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              </div>
+            </div>
             <div className="p-0">
               <CashFlowTable
                 data={data?.data || []}
