@@ -1,3 +1,4 @@
+import { syncFinancialTransactions } from "../finance";
 import {
   checkMpConfig,
   MP_ACCESS_TOKEN,
@@ -79,6 +80,10 @@ export const MercadoPagoService = {
     }
 
     return await processReportUrl(downloadUrl, type);
+  },
+
+  async syncCashFlow(userId?: number) {
+    return syncFinancialTransactions(userId ?? 0);
   },
 };
 

@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { apiClient } from "@/lib/api-client";
+import { ApiError, apiClient } from "@/lib/api-client";
 import type { TransactionWithRelations } from "../components/CashFlowColumns";
 import { CashFlowTable } from "../components/CashFlowTable";
 import { TransactionForm } from "../components/TransactionForm";
@@ -59,6 +59,10 @@ const FinancialSyncResponseSchema = z.object({
   data: z
     .object({
       created: z.number().optional(),
+      duplicates: z.number().optional(),
+      failed: z.number().optional(),
+      total: z.number().optional(),
+      errors: z.array(z.string()).optional(),
     })
     .optional(),
   status: z.literal("ok"),
@@ -103,7 +107,15 @@ function useSyncTransactions() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      apiClient.post<{ data?: { created?: number } }>(
+      apiClient.post<{
+        data?: {
+          created?: number;
+          duplicates?: number;
+          failed?: number;
+          total?: number;
+          errors?: string[];
+        };
+      }>(
         "/api/finance/sync",
         {},
         {
@@ -112,10 +124,23 @@ function useSyncTransactions() {
       ),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
-      toast.success(`Sincronización completada: ${data.data?.created ?? 0} creados.`);
+      const created = data.data?.created ?? 0;
+      const duplicates = data.data?.duplicates ?? 0;
+      const failed = data.data?.failed ?? 0;
+      const total = data.data?.total ?? created + duplicates + failed;
+      if (failed > 0) {
+        toast.warning(
+          `Sincronización parcial: ${created} creados, ${duplicates} duplicados, ${failed} con error (${total} total).`,
+        );
+        return;
+      }
+      toast.success(
+        `Sincronización completada: ${created} creados, ${duplicates} duplicados (${total} total).`,
+      );
     },
-    onError: () => {
-      toast.error("Error al sincronizar");
+    onError: (error) => {
+      const message = error instanceof ApiError ? error.message : "Error inesperado al sincronizar";
+      toast.error(`Error al sincronizar: ${message}`);
     },
   });
 }

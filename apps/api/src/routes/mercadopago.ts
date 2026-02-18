@@ -268,6 +268,7 @@ mercadopagoRoutes.post("/process-report", async (c) => {
     const stats = await MercadoPagoService.processReport(reportType, {
       fileName,
     });
+    const cashFlowSync = await MercadoPagoService.syncCashFlow(auth.userId);
 
     await finalizeMpSyncLogEntry(logId, {
       status: "SUCCESS",
@@ -296,6 +297,7 @@ mercadopagoRoutes.post("/process-report", async (c) => {
           skippedRows: stats.skippedRows,
           errorCount: stats.errors?.length ?? 0,
         },
+        cashFlowSync,
       },
     });
 
@@ -303,6 +305,7 @@ mercadopagoRoutes.post("/process-report", async (c) => {
       status: "success",
       message: "Reporte procesado exitosamente",
       stats,
+      cashFlowSync,
     });
   } catch (e) {
     console.error(`[MP Process] Failed to process ${fileName}:`, e);
@@ -409,30 +412,52 @@ async function processWebhookFiles(payload: MPWebhookPayload) {
     triggerLabel: payload.transaction_id,
   });
 
-  let queuedCount = 0;
+  let processedCount = 0;
   const reportType = inferWebhookReportKind(payload.report_type);
+  const processingErrors: string[] = [];
 
   for (const file of payload.files) {
     if (processed.has(file.name) || !isCsvWebhookFile(file)) {
       continue;
     }
     console.log("[MP Webhook] Processing file:", file.name);
-    MercadoPagoService.processReport(reportType, { url: file.url }).catch((err) => {
-      console.error("[MP Webhook] Async processing failed:", err);
-    });
+    try {
+      await MercadoPagoService.processReport(reportType, { url: file.url });
+      processedCount += 1;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      processingErrors.push(`${file.name}: ${message}`);
+      console.error("[MP Webhook] Processing failed:", file.name, err);
+      continue;
+    }
     processed.add(file.name);
-    queuedCount += 1;
+  }
+
+  let cashFlowSync:
+    | {
+        created: number;
+        duplicates: number;
+        errors: string[];
+        failed: number;
+        total: number;
+      }
+    | undefined;
+  if (processedCount > 0) {
+    cashFlowSync = await MercadoPagoService.syncCashFlow(0);
   }
 
   await persistProcessedFiles(PROCESSED_FILES_KEY, processed);
   await finalizeMpSyncLogEntry(logId, {
-    status: "SUCCESS",
-    inserted: queuedCount,
+    status: processingErrors.length > 0 ? "ERROR" : "SUCCESS",
+    inserted: processedCount,
+    errorMessage: processingErrors.length > 0 ? processingErrors.join(" | ") : undefined,
     changeDetails: {
-      queuedFiles: queuedCount,
+      processedFiles: processedCount,
+      processingErrors,
       transactionId: payload.transaction_id,
       reportType: payload.report_type,
       reportTypes: [reportType],
+      cashFlowSync: cashFlowSync ?? null,
     },
   });
 }

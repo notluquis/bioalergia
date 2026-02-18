@@ -123,6 +123,11 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
       );
     }
 
+    const processedReportsTotal =
+      pendingProcessed + (results.release ?? 0) + (results.settlement ?? 0);
+    const cashFlowSync =
+      processedReportsTotal > 0 ? await MercadoPagoService.syncCashFlow(0) : undefined;
+
     await finalizeMpSyncLogEntry(logId, {
       status: "SUCCESS",
       inserted: importStats.insertedRows,
@@ -133,6 +138,7 @@ export async function runMercadoPagoAutoSync({ trigger }: { trigger: string }) {
         importStats,
         importStatsByType,
         reportTypes: ["release", "settlement"],
+        cashFlowSync: cashFlowSync ?? null,
       },
     });
     await updateSetting(SETTINGS_KEYS.lastRun, startedAt.toISOString());

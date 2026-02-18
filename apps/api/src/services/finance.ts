@@ -30,36 +30,72 @@ export async function syncFinancialTransactions(_userId: number) {
   });
 
   let createdCount = 0;
+  let duplicateCount = 0;
+  let failedCount = 0;
+  const errors: string[] = [];
 
   for (const tour of unifiedTransactions) {
     // All MP-sourced transactions map to MERCADOPAGO source
     const source: TransactionSource = "MERCADOPAGO";
 
-    // Check if already synced (idempotent via sourceId)
-    if (tour.sourceId) {
-      const existing = await db.financialTransaction.findFirst({
-        where: { sourceId: tour.sourceId },
+    try {
+      // Check if already synced (idempotent via sourceId)
+      if (tour.sourceId) {
+        const existing = await db.financialTransaction.findFirst({
+          where: { source, sourceId: tour.sourceId },
+          select: { id: true },
+        });
+        if (existing) {
+          duplicateCount++;
+          continue;
+        }
+      } else {
+        // Fallback dedupe for rows without sourceId.
+        const existing = await db.financialTransaction.findFirst({
+          where: {
+            amount: tour.transactionAmount,
+            date: tour.transactionDate,
+            description: tour.description || "Sin descripcion",
+            source,
+          },
+          select: { id: true },
+        });
+        if (existing) {
+          duplicateCount++;
+          continue;
+        }
+      }
+
+      const type: TransactionType = tour.transactionAmount >= 0 ? "INCOME" : "EXPENSE";
+
+      await db.financialTransaction.create({
+        data: {
+          date: tour.transactionDate,
+          description: tour.description || "Sin descripcion",
+          amount: new Decimal(tour.transactionAmount),
+          type,
+          source,
+          sourceId: tour.sourceId ?? undefined,
+          comment: tour.externalReference ? `Ref: ${tour.externalReference}` : undefined,
+        },
       });
-      if (existing) continue;
+      createdCount++;
+    } catch (error) {
+      failedCount++;
+      if (errors.length < 10) {
+        const message = error instanceof Error ? error.message : "Error desconocido";
+        errors.push(message);
+      }
     }
-
-    const type: TransactionType = tour.transactionAmount >= 0 ? "INCOME" : "EXPENSE";
-
-    await db.financialTransaction.create({
-      data: {
-        date: tour.transactionDate,
-        description: tour.description || "Sin descripcion",
-        amount: new Decimal(tour.transactionAmount),
-        type,
-        source,
-        sourceId: tour.sourceId ?? undefined,
-        comment: tour.externalReference ? `Ref: ${tour.externalReference}` : undefined,
-      },
-    });
-    createdCount++;
   }
 
-  return { created: createdCount };
+  return {
+    created: createdCount,
+    duplicates: duplicateCount,
+    failed: failedCount,
+    errors,
+    total: unifiedTransactions.length,
+  };
 }
 
 export async function listFinancialTransactions(params: {
