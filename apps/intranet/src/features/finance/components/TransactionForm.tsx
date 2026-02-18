@@ -180,20 +180,21 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
               <form id="transaction-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="grid grid-cols-2 gap-4">
                   {/* Fecha */}
-                  <DateField
-                    value={formData.date ? parseDate(formData.date) : undefined}
-                    onChange={(val) => handleChange("date", val?.toString() ?? "")}
-                    isReadOnly={isEditMode}
-                    isInvalid={!!errors.date}
-                  >
-                    <Label>Fecha</Label>
-                    <DateInputGroup>
-                      <DateInputGroup.Input>
-                        {(segment) => <DateInputGroup.Segment segment={segment} />}
-                      </DateInputGroup.Input>
-                    </DateInputGroup>
-                    <FieldError>{errors.date}</FieldError>
-                  </DateField>
+                  {!isEditMode ? (
+                    <DateField
+                      value={formData.date ? parseDate(formData.date) : undefined}
+                      onChange={(val) => handleChange("date", val?.toString() ?? "")}
+                      isInvalid={!!errors.date}
+                    >
+                      <Label>Fecha</Label>
+                      <DateInputGroup>
+                        <DateInputGroup.Input>
+                          {(segment) => <DateInputGroup.Segment segment={segment} />}
+                        </DateInputGroup.Input>
+                      </DateInputGroup>
+                      <FieldError>{errors.date}</FieldError>
+                    </DateField>
+                  ) : null}
 
                   {/* Tipo */}
                   <Select
@@ -242,23 +243,23 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
 
                 <div className="grid grid-cols-2 gap-4">
                   {/* Monto */}
-                  <TextField isInvalid={!!errors.amount}>
-                    <Label>Monto</Label>
-                    <div className="flex items-center gap-1">
-                      <span className="text-default-500 text-sm">$</span>
-                      <Input
-                        type="number"
-                        value={formData.amount.toString()}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          handleChange("amount", Number(e.target.value))
-                        }
-                        disabled={isEditMode}
-                        readOnly={isEditMode}
-                        placeholder="0"
-                      />
-                    </div>
-                    <FieldError>{errors.amount}</FieldError>
-                  </TextField>
+                  {!isEditMode ? (
+                    <TextField isInvalid={!!errors.amount}>
+                      <Label>Monto</Label>
+                      <div className="flex items-center gap-1">
+                        <span className="text-default-500 text-sm">$</span>
+                        <Input
+                          type="number"
+                          value={formData.amount.toString()}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            handleChange("amount", Number(e.target.value))
+                          }
+                          placeholder="0"
+                        />
+                      </div>
+                      <FieldError>{errors.amount}</FieldError>
+                    </TextField>
+                  ) : null}
 
                   {/* Categoría */}
                   <Select
