@@ -16,6 +16,23 @@ interface TransactionQueryParams {
   search?: string;
 }
 
+type FinancialTransactionsResponse = {
+  data?: FinancialTransaction[];
+  meta?: {
+    page?: number;
+    pageSize?: number;
+    total?: number;
+    totalPages?: number;
+  };
+};
+
+function unwrapApiPayload<T>(raw: unknown): T {
+  if (raw && typeof raw === "object" && "json" in raw) {
+    return (raw as { json: T }).json;
+  }
+  return raw as T;
+}
+
 function useFinancialTransactions(params: TransactionQueryParams) {
   return useQuery({
     queryKey: ["FinancialTransaction", params],
@@ -29,7 +46,8 @@ function useFinancialTransactions(params: TransactionQueryParams) {
 
       const res = await fetch(`/api/finance/transactions?${searchParams.toString()}`);
       if (!res.ok) throw new Error("Network response was not ok");
-      return res.json();
+      const raw = await res.json();
+      return unwrapApiPayload<FinancialTransactionsResponse>(raw);
     },
   });
 }
@@ -40,11 +58,12 @@ function useSyncTransactions() {
     mutationFn: async () => {
       const res = await fetch("/api/finance/sync", { method: "POST" });
       if (!res.ok) throw new Error("Sync failed");
-      return res.json();
+      const raw = await res.json();
+      return unwrapApiPayload<{ data?: { created?: number } }>(raw);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
-      toast.success(`Sincronización completada: ${data.data.created} creados.`);
+      toast.success(`Sincronización completada: ${data.data?.created ?? 0} creados.`);
     },
     onError: () => {
       toast.error("Error al sincronizar");

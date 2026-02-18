@@ -36,14 +36,23 @@ interface Props {
   initialData?: FinancialTransaction | null;
 }
 
+function unwrapApiPayload<T>(raw: unknown): T {
+  if (raw && typeof raw === "object" && "json" in raw) {
+    return (raw as { json: T }).json;
+  }
+  return raw as T;
+}
+
 function useTransactionCategories() {
   return useQuery<TransactionCategory[]>({
     queryKey: ["TransactionCategory"],
     queryFn: async () => {
       const res = await fetch("/api/finance/categories");
       if (!res.ok) return [];
-      const json = await res.json();
-      return json.data ?? json;
+      const raw = await res.json();
+      const payload = unwrapApiPayload<{ data?: unknown }>(raw);
+      const data = payload?.data;
+      return Array.isArray(data) ? (data as TransactionCategory[]) : [];
     },
   });
 }
