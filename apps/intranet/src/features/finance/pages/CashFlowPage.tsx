@@ -1,5 +1,16 @@
 import type { FinancialTransaction, TransactionCategory } from "@finanzas/db";
-import { Button, Card, Input, Label, ListBox, Select, Tabs, TextField } from "@heroui/react";
+import {
+  Button,
+  Card,
+  ColorSwatchPicker,
+  Input,
+  Label,
+  ListBox,
+  parseColor,
+  Select,
+  Tabs,
+  TextField,
+} from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -181,6 +192,18 @@ type CashFlowTab = "cash-flow" | "categories";
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("es-CL", { currency: "CLP", style: "currency" }).format(amount);
 
+const CATEGORY_COLOR_PRESETS = [
+  "#EF4444",
+  "#F97316",
+  "#EAB308",
+  "#22C55E",
+  "#06B6D4",
+  "#3B82F6",
+  "#8B5CF6",
+  "#EC4899",
+  "#64748B",
+] as const;
+
 const formatMonthLabel = (monthValue: string) => {
   const date = new Date(`${monthValue}-01T00:00:00`);
   if (Number.isNaN(date.getTime())) return monthValue;
@@ -190,6 +213,37 @@ const formatMonthLabel = (monthValue: string) => {
   }).format(date);
   return label.charAt(0).toUpperCase() + label.slice(1);
 };
+
+function CategoryColorPicker({
+  label,
+  onChange,
+  value,
+}: {
+  label: string;
+  onChange: (hex: string) => void;
+  value: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="flex items-center gap-3">
+        <ColorSwatchPicker
+          size="sm"
+          value={parseColor(value)}
+          onChange={(color) => onChange(color.toString("hex"))}
+        >
+          {CATEGORY_COLOR_PRESETS.map((color) => (
+            <ColorSwatchPicker.Item key={color} color={color}>
+              <ColorSwatchPicker.Swatch />
+              <ColorSwatchPicker.Indicator />
+            </ColorSwatchPicker.Item>
+          ))}
+        </ColorSwatchPicker>
+        <span className="text-tiny text-default-500 uppercase">{value}</span>
+      </div>
+    </div>
+  );
+}
 
 export function CashFlowPage() {
   const [page, setPage] = useState(1);
@@ -583,14 +637,11 @@ export function CashFlowPage() {
                   </Select.Popover>
                 </Select>
 
-                <TextField>
-                  <Label>Color</Label>
-                  <Input
-                    type="color"
-                    value={newCategoryColor}
-                    onChange={(e) => setNewCategoryColor(e.target.value)}
-                  />
-                </TextField>
+                <CategoryColorPicker
+                  label="Color"
+                  value={newCategoryColor}
+                  onChange={setNewCategoryColor}
+                />
 
                 <div className="md:col-span-4">
                   <Button type="submit" isPending={createCategoryMutation.isPending}>
@@ -645,14 +696,11 @@ export function CashFlowPage() {
                               </ListBox>
                             </Select.Popover>
                           </Select>
-                          <TextField>
-                            <Label>Color</Label>
-                            <Input
-                              type="color"
-                              value={editingCategoryColor}
-                              onChange={(e) => setEditingCategoryColor(e.target.value)}
-                            />
-                          </TextField>
+                          <CategoryColorPicker
+                            label="Color"
+                            value={editingCategoryColor}
+                            onChange={setEditingCategoryColor}
+                          />
                           <div className="flex gap-2">
                             <Button
                               size="sm"
