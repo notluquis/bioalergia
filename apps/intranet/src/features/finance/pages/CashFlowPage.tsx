@@ -448,8 +448,8 @@ export function CashFlowPage() {
                         Ingreso
                         <ListBox.ItemIndicator />
                       </ListBox.Item>
-                      <ListBox.Item id="EXPENSE" textValue="Gasto">
-                        Gasto
+                      <ListBox.Item id="EXPENSE" textValue="EGRESO">
+                        EGRESO
                         <ListBox.ItemIndicator />
                       </ListBox.Item>
                     </ListBox>
@@ -511,8 +511,8 @@ export function CashFlowPage() {
                                   Ingreso
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
-                                <ListBox.Item id="EXPENSE" textValue="Gasto">
-                                  Gasto
+                                <ListBox.Item id="EXPENSE" textValue="EGRESO">
+                                  EGRESO
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
                               </ListBox>
@@ -554,7 +554,7 @@ export function CashFlowPage() {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="text-default-500 text-sm">
-                              {category.type === "INCOME" ? "Ingreso" : "Gasto"}
+                              {category.type === "INCOME" ? "Ingreso" : "EGRESO"}
                             </span>
                             <Button
                               size="sm"

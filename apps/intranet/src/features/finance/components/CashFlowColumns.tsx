@@ -81,7 +81,7 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
           size="sm"
           variant="soft"
         >
-          {type === "INCOME" ? "Ingreso" : "Gasto"}
+          {type === "INCOME" ? "Ingreso" : "EGRESO"}
         </Chip>
       );
     },

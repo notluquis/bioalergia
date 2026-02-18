@@ -214,8 +214,8 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                           Ingreso
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
-                        <ListBox.Item id="EXPENSE" textValue="Gasto">
-                          Gasto
+                        <ListBox.Item id="EXPENSE" textValue="EGRESO">
+                          EGRESO
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
                       </ListBox>
