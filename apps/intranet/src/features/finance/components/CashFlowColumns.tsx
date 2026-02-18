@@ -12,12 +12,6 @@ export type TransactionWithRelations = FinancialTransaction & {
   counterpart?: Counterpart | null;
 };
 
-type CashFlowTableMeta = {
-  onCategoryChange?: (tx: TransactionWithRelations, categoryId: null | number) => void;
-  transactionCategories?: Array<{ color?: null | string; id: number; name: string }>;
-  updatingCategoryIds?: Set<number>;
-};
-
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("es-CL", {
     style: "currency",
@@ -102,7 +96,7 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
     accessorKey: "category",
     header: "Categoría",
     cell: ({ row, table }) => {
-      const meta = table.options.meta as CashFlowTableMeta | undefined;
+      const meta = table.options.meta;
       const cat = row.original.category;
       const categories = meta?.transactionCategories ?? [];
       const isUpdating = meta?.updatingCategoryIds?.has(row.original.id) ?? false;
