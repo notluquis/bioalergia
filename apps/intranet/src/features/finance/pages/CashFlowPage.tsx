@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
+import { apiClient } from "@/lib/api-client";
 import { CashFlowTable } from "../components/CashFlowTable";
 import { TransactionForm } from "../components/TransactionForm";
 
@@ -26,41 +28,69 @@ type FinancialTransactionsResponse = {
   };
 };
 
-function unwrapApiPayload<T>(raw: unknown): T {
-  if (raw && typeof raw === "object" && "json" in raw) {
-    return (raw as { json: T }).json;
-  }
-  return raw as T;
-}
+const CashFlowTransactionSchema = z
+  .object({
+    amount: z.number(),
+    categoryId: z.number().nullable().optional(),
+    comment: z.string().nullable().optional(),
+    date: z.coerce.date(),
+    description: z.string(),
+    id: z.number(),
+    source: z.string(),
+    type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
+  })
+  .passthrough();
+
+const FinancialTransactionsResponseSchema = z.object({
+  data: z.array(CashFlowTransactionSchema),
+  meta: z
+    .object({
+      page: z.number(),
+      pageSize: z.number(),
+      total: z.number(),
+      totalPages: z.number(),
+    })
+    .optional(),
+  status: z.literal("ok"),
+});
+
+const FinancialSyncResponseSchema = z.object({
+  data: z
+    .object({
+      created: z.number().optional(),
+    })
+    .optional(),
+  status: z.literal("ok"),
+});
 
 function useFinancialTransactions(params: TransactionQueryParams) {
   return useQuery({
     queryKey: ["FinancialTransaction", params],
-    queryFn: async () => {
-      const searchParams = new URLSearchParams();
-      searchParams.set("page", params.page.toString());
-      if (params.pageSize) searchParams.set("pageSize", params.pageSize.toString());
-      if (params.from) searchParams.set("from", params.from);
-      if (params.to) searchParams.set("to", params.to);
-      if (params.search) searchParams.set("search", params.search);
-
-      const res = await fetch(`/api/finance/transactions?${searchParams.toString()}`);
-      if (!res.ok) throw new Error("Network response was not ok");
-      const raw = await res.json();
-      return unwrapApiPayload<FinancialTransactionsResponse>(raw);
-    },
+    queryFn: () =>
+      apiClient.get<FinancialTransactionsResponse>("/api/finance/transactions", {
+        query: {
+          from: params.from,
+          page: params.page,
+          pageSize: params.pageSize,
+          search: params.search,
+          to: params.to,
+        },
+        responseSchema: FinancialTransactionsResponseSchema,
+      }),
   });
 }
 
 function useSyncTransactions() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/finance/sync", { method: "POST" });
-      if (!res.ok) throw new Error("Sync failed");
-      const raw = await res.json();
-      return unwrapApiPayload<{ data?: { created?: number } }>(raw);
-    },
+    mutationFn: () =>
+      apiClient.post<{ data?: { created?: number } }>(
+        "/api/finance/sync",
+        {},
+        {
+          responseSchema: FinancialSyncResponseSchema,
+        },
+      ),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
       toast.success(`Sincronización completada: ${data.data?.created ?? 0} creados.`);

@@ -18,6 +18,7 @@ import dayjs from "dayjs";
 import { type ChangeEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { apiClient } from "@/lib/api-client";
 
 const schema = z.object({
   date: z.string(),
@@ -36,23 +37,35 @@ interface Props {
   initialData?: FinancialTransaction | null;
 }
 
-function unwrapApiPayload<T>(raw: unknown): T {
-  if (raw && typeof raw === "object" && "json" in raw) {
-    return (raw as { json: T }).json;
-  }
-  return raw as T;
-}
+const TransactionCategorySchema = z
+  .object({
+    color: z.string().nullable().optional(),
+    id: z.number(),
+    name: z.string(),
+  })
+  .passthrough();
+
+const TransactionCategoriesResponseSchema = z.object({
+  data: z.array(TransactionCategorySchema),
+  status: z.literal("ok"),
+});
+
+const SaveTransactionResponseSchema = z.object({
+  data: z.unknown().optional(),
+  status: z.literal("ok"),
+});
 
 function useTransactionCategories() {
   return useQuery<TransactionCategory[]>({
     queryKey: ["TransactionCategory"],
     queryFn: async () => {
-      const res = await fetch("/api/finance/categories");
-      if (!res.ok) return [];
-      const raw = await res.json();
-      const payload = unwrapApiPayload<{ data?: unknown }>(raw);
-      const data = payload?.data;
-      return Array.isArray(data) ? (data as TransactionCategory[]) : [];
+      const payload = await apiClient.get<{ data: TransactionCategory[] }>(
+        "/api/finance/categories",
+        {
+          responseSchema: TransactionCategoriesResponseSchema,
+        },
+      );
+      return payload.data;
     },
   });
 }
@@ -99,17 +112,14 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
 
   const mutation = useMutation({
     mutationFn: async (data: FormValues) => {
-      const url = initialData
-        ? `/api/finance/transactions/${initialData.id}`
-        : "/api/finance/transactions";
-      const method = initialData ? "PUT" : "POST";
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      if (initialData) {
+        return apiClient.put(`/api/finance/transactions/${initialData.id}`, data, {
+          responseSchema: SaveTransactionResponseSchema,
+        });
+      }
+      return apiClient.post("/api/finance/transactions", data, {
+        responseSchema: SaveTransactionResponseSchema,
       });
-      if (!res.ok) throw new Error("Error al guardar");
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
