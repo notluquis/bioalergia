@@ -73,19 +73,6 @@ const FinancialTransactionsResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
-const FinancialSyncResponseSchema = z.object({
-  data: z
-    .object({
-      created: z.number().optional(),
-      duplicates: z.number().optional(),
-      failed: z.number().optional(),
-      total: z.number().optional(),
-      errors: z.array(z.string()).optional(),
-    })
-    .optional(),
-  status: z.literal("ok"),
-});
-
 const TransactionCategorySchema = z
   .object({
     color: z.string().nullable().optional(),
@@ -170,48 +157,6 @@ function useFinancialSummaryByCategory(params: { from: string; to: string }) {
   });
 }
 
-function useSyncTransactions() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () =>
-      apiClient.post<{
-        data?: {
-          created?: number;
-          duplicates?: number;
-          failed?: number;
-          total?: number;
-          errors?: string[];
-        };
-      }>(
-        "/api/finance/sync",
-        {},
-        {
-          responseSchema: FinancialSyncResponseSchema,
-        },
-      ),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
-      const created = data.data?.created ?? 0;
-      const duplicates = data.data?.duplicates ?? 0;
-      const failed = data.data?.failed ?? 0;
-      const total = data.data?.total ?? created + duplicates + failed;
-      if (failed > 0) {
-        toast.warning(
-          `Sincronización parcial: ${created} creados, ${duplicates} duplicados, ${failed} con error (${total} total).`,
-        );
-        return;
-      }
-      toast.success(
-        `Sincronización completada: ${created} creados, ${duplicates} duplicados (${total} total).`,
-      );
-    },
-    onError: (error) => {
-      const message = error instanceof ApiError ? error.message : "Error inesperado al sincronizar";
-      toast.error(`Error al sincronizar: ${message}`);
-    },
-  });
-}
-
 function useTransactionCategories() {
   return useQuery<TransactionCategory[]>({
     queryKey: ["TransactionCategory"],
@@ -289,7 +234,6 @@ export function CashFlowPage() {
   const { data: summaryData, isLoading: isSummaryLoading } =
     useFinancialSummaryByCategory(monthRange);
   const { data: categories = [] } = useTransactionCategories();
-  const syncMutation = useSyncTransactions();
   const queryClient = useQueryClient();
 
   const updateTransactionCategoryMutation = useMutation({
@@ -400,10 +344,6 @@ export function CashFlowPage() {
     setIsFormOpen(true);
   };
 
-  const handleSync = () => {
-    syncMutation.mutate();
-  };
-
   const handleCategoryChange = (tx: TransactionWithRelations, categoryId: null | number) => {
     updateTransactionCategoryMutation.mutate({
       categoryId,
@@ -480,12 +420,7 @@ export function CashFlowPage() {
         </Tabs.ListContainer>
 
         <Tabs.Panel id="cash-flow" className="space-y-4 pt-4">
-          <div className="flex justify-between items-end gap-4">
-            <div className="flex gap-2">
-              <Button variant="secondary" onPress={handleSync} isPending={syncMutation.isPending}>
-                {({ isPending }) => (isPending ? "Sincronizando..." : "Sincronizar Datos (MP)")}
-              </Button>
-            </div>
+          <div className="flex justify-end items-end gap-4">
             <div className="w-full max-w-60">
               <Select
                 selectedKey={selectedMonth}

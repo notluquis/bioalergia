@@ -3,6 +3,8 @@ import { db } from "@finanzas/db";
 import Decimal from "decimal.js";
 import { fetchMergedTransactions } from "./transactions";
 
+const SETTLEMENT_CASHBACK_TYPE = "CASHBACK";
+
 export type CreateFinancialTransactionInput = {
   date: Date;
   description: string;
@@ -81,6 +83,13 @@ export async function syncFinancialTransactions(_userId: number) {
   const unifiedTransactions = await fetchMergedTransactions({
     includeTest: false,
   });
+  const nonCashbackTransactions = unifiedTransactions.filter(
+    (tour) =>
+      !(
+        tour.source === "settlement" &&
+        tour.transactionType?.toUpperCase() === SETTLEMENT_CASHBACK_TYPE
+      ),
+  );
   const counterpartLookup = await buildCounterpartLookup();
 
   let createdCount = 0;
@@ -88,7 +97,7 @@ export async function syncFinancialTransactions(_userId: number) {
   let failedCount = 0;
   const errors: string[] = [];
 
-  for (const tour of unifiedTransactions) {
+  for (const tour of nonCashbackTransactions) {
     // All MP-sourced transactions map to MERCADOPAGO source
     const source: TransactionSource = "MERCADOPAGO";
     const counterpartIdByRut = counterpartLookup.byRut.get(normalizeRut(tour.identificationNumber));
@@ -166,7 +175,7 @@ export async function syncFinancialTransactions(_userId: number) {
     duplicates: duplicateCount,
     failed: failedCount,
     errors,
-    total: unifiedTransactions.length,
+    total: nonCashbackTransactions.length,
   };
 }
 
@@ -183,15 +192,10 @@ export async function listFinancialTransactions(params: {
   const pageSize = params.pageSize || 50;
   const skip = (page - 1) * pageSize;
 
-  const where: {
-    date?: { gte?: Date; lte?: Date };
-    categoryId?: number;
-    type?: TransactionType;
-    OR?: Array<{
-      description?: { contains: string; mode: "insensitive" };
-      comment?: { contains: string; mode: "insensitive" };
-    }>;
-  } = {};
+  type FinancialTransactionWhereInput = NonNullable<
+    Parameters<typeof db.financialTransaction.findMany>[0]
+  >["where"];
+  const where: FinancialTransactionWhereInput = {};
 
   if (params.from || params.to) {
     where.date = {};
@@ -204,6 +208,25 @@ export async function listFinancialTransactions(params: {
     where.OR = [
       { description: { contains: params.search, mode: "insensitive" } },
       { comment: { contains: params.search, mode: "insensitive" } },
+    ];
+  }
+
+  const cashbackSettlementSourceIds = (
+    await db.settlementTransaction.findMany({
+      where: {
+        sourceId: { not: "" },
+        transactionType: SETTLEMENT_CASHBACK_TYPE,
+      },
+      select: { sourceId: true },
+    })
+  ).map((row) => row.sourceId);
+
+  if (cashbackSettlementSourceIds.length > 0) {
+    where.NOT = [
+      {
+        source: "MERCADOPAGO",
+        sourceId: { in: cashbackSettlementSourceIds },
+      },
     ];
   }
 
@@ -233,12 +256,34 @@ export async function listFinancialTransactions(params: {
 }
 
 export async function getFinancialSummaryByCategory(params: { from?: Date; to?: Date }) {
-  const where: { date?: { gte?: Date; lte?: Date } } = {};
+  type FinancialTransactionWhereInput = NonNullable<
+    Parameters<typeof db.financialTransaction.findMany>[0]
+  >["where"];
+  const where: FinancialTransactionWhereInput = {};
 
   if (params.from || params.to) {
     where.date = {};
     if (params.from) where.date.gte = params.from;
     if (params.to) where.date.lte = params.to;
+  }
+
+  const cashbackSettlementSourceIds = (
+    await db.settlementTransaction.findMany({
+      where: {
+        sourceId: { not: "" },
+        transactionType: SETTLEMENT_CASHBACK_TYPE,
+      },
+      select: { sourceId: true },
+    })
+  ).map((row) => row.sourceId);
+
+  if (cashbackSettlementSourceIds.length > 0) {
+    where.NOT = [
+      {
+        source: "MERCADOPAGO",
+        sourceId: { in: cashbackSettlementSourceIds },
+      },
+    ];
   }
 
   const grouped = await db.financialTransaction.groupBy({
