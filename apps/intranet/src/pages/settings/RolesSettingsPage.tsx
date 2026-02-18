@@ -5,6 +5,7 @@ import type { AnyRoute } from "@tanstack/react-router";
 import { useRouter } from "@tanstack/react-router";
 import { Plus, RotateCw, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Select, SelectItem } from "@/components/ui/Select";
 import { useAuth } from "@/context/AuthContext";
@@ -17,10 +18,13 @@ import {
 } from "@/features/roles/components/PermissionsMatrixTable";
 import { RoleFormModal } from "@/features/roles/components/RoleFormModal";
 import { roleKeys } from "@/features/roles/queries";
+import { apiClient } from "@/lib/api-client";
 import { getNavSections, type NavItem, type NavSectionData } from "@/lib/nav-generator";
 import { cn } from "@/lib/utils";
 import type { NavConfig } from "@/types/navigation";
 import type { Permission, Role } from "@/types/roles";
+
+const RolesTelemetryResponseSchema = z.object({}).passthrough();
 
 // --- Page Component ---
 export function RolesSettingsPage() {
@@ -169,14 +173,14 @@ export function RolesSettingsPage() {
       return;
     }
 
-    fetch("/api/roles/telemetry/unmapped-subjects", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    }).catch((error) => {
-      console.warn("[Roles] Telemetry send failed", error);
-    });
+    apiClient
+      .post("/api/roles/telemetry/unmapped-subjects", payload, {
+        keepalive: true,
+        responseSchema: RolesTelemetryResponseSchema,
+      })
+      .catch((error) => {
+        console.warn("[Roles] Telemetry send failed", error);
+      });
   }, [unmappedSubjects]);
 
   return (

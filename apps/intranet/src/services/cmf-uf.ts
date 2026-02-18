@@ -2,9 +2,20 @@
  * Servicio para obtener valores de UF desde API CMF Chile
  * Documentación: https://api.cmfchile.cl/api-sbifv3/
  */
+import { z } from "zod";
+import { apiClient } from "@/lib/api-client";
 
 // Cache en memoria para valores UF
 const UF_CACHE = new Map<string, number>();
+
+const CmfUfResponseSchema = z.object({
+  UFs: z.array(
+    z.object({
+      Fecha: z.string(),
+      Valor: z.string(),
+    }),
+  ),
+});
 
 /**
  * Parsea valor UF con formato chileno (ej: "38.123,45") a número
@@ -34,15 +45,10 @@ export async function getUFValue(date: string): Promise<number> {
     const apiKey = import.meta.env.VITE_CMF_API_KEY || "37849dd7e45182bc8882322036016466dec20efc";
     const url = `https://api.cmfchile.cl/api-sbifv3/recursos_api/uf/${year}/${month}/dias/${day}?apikey=${apiKey}&formato=json`;
 
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`API CMF error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = (await response.json()) as {
-      UFs: Array<{ Valor: string; Fecha: string }>;
-    };
+    const data = await apiClient.get<{ UFs: Array<{ Fecha: string; Valor: string }> }>(url, {
+      credentials: "omit",
+      responseSchema: CmfUfResponseSchema,
+    });
 
     if (!data.UFs || data.UFs.length === 0) {
       throw new Error(`No UF value found for date ${date}`);
