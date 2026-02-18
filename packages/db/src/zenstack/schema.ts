@@ -14700,7 +14700,6 @@ export class SchemaType implements SchemaDef {
       values: {
         INCOME: "INCOME",
         EXPENSE: "EXPENSE",
-        TRANSFER: "TRANSFER",
       },
     },
     TransactionSource: {

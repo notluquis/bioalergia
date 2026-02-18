@@ -1933,7 +1933,6 @@ enum DTEType {
 enum TransactionType {
   INCOME
   EXPENSE
-  TRANSFER
 }
 
 enum TransactionSource {

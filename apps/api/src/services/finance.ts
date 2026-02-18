@@ -42,19 +42,6 @@ const normalizeAccount = (value: null | string | undefined) => {
   return normalized.length > 0 ? normalized : "0";
 };
 
-const normalizeLegacyTransactionType = (
-  type: TransactionType,
-  amount?: number,
-): Exclude<TransactionType, "TRANSFER"> => {
-  if (type === "TRANSFER") {
-    if (amount !== undefined) {
-      return amount >= 0 ? "INCOME" : "EXPENSE";
-    }
-    return "EXPENSE";
-  }
-  return type;
-};
-
 type CounterpartLookup = {
   byAccount: Map<string, number>;
   byRut: Map<string, number>;
@@ -235,10 +222,7 @@ export async function listFinancialTransactions(params: {
   ]);
 
   return {
-    data: transactions.map((tx) => ({
-      ...tx,
-      type: normalizeLegacyTransactionType(tx.type, Number(tx.amount)),
-    })),
+    data: transactions,
     meta: {
       total,
       page,
@@ -289,13 +273,9 @@ export async function deleteFinancialTransaction(id: number) {
 }
 
 export async function listTransactionCategories() {
-  const categories = await db.transactionCategory.findMany({
+  return db.transactionCategory.findMany({
     orderBy: { name: "asc" },
   });
-  return categories.map((category) => ({
-    ...category,
-    type: normalizeLegacyTransactionType(category.type),
-  }));
 }
 
 export async function createTransactionCategory(data: {
