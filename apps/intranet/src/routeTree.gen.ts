@@ -59,6 +59,7 @@ import { Route as AuthedFinanzasDashboardRouteImport } from "./routes/_authed/fi
 import { Route as AuthedFinanzasDailyRouteImport } from "./routes/_authed/finanzas/daily"
 import { Route as AuthedFinanzasCounterpartsRouteImport } from "./routes/_authed/finanzas/counterparts"
 import { Route as AuthedFinanzasConciliacionesRouteImport } from "./routes/_authed/finanzas/conciliaciones"
+import { Route as AuthedFinanzasCashFlowRouteImport } from "./routes/_authed/finanzas/cash-flow"
 import { Route as AuthedDevRoutesAuditRouteImport } from "./routes/_authed/dev/routes-audit"
 import { Route as AuthedCertificatesMedicalRouteImport } from "./routes/_authed/certificates/medical"
 import { Route as AuthedCalendarSyncHistoryRouteImport } from "./routes/_authed/calendar/sync-history"
@@ -306,6 +307,11 @@ const AuthedFinanzasConciliacionesRoute =
     path: "/conciliaciones",
     getParentRoute: () => AuthedFinanzasRoute,
   } as any)
+const AuthedFinanzasCashFlowRoute = AuthedFinanzasCashFlowRouteImport.update({
+  id: "/cash-flow",
+  path: "/cash-flow",
+  getParentRoute: () => AuthedFinanzasRoute,
+} as any)
 const AuthedDevRoutesAuditRoute = AuthedDevRoutesAuditRouteImport.update({
   id: "/dev/routes-audit",
   path: "/dev/routes-audit",
@@ -409,6 +415,7 @@ export interface FileRoutesByFullPath {
   "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
+  "/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
   "/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/finanzas/daily": typeof AuthedFinanzasDailyRoute
@@ -465,6 +472,7 @@ export interface FileRoutesByTo {
   "/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
   "/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
+  "/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
   "/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
   "/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/finanzas/daily": typeof AuthedFinanzasDailyRoute
@@ -527,6 +535,7 @@ export interface FileRoutesById {
   "/_authed/calendar/sync-history": typeof AuthedCalendarSyncHistoryRoute
   "/_authed/certificates/medical": typeof AuthedCertificatesMedicalRoute
   "/_authed/dev/routes-audit": typeof AuthedDevRoutesAuditRoute
+  "/_authed/finanzas/cash-flow": typeof AuthedFinanzasCashFlowRoute
   "/_authed/finanzas/conciliaciones": typeof AuthedFinanzasConciliacionesRoute
   "/_authed/finanzas/counterparts": typeof AuthedFinanzasCounterpartsRoute
   "/_authed/finanzas/daily": typeof AuthedFinanzasDailyRoute
@@ -589,6 +598,7 @@ export interface FileRouteTypes {
     | "/calendar/sync-history"
     | "/certificates/medical"
     | "/dev/routes-audit"
+    | "/finanzas/cash-flow"
     | "/finanzas/conciliaciones"
     | "/finanzas/counterparts"
     | "/finanzas/daily"
@@ -645,6 +655,7 @@ export interface FileRouteTypes {
     | "/calendar/sync-history"
     | "/certificates/medical"
     | "/dev/routes-audit"
+    | "/finanzas/cash-flow"
     | "/finanzas/conciliaciones"
     | "/finanzas/counterparts"
     | "/finanzas/daily"
@@ -706,6 +717,7 @@ export interface FileRouteTypes {
     | "/_authed/calendar/sync-history"
     | "/_authed/certificates/medical"
     | "/_authed/dev/routes-audit"
+    | "/_authed/finanzas/cash-flow"
     | "/_authed/finanzas/conciliaciones"
     | "/_authed/finanzas/counterparts"
     | "/_authed/finanzas/daily"
@@ -1064,6 +1076,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthedFinanzasConciliacionesRouteImport
       parentRoute: typeof AuthedFinanzasRoute
     }
+    "/_authed/finanzas/cash-flow": {
+      id: "/_authed/finanzas/cash-flow"
+      path: "/cash-flow"
+      fullPath: "/finanzas/cash-flow"
+      preLoaderRoute: typeof AuthedFinanzasCashFlowRouteImport
+      parentRoute: typeof AuthedFinanzasRoute
+    }
     "/_authed/dev/routes-audit": {
       id: "/_authed/dev/routes-audit"
       path: "/dev/routes-audit"
@@ -1219,6 +1238,7 @@ const AuthedFinanzasPersonalCreditsRouteWithChildren =
   )
 
 interface AuthedFinanzasRouteChildren {
+  AuthedFinanzasCashFlowRoute: typeof AuthedFinanzasCashFlowRoute
   AuthedFinanzasConciliacionesRoute: typeof AuthedFinanzasConciliacionesRoute
   AuthedFinanzasCounterpartsRoute: typeof AuthedFinanzasCounterpartsRoute
   AuthedFinanzasDailyRoute: typeof AuthedFinanzasDailyRoute
@@ -1234,6 +1254,7 @@ interface AuthedFinanzasRouteChildren {
 }
 
 const AuthedFinanzasRouteChildren: AuthedFinanzasRouteChildren = {
+  AuthedFinanzasCashFlowRoute: AuthedFinanzasCashFlowRoute,
   AuthedFinanzasConciliacionesRoute: AuthedFinanzasConciliacionesRoute,
   AuthedFinanzasCounterpartsRoute: AuthedFinanzasCounterpartsRoute,
   AuthedFinanzasDailyRoute: AuthedFinanzasDailyRoute,

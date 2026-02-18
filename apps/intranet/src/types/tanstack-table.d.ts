@@ -1,7 +1,6 @@
 import "@tanstack/react-table";
 
 import type { BalanceDraft } from "@/features/finance/balances/types";
-import type { Employee } from "@/features/hr/employees/types";
 import type { InventoryItem } from "@/features/inventory/types";
 import type { SupplyRequest } from "@/features/supplies/types";
 
@@ -23,7 +22,7 @@ declare module "@tanstack/react-table" {
     canEdit?: boolean;
     onActivate?: (id: number) => void;
     onDeactivate?: (id: number) => void;
-    onEdit?: (employee: Employee) => void;
+    onEdit?: (row: TData) => void;
 
     canAdjust?: boolean;
     canUpdate?: boolean;

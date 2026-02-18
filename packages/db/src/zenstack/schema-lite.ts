@@ -2340,16 +2340,6 @@ export class SchemaType implements SchemaDef {
           type: "Boolean",
           optional: true,
         },
-        dosageValue: {
-          name: "dosageValue",
-          type: "Float",
-          optional: true,
-        },
-        dosageUnit: {
-          name: "dosageUnit",
-          type: "String",
-          optional: true,
-        },
         treatmentStage: {
           name: "treatmentStage",
           type: "String",
@@ -2373,11 +2363,38 @@ export class SchemaType implements SchemaDef {
         lastSyncedAt: {
           name: "lastSyncedAt",
           type: "DateTime",
+          optional: true,
+        },
+        dosageValue: {
+          name: "dosageValue",
+          type: "Float",
+          optional: true,
+        },
+        dosageUnit: {
+          name: "dosageUnit",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+          default: ExpressionUtils.call("now"),
         },
         calendar: {
           name: "calendar",
           type: "Calendar",
-          relation: { opposite: "events", fields: ["calendarId"], references: ["id"] },
+          relation: {
+            opposite: "events",
+            fields: ["calendarId"],
+            references: ["id"],
+            onDelete: "Cascade",
+          },
         },
         consultations: {
           name: "consultations",
@@ -5268,6 +5285,123 @@ export class SchemaType implements SchemaDef {
         id: { type: "String" },
       },
     },
+    TransactionCategory: {
+      name: "TransactionCategory",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        name: {
+          name: "name",
+          type: "String",
+        },
+        type: {
+          name: "type",
+          type: "TransactionType",
+        },
+        color: {
+          name: "color",
+          type: "String",
+          optional: true,
+        },
+        icon: {
+          name: "icon",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+        },
+        transactions: {
+          name: "transactions",
+          type: "FinancialTransaction",
+          array: true,
+          relation: { opposite: "category" },
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
+    FinancialTransaction: {
+      name: "FinancialTransaction",
+      fields: {
+        id: {
+          name: "id",
+          type: "Int",
+          id: true,
+          default: ExpressionUtils.call("autoincrement"),
+        },
+        date: {
+          name: "date",
+          type: "DateTime",
+        },
+        description: {
+          name: "description",
+          type: "String",
+        },
+        amount: {
+          name: "amount",
+          type: "Decimal",
+        },
+        type: {
+          name: "type",
+          type: "TransactionType",
+        },
+        source: {
+          name: "source",
+          type: "TransactionSource",
+          default: "MANUAL",
+        },
+        sourceId: {
+          name: "sourceId",
+          type: "String",
+          optional: true,
+        },
+        categoryId: {
+          name: "categoryId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["category"],
+        },
+        category: {
+          name: "category",
+          type: "TransactionCategory",
+          optional: true,
+          relation: { opposite: "transactions", fields: ["categoryId"], references: ["id"] },
+        },
+        comment: {
+          name: "comment",
+          type: "String",
+          optional: true,
+        },
+        createdAt: {
+          name: "createdAt",
+          type: "DateTime",
+          default: ExpressionUtils.call("now"),
+        },
+        updatedAt: {
+          name: "updatedAt",
+          type: "DateTime",
+          updatedAt: true,
+        },
+      },
+      idFields: ["id"],
+      uniqueFields: {
+        id: { type: "Int" },
+      },
+    },
   } as const;
   enums = {
     PersonType: {
@@ -5452,6 +5586,22 @@ export class SchemaType implements SchemaDef {
       values: {
         PURCHASE: "PURCHASE",
         SALE: "SALE",
+      },
+    },
+    TransactionType: {
+      name: "TransactionType",
+      values: {
+        INCOME: "INCOME",
+        EXPENSE: "EXPENSE",
+        TRANSFER: "TRANSFER",
+      },
+    },
+    TransactionSource: {
+      name: "TransactionSource",
+      values: {
+        MANUAL: "MANUAL",
+        MERCADOPAGO: "MERCADOPAGO",
+        BANK: "BANK",
       },
     },
   } as const;

@@ -30,7 +30,7 @@ import type {
   UpsertArgs as $UpsertArgs,
   WhereInput as $WhereInput,
 } from "@zenstackhq/orm";
-import type { SchemaType as $Schema } from "./schema-lite";
+import type { SchemaType as $Schema } from "./schema-lite.js";
 export type PersonFindManyArgs = $FindManyArgs<$Schema, "Person">;
 export type PersonFindUniqueArgs = $FindUniqueArgs<$Schema, "Person">;
 export type PersonFindFirstArgs = $FindFirstArgs<$Schema, "Person">;
@@ -1888,3 +1888,63 @@ export type DTESyncLogGetPayload<
   Args extends $SelectIncludeOmit<$Schema, "DTESyncLog", true>,
   Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
 > = $Result<$Schema, "DTESyncLog", Args, Options>;
+export type TransactionCategoryFindManyArgs = $FindManyArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryFindUniqueArgs = $FindUniqueArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryFindFirstArgs = $FindFirstArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryExistsArgs = $ExistsArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryCreateArgs = $CreateArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryCreateManyArgs = $CreateManyArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "TransactionCategory"
+>;
+export type TransactionCategoryUpdateArgs = $UpdateArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryUpdateManyArgs = $UpdateManyArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "TransactionCategory"
+>;
+export type TransactionCategoryUpsertArgs = $UpsertArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryDeleteArgs = $DeleteArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryDeleteManyArgs = $DeleteManyArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryCountArgs = $CountArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryAggregateArgs = $AggregateArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryGroupByArgs = $GroupByArgs<$Schema, "TransactionCategory">;
+export type TransactionCategoryWhereInput = $WhereInput<$Schema, "TransactionCategory">;
+export type TransactionCategorySelect = $SelectInput<$Schema, "TransactionCategory">;
+export type TransactionCategoryInclude = $IncludeInput<$Schema, "TransactionCategory">;
+export type TransactionCategoryOmit = $OmitInput<$Schema, "TransactionCategory">;
+export type TransactionCategoryGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "TransactionCategory", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "TransactionCategory", Args, Options>;
+export type FinancialTransactionFindManyArgs = $FindManyArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionFindUniqueArgs = $FindUniqueArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionFindFirstArgs = $FindFirstArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionExistsArgs = $ExistsArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionCreateArgs = $CreateArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionCreateManyArgs = $CreateManyArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionCreateManyAndReturnArgs = $CreateManyAndReturnArgs<
+  $Schema,
+  "FinancialTransaction"
+>;
+export type FinancialTransactionUpdateArgs = $UpdateArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionUpdateManyArgs = $UpdateManyArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionUpdateManyAndReturnArgs = $UpdateManyAndReturnArgs<
+  $Schema,
+  "FinancialTransaction"
+>;
+export type FinancialTransactionUpsertArgs = $UpsertArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionDeleteArgs = $DeleteArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionDeleteManyArgs = $DeleteManyArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionCountArgs = $CountArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionAggregateArgs = $AggregateArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionGroupByArgs = $GroupByArgs<$Schema, "FinancialTransaction">;
+export type FinancialTransactionWhereInput = $WhereInput<$Schema, "FinancialTransaction">;
+export type FinancialTransactionSelect = $SelectInput<$Schema, "FinancialTransaction">;
+export type FinancialTransactionInclude = $IncludeInput<$Schema, "FinancialTransaction">;
+export type FinancialTransactionOmit = $OmitInput<$Schema, "FinancialTransaction">;
+export type FinancialTransactionGetPayload<
+  Args extends $SelectIncludeOmit<$Schema, "FinancialTransaction", true>,
+  Options extends $QueryOptions<$Schema> = $QueryOptions<$Schema>,
+> = $Result<$Schema, "FinancialTransaction", Args, Options>;

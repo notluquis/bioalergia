@@ -138,7 +138,12 @@ async function main() {
     validRoutes++;
   }
 
-  const exitCode = printAuditResult({ missingNav, missingPermission, technicalRoutes, validRoutes });
+  const exitCode = printAuditResult({
+    missingNav,
+    missingPermission,
+    technicalRoutes,
+    validRoutes,
+  });
   process.exit(exitCode);
 }
 

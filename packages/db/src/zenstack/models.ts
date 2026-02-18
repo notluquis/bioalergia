@@ -6,7 +6,7 @@
 /* eslint-disable */
 
 import type { ModelResult as $ModelResult } from "@zenstackhq/orm";
-import { type SchemaType as $Schema, schema as $schema } from "./schema-lite";
+import { type SchemaType as $Schema, schema as $schema } from "./schema-lite.js";
 export type Person = $ModelResult<$Schema, "Person">;
 export type User = $ModelResult<$Schema, "User">;
 export type Passkey = $ModelResult<$Schema, "Passkey">;
@@ -67,6 +67,8 @@ export type PatientAttachment = $ModelResult<$Schema, "PatientAttachment">;
 export type DTEPurchaseDetail = $ModelResult<$Schema, "DTEPurchaseDetail">;
 export type DTESaleDetail = $ModelResult<$Schema, "DTESaleDetail">;
 export type DTESyncLog = $ModelResult<$Schema, "DTESyncLog">;
+export type TransactionCategory = $ModelResult<$Schema, "TransactionCategory">;
+export type FinancialTransaction = $ModelResult<$Schema, "FinancialTransaction">;
 export const PersonType = $schema.enums.PersonType.values;
 export type PersonType = (typeof PersonType)[keyof typeof PersonType];
 export const CounterpartCategory = $schema.enums.CounterpartCategory.values;
@@ -113,3 +115,7 @@ export const AttachmentType = $schema.enums.AttachmentType.values;
 export type AttachmentType = (typeof AttachmentType)[keyof typeof AttachmentType];
 export const DTEType = $schema.enums.DTEType.values;
 export type DTEType = (typeof DTEType)[keyof typeof DTEType];
+export const TransactionType = $schema.enums.TransactionType.values;
+export type TransactionType = (typeof TransactionType)[keyof typeof TransactionType];
+export const TransactionSource = $schema.enums.TransactionSource.values;
+export type TransactionSource = (typeof TransactionSource)[keyof typeof TransactionSource];

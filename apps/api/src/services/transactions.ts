@@ -379,7 +379,9 @@ function matchesFilter(tx: UnifiedTransaction, filters: TransactionFilters) {
   return true;
 }
 
-async function fetchMergedTransactions(filters: TransactionFilters): Promise<UnifiedTransaction[]> {
+export async function fetchMergedTransactions(
+  filters: TransactionFilters,
+): Promise<UnifiedTransaction[]> {
   const settlementDateWhere =
     filters.from || filters.to
       ? {

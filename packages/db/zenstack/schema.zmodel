@@ -804,14 +804,19 @@ model Event {
   amountExpected  Int?           @map("amount_expected")
   amountPaid      Int?           @map("amount_paid")
   attended        Boolean?
-  dosageValue     Float?         @map("dosage_value")
-  dosageUnit      String?        @map("dosage_unit")
+  
+  // Custom tracking fields
   treatmentStage  String?        @map("treatment_stage")
   controlIncluded Boolean        @default(false) @map("control_included")
   isDomicilio     Boolean        @default(false) @map("is_domicilio")
   rawEvent        Json?          @map("raw_event")
-  lastSyncedAt    DateTime       @map("last_synced_at")
-  calendar        Calendar       @relation(fields: [calendarId], references: [id])
+  lastSyncedAt    DateTime?      @map("last_synced_at")
+
+  dosageValue     Float?         @map("dosage_value")
+  dosageUnit      String?        @map("dosage_unit")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
+  calendar        Calendar       @relation(fields: [calendarId], references: [id], onDelete: Cascade)
   consultations   Consultation[]
 
   // Access policies
@@ -1922,4 +1927,57 @@ model DTESyncLog {
 enum DTEType {
   PURCHASE
   SALE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum TransactionSource {
+  MANUAL
+  MERCADOPAGO
+  BANK
+}
+
+model TransactionCategory {
+  id           Int                    @id @default(autoincrement())
+  name         String
+  type         TransactionType
+  color        String?
+  icon         String?
+  createdAt    DateTime               @default(now()) @map("created_at")
+  updatedAt    DateTime               @updatedAt @map("updated_at")
+
+  transactions FinancialTransaction[]
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@map("transaction_categories")
+}
+
+model FinancialTransaction {
+  id          Int                  @id @default(autoincrement())
+  date        DateTime
+  description String
+  amount      Decimal              @db.Decimal(19, 4)
+  type        TransactionType
+  source      TransactionSource    @default(MANUAL)
+  sourceId    String?              @map("source_id")
+  categoryId  Int?                 @map("category_id")
+  category    TransactionCategory? @relation(fields: [categoryId], references: [id])
+  comment     String?
+
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  // Access policies
+  @@allow('all', auth().status == 'ACTIVE')
+
+  @@index([date])
+  @@index([type])
+  @@index([categoryId])
+  @@map("financial_transactions")
 }

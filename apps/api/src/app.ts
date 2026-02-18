@@ -23,6 +23,7 @@ import { dteRoutes } from "./routes/dte";
 import { dteAnalyticsRoutes } from "./routes/dte-analytics";
 import { employeeRoutes } from "./routes/employees";
 import { expenseRoutes } from "./routes/expenses";
+import { financeRoutes } from "./routes/finance";
 import { haulmerRoutes } from "./routes/haulmer";
 import { integrationRoutes } from "./routes/integrations";
 import { inventoryRoutes } from "./routes/inventory";
@@ -193,6 +194,9 @@ app.route("/api/people", peopleRoutes);
 app.route("/api/expenses", expenseRoutes);
 app.route("/api/integrations", integrationRoutes);
 app.route("/api/personal-finance", personalFinanceRoutes);
+
+// Finance (Cash Flow)
+app.route("/api/finance", financeRoutes);
 
 // Doctoralia integration routes
 app.route("/api/doctoralia", doctoraliaRoutes);
