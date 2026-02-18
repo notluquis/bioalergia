@@ -24,7 +24,7 @@ const schema = z.object({
   date: z.string(),
   description: z.string().min(1, "Descripción requerida"),
   amount: z.coerce.number().refine((val) => val !== 0, "Monto no puede ser 0"),
-  type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
+  type: z.enum(["INCOME", "EXPENSE"]),
   categoryId: z.number().nullable().optional(),
   comment: z.string().optional(),
 });
@@ -92,7 +92,7 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
           date: dayjs(initialData.date).format("YYYY-MM-DD"),
           description: initialData.description,
           amount: Number(initialData.amount),
-          type: initialData.type as "INCOME" | "EXPENSE" | "TRANSFER",
+          type: initialData.type === "INCOME" ? "INCOME" : "EXPENSE",
           categoryId: initialData.categoryId ?? undefined,
           comment: initialData.comment ?? "",
         });
@@ -216,10 +216,6 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                         </ListBox.Item>
                         <ListBox.Item id="EXPENSE" textValue="Gasto">
                           Gasto
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                        <ListBox.Item id="TRANSFER" textValue="Transferencia">
-                          Transferencia
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
                       </ListBox>

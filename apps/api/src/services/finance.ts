@@ -42,6 +42,19 @@ const normalizeAccount = (value: null | string | undefined) => {
   return normalized.length > 0 ? normalized : "0";
 };
 
+const normalizeLegacyTransactionType = (
+  type: TransactionType,
+  amount?: number,
+): Exclude<TransactionType, "TRANSFER"> => {
+  if (type === "TRANSFER") {
+    if (amount !== undefined) {
+      return amount >= 0 ? "INCOME" : "EXPENSE";
+    }
+    return "EXPENSE";
+  }
+  return type;
+};
+
 type CounterpartLookup = {
   byAccount: Map<string, number>;
   byRut: Map<string, number>;
@@ -222,7 +235,10 @@ export async function listFinancialTransactions(params: {
   ]);
 
   return {
-    data: transactions,
+    data: transactions.map((tx) => ({
+      ...tx,
+      type: normalizeLegacyTransactionType(tx.type, Number(tx.amount)),
+    })),
     meta: {
       total,
       page,
@@ -273,9 +289,13 @@ export async function deleteFinancialTransaction(id: number) {
 }
 
 export async function listTransactionCategories() {
-  return db.transactionCategory.findMany({
+  const categories = await db.transactionCategory.findMany({
     orderBy: { name: "asc" },
   });
+  return categories.map((category) => ({
+    ...category,
+    type: normalizeLegacyTransactionType(category.type),
+  }));
 }
 
 export async function createTransactionCategory(data: {
@@ -284,4 +304,36 @@ export async function createTransactionCategory(data: {
   color?: string;
 }) {
   return db.transactionCategory.create({ data });
+}
+
+export async function updateTransactionCategory(
+  id: number,
+  data: {
+    color?: null | string;
+    name?: string;
+    type?: TransactionType;
+  },
+) {
+  return db.transactionCategory.update({
+    where: { id },
+    data: {
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.type !== undefined && { type: data.type }),
+      ...(data.color !== undefined && { color: data.color }),
+    },
+  });
+}
+
+export async function deleteTransactionCategory(id: number) {
+  const usageCount = await db.financialTransaction.count({
+    where: { categoryId: id },
+  });
+
+  if (usageCount > 0) {
+    throw new Error("No se puede eliminar: la categoría está en uso por movimientos financieros.");
+  }
+
+  return db.transactionCategory.delete({
+    where: { id },
+  });
 }

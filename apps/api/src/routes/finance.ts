@@ -6,10 +6,12 @@ import {
   createFinancialTransaction,
   createTransactionCategory,
   deleteFinancialTransaction,
+  deleteTransactionCategory,
   listFinancialTransactions,
   listTransactionCategories,
   syncFinancialTransactions,
   updateFinancialTransaction,
+  updateTransactionCategory,
 } from "../services/finance";
 import { reply } from "../utils/reply";
 
@@ -20,7 +22,7 @@ const listSchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
   categoryId: z.coerce.number().optional(),
-  type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]).optional(),
+  type: z.enum(["INCOME", "EXPENSE"]).optional(),
   search: z.string().optional(),
   page: z.coerce.number().optional().default(1),
   pageSize: z.coerce.number().optional().default(50),
@@ -30,7 +32,7 @@ const createSchema = z.object({
   date: z.string().transform((str) => new Date(str)),
   description: z.string().min(1),
   amount: z.number(),
-  type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
+  type: z.enum(["INCOME", "EXPENSE"]),
   categoryId: z.number().nullable().optional(),
   counterpartId: z.number().nullable().optional(),
   comment: z.string().optional(),
@@ -42,8 +44,14 @@ const updateSchema = createSchema.partial().extend({
 
 const createCategorySchema = z.object({
   name: z.string().min(1),
-  type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
+  type: z.enum(["INCOME", "EXPENSE"]),
   color: z.string().optional(),
+});
+
+const updateCategorySchema = z.object({
+  name: z.string().min(1).optional(),
+  type: z.enum(["INCOME", "EXPENSE"]).optional(),
+  color: z.string().nullable().optional(),
 });
 
 // Middleware for auth
@@ -113,6 +121,19 @@ app.post("/categories", zValidator("json", createCategorySchema), async (c) => {
   const data = c.req.valid("json");
   const result = await createTransactionCategory(data);
   return reply(c, { status: "ok", data: result });
+});
+
+app.put("/categories/:id", zValidator("json", updateCategorySchema), async (c) => {
+  const id = Number(c.req.param("id"));
+  const data = c.req.valid("json");
+  const result = await updateTransactionCategory(id, data);
+  return reply(c, { status: "ok", data: result });
+});
+
+app.delete("/categories/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+  await deleteTransactionCategory(id);
+  return reply(c, { status: "ok" });
 });
 
 export const financeRoutes = app;

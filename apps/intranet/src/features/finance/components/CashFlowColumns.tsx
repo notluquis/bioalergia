@@ -77,11 +77,11 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
       return (
         <Chip
           className="capitalize"
-          color={type === "INCOME" ? "success" : type === "EXPENSE" ? "danger" : "warning"}
+          color={type === "INCOME" ? "success" : "danger"}
           size="sm"
           variant="soft"
         >
-          {type === "INCOME" ? "Ingreso" : type === "EXPENSE" ? "Gasto" : "Transferencia"}
+          {type === "INCOME" ? "Ingreso" : "Gasto"}
         </Chip>
       );
     },

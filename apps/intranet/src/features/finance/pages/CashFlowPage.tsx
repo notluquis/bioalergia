@@ -38,7 +38,7 @@ const CashFlowTransactionSchema = z
     description: z.string(),
     id: z.number(),
     source: z.string(),
-    type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
+    type: z.enum(["INCOME", "EXPENSE"]),
   })
   .passthrough();
 
@@ -73,6 +73,7 @@ const TransactionCategorySchema = z
     color: z.string().nullable().optional(),
     id: z.number(),
     name: z.string(),
+    type: z.enum(["INCOME", "EXPENSE"]),
   })
   .passthrough();
 
@@ -83,6 +84,15 @@ const TransactionCategoriesResponseSchema = z.object({
 
 const CreateTransactionCategoryResponseSchema = z.object({
   data: TransactionCategorySchema,
+  status: z.literal("ok"),
+});
+
+const UpdateTransactionCategoryResponseSchema = z.object({
+  data: TransactionCategorySchema,
+  status: z.literal("ok"),
+});
+
+const DeleteTransactionCategoryResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
@@ -178,17 +188,19 @@ export function CashFlowPage() {
   const [editingTx, setEditingTx] = useState<FinancialTransaction | null>(null);
   const [updatingCategoryIds, setUpdatingCategoryIds] = useState<Set<number>>(new Set());
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryType, setNewCategoryType] = useState<"EXPENSE" | "INCOME" | "TRANSFER">(
-    "EXPENSE",
-  );
+  const [newCategoryType, setNewCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
   const [newCategoryColor, setNewCategoryColor] = useState("#64748b");
+  const [editingCategoryId, setEditingCategoryId] = useState<null | number>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState("");
+  const [editingCategoryType, setEditingCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
+  const [editingCategoryColor, setEditingCategoryColor] = useState("#64748b");
 
   const { data, isLoading } = useFinancialTransactions({ page, pageSize: 50 });
   const { data: categories = [] } = useTransactionCategories();
   const syncMutation = useSyncTransactions();
   const queryClient = useQueryClient();
 
-  const updateCategoryMutation = useMutation({
+  const updateTransactionCategoryMutation = useMutation({
     mutationFn: async ({
       categoryId,
       transactionId,
@@ -226,11 +238,7 @@ export function CashFlowPage() {
   });
 
   const createCategoryMutation = useMutation({
-    mutationFn: async (payload: {
-      color?: string;
-      name: string;
-      type: "EXPENSE" | "INCOME" | "TRANSFER";
-    }) =>
+    mutationFn: async (payload: { color?: string; name: string; type: "EXPENSE" | "INCOME" }) =>
       apiClient.post("/api/finance/categories", payload, {
         responseSchema: CreateTransactionCategoryResponseSchema,
       }),
@@ -248,6 +256,53 @@ export function CashFlowPage() {
     },
   });
 
+  const updateCategoryMutation = useMutation({
+    mutationFn: async (payload: {
+      color?: null | string;
+      id: number;
+      name: string;
+      type: "EXPENSE" | "INCOME";
+    }) =>
+      apiClient.put(
+        `/api/finance/categories/${payload.id}`,
+        {
+          color: payload.color,
+          name: payload.name,
+          type: payload.type,
+        },
+        {
+          responseSchema: UpdateTransactionCategoryResponseSchema,
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
+      setEditingCategoryId(null);
+      toast.success("Categoría actualizada");
+    },
+    onError: (error) => {
+      const message =
+        error instanceof ApiError ? error.message : "Error inesperado al actualizar categoría";
+      toast.error(message);
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: number) =>
+      apiClient.delete(`/api/finance/categories/${id}`, {
+        responseSchema: DeleteTransactionCategoryResponseSchema,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["TransactionCategory"] });
+      queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
+      toast.success("Categoría eliminada");
+    },
+    onError: (error) => {
+      const message =
+        error instanceof ApiError ? error.message : "Error inesperado al eliminar categoría";
+      toast.error(message);
+    },
+  });
+
   const handleEdit = (tx: FinancialTransaction) => {
     setEditingTx(tx);
     setIsFormOpen(true);
@@ -258,7 +313,7 @@ export function CashFlowPage() {
   };
 
   const handleCategoryChange = (tx: TransactionWithRelations, categoryId: null | number) => {
-    updateCategoryMutation.mutate({
+    updateTransactionCategoryMutation.mutate({
       categoryId,
       transactionId: tx.id,
     });
@@ -276,6 +331,40 @@ export function CashFlowPage() {
       name,
       type: newCategoryType,
     });
+  };
+
+  const handleStartEditCategory = (category: TransactionCategory) => {
+    setEditingCategoryId(category.id);
+    setEditingCategoryName(category.name);
+    setEditingCategoryType(category.type === "INCOME" ? "INCOME" : "EXPENSE");
+    setEditingCategoryColor(category.color ?? "#64748b");
+  };
+
+  const handleCancelEditCategory = () => {
+    setEditingCategoryId(null);
+    setEditingCategoryName("");
+    setEditingCategoryType("EXPENSE");
+    setEditingCategoryColor("#64748b");
+  };
+
+  const handleSaveEditCategory = (categoryId: number) => {
+    const name = editingCategoryName.trim();
+    if (!name) {
+      toast.error("El nombre de la categoría es obligatorio");
+      return;
+    }
+    updateCategoryMutation.mutate({
+      color: editingCategoryColor || null,
+      id: categoryId,
+      name,
+      type: editingCategoryType,
+    });
+  };
+
+  const handleDeleteCategory = (category: TransactionCategory) => {
+    const confirmed = window.confirm(`¿Eliminar la categoría "${category.name}"?`);
+    if (!confirmed) return;
+    deleteCategoryMutation.mutate(category.id);
   };
 
   return (
@@ -344,7 +433,7 @@ export function CashFlowPage() {
                 <Select
                   selectedKey={newCategoryType}
                   onSelectionChange={(key) =>
-                    setNewCategoryType(String(key) as "EXPENSE" | "INCOME" | "TRANSFER")
+                    setNewCategoryType(String(key) as "EXPENSE" | "INCOME")
                   }
                   placeholder="Tipo"
                 >
@@ -361,10 +450,6 @@ export function CashFlowPage() {
                       </ListBox.Item>
                       <ListBox.Item id="EXPENSE" textValue="Gasto">
                         Gasto
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                      <ListBox.Item id="TRANSFER" textValue="Transferencia">
-                        Transferencia
                         <ListBox.ItemIndicator />
                       </ListBox.Item>
                     </ListBox>
@@ -400,20 +485,96 @@ export function CashFlowPage() {
                       key={category.id}
                       className="flex items-center justify-between rounded-md border border-default-200 px-3 py-2"
                     >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: category.color ?? "#ccc" }}
-                        />
-                        <span>{category.name}</span>
-                      </div>
-                      <span className="text-default-500 text-sm">
-                        {category.type === "INCOME"
-                          ? "Ingreso"
-                          : category.type === "EXPENSE"
-                            ? "Gasto"
-                            : "Transferencia"}
-                      </span>
+                      {editingCategoryId === category.id ? (
+                        <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[1fr_160px_90px_auto] md:items-end">
+                          <TextField>
+                            <Label>Nombre</Label>
+                            <Input
+                              value={editingCategoryName}
+                              onChange={(e) => setEditingCategoryName(e.target.value)}
+                            />
+                          </TextField>
+                          <Select
+                            selectedKey={editingCategoryType}
+                            onSelectionChange={(key) =>
+                              setEditingCategoryType(String(key) as "EXPENSE" | "INCOME")
+                            }
+                          >
+                            <Label>Tipo</Label>
+                            <Select.Trigger>
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                              <ListBox>
+                                <ListBox.Item id="INCOME" textValue="Ingreso">
+                                  Ingreso
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                                <ListBox.Item id="EXPENSE" textValue="Gasto">
+                                  Gasto
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
+                          <TextField>
+                            <Label>Color</Label>
+                            <Input
+                              type="color"
+                              value={editingCategoryColor}
+                              onChange={(e) => setEditingCategoryColor(e.target.value)}
+                            />
+                          </TextField>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onPress={() => handleCancelEditCategory()}
+                            >
+                              Cancelar
+                            </Button>
+                            <Button
+                              size="sm"
+                              onPress={() => handleSaveEditCategory(category.id)}
+                              isPending={updateCategoryMutation.isPending}
+                            >
+                              Guardar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full"
+                              style={{ backgroundColor: category.color ?? "#ccc" }}
+                            />
+                            <span>{category.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-default-500 text-sm">
+                              {category.type === "INCOME" ? "Ingreso" : "Gasto"}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onPress={() => handleStartEditCategory(category)}
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-danger"
+                              onPress={() => handleDeleteCategory(category)}
+                              isPending={deleteCategoryMutation.isPending}
+                            >
+                              Eliminar
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
