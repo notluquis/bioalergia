@@ -207,7 +207,7 @@ importers:
         specifier: 3.0.0-beta.6
         version: 3.0.0-beta.6(tailwind-merge@3.4.1)(tailwindcss@4.2.0)
       '@internationalized/date':
-        specifier: ^3.11.0
+        specifier: 3.11.0
         version: 3.11.0
       '@simplewebauthn/browser':
         specifier: ^13.2.2
@@ -14180,7 +14180,7 @@ snapshots:
 
   react-aria-components@1.14.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
-      '@internationalized/date': 3.10.1
+      '@internationalized/date': 3.11.0
       '@internationalized/string': 3.2.7
       '@react-aria/autocomplete': 3.0.0-rc.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@react-aria/collections': 3.0.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

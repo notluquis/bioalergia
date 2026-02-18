@@ -9,7 +9,8 @@
   },
   "overrides": {
     "hono": "^4.10.3",
-    "jspdf": "$jspdf"
+    "jspdf": "$jspdf",
+    "@internationalized/date": "3.11.0"
   },
   "scripts": {
     "dev": "vite",
@@ -38,7 +39,7 @@
     "@fullcalendar/timegrid": "^6.1.20",
     "@heroui/react": "3.0.0-beta.6",
     "@heroui/styles": "3.0.0-beta.6",
-    "@internationalized/date": "^3.11.0",
+    "@internationalized/date": "3.11.0",
     "@simplewebauthn/browser": "^13.2.2",
     "@tanstack/react-form": "^1.28.3",
     "@tanstack/react-pacer": "^0.19.4",
