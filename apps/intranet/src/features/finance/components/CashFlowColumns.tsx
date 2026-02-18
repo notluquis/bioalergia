@@ -1,10 +1,9 @@
 import type { Counterpart, FinancialTransaction, TransactionCategory } from "@finanzas/db";
-import { Chip } from "@heroui/react";
+import { Autocomplete, Chip, EmptyState, ListBox, SearchField } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Select, SelectItem } from "@/components/ui/Select";
 
 // Extend with relations
 export type TransactionWithRelations = FinancialTransaction & {
@@ -118,32 +117,64 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
       }
 
       return (
-        <Select
-          className="min-w-44"
+        <Autocomplete
+          className="min-w-56"
           isDisabled={isUpdating}
-          selectedKey={selectedValue}
-          onSelectionChange={(key) => {
+          placeholder="Sin categoría"
+          selectionMode="single"
+          value={selectedValue === "__none__" ? null : selectedValue}
+          onChange={(key) => {
+            if (key == null) {
+              meta.onCategoryChange?.(row.original, null);
+              return;
+            }
             const parsed = String(key);
             const categoryId = parsed === "__none__" ? null : Number(parsed);
             if (categoryId !== null && Number.isNaN(categoryId)) return;
             meta.onCategoryChange?.(row.original, categoryId);
           }}
         >
-          <SelectItem id="__none__" textValue="Sin categoría">
-            Sin categoría
-          </SelectItem>
-          {categories.map((category) => (
-            <SelectItem id={String(category.id)} key={category.id} textValue={category.name}>
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block h-2 w-2 rounded-full shrink-0"
-                  style={{ backgroundColor: category.color ?? "#ccc" }}
-                />
-                <span>{category.name}</span>
-              </div>
-            </SelectItem>
-          ))}
-        </Select>
+          <Autocomplete.Trigger>
+            <Autocomplete.Value />
+            <Autocomplete.ClearButton />
+            <Autocomplete.Indicator />
+          </Autocomplete.Trigger>
+          <Autocomplete.Popover>
+            <Autocomplete.Filter
+              filter={(text, input) => text.toLowerCase().includes(input.toLowerCase())}
+            >
+              <SearchField autoFocus name="search-category" variant="secondary">
+                <SearchField.Group>
+                  <SearchField.SearchIcon />
+                  <SearchField.Input placeholder="Buscar categoría..." />
+                  <SearchField.ClearButton />
+                </SearchField.Group>
+              </SearchField>
+              <ListBox renderEmptyState={() => <EmptyState>Sin resultados</EmptyState>}>
+                <ListBox.Item id="__none__" textValue="Sin categoría">
+                  Sin categoría
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+                {categories.map((category) => (
+                  <ListBox.Item
+                    id={String(category.id)}
+                    key={category.id}
+                    textValue={category.name}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="inline-block h-2 w-2 rounded-full shrink-0"
+                        style={{ backgroundColor: category.color ?? "#ccc" }}
+                      />
+                      <span>{category.name}</span>
+                    </div>
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Autocomplete.Filter>
+          </Autocomplete.Popover>
+        </Autocomplete>
       );
     },
   },

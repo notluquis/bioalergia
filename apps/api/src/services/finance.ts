@@ -28,7 +28,7 @@ export type UpdateFinancialTransactionInput = {
 };
 
 const NON_RUT_CHARS_REGEX = /[^0-9k]/gi;
-const ACCOUNT_SPACES_REGEX = /\s+/g;
+const NON_ACCOUNT_CHARS_REGEX = /[^0-9a-z]/gi;
 const LEADING_ZEROS_REGEX = /^0+/;
 
 const normalizeRut = (value: null | string | undefined) => {
@@ -38,7 +38,7 @@ const normalizeRut = (value: null | string | undefined) => {
 
 const normalizeAccount = (value: null | string | undefined) => {
   if (!value) return "";
-  const compact = value.replace(ACCOUNT_SPACES_REGEX, "").toUpperCase();
+  const compact = value.replace(NON_ACCOUNT_CHARS_REGEX, "").toUpperCase();
   if (!compact) return "";
   const normalized = compact.replace(LEADING_ZEROS_REGEX, "");
   return normalized.length > 0 ? normalized : "0";

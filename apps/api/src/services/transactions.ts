@@ -216,7 +216,7 @@ function getReleaseReconcileKey(tx: UnifiedTransaction) {
   if (tx.source !== "release") {
     return "";
   }
-  return tx.sourceId?.trim() ?? "";
+  return tx.withdrawId?.trim() ?? tx.sourceId?.trim() ?? "";
 }
 
 function getWithdrawReconcileKey(tx: UnifiedTransaction) {
