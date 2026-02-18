@@ -186,7 +186,7 @@ function mapReleaseRow(row: ReleaseRow): UnifiedTransaction {
       null,
     bankAccountType: getMetaString(meta, ["bank_account_type", "account_type"]) ?? null,
     bankName: getMetaString(meta, ["bank_name", "bank"]) ?? null,
-    withdrawId: getMetaString(meta, ["withdraw_id", "id"]) ?? null,
+    withdrawId: null,
   };
 }
 
@@ -216,7 +216,7 @@ function getReleaseReconcileKey(tx: UnifiedTransaction) {
   if (tx.source !== "release") {
     return "";
   }
-  return tx.withdrawId?.trim() ?? tx.sourceId?.trim() ?? "";
+  return tx.sourceId?.trim() ?? "";
 }
 
 function getWithdrawReconcileKey(tx: UnifiedTransaction) {
@@ -265,7 +265,7 @@ function mergeReleaseWithdraw(
     bankAccountNumber: withdraw.bankAccountNumber ?? release.bankAccountNumber,
     bankAccountType: withdraw.bankAccountType ?? release.bankAccountType,
     bankName: withdraw.bankName ?? release.bankName,
-    withdrawId: withdraw.withdrawId ?? release.withdrawId ?? release.sourceId,
+    withdrawId: withdraw.withdrawId ?? release.sourceId,
   };
 }
 

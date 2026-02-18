@@ -49,6 +49,16 @@ type CounterpartLookup = {
   byRut: Map<string, number>;
 };
 
+type WithdrawLookup = {
+  byWithdrawId: Map<
+    string,
+    {
+      bankAccountNumber: null | string;
+      identificationNumber: null | string;
+    }
+  >;
+};
+
 async function buildCounterpartLookup(): Promise<CounterpartLookup> {
   const counterparts = await db.counterpart.findMany({
     select: {
@@ -78,6 +88,72 @@ async function buildCounterpartLookup(): Promise<CounterpartLookup> {
   return { byAccount, byRut };
 }
 
+async function buildWithdrawLookup(): Promise<WithdrawLookup> {
+  const withdrawals = await db.withdrawTransaction.findMany({
+    select: {
+      bankAccountNumber: true,
+      identificationNumber: true,
+      withdrawId: true,
+    },
+  });
+
+  const byWithdrawId = new Map<
+    string,
+    {
+      bankAccountNumber: null | string;
+      identificationNumber: null | string;
+    }
+  >();
+
+  for (const withdrawal of withdrawals) {
+    const key = withdrawal.withdrawId?.trim();
+    if (!key || byWithdrawId.has(key)) continue;
+    byWithdrawId.set(key, {
+      bankAccountNumber: withdrawal.bankAccountNumber ?? null,
+      identificationNumber: withdrawal.identificationNumber ?? null,
+    });
+  }
+
+  return { byWithdrawId };
+}
+
+type UnifiedTransaction = Awaited<ReturnType<typeof fetchMergedTransactions>>[number];
+
+function resolveCounterpartIdForTransaction(
+  tour: UnifiedTransaction,
+  counterpartLookup: CounterpartLookup,
+  withdrawLookup: WithdrawLookup,
+) {
+  // Release flow:
+  // 1) source_id (release) -> withdraw_id (withdraw) to recover RUT/account.
+  // 2) fallback by payout_bank_account_number against counterpart_accounts.
+  if (tour.source === "release") {
+    const linkedWithdraw = tour.sourceId
+      ? withdrawLookup.byWithdrawId.get(tour.sourceId.trim())
+      : undefined;
+
+    const rutFromWithdraw = normalizeRut(linkedWithdraw?.identificationNumber);
+    const rutFromRelease = normalizeRut(tour.identificationNumber);
+    const counterpartIdByRut = counterpartLookup.byRut.get(rutFromWithdraw || rutFromRelease);
+    if (counterpartIdByRut != null) {
+      return counterpartIdByRut;
+    }
+
+    const accountFromRelease = normalizeAccount(tour.bankAccountNumber);
+    const accountFromWithdraw = normalizeAccount(linkedWithdraw?.bankAccountNumber);
+    const counterpartIdByAccount = counterpartLookup.byAccount.get(
+      accountFromRelease || accountFromWithdraw,
+    );
+    return counterpartIdByAccount ?? null;
+  }
+
+  const counterpartIdByRut = counterpartLookup.byRut.get(normalizeRut(tour.identificationNumber));
+  const counterpartIdByAccount = counterpartLookup.byAccount.get(
+    normalizeAccount(tour.bankAccountNumber),
+  );
+  return counterpartIdByRut ?? counterpartIdByAccount ?? null;
+}
+
 export async function syncFinancialTransactions(_userId: number) {
   // 1. Fetch all unified transactions from MP (Settlements, Releases, Withdraws)
   const unifiedTransactions = await fetchMergedTransactions({
@@ -91,6 +167,7 @@ export async function syncFinancialTransactions(_userId: number) {
       ),
   );
   const counterpartLookup = await buildCounterpartLookup();
+  const withdrawLookup = await buildWithdrawLookup();
 
   let createdCount = 0;
   let duplicateCount = 0;
@@ -100,11 +177,11 @@ export async function syncFinancialTransactions(_userId: number) {
   for (const tour of nonCashbackTransactions) {
     // All MP-sourced transactions map to MERCADOPAGO source
     const source: TransactionSource = "MERCADOPAGO";
-    const counterpartIdByRut = counterpartLookup.byRut.get(normalizeRut(tour.identificationNumber));
-    const counterpartIdByAccount = counterpartLookup.byAccount.get(
-      normalizeAccount(tour.bankAccountNumber),
+    const counterpartId = resolveCounterpartIdForTransaction(
+      tour,
+      counterpartLookup,
+      withdrawLookup,
     );
-    const counterpartId = counterpartIdByRut ?? counterpartIdByAccount ?? null;
 
     try {
       // Check if already synced (idempotent via sourceId)
