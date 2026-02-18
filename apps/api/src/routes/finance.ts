@@ -31,7 +31,7 @@ const createSchema = z.object({
   description: z.string().min(1),
   amount: z.number(),
   type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
-  categoryId: z.number().optional(),
+  categoryId: z.number().nullable().optional(),
   counterpartId: z.number().optional(),
   comment: z.string().optional(),
 });

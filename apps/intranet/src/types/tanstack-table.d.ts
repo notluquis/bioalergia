@@ -31,5 +31,9 @@ declare module "@tanstack/react-table" {
 
     isAdmin?: boolean;
     onStatusChange?: (requestId: number, newStatus: SupplyRequest["status"]) => void;
+
+    onCategoryChange?: (row: TData, categoryId: null | number) => void;
+    transactionCategories?: Array<{ color?: null | string; id: number; name: string }>;
+    updatingCategoryIds?: Set<number>;
   }
 }

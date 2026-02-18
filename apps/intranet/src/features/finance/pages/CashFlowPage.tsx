@@ -1,4 +1,4 @@
-import type { FinancialTransaction } from "@finanzas/db";
+import type { FinancialTransaction, TransactionCategory } from "@finanzas/db";
 import { Button, Card } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -6,6 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
+import type { TransactionWithRelations } from "../components/CashFlowColumns";
 import { CashFlowTable } from "../components/CashFlowTable";
 import { TransactionForm } from "../components/TransactionForm";
 
@@ -19,7 +20,7 @@ interface TransactionQueryParams {
 }
 
 type FinancialTransactionsResponse = {
-  data?: FinancialTransaction[];
+  data?: TransactionWithRelations[];
   meta?: {
     page?: number;
     pageSize?: number;
@@ -63,6 +64,24 @@ const FinancialSyncResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+const TransactionCategorySchema = z
+  .object({
+    color: z.string().nullable().optional(),
+    id: z.number(),
+    name: z.string(),
+  })
+  .passthrough();
+
+const TransactionCategoriesResponseSchema = z.object({
+  data: z.array(TransactionCategorySchema),
+  status: z.literal("ok"),
+});
+
+const UpdateTransactionResponseSchema = z.object({
+  data: z.unknown().optional(),
+  status: z.literal("ok"),
+});
+
 function useFinancialTransactions(params: TransactionQueryParams) {
   return useQuery({
     queryKey: ["FinancialTransaction", params],
@@ -101,6 +120,21 @@ function useSyncTransactions() {
   });
 }
 
+function useTransactionCategories() {
+  return useQuery<TransactionCategory[]>({
+    queryKey: ["TransactionCategory"],
+    queryFn: async () => {
+      const payload = await apiClient.get<{ data: TransactionCategory[] }>(
+        "/api/finance/categories",
+        {
+          responseSchema: TransactionCategoriesResponseSchema,
+        },
+      );
+      return payload.data;
+    },
+  });
+}
+
 export const Route = createFileRoute("/_authed/finanzas/cash-flow")({
   component: CashFlowPage,
 });
@@ -109,9 +143,49 @@ export function CashFlowPage() {
   const [page, setPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<FinancialTransaction | null>(null);
+  const [updatingCategoryIds, setUpdatingCategoryIds] = useState<Set<number>>(new Set());
 
   const { data, isLoading } = useFinancialTransactions({ page, pageSize: 50 });
+  const { data: categories = [] } = useTransactionCategories();
   const syncMutation = useSyncTransactions();
+  const queryClient = useQueryClient();
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({
+      categoryId,
+      transactionId,
+    }: {
+      categoryId: null | number;
+      transactionId: number;
+    }) =>
+      apiClient.put(
+        `/api/finance/transactions/${transactionId}`,
+        { categoryId },
+        {
+          responseSchema: UpdateTransactionResponseSchema,
+        },
+      ),
+    onMutate: ({ transactionId }) => {
+      setUpdatingCategoryIds((prev) => {
+        const next = new Set(prev);
+        next.add(transactionId);
+        return next;
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["FinancialTransaction"] });
+    },
+    onError: () => {
+      toast.error("No se pudo actualizar la categoría");
+    },
+    onSettled: (_data, _error, variables) => {
+      setUpdatingCategoryIds((prev) => {
+        const next = new Set(prev);
+        next.delete(variables.transactionId);
+        return next;
+      });
+    },
+  });
 
   const handleEdit = (tx: FinancialTransaction) => {
     setEditingTx(tx);
@@ -125,6 +199,13 @@ export function CashFlowPage() {
 
   const handleSync = () => {
     syncMutation.mutate();
+  };
+
+  const handleCategoryChange = (tx: TransactionWithRelations, categoryId: null | number) => {
+    updateCategoryMutation.mutate({
+      categoryId,
+      transactionId: tx.id,
+    });
   };
 
   return (
@@ -142,12 +223,15 @@ export function CashFlowPage() {
         <div className="p-0">
           <CashFlowTable
             data={data?.data || []}
+            categories={categories}
             total={data?.meta?.total || 0}
             isLoading={isLoading}
             page={page}
             pageSize={50}
             onPageChange={setPage}
             onEdit={handleEdit}
+            onCategoryChange={handleCategoryChange}
+            updatingCategoryIds={updatingCategoryIds}
           />
         </div>
       </Card>

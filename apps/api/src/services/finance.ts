@@ -8,7 +8,7 @@ export type CreateFinancialTransactionInput = {
   description: string;
   amount: number;
   type: TransactionType;
-  categoryId?: number;
+  categoryId?: number | null;
   comment?: string;
   source?: TransactionSource;
   sourceId?: string;
