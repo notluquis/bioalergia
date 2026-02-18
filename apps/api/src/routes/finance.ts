@@ -7,6 +7,7 @@ import {
   createTransactionCategory,
   deleteFinancialTransaction,
   deleteTransactionCategory,
+  getFinancialSummaryByCategory,
   listFinancialTransactions,
   listTransactionCategories,
   syncFinancialTransactions,
@@ -74,6 +75,15 @@ app.get("/transactions", zValidator("query", listSchema), async (c) => {
     to: query.to ? new Date(query.to) : undefined,
   };
   const result = await listFinancialTransactions(filters);
+  return reply(c, { status: "ok", ...result });
+});
+
+app.get("/transactions/summary", zValidator("query", listSchema), async (c) => {
+  const query = c.req.valid("query");
+  const result = await getFinancialSummaryByCategory({
+    from: query.from ? new Date(query.from) : undefined,
+    to: query.to ? new Date(query.to) : undefined,
+  });
   return reply(c, { status: "ok", ...result });
 });
 

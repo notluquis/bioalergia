@@ -232,6 +232,76 @@ export async function listFinancialTransactions(params: {
   };
 }
 
+export async function getFinancialSummaryByCategory(params: { from?: Date; to?: Date }) {
+  const where: { date?: { gte?: Date; lte?: Date } } = {};
+
+  if (params.from || params.to) {
+    where.date = {};
+    if (params.from) where.date.gte = params.from;
+    if (params.to) where.date.lte = params.to;
+  }
+
+  const grouped = await db.financialTransaction.groupBy({
+    by: ["categoryId", "type"],
+    where,
+    _count: { _all: true },
+    _sum: { amount: true },
+  });
+
+  const categoryIds = Array.from(
+    new Set(grouped.map((row) => row.categoryId).filter((id): id is number => id != null)),
+  );
+
+  const categories =
+    categoryIds.length > 0
+      ? await db.transactionCategory.findMany({
+          where: { id: { in: categoryIds } },
+          select: { color: true, id: true, name: true },
+        })
+      : [];
+
+  const categoryById = new Map(categories.map((category) => [category.id, category]));
+
+  let totalIncome = 0;
+  let totalExpense = 0;
+  let totalCount = 0;
+
+  const byCategory = grouped
+    .map((row) => {
+      const rawAmount = Number(row._sum.amount ?? 0);
+      const total = row.type === "EXPENSE" ? Math.abs(rawAmount) : rawAmount;
+      const category = row.categoryId != null ? categoryById.get(row.categoryId) : undefined;
+      const count = row._count._all;
+
+      if (row.type === "INCOME") {
+        totalIncome += total;
+      } else {
+        totalExpense += total;
+      }
+      totalCount += count;
+
+      return {
+        categoryColor: category?.color ?? null,
+        categoryId: row.categoryId,
+        categoryName: category?.name ?? "Sin categoría",
+        count,
+        total,
+        type: row.type,
+      };
+    })
+    .sort((a, b) => b.total - a.total);
+
+  return {
+    byCategory,
+    totals: {
+      count: totalCount,
+      expense: totalExpense,
+      income: totalIncome,
+      net: totalIncome - totalExpense,
+    },
+  };
+}
+
 export async function createFinancialTransaction(data: CreateFinancialTransactionInput) {
   return db.financialTransaction.create({
     data: {

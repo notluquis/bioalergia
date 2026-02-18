@@ -2,7 +2,8 @@ import type { FinancialTransaction, TransactionCategory } from "@finanzas/db";
 import { Button, Card, Input, Label, ListBox, Select, Tabs, TextField } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import dayjs from "dayjs";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { ApiError, apiClient } from "@/lib/api-client";
@@ -26,6 +27,23 @@ type FinancialTransactionsResponse = {
     pageSize?: number;
     total?: number;
     totalPages?: number;
+  };
+};
+
+type FinancialSummaryByCategoryResponse = {
+  byCategory: Array<{
+    categoryColor?: null | string;
+    categoryId: null | number;
+    categoryName: string;
+    count: number;
+    total: number;
+    type: "EXPENSE" | "INCOME";
+  }>;
+  totals: {
+    count: number;
+    expense: number;
+    income: number;
+    net: number;
   };
 };
 
@@ -101,6 +119,26 @@ const UpdateTransactionResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
+const FinancialSummaryByCategoryResponseSchema = z.object({
+  byCategory: z.array(
+    z.object({
+      categoryColor: z.string().nullable().optional(),
+      categoryId: z.number().nullable(),
+      categoryName: z.string(),
+      count: z.number(),
+      total: z.number(),
+      type: z.enum(["INCOME", "EXPENSE"]),
+    }),
+  ),
+  status: z.literal("ok"),
+  totals: z.object({
+    count: z.number(),
+    expense: z.number(),
+    income: z.number(),
+    net: z.number(),
+  }),
+});
+
 function useFinancialTransactions(params: TransactionQueryParams) {
   return useQuery({
     queryKey: ["FinancialTransaction", params],
@@ -114,6 +152,20 @@ function useFinancialTransactions(params: TransactionQueryParams) {
           to: params.to,
         },
         responseSchema: FinancialTransactionsResponseSchema,
+      }),
+  });
+}
+
+function useFinancialSummaryByCategory(params: { from: string; to: string }) {
+  return useQuery<FinancialSummaryByCategoryResponse>({
+    queryKey: ["FinancialTransactionSummary", params],
+    queryFn: () =>
+      apiClient.get<FinancialSummaryByCategoryResponse>("/api/finance/transactions/summary", {
+        query: {
+          from: params.from,
+          to: params.to,
+        },
+        responseSchema: FinancialSummaryByCategoryResponseSchema,
       }),
   });
 }
@@ -181,8 +233,12 @@ export const Route = createFileRoute("/_authed/finanzas/cash-flow")({
 
 type CashFlowTab = "cash-flow" | "categories";
 
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("es-CL", { currency: "CLP", style: "currency" }).format(amount);
+
 export function CashFlowPage() {
   const [page, setPage] = useState(1);
+  const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
   const [activeTab, setActiveTab] = useState<CashFlowTab>("cash-flow");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<FinancialTransaction | null>(null);
@@ -195,7 +251,22 @@ export function CashFlowPage() {
   const [editingCategoryType, setEditingCategoryType] = useState<"EXPENSE" | "INCOME">("EXPENSE");
   const [editingCategoryColor, setEditingCategoryColor] = useState("#64748b");
 
-  const { data, isLoading } = useFinancialTransactions({ page, pageSize: 50 });
+  const monthRange = useMemo(() => {
+    const base = dayjs(`${selectedMonth}-01`);
+    return {
+      from: base.startOf("month").format("YYYY-MM-DD"),
+      to: base.endOf("month").format("YYYY-MM-DD"),
+    };
+  }, [selectedMonth]);
+
+  const { data, isLoading } = useFinancialTransactions({
+    from: monthRange.from,
+    page,
+    pageSize: 50,
+    to: monthRange.to,
+  });
+  const { data: summaryData, isLoading: isSummaryLoading } =
+    useFinancialSummaryByCategory(monthRange);
   const { data: categories = [] } = useTransactionCategories();
   const syncMutation = useSyncTransactions();
   const queryClient = useQueryClient();
@@ -388,13 +459,96 @@ export function CashFlowPage() {
         </Tabs.ListContainer>
 
         <Tabs.Panel id="cash-flow" className="space-y-4 pt-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-end gap-4">
             <div className="flex gap-2">
               <Button variant="secondary" onPress={handleSync} isPending={syncMutation.isPending}>
                 {({ isPending }) => (isPending ? "Sincronizando..." : "Sincronizar Datos (MP)")}
               </Button>
             </div>
+            <TextField className="w-full max-w-52">
+              <Label>Mes</Label>
+              <Input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => {
+                  setSelectedMonth(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </TextField>
           </div>
+
+          <Card>
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                <div className="rounded-md border border-default-200 px-3 py-2">
+                  <p className="text-tiny text-default-500">Ingresos</p>
+                  <p className="font-semibold text-success">
+                    {formatCurrency(summaryData?.totals.income ?? 0)}
+                  </p>
+                </div>
+                <div className="rounded-md border border-default-200 px-3 py-2">
+                  <p className="text-tiny text-default-500">Egresos</p>
+                  <p className="font-semibold text-danger">
+                    {formatCurrency(summaryData?.totals.expense ?? 0)}
+                  </p>
+                </div>
+                <div className="rounded-md border border-default-200 px-3 py-2">
+                  <p className="text-tiny text-default-500">Neto</p>
+                  <p
+                    className={`font-semibold ${(summaryData?.totals.net ?? 0) >= 0 ? "text-success" : "text-danger"}`}
+                  >
+                    {formatCurrency(summaryData?.totals.net ?? 0)}
+                  </p>
+                </div>
+                <div className="rounded-md border border-default-200 px-3 py-2">
+                  <p className="text-tiny text-default-500">Movimientos</p>
+                  <p className="font-semibold">{summaryData?.totals.count ?? 0}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Resumen por categoría</p>
+                {isSummaryLoading ? (
+                  <p className="text-sm text-default-500">Cargando resumen...</p>
+                ) : (summaryData?.byCategory.length ?? 0) === 0 ? (
+                  <p className="text-sm text-default-500">
+                    No hay movimientos para el mes seleccionado.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+                    {(summaryData?.byCategory ?? []).map((item) => (
+                      <div
+                        key={`${item.type}-${item.categoryId ?? "none"}`}
+                        className="rounded-md border border-default-200 px-3 py-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: item.categoryColor ?? "#9ca3af" }}
+                            />
+                            <span className="truncate text-sm">{item.categoryName}</span>
+                          </div>
+                          <span className="text-tiny text-default-500">
+                            {item.type === "INCOME" ? "Ingreso" : "EGRESO"}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between">
+                          <span className="text-tiny text-default-500">{item.count} mov.</span>
+                          <span
+                            className={`font-medium ${item.type === "INCOME" ? "text-success" : "text-danger"}`}
+                          >
+                            {formatCurrency(item.total)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
 
           <Card>
             <div className="p-0">
