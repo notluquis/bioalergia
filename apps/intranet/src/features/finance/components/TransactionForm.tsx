@@ -25,7 +25,7 @@ const schema = z.object({
   description: z.string().min(1, "Descripción requerida"),
   amount: z.coerce.number().refine((val) => val !== 0, "Monto no puede ser 0"),
   type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
-  categoryId: z.coerce.number().optional(),
+  categoryId: z.number().nullable().optional(),
   comment: z.string().optional(),
 });
 
@@ -150,7 +150,7 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
     mutation.mutate(result.data);
   };
 
-  const handleChange = (field: keyof FormValues, value: string | number) => {
+  const handleChange = (field: keyof FormValues, value: null | number | string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => {
@@ -160,6 +160,8 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
       });
     }
   };
+
+  const isEditMode = Boolean(initialData);
 
   // HeroUI v3: Modal usa composición con dot notation.
   // El control de apertura se hace en Modal.Backdrop con isOpen/onOpenChange.
@@ -181,6 +183,7 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                   <DateField
                     value={formData.date ? parseDate(formData.date) : undefined}
                     onChange={(val) => handleChange("date", val?.toString() ?? "")}
+                    isReadOnly={isEditMode}
                     isInvalid={!!errors.date}
                   >
                     <Label>Fecha</Label>
@@ -249,6 +252,8 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
                           handleChange("amount", Number(e.target.value))
                         }
+                        disabled={isEditMode}
+                        readOnly={isEditMode}
                         placeholder="0"
                       />
                     </div>
@@ -257,8 +262,19 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
 
                   {/* Categoría */}
                   <Select
-                    selectedKey={formData.categoryId?.toString() ?? null}
-                    onSelectionChange={(key) => handleChange("categoryId", key ? Number(key) : 0)}
+                    selectedKey={
+                      formData.categoryId == null ? "__none__" : formData.categoryId.toString()
+                    }
+                    onSelectionChange={(key) => {
+                      const raw = String(key);
+                      if (raw === "__none__") {
+                        handleChange("categoryId", null);
+                        return;
+                      }
+                      const id = Number(raw);
+                      if (Number.isNaN(id)) return;
+                      handleChange("categoryId", id);
+                    }}
                     isInvalid={!!errors.categoryId}
                     placeholder="Sin categoría"
                   >
@@ -269,6 +285,15 @@ export function TransactionForm({ isOpen, onClose, initialData }: Props) {
                     </Select.Trigger>
                     <Select.Popover>
                       <ListBox>
+                        <ListBox.Item id="__none__" textValue="Sin categoría">
+                          Sin categoría
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        {(categories ?? []).length === 0 ? (
+                          <ListBox.Item id="__empty__" textValue="No hay categorías" isDisabled>
+                            No hay categorías disponibles
+                          </ListBox.Item>
+                        ) : null}
                         {(categories ?? []).map((cat: TransactionCategory) => (
                           <ListBox.Item key={cat.id} id={cat.id.toString()} textValue={cat.name}>
                             <div className="flex items-center gap-2">

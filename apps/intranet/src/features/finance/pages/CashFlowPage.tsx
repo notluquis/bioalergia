@@ -217,11 +217,6 @@ export function CashFlowPage() {
     setIsFormOpen(true);
   };
 
-  const handleCreate = () => {
-    setEditingTx(null);
-    setIsFormOpen(true);
-  };
-
   const handleSync = () => {
     syncMutation.mutate();
   };
@@ -240,7 +235,6 @@ export function CashFlowPage() {
           <Button variant="secondary" onPress={handleSync} isPending={syncMutation.isPending}>
             {({ isPending }) => (isPending ? "Sincronizando..." : "Sincronizar Datos (MP)")}
           </Button>
-          <Button onPress={handleCreate}>Agregar Movimiento</Button>
         </div>
       </div>
 
