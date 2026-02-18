@@ -42,7 +42,7 @@
     "@internationalized/date": "3.11.0",
     "@simplewebauthn/browser": "^13.2.2",
     "@tanstack/react-form": "^1.28.3",
-    "@tanstack/react-pacer": "^0.19.4",
+    "@tanstack/react-pacer": "^0.20.0",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-router": "^1.161.1",
     "@tanstack/react-store": "^0.9.1",
