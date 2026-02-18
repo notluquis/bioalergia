@@ -9,6 +9,7 @@ export type CreateFinancialTransactionInput = {
   amount: number;
   type: TransactionType;
   categoryId?: number | null;
+  counterpartId?: number | null;
   comment?: string;
   source?: TransactionSource;
   sourceId?: string;
@@ -20,14 +21,67 @@ export type UpdateFinancialTransactionInput = {
   amount?: number;
   type?: TransactionType;
   categoryId?: number | null;
+  counterpartId?: number | null;
   comment?: string | null;
 };
+
+const NON_RUT_CHARS_REGEX = /[^0-9k]/gi;
+const ACCOUNT_SPACES_REGEX = /\s+/g;
+const LEADING_ZEROS_REGEX = /^0+/;
+
+const normalizeRut = (value: null | string | undefined) => {
+  if (!value) return "";
+  return value.replace(NON_RUT_CHARS_REGEX, "").toUpperCase();
+};
+
+const normalizeAccount = (value: null | string | undefined) => {
+  if (!value) return "";
+  const compact = value.replace(ACCOUNT_SPACES_REGEX, "").toUpperCase();
+  if (!compact) return "";
+  const normalized = compact.replace(LEADING_ZEROS_REGEX, "");
+  return normalized.length > 0 ? normalized : "0";
+};
+
+type CounterpartLookup = {
+  byAccount: Map<string, number>;
+  byRut: Map<string, number>;
+};
+
+async function buildCounterpartLookup(): Promise<CounterpartLookup> {
+  const counterparts = await db.counterpart.findMany({
+    select: {
+      accounts: { select: { accountNumber: true } },
+      id: true,
+      identificationNumber: true,
+    },
+  });
+
+  const byRut = new Map<string, number>();
+  const byAccount = new Map<string, number>();
+
+  for (const counterpart of counterparts) {
+    const normalizedRut = normalizeRut(counterpart.identificationNumber);
+    if (normalizedRut) {
+      byRut.set(normalizedRut, counterpart.id);
+    }
+
+    for (const account of counterpart.accounts) {
+      const normalizedAccount = normalizeAccount(account.accountNumber);
+      if (normalizedAccount && !byAccount.has(normalizedAccount)) {
+        byAccount.set(normalizedAccount, counterpart.id);
+      }
+    }
+  }
+
+  return { byAccount, byRut };
+}
 
 export async function syncFinancialTransactions(_userId: number) {
   // 1. Fetch all unified transactions from MP (Settlements, Releases, Withdraws)
   const unifiedTransactions = await fetchMergedTransactions({
     includeTest: false,
   });
+  const counterpartLookup = await buildCounterpartLookup();
 
   let createdCount = 0;
   let duplicateCount = 0;
@@ -37,15 +91,26 @@ export async function syncFinancialTransactions(_userId: number) {
   for (const tour of unifiedTransactions) {
     // All MP-sourced transactions map to MERCADOPAGO source
     const source: TransactionSource = "MERCADOPAGO";
+    const counterpartIdByRut = counterpartLookup.byRut.get(normalizeRut(tour.identificationNumber));
+    const counterpartIdByAccount = counterpartLookup.byAccount.get(
+      normalizeAccount(tour.bankAccountNumber),
+    );
+    const counterpartId = counterpartIdByRut ?? counterpartIdByAccount ?? null;
 
     try {
       // Check if already synced (idempotent via sourceId)
       if (tour.sourceId) {
         const existing = await db.financialTransaction.findFirst({
           where: { source, sourceId: tour.sourceId },
-          select: { id: true },
+          select: { counterpartId: true, id: true },
         });
         if (existing) {
+          if (existing.counterpartId == null && counterpartId != null) {
+            await db.financialTransaction.update({
+              where: { id: existing.id },
+              data: { counterpartId },
+            });
+          }
           duplicateCount++;
           continue;
         }
@@ -58,9 +123,15 @@ export async function syncFinancialTransactions(_userId: number) {
             description: tour.description || "Sin descripcion",
             source,
           },
-          select: { id: true },
+          select: { counterpartId: true, id: true },
         });
         if (existing) {
+          if (existing.counterpartId == null && counterpartId != null) {
+            await db.financialTransaction.update({
+              where: { id: existing.id },
+              data: { counterpartId },
+            });
+          }
           duplicateCount++;
           continue;
         }
@@ -76,6 +147,7 @@ export async function syncFinancialTransactions(_userId: number) {
           type,
           source,
           sourceId: tour.sourceId ?? undefined,
+          counterpartId,
           comment: tour.externalReference ? `Ref: ${tour.externalReference}` : undefined,
         },
       });
@@ -141,6 +213,7 @@ export async function listFinancialTransactions(params: {
       where,
       include: {
         category: true,
+        counterpart: true,
       },
       orderBy: { date: "desc" },
       skip,
@@ -168,6 +241,7 @@ export async function createFinancialTransaction(data: CreateFinancialTransactio
       type: data.type,
       source: data.source ?? "MANUAL",
       categoryId: data.categoryId,
+      counterpartId: data.counterpartId,
       comment: data.comment,
       sourceId: data.sourceId,
     },
@@ -186,6 +260,7 @@ export async function updateFinancialTransaction(
       ...(data.amount !== undefined && { amount: new Decimal(data.amount) }),
       ...(data.type !== undefined && { type: data.type }),
       ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
+      ...(data.counterpartId !== undefined && { counterpartId: data.counterpartId }),
       ...(data.comment !== undefined && { comment: data.comment }),
     },
   });

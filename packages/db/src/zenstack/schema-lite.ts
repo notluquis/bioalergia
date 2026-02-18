@@ -691,6 +691,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "counterpart" },
         },
+        financialTransactions: {
+          name: "financialTransactions",
+          type: "FinancialTransaction",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
         withdrawTransactions: {
           name: "withdrawTransactions",
           type: "WithdrawTransaction",
@@ -5375,11 +5381,27 @@ export class SchemaType implements SchemaDef {
           optional: true,
           foreignKeyFor: ["category"],
         },
+        counterpartId: {
+          name: "counterpartId",
+          type: "Int",
+          optional: true,
+          foreignKeyFor: ["counterpart"],
+        },
         category: {
           name: "category",
           type: "TransactionCategory",
           optional: true,
           relation: { opposite: "transactions", fields: ["categoryId"], references: ["id"] },
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          relation: {
+            opposite: "financialTransactions",
+            fields: ["counterpartId"],
+            references: ["id"],
+          },
         },
         comment: {
           name: "comment",

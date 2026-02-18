@@ -241,6 +241,7 @@ model Counterpart {
   
   // Relations
   accounts               CounterpartAccount[]
+  financialTransactions  FinancialTransaction[]
   withdrawTransactions   WithdrawTransaction[]
   releaseTransactions    ReleaseTransaction[]
   settlementTransactions SettlementTransaction[]
@@ -1967,7 +1968,9 @@ model FinancialTransaction {
   source      TransactionSource    @default(MANUAL)
   sourceId    String?              @map("source_id")
   categoryId  Int?                 @map("category_id")
+  counterpartId Int?               @map("counterpart_id")
   category    TransactionCategory? @relation(fields: [categoryId], references: [id])
+  counterpart Counterpart?         @relation(fields: [counterpartId], references: [id])
   comment     String?
 
   createdAt   DateTime             @default(now()) @map("created_at")
@@ -1979,5 +1982,6 @@ model FinancialTransaction {
   @@index([date])
   @@index([type])
   @@index([categoryId])
+  @@index([counterpartId])
   @@map("financial_transactions")
 }

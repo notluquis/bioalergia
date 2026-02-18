@@ -1650,6 +1650,12 @@ export class SchemaType implements SchemaDef {
           array: true,
           relation: { opposite: "counterpart" },
         },
+        financialTransactions: {
+          name: "financialTransactions",
+          type: "FinancialTransaction",
+          array: true,
+          relation: { opposite: "counterpart" },
+        },
         withdrawTransactions: {
           name: "withdrawTransactions",
           type: "WithdrawTransaction",
@@ -14354,6 +14360,18 @@ export class SchemaType implements SchemaDef {
           ],
           foreignKeyFor: ["category"],
         },
+        counterpartId: {
+          name: "counterpartId",
+          type: "Int",
+          optional: true,
+          attributes: [
+            {
+              name: "@map",
+              args: [{ name: "name", value: ExpressionUtils.literal("counterpart_id") }],
+            },
+          ],
+          foreignKeyFor: ["counterpart"],
+        },
         category: {
           name: "category",
           type: "TransactionCategory",
@@ -14374,6 +14392,31 @@ export class SchemaType implements SchemaDef {
             },
           ],
           relation: { opposite: "transactions", fields: ["categoryId"], references: ["id"] },
+        },
+        counterpart: {
+          name: "counterpart",
+          type: "Counterpart",
+          optional: true,
+          attributes: [
+            {
+              name: "@relation",
+              args: [
+                {
+                  name: "fields",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]),
+                },
+                {
+                  name: "references",
+                  value: ExpressionUtils.array("Int", [ExpressionUtils.field("id")]),
+                },
+              ],
+            },
+          ],
+          relation: {
+            opposite: "financialTransactions",
+            fields: ["counterpartId"],
+            references: ["id"],
+          },
         },
         comment: {
           name: "comment",
@@ -14444,6 +14487,15 @@ export class SchemaType implements SchemaDef {
             {
               name: "fields",
               value: ExpressionUtils.array("Int", [ExpressionUtils.field("categoryId")]),
+            },
+          ],
+        },
+        {
+          name: "@@index",
+          args: [
+            {
+              name: "fields",
+              value: ExpressionUtils.array("Int", [ExpressionUtils.field("counterpartId")]),
             },
           ],
         },
