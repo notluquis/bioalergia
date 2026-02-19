@@ -433,10 +433,9 @@ export function CashFlowPage() {
       }
     }
 
-    const byCategory = Array.from(byCategoryMap.values()).sort((a, b) => {
-      if (a.type !== b.type) return a.type === "INCOME" ? -1 : 1;
-      return Math.abs(b.total) - Math.abs(a.total);
-    });
+    const byCategory = Array.from(byCategoryMap.values()).sort(
+      (a, b) => Math.abs(b.total) - Math.abs(a.total),
+    );
 
     return { byCategory, totals };
   }, [filteredTransactions]);
