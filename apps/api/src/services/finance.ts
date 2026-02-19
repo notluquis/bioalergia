@@ -11,6 +11,12 @@ const SETTLEMENT_CASHBACK_TYPE = "CASHBACK";
 const MP_CARD_CATEGORY_NAME = "Tarjeta Mercadopago";
 const MP_CARD_RULE_NAME = "Sistema - Tarjeta Mercadopago por referencia";
 const MP_CARD_REFERENCE_PATTERN = "74fe4f0-1808-44bf-92b7-5f6215842ff5-17";
+const PERSONAL_DR_CATEGORY_NAME = "Personal Dr";
+const PERSONAL_DR_RULE_NAME_PREFIX = "Sistema - Personal Dr por referencia";
+const PERSONAL_DR_REFERENCE_PATTERNS = [
+  "db4b64d0-a31f-4622-9f7b-ec28f54ab6e8-17",
+  "e3c65f7a-64c4-4664-b3ed-87674105d34f-17",
+];
 
 export type CreateFinancialTransactionInput = {
   date: Date;
@@ -295,6 +301,7 @@ async function syncUnifiedTransactions(
   options?: { applyGlobalRules?: boolean },
 ) {
   await ensureMercadoPagoCardAutoCategoryRule();
+  await ensurePersonalDrAutoCategoryRules();
 
   const nonCashbackTransactions = unifiedTransactions.filter(
     (tour) =>
@@ -514,6 +521,7 @@ export async function syncFinancialTransactionsBySourceIds(sourceIds: string[], 
 
 export async function syncUncategorizedTransactionsByPatterns() {
   await ensureMercadoPagoCardAutoCategoryRule();
+  await ensurePersonalDrAutoCategoryRules();
   const autoCategoryRules = await buildAutoCategoryRuleLookup();
   const updated = await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules, {
     onlyUncategorized: true,
@@ -1089,6 +1097,68 @@ async function ensureMercadoPagoCardAutoCategoryRule() {
 
   // Apply to historical records too, including already classified ones.
   await applySingleAutoCategoryRule(ensuredRule.id);
+}
+
+async function ensurePersonalDrAutoCategoryRules() {
+  const category =
+    (await db.transactionCategory.findFirst({
+      where: {
+        name: PERSONAL_DR_CATEGORY_NAME,
+        type: "EXPENSE",
+      },
+      select: { id: true },
+    })) ??
+    (await db.transactionCategory.create({
+      data: {
+        color: "#64748B",
+        name: PERSONAL_DR_CATEGORY_NAME,
+        type: "EXPENSE",
+      },
+      select: { id: true },
+    }));
+
+  for (const pattern of PERSONAL_DR_REFERENCE_PATTERNS) {
+    const ruleName = `${PERSONAL_DR_RULE_NAME_PREFIX}: ${pattern}`;
+    const existingRule = await db.financialAutoCategoryRule.findFirst({
+      where: { name: ruleName },
+      select: { id: true },
+    });
+
+    const ensuredRule = existingRule
+      ? await db.financialAutoCategoryRule.update({
+          where: { id: existingRule.id },
+          data: {
+            categoryId: category.id,
+            commentContains: pattern,
+            counterpartId: null,
+            descriptionContains: null,
+            isActive: true,
+            maxAmount: null,
+            minAmount: null,
+            priority: 11000,
+            type: "EXPENSE",
+          },
+          select: { id: true },
+        })
+      : await db.financialAutoCategoryRule.create({
+          data: {
+            categoryId: category.id,
+            commentContains: pattern,
+            counterpartId: null,
+            descriptionContains: null,
+            isActive: true,
+            maxAmount: null,
+            minAmount: null,
+            name: ruleName,
+            priority: 11000,
+            type: "EXPENSE",
+          },
+          select: { id: true },
+        });
+
+    // Apply to historical records too, including already classified ones.
+    await applySingleAutoCategoryRule(ensuredRule.id);
+  }
 }
 
 export async function listFinancialAutoCategoryRules() {
