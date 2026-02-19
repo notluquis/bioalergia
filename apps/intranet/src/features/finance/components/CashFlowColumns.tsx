@@ -105,6 +105,25 @@ const mapPaymentMethodLabel = (
 const normalizeSaleDetail = (rawValue: null | string | undefined) =>
   (rawValue ?? "").replaceAll('"', "").trim();
 
+const normalizeCommentDetail = (rawValue: null | string | undefined) =>
+  (rawValue ?? "").replace(/^ref:\s*/i, "").trim();
+
+const dedupeDetails = (values: string[]) => {
+  const result: string[] = [];
+  const seen = new Set<string>();
+
+  for (const value of values) {
+    const raw = value.trim();
+    if (!raw) continue;
+    const key = normalizeComparable(raw);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(raw);
+  }
+
+  return result;
+};
+
 export const columns: ColumnDef<TransactionWithRelations>[] = [
   {
     accessorKey: "date",
@@ -152,15 +171,40 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
     },
   },
   {
-    id: "sale_detail",
-    header: "sale_detail",
-    cell: ({ row }) =>
-      renderUnifiedValue({
-        primary: normalizeSaleDetail(row.original.releaseSaleDetail),
-        primaryLabel: "Release",
-        secondary: normalizeSaleDetail(row.original.settlementSaleDetail),
-        secondaryLabel: "Settlement",
-      }),
+    id: "details",
+    header: "Detalles",
+    cell: ({ row }) => {
+      const detailLines = dedupeDetails([
+        normalizeSaleDetail(row.original.releaseSaleDetail),
+        normalizeSaleDetail(row.original.settlementSaleDetail),
+        normalizeCommentDetail(row.original.comment),
+      ]);
+
+      if (detailLines.length === 0) {
+        return <span className="text-default-400">-</span>;
+      }
+
+      if (detailLines.length === 1) {
+        return (
+          <span
+            className="block max-w-60 truncate text-small text-default-600"
+            title={detailLines[0]}
+          >
+            {detailLines[0]}
+          </span>
+        );
+      }
+
+      return (
+        <div className="flex max-w-72 flex-col gap-1 text-small text-default-600">
+          {detailLines.map((line) => (
+            <span className="block truncate" key={line} title={line}>
+              {line}
+            </span>
+          ))}
+        </div>
+      );
+    },
   },
   {
     id: "source_target",
@@ -309,18 +353,6 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
         </Autocomplete>
       );
     },
-  },
-  {
-    accessorKey: "comment",
-    header: "Comentario",
-    cell: ({ row }) => (
-      <span
-        className="text-small text-default-500 truncate max-w-50 block"
-        title={row.getValue("comment")}
-      >
-        {row.getValue("comment")}
-      </span>
-    ),
   },
   {
     id: "release_balance_amount",
