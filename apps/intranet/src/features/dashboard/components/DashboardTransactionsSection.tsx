@@ -12,13 +12,11 @@ export function DashboardTransactionsSection({ statsParams }: Props) {
   const { data: stats } = useSuspenseQuery(dashboardKeys.stats(statsParams));
   const { data: recentMovements } = useSuspenseQuery(dashboardKeys.recentMovements());
 
-  const totals = stats.totals
-    ? {
-        in: stats.totals.IN ?? 0,
-        net: (stats.totals.IN ?? 0) - (stats.totals.OUT ?? 0),
-        out: stats.totals.OUT ?? 0,
-      }
-    : { in: 0, net: 0, out: 0 };
+  const rawTotals = stats.totals ?? {};
+  const totalIn = rawTotals.in ?? rawTotals.IN ?? 0;
+  const totalOut = rawTotals.out ?? rawTotals.OUT ?? 0;
+  const totalNet = rawTotals.net ?? totalIn - totalOut;
+  const totals = { in: totalIn, net: totalNet, out: totalOut };
 
   return (
     <>

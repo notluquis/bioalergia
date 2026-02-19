@@ -37,10 +37,10 @@ const ACCENT_THEME: Record<
   rose: {
     badge: "bg-danger/10 text-danger",
     badgeLabel: "Egresos",
-    gradient: "from-error/20 via-error/5 to-transparent",
+    gradient: "from-danger/20 via-danger/5 to-transparent",
     icon: TrendingDown,
     iconColor: "text-danger",
-    ring: "ring-error/20",
+    ring: "ring-danger/20",
     value: "text-danger",
   },
 };
