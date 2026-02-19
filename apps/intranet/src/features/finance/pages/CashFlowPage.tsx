@@ -13,6 +13,7 @@ import {
   SearchField,
   Select,
   type Selection,
+  Skeleton,
   Tabs,
   TextField,
 } from "@heroui/react";
@@ -976,34 +977,61 @@ export function CashFlowPage() {
               <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
                 <div className="rounded-md border border-default-200 px-2.5 py-2">
                   <p className="text-tiny text-default-500">Ingresos</p>
-                  <p className="font-semibold text-success">
-                    {formatCurrency(filteredSummary.totals.income)}
-                  </p>
+                  {isLoading ? (
+                    <Skeleton className="mt-1 h-6 w-24 rounded-md" />
+                  ) : (
+                    <p className="font-semibold text-success">
+                      {formatCurrency(filteredSummary.totals.income)}
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-md border border-default-200 px-2.5 py-2">
                   <p className="text-tiny text-default-500">Egresos</p>
-                  <p className="font-semibold text-danger">
-                    {formatCurrency(filteredSummary.totals.expense)}
-                  </p>
+                  {isLoading ? (
+                    <Skeleton className="mt-1 h-6 w-24 rounded-md" />
+                  ) : (
+                    <p className="font-semibold text-danger">
+                      {formatCurrency(filteredSummary.totals.expense)}
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-md border border-default-200 px-2.5 py-2">
                   <p className="text-tiny text-default-500">Neto</p>
-                  <p
-                    className={`font-semibold ${filteredSummary.totals.net >= 0 ? "text-success" : "text-danger"}`}
-                  >
-                    {formatCurrency(filteredSummary.totals.net)}
-                  </p>
+                  {isLoading ? (
+                    <Skeleton className="mt-1 h-6 w-24 rounded-md" />
+                  ) : (
+                    <p
+                      className={`font-semibold ${filteredSummary.totals.net >= 0 ? "text-success" : "text-danger"}`}
+                    >
+                      {formatCurrency(filteredSummary.totals.net)}
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-md border border-default-200 px-2.5 py-2">
                   <p className="text-tiny text-default-500">Movimientos</p>
-                  <p className="font-semibold">{filteredSummary.totals.count}</p>
+                  {isLoading ? (
+                    <Skeleton className="mt-1 h-6 w-16 rounded-md" />
+                  ) : (
+                    <p className="font-semibold">{filteredSummary.totals.count}</p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <p className="text-sm font-medium">Resumen por categoría</p>
                 {isLoading ? (
-                  <p className="text-sm text-default-500">Cargando resumen...</p>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <div
+                        key={`summary-skeleton-${index + 1}`}
+                        className="rounded-md border border-default-200 px-2.5 py-2"
+                      >
+                        <Skeleton className="mb-2 h-4 w-32 rounded-md" />
+                        <Skeleton className="h-3 w-16 rounded-md" />
+                        <Skeleton className="mt-2 h-4 w-20 rounded-md" />
+                      </div>
+                    ))}
+                  </div>
                 ) : filteredSummary.byCategory.length === 0 ? (
                   <p className="text-sm text-default-500">
                     No hay movimientos para los filtros seleccionados.
