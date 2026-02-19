@@ -661,6 +661,22 @@ export function CashFlowPage() {
   }, [columnFilters, monthTransactions, selectedCategoryFilters]);
 
   const monthlySummary = useMemo(() => buildSummary(monthTransactions), [monthTransactions]);
+  const incomeCategorySummary = useMemo(
+    () =>
+      monthlySummary.byCategory
+        .filter((item) => item.type === "INCOME")
+        .sort((a, b) => Math.abs(b.total) - Math.abs(a.total))
+        .slice(0, 6),
+    [monthlySummary.byCategory],
+  );
+  const expenseCategorySummary = useMemo(
+    () =>
+      monthlySummary.byCategory
+        .filter((item) => item.type === "EXPENSE")
+        .sort((a, b) => Math.abs(b.total) - Math.abs(a.total))
+        .slice(0, 6),
+    [monthlySummary.byCategory],
+  );
   const incomePieData = useMemo(
     () => buildPieCategoryData(monthlySummary.byCategory, "INCOME"),
     [monthlySummary.byCategory],
@@ -1148,6 +1164,92 @@ export function CashFlowPage() {
                     <Skeleton className="mt-1 h-6 w-16 rounded-md" />
                   ) : (
                     <p className="font-semibold">{monthlySummary.totals.count}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                <div className="rounded-md border border-default-200 p-3">
+                  <p className="mb-2 text-tiny font-medium uppercase tracking-wide text-default-500">
+                    Categorías de ingreso
+                  </p>
+                  {isLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-7 w-full rounded-md" />
+                      <Skeleton className="h-7 w-full rounded-md" />
+                      <Skeleton className="h-7 w-full rounded-md" />
+                    </div>
+                  ) : incomeCategorySummary.length === 0 ? (
+                    <p className="text-sm text-default-500">
+                      Sin ingresos categorizados en este mes.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {incomeCategorySummary.map((item) => (
+                        <div
+                          className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2.5 py-1.5"
+                          key={`summary-income-category-${item.type}-${item.categoryId ?? "none"}`}
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span
+                              className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{
+                                backgroundColor: item.categoryColor ?? "#64748B",
+                              }}
+                            />
+                            <span className="truncate text-sm">{item.categoryName}</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-success">
+                              {formatCurrency(Math.abs(item.total))}
+                            </p>
+                            <p className="text-tiny text-default-500">{item.count} mov.</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-md border border-default-200 p-3">
+                  <p className="mb-2 text-tiny font-medium uppercase tracking-wide text-default-500">
+                    Categorías de egreso
+                  </p>
+                  {isLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-7 w-full rounded-md" />
+                      <Skeleton className="h-7 w-full rounded-md" />
+                      <Skeleton className="h-7 w-full rounded-md" />
+                    </div>
+                  ) : expenseCategorySummary.length === 0 ? (
+                    <p className="text-sm text-default-500">
+                      Sin egresos categorizados en este mes.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {expenseCategorySummary.map((item) => (
+                        <div
+                          className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2.5 py-1.5"
+                          key={`summary-expense-category-${item.type}-${item.categoryId ?? "none"}`}
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span
+                              className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{
+                                backgroundColor: item.categoryColor ?? "#64748B",
+                              }}
+                            />
+                            <span className="truncate text-sm">{item.categoryName}</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-danger">
+                              {formatCurrency(Math.abs(item.total))}
+                            </p>
+                            <p className="text-tiny text-default-500">{item.count} mov.</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
