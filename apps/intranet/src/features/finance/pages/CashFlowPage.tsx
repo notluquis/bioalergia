@@ -22,6 +22,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { toast } from "sonner";
 import { z } from "zod";
 import { ApiError, apiClient } from "@/lib/api-client";
@@ -240,7 +241,7 @@ export const Route = createFileRoute("/_authed/finanzas/cash-flow")({
   component: CashFlowPage,
 });
 
-type CashFlowTab = "cash-flow" | "categories";
+type CashFlowTab = "cash-flow" | "categories" | "movements";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("es-CL", { currency: "CLP", style: "currency" }).format(amount);
@@ -258,6 +259,18 @@ const CATEGORY_COLOR_PRESETS = [
 ] as const;
 
 const TABLE_PAGE_SIZE = 50;
+
+const PIE_COLORS = [
+  "#2563EB",
+  "#0891B2",
+  "#0D9488",
+  "#16A34A",
+  "#CA8A04",
+  "#EA580C",
+  "#DC2626",
+  "#9333EA",
+  "#64748B",
+] as const;
 
 type CashFlowTypeFilter = "ALL" | "EXPENSE" | "INCOME";
 
@@ -295,6 +308,79 @@ const formatMonthLabel = (monthValue: string) => {
   }).format(date);
   return label.charAt(0).toUpperCase() + label.slice(1);
 };
+
+type SummaryByCategoryEntry = {
+  categoryColor?: null | string;
+  categoryId: null | number;
+  categoryName: string;
+  count: number;
+  total: number;
+  type: "EXPENSE" | "INCOME";
+};
+
+type PieCategoryDatum = {
+  color: string;
+  name: string;
+  value: number;
+};
+
+function buildSummary(transactions: TransactionWithRelations[]) {
+  const totals = transactions.reduce(
+    (acc, tx) => {
+      const amount = Number(tx.amount);
+      if (tx.type === "INCOME") {
+        acc.income += amount;
+      } else {
+        acc.expense += amount;
+      }
+      acc.count += 1;
+      acc.net += amount;
+      return acc;
+    },
+    { count: 0, expense: 0, income: 0, net: 0 },
+  );
+
+  const byCategoryMap = new Map<string, SummaryByCategoryEntry>();
+
+  for (const tx of transactions) {
+    const key = `${tx.type}-${tx.categoryId ?? "none"}`;
+    const current = byCategoryMap.get(key);
+    const amount = Number(tx.amount);
+    if (current) {
+      current.count += 1;
+      current.total += amount;
+    } else {
+      byCategoryMap.set(key, {
+        categoryColor: tx.category?.color ?? null,
+        categoryId: tx.categoryId ?? null,
+        categoryName: tx.category?.name ?? "Sin categoría",
+        count: 1,
+        total: amount,
+        type: tx.type,
+      });
+    }
+  }
+
+  const byCategory = Array.from(byCategoryMap.values()).sort(
+    (a, b) => Math.abs(b.total) - Math.abs(a.total),
+  );
+
+  return { byCategory, totals };
+}
+
+function buildPieCategoryData(
+  items: SummaryByCategoryEntry[],
+  type: "EXPENSE" | "INCOME",
+): PieCategoryDatum[] {
+  return items
+    .filter((item) => item.type === type)
+    .map((item, index) => ({
+      color: item.categoryColor ?? PIE_COLORS[index % PIE_COLORS.length] ?? "#64748B",
+      name: item.categoryName,
+      value: Math.abs(item.total),
+    }))
+    .filter((item) => item.value > 0);
+}
 
 function CategoryColorPicker({
   label,
@@ -523,59 +609,15 @@ export function CashFlowPage() {
     });
   }, [columnFilters, monthTransactions, selectedCategoryFilters]);
 
-  const filteredSummary = useMemo(() => {
-    const totals = filteredTransactions.reduce(
-      (acc, tx) => {
-        const amount = Number(tx.amount);
-        if (tx.type === "INCOME") {
-          acc.income += amount;
-        } else {
-          acc.expense += amount;
-        }
-        acc.count += 1;
-        acc.net += amount;
-        return acc;
-      },
-      { count: 0, expense: 0, income: 0, net: 0 },
-    );
-
-    const byCategoryMap = new Map<
-      string,
-      {
-        categoryColor?: null | string;
-        categoryId: null | number;
-        categoryName: string;
-        count: number;
-        total: number;
-        type: "EXPENSE" | "INCOME";
-      }
-    >();
-
-    for (const tx of filteredTransactions) {
-      const key = `${tx.type}-${tx.categoryId ?? "none"}`;
-      const current = byCategoryMap.get(key);
-      const amount = Number(tx.amount);
-      if (current) {
-        current.count += 1;
-        current.total += amount;
-      } else {
-        byCategoryMap.set(key, {
-          categoryColor: tx.category?.color ?? null,
-          categoryId: tx.categoryId ?? null,
-          categoryName: tx.category?.name ?? "Sin categoría",
-          count: 1,
-          total: amount,
-          type: tx.type,
-        });
-      }
-    }
-
-    const byCategory = Array.from(byCategoryMap.values()).sort(
-      (a, b) => Math.abs(b.total) - Math.abs(a.total),
-    );
-
-    return { byCategory, totals };
-  }, [filteredTransactions]);
+  const monthlySummary = useMemo(() => buildSummary(monthTransactions), [monthTransactions]);
+  const incomePieData = useMemo(
+    () => buildPieCategoryData(monthlySummary.byCategory, "INCOME"),
+    [monthlySummary.byCategory],
+  );
+  const expensePieData = useMemo(
+    () => buildPieCategoryData(monthlySummary.byCategory, "EXPENSE"),
+    [monthlySummary.byCategory],
+  );
 
   const totalFiltered = filteredTransactions.length;
   const pageCount = Math.max(1, Math.ceil(totalFiltered / TABLE_PAGE_SIZE));
@@ -961,7 +1003,11 @@ export function CashFlowPage() {
         <Tabs.ListContainer>
           <Tabs.List aria-label="Flujo de caja" className="rounded-lg bg-default-50/50 p-1">
             <Tabs.Tab id="cash-flow">
-              Flujo de caja
+              Resumen
+              <Tabs.Indicator />
+            </Tabs.Tab>
+            <Tabs.Tab id="movements">
+              Movimientos
               <Tabs.Indicator />
             </Tabs.Tab>
             <Tabs.Tab id="categories">
@@ -974,6 +1020,36 @@ export function CashFlowPage() {
         <Tabs.Panel id="cash-flow" className="space-y-3 pt-3">
           <Card>
             <div className="space-y-3 p-3">
+              <div className="max-w-xs">
+                <Select
+                  value={selectedMonth}
+                  onChange={(key) => {
+                    setSelectedMonth(String(key ?? ""));
+                    setPage(1);
+                  }}
+                >
+                  <Label>Mes</Label>
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {monthOptions.map((monthOption) => (
+                        <ListBox.Item
+                          id={monthOption.value}
+                          key={monthOption.value}
+                          textValue={monthOption.label}
+                        >
+                          {monthOption.label}
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              </div>
+
               <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
                 <div className="rounded-md border border-default-200 px-2.5 py-2">
                   <p className="text-tiny text-default-500">Ingresos</p>
@@ -981,7 +1057,7 @@ export function CashFlowPage() {
                     <Skeleton className="mt-1 h-6 w-24 rounded-md" />
                   ) : (
                     <p className="font-semibold text-success">
-                      {formatCurrency(filteredSummary.totals.income)}
+                      {formatCurrency(monthlySummary.totals.income)}
                     </p>
                   )}
                 </div>
@@ -991,7 +1067,7 @@ export function CashFlowPage() {
                     <Skeleton className="mt-1 h-6 w-24 rounded-md" />
                   ) : (
                     <p className="font-semibold text-danger">
-                      {formatCurrency(filteredSummary.totals.expense)}
+                      {formatCurrency(monthlySummary.totals.expense)}
                     </p>
                   )}
                 </div>
@@ -1001,9 +1077,9 @@ export function CashFlowPage() {
                     <Skeleton className="mt-1 h-6 w-24 rounded-md" />
                   ) : (
                     <p
-                      className={`font-semibold ${filteredSummary.totals.net >= 0 ? "text-success" : "text-danger"}`}
+                      className={`font-semibold ${monthlySummary.totals.net >= 0 ? "text-success" : "text-danger"}`}
                     >
-                      {formatCurrency(filteredSummary.totals.net)}
+                      {formatCurrency(monthlySummary.totals.net)}
                     </p>
                   )}
                 </div>
@@ -1012,67 +1088,104 @@ export function CashFlowPage() {
                   {isLoading ? (
                     <Skeleton className="mt-1 h-6 w-16 rounded-md" />
                   ) : (
-                    <p className="font-semibold">{filteredSummary.totals.count}</p>
+                    <p className="font-semibold">{monthlySummary.totals.count}</p>
                   )}
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Resumen por categoría</p>
-                {isLoading ? (
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <div
-                        key={`summary-skeleton-${index + 1}`}
-                        className="rounded-md border border-default-200 px-2.5 py-2"
-                      >
-                        <Skeleton className="mb-2 h-4 w-32 rounded-md" />
-                        <Skeleton className="h-3 w-16 rounded-md" />
-                        <Skeleton className="mt-2 h-4 w-20 rounded-md" />
-                      </div>
-                    ))}
-                  </div>
-                ) : filteredSummary.byCategory.length === 0 ? (
-                  <p className="text-sm text-default-500">
-                    No hay movimientos para los filtros seleccionados.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
-                    {filteredSummary.byCategory.map((item) => (
-                      <div
-                        key={`${item.type}-${item.categoryId ?? "none"}`}
-                        className="rounded-md border border-default-200 px-2.5 py-1.5"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span
-                              className="h-2.5 w-2.5 rounded-full shrink-0"
-                              style={{ backgroundColor: item.categoryColor ?? "#9ca3af" }}
-                            />
-                            <div className="min-w-0">
-                              <span className="block truncate text-sm">{item.categoryName}</span>
-                              <span className="text-tiny text-default-500">{item.count} mov.</span>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <span className="block text-tiny text-default-500">
-                              {item.type === "INCOME" ? "Ingreso" : "Egreso"}
-                            </span>
-                            <span
-                              className={`font-medium ${item.type === "INCOME" ? "text-success" : "text-danger"}`}
-                            >
-                              {formatCurrency(item.total)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </Card>
 
+          <Card>
+            <div className="space-y-3 p-3">
+              <p className="text-sm font-medium">Distribución por categoría</p>
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                <div className="rounded-md border border-default-200 p-3">
+                  <h4 className="mb-2 text-sm font-medium">Ingresos por categoría</h4>
+                  {isLoading ? (
+                    <Skeleton className="h-[320px] w-full rounded-md" />
+                  ) : incomePieData.length === 0 ? (
+                    <p className="text-sm text-default-500">
+                      No hay ingresos para el mes seleccionado.
+                    </p>
+                  ) : (
+                    <div className="h-[320px]">
+                      <ResponsiveContainer height="100%" width="100%">
+                        <PieChart>
+                          <Pie
+                            data={incomePieData}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={70}
+                            outerRadius={105}
+                            paddingAngle={2}
+                          >
+                            {incomePieData.map((entry) => (
+                              <Cell key={`income-pie-${entry.name}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value: number | undefined) =>
+                              formatCurrency(Number(value ?? 0))
+                            }
+                            contentStyle={{
+                              backgroundColor: "var(--color-background)",
+                              border: "1px solid var(--default-200)",
+                              borderRadius: "12px",
+                            }}
+                          />
+                          <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-md border border-default-200 p-3">
+                  <h4 className="mb-2 text-sm font-medium">Egresos por categoría</h4>
+                  {isLoading ? (
+                    <Skeleton className="h-[320px] w-full rounded-md" />
+                  ) : expensePieData.length === 0 ? (
+                    <p className="text-sm text-default-500">
+                      No hay egresos para el mes seleccionado.
+                    </p>
+                  ) : (
+                    <div className="h-[320px]">
+                      <ResponsiveContainer height="100%" width="100%">
+                        <PieChart>
+                          <Pie
+                            data={expensePieData}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={70}
+                            outerRadius={105}
+                            paddingAngle={2}
+                          >
+                            {expensePieData.map((entry) => (
+                              <Cell key={`expense-pie-${entry.name}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value: number | undefined) =>
+                              formatCurrency(Number(value ?? 0))
+                            }
+                            contentStyle={{
+                              backgroundColor: "var(--color-background)",
+                              border: "1px solid var(--default-200)",
+                              borderRadius: "12px",
+                            }}
+                          />
+                          <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </Tabs.Panel>
+
+        <Tabs.Panel id="movements" className="space-y-3 pt-3">
           <Card>
             <div className="border-b border-default-200 p-3">
               <div className="grid grid-cols-1 gap-2 lg:grid-cols-10">
