@@ -793,7 +793,7 @@ export function CashFlowPage() {
                   </Dropdown>
                 </div>
 
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-2">
                   <Select
                     selectedKey={columnFilters.type}
                     onSelectionChange={(key) =>
@@ -824,7 +824,7 @@ export function CashFlowPage() {
                   </Select>
                 </div>
 
-                <div className="flex items-end justify-end lg:col-span-3">
+                <div className="flex items-end justify-end lg:col-span-2">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -841,7 +841,8 @@ export function CashFlowPage() {
 
                 <SearchField
                   aria-label="Buscar en descripción"
-                  className="lg:col-span-3"
+                  className="lg:col-span-2"
+                  variant="secondary"
                   value={columnFilters.description}
                   onChange={(value) => updateColumnFilter("description", value)}
                 >
@@ -855,6 +856,7 @@ export function CashFlowPage() {
                 <SearchField
                   aria-label="Buscar en desde"
                   className="lg:col-span-2"
+                  variant="secondary"
                   value={columnFilters.fromCounterpart}
                   onChange={(value) => updateColumnFilter("fromCounterpart", value)}
                 >
@@ -868,6 +870,7 @@ export function CashFlowPage() {
                 <SearchField
                   aria-label="Buscar en hacia"
                   className="lg:col-span-2"
+                  variant="secondary"
                   value={columnFilters.toCounterpart}
                   onChange={(value) => updateColumnFilter("toCounterpart", value)}
                 >
@@ -880,7 +883,8 @@ export function CashFlowPage() {
 
                 <SearchField
                   aria-label="Buscar por monto"
-                  className="lg:col-span-1"
+                  className="lg:col-span-2"
+                  variant="secondary"
                   value={columnFilters.amount}
                   onChange={(value) => updateColumnFilter("amount", value)}
                 >
@@ -893,7 +897,8 @@ export function CashFlowPage() {
 
                 <SearchField
                   aria-label="Buscar en comentario"
-                  className="lg:col-span-1"
+                  className="lg:col-span-2"
+                  variant="secondary"
                   value={columnFilters.comment}
                   onChange={(value) => updateColumnFilter("comment", value)}
                 >
