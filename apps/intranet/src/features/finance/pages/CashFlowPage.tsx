@@ -1108,7 +1108,7 @@ export function CashFlowPage() {
                       No hay ingresos para el mes seleccionado.
                     </p>
                   ) : (
-                    <div className="h-[320px]">
+                    <div className="cashflow-recharts h-[320px]">
                       <ResponsiveContainer height="100%" width="100%">
                         <PieChart>
                           <Pie
@@ -1127,22 +1127,14 @@ export function CashFlowPage() {
                             formatter={(value: number | undefined) =>
                               formatCurrency(Number(value ?? 0))
                             }
+                            wrapperClassName="cashflow-recharts-tooltip"
                             contentStyle={{
-                              backgroundColor: "var(--color-background)",
-                              border: "1px solid var(--default-200)",
+                              backgroundColor: "hsl(var(--b1))",
+                              border: "1px solid hsl(var(--bc) / 0.2)",
                               borderRadius: "12px",
-                              color: "var(--color-foreground)",
                             }}
-                            itemStyle={{ color: "var(--color-foreground)" }}
-                            labelStyle={{ color: "var(--color-foreground)" }}
                           />
-                          <Legend
-                            iconType="circle"
-                            wrapperStyle={{ color: "var(--color-foreground)", fontSize: 12 }}
-                            formatter={(value) => (
-                              <span style={{ color: "var(--color-foreground)" }}>{value}</span>
-                            )}
-                          />
+                          <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
@@ -1158,7 +1150,7 @@ export function CashFlowPage() {
                       No hay egresos para el mes seleccionado.
                     </p>
                   ) : (
-                    <div className="h-[320px]">
+                    <div className="cashflow-recharts h-[320px]">
                       <ResponsiveContainer height="100%" width="100%">
                         <PieChart>
                           <Pie
@@ -1177,22 +1169,14 @@ export function CashFlowPage() {
                             formatter={(value: number | undefined) =>
                               formatCurrency(Number(value ?? 0))
                             }
+                            wrapperClassName="cashflow-recharts-tooltip"
                             contentStyle={{
-                              backgroundColor: "var(--color-background)",
-                              border: "1px solid var(--default-200)",
+                              backgroundColor: "hsl(var(--b1))",
+                              border: "1px solid hsl(var(--bc) / 0.2)",
                               borderRadius: "12px",
-                              color: "var(--color-foreground)",
                             }}
-                            itemStyle={{ color: "var(--color-foreground)" }}
-                            labelStyle={{ color: "var(--color-foreground)" }}
                           />
-                          <Legend
-                            iconType="circle"
-                            wrapperStyle={{ color: "var(--color-foreground)", fontSize: 12 }}
-                            formatter={(value) => (
-                              <span style={{ color: "var(--color-foreground)" }}>{value}</span>
-                            )}
-                          />
+                          <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>

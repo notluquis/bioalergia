@@ -163,3 +163,15 @@ body {
 @view-transition {
   navigation: auto;
 }
+
+/* Recharts defaults aligned with app theme */
+.cashflow-recharts .recharts-legend-item-text {
+  color: var(--color-foreground) !important;
+}
+
+.cashflow-recharts-tooltip .recharts-tooltip-label,
+.cashflow-recharts-tooltip .recharts-tooltip-item,
+.cashflow-recharts-tooltip .recharts-tooltip-item-name,
+.cashflow-recharts-tooltip .recharts-tooltip-item-value {
+  color: var(--color-foreground) !important;
+}
