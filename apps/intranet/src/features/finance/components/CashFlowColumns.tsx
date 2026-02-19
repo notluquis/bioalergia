@@ -2,7 +2,7 @@ import type { Counterpart, FinancialTransaction, TransactionCategory } from "@fi
 import { Autocomplete, Chip, EmptyState, ListBox, SearchField } from "@heroui/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Pencil } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 
@@ -371,11 +371,15 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
       // table.options.meta is typed via the global TableMeta declaration in tanstack-table.d.ts
       return (
         <Button
+          aria-label="Editar movimiento"
+          className="h-7 w-7 min-w-7 p-0"
+          isIconOnly
           size="sm"
+          title="Editar"
           variant="ghost"
           onClick={() => table.options.meta?.onEdit?.(row.original)}
         >
-          Editar
+          <Pencil className="h-3.5 w-3.5" />
         </Button>
       );
     },
