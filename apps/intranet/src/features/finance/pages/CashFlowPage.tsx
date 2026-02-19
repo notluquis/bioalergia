@@ -690,31 +690,33 @@ export function CashFlowPage() {
                     No hay movimientos para los filtros seleccionados.
                   </p>
                 ) : (
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
                     {filteredSummary.byCategory.map((item) => (
                       <div
                         key={`${item.type}-${item.categoryId ?? "none"}`}
-                        className="rounded-md border border-default-200 px-2.5 py-2"
+                        className="rounded-md border border-default-200 px-2.5 py-1.5"
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex min-w-0 items-center gap-2">
                             <span
                               className="h-2.5 w-2.5 rounded-full shrink-0"
                               style={{ backgroundColor: item.categoryColor ?? "#9ca3af" }}
                             />
-                            <span className="truncate text-sm">{item.categoryName}</span>
+                            <div className="min-w-0">
+                              <span className="block truncate text-sm">{item.categoryName}</span>
+                              <span className="text-tiny text-default-500">{item.count} mov.</span>
+                            </div>
                           </div>
-                          <span className="text-tiny text-default-500">
-                            {item.type === "INCOME" ? "Ingreso" : "EGRESO"}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex items-center justify-between">
-                          <span className="text-tiny text-default-500">{item.count} mov.</span>
-                          <span
-                            className={`font-medium ${item.type === "INCOME" ? "text-success" : "text-danger"}`}
-                          >
-                            {formatCurrency(item.total)}
-                          </span>
+                          <div className="text-right">
+                            <span className="block text-tiny text-default-500">
+                              {item.type === "INCOME" ? "Ingreso" : "Egreso"}
+                            </span>
+                            <span
+                              className={`font-medium ${item.type === "INCOME" ? "text-success" : "text-danger"}`}
+                            >
+                              {formatCurrency(item.total)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -815,8 +817,8 @@ export function CashFlowPage() {
                           Ingreso
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
-                        <ListBox.Item id="EXPENSE" textValue="EGRESO">
-                          EGRESO
+                        <ListBox.Item id="EXPENSE" textValue="Egreso">
+                          Egreso
                           <ListBox.ItemIndicator />
                         </ListBox.Item>
                       </ListBox>
@@ -937,7 +939,7 @@ export function CashFlowPage() {
                       variant="outline"
                       onClick={() => updateColumnFilter("type", "ALL")}
                     >
-                      {columnFilters.type === "INCOME" ? "Ingreso" : "EGRESO"}
+                      {columnFilters.type === "INCOME" ? "Ingreso" : "Egreso"}
                       <X className="h-3.5 w-3.5" />
                     </Button>
                   )}
@@ -1055,8 +1057,8 @@ export function CashFlowPage() {
                         Ingreso
                         <ListBox.ItemIndicator />
                       </ListBox.Item>
-                      <ListBox.Item id="EXPENSE" textValue="EGRESO">
-                        EGRESO
+                      <ListBox.Item id="EXPENSE" textValue="Egreso">
+                        Egreso
                         <ListBox.ItemIndicator />
                       </ListBox.Item>
                     </ListBox>
@@ -1115,8 +1117,8 @@ export function CashFlowPage() {
                                   Ingreso
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
-                                <ListBox.Item id="EXPENSE" textValue="EGRESO">
-                                  EGRESO
+                                <ListBox.Item id="EXPENSE" textValue="Egreso">
+                                  Egreso
                                   <ListBox.ItemIndicator />
                                 </ListBox.Item>
                               </ListBox>
@@ -1155,7 +1157,7 @@ export function CashFlowPage() {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="text-default-500 text-sm">
-                              {category.type === "INCOME" ? "Ingreso" : "EGRESO"}
+                              {category.type === "INCOME" ? "Ingreso" : "Egreso"}
                             </span>
                             <Button
                               size="sm"
