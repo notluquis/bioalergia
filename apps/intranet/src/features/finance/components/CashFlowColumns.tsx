@@ -33,7 +33,7 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
         </Button>
       );
     },
-    cell: ({ row }) => dayjs(row.getValue("date")).format("DD-MM-YY"),
+    cell: ({ row }) => dayjs(row.getValue("date")).format("DD-MM-YY HH:mm"),
   },
   {
     accessorKey: "description",
