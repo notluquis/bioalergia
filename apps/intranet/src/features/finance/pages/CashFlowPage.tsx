@@ -3,17 +3,24 @@ import {
   Button,
   Card,
   ColorSwatchPicker,
+  Dropdown,
+  DropdownPopover,
+  DropdownTrigger,
   Input,
   Label,
   ListBox,
   parseColor,
+  SearchField,
   Select,
+  type Selection,
+  Switch,
   Tabs,
   TextField,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
+import { X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -38,23 +45,6 @@ type FinancialTransactionsResponse = {
     pageSize?: number;
     total?: number;
     totalPages?: number;
-  };
-};
-
-type FinancialSummaryByCategoryResponse = {
-  byCategory: Array<{
-    categoryColor?: null | string;
-    categoryId: null | number;
-    categoryName: string;
-    count: number;
-    total: number;
-    type: "EXPENSE" | "INCOME";
-  }>;
-  totals: {
-    count: number;
-    expense: number;
-    income: number;
-    net: number;
   };
 };
 
@@ -117,26 +107,6 @@ const UpdateTransactionResponseSchema = z.object({
   status: z.literal("ok"),
 });
 
-const FinancialSummaryByCategoryResponseSchema = z.object({
-  byCategory: z.array(
-    z.object({
-      categoryColor: z.string().nullable().optional(),
-      categoryId: z.number().nullable(),
-      categoryName: z.string(),
-      count: z.number(),
-      total: z.number(),
-      type: z.enum(["INCOME", "EXPENSE"]),
-    }),
-  ),
-  status: z.literal("ok"),
-  totals: z.object({
-    count: z.number(),
-    expense: z.number(),
-    income: z.number(),
-    net: z.number(),
-  }),
-});
-
 function useFinancialTransactions(params: TransactionQueryParams) {
   return useQuery({
     queryKey: ["FinancialTransaction", params],
@@ -150,20 +120,6 @@ function useFinancialTransactions(params: TransactionQueryParams) {
           to: params.to,
         },
         responseSchema: FinancialTransactionsResponseSchema,
-      }),
-  });
-}
-
-function useFinancialSummaryByCategory(params: { from: string; to: string }) {
-  return useQuery<FinancialSummaryByCategoryResponse>({
-    queryKey: ["FinancialTransactionSummary", params],
-    queryFn: () =>
-      apiClient.get<FinancialSummaryByCategoryResponse>("/api/finance/transactions/summary", {
-        query: {
-          from: params.from,
-          to: params.to,
-        },
-        responseSchema: FinancialSummaryByCategoryResponseSchema,
       }),
   });
 }
@@ -203,6 +159,35 @@ const CATEGORY_COLOR_PRESETS = [
   "#EC4899",
   "#64748B",
 ] as const;
+
+const TABLE_PAGE_SIZE = 50;
+
+type CashFlowTypeFilter = "ALL" | "EXPENSE" | "INCOME";
+
+type CashFlowColumnFilters = {
+  amount: string;
+  comment: string;
+  fromCounterpart: string;
+  description: string;
+  toCounterpart: string;
+  type: CashFlowTypeFilter;
+};
+
+const DEFAULT_COLUMN_FILTERS: CashFlowColumnFilters = {
+  amount: "",
+  comment: "",
+  fromCounterpart: "",
+  description: "",
+  toCounterpart: "",
+  type: "ALL",
+};
+
+const normalizeText = (value: null | string | undefined) =>
+  (value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 
 const formatMonthLabel = (monthValue: string) => {
   const date = new Date(`${monthValue}-01T00:00:00`);
@@ -249,6 +234,9 @@ export function CashFlowPage() {
   const [page, setPage] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
   const [activeTab, setActiveTab] = useState<CashFlowTab>("cash-flow");
+  const [onlyUncategorized, setOnlyUncategorized] = useState(false);
+  const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
+  const [columnFilters, setColumnFilters] = useState<CashFlowColumnFilters>(DEFAULT_COLUMN_FILTERS);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTx, setEditingTx] = useState<FinancialTransaction | null>(null);
   const [updatingCategoryIds, setUpdatingCategoryIds] = useState<Set<number>>(new Set());
@@ -281,14 +269,193 @@ export function CashFlowPage() {
 
   const { data, isLoading } = useFinancialTransactions({
     from: monthRange.from,
-    page,
-    pageSize: 50,
+    page: 1,
+    pageSize: 2500,
     to: monthRange.to,
   });
-  const { data: summaryData, isLoading: isSummaryLoading } =
-    useFinancialSummaryByCategory(monthRange);
   const { data: categories = [] } = useTransactionCategories();
   const queryClient = useQueryClient();
+
+  const categoryFilterOptions = useMemo(() => {
+    const baseOptions = categories.map((category) => ({
+      color: category.color ?? "#9ca3af",
+      label: category.name,
+      value: String(category.id),
+    }));
+    return [{ color: "#9ca3af", label: "Sin categoría", value: "__none__" }, ...baseOptions];
+  }, [categories]);
+
+  const selectedCategoryLabel = useMemo(() => {
+    if (selectedCategoryFilters.length === 0) {
+      return "Todas";
+    }
+    const selectedMap = new Map(
+      categoryFilterOptions.map((option) => [option.value, option.label]),
+    );
+    const labels = selectedCategoryFilters.map((key) => selectedMap.get(key) ?? key);
+    const preview = labels.slice(0, 2).join(", ");
+    if (labels.length > 2) {
+      return `${preview} +${labels.length - 2}`;
+    }
+    return preview;
+  }, [categoryFilterOptions, selectedCategoryFilters]);
+
+  const selectedCategoryMap = useMemo(
+    () => new Map(categoryFilterOptions.map((option) => [option.value, option.label])),
+    [categoryFilterOptions],
+  );
+
+  const hasActiveFilters =
+    onlyUncategorized ||
+    selectedCategoryFilters.length > 0 ||
+    columnFilters.type !== "ALL" ||
+    columnFilters.description.trim().length > 0 ||
+    columnFilters.fromCounterpart.trim().length > 0 ||
+    columnFilters.toCounterpart.trim().length > 0 ||
+    columnFilters.amount.trim().length > 0 ||
+    columnFilters.comment.trim().length > 0;
+
+  const monthTransactions = data?.data ?? [];
+
+  const filteredTransactions = useMemo(() => {
+    const descriptionFilter = normalizeText(columnFilters.description);
+    const fromCounterpartFilter = normalizeText(columnFilters.fromCounterpart);
+    const toCounterpartFilter = normalizeText(columnFilters.toCounterpart);
+    const commentFilter = normalizeText(columnFilters.comment);
+    const amountFilter = columnFilters.amount.replace(/[^\d-]/g, "").trim();
+
+    return monthTransactions.filter((tx) => {
+      if (onlyUncategorized && tx.categoryId != null) {
+        return false;
+      }
+
+      if (columnFilters.type !== "ALL" && tx.type !== columnFilters.type) {
+        return false;
+      }
+
+      if (selectedCategoryFilters.length > 0) {
+        const txCategoryKey = tx.categoryId == null ? "__none__" : String(tx.categoryId);
+        if (!selectedCategoryFilters.includes(txCategoryKey)) {
+          return false;
+        }
+      }
+
+      if (descriptionFilter) {
+        const descriptionText = normalizeText(`${tx.description} ${tx.source ?? ""}`);
+        if (!descriptionText.includes(descriptionFilter)) {
+          return false;
+        }
+      }
+
+      const counterpartText = normalizeText(
+        tx.counterpart
+          ? `${tx.counterpart.bankAccountHolder} ${tx.counterpart.identificationNumber}`
+          : "",
+      );
+
+      if (
+        tx.type === "INCOME" &&
+        fromCounterpartFilter &&
+        !counterpartText.includes(fromCounterpartFilter)
+      ) {
+        return false;
+      }
+
+      if (
+        tx.type === "EXPENSE" &&
+        toCounterpartFilter &&
+        !counterpartText.includes(toCounterpartFilter)
+      ) {
+        return false;
+      }
+
+      if (commentFilter) {
+        const commentText = normalizeText(tx.comment ?? "");
+        if (!commentText.includes(commentFilter)) {
+          return false;
+        }
+      }
+
+      if (amountFilter) {
+        const numericAmount = Number(tx.amount);
+        const normalizedRawAmount = String(tx.amount).replace(/[^\d-]/g, "");
+        const normalizedAmount = String(Math.round(numericAmount)).replace(/[^\d-]/g, "");
+        const normalizedCurrency = formatCurrency(numericAmount).replace(/[^\d-]/g, "");
+        const matchesAmount = [normalizedRawAmount, normalizedAmount, normalizedCurrency].some(
+          (candidate) => candidate.includes(amountFilter),
+        );
+        if (!matchesAmount) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [columnFilters, monthTransactions, onlyUncategorized, selectedCategoryFilters]);
+
+  const filteredSummary = useMemo(() => {
+    const totals = filteredTransactions.reduce(
+      (acc, tx) => {
+        const amount = Number(tx.amount);
+        if (tx.type === "INCOME") {
+          acc.income += amount;
+        } else {
+          acc.expense += amount;
+        }
+        acc.count += 1;
+        acc.net += amount;
+        return acc;
+      },
+      { count: 0, expense: 0, income: 0, net: 0 },
+    );
+
+    const byCategoryMap = new Map<
+      string,
+      {
+        categoryColor?: null | string;
+        categoryId: null | number;
+        categoryName: string;
+        count: number;
+        total: number;
+        type: "EXPENSE" | "INCOME";
+      }
+    >();
+
+    for (const tx of filteredTransactions) {
+      const key = `${tx.type}-${tx.categoryId ?? "none"}`;
+      const current = byCategoryMap.get(key);
+      const amount = Number(tx.amount);
+      if (current) {
+        current.count += 1;
+        current.total += amount;
+      } else {
+        byCategoryMap.set(key, {
+          categoryColor: tx.category?.color ?? null,
+          categoryId: tx.categoryId ?? null,
+          categoryName: tx.category?.name ?? "Sin categoría",
+          count: 1,
+          total: amount,
+          type: tx.type,
+        });
+      }
+    }
+
+    const byCategory = Array.from(byCategoryMap.values()).sort((a, b) => {
+      if (a.type !== b.type) return a.type === "INCOME" ? -1 : 1;
+      return Math.abs(b.total) - Math.abs(a.total);
+    });
+
+    return { byCategory, totals };
+  }, [filteredTransactions]);
+
+  const totalFiltered = filteredTransactions.length;
+  const pageCount = Math.max(1, Math.ceil(totalFiltered / TABLE_PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+
+  const paginatedTransactions = useMemo(() => {
+    const start = (safePage - 1) * TABLE_PAGE_SIZE;
+    return filteredTransactions.slice(start, start + TABLE_PAGE_SIZE);
+  }, [filteredTransactions, safePage]);
 
   const updateTransactionCategoryMutation = useMutation({
     mutationFn: async ({
@@ -453,6 +620,24 @@ export function CashFlowPage() {
     deleteCategoryMutation.mutate(category.id);
   };
 
+  const updateColumnFilter = <K extends keyof CashFlowColumnFilters>(
+    key: K,
+    value: CashFlowColumnFilters[K],
+  ) => {
+    setColumnFilters((prev) => ({ ...prev, [key]: value }));
+    setPage(1);
+  };
+
+  const handleCategoryFilterSelection = (keys: Selection) => {
+    if (keys === "all") {
+      setSelectedCategoryFilters(categoryFilterOptions.map((item) => item.value));
+      setPage(1);
+      return;
+    }
+    setSelectedCategoryFilters(Array.from(keys).map(String));
+    setPage(1);
+  };
+
   return (
     <div className="flex flex-col gap-6 px-4 pb-4 pt-0">
       <Tabs
@@ -480,40 +665,40 @@ export function CashFlowPage() {
                 <div className="rounded-md border border-default-200 px-3 py-2">
                   <p className="text-tiny text-default-500">Ingresos</p>
                   <p className="font-semibold text-success">
-                    {formatCurrency(summaryData?.totals.income ?? 0)}
+                    {formatCurrency(filteredSummary.totals.income)}
                   </p>
                 </div>
                 <div className="rounded-md border border-default-200 px-3 py-2">
                   <p className="text-tiny text-default-500">Egresos</p>
                   <p className="font-semibold text-danger">
-                    {formatCurrency(summaryData?.totals.expense ?? 0)}
+                    {formatCurrency(filteredSummary.totals.expense)}
                   </p>
                 </div>
                 <div className="rounded-md border border-default-200 px-3 py-2">
                   <p className="text-tiny text-default-500">Neto</p>
                   <p
-                    className={`font-semibold ${(summaryData?.totals.net ?? 0) >= 0 ? "text-success" : "text-danger"}`}
+                    className={`font-semibold ${filteredSummary.totals.net >= 0 ? "text-success" : "text-danger"}`}
                   >
-                    {formatCurrency(summaryData?.totals.net ?? 0)}
+                    {formatCurrency(filteredSummary.totals.net)}
                   </p>
                 </div>
                 <div className="rounded-md border border-default-200 px-3 py-2">
                   <p className="text-tiny text-default-500">Movimientos</p>
-                  <p className="font-semibold">{summaryData?.totals.count ?? 0}</p>
+                  <p className="font-semibold">{filteredSummary.totals.count}</p>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <p className="text-sm font-medium">Resumen por categoría</p>
-                {isSummaryLoading ? (
+                {isLoading ? (
                   <p className="text-sm text-default-500">Cargando resumen...</p>
-                ) : (summaryData?.byCategory.length ?? 0) === 0 ? (
+                ) : filteredSummary.byCategory.length === 0 ? (
                   <p className="text-sm text-default-500">
-                    No hay movimientos para el mes seleccionado.
+                    No hay movimientos para los filtros seleccionados.
                   </p>
                 ) : (
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
-                    {(summaryData?.byCategory ?? []).map((item) => (
+                    {filteredSummary.byCategory.map((item) => (
                       <div
                         key={`${item.type}-${item.categoryId ?? "none"}`}
                         className="rounded-md border border-default-200 px-3 py-2"
@@ -548,45 +733,318 @@ export function CashFlowPage() {
 
           <Card>
             <div className="border-b border-default-200 p-4">
-              <div className="ml-auto w-full max-w-60">
-                <Select
-                  selectedKey={selectedMonth}
-                  onSelectionChange={(key) => {
-                    setSelectedMonth(String(key));
-                    setPage(1);
-                  }}
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+                <div className="lg:col-span-3">
+                  <Select
+                    selectedKey={selectedMonth}
+                    onSelectionChange={(key) => {
+                      setSelectedMonth(String(key));
+                      setPage(1);
+                    }}
+                  >
+                    <Label>Mes</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {monthOptions.map((monthOption) => (
+                          <ListBox.Item
+                            id={monthOption.value}
+                            key={monthOption.value}
+                            textValue={monthOption.label}
+                          >
+                            {monthOption.label}
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                </div>
+
+                <div className="lg:col-span-4">
+                  <Label className="mb-1 block">Categorías (multi)</Label>
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button className="h-10 w-full justify-start text-left" variant="outline">
+                        {selectedCategoryLabel}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownPopover>
+                      <ListBox
+                        className="max-h-60 w-[320px] overflow-auto"
+                        selectedKeys={new Set(selectedCategoryFilters)}
+                        selectionMode="multiple"
+                        onSelectionChange={handleCategoryFilterSelection}
+                      >
+                        {categoryFilterOptions.map((option) => (
+                          <ListBox.Item
+                            id={option.value}
+                            key={option.value}
+                            textValue={option.label}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="h-2.5 w-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: option.color }}
+                              />
+                              <span>{option.label}</span>
+                            </div>
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        ))}
+                      </ListBox>
+                    </DropdownPopover>
+                  </Dropdown>
+                </div>
+
+                <div className="flex items-end lg:col-span-2">
+                  <Switch
+                    className="pb-1"
+                    isSelected={onlyUncategorized}
+                    onChange={(selected) => {
+                      setOnlyUncategorized(selected);
+                      setPage(1);
+                    }}
+                  >
+                    <Switch.Control>
+                      <Switch.Thumb />
+                    </Switch.Control>
+                    <Label>Solo sin categoría</Label>
+                  </Switch>
+                </div>
+
+                <div className="flex items-end lg:col-span-3">
+                  <Button
+                    variant="secondary"
+                    className="h-10 w-full"
+                    onClick={() => {
+                      setOnlyUncategorized(false);
+                      setSelectedCategoryFilters([]);
+                      setColumnFilters(DEFAULT_COLUMN_FILTERS);
+                      setPage(1);
+                    }}
+                  >
+                    Limpiar filtros
+                  </Button>
+                </div>
+
+                <SearchField
+                  aria-label="Buscar en descripción"
+                  className="lg:col-span-3"
+                  value={columnFilters.description}
+                  onChange={(value) => updateColumnFilter("description", value)}
                 >
-                  <Label>Mes</Label>
+                  <SearchField.Group>
+                    <SearchField.SearchIcon />
+                    <SearchField.Input placeholder="Descripción" />
+                    <SearchField.ClearButton />
+                  </SearchField.Group>
+                </SearchField>
+
+                <SearchField
+                  aria-label="Buscar en desde"
+                  className="lg:col-span-3"
+                  value={columnFilters.fromCounterpart}
+                  onChange={(value) => updateColumnFilter("fromCounterpart", value)}
+                >
+                  <SearchField.Group>
+                    <SearchField.SearchIcon />
+                    <SearchField.Input placeholder="Desde" />
+                    <SearchField.ClearButton />
+                  </SearchField.Group>
+                </SearchField>
+
+                <SearchField
+                  aria-label="Buscar en hacia"
+                  className="lg:col-span-3"
+                  value={columnFilters.toCounterpart}
+                  onChange={(value) => updateColumnFilter("toCounterpart", value)}
+                >
+                  <SearchField.Group>
+                    <SearchField.SearchIcon />
+                    <SearchField.Input placeholder="Hacia" />
+                    <SearchField.ClearButton />
+                  </SearchField.Group>
+                </SearchField>
+
+                <Select
+                  className="lg:col-span-1"
+                  selectedKey={columnFilters.type}
+                  onSelectionChange={(key) =>
+                    updateColumnFilter("type", String(key) as CashFlowTypeFilter)
+                  }
+                >
+                  <Label>Tipo</Label>
                   <Select.Trigger>
                     <Select.Value />
                     <Select.Indicator />
                   </Select.Trigger>
                   <Select.Popover>
                     <ListBox>
-                      {monthOptions.map((monthOption) => (
-                        <ListBox.Item
-                          id={monthOption.value}
-                          key={monthOption.value}
-                          textValue={monthOption.label}
-                        >
-                          {monthOption.label}
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                      ))}
+                      <ListBox.Item id="ALL" textValue="Todos">
+                        Todos
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item id="INCOME" textValue="Ingreso">
+                        Ingreso
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                      <ListBox.Item id="EXPENSE" textValue="EGRESO">
+                        EGRESO
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
                     </ListBox>
                   </Select.Popover>
                 </Select>
+
+                <SearchField
+                  aria-label="Buscar por monto"
+                  className="lg:col-span-1"
+                  value={columnFilters.amount}
+                  onChange={(value) => updateColumnFilter("amount", value)}
+                >
+                  <SearchField.Group>
+                    <SearchField.SearchIcon />
+                    <SearchField.Input placeholder="Monto" />
+                    <SearchField.ClearButton />
+                  </SearchField.Group>
+                </SearchField>
+
+                <SearchField
+                  aria-label="Buscar en comentario"
+                  className="lg:col-span-1"
+                  value={columnFilters.comment}
+                  onChange={(value) => updateColumnFilter("comment", value)}
+                >
+                  <SearchField.Group>
+                    <SearchField.SearchIcon />
+                    <SearchField.Input placeholder="Comentario" />
+                    <SearchField.ClearButton />
+                  </SearchField.Group>
+                </SearchField>
               </div>
+
+              {hasActiveFilters && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {onlyUncategorized && (
+                    <Button
+                      className="h-7 rounded-full px-3"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setOnlyUncategorized(false);
+                        setPage(1);
+                      }}
+                    >
+                      Sin categoría
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+
+                  {selectedCategoryFilters.map((categoryKey) => (
+                    <Button
+                      key={categoryKey}
+                      className="h-7 rounded-full px-3"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedCategoryFilters((prev) =>
+                          prev.filter((key) => key !== categoryKey),
+                        );
+                        setPage(1);
+                      }}
+                    >
+                      {selectedCategoryMap.get(categoryKey) ?? categoryKey}
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  ))}
+
+                  {columnFilters.type !== "ALL" && (
+                    <Button
+                      className="h-7 rounded-full px-3"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateColumnFilter("type", "ALL")}
+                    >
+                      {columnFilters.type === "INCOME" ? "Ingreso" : "EGRESO"}
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+
+                  {columnFilters.description.trim().length > 0 && (
+                    <Button
+                      className="h-7 rounded-full px-3"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateColumnFilter("description", "")}
+                    >
+                      Descripción: {columnFilters.description}
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+
+                  {columnFilters.fromCounterpart.trim().length > 0 && (
+                    <Button
+                      className="h-7 rounded-full px-3"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateColumnFilter("fromCounterpart", "")}
+                    >
+                      Desde: {columnFilters.fromCounterpart}
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+
+                  {columnFilters.toCounterpart.trim().length > 0 && (
+                    <Button
+                      className="h-7 rounded-full px-3"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateColumnFilter("toCounterpart", "")}
+                    >
+                      Hacia: {columnFilters.toCounterpart}
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+
+                  {columnFilters.amount.trim().length > 0 && (
+                    <Button
+                      className="h-7 rounded-full px-3"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateColumnFilter("amount", "")}
+                    >
+                      Monto: {columnFilters.amount}
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+
+                  {columnFilters.comment.trim().length > 0 && (
+                    <Button
+                      className="h-7 rounded-full px-3"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateColumnFilter("comment", "")}
+                    >
+                      Comentario: {columnFilters.comment}
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
             <div className="p-0">
               <CashFlowTable
-                data={data?.data || []}
+                data={paginatedTransactions}
                 categories={categories}
-                total={data?.meta?.total || 0}
+                total={totalFiltered}
                 isLoading={isLoading}
-                page={page}
-                pageSize={50}
-                onPageChange={setPage}
+                page={safePage}
+                pageSize={TABLE_PAGE_SIZE}
+                onPageChange={(nextPage) => setPage(Math.max(1, nextPage))}
                 onEdit={handleEdit}
                 onCategoryChange={handleCategoryChange}
                 updatingCategoryIds={updatingCategoryIds}
