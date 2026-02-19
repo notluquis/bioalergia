@@ -22,7 +22,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { toast } from "sonner";
 import { z } from "zod";
 import { ApiError, apiClient } from "@/lib/api-client";
@@ -271,6 +271,7 @@ const PIE_COLORS = [
   "#9333EA",
   "#64748B",
 ] as const;
+const PIE_MAX_SEGMENTS = 8;
 
 type CashFlowTypeFilter = "ALL" | "EXPENSE" | "INCOME";
 
@@ -324,6 +325,38 @@ type PieCategoryDatum = {
   value: number;
 };
 
+type PieTooltipPayloadEntry = {
+  name?: string;
+  value?: number;
+};
+
+function CashflowPieTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: PieTooltipPayloadEntry[];
+}) {
+  if (!active || !payload || payload.length === 0) {
+    return null;
+  }
+
+  const item = payload[0];
+  return (
+    <div
+      className="rounded-md border px-2.5 py-1.5 text-sm shadow-sm"
+      style={{
+        backgroundColor: "hsl(var(--b1))",
+        borderColor: "hsl(var(--bc) / 0.2)",
+        color: "hsl(var(--bc))",
+      }}
+    >
+      <span className="font-medium">{item?.name ?? "Categoría"}</span>
+      <span> : {formatCurrency(Number(item?.value ?? 0))}</span>
+    </div>
+  );
+}
+
 function buildSummary(transactions: TransactionWithRelations[]) {
   const totals = transactions.reduce(
     (acc, tx) => {
@@ -372,7 +405,7 @@ function buildPieCategoryData(
   items: SummaryByCategoryEntry[],
   type: "EXPENSE" | "INCOME",
 ): PieCategoryDatum[] {
-  return items
+  const rows = items
     .filter((item) => item.type === type)
     .map((item, index) => ({
       color: item.categoryColor ?? PIE_COLORS[index % PIE_COLORS.length] ?? "#64748B",
@@ -380,6 +413,24 @@ function buildPieCategoryData(
       value: Math.abs(item.total),
     }))
     .filter((item) => item.value > 0);
+
+  if (rows.length <= PIE_MAX_SEGMENTS) {
+    return rows;
+  }
+
+  const sortedRows = [...rows].sort((a, b) => b.value - a.value);
+  const mainRows = sortedRows.slice(0, PIE_MAX_SEGMENTS - 1);
+  const remainingRows = sortedRows.slice(PIE_MAX_SEGMENTS - 1);
+  const othersTotal = remainingRows.reduce((acc, row) => acc + row.value, 0);
+
+  return [
+    ...mainRows,
+    {
+      color: "#94A3B8",
+      name: "Otros",
+      value: othersTotal,
+    },
+  ];
 }
 
 function CategoryColorPicker({
@@ -617,6 +668,14 @@ export function CashFlowPage() {
   const expensePieData = useMemo(
     () => buildPieCategoryData(monthlySummary.byCategory, "EXPENSE"),
     [monthlySummary.byCategory],
+  );
+  const incomePieTotal = useMemo(
+    () => incomePieData.reduce((acc, item) => acc + item.value, 0),
+    [incomePieData],
+  );
+  const expensePieTotal = useMemo(
+    () => expensePieData.reduce((acc, item) => acc + item.value, 0),
+    [expensePieData],
   );
 
   const totalFiltered = filteredTransactions.length;
@@ -1108,36 +1167,52 @@ export function CashFlowPage() {
                       No hay ingresos para el mes seleccionado.
                     </p>
                   ) : (
-                    <div className="cashflow-recharts h-[320px]">
-                      <ResponsiveContainer height="100%" width="100%">
-                        <PieChart>
-                          <Pie
-                            data={incomePieData}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={70}
-                            outerRadius={105}
-                            paddingAngle={2}
-                          >
-                            {incomePieData.map((entry) => (
-                              <Cell key={`income-pie-${entry.name}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(value: number | undefined) =>
-                              formatCurrency(Number(value ?? 0))
-                            }
-                            wrapperClassName="cashflow-recharts-tooltip"
-                            contentStyle={{
-                              backgroundColor: "hsl(var(--b1))",
-                              border: "1px solid hsl(var(--bc) / 0.2)",
-                              borderRadius: "12px",
-                            }}
-                          />
-                          <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <>
+                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
+                        <div className="h-[320px] min-w-0">
+                          <ResponsiveContainer height="100%" width="100%">
+                            <PieChart>
+                              <Pie
+                                data={incomePieData}
+                                dataKey="value"
+                                nameKey="name"
+                                innerRadius={70}
+                                outerRadius={105}
+                                paddingAngle={2}
+                              >
+                                {incomePieData.map((entry) => (
+                                  <Cell key={`income-pie-${entry.name}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip content={<CashflowPieTooltip />} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="max-h-[320px] space-y-2 overflow-auto pr-1">
+                          {incomePieData.map((entry) => {
+                            const share =
+                              incomePieTotal > 0 ? (entry.value / incomePieTotal) * 100 : 0;
+                            return (
+                              <div
+                                className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2 py-1.5 text-sm"
+                                key={`income-legend-${entry.name}`}
+                              >
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <span
+                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                    style={{ backgroundColor: entry.color }}
+                                  />
+                                  <span className="truncate text-default-700">{entry.name}</span>
+                                </div>
+                                <div className="shrink-0 text-right text-default-500">
+                                  {share.toFixed(1)}%
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
 
@@ -1150,36 +1225,52 @@ export function CashFlowPage() {
                       No hay egresos para el mes seleccionado.
                     </p>
                   ) : (
-                    <div className="cashflow-recharts h-[320px]">
-                      <ResponsiveContainer height="100%" width="100%">
-                        <PieChart>
-                          <Pie
-                            data={expensePieData}
-                            dataKey="value"
-                            nameKey="name"
-                            innerRadius={70}
-                            outerRadius={105}
-                            paddingAngle={2}
-                          >
-                            {expensePieData.map((entry) => (
-                              <Cell key={`expense-pie-${entry.name}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(value: number | undefined) =>
-                              formatCurrency(Number(value ?? 0))
-                            }
-                            wrapperClassName="cashflow-recharts-tooltip"
-                            contentStyle={{
-                              backgroundColor: "hsl(var(--b1))",
-                              border: "1px solid hsl(var(--bc) / 0.2)",
-                              borderRadius: "12px",
-                            }}
-                          />
-                          <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <>
+                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
+                        <div className="h-[320px] min-w-0">
+                          <ResponsiveContainer height="100%" width="100%">
+                            <PieChart>
+                              <Pie
+                                data={expensePieData}
+                                dataKey="value"
+                                nameKey="name"
+                                innerRadius={70}
+                                outerRadius={105}
+                                paddingAngle={2}
+                              >
+                                {expensePieData.map((entry) => (
+                                  <Cell key={`expense-pie-${entry.name}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip content={<CashflowPieTooltip />} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="max-h-[320px] space-y-2 overflow-auto pr-1">
+                          {expensePieData.map((entry) => {
+                            const share =
+                              expensePieTotal > 0 ? (entry.value / expensePieTotal) * 100 : 0;
+                            return (
+                              <div
+                                className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2 py-1.5 text-sm"
+                                key={`expense-legend-${entry.name}`}
+                              >
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <span
+                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                    style={{ backgroundColor: entry.color }}
+                                  />
+                                  <span className="truncate text-default-700">{entry.name}</span>
+                                </div>
+                                <div className="shrink-0 text-right text-default-500">
+                                  {share.toFixed(1)}%
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
