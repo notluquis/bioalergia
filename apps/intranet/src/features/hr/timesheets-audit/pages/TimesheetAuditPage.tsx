@@ -3,7 +3,7 @@
  * A more ergonomic, user-friendly interface for auditing employee schedules
  */
 
-import { ButtonGroup, Card, Chip, Description, Spinner } from "@heroui/react";
+import { ButtonGroup, Card, Chip, Description, Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -590,8 +590,9 @@ function CalendarPanel({
       </span>
       <Suspense
         fallback={
-          <div className="flex h-64 items-center justify-center">
-            <Spinner className="text-primary" color="current" size="lg" />
+          <div className="space-y-3">
+            <Skeleton className="h-6 w-56 rounded-md" />
+            <Skeleton className="h-64 w-full rounded-xl" />
           </div>
         }
       >

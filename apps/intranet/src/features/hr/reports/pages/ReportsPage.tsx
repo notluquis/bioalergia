@@ -1,4 +1,13 @@
-import { Chip, DateField, DateInputGroup, Label, Separator, Spinner, Tabs } from "@heroui/react";
+import {
+  Chip,
+  DateField,
+  DateInputGroup,
+  Label,
+  Separator,
+  Skeleton,
+  Spinner,
+  Tabs,
+} from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -583,8 +592,9 @@ function ReportsResultsPanel({
 
           <Suspense
             fallback={
-              <div className="flex h-96 items-center justify-center rounded-3xl border border-default-100 bg-background shadow-sm">
-                <Spinner className="text-primary" color="current" size="lg" />
+              <div className="space-y-3 rounded-3xl border border-default-100 bg-background p-6 shadow-sm">
+                <Skeleton className="h-6 w-48 rounded-md" />
+                <Skeleton className="h-80 w-full rounded-xl" />
               </div>
             }
           >
@@ -598,8 +608,9 @@ function ReportsResultsPanel({
           <div className="grid gap-6 lg:grid-cols-2">
             <Suspense
               fallback={
-                <div className="flex h-80 items-center justify-center rounded-3xl border border-default-100 bg-background shadow-sm">
-                  <Spinner className="text-secondary" color="current" size="md" />
+                <div className="space-y-3 rounded-3xl border border-default-100 bg-background p-6 shadow-sm">
+                  <Skeleton className="h-6 w-48 rounded-md" />
+                  <Skeleton className="h-64 w-full rounded-xl" />
                 </div>
               }
             >

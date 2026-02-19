@@ -9,7 +9,7 @@
  * - Autosave
  */
 
-import { Spinner } from "@heroui/react";
+import { Skeleton } from "@heroui/react";
 
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -70,8 +70,10 @@ export function DailyBalancePage() {
         {/* Entry Form - main column */}
         <div className="lg:col-span-8">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Spinner size="lg" />
+            <div className="space-y-3 py-6">
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-44 w-full rounded-xl" />
+              <Skeleton className="h-44 w-full rounded-xl" />
             </div>
           ) : (
             <EntryForm disabled={isSaving} onChange={updateField} values={formData} />

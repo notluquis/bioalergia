@@ -1,4 +1,13 @@
-import { Button, Description, FieldError, Input, Label, Modal, TextField } from "@heroui/react";
+import {
+  Button,
+  Description,
+  FieldError,
+  Input,
+  Label,
+  Modal,
+  Skeleton,
+  TextField,
+} from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import { useState } from "react";
@@ -501,9 +510,11 @@ function RegenerateServiceModal({
 function ServiceLoadingOverlay() {
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/40 backdrop-blur-sm">
-      <Description className="rounded-full bg-background px-4 py-2 font-semibold text-primary text-sm shadow">
-        Cargando servicio...
-      </Description>
+      <div className="w-full max-w-2xl space-y-3 rounded-2xl bg-background p-6 shadow">
+        <Skeleton className="h-6 w-48 rounded-md" />
+        <Skeleton className="h-10 w-full rounded-md" />
+        <Skeleton className="h-40 w-full rounded-xl" />
+      </div>
     </div>
   );
 }

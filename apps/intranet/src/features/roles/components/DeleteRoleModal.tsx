@@ -1,4 +1,4 @@
-import { Alert, Description, Spinner } from "@heroui/react";
+import { Alert, Description, Skeleton, Spinner } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, AlertTriangle, ArrowRight } from "lucide-react";
 import { Suspense, useState } from "react";
@@ -42,9 +42,10 @@ export function DeleteRoleModal({ allRoles, isOpen, onClose, role }: DeleteRoleM
         ) : (
           <Suspense
             fallback={
-              <div className="py-8 text-center">
-                <Spinner className="text-primary" size="lg" />
-                <Description className="mt-2 text-sm opacity-70">
+              <div className="space-y-3 py-4">
+                <Skeleton className="h-6 w-56 rounded-md" />
+                <Skeleton className="h-10 w-full rounded-md" />
+                <Description className="text-sm opacity-70">
                   Verificando usuarios afectados...
                 </Description>
               </div>

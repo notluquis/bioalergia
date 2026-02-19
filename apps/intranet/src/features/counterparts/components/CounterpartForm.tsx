@@ -1,4 +1,4 @@
-import { Spinner, Surface } from "@heroui/react";
+import { Skeleton, Surface } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useEffect } from "react";
 import { z } from "zod";
@@ -106,7 +106,11 @@ export function CounterpartForm({
     <Surface aria-busy={busy} className="relative space-y-5 p-6" variant="secondary">
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/60 backdrop-blur-sm">
-          <Spinner size="lg" />
+          <div className="w-full max-w-xl space-y-3 p-6">
+            <Skeleton className="h-10 w-full rounded-md" />
+            <Skeleton className="h-10 w-full rounded-md" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
         </div>
       )}
       <form

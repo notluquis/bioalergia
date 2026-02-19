@@ -1,4 +1,4 @@
-import { Checkbox, Description, Link } from "@heroui/react";
+import { Checkbox, Description, Link, Skeleton } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -553,9 +553,13 @@ function BackupRow({ backup, onSuccess }: { backup: BackupFile; onSuccess: () =>
           <div className="rounded-lg bg-default-50/50 p-4">
             <Suspense
               fallback={
-                <div className="flex items-center gap-2 py-4">
-                  <Loader2 className="size-4 animate-spin" />
-                  <span className="text-sm">Cargando tablas...</span>
+                <div className="space-y-2 py-2">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <Skeleton
+                      className="h-8 w-full rounded-md"
+                      key={`backup-table-skeleton-${index + 1}`}
+                    />
+                  ))}
                 </div>
               }
             >

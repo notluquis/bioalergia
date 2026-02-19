@@ -1,4 +1,4 @@
-import { Description, Spinner } from "@heroui/react";
+import { Description, Skeleton } from "@heroui/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, User as UserIcon } from "lucide-react";
@@ -40,8 +40,10 @@ export function RoleFormModal({ isOpen, onClose, role }: RoleFormModalProps) {
         {role ? (
           <Suspense
             fallback={
-              <div className="flex h-64 items-center justify-center">
-                <Spinner className="text-primary" />
+              <div className="space-y-3 p-4">
+                <Skeleton className="h-8 w-40 rounded-md" />
+                <Skeleton className="h-10 w-full rounded-md" />
+                <Skeleton className="h-10 w-full rounded-md" />
               </div>
             }
           >

@@ -1,4 +1,4 @@
-import { Card, Chip, Description, Spinner } from "@heroui/react";
+import { Card, Chip, Description, Skeleton, Spinner } from "@heroui/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import localeEs from "dayjs/locale/es";
@@ -548,11 +548,9 @@ export function HaulmerSyncPage() {
       {/* Loading State */}
       {isLoadingPeriods && (
         <Card className="border-warning-100 bg-warning-50">
-          <div className="flex items-center gap-2 p-4">
-            <Spinner size="sm" />
-            <Description className="text-default-700 text-sm">
-              Cargando períodos disponibles...
-            </Description>
+          <div className="space-y-2 p-4">
+            <Skeleton className="h-4 w-56 rounded-md" />
+            <Skeleton className="h-3 w-40 rounded-md" />
           </div>
         </Card>
       )}

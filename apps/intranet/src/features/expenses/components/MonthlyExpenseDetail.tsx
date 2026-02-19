@@ -1,4 +1,4 @@
-import { Description } from "@heroui/react";
+import { Description, Skeleton } from "@heroui/react";
 import dayjs from "dayjs";
 
 import { Alert } from "@/components/ui/Alert";
@@ -23,7 +23,16 @@ export function MonthlyExpenseDetail({
   onUnlinkTransaction,
 }: MonthlyExpenseDetailProps) {
   if (loading) {
-    return <Description className="text-default-500 text-xs">Cargando gasto…</Description>;
+    return (
+      <div className="space-y-3 rounded-xl border border-default-200 bg-background p-4">
+        <Skeleton className="h-6 w-64 rounded-md" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Skeleton className="h-16 rounded-lg" />
+          <Skeleton className="h-16 rounded-lg" />
+        </div>
+        <Skeleton className="h-32 w-full rounded-xl" />
+      </div>
+    );
   }
 
   if (!expense) {

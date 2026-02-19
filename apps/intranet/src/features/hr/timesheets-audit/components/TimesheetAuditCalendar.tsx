@@ -9,7 +9,7 @@ import esLocale from "@fullcalendar/core/locales/es";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { Spinner, Tooltip } from "@heroui/react";
+import { Skeleton, Tooltip } from "@heroui/react";
 import dayjs from "dayjs";
 import { useEffect, useRef, useState } from "react";
 
@@ -294,7 +294,10 @@ export function TimesheetAuditCalendar({
       <div className="timesheet-audit-calendar-wrapper">
         {loading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80">
-            <Spinner size="md" />
+            <div className="w-full max-w-lg space-y-3 rounded-xl bg-background p-4 shadow-sm">
+              <Skeleton className="h-5 w-40 rounded-md" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+            </div>
           </div>
         )}
         <FullCalendar

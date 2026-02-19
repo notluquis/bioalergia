@@ -1,3 +1,4 @@
+import { Skeleton } from "@heroui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { Suspense, useState } from "react";
@@ -132,7 +133,14 @@ export function TimesheetsPage() {
       />
 
       {selectedEmployee && month && (
-        <Suspense fallback={<div className="p-4 text-center">Cargando detalles...</div>}>
+        <Suspense
+          fallback={
+            <div className="space-y-3 rounded-2xl border border-default-200 bg-background p-4">
+              <Skeleton className="h-8 w-52 rounded-md" />
+              <Skeleton className="h-72 w-full rounded-xl" />
+            </div>
+          }
+        >
           <TimesheetEditor
             activeEmployees={activeEmployees}
             employeeId={selectedEmployee.id}

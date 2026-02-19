@@ -1,4 +1,4 @@
-import { Button, Card, Description, Spinner } from "@heroui/react";
+import { Button, Card, Description, Skeleton, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
@@ -303,8 +303,15 @@ function TreatmentAnalyticsContent({
 }) {
   if (isLoading && !data) {
     return (
-      <div className="flex h-80 items-center justify-center">
-        <Spinner size="lg" color="current" className="text-default-300" />
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-72 rounded-md" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+        </div>
+        <Skeleton className="h-80 w-full rounded-xl" />
       </div>
     );
   }
@@ -727,7 +734,7 @@ function AnalyticsHeader({
       <div className="flex w-full items-center justify-between">
         {isLoading && (
           <div className="flex items-center gap-2">
-            <Spinner size="sm" color="current" />
+            <Skeleton className="h-3 w-3 rounded-full" />
             <span className="text-default-500 text-sm">Cargando datos...</span>
           </div>
         )}

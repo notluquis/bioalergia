@@ -1,4 +1,4 @@
-import { ButtonGroup } from "@heroui/react";
+import { ButtonGroup, Skeleton } from "@heroui/react";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import type React from "react";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -290,9 +290,9 @@ export function SettingsForm() {
           fallback={
             <div className="mt-6 rounded-lg border border-default-200 bg-default-50 p-4">
               <h3 className="font-semibold text-sm">Ajustes internos (avanzado)</h3>
-              <div className="mt-3 flex items-center gap-2 text-default-500 text-sm">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Cargando configuración interna...
+              <div className="mt-3 space-y-2">
+                <Skeleton className="h-4 w-56 rounded-md" />
+                <Skeleton className="h-10 w-full rounded-md" />
               </div>
             </div>
           }
