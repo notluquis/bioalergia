@@ -10,7 +10,7 @@ import {
 const SETTLEMENT_CASHBACK_TYPE = "CASHBACK";
 const MP_CARD_CATEGORY_NAME = "Tarjeta Mercadopago";
 const MP_CARD_RULE_NAME = "Sistema - Tarjeta Mercadopago por referencia";
-const MP_CARD_REFERENCE_PATTERN = "074fe4f0-1808-44bf-92b7-5f6215842ff5-17";
+const MP_CARD_REFERENCE_PATTERN = "74fe4f0-1808-44bf-92b7-5f6215842ff5-17";
 
 export type CreateFinancialTransactionInput = {
   date: Date;
