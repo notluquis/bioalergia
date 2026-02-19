@@ -17,6 +17,10 @@ const PERSONAL_DR_REFERENCE_PATTERNS = [
   "db4b64d0-a31f-4622-9f7b-ec28f54ab6e8-17",
   "e3c65f7a-64c4-4664-b3ed-87674105d34f-17",
 ];
+const PERSONAL_DR_REFERENCE_REGEX =
+  /^ref:\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-17\d*$/i;
+const PERSONAL_DR_REFERENCE_SQL_REGEX =
+  "^\\s*ref:\\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-17[0-9]*\\s*$";
 
 export type CreateFinancialTransactionInput = {
   date: Date;
@@ -253,6 +257,40 @@ function resolveAutoCategoryId(
   return null;
 }
 
+function matchesPersonalDrPattern(comment: null | string | undefined) {
+  if (!comment) return false;
+  return PERSONAL_DR_REFERENCE_REGEX.test(comment.trim());
+}
+
+async function applyPersonalDrPatternCategoryToExistingTransactions(
+  categoryId: number,
+  options?: { onlyUncategorized?: boolean },
+) {
+  if (options?.onlyUncategorized) {
+    const updatedRows = await db.$executeRaw`
+      UPDATE financial_transactions
+      SET category_id = ${categoryId},
+          updated_at = NOW()
+      WHERE type = 'EXPENSE'
+        AND category_id IS NULL
+        AND comment IS NOT NULL
+        AND comment ~* ${PERSONAL_DR_REFERENCE_SQL_REGEX}
+    `;
+    return Number(updatedRows);
+  }
+
+  const updatedRows = await db.$executeRaw`
+    UPDATE financial_transactions
+    SET category_id = ${categoryId},
+        updated_at = NOW()
+    WHERE type = 'EXPENSE'
+      AND comment IS NOT NULL
+      AND comment ~* ${PERSONAL_DR_REFERENCE_SQL_REGEX}
+      AND category_id IS DISTINCT FROM ${categoryId}
+  `;
+  return Number(updatedRows);
+}
+
 async function applyAutoCategoryRulesToExistingTransactions(
   rules: AutoCategoryRuleLookup,
   options?: { onlyUncategorized?: boolean },
@@ -301,7 +339,7 @@ async function syncUnifiedTransactions(
   options?: { applyGlobalRules?: boolean },
 ) {
   await ensureMercadoPagoCardAutoCategoryRule();
-  await ensurePersonalDrAutoCategoryRules();
+  const personalDrCategoryId = await ensurePersonalDrAutoCategoryRules();
 
   const nonCashbackTransactions = unifiedTransactions.filter(
     (tour) =>
@@ -375,6 +413,10 @@ async function syncUnifiedTransactions(
             existing.description,
             autoCategoryRules,
           );
+          const nextSystemCategoryId =
+            existing.type === "EXPENSE" && matchesPersonalDrPattern(existing.comment)
+              ? personalDrCategoryId
+              : null;
           const updateData: {
             categoryId?: null | number;
             counterpartId?: null | number;
@@ -383,7 +425,9 @@ async function syncUnifiedTransactions(
           if (counterpartId != null && existing.counterpartId !== counterpartId) {
             updateData.counterpartId = counterpartId;
           }
-          if (nextCategoryId != null && existing.categoryId !== nextCategoryId) {
+          if (nextSystemCategoryId != null && existing.categoryId !== nextSystemCategoryId) {
+            updateData.categoryId = nextSystemCategoryId;
+          } else if (nextCategoryId != null && existing.categoryId !== nextCategoryId) {
             updateData.categoryId = nextCategoryId;
           }
 
@@ -424,6 +468,10 @@ async function syncUnifiedTransactions(
             existing.description,
             autoCategoryRules,
           );
+          const nextSystemCategoryId =
+            existing.type === "EXPENSE" && matchesPersonalDrPattern(existing.comment)
+              ? personalDrCategoryId
+              : null;
           const updateData: {
             categoryId?: null | number;
             counterpartId?: null | number;
@@ -432,7 +480,9 @@ async function syncUnifiedTransactions(
           if (counterpartId != null && existing.counterpartId !== counterpartId) {
             updateData.counterpartId = counterpartId;
           }
-          if (nextCategoryId != null && existing.categoryId !== nextCategoryId) {
+          if (nextSystemCategoryId != null && existing.categoryId !== nextSystemCategoryId) {
+            updateData.categoryId = nextSystemCategoryId;
+          } else if (nextCategoryId != null && existing.categoryId !== nextCategoryId) {
             updateData.categoryId = nextCategoryId;
           }
 
@@ -457,6 +507,8 @@ async function syncUnifiedTransactions(
         tour.description,
         autoCategoryRules,
       );
+      const resolvedCategoryId =
+        type === "EXPENSE" && matchesPersonalDrPattern(comment) ? personalDrCategoryId : categoryId;
 
       const created = await db.financialTransaction.create({
         data: {
@@ -465,7 +517,7 @@ async function syncUnifiedTransactions(
           amount: new Decimal(tour.transactionAmount),
           type,
           sourceId: tour.sourceId ?? undefined,
-          categoryId,
+          categoryId: resolvedCategoryId,
           counterpartId,
           comment,
         },
@@ -473,7 +525,7 @@ async function syncUnifiedTransactions(
       if (tour.sourceId) {
         existingBySourceId.set(tour.sourceId.trim(), {
           amount: new Decimal(tour.transactionAmount),
-          categoryId,
+          categoryId: resolvedCategoryId,
           comment: comment ?? null,
           counterpartId,
           description: tour.description || "Sin descripcion",
@@ -494,6 +546,7 @@ async function syncUnifiedTransactions(
 
   if (options?.applyGlobalRules !== false) {
     await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules);
+    await applyPersonalDrPatternCategoryToExistingTransactions(personalDrCategoryId);
   }
 
   return {
@@ -521,14 +574,20 @@ export async function syncFinancialTransactionsBySourceIds(sourceIds: string[], 
 
 export async function syncUncategorizedTransactionsByPatterns() {
   await ensureMercadoPagoCardAutoCategoryRule();
-  await ensurePersonalDrAutoCategoryRules();
+  const personalDrCategoryId = await ensurePersonalDrAutoCategoryRules();
   const autoCategoryRules = await buildAutoCategoryRuleLookup();
-  const updated = await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules, {
+  const updatedByRules = await applyAutoCategoryRulesToExistingTransactions(autoCategoryRules, {
     onlyUncategorized: true,
   });
+  const updatedByPersonalPattern = await applyPersonalDrPatternCategoryToExistingTransactions(
+    personalDrCategoryId,
+    {
+      onlyUncategorized: true,
+    },
+  );
 
   return {
-    updated,
+    updated: updatedByRules + updatedByPersonalPattern,
   };
 }
 
@@ -1159,6 +1218,8 @@ async function ensurePersonalDrAutoCategoryRules() {
     // Apply to historical records too, including already classified ones.
     await applySingleAutoCategoryRule(ensuredRule.id);
   }
+
+  return category.id;
 }
 
 export async function listFinancialAutoCategoryRules() {
