@@ -1131,9 +1131,18 @@ export function CashFlowPage() {
                               backgroundColor: "var(--color-background)",
                               border: "1px solid var(--default-200)",
                               borderRadius: "12px",
+                              color: "var(--color-foreground)",
                             }}
+                            itemStyle={{ color: "var(--color-foreground)" }}
+                            labelStyle={{ color: "var(--color-foreground)" }}
                           />
-                          <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                          <Legend
+                            iconType="circle"
+                            wrapperStyle={{ color: "var(--color-foreground)", fontSize: 12 }}
+                            formatter={(value) => (
+                              <span style={{ color: "var(--color-foreground)" }}>{value}</span>
+                            )}
+                          />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
@@ -1172,9 +1181,18 @@ export function CashFlowPage() {
                               backgroundColor: "var(--color-background)",
                               border: "1px solid var(--default-200)",
                               borderRadius: "12px",
+                              color: "var(--color-foreground)",
                             }}
+                            itemStyle={{ color: "var(--color-foreground)" }}
+                            labelStyle={{ color: "var(--color-foreground)" }}
                           />
-                          <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                          <Legend
+                            iconType="circle"
+                            wrapperStyle={{ color: "var(--color-foreground)", fontSize: 12 }}
+                            formatter={(value) => (
+                              <span style={{ color: "var(--color-foreground)" }}>{value}</span>
+                            )}
+                          />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
