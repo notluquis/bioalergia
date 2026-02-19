@@ -6,19 +6,7 @@ export function ToastProvider({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <>
       {children}
-      <Toaster
-        closeButton
-        position="bottom-right"
-        richColors
-        style={{
-          zIndex: 9999,
-        }}
-        toastOptions={{
-          style: {
-            zIndex: 9999,
-          },
-        }}
-      />
+      <Toaster closeButton position="bottom-right" richColors />
     </>
   );
 }

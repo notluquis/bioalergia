@@ -16,9 +16,9 @@ import { parseDate } from "@internationalized/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { type ChangeEvent, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { z } from "zod";
 import { apiClient } from "@/lib/api-client";
+import { toast } from "@/lib/toast-interceptor";
 
 const schema = z.object({
   date: z.string(),
