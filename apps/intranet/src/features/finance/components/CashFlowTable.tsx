@@ -41,8 +41,10 @@ export function CashFlowTable({
 
   return (
     <DataTable
+      autoFitColumns={false}
       columns={columns}
       columnVisibility={columnVisibility}
+      containerVariant="plain"
       data={data}
       onColumnVisibilityChange={setColumnVisibility}
       pageCount={Math.ceil(total / pageSize)}

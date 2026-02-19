@@ -1058,14 +1058,17 @@ export function CashFlowPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4 px-3 pb-3 pt-0">
+    <div className="flex flex-col gap-4 px-3 pb-4 pt-2">
       <Tabs
         selectedKey={activeTab}
         onSelectionChange={(key) => setActiveTab(key as CashFlowTab)}
         variant="secondary"
       >
         <Tabs.ListContainer>
-          <Tabs.List aria-label="Flujo de caja" className="rounded-lg bg-default-50/50 p-1">
+          <Tabs.List
+            aria-label="Flujo de caja"
+            className="rounded-2xl border border-default-200/70 bg-default-50/30 p-1.5 shadow-sm backdrop-blur"
+          >
             <Tabs.Tab id="cash-flow">
               Resumen
               <Tabs.Indicator />
@@ -1082,7 +1085,7 @@ export function CashFlowPage() {
         </Tabs.ListContainer>
 
         <Tabs.Panel id="cash-flow" className="space-y-3 pt-3">
-          <Card>
+          <Card className="border border-default-200/70 bg-gradient-to-b from-default-100/40 to-default-50/10 shadow-sm">
             <div className="space-y-3 p-3">
               <div className="max-w-xs">
                 <Select
@@ -1245,7 +1248,7 @@ export function CashFlowPage() {
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-default-200/70 bg-gradient-to-b from-default-100/40 to-default-50/10 shadow-sm">
             <div className="space-y-3 p-3">
               <p className="text-sm font-medium">Distribución por categoría</p>
               <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
@@ -1370,9 +1373,9 @@ export function CashFlowPage() {
         </Tabs.Panel>
 
         <Tabs.Panel id="movements" className="space-y-3 pt-3">
-          <Card>
-            <div className="border-b border-default-200 p-3">
-              <div className="grid grid-cols-1 gap-2 lg:grid-cols-10">
+          <Card className="overflow-hidden border border-default-200/70 bg-gradient-to-b from-default-100/35 via-default-50/15 to-transparent shadow-sm">
+            <div className="border-b border-default-200/70 px-4 py-3">
+              <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12">
                 <div className="lg:col-span-2">
                   <Select
                     value={selectedMonth}
@@ -1407,7 +1410,10 @@ export function CashFlowPage() {
                   <Label className="mb-1 block">Categorías (multi)</Label>
                   <Dropdown>
                     <DropdownTrigger>
-                      <Button className="h-10 w-full justify-start text-left" variant="outline">
+                      <Button
+                        className="h-10 w-full justify-start rounded-xl border-default-300/60 bg-default-100/40 text-left"
+                        variant="outline"
+                      >
                         {selectedCategoryLabel}
                       </Button>
                     </DropdownTrigger>
@@ -1472,9 +1478,9 @@ export function CashFlowPage() {
 
                 <div className="flex items-end justify-end lg:col-span-2">
                   <Button
-                    variant="ghost"
+                    className="h-10 rounded-xl border-default-300/60 bg-default-100/40 px-3 text-default-700 hover:bg-default-100/70"
                     size="sm"
-                    className="h-8 px-2 text-default-500 hover:text-foreground"
+                    variant="outline"
                     onClick={() => {
                       setSelectedCategoryFilters([]);
                       setColumnFilters(DEFAULT_COLUMN_FILTERS);
@@ -1487,7 +1493,7 @@ export function CashFlowPage() {
 
                 <SearchField
                   aria-label="Buscar en desde"
-                  className="lg:col-span-2"
+                  className="lg:col-span-3"
                   variant="secondary"
                   value={columnFilters.fromCounterpart}
                   onChange={(value) => updateColumnFilter("fromCounterpart", value)}
@@ -1501,7 +1507,7 @@ export function CashFlowPage() {
 
                 <SearchField
                   aria-label="Buscar en hacia"
-                  className="lg:col-span-2"
+                  className="lg:col-span-3"
                   variant="secondary"
                   value={columnFilters.toCounterpart}
                   onChange={(value) => updateColumnFilter("toCounterpart", value)}
@@ -1547,7 +1553,7 @@ export function CashFlowPage() {
                   {selectedCategoryFilters.map((categoryKey) => (
                     <Button
                       key={categoryKey}
-                      className="h-7 rounded-full px-3"
+                      className="h-7 rounded-full border-default-300/70 bg-default-100/40 px-3"
                       size="sm"
                       variant="outline"
                       onClick={() => {
@@ -1624,7 +1630,7 @@ export function CashFlowPage() {
                 </div>
               )}
             </div>
-            <div className="p-0">
+            <div className="p-2">
               <CashFlowTable
                 data={paginatedTransactions}
                 categories={categories}
@@ -1642,7 +1648,7 @@ export function CashFlowPage() {
         </Tabs.Panel>
 
         <Tabs.Panel id="categories" className="space-y-3 pt-3">
-          <Card>
+          <Card className="border border-default-200/70 bg-gradient-to-b from-default-100/40 to-default-50/10 shadow-sm">
             <div className="p-3">
               <form
                 className="grid grid-cols-1 gap-4 md:grid-cols-4"
@@ -1698,7 +1704,7 @@ export function CashFlowPage() {
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-default-200/70 bg-gradient-to-b from-default-100/40 to-default-50/10 shadow-sm">
             <div className="p-3">
               {categories.length === 0 ? (
                 <p className="text-default-500 text-sm">No hay categorías creadas.</p>
