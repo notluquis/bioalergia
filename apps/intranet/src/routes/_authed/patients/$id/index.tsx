@@ -23,6 +23,7 @@ import { DataTable } from "@/components/data-table/DataTable";
 import { Button } from "@/components/ui/Button";
 import { NewAttachmentModal } from "@/features/patients/components/NewAttachmentModal";
 import { PatientDetailSchema } from "@/features/patients/schemas";
+import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { apiClient } from "@/lib/api-client";
 
 interface Person {
@@ -127,6 +128,12 @@ function PatientDetailsPage() {
   const { id } = useParams({ from: "/_authed/patients/$id/" });
   const navigate = useNavigate();
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    "budgets" | "certificates" | "docs" | "history" | "info" | "payments"
+  >("history");
+  const { isTabMounted, markTabAsMounted } = useLazyTabs<
+    "budgets" | "certificates" | "docs" | "history" | "info" | "payments"
+  >("history");
 
   const { data: patientData, isLoading } = useQuery({
     queryKey: ["patient", id],
@@ -215,7 +222,23 @@ function PatientDetailsPage() {
 
         {/* Main: Tabs Content */}
         <div className="lg:col-span-2">
-          <Tabs aria-label="Patient details tabs">
+          <Tabs
+            aria-label="Patient details tabs"
+            selectedKey={activeTab}
+            onSelectionChange={(key) => {
+              const keyValue = String(key);
+              const nextTab: "budgets" | "certificates" | "docs" | "history" | "info" | "payments" =
+                keyValue === "certificates" ||
+                keyValue === "budgets" ||
+                keyValue === "payments" ||
+                keyValue === "docs" ||
+                keyValue === "info"
+                  ? keyValue
+                  : "history";
+              setActiveTab(nextTab);
+              markTabAsMounted(nextTab);
+            }}
+          >
             <Tabs.List className="no-scrollbar flex w-full gap-4 overflow-x-auto border-divider border-b pb-1">
               <Tabs.Tab id="history" className="min-w-max gap-2 font-semibold">
                 <Calendar size={18} />
@@ -249,126 +272,144 @@ function PatientDetailsPage() {
             </Tabs.List>
 
             <Tabs.Panel id="history" className="py-4">
-              <DataTable
-                columns={consultationColumns}
-                data={patient.consultations || []}
-                enablePagination={false}
-                enableToolbar={false}
-                noDataMessage="No hay consultas registradas para este paciente."
-              />
+              {isTabMounted("history") ? (
+                <DataTable
+                  columns={consultationColumns}
+                  data={patient.consultations || []}
+                  enablePagination={false}
+                  enableToolbar={false}
+                  noDataMessage="No hay consultas registradas para este paciente."
+                />
+              ) : null}
             </Tabs.Panel>
 
             <Tabs.Panel id="certificates" className="py-4">
-              <DataTable
-                columns={certificateColumns}
-                data={patient.medicalCertificates || []}
-                enablePagination={false}
-                enableToolbar={false}
-                noDataMessage="No se han emitido certificados a este paciente."
-              />
+              {isTabMounted("certificates") ? (
+                <DataTable
+                  columns={certificateColumns}
+                  data={patient.medicalCertificates || []}
+                  enablePagination={false}
+                  enableToolbar={false}
+                  noDataMessage="No se han emitido certificados a este paciente."
+                />
+              ) : null}
             </Tabs.Panel>
 
             <Tabs.Panel id="budgets" className="space-y-4 py-4">
-              <div className="flex justify-end">
-                <Button
-                  size="sm"
-                  className="gap-2"
-                  onClick={() =>
-                    navigate({
-                      to: "/patients/$id/new-budget",
-                      params: { id: String(id) },
-                    })
-                  }
-                >
-                  <PlusCircle size={16} />
-                  Nuevo Presupuesto
-                </Button>
-              </div>
-              <DataTable
-                columns={budgetColumns}
-                data={patient.budgets || []}
-                enablePagination={false}
-                enableToolbar={false}
-                noDataMessage="No hay presupuestos registrados."
-              />
+              {isTabMounted("budgets") ? (
+                <>
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      className="gap-2"
+                      onClick={() =>
+                        navigate({
+                          to: "/patients/$id/new-budget",
+                          params: { id: String(id) },
+                        })
+                      }
+                    >
+                      <PlusCircle size={16} />
+                      Nuevo Presupuesto
+                    </Button>
+                  </div>
+                  <DataTable
+                    columns={budgetColumns}
+                    data={patient.budgets || []}
+                    enablePagination={false}
+                    enableToolbar={false}
+                    noDataMessage="No hay presupuestos registrados."
+                  />
+                </>
+              ) : null}
             </Tabs.Panel>
 
             <Tabs.Panel id="payments" className="space-y-4 py-4">
-              <div className="flex justify-end">
-                <Button
-                  size="sm"
-                  className="gap-2"
-                  onClick={() =>
-                    navigate({
-                      to: "/patients/$id/new-payment",
-                      params: { id: String(id) },
-                    })
-                  }
-                >
-                  <PlusCircle size={16} />
-                  Registrar Pago
-                </Button>
-              </div>
-              <DataTable
-                columns={paymentColumns}
-                data={patient.payments || []}
-                enablePagination={false}
-                enableToolbar={false}
-                noDataMessage="No hay pagos registrados."
-              />
+              {isTabMounted("payments") ? (
+                <>
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      className="gap-2"
+                      onClick={() =>
+                        navigate({
+                          to: "/patients/$id/new-payment",
+                          params: { id: String(id) },
+                        })
+                      }
+                    >
+                      <PlusCircle size={16} />
+                      Registrar Pago
+                    </Button>
+                  </div>
+                  <DataTable
+                    columns={paymentColumns}
+                    data={patient.payments || []}
+                    enablePagination={false}
+                    enableToolbar={false}
+                    noDataMessage="No hay pagos registrados."
+                  />
+                </>
+              ) : null}
             </Tabs.Panel>
 
             <Tabs.Panel id="docs" className="space-y-4 py-4">
-              <div className="flex justify-end">
-                <Button
-                  size="sm"
-                  className="gap-2"
-                  variant="outline"
-                  onClick={() => setIsAttachmentModalOpen(true)}
-                >
-                  <PlusCircle size={16} />
-                  Cargar Documento
-                </Button>
-              </div>
-              <DataTable
-                columns={attachmentColumns}
-                data={patient.attachments || []}
-                enablePagination={false}
-                enableToolbar={false}
-                noDataMessage="No hay documentos adjuntos."
-              />
+              {isTabMounted("docs") ? (
+                <>
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      className="gap-2"
+                      variant="outline"
+                      onClick={() => setIsAttachmentModalOpen(true)}
+                    >
+                      <PlusCircle size={16} />
+                      Cargar Documento
+                    </Button>
+                  </div>
+                  <DataTable
+                    columns={attachmentColumns}
+                    data={patient.attachments || []}
+                    enablePagination={false}
+                    enableToolbar={false}
+                    noDataMessage="No hay documentos adjuntos."
+                  />
+                </>
+              ) : null}
             </Tabs.Panel>
 
             <Tabs.Panel id="info" className="py-4">
-              <Card className="border-none bg-background shadow-sm">
-                <Card.Content className="p-6">
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <DetailRow label="Nombres" value={person.names} />
-                    <DetailRow
-                      label="Apellidos"
-                      value={`${person.fatherName} ${person.motherName}`}
-                    />
+              {isTabMounted("info") ? (
+                <Card className="border-none bg-background shadow-sm">
+                  <Card.Content className="p-6">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <DetailRow label="Nombres" value={person.names} />
+                      <DetailRow
+                        label="Apellidos"
+                        value={`${person.fatherName} ${person.motherName}`}
+                      />
 
-                    <DetailRow label="RUT" value={person.rut} />
-                    <DetailRow
-                      label="Fecha Nacimiento"
-                      value={
-                        patient.birthDate
-                          ? dayjs(patient.birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")
-                          : "N/A"
-                      }
-                    />
+                      <DetailRow label="RUT" value={person.rut} />
+                      <DetailRow
+                        label="Fecha Nacimiento"
+                        value={
+                          patient.birthDate
+                            ? dayjs(patient.birthDate, "YYYY-MM-DD").format("DD/MM/YYYY")
+                            : "N/A"
+                        }
+                      />
 
-                    <DetailRow label="Email" value={person.email || "N/A"} />
-                    <DetailRow label="Teléfono" value={person.phone || "N/A"} />
-                    <DetailRow
-                      label="Dirección"
-                      value={person.address || "N/A"}
-                      className="md:col-span-2"
-                    />
-                  </div>
-                </Card.Content>
-              </Card>
+                      <DetailRow label="Email" value={person.email || "N/A"} />
+                      <DetailRow label="Teléfono" value={person.phone || "N/A"} />
+                      <DetailRow
+                        label="Dirección"
+                        value={person.address || "N/A"}
+                        className="md:col-span-2"
+                      />
+                    </div>
+                  </Card.Content>
+                </Card>
+              ) : null}
             </Tabs.Panel>
           </Tabs>
         </div>

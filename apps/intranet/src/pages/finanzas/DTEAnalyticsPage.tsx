@@ -34,10 +34,17 @@ import {
   formatNumber,
   safeYearSelection,
 } from "@/features/finance/dte-analytics/utils";
+import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 
 export function DTEAnalyticsPage() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const [selectedTab, setSelectedTab] = useState<
+    "purchases-comparison" | "purchases-monthly" | "sales-comparison" | "sales-monthly"
+  >("purchases-monthly");
+  const { isTabMounted, markTabAsMounted } = useLazyTabs<
+    "purchases-comparison" | "purchases-monthly" | "sales-comparison" | "sales-monthly"
+  >("purchases-monthly");
 
   // Load all purchases and sales data to extract years with actual data
   const { data: allPurchases } = useSuspenseQuery(dteAnalyticsKeys.purchases());
@@ -60,7 +67,19 @@ export function DTEAnalyticsPage() {
 
   return (
     <div className="container mx-auto space-y-6 p-6">
-      <Tabs aria-label="DTE Analytics Tabs" defaultSelectedKey="purchases-monthly">
+      <Tabs
+        aria-label="DTE Analytics Tabs"
+        selectedKey={selectedTab}
+        onSelectionChange={(key) => {
+          const nextTab = String(key) as
+            | "purchases-comparison"
+            | "purchases-monthly"
+            | "sales-comparison"
+            | "sales-monthly";
+          setSelectedTab(nextTab);
+          markTabAsMounted(nextTab);
+        }}
+      >
         <Tabs.List
           aria-label="Opciones de visualización"
           className="rounded-lg bg-default-50/50 p-1"
@@ -84,27 +103,31 @@ export function DTEAnalyticsPage() {
         </Tabs.List>
 
         <Tabs.Panel id="purchases-monthly">
-          <PurchasesMonthlySummary
-            selectedYear={validatedYear}
-            setSelectedYear={setSelectedYear}
-            yearOptions={yearOptions}
-          />
+          {isTabMounted("purchases-monthly") ? (
+            <PurchasesMonthlySummary
+              selectedYear={validatedYear}
+              setSelectedYear={setSelectedYear}
+              yearOptions={yearOptions}
+            />
+          ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel id="sales-monthly">
-          <SalesMonthlySummary
-            selectedYear={validatedYear}
-            setSelectedYear={setSelectedYear}
-            yearOptions={yearOptions}
-          />
+          {isTabMounted("sales-monthly") ? (
+            <SalesMonthlySummary
+              selectedYear={validatedYear}
+              setSelectedYear={setSelectedYear}
+              yearOptions={yearOptions}
+            />
+          ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel id="purchases-comparison">
-          <PurchasesComparison />
+          {isTabMounted("purchases-comparison") ? <PurchasesComparison /> : null}
         </Tabs.Panel>
 
         <Tabs.Panel id="sales-comparison">
-          <SalesComparison />
+          {isTabMounted("sales-comparison") ? <SalesComparison /> : null}
         </Tabs.Panel>
       </Tabs>
     </div>

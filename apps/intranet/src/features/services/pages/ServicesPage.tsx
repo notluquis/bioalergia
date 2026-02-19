@@ -2,15 +2,19 @@ import { Tabs } from "@heroui/react";
 import { useState } from "react";
 import { ServicesAgendaContent } from "@/features/services/components/ServicesAgendaContent";
 import { ServicesOverviewContent } from "@/features/services/components/ServicesOverviewContent";
+import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 
 export function ServicesPage() {
   const [selectedTab, setSelectedTab] = useState<"overview" | "agenda">("overview");
+  const { isTabMounted, markTabAsMounted } = useLazyTabs<"overview" | "agenda">("overview");
 
   return (
     <Tabs
       aria-label="Secciones de servicios"
       onSelectionChange={(key) => {
-        setSelectedTab(String(key) as "overview" | "agenda");
+        const nextTab = String(key) as "overview" | "agenda";
+        setSelectedTab(nextTab);
+        markTabAsMounted(nextTab);
       }}
       selectedKey={selectedTab}
     >
@@ -31,11 +35,11 @@ export function ServicesPage() {
       </Tabs.ListContainer>
 
       <Tabs.Panel className="space-y-4 pt-4" id="overview">
-        <ServicesOverviewContent />
+        {isTabMounted("overview") ? <ServicesOverviewContent /> : null}
       </Tabs.Panel>
 
       <Tabs.Panel className="space-y-8 pt-4" id="agenda">
-        <ServicesAgendaContent />
+        {isTabMounted("agenda") ? <ServicesAgendaContent /> : null}
       </Tabs.Panel>
     </Tabs>
   );

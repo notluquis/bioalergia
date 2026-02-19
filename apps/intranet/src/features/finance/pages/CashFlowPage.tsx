@@ -25,6 +25,7 @@ import { X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { z } from "zod";
+import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { toast } from "@/lib/toast-interceptor";
 import type { TransactionWithRelations } from "../components/CashFlowColumns";
@@ -499,6 +500,7 @@ export function CashFlowPage() {
   const [page, setPage] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
   const [activeTab, setActiveTab] = useState<CashFlowTab>("cash-flow");
+  const { isTabMounted, markTabAsMounted } = useLazyTabs<CashFlowTab>("cash-flow");
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
   const [columnFilters, setColumnFilters] = useState<CashFlowColumnFilters>(DEFAULT_COLUMN_FILTERS);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -1142,7 +1144,11 @@ export function CashFlowPage() {
     <div className="flex flex-col gap-4 px-3 pb-4 pt-2">
       <Tabs
         selectedKey={activeTab}
-        onSelectionChange={(key) => setActiveTab(key as CashFlowTab)}
+        onSelectionChange={(key) => {
+          const nextTab = key as CashFlowTab;
+          setActiveTab(nextTab);
+          markTabAsMounted(nextTab);
+        }}
         variant="secondary"
       >
         <Tabs.ListContainer>
@@ -1166,1125 +1172,1156 @@ export function CashFlowPage() {
         </Tabs.ListContainer>
 
         <Tabs.Panel id="cash-flow" className="space-y-3 pt-3">
-          <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
-            <div className="space-y-3 p-3">
-              <div className="max-w-xs">
-                <Select
-                  value={selectedMonth}
-                  onChange={(key) => {
-                    setSelectedMonth(String(key ?? ""));
-                    setPage(1);
-                  }}
-                >
-                  <Label>Mes</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      {monthOptionsByYear.map((monthGroup) => (
-                        <ListBox.Section key={monthGroup.year}>
-                          <Header>{monthGroup.year}</Header>
-                          {monthGroup.options.map((monthOption) => (
-                            <ListBox.Item
-                              id={monthOption.value}
-                              key={monthOption.value}
-                              textValue={monthOption.label}
-                            >
-                              {monthOption.label}
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
-                          ))}
-                        </ListBox.Section>
-                      ))}
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
-                <div className="rounded-md border border-default-200 px-2.5 py-2">
-                  <p className="text-tiny text-default-500">Ingresos</p>
-                  {isLoading ? (
-                    <Skeleton className="mt-1 h-6 w-24 rounded-md" />
-                  ) : (
-                    <p className="font-semibold text-success">
-                      {formatCurrency(monthlySummary.totals.income)}
-                    </p>
-                  )}
-                </div>
-                <div className="rounded-md border border-default-200 px-2.5 py-2">
-                  <p className="text-tiny text-default-500">Egresos</p>
-                  {isLoading ? (
-                    <Skeleton className="mt-1 h-6 w-24 rounded-md" />
-                  ) : (
-                    <p className="font-semibold text-danger">
-                      {formatCurrency(monthlySummary.totals.expense)}
-                    </p>
-                  )}
-                </div>
-                <div className="rounded-md border border-default-200 px-2.5 py-2">
-                  <p className="text-tiny text-default-500">Neto</p>
-                  {isLoading ? (
-                    <Skeleton className="mt-1 h-6 w-24 rounded-md" />
-                  ) : (
-                    <p
-                      className={`font-semibold ${monthlySummary.totals.net >= 0 ? "text-success" : "text-danger"}`}
-                    >
-                      {formatCurrency(monthlySummary.totals.net)}
-                    </p>
-                  )}
-                </div>
-                <div className="rounded-md border border-default-200 px-2.5 py-2">
-                  <p className="text-tiny text-default-500">Movimientos</p>
-                  {isLoading ? (
-                    <Skeleton className="mt-1 h-6 w-16 rounded-md" />
-                  ) : (
-                    <p className="font-semibold">{monthlySummary.totals.count}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-                <div className="rounded-md border border-default-200 p-3">
-                  <p className="mb-2 text-tiny font-medium uppercase tracking-wide text-default-500">
-                    Categorías de ingreso
-                  </p>
-                  {isLoading ? (
-                    <div className="space-y-2">
-                      <Skeleton className="h-7 w-full rounded-md" />
-                      <Skeleton className="h-7 w-full rounded-md" />
-                      <Skeleton className="h-7 w-full rounded-md" />
-                    </div>
-                  ) : incomeCategorySummary.length === 0 ? (
-                    <p className="text-sm text-default-500">
-                      Sin ingresos categorizados en este mes.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {incomeCategorySummary.map((item) => (
-                        <div
-                          className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2.5 py-1.5"
-                          key={`summary-income-category-${item.type}-${item.categoryId ?? "none"}`}
-                        >
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span
-                              className="h-2.5 w-2.5 shrink-0 rounded-full"
-                              style={{
-                                backgroundColor: item.categoryColor ?? "#64748B",
-                              }}
-                            />
-                            <span className="truncate text-sm">{item.categoryName}</span>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-success">
-                              {formatCurrency(Math.abs(item.total))}
-                            </p>
-                            <p className="text-tiny text-default-500">{item.count} mov.</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-md border border-default-200 p-3">
-                  <p className="mb-2 text-tiny font-medium uppercase tracking-wide text-default-500">
-                    Categorías de egreso
-                  </p>
-                  {isLoading ? (
-                    <div className="space-y-2">
-                      <Skeleton className="h-7 w-full rounded-md" />
-                      <Skeleton className="h-7 w-full rounded-md" />
-                      <Skeleton className="h-7 w-full rounded-md" />
-                    </div>
-                  ) : expenseCategorySummary.length === 0 ? (
-                    <p className="text-sm text-default-500">
-                      Sin egresos categorizados en este mes.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {expenseCategorySummary.map((item) => (
-                        <div
-                          className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2.5 py-1.5"
-                          key={`summary-expense-category-${item.type}-${item.categoryId ?? "none"}`}
-                        >
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span
-                              className="h-2.5 w-2.5 shrink-0 rounded-full"
-                              style={{
-                                backgroundColor: item.categoryColor ?? "#64748B",
-                              }}
-                            />
-                            <span className="truncate text-sm">{item.categoryName}</span>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-danger">
-                              {formatCurrency(Math.abs(item.total))}
-                            </p>
-                            <p className="text-tiny text-default-500">{item.count} mov.</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
-            <div className="space-y-3 p-3">
-              <p className="text-sm font-medium">Distribución por categoría</p>
-              <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-                <div className="rounded-md border border-default-200 p-3">
-                  <h4 className="mb-2 text-sm font-medium">Ingresos por categoría</h4>
-                  {isLoading ? (
-                    <Skeleton className="h-80 w-full rounded-md" />
-                  ) : incomePieData.length === 0 ? (
-                    <p className="text-sm text-default-500">
-                      No hay ingresos para el mes seleccionado.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
-                      <div className="h-80 min-w-0">
-                        <ResponsiveContainer height="100%" width="100%">
-                          <PieChart>
-                            <Pie
-                              data={incomePieData}
-                              dataKey="value"
-                              nameKey="name"
-                              innerRadius={70}
-                              outerRadius={105}
-                              paddingAngle={2}
-                            >
-                              {incomePieData.map((entry) => (
-                                <Cell key={`income-pie-${entry.name}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip content={<CashflowPieTooltip />} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="max-h-80 space-y-2 overflow-auto pr-1">
-                        {incomePieData.map((entry) => {
-                          const share =
-                            incomePieTotal > 0 ? (entry.value / incomePieTotal) * 100 : 0;
-                          return (
-                            <div
-                              className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2 py-1.5 text-sm"
-                              key={`income-legend-${entry.name}`}
-                            >
-                              <div className="flex min-w-0 items-center gap-2">
-                                <span
-                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                  style={{ backgroundColor: entry.color }}
-                                />
-                                <span className="truncate text-default-700">{entry.name}</span>
-                              </div>
-                              <div className="shrink-0 text-right text-default-500">
-                                {share.toFixed(1)}%
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-md border border-default-200 p-3">
-                  <h4 className="mb-2 text-sm font-medium">Egresos por categoría</h4>
-                  {isLoading ? (
-                    <Skeleton className="h-80 w-full rounded-md" />
-                  ) : expensePieData.length === 0 ? (
-                    <p className="text-sm text-default-500">
-                      No hay egresos para el mes seleccionado.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
-                      <div className="h-80 min-w-0">
-                        <ResponsiveContainer height="100%" width="100%">
-                          <PieChart>
-                            <Pie
-                              data={expensePieData}
-                              dataKey="value"
-                              nameKey="name"
-                              innerRadius={70}
-                              outerRadius={105}
-                              paddingAngle={2}
-                            >
-                              {expensePieData.map((entry) => (
-                                <Cell key={`expense-pie-${entry.name}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip content={<CashflowPieTooltip />} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="max-h-80 space-y-2 overflow-auto pr-1">
-                        {expensePieData.map((entry) => {
-                          const share =
-                            expensePieTotal > 0 ? (entry.value / expensePieTotal) * 100 : 0;
-                          return (
-                            <div
-                              className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2 py-1.5 text-sm"
-                              key={`expense-legend-${entry.name}`}
-                            >
-                              <div className="flex min-w-0 items-center gap-2">
-                                <span
-                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                  style={{ backgroundColor: entry.color }}
-                                />
-                                <span className="truncate text-default-700">{entry.name}</span>
-                              </div>
-                              <div className="shrink-0 text-right text-default-500">
-                                {share.toFixed(1)}%
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
-        </Tabs.Panel>
-
-        <Tabs.Panel id="movements" className="space-y-3 pt-3">
-          <Card className="overflow-hidden border border-default-200/70 bg-linear-to-b from-default-100/35 via-default-50/15 to-transparent shadow-sm">
-            <div className="border-b border-default-200/70 px-4 py-3">
-              <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12">
-                <div className="lg:col-span-2">
-                  <Select
-                    value={selectedMonth}
-                    onChange={(key) => {
-                      setSelectedMonth(String(key ?? ""));
-                      setPage(1);
-                    }}
-                  >
-                    <Label>Mes</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {monthOptionsByYear.map((monthGroup) => (
-                          <ListBox.Section key={monthGroup.year}>
-                            <Header>{monthGroup.year}</Header>
-                            {monthGroup.options.map((monthOption) => (
-                              <ListBox.Item
-                                id={monthOption.value}
-                                key={monthOption.value}
-                                textValue={monthOption.label}
-                              >
-                                {monthOption.label}
-                                <ListBox.ItemIndicator />
-                              </ListBox.Item>
-                            ))}
-                          </ListBox.Section>
-                        ))}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-                </div>
-
-                <div className="lg:col-span-4">
-                  <Label className="mb-1 block">Categorías (multi)</Label>
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <Button
-                        className="h-10 w-full justify-start rounded-xl border-default-300/60 bg-default-100/40 text-left"
-                        variant="outline"
-                      >
-                        {selectedCategoryLabel}
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownPopover>
-                      <ListBox
-                        className="max-h-60 w-[320px] overflow-auto"
-                        selectedKeys={new Set(selectedCategoryFilters)}
-                        selectionMode="multiple"
-                        onSelectionChange={handleCategoryFilterSelection}
-                      >
-                        {categoryFilterOptions.map((option) => (
-                          <ListBox.Item
-                            id={option.value}
-                            key={option.value}
-                            textValue={option.label}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="h-2.5 w-2.5 rounded-full shrink-0"
-                                style={{ backgroundColor: option.color }}
-                              />
-                              <span>{option.label}</span>
-                            </div>
-                            <ListBox.ItemIndicator />
-                          </ListBox.Item>
-                        ))}
-                      </ListBox>
-                    </DropdownPopover>
-                  </Dropdown>
-                </div>
-
-                <div className="lg:col-span-2">
-                  <Select
-                    value={columnFilters.type}
-                    onChange={(key) =>
-                      updateColumnFilter("type", String(key ?? "ALL") as CashFlowTypeFilter)
-                    }
-                  >
-                    <Label>Tipo</Label>
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        <ListBox.Item id="ALL" textValue="Todos">
-                          Todos
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                        <ListBox.Item id="INCOME" textValue="Ingreso">
-                          Ingreso
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                        <ListBox.Item id="EXPENSE" textValue="Egreso">
-                          Egreso
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-                </div>
-
-                <div className="flex items-end justify-end lg:col-span-2">
-                  <Button
-                    className="h-10 rounded-xl border-default-300/60 bg-default-100/40 px-3 text-default-700 hover:bg-default-100/70"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedCategoryFilters([]);
-                      setColumnFilters(DEFAULT_COLUMN_FILTERS);
-                      setPage(1);
-                    }}
-                  >
-                    Limpiar
-                  </Button>
-                </div>
-
-                <SearchField
-                  aria-label="Buscar en desde"
-                  className="lg:col-span-3"
-                  variant="secondary"
-                  value={columnFilters.fromCounterpart}
-                  onChange={(value) => updateColumnFilter("fromCounterpart", value)}
-                >
-                  <SearchField.Group>
-                    <SearchField.SearchIcon />
-                    <SearchField.Input placeholder="Desde" />
-                    <SearchField.ClearButton />
-                  </SearchField.Group>
-                </SearchField>
-
-                <SearchField
-                  aria-label="Buscar en hacia"
-                  className="lg:col-span-3"
-                  variant="secondary"
-                  value={columnFilters.toCounterpart}
-                  onChange={(value) => updateColumnFilter("toCounterpart", value)}
-                >
-                  <SearchField.Group>
-                    <SearchField.SearchIcon />
-                    <SearchField.Input placeholder="Hacia" />
-                    <SearchField.ClearButton />
-                  </SearchField.Group>
-                </SearchField>
-
-                <SearchField
-                  aria-label="Buscar por monto"
-                  className="lg:col-span-2"
-                  variant="secondary"
-                  value={columnFilters.amount}
-                  onChange={(value) => updateColumnFilter("amount", value)}
-                >
-                  <SearchField.Group>
-                    <SearchField.SearchIcon />
-                    <SearchField.Input placeholder="Monto" />
-                    <SearchField.ClearButton />
-                  </SearchField.Group>
-                </SearchField>
-
-                <SearchField
-                  aria-label="Buscar en comentario"
-                  className="lg:col-span-2"
-                  variant="secondary"
-                  value={columnFilters.comment}
-                  onChange={(value) => updateColumnFilter("comment", value)}
-                >
-                  <SearchField.Group>
-                    <SearchField.SearchIcon />
-                    <SearchField.Input placeholder="Comentario" />
-                    <SearchField.ClearButton />
-                  </SearchField.Group>
-                </SearchField>
-              </div>
-
-              {hasActiveFilters && (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {selectedCategoryFilters.map((categoryKey) => (
-                    <Button
-                      key={categoryKey}
-                      className="h-7 rounded-full border-default-300/70 bg-default-100/40 px-3"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedCategoryFilters((prev) =>
-                          prev.filter((key) => key !== categoryKey),
-                        );
+          {isTabMounted("cash-flow") ? (
+            <>
+              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+                <div className="space-y-3 p-3">
+                  <div className="max-w-xs">
+                    <Select
+                      value={selectedMonth}
+                      onChange={(key) => {
+                        setSelectedMonth(String(key ?? ""));
                         setPage(1);
                       }}
                     >
-                      {selectedCategoryMap.get(categoryKey) ?? categoryKey}
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  ))}
+                      <Label>Mes</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {monthOptionsByYear.map((monthGroup) => (
+                            <ListBox.Section key={monthGroup.year}>
+                              <Header>{monthGroup.year}</Header>
+                              {monthGroup.options.map((monthOption) => (
+                                <ListBox.Item
+                                  id={monthOption.value}
+                                  key={monthOption.value}
+                                  textValue={monthOption.label}
+                                >
+                                  {monthOption.label}
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              ))}
+                            </ListBox.Section>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
 
-                  {columnFilters.type !== "ALL" && (
-                    <Button
-                      className="h-7 rounded-full px-3"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateColumnFilter("type", "ALL")}
-                    >
-                      {columnFilters.type === "INCOME" ? "Ingreso" : "Egreso"}
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
+                    <div className="rounded-md border border-default-200 px-2.5 py-2">
+                      <p className="text-tiny text-default-500">Ingresos</p>
+                      {isLoading ? (
+                        <Skeleton className="mt-1 h-6 w-24 rounded-md" />
+                      ) : (
+                        <p className="font-semibold text-success">
+                          {formatCurrency(monthlySummary.totals.income)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="rounded-md border border-default-200 px-2.5 py-2">
+                      <p className="text-tiny text-default-500">Egresos</p>
+                      {isLoading ? (
+                        <Skeleton className="mt-1 h-6 w-24 rounded-md" />
+                      ) : (
+                        <p className="font-semibold text-danger">
+                          {formatCurrency(monthlySummary.totals.expense)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="rounded-md border border-default-200 px-2.5 py-2">
+                      <p className="text-tiny text-default-500">Neto</p>
+                      {isLoading ? (
+                        <Skeleton className="mt-1 h-6 w-24 rounded-md" />
+                      ) : (
+                        <p
+                          className={`font-semibold ${monthlySummary.totals.net >= 0 ? "text-success" : "text-danger"}`}
+                        >
+                          {formatCurrency(monthlySummary.totals.net)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="rounded-md border border-default-200 px-2.5 py-2">
+                      <p className="text-tiny text-default-500">Movimientos</p>
+                      {isLoading ? (
+                        <Skeleton className="mt-1 h-6 w-16 rounded-md" />
+                      ) : (
+                        <p className="font-semibold">{monthlySummary.totals.count}</p>
+                      )}
+                    </div>
+                  </div>
 
-                  {columnFilters.fromCounterpart.trim().length > 0 && (
-                    <Button
-                      className="h-7 rounded-full px-3"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateColumnFilter("fromCounterpart", "")}
-                    >
-                      Desde: {columnFilters.fromCounterpart}
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                    <div className="rounded-md border border-default-200 p-3">
+                      <p className="mb-2 text-tiny font-medium uppercase tracking-wide text-default-500">
+                        Categorías de ingreso
+                      </p>
+                      {isLoading ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-7 w-full rounded-md" />
+                          <Skeleton className="h-7 w-full rounded-md" />
+                          <Skeleton className="h-7 w-full rounded-md" />
+                        </div>
+                      ) : incomeCategorySummary.length === 0 ? (
+                        <p className="text-sm text-default-500">
+                          Sin ingresos categorizados en este mes.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {incomeCategorySummary.map((item) => (
+                            <div
+                              className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2.5 py-1.5"
+                              key={`summary-income-category-${item.type}-${item.categoryId ?? "none"}`}
+                            >
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                  style={{
+                                    backgroundColor: item.categoryColor ?? "#64748B",
+                                  }}
+                                />
+                                <span className="truncate text-sm">{item.categoryName}</span>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-success">
+                                  {formatCurrency(Math.abs(item.total))}
+                                </p>
+                                <p className="text-tiny text-default-500">{item.count} mov.</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-                  {columnFilters.toCounterpart.trim().length > 0 && (
-                    <Button
-                      className="h-7 rounded-full px-3"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateColumnFilter("toCounterpart", "")}
-                    >
-                      Hacia: {columnFilters.toCounterpart}
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-
-                  {columnFilters.amount.trim().length > 0 && (
-                    <Button
-                      className="h-7 rounded-full px-3"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateColumnFilter("amount", "")}
-                    >
-                      Monto: {columnFilters.amount}
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-
-                  {columnFilters.comment.trim().length > 0 && (
-                    <Button
-                      className="h-7 rounded-full px-3"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateColumnFilter("comment", "")}
-                    >
-                      Comentario: {columnFilters.comment}
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
+                    <div className="rounded-md border border-default-200 p-3">
+                      <p className="mb-2 text-tiny font-medium uppercase tracking-wide text-default-500">
+                        Categorías de egreso
+                      </p>
+                      {isLoading ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-7 w-full rounded-md" />
+                          <Skeleton className="h-7 w-full rounded-md" />
+                          <Skeleton className="h-7 w-full rounded-md" />
+                        </div>
+                      ) : expenseCategorySummary.length === 0 ? (
+                        <p className="text-sm text-default-500">
+                          Sin egresos categorizados en este mes.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {expenseCategorySummary.map((item) => (
+                            <div
+                              className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2.5 py-1.5"
+                              key={`summary-expense-category-${item.type}-${item.categoryId ?? "none"}`}
+                            >
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                  style={{
+                                    backgroundColor: item.categoryColor ?? "#64748B",
+                                  }}
+                                />
+                                <span className="truncate text-sm">{item.categoryName}</span>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium text-danger">
+                                  {formatCurrency(Math.abs(item.total))}
+                                </p>
+                                <p className="text-tiny text-default-500">{item.count} mov.</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-            <div className="p-2">
-              <CashFlowTable
-                data={paginatedTransactions}
-                categories={categories}
-                total={totalFiltered}
-                isLoading={isLoading}
-                page={safePage}
-                pageSize={TABLE_PAGE_SIZE}
-                onPageChange={(nextPage) => setPage(Math.max(1, nextPage))}
-                onEdit={handleEdit}
-                onCategoryChange={handleCategoryChange}
-                updatingCategoryIds={updatingCategoryIds}
-              />
-            </div>
-          </Card>
+              </Card>
+
+              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+                <div className="space-y-3 p-3">
+                  <p className="text-sm font-medium">Distribución por categoría</p>
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                    <div className="rounded-md border border-default-200 p-3">
+                      <h4 className="mb-2 text-sm font-medium">Ingresos por categoría</h4>
+                      {isLoading ? (
+                        <Skeleton className="h-80 w-full rounded-md" />
+                      ) : incomePieData.length === 0 ? (
+                        <p className="text-sm text-default-500">
+                          No hay ingresos para el mes seleccionado.
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
+                          <div className="h-80 min-w-0">
+                            <ResponsiveContainer height="100%" width="100%">
+                              <PieChart>
+                                <Pie
+                                  data={incomePieData}
+                                  dataKey="value"
+                                  nameKey="name"
+                                  innerRadius={70}
+                                  outerRadius={105}
+                                  paddingAngle={2}
+                                >
+                                  {incomePieData.map((entry) => (
+                                    <Cell key={`income-pie-${entry.name}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip content={<CashflowPieTooltip />} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="max-h-80 space-y-2 overflow-auto pr-1">
+                            {incomePieData.map((entry) => {
+                              const share =
+                                incomePieTotal > 0 ? (entry.value / incomePieTotal) * 100 : 0;
+                              return (
+                                <div
+                                  className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2 py-1.5 text-sm"
+                                  key={`income-legend-${entry.name}`}
+                                >
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <span
+                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      style={{ backgroundColor: entry.color }}
+                                    />
+                                    <span className="truncate text-default-700">{entry.name}</span>
+                                  </div>
+                                  <div className="shrink-0 text-right text-default-500">
+                                    {share.toFixed(1)}%
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-md border border-default-200 p-3">
+                      <h4 className="mb-2 text-sm font-medium">Egresos por categoría</h4>
+                      {isLoading ? (
+                        <Skeleton className="h-80 w-full rounded-md" />
+                      ) : expensePieData.length === 0 ? (
+                        <p className="text-sm text-default-500">
+                          No hay egresos para el mes seleccionado.
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1fr)_minmax(220px,260px)]">
+                          <div className="h-80 min-w-0">
+                            <ResponsiveContainer height="100%" width="100%">
+                              <PieChart>
+                                <Pie
+                                  data={expensePieData}
+                                  dataKey="value"
+                                  nameKey="name"
+                                  innerRadius={70}
+                                  outerRadius={105}
+                                  paddingAngle={2}
+                                >
+                                  {expensePieData.map((entry) => (
+                                    <Cell key={`expense-pie-${entry.name}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip content={<CashflowPieTooltip />} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="max-h-80 space-y-2 overflow-auto pr-1">
+                            {expensePieData.map((entry) => {
+                              const share =
+                                expensePieTotal > 0 ? (entry.value / expensePieTotal) * 100 : 0;
+                              return (
+                                <div
+                                  className="flex items-center justify-between gap-2 rounded-md border border-default-200 px-2 py-1.5 text-sm"
+                                  key={`expense-legend-${entry.name}`}
+                                >
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <span
+                                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                      style={{ backgroundColor: entry.color }}
+                                    />
+                                    <span className="truncate text-default-700">{entry.name}</span>
+                                  </div>
+                                  <div className="shrink-0 text-right text-default-500">
+                                    {share.toFixed(1)}%
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </>
+          ) : null}
+        </Tabs.Panel>
+
+        <Tabs.Panel id="movements" className="space-y-3 pt-3">
+          {isTabMounted("movements") ? (
+            <Card className="overflow-hidden border border-default-200/70 bg-linear-to-b from-default-100/35 via-default-50/15 to-transparent shadow-sm">
+              <div className="border-b border-default-200/70 px-4 py-3">
+                <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12">
+                  <div className="lg:col-span-2">
+                    <Select
+                      value={selectedMonth}
+                      onChange={(key) => {
+                        setSelectedMonth(String(key ?? ""));
+                        setPage(1);
+                      }}
+                    >
+                      <Label>Mes</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {monthOptionsByYear.map((monthGroup) => (
+                            <ListBox.Section key={monthGroup.year}>
+                              <Header>{monthGroup.year}</Header>
+                              {monthGroup.options.map((monthOption) => (
+                                <ListBox.Item
+                                  id={monthOption.value}
+                                  key={monthOption.value}
+                                  textValue={monthOption.label}
+                                >
+                                  {monthOption.label}
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              ))}
+                            </ListBox.Section>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+
+                  <div className="lg:col-span-4">
+                    <Label className="mb-1 block">Categorías (multi)</Label>
+                    <Dropdown>
+                      <DropdownTrigger>
+                        <Button
+                          className="h-10 w-full justify-start rounded-xl border-default-300/60 bg-default-100/40 text-left"
+                          variant="outline"
+                        >
+                          {selectedCategoryLabel}
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownPopover>
+                        <ListBox
+                          className="max-h-60 w-[320px] overflow-auto"
+                          selectedKeys={new Set(selectedCategoryFilters)}
+                          selectionMode="multiple"
+                          onSelectionChange={handleCategoryFilterSelection}
+                        >
+                          {categoryFilterOptions.map((option) => (
+                            <ListBox.Item
+                              id={option.value}
+                              key={option.value}
+                              textValue={option.label}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="h-2.5 w-2.5 rounded-full shrink-0"
+                                  style={{ backgroundColor: option.color }}
+                                />
+                                <span>{option.label}</span>
+                              </div>
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </DropdownPopover>
+                    </Dropdown>
+                  </div>
+
+                  <div className="lg:col-span-2">
+                    <Select
+                      value={columnFilters.type}
+                      onChange={(key) =>
+                        updateColumnFilter("type", String(key ?? "ALL") as CashFlowTypeFilter)
+                      }
+                    >
+                      <Label>Tipo</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item id="ALL" textValue="Todos">
+                            Todos
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="INCOME" textValue="Ingreso">
+                            Ingreso
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="EXPENSE" textValue="Egreso">
+                            Egreso
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-end justify-end lg:col-span-2">
+                    <Button
+                      className="h-10 rounded-xl border-default-300/60 bg-default-100/40 px-3 text-default-700 hover:bg-default-100/70"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedCategoryFilters([]);
+                        setColumnFilters(DEFAULT_COLUMN_FILTERS);
+                        setPage(1);
+                      }}
+                    >
+                      Limpiar
+                    </Button>
+                  </div>
+
+                  <SearchField
+                    aria-label="Buscar en desde"
+                    className="lg:col-span-3"
+                    variant="secondary"
+                    value={columnFilters.fromCounterpart}
+                    onChange={(value) => updateColumnFilter("fromCounterpart", value)}
+                  >
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Desde" />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+
+                  <SearchField
+                    aria-label="Buscar en hacia"
+                    className="lg:col-span-3"
+                    variant="secondary"
+                    value={columnFilters.toCounterpart}
+                    onChange={(value) => updateColumnFilter("toCounterpart", value)}
+                  >
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Hacia" />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+
+                  <SearchField
+                    aria-label="Buscar por monto"
+                    className="lg:col-span-2"
+                    variant="secondary"
+                    value={columnFilters.amount}
+                    onChange={(value) => updateColumnFilter("amount", value)}
+                  >
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Monto" />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+
+                  <SearchField
+                    aria-label="Buscar en comentario"
+                    className="lg:col-span-2"
+                    variant="secondary"
+                    value={columnFilters.comment}
+                    onChange={(value) => updateColumnFilter("comment", value)}
+                  >
+                    <SearchField.Group>
+                      <SearchField.SearchIcon />
+                      <SearchField.Input placeholder="Comentario" />
+                      <SearchField.ClearButton />
+                    </SearchField.Group>
+                  </SearchField>
+                </div>
+
+                {hasActiveFilters && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {selectedCategoryFilters.map((categoryKey) => (
+                      <Button
+                        key={categoryKey}
+                        className="h-7 rounded-full border-default-300/70 bg-default-100/40 px-3"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedCategoryFilters((prev) =>
+                            prev.filter((key) => key !== categoryKey),
+                          );
+                          setPage(1);
+                        }}
+                      >
+                        {selectedCategoryMap.get(categoryKey) ?? categoryKey}
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    ))}
+
+                    {columnFilters.type !== "ALL" && (
+                      <Button
+                        className="h-7 rounded-full px-3"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateColumnFilter("type", "ALL")}
+                      >
+                        {columnFilters.type === "INCOME" ? "Ingreso" : "Egreso"}
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+
+                    {columnFilters.fromCounterpart.trim().length > 0 && (
+                      <Button
+                        className="h-7 rounded-full px-3"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateColumnFilter("fromCounterpart", "")}
+                      >
+                        Desde: {columnFilters.fromCounterpart}
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+
+                    {columnFilters.toCounterpart.trim().length > 0 && (
+                      <Button
+                        className="h-7 rounded-full px-3"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateColumnFilter("toCounterpart", "")}
+                      >
+                        Hacia: {columnFilters.toCounterpart}
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+
+                    {columnFilters.amount.trim().length > 0 && (
+                      <Button
+                        className="h-7 rounded-full px-3"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateColumnFilter("amount", "")}
+                      >
+                        Monto: {columnFilters.amount}
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+
+                    {columnFilters.comment.trim().length > 0 && (
+                      <Button
+                        className="h-7 rounded-full px-3"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateColumnFilter("comment", "")}
+                      >
+                        Comentario: {columnFilters.comment}
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="p-2">
+                <CashFlowTable
+                  data={paginatedTransactions}
+                  categories={categories}
+                  total={totalFiltered}
+                  isLoading={isLoading}
+                  page={safePage}
+                  pageSize={TABLE_PAGE_SIZE}
+                  onPageChange={(nextPage) => setPage(Math.max(1, nextPage))}
+                  onEdit={handleEdit}
+                  onCategoryChange={handleCategoryChange}
+                  updatingCategoryIds={updatingCategoryIds}
+                />
+              </div>
+            </Card>
+          ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel id="categories" className="space-y-3 pt-3">
-          <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
-            <div className="p-3">
-              <form
-                className="grid grid-cols-1 gap-4 md:grid-cols-4"
-                onSubmit={handleCreateCategory}
-              >
-                <TextField className="md:col-span-2">
-                  <Label>Nombre</Label>
-                  <Input
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Ej: Honorarios médicos"
-                  />
-                </TextField>
+          {isTabMounted("categories") ? (
+            <>
+              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+                <div className="p-3">
+                  <form
+                    className="grid grid-cols-1 gap-4 md:grid-cols-4"
+                    onSubmit={handleCreateCategory}
+                  >
+                    <TextField className="md:col-span-2">
+                      <Label>Nombre</Label>
+                      <Input
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Ej: Honorarios médicos"
+                      />
+                    </TextField>
 
-                <Select
-                  value={newCategoryType}
-                  onChange={(key) =>
-                    setNewCategoryType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
-                  }
-                  placeholder="Tipo"
-                >
-                  <Label>Tipo</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      <ListBox.Item id="INCOME" textValue="Ingreso">
-                        Ingreso
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                      <ListBox.Item id="EXPENSE" textValue="Egreso">
-                        Egreso
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
-
-                <CategoryColorPicker
-                  label="Color"
-                  value={newCategoryColor}
-                  onChange={setNewCategoryColor}
-                />
-
-                <div className="md:col-span-4">
-                  <Button type="submit" isPending={createCategoryMutation.isPending}>
-                    {({ isPending }) => (isPending ? "Creando..." : "Crear categoría")}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </Card>
-
-          <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
-            <div className="p-3">
-              {categories.length === 0 ? (
-                <p className="text-default-500 text-sm">No hay categorías creadas.</p>
-              ) : (
-                <div className="space-y-2">
-                  {categories.map((category) => (
-                    <div
-                      key={category.id}
-                      className="flex items-center justify-between rounded-md border border-default-200 px-3 py-2"
+                    <Select
+                      value={newCategoryType}
+                      onChange={(key) =>
+                        setNewCategoryType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
+                      }
+                      placeholder="Tipo"
                     >
-                      {editingCategoryId === category.id ? (
-                        <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[1fr_160px_90px_auto] md:items-end">
-                          <TextField>
-                            <Label>Nombre</Label>
-                            <Input
-                              value={editingCategoryName}
-                              onChange={(e) => setEditingCategoryName(e.target.value)}
-                            />
-                          </TextField>
-                          <Select
-                            value={editingCategoryType}
-                            onChange={(key) =>
-                              setEditingCategoryType(
-                                String(key ?? "EXPENSE") as "EXPENSE" | "INCOME",
-                              )
-                            }
-                          >
-                            <Label>Tipo</Label>
-                            <Select.Trigger>
-                              <Select.Value />
-                              <Select.Indicator />
-                            </Select.Trigger>
-                            <Select.Popover>
-                              <ListBox>
-                                <ListBox.Item id="INCOME" textValue="Ingreso">
-                                  Ingreso
-                                  <ListBox.ItemIndicator />
-                                </ListBox.Item>
-                                <ListBox.Item id="EXPENSE" textValue="Egreso">
-                                  Egreso
-                                  <ListBox.ItemIndicator />
-                                </ListBox.Item>
-                              </ListBox>
-                            </Select.Popover>
-                          </Select>
-                          <CategoryColorPicker
-                            label="Color"
-                            value={editingCategoryColor}
-                            onChange={setEditingCategoryColor}
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onPress={() => handleCancelEditCategory()}
-                            >
-                              Cancelar
-                            </Button>
-                            <Button
-                              size="sm"
-                              onPress={() => handleSaveEditCategory(category.id)}
-                              isPending={updateCategoryMutation.isPending}
-                            >
-                              Guardar
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="h-2.5 w-2.5 rounded-full"
-                              style={{ backgroundColor: category.color ?? "#ccc" }}
-                            />
-                            <span>{category.name}</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-default-500 text-sm">
-                              {category.type === "INCOME" ? "Ingreso" : "Egreso"}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onPress={() => handleStartEditCategory(category)}
-                            >
-                              Editar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-danger"
-                              onPress={() => handleDeleteCategory(category)}
-                              isPending={deleteCategoryMutation.isPending}
-                            >
-                              Eliminar
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </Card>
+                      <Label>Tipo</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item id="INCOME" textValue="Ingreso">
+                            Ingreso
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="EXPENSE" textValue="Egreso">
+                            Egreso
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
 
-          <Card>
-            <div className="space-y-3 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">Reglas automáticas por contraparte</h3>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  isPending={syncUncategorizedByPatternsMutation.isPending}
-                  onPress={() => syncUncategorizedByPatternsMutation.mutate()}
-                >
-                  Sincronizar sin categoría
-                </Button>
-              </div>
-              <form
-                className="grid grid-cols-1 gap-3 md:grid-cols-8"
-                onSubmit={handleCreateAutoCategoryRule}
-              >
-                <TextField className="md:col-span-2">
-                  <Label>Nombre regla</Label>
-                  <Input
-                    placeholder="Ej: Paula Flores MP Egreso"
-                    value={newRuleName}
-                    onChange={(e) => setNewRuleName(e.target.value)}
-                  />
-                </TextField>
-                <Select
-                  className="md:col-span-2"
-                  value={newRuleCounterpartId == null ? null : String(newRuleCounterpartId)}
-                  onChange={(key) => {
-                    const value = key == null || String(key) === "__none__" ? null : Number(key);
-                    setNewRuleCounterpartId(value);
-                  }}
-                >
-                  <Label>Contraparte</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      <ListBox.Item id="__none__" textValue="Sin filtro">
-                        Sin filtro (cualquier contraparte)
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                      {counterpartOptions.map((counterpart) => (
-                        <ListBox.Item
-                          id={String(counterpart.value)}
-                          key={counterpart.value}
-                          textValue={counterpart.label}
-                        >
-                          {counterpart.label}
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
-                      ))}
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
-                <Select
-                  value={newRuleType}
-                  onChange={(key) =>
-                    setNewRuleType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
-                  }
-                >
-                  <Label>Tipo</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      <ListBox.Item id="EXPENSE" textValue="Egreso">
-                        Egreso
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                      <ListBox.Item id="INCOME" textValue="Ingreso">
-                        Ingreso
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
-                <Select
-                  className="md:col-span-2"
-                  value={newRuleCategoryId == null ? null : String(newRuleCategoryId)}
-                  onChange={(key) => {
-                    const value = key == null ? null : Number(key);
-                    setNewRuleCategoryId(value);
-                  }}
-                >
-                  <Label>Categoría</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      {categoryOptionsByType[newRuleType].map((category) => (
-                        <ListBox.Item
-                          id={String(category.id)}
+                    <CategoryColorPicker
+                      label="Color"
+                      value={newCategoryColor}
+                      onChange={setNewCategoryColor}
+                    />
+
+                    <div className="md:col-span-4">
+                      <Button type="submit" isPending={createCategoryMutation.isPending}>
+                        {({ isPending }) => (isPending ? "Creando..." : "Crear categoría")}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </Card>
+
+              <Card className="border border-default-200/70 bg-linear-to-b from-default-100/40 to-default-50/10 shadow-sm">
+                <div className="p-3">
+                  {categories.length === 0 ? (
+                    <p className="text-default-500 text-sm">No hay categorías creadas.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {categories.map((category) => (
+                        <div
                           key={category.id}
-                          textValue={category.name}
+                          className="flex items-center justify-between rounded-md border border-default-200 px-3 py-2"
                         >
-                          {category.name}
-                          <ListBox.ItemIndicator />
-                        </ListBox.Item>
+                          {editingCategoryId === category.id ? (
+                            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-[1fr_160px_90px_auto] md:items-end">
+                              <TextField>
+                                <Label>Nombre</Label>
+                                <Input
+                                  value={editingCategoryName}
+                                  onChange={(e) => setEditingCategoryName(e.target.value)}
+                                />
+                              </TextField>
+                              <Select
+                                value={editingCategoryType}
+                                onChange={(key) =>
+                                  setEditingCategoryType(
+                                    String(key ?? "EXPENSE") as "EXPENSE" | "INCOME",
+                                  )
+                                }
+                              >
+                                <Label>Tipo</Label>
+                                <Select.Trigger>
+                                  <Select.Value />
+                                  <Select.Indicator />
+                                </Select.Trigger>
+                                <Select.Popover>
+                                  <ListBox>
+                                    <ListBox.Item id="INCOME" textValue="Ingreso">
+                                      Ingreso
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                    <ListBox.Item id="EXPENSE" textValue="Egreso">
+                                      Egreso
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                  </ListBox>
+                                </Select.Popover>
+                              </Select>
+                              <CategoryColorPicker
+                                label="Color"
+                                value={editingCategoryColor}
+                                onChange={setEditingCategoryColor}
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onPress={() => handleCancelEditCategory()}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onPress={() => handleSaveEditCategory(category.id)}
+                                  isPending={updateCategoryMutation.isPending}
+                                >
+                                  Guardar
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="h-2.5 w-2.5 rounded-full"
+                                  style={{ backgroundColor: category.color ?? "#ccc" }}
+                                />
+                                <span>{category.name}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-default-500 text-sm">
+                                  {category.type === "INCOME" ? "Ingreso" : "Egreso"}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onPress={() => handleStartEditCategory(category)}
+                                >
+                                  Editar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-danger"
+                                  onPress={() => handleDeleteCategory(category)}
+                                  isPending={deleteCategoryMutation.isPending}
+                                >
+                                  Eliminar
+                                </Button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       ))}
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
-                <TextField>
-                  <Label>Prioridad</Label>
-                  <Input
-                    inputMode="numeric"
-                    value={newRulePriority}
-                    onChange={(e) => setNewRulePriority(e.target.value.replace(/[^\d-]/g, ""))}
-                  />
-                </TextField>
-                <TextField>
-                  <Label>Monto mínimo</Label>
-                  <Input
-                    inputMode="decimal"
-                    placeholder="0"
-                    value={newRuleMinAmount}
-                    onChange={(e) => setNewRuleMinAmount(e.target.value.replace(/[^0-9.-]/g, ""))}
-                  />
-                </TextField>
-                <TextField>
-                  <Label>Monto máximo</Label>
-                  <Input
-                    inputMode="decimal"
-                    placeholder="200000"
-                    value={newRuleMaxAmount}
-                    onChange={(e) => setNewRuleMaxAmount(e.target.value.replace(/[^0-9.-]/g, ""))}
-                  />
-                </TextField>
-                <TextField className="md:col-span-2">
-                  <Label>Comentario contiene</Label>
-                  <Input
-                    placeholder="Ref: Venta presencial"
-                    value={newRuleCommentContains}
-                    onChange={(e) => setNewRuleCommentContains(e.target.value)}
-                  />
-                </TextField>
-                <TextField className="md:col-span-2">
-                  <Label>Descripción contiene</Label>
-                  <Input
-                    placeholder="Opcional"
-                    value={newRuleDescriptionContains}
-                    onChange={(e) => setNewRuleDescriptionContains(e.target.value)}
-                  />
-                </TextField>
-                <div className="flex items-end md:col-span-8">
-                  <Button type="submit" isPending={createAutoCategoryRuleMutation.isPending}>
-                    Crear regla
-                  </Button>
-                </div>
-              </form>
-
-              {autoCategoryRules.length === 0 ? (
-                <p className="text-default-500 text-sm">No hay reglas automáticas configuradas.</p>
-              ) : (
-                <div className="space-y-2">
-                  {autoCategoryRules.map((rule) => (
-                    <div key={rule.id} className="rounded-md border border-default-200 px-3 py-2">
-                      {editingRuleId === rule.id ? (
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-8 md:items-end">
-                          <TextField className="md:col-span-2">
-                            <Label>Nombre regla</Label>
-                            <Input
-                              value={editingRuleName}
-                              onChange={(e) => setEditingRuleName(e.target.value)}
-                            />
-                          </TextField>
-                          <Select
-                            value={
-                              editingRuleCounterpartId == null
-                                ? null
-                                : String(editingRuleCounterpartId)
-                            }
-                            onChange={(key) => {
-                              const value =
-                                key == null || String(key) === "__none__" ? null : Number(key);
-                              setEditingRuleCounterpartId(value);
-                            }}
-                          >
-                            <Label>Contraparte</Label>
-                            <Select.Trigger>
-                              <Select.Value />
-                              <Select.Indicator />
-                            </Select.Trigger>
-                            <Select.Popover>
-                              <ListBox>
-                                <ListBox.Item id="__none__" textValue="Sin filtro">
-                                  Sin filtro (cualquier contraparte)
-                                  <ListBox.ItemIndicator />
-                                </ListBox.Item>
-                                {counterpartOptions.map((counterpart) => (
-                                  <ListBox.Item
-                                    id={String(counterpart.value)}
-                                    key={counterpart.value}
-                                    textValue={counterpart.label}
-                                  >
-                                    {counterpart.label}
-                                    <ListBox.ItemIndicator />
-                                  </ListBox.Item>
-                                ))}
-                              </ListBox>
-                            </Select.Popover>
-                          </Select>
-                          <Select
-                            value={editingRuleType}
-                            onChange={(key) =>
-                              setEditingRuleType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
-                            }
-                          >
-                            <Label>Tipo</Label>
-                            <Select.Trigger>
-                              <Select.Value />
-                              <Select.Indicator />
-                            </Select.Trigger>
-                            <Select.Popover>
-                              <ListBox>
-                                <ListBox.Item id="EXPENSE" textValue="Egreso">
-                                  Egreso
-                                  <ListBox.ItemIndicator />
-                                </ListBox.Item>
-                                <ListBox.Item id="INCOME" textValue="Ingreso">
-                                  Ingreso
-                                  <ListBox.ItemIndicator />
-                                </ListBox.Item>
-                              </ListBox>
-                            </Select.Popover>
-                          </Select>
-                          <Select
-                            value={
-                              editingRuleCategoryId == null ? null : String(editingRuleCategoryId)
-                            }
-                            onChange={(key) => {
-                              const value = key == null ? null : Number(key);
-                              setEditingRuleCategoryId(value);
-                            }}
-                          >
-                            <Label>Categoría</Label>
-                            <Select.Trigger>
-                              <Select.Value />
-                              <Select.Indicator />
-                            </Select.Trigger>
-                            <Select.Popover>
-                              <ListBox>
-                                {categoryOptionsByType[editingRuleType].map((category) => (
-                                  <ListBox.Item
-                                    id={String(category.id)}
-                                    key={category.id}
-                                    textValue={category.name}
-                                  >
-                                    {category.name}
-                                    <ListBox.ItemIndicator />
-                                  </ListBox.Item>
-                                ))}
-                              </ListBox>
-                            </Select.Popover>
-                          </Select>
-                          <TextField>
-                            <Label>Prioridad</Label>
-                            <Input
-                              inputMode="numeric"
-                              value={editingRulePriority}
-                              onChange={(e) =>
-                                setEditingRulePriority(e.target.value.replace(/[^\d-]/g, ""))
-                              }
-                            />
-                          </TextField>
-                          <TextField>
-                            <Label>Monto mínimo</Label>
-                            <Input
-                              inputMode="decimal"
-                              value={editingRuleMinAmount}
-                              onChange={(e) =>
-                                setEditingRuleMinAmount(e.target.value.replace(/[^0-9.-]/g, ""))
-                              }
-                            />
-                          </TextField>
-                          <TextField>
-                            <Label>Monto máximo</Label>
-                            <Input
-                              inputMode="decimal"
-                              value={editingRuleMaxAmount}
-                              onChange={(e) =>
-                                setEditingRuleMaxAmount(e.target.value.replace(/[^0-9.-]/g, ""))
-                              }
-                            />
-                          </TextField>
-                          <TextField className="md:col-span-2">
-                            <Label>Comentario contiene</Label>
-                            <Input
-                              value={editingRuleCommentContains}
-                              onChange={(e) => setEditingRuleCommentContains(e.target.value)}
-                            />
-                          </TextField>
-                          <TextField className="md:col-span-2">
-                            <Label>Descripción contiene</Label>
-                            <Input
-                              value={editingRuleDescriptionContains}
-                              onChange={(e) => setEditingRuleDescriptionContains(e.target.value)}
-                            />
-                          </TextField>
-                          <Select
-                            value={editingRuleIsActive ? "ACTIVE" : "INACTIVE"}
-                            onChange={(key) => setEditingRuleIsActive(String(key) === "ACTIVE")}
-                          >
-                            <Label>Estado</Label>
-                            <Select.Trigger>
-                              <Select.Value />
-                              <Select.Indicator />
-                            </Select.Trigger>
-                            <Select.Popover>
-                              <ListBox>
-                                <ListBox.Item id="ACTIVE" textValue="Activa">
-                                  Activa
-                                  <ListBox.ItemIndicator />
-                                </ListBox.Item>
-                                <ListBox.Item id="INACTIVE" textValue="Inactiva">
-                                  Inactiva
-                                  <ListBox.ItemIndicator />
-                                </ListBox.Item>
-                              </ListBox>
-                            </Select.Popover>
-                          </Select>
-                          <div className="flex gap-2 md:col-span-8 md:justify-end">
-                            <Button size="sm" variant="secondary" onPress={handleCancelEditRule}>
-                              Cancelar
-                            </Button>
-                            <Button
-                              size="sm"
-                              onPress={() => handleSaveEditRule(rule.id)}
-                              isPending={updateAutoCategoryRuleMutation.isPending}
-                            >
-                              Guardar
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium">{rule.name}</p>
-                            <p className="text-tiny text-default-500">
-                              {rule.counterpart
-                                ? `${rule.counterpart.bankAccountHolder} (${rule.counterpart.identificationNumber})`
-                                : "Sin filtro de contraparte"}
-                            </p>
-                            <p className="text-tiny text-default-500">
-                              {rule.type === "INCOME" ? "Ingreso" : "Egreso"} | {rule.category.name}{" "}
-                              | prioridad {rule.priority} | {rule.isActive ? "Activa" : "Inactiva"}
-                            </p>
-                            <p className="text-tiny text-default-500">
-                              {rule.minAmount != null ? `min ${rule.minAmount}` : "min -"} |{" "}
-                              {rule.maxAmount != null ? `max ${rule.maxAmount}` : "max -"} |{" "}
-                              comentario: {rule.commentContains || "-"} | descripción:{" "}
-                              {rule.descriptionContains || "-"}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onPress={() => handleStartEditRule(rule)}
-                            >
-                              Editar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-danger"
-                              isPending={deleteAutoCategoryRuleMutation.isPending}
-                              onPress={() => handleDeleteRule(rule)}
-                            >
-                              Eliminar
-                            </Button>
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-            </div>
-          </Card>
+              </Card>
+
+              <Card>
+                <div className="space-y-3 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold">Reglas automáticas por contraparte</h3>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      isPending={syncUncategorizedByPatternsMutation.isPending}
+                      onPress={() => syncUncategorizedByPatternsMutation.mutate()}
+                    >
+                      Sincronizar sin categoría
+                    </Button>
+                  </div>
+                  <form
+                    className="grid grid-cols-1 gap-3 md:grid-cols-8"
+                    onSubmit={handleCreateAutoCategoryRule}
+                  >
+                    <TextField className="md:col-span-2">
+                      <Label>Nombre regla</Label>
+                      <Input
+                        placeholder="Ej: Paula Flores MP Egreso"
+                        value={newRuleName}
+                        onChange={(e) => setNewRuleName(e.target.value)}
+                      />
+                    </TextField>
+                    <Select
+                      className="md:col-span-2"
+                      value={newRuleCounterpartId == null ? null : String(newRuleCounterpartId)}
+                      onChange={(key) => {
+                        const value =
+                          key == null || String(key) === "__none__" ? null : Number(key);
+                        setNewRuleCounterpartId(value);
+                      }}
+                    >
+                      <Label>Contraparte</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item id="__none__" textValue="Sin filtro">
+                            Sin filtro (cualquier contraparte)
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          {counterpartOptions.map((counterpart) => (
+                            <ListBox.Item
+                              id={String(counterpart.value)}
+                              key={counterpart.value}
+                              textValue={counterpart.label}
+                            >
+                              {counterpart.label}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                    <Select
+                      value={newRuleType}
+                      onChange={(key) =>
+                        setNewRuleType(String(key ?? "EXPENSE") as "EXPENSE" | "INCOME")
+                      }
+                    >
+                      <Label>Tipo</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          <ListBox.Item id="EXPENSE" textValue="Egreso">
+                            Egreso
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                          <ListBox.Item id="INCOME" textValue="Ingreso">
+                            Ingreso
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                    <Select
+                      className="md:col-span-2"
+                      value={newRuleCategoryId == null ? null : String(newRuleCategoryId)}
+                      onChange={(key) => {
+                        const value = key == null ? null : Number(key);
+                        setNewRuleCategoryId(value);
+                      }}
+                    >
+                      <Label>Categoría</Label>
+                      <Select.Trigger>
+                        <Select.Value />
+                        <Select.Indicator />
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {categoryOptionsByType[newRuleType].map((category) => (
+                            <ListBox.Item
+                              id={String(category.id)}
+                              key={category.id}
+                              textValue={category.name}
+                            >
+                              {category.name}
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                    <TextField>
+                      <Label>Prioridad</Label>
+                      <Input
+                        inputMode="numeric"
+                        value={newRulePriority}
+                        onChange={(e) => setNewRulePriority(e.target.value.replace(/[^\d-]/g, ""))}
+                      />
+                    </TextField>
+                    <TextField>
+                      <Label>Monto mínimo</Label>
+                      <Input
+                        inputMode="decimal"
+                        placeholder="0"
+                        value={newRuleMinAmount}
+                        onChange={(e) =>
+                          setNewRuleMinAmount(e.target.value.replace(/[^0-9.-]/g, ""))
+                        }
+                      />
+                    </TextField>
+                    <TextField>
+                      <Label>Monto máximo</Label>
+                      <Input
+                        inputMode="decimal"
+                        placeholder="200000"
+                        value={newRuleMaxAmount}
+                        onChange={(e) =>
+                          setNewRuleMaxAmount(e.target.value.replace(/[^0-9.-]/g, ""))
+                        }
+                      />
+                    </TextField>
+                    <TextField className="md:col-span-2">
+                      <Label>Comentario contiene</Label>
+                      <Input
+                        placeholder="Ref: Venta presencial"
+                        value={newRuleCommentContains}
+                        onChange={(e) => setNewRuleCommentContains(e.target.value)}
+                      />
+                    </TextField>
+                    <TextField className="md:col-span-2">
+                      <Label>Descripción contiene</Label>
+                      <Input
+                        placeholder="Opcional"
+                        value={newRuleDescriptionContains}
+                        onChange={(e) => setNewRuleDescriptionContains(e.target.value)}
+                      />
+                    </TextField>
+                    <div className="flex items-end md:col-span-8">
+                      <Button type="submit" isPending={createAutoCategoryRuleMutation.isPending}>
+                        Crear regla
+                      </Button>
+                    </div>
+                  </form>
+
+                  {autoCategoryRules.length === 0 ? (
+                    <p className="text-default-500 text-sm">
+                      No hay reglas automáticas configuradas.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {autoCategoryRules.map((rule) => (
+                        <div
+                          key={rule.id}
+                          className="rounded-md border border-default-200 px-3 py-2"
+                        >
+                          {editingRuleId === rule.id ? (
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-8 md:items-end">
+                              <TextField className="md:col-span-2">
+                                <Label>Nombre regla</Label>
+                                <Input
+                                  value={editingRuleName}
+                                  onChange={(e) => setEditingRuleName(e.target.value)}
+                                />
+                              </TextField>
+                              <Select
+                                value={
+                                  editingRuleCounterpartId == null
+                                    ? null
+                                    : String(editingRuleCounterpartId)
+                                }
+                                onChange={(key) => {
+                                  const value =
+                                    key == null || String(key) === "__none__" ? null : Number(key);
+                                  setEditingRuleCounterpartId(value);
+                                }}
+                              >
+                                <Label>Contraparte</Label>
+                                <Select.Trigger>
+                                  <Select.Value />
+                                  <Select.Indicator />
+                                </Select.Trigger>
+                                <Select.Popover>
+                                  <ListBox>
+                                    <ListBox.Item id="__none__" textValue="Sin filtro">
+                                      Sin filtro (cualquier contraparte)
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                    {counterpartOptions.map((counterpart) => (
+                                      <ListBox.Item
+                                        id={String(counterpart.value)}
+                                        key={counterpart.value}
+                                        textValue={counterpart.label}
+                                      >
+                                        {counterpart.label}
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                    ))}
+                                  </ListBox>
+                                </Select.Popover>
+                              </Select>
+                              <Select
+                                value={editingRuleType}
+                                onChange={(key) =>
+                                  setEditingRuleType(
+                                    String(key ?? "EXPENSE") as "EXPENSE" | "INCOME",
+                                  )
+                                }
+                              >
+                                <Label>Tipo</Label>
+                                <Select.Trigger>
+                                  <Select.Value />
+                                  <Select.Indicator />
+                                </Select.Trigger>
+                                <Select.Popover>
+                                  <ListBox>
+                                    <ListBox.Item id="EXPENSE" textValue="Egreso">
+                                      Egreso
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                    <ListBox.Item id="INCOME" textValue="Ingreso">
+                                      Ingreso
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                  </ListBox>
+                                </Select.Popover>
+                              </Select>
+                              <Select
+                                value={
+                                  editingRuleCategoryId == null
+                                    ? null
+                                    : String(editingRuleCategoryId)
+                                }
+                                onChange={(key) => {
+                                  const value = key == null ? null : Number(key);
+                                  setEditingRuleCategoryId(value);
+                                }}
+                              >
+                                <Label>Categoría</Label>
+                                <Select.Trigger>
+                                  <Select.Value />
+                                  <Select.Indicator />
+                                </Select.Trigger>
+                                <Select.Popover>
+                                  <ListBox>
+                                    {categoryOptionsByType[editingRuleType].map((category) => (
+                                      <ListBox.Item
+                                        id={String(category.id)}
+                                        key={category.id}
+                                        textValue={category.name}
+                                      >
+                                        {category.name}
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                    ))}
+                                  </ListBox>
+                                </Select.Popover>
+                              </Select>
+                              <TextField>
+                                <Label>Prioridad</Label>
+                                <Input
+                                  inputMode="numeric"
+                                  value={editingRulePriority}
+                                  onChange={(e) =>
+                                    setEditingRulePriority(e.target.value.replace(/[^\d-]/g, ""))
+                                  }
+                                />
+                              </TextField>
+                              <TextField>
+                                <Label>Monto mínimo</Label>
+                                <Input
+                                  inputMode="decimal"
+                                  value={editingRuleMinAmount}
+                                  onChange={(e) =>
+                                    setEditingRuleMinAmount(e.target.value.replace(/[^0-9.-]/g, ""))
+                                  }
+                                />
+                              </TextField>
+                              <TextField>
+                                <Label>Monto máximo</Label>
+                                <Input
+                                  inputMode="decimal"
+                                  value={editingRuleMaxAmount}
+                                  onChange={(e) =>
+                                    setEditingRuleMaxAmount(e.target.value.replace(/[^0-9.-]/g, ""))
+                                  }
+                                />
+                              </TextField>
+                              <TextField className="md:col-span-2">
+                                <Label>Comentario contiene</Label>
+                                <Input
+                                  value={editingRuleCommentContains}
+                                  onChange={(e) => setEditingRuleCommentContains(e.target.value)}
+                                />
+                              </TextField>
+                              <TextField className="md:col-span-2">
+                                <Label>Descripción contiene</Label>
+                                <Input
+                                  value={editingRuleDescriptionContains}
+                                  onChange={(e) =>
+                                    setEditingRuleDescriptionContains(e.target.value)
+                                  }
+                                />
+                              </TextField>
+                              <Select
+                                value={editingRuleIsActive ? "ACTIVE" : "INACTIVE"}
+                                onChange={(key) => setEditingRuleIsActive(String(key) === "ACTIVE")}
+                              >
+                                <Label>Estado</Label>
+                                <Select.Trigger>
+                                  <Select.Value />
+                                  <Select.Indicator />
+                                </Select.Trigger>
+                                <Select.Popover>
+                                  <ListBox>
+                                    <ListBox.Item id="ACTIVE" textValue="Activa">
+                                      Activa
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                    <ListBox.Item id="INACTIVE" textValue="Inactiva">
+                                      Inactiva
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                  </ListBox>
+                                </Select.Popover>
+                              </Select>
+                              <div className="flex gap-2 md:col-span-8 md:justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onPress={handleCancelEditRule}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onPress={() => handleSaveEditRule(rule.id)}
+                                  isPending={updateAutoCategoryRuleMutation.isPending}
+                                >
+                                  Guardar
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium">{rule.name}</p>
+                                <p className="text-tiny text-default-500">
+                                  {rule.counterpart
+                                    ? `${rule.counterpart.bankAccountHolder} (${rule.counterpart.identificationNumber})`
+                                    : "Sin filtro de contraparte"}
+                                </p>
+                                <p className="text-tiny text-default-500">
+                                  {rule.type === "INCOME" ? "Ingreso" : "Egreso"} |{" "}
+                                  {rule.category.name} | prioridad {rule.priority} |{" "}
+                                  {rule.isActive ? "Activa" : "Inactiva"}
+                                </p>
+                                <p className="text-tiny text-default-500">
+                                  {rule.minAmount != null ? `min ${rule.minAmount}` : "min -"} |{" "}
+                                  {rule.maxAmount != null ? `max ${rule.maxAmount}` : "max -"} |{" "}
+                                  comentario: {rule.commentContains || "-"} | descripción:{" "}
+                                  {rule.descriptionContains || "-"}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onPress={() => handleStartEditRule(rule)}
+                                >
+                                  Editar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-danger"
+                                  isPending={deleteAutoCategoryRuleMutation.isPending}
+                                  onPress={() => handleDeleteRule(rule)}
+                                >
+                                  Eliminar
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </>
+          ) : null}
         </Tabs.Panel>
       </Tabs>
 

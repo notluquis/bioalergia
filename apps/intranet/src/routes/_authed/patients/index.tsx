@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { CreatePatientModal } from "@/features/patients/components/CreatePatientModal";
 import { PatientListSchema } from "@/features/patients/schemas";
 import { useDisclosure } from "@/hooks/use-disclosure";
+import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { apiClient } from "@/lib/api-client";
 import { PAGE_CONTAINER_RELAXED } from "@/lib/styles";
 
@@ -66,7 +67,8 @@ function PatientsListPage() {
   const { close: closeCreateModal, isOpen: createOpen, open: openCreateModal } = useDisclosure();
   const [searchClinical, setSearchClinical] = useState("");
   const [searchDte, setSearchDte] = useState("");
-  const [activeTab, setActiveTab] = useState("clinical");
+  const [activeTab, setActiveTab] = useState<"clinical" | "dte">("clinical");
+  const { isTabMounted, markTabAsMounted } = useLazyTabs<"clinical" | "dte">("clinical");
   const [paginationClinical, setPaginationClinical] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 20,
@@ -255,7 +257,11 @@ function PatientsListPage() {
           <Tabs
             aria-label="Fuentes de pacientes"
             selectedKey={activeTab}
-            onSelectionChange={(key) => setActiveTab(String(key))}
+            onSelectionChange={(key) => {
+              const nextTab = String(key) === "dte" ? "dte" : "clinical";
+              setActiveTab(nextTab);
+              markTabAsMounted(nextTab);
+            }}
           >
             <Tabs.List className="w-fit rounded-xl bg-default-100 p-1">
               <Tabs.Tab id="clinical">Ficha clínica</Tabs.Tab>
@@ -263,55 +269,63 @@ function PatientsListPage() {
             </Tabs.List>
 
             <Tabs.Panel className="space-y-4 pt-4" id="clinical">
-              <Input
-                className="max-w-md"
-                onChange={(e) => {
-                  setSearchClinical(e.target.value);
-                  setPaginationClinical((prev) => ({ ...prev, pageIndex: 0 }));
-                }}
-                placeholder="Buscar ficha clínica por nombre o RUT..."
-                rightElement={<Search className="text-default-300" size={18} />}
-                value={searchClinical}
-              />
-              <DataTable
-                columns={patientColumns}
-                containerVariant="plain"
-                data={patients}
-                enableExport={false}
-                enableGlobalFilter={false}
-                enableToolbar={false}
-                isLoading={isLoadingPatients}
-                noDataMessage="No hay fichas clínicas registradas."
-                onPaginationChange={setPaginationClinical}
-                pageSizeOptions={[10, 20, 50]}
-                pagination={paginationClinical}
-              />
+              {isTabMounted("clinical") ? (
+                <>
+                  <Input
+                    className="max-w-md"
+                    onChange={(e) => {
+                      setSearchClinical(e.target.value);
+                      setPaginationClinical((prev) => ({ ...prev, pageIndex: 0 }));
+                    }}
+                    placeholder="Buscar ficha clínica por nombre o RUT..."
+                    rightElement={<Search className="text-default-300" size={18} />}
+                    value={searchClinical}
+                  />
+                  <DataTable
+                    columns={patientColumns}
+                    containerVariant="plain"
+                    data={patients}
+                    enableExport={false}
+                    enableGlobalFilter={false}
+                    enableToolbar={false}
+                    isLoading={isLoadingPatients}
+                    noDataMessage="No hay fichas clínicas registradas."
+                    onPaginationChange={setPaginationClinical}
+                    pageSizeOptions={[10, 20, 50]}
+                    pagination={paginationClinical}
+                  />
+                </>
+              ) : null}
             </Tabs.Panel>
 
             <Tabs.Panel className="space-y-4 pt-4" id="dte">
-              <Input
-                className="max-w-md"
-                onChange={(e) => {
-                  setSearchDte(e.target.value);
-                  setPaginationDte((prev) => ({ ...prev, pageIndex: 0 }));
-                }}
-                placeholder="Buscar en fuente DTE por nombre o RUT..."
-                rightElement={<Search className="text-default-300" size={18} />}
-                value={searchDte}
-              />
-              <DataTable
-                columns={dteColumns}
-                containerVariant="plain"
-                data={dteSources}
-                enableExport={false}
-                enableGlobalFilter={false}
-                enableToolbar={false}
-                isLoading={isLoadingDteSources}
-                noDataMessage="No hay registros DTE en la base de fuentes."
-                onPaginationChange={setPaginationDte}
-                pageSizeOptions={[10, 20, 50]}
-                pagination={paginationDte}
-              />
+              {isTabMounted("dte") ? (
+                <>
+                  <Input
+                    className="max-w-md"
+                    onChange={(e) => {
+                      setSearchDte(e.target.value);
+                      setPaginationDte((prev) => ({ ...prev, pageIndex: 0 }));
+                    }}
+                    placeholder="Buscar en fuente DTE por nombre o RUT..."
+                    rightElement={<Search className="text-default-300" size={18} />}
+                    value={searchDte}
+                  />
+                  <DataTable
+                    columns={dteColumns}
+                    containerVariant="plain"
+                    data={dteSources}
+                    enableExport={false}
+                    enableGlobalFilter={false}
+                    enableToolbar={false}
+                    isLoading={isLoadingDteSources}
+                    noDataMessage="No hay registros DTE en la base de fuentes."
+                    onPaginationChange={setPaginationDte}
+                    pageSizeOptions={[10, 20, 50]}
+                    pagination={paginationDte}
+                  />
+                </>
+              ) : null}
             </Tabs.Panel>
           </Tabs>
         </Card.Content>

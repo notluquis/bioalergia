@@ -41,6 +41,7 @@ import type {
   CounterpartCategory,
   UnassignedPayoutAccount,
 } from "@/features/counterparts/types";
+import { useLazyTabs } from "@/hooks/use-lazy-tabs";
 import { fmtCLP } from "@/lib/format";
 import { normalizeRut, validateRut } from "@/lib/rut";
 import { CounterpartDetailSection } from "../components/CounterpartDetailSection";
@@ -488,6 +489,7 @@ export function CounterpartsPage() {
     : 0;
   const unassignedTotal = unassignedPayoutData?.total ?? 0;
   const selectedTab: CounterpartsTab = tab === "unassigned-payouts" ? tab : "counterparts";
+  const { isTabMounted, markTabAsMounted } = useLazyTabs<CounterpartsTab>("counterparts");
 
   const handleTabSelectionChange = (nextValue: string) => {
     const nextTab: CounterpartsTab =
@@ -502,7 +504,10 @@ export function CounterpartsPage() {
       <Tabs
         aria-label="Gestión de contrapartes"
         onSelectionChange={(key) => {
-          handleTabSelectionChange(String(key));
+          const nextTab: CounterpartsTab =
+            String(key) === "unassigned-payouts" ? "unassigned-payouts" : "counterparts";
+          markTabAsMounted(nextTab);
+          handleTabSelectionChange(nextTab);
         }}
         selectedKey={selectedTab}
       >
@@ -524,67 +529,73 @@ export function CounterpartsPage() {
         </Tabs.ListContainer>
 
         <Tabs.Panel className="space-y-5 pt-4" id="counterparts">
-          <CounterpartsToolbar
-            canCreate={canCreate}
-            canSync={canUpdate}
-            categoryFilter={state.categoryFilter}
-            onCategoryFilterChange={state.setCategoryFilter}
-            onCreate={() => {
-              state.openFormModal(null);
-            }}
-            onSync={() => {
-              actions.triggerSync();
-            }}
-            onResetFilters={() => {
-              state.setCategoryFilter("ALL");
-              state.setSearchQuery("");
-            }}
-            onClearSelection={() => {
-              state.setSelectedId(null);
-            }}
-            syncLoading={mutations.syncMutation.isPending}
-            onSearchQueryChange={state.setSearchQuery}
-            searchQuery={state.searchQuery}
-            selectedCounterpart={derived.selectedCounterpart}
-            visibleCounterparts={derived.visibleCounterparts}
-            onSelectCounterpart={state.setSelectedId}
-            selectedId={state.selectedId}
-            totalCount={counterparts.length}
-            visibleCount={derived.visibleCounterparts.length}
-          />
+          {isTabMounted("counterparts") ? (
+            <>
+              <CounterpartsToolbar
+                canCreate={canCreate}
+                canSync={canUpdate}
+                categoryFilter={state.categoryFilter}
+                onCategoryFilterChange={state.setCategoryFilter}
+                onCreate={() => {
+                  state.openFormModal(null);
+                }}
+                onSync={() => {
+                  actions.triggerSync();
+                }}
+                onResetFilters={() => {
+                  state.setCategoryFilter("ALL");
+                  state.setSearchQuery("");
+                }}
+                onClearSelection={() => {
+                  state.setSelectedId(null);
+                }}
+                syncLoading={mutations.syncMutation.isPending}
+                onSearchQueryChange={state.setSearchQuery}
+                searchQuery={state.searchQuery}
+                selectedCounterpart={derived.selectedCounterpart}
+                visibleCounterparts={derived.visibleCounterparts}
+                onSelectCounterpart={state.setSelectedId}
+                selectedId={state.selectedId}
+                totalCount={counterparts.length}
+                visibleCount={derived.visibleCounterparts.length}
+              />
 
-          <div className="min-h-[calc(100vh-220px)]">
-            <CounterpartDetailPane
-              canCreate={canCreate}
-              canUpdate={canUpdate}
-              counterpartId={state.selectedId}
-              onCreate={() => {
-                state.openFormModal(null);
-              }}
-              onEdit={state.openFormModal}
-            />
-          </div>
+              <div className="min-h-[calc(100vh-220px)]">
+                <CounterpartDetailPane
+                  canCreate={canCreate}
+                  canUpdate={canUpdate}
+                  counterpartId={state.selectedId}
+                  onCreate={() => {
+                    state.openFormModal(null);
+                  }}
+                  onEdit={state.openFormModal}
+                />
+              </div>
+            </>
+          ) : null}
         </Tabs.Panel>
 
         <Tabs.Panel className="space-y-4 pt-4" id="unassigned-payouts">
-          <UnassignedPayoutAccountsTable
-            canCreate={canCreate}
-            loading={isUnassignedPayoutLoading}
-            onBulkAssign={actions.handleBulkAssignFromSelection}
-            onCreateFromPayout={actions.handleCreateFromPayout}
-            onPaginationChange={state.setPayoutPagination}
-            onSearchQueryChange={(value) => {
-              state.setPayoutSearchQuery(value);
-              state.setPayoutPagination((prev) => ({ ...prev, pageIndex: 0 }));
-            }}
-            pageCount={unassignedPageCount}
-            pagination={state.payoutPagination}
-            rows={unassignedPayoutData?.rows ?? []}
-            searchQuery={state.payoutSearchQuery}
-            selectedAccounts={state.selectedPayoutAccounts}
-            setSelectedAccounts={state.setSelectedPayoutAccounts}
-            total={unassignedTotal}
-          />
+          {isTabMounted("unassigned-payouts") ? (
+            <UnassignedPayoutAccountsTable
+              canCreate={canCreate}
+              loading={isUnassignedPayoutLoading}
+              onBulkAssign={actions.handleBulkAssignFromSelection}
+              onCreateFromPayout={actions.handleCreateFromPayout}
+              onPaginationChange={state.setPayoutPagination}
+              onSearchQueryChange={(value) => {
+                state.setPayoutSearchQuery(value);
+                state.setPayoutPagination((prev) => ({ ...prev, pageIndex: 0 }));
+              }}
+              pageCount={unassignedPageCount}
+              pagination={state.payoutPagination}
+              rows={unassignedPayoutData?.rows ?? []}
+              searchQuery={state.payoutSearchQuery}
+              selectedAccounts={state.selectedPayoutAccounts}
+              setSelectedAccounts={state.setSelectedPayoutAccounts}
+              total={unassignedTotal}
+            />
+          ) : null}
         </Tabs.Panel>
       </Tabs>
       <Modal
