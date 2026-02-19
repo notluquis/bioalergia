@@ -165,14 +165,28 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
   {
     id: "source_target",
     header: "Desde / Hacia",
+    maxSize: 320,
+    minSize: 180,
+    size: 240,
     cell: ({ row }) =>
       row.original.counterpart ? (
-        <div className="flex flex-col">
-          <span className="text-small">{row.original.counterpart.bankAccountHolder}</span>
-          <span className="text-tiny text-default-400">
+        <div className="flex max-w-[280px] min-w-0 flex-col">
+          <span
+            className="block truncate text-small"
+            title={row.original.counterpart.bankAccountHolder}
+          >
+            {row.original.counterpart.bankAccountHolder}
+          </span>
+          <span
+            className="block truncate text-tiny text-default-400"
+            title={row.original.counterpart.identificationNumber}
+          >
             {row.original.counterpart.identificationNumber}
           </span>
-          <span className="text-tiny text-default-400">
+          <span
+            className="block truncate text-tiny text-default-400"
+            title={row.original.counterpartAccountNumber ?? "-"}
+          >
             {row.original.counterpartAccountNumber ?? "-"}
           </span>
         </div>
