@@ -13,7 +13,6 @@ import {
   SearchField,
   Select,
   type Selection,
-  Switch,
   Tabs,
   TextField,
 } from "@heroui/react";
@@ -234,7 +233,6 @@ export function CashFlowPage() {
   const [page, setPage] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
   const [activeTab, setActiveTab] = useState<CashFlowTab>("cash-flow");
-  const [onlyUncategorized, setOnlyUncategorized] = useState(false);
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
   const [columnFilters, setColumnFilters] = useState<CashFlowColumnFilters>(DEFAULT_COLUMN_FILTERS);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -306,7 +304,6 @@ export function CashFlowPage() {
   );
 
   const hasActiveFilters =
-    onlyUncategorized ||
     selectedCategoryFilters.length > 0 ||
     columnFilters.type !== "ALL" ||
     columnFilters.description.trim().length > 0 ||
@@ -325,10 +322,6 @@ export function CashFlowPage() {
     const amountFilter = columnFilters.amount.replace(/[^\d-]/g, "").trim();
 
     return monthTransactions.filter((tx) => {
-      if (onlyUncategorized && tx.categoryId != null) {
-        return false;
-      }
-
       if (columnFilters.type !== "ALL" && tx.type !== columnFilters.type) {
         return false;
       }
@@ -391,7 +384,7 @@ export function CashFlowPage() {
 
       return true;
     });
-  }, [columnFilters, monthTransactions, onlyUncategorized, selectedCategoryFilters]);
+  }, [columnFilters, monthTransactions, selectedCategoryFilters]);
 
   const filteredSummary = useMemo(() => {
     const totals = filteredTransactions.reduce(
@@ -639,7 +632,7 @@ export function CashFlowPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 px-4 pb-4 pt-0">
+    <div className="flex flex-col gap-4 px-3 pb-3 pt-0">
       <Tabs
         selectedKey={activeTab}
         onSelectionChange={(key) => setActiveTab(key as CashFlowTab)}
@@ -658,23 +651,23 @@ export function CashFlowPage() {
           </Tabs.List>
         </Tabs.ListContainer>
 
-        <Tabs.Panel id="cash-flow" className="space-y-4 pt-4">
+        <Tabs.Panel id="cash-flow" className="space-y-3 pt-3">
           <Card>
-            <div className="p-4 space-y-4">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                <div className="rounded-md border border-default-200 px-3 py-2">
+            <div className="space-y-3 p-3">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
+                <div className="rounded-md border border-default-200 px-2.5 py-2">
                   <p className="text-tiny text-default-500">Ingresos</p>
                   <p className="font-semibold text-success">
                     {formatCurrency(filteredSummary.totals.income)}
                   </p>
                 </div>
-                <div className="rounded-md border border-default-200 px-3 py-2">
+                <div className="rounded-md border border-default-200 px-2.5 py-2">
                   <p className="text-tiny text-default-500">Egresos</p>
                   <p className="font-semibold text-danger">
                     {formatCurrency(filteredSummary.totals.expense)}
                   </p>
                 </div>
-                <div className="rounded-md border border-default-200 px-3 py-2">
+                <div className="rounded-md border border-default-200 px-2.5 py-2">
                   <p className="text-tiny text-default-500">Neto</p>
                   <p
                     className={`font-semibold ${filteredSummary.totals.net >= 0 ? "text-success" : "text-danger"}`}
@@ -682,7 +675,7 @@ export function CashFlowPage() {
                     {formatCurrency(filteredSummary.totals.net)}
                   </p>
                 </div>
-                <div className="rounded-md border border-default-200 px-3 py-2">
+                <div className="rounded-md border border-default-200 px-2.5 py-2">
                   <p className="text-tiny text-default-500">Movimientos</p>
                   <p className="font-semibold">{filteredSummary.totals.count}</p>
                 </div>
@@ -701,7 +694,7 @@ export function CashFlowPage() {
                     {filteredSummary.byCategory.map((item) => (
                       <div
                         key={`${item.type}-${item.categoryId ?? "none"}`}
-                        className="rounded-md border border-default-200 px-3 py-2"
+                        className="rounded-md border border-default-200 px-2.5 py-2"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
@@ -732,9 +725,9 @@ export function CashFlowPage() {
           </Card>
 
           <Card>
-            <div className="border-b border-default-200 p-4">
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-                <div className="lg:col-span-3">
+            <div className="border-b border-default-200 p-3">
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-10">
+                <div className="lg:col-span-2">
                   <Select
                     selectedKey={selectedMonth}
                     onSelectionChange={(key) => {
@@ -800,34 +793,49 @@ export function CashFlowPage() {
                   </Dropdown>
                 </div>
 
-                <div className="flex items-end lg:col-span-2">
-                  <Switch
-                    className="pb-1"
-                    isSelected={onlyUncategorized}
-                    onChange={(selected) => {
-                      setOnlyUncategorized(selected);
-                      setPage(1);
-                    }}
+                <div className="lg:col-span-1">
+                  <Select
+                    selectedKey={columnFilters.type}
+                    onSelectionChange={(key) =>
+                      updateColumnFilter("type", String(key) as CashFlowTypeFilter)
+                    }
                   >
-                    <Switch.Control>
-                      <Switch.Thumb />
-                    </Switch.Control>
-                    <Label>Solo sin categoría</Label>
-                  </Switch>
+                    <Label>Tipo</Label>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        <ListBox.Item id="ALL" textValue="Todos">
+                          Todos
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="INCOME" textValue="Ingreso">
+                          Ingreso
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                        <ListBox.Item id="EXPENSE" textValue="EGRESO">
+                          EGRESO
+                          <ListBox.ItemIndicator />
+                        </ListBox.Item>
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
                 </div>
 
-                <div className="flex items-end lg:col-span-3">
+                <div className="flex items-end justify-end lg:col-span-3">
                   <Button
-                    variant="secondary"
-                    className="h-10 w-full"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-default-500 hover:text-foreground"
                     onClick={() => {
-                      setOnlyUncategorized(false);
                       setSelectedCategoryFilters([]);
                       setColumnFilters(DEFAULT_COLUMN_FILTERS);
                       setPage(1);
                     }}
                   >
-                    Limpiar filtros
+                    Limpiar
                   </Button>
                 </div>
 
@@ -846,7 +854,7 @@ export function CashFlowPage() {
 
                 <SearchField
                   aria-label="Buscar en desde"
-                  className="lg:col-span-3"
+                  className="lg:col-span-2"
                   value={columnFilters.fromCounterpart}
                   onChange={(value) => updateColumnFilter("fromCounterpart", value)}
                 >
@@ -859,7 +867,7 @@ export function CashFlowPage() {
 
                 <SearchField
                   aria-label="Buscar en hacia"
-                  className="lg:col-span-3"
+                  className="lg:col-span-2"
                   value={columnFilters.toCounterpart}
                   onChange={(value) => updateColumnFilter("toCounterpart", value)}
                 >
@@ -869,36 +877,6 @@ export function CashFlowPage() {
                     <SearchField.ClearButton />
                   </SearchField.Group>
                 </SearchField>
-
-                <Select
-                  className="lg:col-span-1"
-                  selectedKey={columnFilters.type}
-                  onSelectionChange={(key) =>
-                    updateColumnFilter("type", String(key) as CashFlowTypeFilter)
-                  }
-                >
-                  <Label>Tipo</Label>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      <ListBox.Item id="ALL" textValue="Todos">
-                        Todos
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                      <ListBox.Item id="INCOME" textValue="Ingreso">
-                        Ingreso
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                      <ListBox.Item id="EXPENSE" textValue="EGRESO">
-                        EGRESO
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
 
                 <SearchField
                   aria-label="Buscar por monto"
@@ -928,22 +906,7 @@ export function CashFlowPage() {
               </div>
 
               {hasActiveFilters && (
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {onlyUncategorized && (
-                    <Button
-                      className="h-7 rounded-full px-3"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setOnlyUncategorized(false);
-                        setPage(1);
-                      }}
-                    >
-                      Sin categoría
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-
+                <div className="mt-2 flex flex-wrap items-center gap-2">
                   {selectedCategoryFilters.map((categoryKey) => (
                     <Button
                       key={categoryKey}
@@ -1053,9 +1016,9 @@ export function CashFlowPage() {
           </Card>
         </Tabs.Panel>
 
-        <Tabs.Panel id="categories" className="space-y-4 pt-4">
+        <Tabs.Panel id="categories" className="space-y-3 pt-3">
           <Card>
-            <div className="p-4">
+            <div className="p-3">
               <form
                 className="grid grid-cols-1 gap-4 md:grid-cols-4"
                 onSubmit={handleCreateCategory}
@@ -1111,7 +1074,7 @@ export function CashFlowPage() {
           </Card>
 
           <Card>
-            <div className="p-4">
+            <div className="p-3">
               {categories.length === 0 ? (
                 <p className="text-default-500 text-sm">No hay categorías creadas.</p>
               ) : (
