@@ -48,10 +48,25 @@ export const columns: ColumnDef<TransactionWithRelations>[] = [
     ),
   },
   {
-    id: "source_target",
-    header: "Desde / Hacia",
+    id: "from_counterpart",
+    header: "Desde",
     cell: ({ row }) =>
-      row.original.counterpart ? (
+      row.original.type === "INCOME" && row.original.counterpart ? (
+        <div className="flex flex-col">
+          <span className="text-small">{row.original.counterpart.bankAccountHolder}</span>
+          <span className="text-tiny text-default-400">
+            {row.original.counterpart.identificationNumber}
+          </span>
+        </div>
+      ) : (
+        <span className="text-default-400">-</span>
+      ),
+  },
+  {
+    id: "to_counterpart",
+    header: "Hacia",
+    cell: ({ row }) =>
+      row.original.type === "EXPENSE" && row.original.counterpart ? (
         <div className="flex flex-col">
           <span className="text-small">{row.original.counterpart.bankAccountHolder}</span>
           <span className="text-tiny text-default-400">
